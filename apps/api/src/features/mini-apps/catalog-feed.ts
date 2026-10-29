@@ -5,6 +5,7 @@ import {
   MINI_APP_TAGS_MAX,
   MINI_APP_NAME_RE,
 } from '@localixai/mini-app-sdk/manifest-primitives'
+import { miniAppFileAssociationSchema } from '@localixai/mini-app-sdk/manifest'
 import { sourceSuitsSchema } from '@localixai/store'
 
 /**
@@ -17,6 +18,8 @@ import { sourceSuitsSchema } from '@localixai/store'
 export const MINI_APP_CATALOG_SCHEMA = 1
 
 const SHA256 = /^[a-f0-9]{64}$/
+/** The most kinds of file one app may say it opens. */
+const FILE_KINDS_MAX = 64
 
 /** A file a catalog publishes beside its archives, pinned like them by size and sha256. */
 const pinnedFileSchema = z.object({
@@ -71,6 +74,24 @@ const storeFieldsSchema = {
   suits: sourceSuitsSchema,
   surfaces: optional(z.array(z.string().max(32)).max(16)),
   commands: optional(z.array(z.string().max(64)).max(64)),
+  /**
+   * The kinds of file it opens: its manifest's `fileAssociations`, as the packer copies them. Read
+   * as the kinds alone (`docx`, `request.json`), each declaration that does not parse dropped, and
+   * one ranked `None` left out: the app opens it but asks not to be offered for it (a reader that
+   * also shows Markdown, which the editor opens).
+   */
+  fileAssociations: optional(
+    z.array(z.unknown()).transform((entries) => [
+      ...new Set(
+        entries
+          .flatMap((entry) => {
+            const declared = miniAppFileAssociationSchema.safeParse(entry).data
+            return declared && declared.rank !== 'None' ? declared.ext : []
+          })
+          .slice(0, FILE_KINDS_MAX),
+      ),
+    ]),
+  ),
 }
 
 const catalogAppSchema = z.object({

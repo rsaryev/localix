@@ -4,6 +4,29 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+### Added
+
+- **An app for a file**: opening a CSV, a Word document, an e-book or a SQLite database that no
+  installed app opens now shows one line above the file, **Documents opens this file**, with
+  **Install** or **Keep in editor**. It comes from what each mini app declares it opens, and an open
+  file switches to the app once it is installed.
+- **Recommended plugins install on their own**: the plugins the Localix marketplace recommends are
+  installed once in the background, like its recommended mini apps; one you remove is not added
+  back.
+
+### Changed
+
+- **What's inside, by kind**: a package's page groups its parts (**Skills · 6**, **Hook**) in the
+  order you use them, and each row says what it does: a skill's description, or when a hook runs.
+
+### Fixed
+
+- **The desktop app keeps up while it is open**: the Store page of a package you install or remove,
+  its **Open** button, a new mini app's rail section, status bar icon, tool card, commands and
+  search filter, the update and recommendation lines, the spend warning and the "minutes ago" times
+  no longer wait for the page to be opened again.
+- **The disk image from a release** shows the same styled install window as one built locally.
+
 ## v0.1.0-beta.19 — 2026-10-29
 
 Localix gets smaller: the mini app kit leaves the app, and a written contract keeps mini apps and

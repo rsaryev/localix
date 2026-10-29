@@ -18,7 +18,8 @@ import {
   useFormatOnSaveRunner,
   useTabDirtyMark,
 } from './fileTabEffects'
-import { contentTypeForPath } from '@/shared/lib/contentTypeRouting'
+import { useDocumentContentType } from './useDocumentContentType'
+import { FileOpenerHint } from './FileOpenerHint'
 import { useFileLsp } from './useFileLsp'
 import { useSplitScrollSync } from './useSplitScrollSync'
 import { useFileComments } from './useFileComments'
@@ -218,6 +219,7 @@ function SessionFileTab({
 
   const { onLocationNavigate, peekTarget, peekView, onPeekDefinition, openPeekTarget, closePeek } =
     useFileTabNavigation(sessionId)
+  const docContentType = useDocumentContentType(path)
 
   if (state.status === 'loading') {
     return (
@@ -237,7 +239,6 @@ function SessionFileTab({
   }
 
   // A pdf/office/spreadsheet that bypassed the grid's viewer routing — see FileDocumentNotice.
-  const docContentType = contentTypeForPath(path)
   if (docContentType) return <FileDocumentNotice path={path} contentType={docContentType} />
 
   // Editable text opens directly in the editor (no Edit button). Markdown can flip
@@ -252,6 +253,7 @@ function SessionFileTab({
     const editorHidden = showPreviewOnly // the editor pane is absent only in preview-only
     return (
       <div className="relative flex min-h-0 flex-1 flex-col" onFocusCapture={onEditorFocus}>
+        <FileOpenerHint path={path} inEditor />
         {problem && <ProblemLine {...problem} className="px-3 py-1.5" />}
         {conflict && (
           <WorkbenchNoticeBar

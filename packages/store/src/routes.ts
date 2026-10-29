@@ -55,6 +55,11 @@ export const listingsQuerySchema = z.object({
 })
 export type ListingsQuery = z.infer<typeof listingsQuerySchema>
 
+/** A file the person opened: which packages would open it (`StoreProvider.openers`). */
+export const openersQuerySchema = z.object({ path: z.string().min(1).max(4096) })
+export const openersResponseSchema = z.object({ listings: z.array(listingSchema) })
+export type OpenersResponse = z.infer<typeof openersResponseSchema>
+
 /**
  * A source of one package kind that could not be read this time, said in a sentence. The listings
  * it would have given are missing only from the shelves that list that kind.

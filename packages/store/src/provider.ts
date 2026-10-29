@@ -114,6 +114,11 @@ export interface StoreProvider {
    * files belong to that project alone. Absent for a kind that keeps nothing per project.
    */
   projectListings?(actor: StoreActor & { projectId: string }): Promise<Listing[]>
+  /**
+   * Its packages that open a file like `path` (`opensFile`), installed or not, best first: what a
+   * file tab offers when nothing on this machine opens it. Absent for a kind that opens no files.
+   */
+  openers?(path: string, actor: StoreActor): Promise<Listing[]>
   /** The collections its editorial sources pick for Discover; none when it has none. */
   editorial?(): Promise<Editorial[]>
   /** Hear every change to what `listings` would answer; returns the unsubscribe. */

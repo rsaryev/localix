@@ -98,6 +98,21 @@ describe('/rpc/store', () => {
     expect(body.updates).toEqual({ count: 1 })
   })
 
+  test('who opens a file: every kind that opens files is asked, and a path is required', async () => {
+    const { root, apps } = app()
+    apps.provider.openers = async (path) => (path.endsWith('.docx') ? [atlas] : [])
+    const plugins = fakeProvider('plugin', [])
+    root.route('/rpc/both', createStoreRoutes(makeStore([apps.provider, plugins.provider]).store))
+    const answer = await root.request('/rpc/both/openers?path=%2Fwork%2Freport.docx')
+    expect(answer.status).toBe(200)
+    expect((await answer.json()).listings.map((l: { ref: { id: string } }) => l.ref.id)).toEqual([
+      'atlas',
+    ])
+    const none = await root.request('/rpc/both/openers?path=%2Fwork%2Fnotes.txt')
+    expect((await none.json()).listings).toEqual([])
+    expect((await root.request('/rpc/both/openers')).status).toBe(400)
+  })
+
   test('a shelf that does not exist is a bad request', async () => {
     expect((await app().get('/listings?shelf=package:gadget')).status).toBe(400)
   })

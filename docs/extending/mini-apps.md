@@ -290,12 +290,17 @@ refuses unknown keys, a plugin's `skills` or `hooks` among them:
 | `commands`               | map keyed by command name                                 | Each `{ prompt, description?, args?, argumentHint?, featured?, activateTools? }` (max 8 tools).                                                                            |
 | `views`                  | view array; max 6                                         | Sandboxed iframe UI, each a work-item tab; HTML capped at 1.5 MiB.                                                                                                         |
 | `promptSections`         | `{ title, content }` array; max 3                         | Static text under the app's prompt section; title max 80, content max 2,000 characters.                                                                                    |
-| `fileAssociations`       | association array                                         | File types the app opens inside Localix; they never reach the operating system.                                                                                            |
+| `fileAssociations`       | association array                                         | File types the app opens inside Localix. The Store offers the app for such a file; they never reach the operating system.                                                  |
 
 The native UI is found by convention at `ui/register.tsx`. A `views[]` entry is
 `{ id, title, file, icon?, agentDescription? }`; a `fileAssociations[]` entry is
 `{ ext, name, description?, mimeType?, role?, rank? }` with `role` `Editor`, `Viewer`, `Shell` or
-`None` and `rank` `Owner`, `Default`, `Alternate` or `None`.
+`None` and `rank` `Owner`, `Default`, `Alternate` or `None`. An `ext` is an extension (`docx`), one
+of several parts (`request.json`, which `package.json` is not) or a whole file name (`dockerfile`).
+Declare every kind your UI opens with `host.fileEditors` or `host.fileFormats`: packing copies the
+list into the catalog, and when someone opens a file of that kind that nothing they have opens, the
+file tab offers your app with **Install**. Rank a kind `None` to open it without being offered for
+it ([the Store](../features/store.md#an-app-for-a-file)).
 
 ### Config options
 

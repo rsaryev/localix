@@ -6,6 +6,7 @@ import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
 import type { FileLoadState } from './fileLoadState'
 import { isMarkdown } from './fileTabHelpers'
 import { FileImageView } from './FileImageView'
+import { FileOpenerHint } from './FileOpenerHint'
 import { FileReadonlyView } from './FileReadonlyView'
 
 type ReadyState = Extract<FileLoadState, { status: 'ready' }>
@@ -32,14 +33,18 @@ export function FileStaticView({
     )
   }
 
-  // Non-image binary (read back as mojibake) — don't render garbage as code.
+  // Non-image binary (read back as mojibake) — don't render garbage as code. When an app in the
+  // Store opens this kind of file, the line above says so (`FileOpenerHint`), here and over text.
   if (!isMarkdown(path) && looksBinary(state.content)) {
     return (
-      <StateNotice
-        icon={FileX2}
-        title={baseName(path)}
-        body="Binary file — preview not supported."
-      />
+      <div className="flex min-h-0 flex-1 flex-col">
+        <FileOpenerHint path={path} />
+        <StateNotice
+          icon={FileX2}
+          title={baseName(path)}
+          body="Binary file — preview not supported."
+        />
+      </div>
     )
   }
 
@@ -49,7 +54,15 @@ export function FileStaticView({
   }
 
   return (
-    <FileReadonlyView path={path} content={state.content} truncated={state.truncated} line={line} />
+    <div className="flex min-h-0 flex-1 flex-col">
+      <FileOpenerHint path={path} inEditor />
+      <FileReadonlyView
+        path={path}
+        content={state.content}
+        truncated={state.truncated}
+        line={line}
+      />
+    </div>
   )
 }
 

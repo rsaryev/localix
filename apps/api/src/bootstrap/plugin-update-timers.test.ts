@@ -58,6 +58,7 @@ function arm(opts: { outcomes?: Array<Outcome | Error>; official?: () => Promise
       } as never,
       ensureDefaultMarketplaces: (opts.official ??
         (async () => ({ localix: { status: 'registered' } }))) as never,
+      install: (async () => ({})) as never,
     },
     userId: 'u1',
     logger: {

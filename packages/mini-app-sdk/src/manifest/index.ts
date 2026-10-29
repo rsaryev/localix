@@ -55,9 +55,10 @@ export type MiniAppConfigOption = z.output<typeof miniAppConfigOptionSchema>
  * The desktop packaging step aggregates every BUNDLED mini app's declarations into
  * `apps/desktop-tauri/src-tauri/tauri.conf.json` (`bundle.fileAssociations`), which
  * a gate keeps byte-identical to what the manifests say. A dropped-in / marketplace
- * mini app may declare associations too, but they are inert: the shell it would have to
- * amend was already signed and installed. That asymmetry is inherent to how every OS
- * registers handlers, so the field is honest about it rather than pretending.
+ * mini app's associations never reach the OS: the shell it would have to amend was
+ * already signed and installed. They reach the Store instead: packing copies them into
+ * the catalog, and a file tab offers the app for a file of one of them that Localix
+ * cannot show (`opensFile` in `@localixai/store`).
  *
  * A declaration is an OPENING CLAIM, not a runtime guarantee: if the user disables
  * the mini app, the OS still routes the double-click to Localix and the file degrades

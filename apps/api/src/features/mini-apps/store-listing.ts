@@ -81,6 +81,7 @@ export function miniAppListing(
     featured: editorial && (entry.featured ?? false),
     recommended: editorial && (entry.recommended ?? false),
     ...(editorial && entry.suits ? { suits: entry.suits } : {}),
+    ...(entry.opens ? { opens: entry.opens } : {}),
     installs: entry.installed
       ? [
           {

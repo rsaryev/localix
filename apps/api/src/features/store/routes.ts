@@ -20,6 +20,8 @@ import {
   listingParamsSchema,
   listingsQuerySchema,
   listingsResponseSchema,
+  openersQuerySchema,
+  openersResponseSchema,
   parseShelf,
   recommendDismissalSchema,
   recommendDismissalsSchema,
@@ -66,6 +68,12 @@ export function createStoreRoutes(store: StoreService) {
       })
       return c.json(listingsResponseSchema.parse(page), 200)
     })
+    .get('/openers', zValidator('query', openersQuerySchema), async (c) =>
+      c.json(
+        openersResponseSchema.parse(await store.openers(c.req.valid('query').path, actor(c))),
+        200,
+      ),
+    )
     .get('/discover', zValidator('query', projectQuerySchema), async (c) => {
       const { projectId } = c.req.valid('query')
       const answer = await store.discover(actor(c), projectId ? { projectId } : {})

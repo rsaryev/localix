@@ -8,6 +8,7 @@ import {
   type Scope,
   type StoreActor,
   type InstallableProvider,
+  opensFile,
 } from '@localixai/store'
 
 import { InvalidRequestError } from '../../lib/domain-errors'
@@ -114,32 +115,43 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
     details: { ...(app.version ? { version: app.version } : {}), author: 'You' },
   })
 
+  // The offers and the person's own apps, as listings: `listings` and what opens a file.
+  const listings = async (actor: StoreActor) => {
+    const [{ entries, problems }, label, apps] = await Promise.all([
+      deps.store.list(),
+      labels(),
+      deps.apps.list(actor.userId),
+    ])
+    const installed = new Map(apps.miniApps.map((app) => [app.name, app]))
+    const offered = new Set(entries.map((entry) => entry.name))
+    const own = apps.miniApps.filter((app) => !app.bundled && !offered.has(app.name))
+    return {
+      listings: [
+        ...entries.map((entry) =>
+          miniAppListing(entry, {
+            sourceLabel: label.get(entry.source)?.label ?? entry.source,
+            builtIn: label.get(entry.source)?.builtIn ?? false,
+            enabled: installed.get(entry.name)?.enabled ?? true,
+            configurable: (installed.get(entry.name)?.config.length ?? 0) > 0,
+          }),
+        ),
+        ...own.map((app) => ownListing(app)),
+      ],
+      problems,
+    }
+  }
+
   return {
     kind: 'mini-app',
 
-    async listings(actor) {
-      const [{ entries, problems }, label, apps] = await Promise.all([
-        deps.store.list(),
-        labels(),
-        deps.apps.list(actor.userId),
-      ])
-      const installed = new Map(apps.miniApps.map((app) => [app.name, app]))
-      const offered = new Set(entries.map((entry) => entry.name))
-      const own = apps.miniApps.filter((app) => !app.bundled && !offered.has(app.name))
-      return {
-        listings: [
-          ...entries.map((entry) =>
-            miniAppListing(entry, {
-              sourceLabel: label.get(entry.source)?.label ?? entry.source,
-              builtIn: label.get(entry.source)?.builtIn ?? false,
-              enabled: installed.get(entry.name)?.enabled ?? true,
-              configurable: (installed.get(entry.name)?.config.length ?? 0) > 0,
-            }),
-          ),
-          ...own.map((app) => ownListing(app)),
-        ],
-        problems,
-      }
+    listings,
+
+    async openers(path, actor) {
+      const opening = (await listings(actor)).listings.filter(
+        (listing) => listing.opens && opensFile(listing.opens, path) && !listing.incompatible,
+      )
+      // What Localix vouches for first; a stranger's claim after it.
+      return opening.sort((a, b) => Number(b.publisher.verified) - Number(a.publisher.verified))
     },
 
     async detail(id, actor) {

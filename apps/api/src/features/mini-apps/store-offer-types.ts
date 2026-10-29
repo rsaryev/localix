@@ -39,6 +39,8 @@ export interface OfferStore {
   recommended?: boolean
   /** What it is for, for recommendations; set only by a catalog Localix vouches for. */
   suits?: ListingSuits
+  /** The kinds of file it opens (`docx`, `request.json`), from its `fileAssociations`. */
+  opens?: string[]
   surfaces?: string[]
   commands?: string[]
 }

@@ -181,6 +181,11 @@ export const listingSchema = z.object({
    * (`prisma`, `@sentry/node`). Recommendations show it where they are (`recommend-rules.ts`).
    */
   suits: suitsSchema.optional(),
+  /**
+   * The kinds of file it opens, as its source declares them (a mini app's `fileAssociations`):
+   * `docx`, `request.json`, `dockerfile`. A file tab offers it for a file it opens (`opensFile`).
+   */
+  opens: z.array(z.string()).optional(),
 })
 export type Listing = z.infer<typeof listingSchema>
 

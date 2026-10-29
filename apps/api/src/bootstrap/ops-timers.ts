@@ -23,6 +23,7 @@ import { MINI_APP_WARNINGS, warnOnce } from '../lib/warn-once'
 import type { StorageMaintenance } from './storage-maintenance'
 import { armModelCatalogChecks } from '../features/catalog/refresh-schedule'
 import { armPluginUpdateTimers } from './plugin-update-timers'
+import { recommendedPlugins } from './recommended-plugins'
 import { armPluginAutoUpdate } from '../features/plugins/auto-update-schedule'
 import type { StoreService } from '../features/store/service'
 import { envFlag } from '../lib/env'
@@ -51,7 +52,7 @@ export interface OpsTimersPhaseInput
   hostRefs: MiniAppHostRefs
   miniAppConditions: MiniAppHostsPhase['miniAppConditions']
   /** The Store: its sources are fetched again every six hours, and read when they move. */
-  storeService?: Pick<StoreService, 'invalidate' | 'refreshSources'>
+  storeService?: Pick<StoreService, 'invalidate' | 'refreshSources' | 'listings'>
 }
 
 export interface OpsTimersPhase {
@@ -204,6 +205,9 @@ export function createOpsTimersPhase({
       logger,
       signal,
       onListingsMoved: () => storeService?.invalidate(),
+      ...(storeService
+        ? { recommended: () => recommendedPlugins(storeService, env.LOCALIX_DEFAULT_USER_ID) }
+        : {}),
     })
     // The Store's sources, every six hours on the plugin pass's clock (`store-scale.md`, "Sync");
     // nothing is fetched while the person asked for no nonessential traffic.
@@ -240,6 +244,8 @@ export function createOpsTimersPhase({
       miniAppTimers.recommendedTask,
       // Near the end: it waits on the network (a first fetch of the official marketplace).
       pluginTimers.defaultMarketplacesTask,
+      // After it: what that marketplace recommends is read from it.
+      pluginTimers.recommendedTask,
       // Last: it waits on the network, and the restored catalog is already served.
       ...(checkModelCatalog ? [{ name: 'model_catalog_check', run: checkModelCatalog }] : []),
     ]

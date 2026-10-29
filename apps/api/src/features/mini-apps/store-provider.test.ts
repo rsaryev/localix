@@ -418,4 +418,33 @@ describe('the mini apps in the Store', () => {
     // Nothing to install: it is already here, and no catalog has it.
     await expect(provider.plan('bitcoin-price', 'user', actor)).rejects.toThrow()
   })
+
+  test('a file finds the mini apps that open it, from what each catalog entry declares', async () => {
+    const { offer, provider } = setup()
+    offer('documents', {
+      fileAssociations: [{ ext: ['docx', 'pdf'], name: 'Word Document', role: 'Viewer' }],
+    })
+    offer('reader', {
+      fileAssociations: [
+        { ext: ['epub'], name: 'EPUB Book' },
+        // It reads Markdown too, but asks not to be offered for it: the editor opens Markdown.
+        { ext: ['md'], name: 'Markdown', rank: 'None' },
+        'not one',
+        { ext: [], name: 'X' },
+      ],
+    })
+    offer('clock')
+    const { listings } = await provider.listings(actor)
+    expect(Object.fromEntries(listings.map((l) => [l.ref.id, l.opens]))).toEqual({
+      documents: ['docx', 'pdf'],
+      reader: ['epub'],
+      clock: undefined,
+    })
+    const ids = async (path: string) =>
+      (await provider.openers!(path, actor)).map((listing) => listing.ref.id)
+    expect(await ids('/work/Report.DOCX')).toEqual(['documents'])
+    expect(await ids('/work/scan.pdf')).toEqual(['documents'])
+    expect(await ids('/work/notes.txt')).toEqual([])
+    expect(await ids('/work/README.md')).toEqual([])
+  })
 })

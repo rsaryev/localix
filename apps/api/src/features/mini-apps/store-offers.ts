@@ -87,6 +87,8 @@ export function createOfferReader(deps: {
         ...(app.suits && source.vouches ? { suits: app.suits } : {}),
         ...(app.surfaces ? { surfaces: app.surfaces } : {}),
         ...(app.commands ? { commands: app.commands } : {}),
+        // What it opens is a fact about the app, not a pick: any catalog may say it.
+        ...(app.fileAssociations?.length ? { opens: app.fileAssociations } : {}),
       },
       from: 'catalog',
       catalog: source.url,

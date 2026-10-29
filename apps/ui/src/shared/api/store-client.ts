@@ -9,6 +9,7 @@ import type {
   ListingDetail,
   ListingRef,
   ListingsResponse,
+  OpenersResponse,
   PackageKind,
   Scope,
   ShelfPlan,
@@ -66,6 +67,11 @@ export const storeApi = {
   /** A listing's page; with the open project, its install there too. */
   async detail(ref: ListingRef, projectId?: string | null): Promise<ListingDetail> {
     return unwrap(await listing().$get({ ...param(ref), query: cleanQuery(project(projectId)) }))
+  },
+
+  /** The packages that open a file like `path`, installed or not, best first. */
+  async openers(path: string): Promise<OpenersResponse> {
+    return unwrap(await client.rpc.store.openers.$get({ query: { path } }))
   },
 
   async plan(ref: ListingRef, scope: Scope, projectId?: string | null): Promise<InstallPlan> {

@@ -7,22 +7,16 @@ import { useChatStore } from '@/entities/chat/model/store'
 import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
 import type { ResolvedTheme } from '@/shared/theme/useTheme'
 import { chatSurface } from '@/shared/ui/chatSurfaceSlot'
-import { fileEditorsFor } from '@/shared/contrib/fileEditors'
-import { ContributedFileBody } from './FileEditorPicker'
+import { FileWorkItemBody } from './FileWorkItemBody'
 import { MiniAppWorkItemBody } from './MiniAppWorkItemBody'
-import { nativeFileViewerKind } from './fileEditorSelection'
 import { backendClient } from '@/shared/api/client'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { WorkItemVisibilityProvider } from '@localixai/mini-app-sdk/ui/visibility'
 import { WorkItemFocusProvider } from '@localixai/kit/work-item-focus'
-import { loadFileEditor } from '@/features/inspector/model/fileEditorLoader'
 
 const StatsPanel = lazy(() => import('./StatsPanel').then((m) => ({ default: m.StatsPanel })))
 const GlobalSearchTab = lazy(() =>
   import('@/features/search/ui/GlobalSearchTab').then((m) => ({ default: m.GlobalSearchTab })),
-)
-const MediaFileTab = lazy(() =>
-  import('@/features/inspector/ui/MediaFileTab').then((m) => ({ default: m.MediaFileTab })),
 )
 const TerminalPane = lazy(() =>
   import('@/features/terminal/ui/TerminalPane').then((m) => ({ default: m.TerminalPane })),
@@ -30,9 +24,8 @@ const TerminalPane = lazy(() =>
 const DiffWorkItemBody = lazy(() =>
   import('./DiffWorkItemBody').then((module) => ({ default: module.DiffWorkItemBody })),
 )
-// The code editor (FileTab + LiveFileChangeTab) pulls Monaco —
-// keep it out of the boot chunk; it loads on the first file open.
-const FileTab = lazy(() => loadFileEditor().then((module) => ({ default: module.FileTab })))
+// The live change view pulls Monaco — keep it out of the boot chunk (the code editor's own tab
+// is `FileWorkItemBody`'s).
 const LiveFileChangeTab = lazy(() =>
   import('@/features/inspector/ui/LiveFileChangeTab').then((m) => ({
     default: m.LiveFileChangeTab,
@@ -150,82 +143,15 @@ function WorkItemBodyInner({
         : null
     }
     case 'file': {
-      const filePath = p<string>(item, 'path') ?? ''
-      const mediaId = p<string>(item, 'mediaId')
-      const mediaName = p<string>(item, 'name')
       // Every file tab is opened into a session (`resolveOpenScope`): the editor reads and writes
       // THIS chat's workspace, never the one on screen. A tab without one has nothing to show.
       const fileSession = sessionOfScope(item.scope)
       if (!fileSession) return null
-      // A stored (dropped/uploaded) file has no path — route by its original NAME and
-      // hand the viewer the media id; a viewer key stable across path/media opens.
-      const viewerKey = mediaId ? (mediaName ?? '') : filePath
-      const tabKey = mediaId ?? filePath
-      // A contributed file-type editor is consulted FIRST — the open registry
-      // outranks the built-in
-      // fallbacks below. Media-backed files (dropped/uploaded, no on-disk path)
-      // only match contributions that declare `acceptsMedia`; everything else
-      // falls through to the generic media viewer.
-      const contributedEditors = fileEditorsFor(viewerKey).filter((e) => !mediaId || e.acceptsMedia)
-      const editorPreferenceKey = contributedEditors.find(
-        (editor) => editor.preferenceKey,
-      )?.preferenceKey
-      const nativeViewerKind = nativeFileViewerKind(viewerKey)
-      const nativeViewerAvailable = nativeViewerKind !== null
-      // The built-in fallback body: a dropped/uploaded file (media id, no on-disk
-      // path) shows image / text / binary read-only; a path-backed file opens the
-      // plain code editor.
-      const renderBuiltin = () =>
-        mediaId ? (
-          <MediaFileTab key={tabKey} mediaId={mediaId} name={mediaName} />
-        ) : (
-          <FileTab
-            key={filePath}
-            itemId={item.id}
-            sessionId={fileSession}
-            path={filePath}
-            line={p<number>(item, 'line')}
-            column={p<number>(item, 'column')}
-            endLine={p<number>(item, 'endLine')}
-            endColumn={p<number>(item, 'endColumn')}
-            revealAt={p<number>(item, 'revealAt')}
-            publishMessageContext={publishMessageContext}
-          />
-        )
-      if (contributedEditors.length === 0) return renderBuiltin()
-      // One match renders directly unless core also has a meaningful native
-      // image/text surface; two mini apps show the generic chooser unless exactly one is
-      // `preferred` (`initialFileEditorSelection`).
       return (
-        <ContributedFileBody
-          key={tabKey}
-          matches={contributedEditors}
-          fileKey={viewerKey}
-          preferenceKey={editorPreferenceKey}
-          fallbackLabel={
-            nativeViewerKind === 'image'
-              ? 'Built-in image viewer'
-              : mediaId
-                ? 'File viewer'
-                : 'Code editor'
-          }
-          offerNativeChoice={nativeViewerAvailable}
-          requestedBuiltin={p<string>(item, 'openWith') === 'builtin'}
-          renderFallback={renderBuiltin}
-          editorProps={{
-            itemId: item.id,
-            sessionId: fileSession,
-            path: filePath,
-            mediaId,
-            name: mediaName,
-            title: item.title,
-            line: p<number>(item, 'line'),
-            column: p<number>(item, 'column'),
-            endLine: p<number>(item, 'endLine'),
-            endColumn: p<number>(item, 'endColumn'),
-            revealAt: p<number>(item, 'revealAt'),
-            publishMessageContext,
-          }}
+        <FileWorkItemBody
+          item={item}
+          sessionId={fileSession}
+          publishMessageContext={publishMessageContext}
         />
       )
     }

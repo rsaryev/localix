@@ -16,6 +16,8 @@ export interface CatalogEntry {
   recommended?: boolean
   /** What the catalog says it is for (`Listing.suits`), as it is written. */
   suits?: unknown
+  /** The kinds of file it opens, as `mini-app.json` writes them; carried as it is written. */
+  fileAssociations?: unknown
   tags?: string[]
   surfaces?: string[]
   commands?: string[]
@@ -78,6 +80,7 @@ export function hostedMiniAppCatalog(
         ...(featured ? { featured } : {}),
         ...(recommended ? { recommended } : {}),
         ...(app.suits ? { suits: app.suits } : {}),
+        ...(app.fileAssociations ? { fileAssociations: app.fileAssociations } : {}),
         ...(app.tags ? { tags: app.tags } : {}),
         ...(app.surfaces ? { surfaces: app.surfaces } : {}),
         ...(app.commands ? { commands: app.commands } : {}),

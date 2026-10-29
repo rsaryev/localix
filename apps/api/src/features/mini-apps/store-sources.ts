@@ -11,7 +11,14 @@ export const DEFAULT_MINI_APP_CATALOG_URL = defaultSource('localix-mini-apps')!.
 /**
  * The catalogs every installation reads (`catalogs.ts` adds the person's own after them): the
  * hosted Localix catalog, which Localix vouches for.
+ *
+ * `LOCALIX_MINI_APP_CATALOG_URL` puts another in its place, for trying a Localix marketplace build
+ * before its release (`file://…/dist/catalog/mini-app-catalog.json` after its `bun run pack`). It
+ * is vouched for as the real one is, so it is for the people who build Localix, never a setting.
  */
-export async function builtInMiniAppSources(): Promise<MiniAppStoreSource[]> {
-  return [{ kind: 'catalog', url: DEFAULT_MINI_APP_CATALOG_URL, vouches: true }]
+export async function builtInMiniAppSources(
+  env: Record<string, string | undefined> = process.env,
+): Promise<MiniAppStoreSource[]> {
+  const url = env.LOCALIX_MINI_APP_CATALOG_URL?.trim() || DEFAULT_MINI_APP_CATALOG_URL
+  return [{ kind: 'catalog', url, vouches: true }]
 }

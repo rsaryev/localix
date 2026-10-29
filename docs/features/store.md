@@ -111,6 +111,12 @@ followed by **More from** the publisher and **You might also like**. The page op
 what the shelf knew, and a plugin whose files live elsewhere fills in its contents when they have
 been read.
 
+**What's inside** groups the parts by kind, in the order you meet them: screens and commands, skills
+and agents, then what the agent gets (tools, MCP servers) and last what runs on its own (hooks,
+monitors, a backend). Each group is headed with its count (**Skills · 6**, or just **Hook** for
+one), and each row says what the part does: a skill's own description, or when a hook runs
+(`PostToolUse` is _After each tool the agent uses_).
+
 ![A mini app's page: screenshots, description, what is inside](../assets/screenshots/store/listing--2026-10-28.png)
 
 ### Get
@@ -122,10 +128,10 @@ macOS desktop an app with a screen of its own also offers **Install as app**; se
 
 ### Where packages come from
 
-A fresh profile starts with these sources, registered for browsing only: nothing from them is
-installed or switched on. The first two are one repository, the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace): its releases publish the mini
-app catalog, and its `plugins` folder is the plugin marketplace. The core names none of their
+A fresh profile starts with these sources. Only the Localix marketplace installs anything on its own
+(see below); from the others nothing is installed or switched on. The first two are one repository,
+the [Localix marketplace](https://github.com/rsaryev/localix-marketplace): its releases publish the
+mini app catalog, and its `plugins` folder is the plugin marketplace. The core names none of their
 packages.
 
 | Source                                | Trust     | Shown as                                                |
@@ -143,71 +149,29 @@ every six hours.
 When two sources list the same package (the same repository and folder, or the same npm name), it
 shows once, under the more trusted source, and its page says where else it is listed.
 
-### Search
+### Installed on their own
 
-The Store's search and the palette ask the same search. Words are matched in each package's name,
-tags, description and contents, and a name that says what you typed comes first. While the built-in
-embedding model is ready, packages are found by meaning too, so "kubernetes" also finds a plugin
-that deploys Helm charts. Among equally good matches, Localix's own come before official ones, and
-official before community ones. The open project counts too: a TypeScript project sees its language
-servers first.
+The Localix marketplace names a few of its mini apps and plugins as recommended, and Localix
+installs them in the background without asking: the mini apps on a new installation, the plugins on
+any. Each is installed once; one you remove is not added back, and one the marketplace recommends
+later is installed once too. Plugins go to Localix's own folder (`~/.localix/plugins`), not Claude
+Code's. Progress shows in the Event Center's **In progress**. Updates also arrive on their own: mini
+apps a minute after start and then every six hours, plugins from a source with auto-update on (the
+Localix marketplace is) one to ten minutes after start and then every six hours. See
+[Recommended apps](mini-apps.md#recommended-apps).
 
-### Before an install
+### An app for a file
 
-A plugin's page lists what it adds (skills, commands, agents, hooks, servers) and its plan lists
-what runs on your computer: hooks, a mod, a local MCP or language server, programs in `bin/`. A
-plugin from a community marketplace, or one that runs programs, installs only after you say yes to
-its plan. **User** installs it for you everywhere; **Project** for the open project only.
+When you open a file that no installed app opens and a mini app in the Store says it does, one line
+above the file names it: **Documents opens this file**, with **Install Documents**. Localix's own
+apps install at once and the file switches to them; one that must ask first opens its page in the
+Store, where you read what it runs and say yes.
 
-A plugin whose files live in another repository says "unknown" until its page is opened: Localix
-fetches it then, reads what it contains, and the install that follows uses that fetch.
-
-### Through the assistant
-
-The assistant's `Store` tool works over the same service and only the sources you added: it can
-search, read a package's plan, install, update, remove, enable, disable, and create an agent or a
-skill, but it cannot add or remove a source. Each change shows a card with the plan and waits for
-your yes; the plan's consent goes to the Store only after it. An install or update starts a job, so
-the assistant reads the package again to see the result. A run nobody can answer refuses every
-change. `/plugin install` shows the same plan for a plugin from a Store source, and installs once
-you repeat it with `--yes`.
-
-One `Store` search can carry up to eight queries, so the assistant looks several things up in one
-call: the answer comes back grouped by query, five packages each, and a package two queries find is
-listed once.
-
-![The sheet before a community plugin is installed](../assets/screenshots/store/consent--2026-10-28.png)
-
-### Search results
-
-Typing in the Store's search replaces the section with results after a short pause, and cancels what
-you typed past. **Packages** lists the matches, **Inside packages** the skills, commands and other
-components that match. Chips narrow them by kind, category, source, trust and whether you have them.
-With no match, the Store suggests categories.
-
-![Search results grouped as packages and what is inside them](../assets/screenshots/store/search--2026-10-28.png)
-
-### Library
-
-**Installed** lists every install of every kind with its scope, version and an enabled switch; its
-menu updates it, opens its settings (**Configure**) or removes it, and chips filter by kind. A
-package installed for one project says which. **Updates** lists what has a newer version with
-**Update all**.
-
-![Installed: every kind with its scope, version and switch](../assets/screenshots/store/installed--2026-10-28.png)
-
-### Sources
-
-**Sources** lists each source under its kind (mini app catalogs, plugin marketplaces) with its
-publisher and trust, how many packages it offers, when it was last read and an automatic update
-switch. A source that cannot be read says so quietly on its row. Its menu updates or removes it;
-removing a default says it will not come back. Choosing a source opens the Store filtered by it.
-
-**Add source…** is the one way in. Paste `owner/repo`, a git address, a `marketplace.json` or
-`mini-app-catalog.json` address, or a folder. The Store reads it, shows the publisher, the count and
-sample icons, asks which kind you mean when both fit, and adds it only when you choose **Add**.
-
-![Sources, with the Add source dialog reading an address](../assets/screenshots/store/sources--2026-10-28.png)
+Over a file the editor shows (a CSV) the line also offers **Keep in editor**; over one Localix can
+only call a binary (a Word document, an e-book, a SQLite database), **×** does the same. Either
+answer is for that kind of file (every `.csv`, not a PDF) for good. The line goes once an app that
+opens the file is installed. Only what a mini app declares in its `fileAssociations` counts, never a
+guess, and a kind it ranks `None` (a reader that also shows Markdown) is not offered.
 
 ## Limits
 

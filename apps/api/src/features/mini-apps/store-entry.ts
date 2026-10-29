@@ -34,6 +34,8 @@ export interface MiniAppStoreEntry {
   recommended?: boolean
   /** What it is for, for recommendations (the Localix catalog only). */
   suits?: ListingSuits
+  /** The kinds of file it opens (`docx`, `request.json`). */
+  opens?: string[]
   surfaces?: string[]
   /** The names of the `/<app>:<command>` commands its manifest declares. */
   commands?: string[]
@@ -53,7 +55,7 @@ export function storeEntry(
   job: MiniAppJob | undefined,
 ): MiniAppStoreEntry {
   const installedVersion = typeof installed?.version === 'string' ? installed.version : undefined
-  const { tags, featured, recommended, suits, surfaces, commands } = offer.store
+  const { tags, featured, recommended, suits, opens, surfaces, commands } = offer.store
   const icon = iconOf(offer)
   return {
     name: offer.name,
@@ -68,6 +70,7 @@ export function storeEntry(
     ...(featured ? { featured: true } : {}),
     ...(recommended ? { recommended: true } : {}),
     ...(suits ? { suits } : {}),
+    ...(opens ? { opens } : {}),
     ...(surfaces ? { surfaces } : {}),
     ...(commands?.length ? { commands } : {}),
     installed: installed ? (installedVersion ? { version: installedVersion } : {}) : null,

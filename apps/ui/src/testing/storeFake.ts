@@ -1,4 +1,4 @@
-import { hasUpdate, type PackageKind } from '@localixai/store'
+import { hasUpdate, opensFile, type PackageKind } from '@localixai/store'
 import { makeListingDetail } from '@localixai/store/testing'
 import { ApiError } from '@/shared/api/internal'
 import type { StoreClient } from '@/shared/api/store-client'
@@ -39,6 +39,10 @@ export function fakeClient(fake: StoreFake): StoreClient {
         ],
       })
     },
+    // What opens a file: the listings that say they open its kind (`Listing.opens`).
+    openers: async (path) => ({
+      listings: fake.listings.filter((l) => l.opens && opensFile(l.opens, path)),
+    }),
     plan: async (ref, scope) => {
       if (fake.failing?.plan) throw new ApiError('Could not fetch it', 503, 'unavailable')
       return {

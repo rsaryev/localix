@@ -85,24 +85,29 @@ and the AppImage filter in `apps/api/src/lib/appimage-env.ts`.
 
 ### API boot configuration
 
-| Variable                  | Default                 | Effect                                                                                  |
-| ------------------------- | ----------------------- | --------------------------------------------------------------------------------------- |
-| `PORT`                    | `5051`                  | API listen port; non-negative integer.                                                  |
-| `HOST`                    | `127.0.0.1`             | API bind address.                                                                       |
-| `LOG_LEVEL`               | `info`                  | `debug`, `info`, `warn`, or `error`.                                                    |
-| `LOCALIX_DB_FILE`         | `~/.localix/localix.db` | SQLite database and row-owned blob root.                                                |
-| `LOCALIX_DEFAULT_USER_ID` | `local-user`            | Identifier for the single-user runtime.                                                 |
-| `LOCALIX_UI_DIR`          | unset                   | Prebuilt UI directory served by the API.                                                |
-| `LOCALIX_UI_ORIGINS`      | unset                   | Comma-separated exact page origins allowed to call the API.                             |
-| `LOCALIX_MODELS_DIR`      | `~/.localix/models`     | Local models, their runtime and the model server's presets.                             |
-| `HF_TOKEN`                | unset                   | A Hugging Face token for the local-model catalog: higher API rate limits, gated models. |
-| `LOCALIX_CLI_ENTRY`       | unset                   | Staged `localix` launcher used by shell-command installation.                           |
+| Variable                       | Default                 | Effect                                                                                  |
+| ------------------------------ | ----------------------- | --------------------------------------------------------------------------------------- |
+| `PORT`                         | `5051`                  | API listen port; non-negative integer.                                                  |
+| `HOST`                         | `127.0.0.1`             | API bind address.                                                                       |
+| `LOG_LEVEL`                    | `info`                  | `debug`, `info`, `warn`, or `error`.                                                    |
+| `LOCALIX_DB_FILE`              | `~/.localix/localix.db` | SQLite database and row-owned blob root.                                                |
+| `LOCALIX_DEFAULT_USER_ID`      | `local-user`            | Identifier for the single-user runtime.                                                 |
+| `LOCALIX_UI_DIR`               | unset                   | Prebuilt UI directory served by the API.                                                |
+| `LOCALIX_UI_ORIGINS`           | unset                   | Comma-separated exact page origins allowed to call the API.                             |
+| `LOCALIX_MODELS_DIR`           | `~/.localix/models`     | Local models, their runtime and the model server's presets.                             |
+| `HF_TOKEN`                     | unset                   | A Hugging Face token for the local-model catalog: higher API rate limits, gated models. |
+| `LOCALIX_CLI_ENTRY`            | unset                   | Staged `localix` launcher used by shell-command installation.                           |
+| `LOCALIX_MINI_APP_CATALOG_URL` | the Localix catalog     | Catalog the Store vouches for, in place of the released one; `https:` or `file:`.       |
 
 `LOCALIX_UI_ORIGINS` adds to the packaged app's origins; it accepts only exact `http` or `https`
 origins, and an invalid entry stops startup. `scripts/dev-servers.mjs` sets it to the Vite origin. A
 `HOST` that names a concrete address is also accepted as a request `Host`; a wildcard bind accepts
 only loopback names. The "Local API browser boundary" section of the desktop internals page
 (`docs/internals/desktop-as-primary-artifact.md`) describes the boundary.
+
+`LOCALIX_MINI_APP_CATALOG_URL` is for people who build Localix: point it at a marketplace build
+(`bun run pack` writes `dist/catalog/mini-app-catalog.json`) to try catalog changes before they are
+released.
 
 ### Agent shell and MCP
 

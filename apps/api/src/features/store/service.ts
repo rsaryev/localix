@@ -213,6 +213,14 @@ export function createStoreService(deps: StoreServiceDeps) {
 
     ...recommendations.service,
 
+    /** The packages that open a file like `path`, of every kind that opens files, best first. */
+    async openers(path: string, actor: StoreActor) {
+      const asked = deps.providers.flatMap((provider) =>
+        provider.openers ? [provider.openers(path, actor)] : [],
+      )
+      return { listings: (await Promise.all(asked)).flat() }
+    },
+
     async plan(ref: ListingRef, scope: Scope, actor: StoreActor) {
       const provider = providerOf(ref.kind)
       if (!provider.plan) throw unsupported(ref.kind, 'be installed')
