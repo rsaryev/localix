@@ -4,6 +4,11 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+## v0.1.0-beta.19 — 2026-10-29
+
+Localix gets smaller: the mini app kit leaves the app, and a written contract keeps mini apps and
+Localix in step. The Store's recommendations look at your work more closely and say why.
+
 ### Changed
 
 - **Better recommendations in the Store**: **For your work** asks about each open tab, chip, group
@@ -14,7 +19,13 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
   never open makes room for the next. The row in Discover shows only what suits your work.
 - **Quieter composer strips**: the recommendation line reads _Recommended · Docker tools and 2 more
   for compose.yaml_, without icons, and the tip waits while it shows, so there is one piece of
-  advice above the composer at a time.
+  advice above the composer at a time. The strips stay while the chat is on screen instead of
+  appearing only after a click into it, and **Send** no longer jumps in when you start typing.
+- **A smaller app**: Localix no longer carries the mini app kit (about 75 MB installed). A mini app
+  installs the kit of the Localix release it is built against into its own folder; the
+  mini-app-authoring plugin does this when it creates or checks one.
+- **Cards follow the transparency level**: under glass, cards, Store collections and panels are one
+  step denser than the pane beneath them at every level, instead of dark slabs at High.
 
 ### Added
 
@@ -27,6 +38,18 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
   plugin and mini app suits — Database for `.sql` files and database drivers, DevOps for a
   Dockerfile or compose file, Documents for Office files — and the Store recommends it when one of
   them is open or in the project.
+- **The mini app contract**: everything a mini app may rely on from Localix is written down in one
+  file, and a Localix release that would break a mini app built against it is stopped before it is
+  published. `mini-app kit` says whether a mini app's kit is exactly the running Localix's, and
+  `mini-app kit --update` installs the current one.
+
+### Fixed
+
+- **Settings follow changes made elsewhere**: a vault item removed while its dialog is open closes
+  the dialog; project settings take a name or prompt saved elsewhere instead of writing the old one
+  back; a project removed while its settings are open steps back to Preferences.
+- **The Store keeps up while a package page is open**: a package removed meanwhile no longer says
+  Installed in the list behind it, and its open page steps back to where you came from.
 
 ## v0.1.0-beta.18 — 2026-10-29
 
