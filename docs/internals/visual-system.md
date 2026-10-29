@@ -180,6 +180,19 @@ A veil makes no such bet. `bg-foreground/[0.04]` is "whatever is under me, four 
 one value is correct on near-black, on graphite and on white. Fills, hovers, borders and chips are
 all veils for this reason, and the ones that are not are listed above with the reason they are not.
 
+### A lift follows the level its pane sets
+
+The person's transparency choice (`data-window-transparency`: standard, `low`, `high`, `off`) scales
+the ground coats `--work-coat` and `--sidebar-coat`. Under glass `--card` is derived from the same
+coat, one step denser than its pane (`--card-solid` at `--work-coat + 6%`), so a card, a tile or a
+collection card reads as a step above its pane at every level instead of a near-opaque slab once the
+pane clears. Reduced transparency makes it `--card-solid`. A surface that must hide what it
+overlaps, such as a board node over another node, takes `--card-occlude`, the same step never
+thinner than 88%. A veil, a floating panel's frost, `--background-solid` and `--surface-raised` on a
+modal stay as they are: a veil already follows its ground, and the others are opaque or frosted on
+purpose. A floating chip or an overlay that hides content takes `lx-occluder` (a veil plus blur) or
+the floating material, never `bg-surface-raised/NN`, which mixes from a darker ground than the pane.
+
 ### Over content the app does not own, glass has nothing to bet on
 
 A floating panel is translucent and frosted because it frosts over the app's own chrome, whose tone

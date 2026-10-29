@@ -12,6 +12,9 @@
  * The glow intentionally matches the focused chat composer. New drop targets
  * should consume one of these variants instead of inventing another border.
  */
+
+import { POPOVER_MATERIAL } from '../overlays/popover-surface'
+
 export const DROP_TARGET_TRANSITION =
   'transition-[border-color,box-shadow,background-color,opacity] duration-(--dur-fast)'
 
@@ -25,10 +28,9 @@ export const DROP_TARGET_INSET_ACTIVE =
   'bg-surface-hover/55 ring-2 ring-inset ring-control-border-focus shadow-[inset_0_0_20px_color-mix(in_oklch,var(--foreground),transparent_94%)]'
 
 export const DROP_TARGET_OVERLAY_ACTIVE =
-  'border-2 border-dashed border-control-border-focus bg-surface-raised/88 shadow-[inset_0_0_28px_color-mix(in_oklch,var(--foreground),transparent_93%),0_0_0_1px_var(--surface-hover)] backdrop-blur-sm'
+  'border-2 border-dashed border-control-border-focus lx-occluder shadow-[inset_0_0_28px_color-mix(in_oklch,var(--foreground),transparent_93%),0_0_0_1px_var(--surface-hover)]'
 
-export const DROP_TARGET_HINT =
-  'rounded-lg border border-control-border-focus bg-surface-raised/95 px-3 py-1.5 text-xs font-medium text-foreground shadow-(--shadow-popover) backdrop-blur-sm'
+export const DROP_TARGET_HINT = `${POPOVER_MATERIAL} rounded-lg border border-control-border-focus px-3 py-1.5 text-xs font-medium text-foreground`
 
 // The insertion line's glow is `--drop-indicator-glow` (theme tokens), not a literal: the five
 // indicators below each spelled the same arbitrary shadow, and a string constant cannot carry it

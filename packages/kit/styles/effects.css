@@ -176,7 +176,9 @@
 :root[data-localix-agent-link-drag]
   [data-agent-link-drop-target]:not([data-drop-active='true'])
   > [data-agent-link-drop-hint] {
-  background-color: color-mix(in oklch, var(--surface-raised), transparent 12%);
+  background-color: color-mix(in oklch, var(--foreground) 8%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.05);
+  backdrop-filter: blur(16px) saturate(1.05);
 }
 @media (prefers-reduced-motion: reduce) {
   [data-agent-link-drop-hint] {

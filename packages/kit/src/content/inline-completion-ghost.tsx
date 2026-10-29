@@ -11,7 +11,7 @@ export function InlineCompletionGhost({ children }: { children: ReactNode }) {
     <>
       <span className="text-text-faint">{children}</span>
       <span className="ml-1.5 inline-flex select-none items-center whitespace-nowrap align-middle opacity-80">
-        <Kbd className="border-control-border/55 bg-surface-raised/90 px-1.5 py-0.5 leading-none shadow-(--shadow-raised)">
+        <Kbd className="border-control-border/55 px-1.5 py-0.5 leading-none shadow-(--shadow-raised)">
           Tab
         </Kbd>
       </span>

@@ -6,7 +6,7 @@ export function ComposerDropHint() {
     <div
       data-agent-link-drop-hint
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-(--z-drag-overlay) flex items-center justify-center gap-2 rounded-[inherit] bg-surface-raised/95 px-4 text-xs font-medium text-foreground opacity-0"
+      className="pointer-events-none absolute inset-0 z-(--z-drag-overlay) flex items-center justify-center gap-2 rounded-[inherit] lx-occluder px-4 text-xs font-medium text-foreground opacity-0"
     >
       <Link2 className="size-4" />
       Drop here to add context to the message

@@ -24,7 +24,7 @@
   --xy-handle-background-color: var(--text-faint);
   --xy-handle-border-color: var(--background);
   --xy-node-color: var(--foreground);
-  --xy-node-background-color: var(--card);
+  --xy-node-background-color: var(--card-occlude, var(--card));
   --xy-node-border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
   --xy-node-border-radius: 0.5rem;
   --xy-node-boxshadow-hover: none;
@@ -32,12 +32,12 @@
   --xy-node-group-background-color: transparent;
   --xy-selection-background-color: color-mix(in srgb, var(--status-info) 8%, transparent);
   --xy-selection-border: 1px solid color-mix(in srgb, var(--status-info) 55%, transparent);
-  --xy-minimap-background-color: var(--background);
-  --xy-minimap-mask-background-color: color-mix(in srgb, var(--background) 82%, transparent);
+  --xy-minimap-background-color: var(--field-fill);
+  --xy-minimap-mask-background-color: var(--surface-sunken);
   --xy-minimap-mask-stroke-color: var(--border);
   --xy-minimap-node-background-color: var(--text-faint);
   --xy-minimap-node-stroke-color: transparent;
-  --xy-edge-label-background-color: var(--background);
+  --xy-edge-label-background-color: var(--background-solid);
   --xy-edge-label-color: var(--text-soft);
   --xy-attribution-background-color: transparent;
 }

@@ -6,7 +6,7 @@ import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Textarea } from '@localixai/kit/textarea'
-import { POPOVER_SURFACE } from '@localixai/kit/popover-surface'
+import { POPOVER_MATERIAL, POPOVER_SURFACE } from '@localixai/kit/popover-surface'
 import { AnchoredCommentCard } from './AnchoredCommentCard'
 import { focusOnMount } from './CommentDraftCard'
 import { useCommentDraft } from './useCommentDraft'
@@ -234,7 +234,10 @@ export function TextCommentLayer({
           size="xs"
           // Floating-surface recipe (alpha + blur), not a bare `bg-surface-raised`: raised mixes
           // from a darker ground than the document it floats over, so the marker read as a black dot.
-          className="absolute z-(--z-controls) rounded-full border border-border bg-surface-raised/90 text-text-soft backdrop-blur"
+          className={cn(
+            POPOVER_MATERIAL,
+            'absolute z-(--z-controls) rounded-full border border-border text-text-soft',
+          )}
           aria-label="Show comment"
         >
           <MessageSquare className="size-3.5" />

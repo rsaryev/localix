@@ -2,6 +2,8 @@ import { Maximize2, Minus, Plus, X } from 'lucide-react'
 import { HINT, useDismissable } from '../lib/dismissable'
 import { formatChordText, formatModifierText } from '../keyboard/chord'
 import { ActionTooltip } from '../overlays/action-tooltip'
+import { POPOVER_MATERIAL } from '../overlays/popover-surface'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '../controls/button'
 import { IconButton } from '../controls/icon-button'
 import { gestureHint, type CanvasInteraction } from './keyboard'
@@ -33,7 +35,10 @@ export function CanvasControls({
       {showHint && !hint.dismissed && (
         <div
           data-canvas-chrome=""
-          className="absolute bottom-3 left-3 z-(--z-controls) flex items-center gap-2 rounded-lg border border-border-soft bg-background/90 py-1 pl-3 pr-1 text-2xs text-text-soft shadow-(--shadow-popover)"
+          className={cn(
+            POPOVER_MATERIAL,
+            'absolute bottom-3 left-3 z-(--z-controls) flex items-center gap-2 rounded-lg border border-border-soft py-1 pl-3 pr-1 text-2xs text-text-soft',
+          )}
         >
           <span>{gestureHint(interaction, formatModifierText('mod'))}</span>
           <IconButton aria-label="Dismiss the hint" size="xs" onClick={hint.dismiss}>
@@ -43,7 +48,10 @@ export function CanvasControls({
       )}
       <div
         data-canvas-chrome=""
-        className="absolute bottom-3 right-3 z-(--z-controls) flex items-center gap-0.5 rounded-lg border border-border-soft bg-background/90 p-0.5 shadow-(--shadow-popover)"
+        className={cn(
+          POPOVER_MATERIAL,
+          'absolute bottom-3 right-3 z-(--z-controls) flex items-center gap-0.5 rounded-lg border border-border-soft p-0.5',
+        )}
       >
         <IconButton
           aria-label="Zoom out"

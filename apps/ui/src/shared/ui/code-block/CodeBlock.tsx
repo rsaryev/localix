@@ -168,7 +168,7 @@ export const CodeBlock = memo(function CodeBlock({
           as="figcaption"
           density="slim"
           aria-label={`${language ?? 'text'} code block controls`}
-          className="border-control-border/68 bg-surface-raised/78"
+          className="border-control-border/68 bg-foreground/[0.04]"
         >
           <span className="min-w-0 flex-1 truncate text-2xs font-medium text-text-faint">
             {language ?? 'text'}

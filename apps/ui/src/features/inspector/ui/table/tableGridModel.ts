@@ -12,7 +12,7 @@ export const GUTTER_ACTION =
 
 /** The hover-revealed glyph chips over a cell (filter by value, follow a reference, expand). */
 export const CELL_ACTION =
-  'rounded-md border border-control-border bg-surface-raised/90 p-0.5 outline-none backdrop-blur transition-[color,opacity] duration-(--dur-fast) focus-ring'
+  'rounded-md border border-control-border lx-occluder p-0.5 outline-none transition-[color,opacity] duration-(--dur-fast) focus-ring'
 
 export function justify(align: ReturnType<typeof resolveAlign>): string {
   return align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start'
