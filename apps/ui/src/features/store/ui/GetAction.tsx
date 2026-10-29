@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { FolderGit2, RefreshCw, Settings2, Trash2, User } from 'lucide-react'
+import { FolderGit2, PowerOff, RefreshCw, Settings2, Trash2, User } from 'lucide-react'
 import type { Listing } from '@localixai/store'
 import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { GetButton } from '@localixai/kit/get-button'
@@ -39,7 +39,7 @@ export const GetAction = memo(function GetAction({
  * chevron: where to get it (for you, or for the open project alone, where its kind
  * allows that) and the install extras, each said in its own words. Once installed, its options:
  * whether it updates on its own (from a signed catalog), get it in another scope, configure it,
- * add or remove an extra, remove it.
+ * add or remove an extra, turn it off (the button then says Enable), remove it.
  */
 export function PageGetAction({ listing, className }: { listing: Listing; className?: string }) {
   const store = useStoreScope()
@@ -120,6 +120,20 @@ export function PageGetAction({ listing, className }: { listing: Listing; classN
                 },
               ]
             : []),
+          // Turned off, not removed: the button then says Enable.
+          ...listing.installs
+            .filter((install) => install.enabled)
+            .map((install) => ({
+              id: `disable:${install.scope}`,
+              label:
+                listing.installs.length > 1
+                  ? install.scope === 'user'
+                    ? 'Disable for you'
+                    : `Disable in ${project?.name ?? 'this project'}`
+                  : 'Disable',
+              icon: PowerOff,
+              onSelect: () => store.setEnabled(listing, install, false),
+            })),
           { separator: true } as const,
           ...listing.installs.map((install) => ({
             id: `remove:${install.scope}`,

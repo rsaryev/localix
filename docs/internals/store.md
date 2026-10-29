@@ -568,9 +568,10 @@ provider (X1, A8) and only reads or writes through the Store client.
 - **Lists are cursor-paged and virtualized** (`PagedList`): `useSWRInfinite` over the keyset cursor,
   the next page asked when the window nears the end, rows windowed with `@tanstack/react-virtual`. A
   card's pointer or focus prefetches its page (`prefetchDetail`, after a short intent delay).
-- **One Get** (`GetAction`, `getState.ts`): Get, progress, Open, Update, Retry. A plan that needs
-  consent, or a community source, opens `ConsentSheet` first (what runs, hosts, source and trust,
-  scope for a plugin with an open project); nothing is sent until Install.
+- **One Get** (`GetAction`, `getState.ts`): Get, progress, Open, Enable (every install turned off),
+  Update, Retry. A plan that needs consent, or a community source, opens `ConsentSheet` first (what
+  runs, hosts, source and trust, scope for a plugin with an open project); nothing is sent until
+  Install.
 - **Install extras** ("Install as app") appear in the menu beside a package page's Get only, never
   on list cards, and a failed one is said once above the content.
 - **Filters survive opening a page**: `useRemembered` in `StoreMemoryContext` keeps a list's
@@ -738,8 +739,9 @@ and sends back the ids it showed.
 - [Store service](../../apps/api/src/features/store/service.ts),
   [index](../../apps/api/src/features/store/index-repository.ts),
   [search provider](../../apps/api/src/features/store/search-provider.ts),
-  [Discover](../../apps/api/src/features/store/discover.ts) and
-  [routes](../../apps/api/src/features/store/routes.ts)
+  [Discover](../../apps/api/src/features/store/discover.ts),
+  [routes](../../apps/api/src/features/store/routes.ts) and
+  [one package's routes](../../apps/api/src/features/store/listing-routes.ts)
 - [Mini apps provider](../../apps/api/src/features/mini-apps/store-provider.ts) and
   [its listings](../../apps/api/src/features/mini-apps/store-listing.ts)
 - [MCP servers provider](../../apps/api/src/features/mcp/store-provider.ts) and

@@ -44,6 +44,8 @@ the rest of Localix asks.
   its **Open** button, a new mini app's rail section, status bar icon, tool card, commands and
   search filter, the update and recommendation lines, the spend warning and the "minutes ago" times
   no longer wait for the page to be opened again.
+- **A package you turned off says so**: its page shows **Enable** instead of **Installed**, and the
+  **⋯** menu beside it has **Disable**, which turns it off without removing it.
 - **A plugin you removed installs again**: **Get** on a plugin removed from the Store no longer
   fails with "A plugin already exists at this destination".
 - **A mini app whose screen fails to load says so**: its tabs stay open while the screen is tried

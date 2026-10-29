@@ -64,6 +64,11 @@ export function useStoreActions(deps: {
     const state = getStateOf(listing, Boolean(opens))
     if (state.kind === 'open' && opens) return deps.navigate(opens)
     if (state.kind === 'update') return update(listing)
+    if (state.kind === 'enable') {
+      for (const install of listing.installs)
+        run(client.setEnabled(listing.ref, install.scope, true, projectOf(install.scope)))
+      return
+    }
     if (state.kind !== 'get' && state.kind !== 'retry') return
     const request = { listing, scope: options.scope ?? 'user', extra: options.extra }
     if (trustOf(listing) === 'community' || !listing.publisher.verified) return setAsking(request)

@@ -13,9 +13,17 @@ export type GetState =
   | { kind: 'open' }
   | { kind: 'update' }
   | { kind: 'retry' }
+  /** Installed, but turned off everywhere it is installed. */
+  | { kind: 'enable' }
   | { kind: 'installed' }
 
-const WORDS = { get: 'Get', open: 'Open', update: 'Update', retry: 'Retry' } as const
+const WORDS = {
+  get: 'Get',
+  open: 'Open',
+  update: 'Update',
+  retry: 'Retry',
+  enable: 'Enable',
+} as const
 
 // Drawn as the kit's other buttons are: the scale's `rounded-md` and medium weight. A semibold pill
 // read as a different, heavier kind of thing than every button around it.
@@ -97,8 +105,8 @@ function GetMenu({
 
 /**
  * THE INSTALL CONTROL of a store, one component for its whole life: Get, then a ring with how far
- * the job is, then Open (installed, with something to open), Update (a newer version is offered)
- * or Retry (it failed). Installed with nothing to open, it says so and is not a button. Each state
+ * the job is, then Open (installed, with something to open), Enable (installed but turned off),
+ * Update (a newer version is offered) or Retry (it failed). Installed with nothing to open, it says so and is not a button. Each state
  * names its subject for a screen reader, and the progress is a real progressbar.
  */
 export const GetButton = forwardRef<HTMLButtonElement, GetButtonProps>(function GetButton(

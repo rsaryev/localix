@@ -42,6 +42,12 @@ const LISTINGS = [
     installs: [{ scope: 'user', version: '2.0.0', enabled: true }],
   }),
   listing({
+    id: 'timer',
+    displayName: 'Timer',
+    version: '1.0.0',
+    installs: [{ scope: 'user', version: '1.0.0', enabled: false }],
+  }),
+  listing({
     id: 'forged',
     displayName: 'Forged',
     version: '1.0.0',
@@ -402,6 +408,29 @@ describe('a package’s page', () => {
       expect(view.menuItem('Update automatically')).toBeUndefined()
       await view.click(tab('Versions'))
       expect(page()!.textContent).toContain('when you choose Update')
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('turned off, it says Enable instead of Installed, and Enable turns it back on', async () => {
+    const { view, page } = await open('timer', 'Timer')
+    try {
+      expect(page()!.textContent).not.toContain('Installed')
+      await view.click(view.button('Enable Timer', page()!)!)
+      expect(view.calls).toContain('enable mini-app/timer user')
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('turned on, its menu turns it off without removing it', async () => {
+    const { view } = await open('clock', 'Clock')
+    try {
+      await view.openMenu(view.button('Clock options'))
+      await view.click(view.menuItem('Disable')!)
+      expect(view.calls).toContain('disable mini-app/clock user')
+      expect(view.calls.some((call) => call.startsWith('remove'))).toBe(false)
     } finally {
       await view.done()
     }

@@ -38,4 +38,14 @@ describe('what the Get button shows', () => {
       kind: 'open',
     })
   })
+
+  // Turned off is not gone: the page says what pressing it would do.
+  test('Enable while every install of it is turned off', () => {
+    const off = { scope: 'user' as const, version: '1.0.0', enabled: false }
+    expect(getStateOf(puzzle({ id: 'puzzle', installs: [off] }), true)).toEqual({ kind: 'enable' })
+    const onInProject = { ...off, scope: 'project' as const, enabled: true }
+    expect(getStateOf(puzzle({ id: 'puzzle', installs: [off, onInProject] }), true)).toEqual({
+      kind: 'open',
+    })
+  })
 })

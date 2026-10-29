@@ -11,8 +11,9 @@ const JOB_WORDS = { install: 'Installing', update: 'Updating', remove: 'Removing
 
 /**
  * What the one install control shows for a listing (`docs/internals/store.md`, "Get button"):
- * its job while one runs, Retry once it failed, Update when a newer version is offered, Open once
- * installed with something to open (`canOpen`, else Installed), and Get before that.
+ * its job while one runs, Retry once it failed, Enable while every install is turned off (turned
+ * off is not removed), Update when a newer version is offered, Open once installed with something
+ * to open (`canOpen`, else Installed), and Get before that.
  */
 export function getStateOf(listing: Listing, canOpen = false): GetState {
   const job = listing.job
@@ -23,6 +24,8 @@ export function getStateOf(listing: Listing, canOpen = false): GetState {
       label: job.phase === 'queued' ? 'Waiting to install' : JOB_WORDS[job.action],
     }
   if (job?.phase === 'failed') return { kind: 'retry' }
+  if (listing.installs.length > 0 && listing.installs.every((install) => !install.enabled))
+    return { kind: 'enable' }
   if (hasUpdate(listing)) return { kind: 'update' }
   if (listing.installs.length > 0) return canOpen ? { kind: 'open' } : { kind: 'installed' }
   return { kind: 'get' }
