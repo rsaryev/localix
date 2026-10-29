@@ -178,7 +178,7 @@ describe('a package’s page', () => {
       expect(view.calls).toEqual([])
       const sheet = document.body.querySelector<HTMLElement>('[role="dialog"]')!
       expect(sheet.textContent).toContain('Localix does not review what this source lists')
-      expect(sheet.textContent).toContain('node check.js')
+      expect(sheet.textContent).toContain('PreToolUse')
       await view.click(view.button('Install', sheet))
       expect(view.calls).toEqual(['install mini-app/radio user consent'])
     } finally {
@@ -186,7 +186,7 @@ describe('a package’s page', () => {
     }
   })
 
-  test('a plugin can be got for the open project alone, from the chevron beside Get', async () => {
+  test('a plugin can be got for the open project alone, from the menu beside Get', async () => {
     const view = await renderStore({
       listings: [listing({ id: 'lint', displayName: 'Lint', ref: { kind: 'plugin', id: 'lint' } })],
       project: { id: 'p1', name: 'Atlas' },

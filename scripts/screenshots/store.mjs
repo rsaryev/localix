@@ -223,7 +223,7 @@ const VERIFY = {
   async 'store-consent'(page) {
     const sheet = page.getByRole('dialog')
     await expect(sheet.getByRole('heading', { name: /^Install / })).toBeVisible()
-    await expect(sheet).toContainText('Localix does not review what this source lists')
+    await expect(sheet).toContainText('Localix does not review')
     await expect(sheet.getByRole('button', { name: 'Install', exact: true })).toBeVisible()
     await expect(sheet.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible()
   },

@@ -107,12 +107,12 @@ export function createPluginStoreProvider(deps: {
     projectOf(scope, actor)
     const { view, contents } = await opened(id)
     const runs = contents?.runs ?? []
-    const warnings = [
-      ...(view.trust === 'community'
+    // What it runs is the plan's own `runs`, shown wherever the plan is: a warning saying it again
+    // was the consent sheet's loudest line.
+    const warnings =
+      view.trust === 'community'
         ? [`${view.label} is a community marketplace: Localix does not review what it lists`]
-        : []),
-      ...(runs.length ? ['It runs programs on this computer'] : []),
-    ]
+        : []
     return {
       scope,
       adds: contents?.components ?? [],

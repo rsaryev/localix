@@ -12,17 +12,18 @@ import {
   DialogTitle,
 } from '@localixai/kit/dialog'
 import { Select } from '@localixai/kit/select'
-import { KIND_LABELS, TRUST_LABELS, inSentence, trustOf } from '../model/presentation'
+import { KIND_LABELS, TRUST_LABELS, trustOf } from '../model/presentation'
 import { useStoreScope } from '../model/storeContext'
 import { KIND_SCOPES, type ConsentRequest } from '../model/useStoreActions'
-import { PlanView, useListingPlan } from './PlanSummary'
-import { ListingIcon } from './StoreMarks'
+import { ConsentPlan } from './ConsentPlan'
+import { useListingPlan } from './PlanSummary'
 
 /**
  * THE CONSENT SHEET: before a package that needs a yes is installed — it comes from a community
- * source, or the server says it runs code that must be agreed to — it shows what will run, the
- * hosts it reaches, where it comes from and how far that is trusted, and where to install it
- * (for you, or for the open project alone where its kind allows). Nothing installs until Install.
+ * source, or the server says it runs code that must be agreed to — it says where it comes from,
+ * in a sentence or two what will run and the hosts it reaches, and where to install it (for you,
+ * or for the open project alone where its kind allows), drawn as every other question the app
+ * asks. Nothing installs until Install.
  */
 export function ConsentSheet({
   request,
@@ -40,22 +41,16 @@ export function ConsentSheet({
   const read = useListingPlan(listing, scope)
   return (
     <Dialog open onOpenChange={(open) => !open && onAnswer(null)}>
-      <DialogContent size="md">
+      <DialogContent size="sm">
         <DialogHeader>
-          <div className="flex items-center gap-3">
-            <ListingIcon listing={listing} size={48} />
-            <div className="flex min-w-0 flex-col">
-              <DialogTitle>Install {listing.displayName}?</DialogTitle>
-              <DialogDescription>
-                A {inSentence(KIND_LABELS[listing.ref.kind].one)} from {listing.source.label}
-                {trust && ` · ${TRUST_LABELS[trust]}`}
-                {trust === 'community' && ' — Localix does not review what this source lists'}
-              </DialogDescription>
-            </div>
-          </div>
+          <DialogTitle>Install {listing.displayName}?</DialogTitle>
+          <DialogDescription>
+            {KIND_LABELS[listing.ref.kind].one} from {listing.source.label}
+            {trust && TRUST_LABELS[trust] !== listing.source.label && ` · ${TRUST_LABELS[trust]}`}
+          </DialogDescription>
         </DialogHeader>
         <DialogBody className="flex flex-col gap-5">
-          <PlanView {...read} />
+          <ConsentPlan {...read} />
           {scopes.length > 1 && (
             <Field label="Install for">
               <Select
@@ -72,11 +67,10 @@ export function ConsentSheet({
           )}
         </DialogBody>
         <DialogFooter>
-          <Button size="xl" variant="ghost" onClick={() => onAnswer(null)}>
+          <Button variant="ghost" className="text-text-soft" onClick={() => onAnswer(null)}>
             Cancel
           </Button>
           <Button
-            size="xl"
             variant="mono"
             disabled={!read.plan}
             onClick={() => onAnswer({ ...request, scope })}

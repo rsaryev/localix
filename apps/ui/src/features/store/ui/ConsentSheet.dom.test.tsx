@@ -78,4 +78,21 @@ describe('the consent sheet', () => {
       await view.done()
     }
   })
+
+  // A consent sheet is read in a second: what it runs and reaches in words, each said once. The
+  // commands themselves are on the package's Permissions tab and in a run's tooltip.
+  test('says what it runs and reaches in plain words, each thing once, the command on hover', async () => {
+    const { view, sheet } = await ask(null)
+    try {
+      const text = sheet.textContent ?? ''
+      expect(text).toContain('PreToolUse')
+      expect(text).toContain('api.example.test')
+      expect(text).not.toContain('node check.js')
+      expect(sheet.querySelector('[title="node check.js"]')).not.toBeNull()
+      expect(text.split('Localix does not review').length - 1).toBe(1)
+      expect(text.split('Ada’s market').length - 1).toBe(1)
+    } finally {
+      await view.done()
+    }
+  })
 })
