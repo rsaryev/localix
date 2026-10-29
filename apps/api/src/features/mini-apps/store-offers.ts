@@ -83,6 +83,8 @@ export function createOfferReader(deps: {
         ...(app.featured && source.vouches ? { featured: true } : {}),
         // So is recommended: only Localix installs something without being asked.
         ...(app.recommended && source.vouches ? { recommended: true } : {}),
+        // And so is what it is for: a catalog someone added cannot steer recommendations.
+        ...(app.suits && source.vouches ? { suits: app.suits } : {}),
         ...(app.surfaces ? { surfaces: app.surfaces } : {}),
         ...(app.commands ? { commands: app.commands } : {}),
       },

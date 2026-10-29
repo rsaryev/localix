@@ -40,6 +40,13 @@ const EXACT_NAME = 3
 /** How much of a hit's score the static score decides: enough to order near ties only. */
 const TIE_SHARE = 0.15
 
+/**
+ * A hit's score in [0, 1]: its relevance, with the static score (in [0, 1], `tie`) deciding near
+ * ties only. Recommendations score what installed packages are near on the same scale.
+ */
+export const relevance = (fused: number, tie: number) =>
+  (1 - TIE_SHARE) * unitScore(fused) + TIE_SHARE * tie
+
 /** What the Store's search field sends as `providerOptions`: the shelf and filters it shows. */
 export const storeSearchOptionsSchema = z.object({
   filters: z.object({
@@ -166,7 +173,7 @@ export function createStoreSearchProvider(deps: {
           title: listing.displayName,
           subtitle: listing.summary,
           icon: 'store',
-          score: (1 - TIE_SHARE) * unitScore(result.score + named) + TIE_SHARE * tie,
+          score: relevance(result.score + named, tie),
           matchedBy: result.matchedBy,
         }
       })

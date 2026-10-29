@@ -45,6 +45,7 @@ async function mountPage(target?: { shelf?: string }) {
     listings: [],
     matched: 0,
     strategy: { mode: 'hybrid' },
+    reasons: {},
     pending: false,
   })
   const { StorePage } = await import('./StorePage')

@@ -155,6 +155,39 @@ export function createVectorCache(
         }))
     },
 
+    /**
+     * The weighted mean of these items' stored vectors (each item the mean of its chunks),
+     * normalized: a query made of items rather than words. Null when none of them has a vector.
+     */
+    async centroid(
+      collection: string,
+      userId: string,
+      members: ReadonlyArray<{ key: string; weight: number }>,
+    ): Promise<Float32Array | null> {
+      const m = await matrixFor(collection, userId)
+      m.usedAt = clock()
+      const dims = dimensions()
+      const weights = new Map(members.map((member) => [member.key, member.weight]))
+      const chunks = new Map<string, number>()
+      for (let i = 0; i < m.count; i++)
+        if (weights.has(m.keys[i]!)) chunks.set(m.keys[i]!, (chunks.get(m.keys[i]!) ?? 0) + 1)
+      if (chunks.size === 0) return null
+      const sum = new Float32Array(dims)
+      for (let i = 0; i < m.count; i++) {
+        const key = m.keys[i]!
+        const weight = weights.get(key)
+        if (weight === undefined) continue
+        const share = weight / chunks.get(key)!
+        for (let d = 0; d < dims; d++) sum[d] = sum[d]! + share * m.rows[i * dims + d]!
+      }
+      let norm = 0
+      for (let d = 0; d < dims; d++) norm += sum[d]! ** 2
+      if (norm === 0) return null
+      const scale = 1 / Math.sqrt(norm)
+      for (let d = 0; d < dims; d++) sum[d] = sum[d]! * scale
+      return sum
+    },
+
     /** An item was (re)written with these rows. */
     written(
       collection: string,

@@ -385,7 +385,7 @@ every listing an item names is in `listings`.
 | Part             | From                                                                                              |
 | ---------------- | ------------------------------------------------------------------------------------------------- |
 | Start here       | What editorial sources recommend, every kind, by score.                                           |
-| For your work    | The recommendations' answer (below), read beside Discover; left out when it is empty.             |
+| For your work    | The recommendations' matched listings (below), read beside Discover; left out when none matched.  |
 | For this project | Listings about at least one of the open project's words; left out without a project or a match.   |
 | Collections      | An editorial source's picks, mixing kinds, in the order it gives.                                 |
 | New & updated    | Versions published in the last 90 days, newest first; left out when no source dates its versions. |
@@ -393,7 +393,8 @@ every listing an item names is in `listings`.
 
 A provider hands its picks over through the port's optional `editorial()`. The mini app catalog
 carries them as `editorial` (`collections`), set by its publisher's repository; the `localix`
-marketplace under `metadata.localix` (`recommended`, `featured`, `collections`), which
+marketplace under `metadata.localix` (`recommended`, `featured`, `collections`, and `suits`: by
+entry name, `{ files, dependencies }`, what recommendations show it for), which
 `claude plugin validate` accepts with an unknown-field warning and Claude Code ignores. An item is a
 name of the source's own kind, or `<kind>:<id>`. Only an editorial source's picks are read, and a
 community listing never reaches Start here or a collection. A listing's page adds `related` (more
@@ -406,25 +407,76 @@ is never empty while official listings exist.
 
 A client reports its working set with `POST /rpc/store/recommendations/working-set` (`202`, answered
 later) and reads the answer with `GET /rpc/store/recommendations?projectId&sessionId`:
-`{ listings, matched, strategy, pending }`. The working set is what every completion request
-carries: the open tabs and linked chips as binding targets (`references`), with the open project and
-chat. There is no table of what to recommend for what:
+`{ listings, matched, strategy, reasons, pending }`. The working set is what every completion
+request carries: the open tabs and linked chips as binding targets (`references`), with the open
+project and chat. There is no table of what to recommend for what. The answer is worked out in
+stages, as recommenders are (candidates, fusion, filters, diversity, fill):
 
-1. The references resolve through Context Fabric for the `recommendation` destination, inside the
-   chat's workspace and under the same scope, containment and secret rules as a sent message
-   (`bootstrap/store-context.ts`). An ambient tab ranks below a chip the person linked.
-2. Every automatic provider that declares `recommendation` adds what it knows. Declaring the
-   destination is how a mini app or a core feature shapes what the Store suggests; the Store names
-   none of them.
-3. What the person installed is read as what they use, below the working set; the open project's
-   signals (`project-signals.ts`) are the last piece. So the answer improves as the Store is used,
-   and a project with nothing open still has one.
-4. The pieces, highest priority first and each clipped, make one query of at most 2,000 characters
-   (`features/store/recommend.ts`). It searches the Store's semantic collection through global
-   search with `related: true`: only meaning finds a listing, because a word the working set shares
-   with a summary is no reason to call a package suited. Those are the first `matched` listings.
-5. The row is never empty while anything is left to install: trusted listings by score, lifted by
-   the project, then any listing, fill it to ten. None is installed.
+1. **Interests** (`recommend-interests.ts`). The references resolve through Context Fabric for the
+   `recommendation` destination, inside the chat's workspace and under the same scope, containment
+   and secret rules as a sent message (`bootstrap/store-context.ts`), which also says which tab or
+   chip each piece came from. Every automatic provider that declares `recommendation` adds what it
+   knows; declaring the destination is how a mini app or a core feature shapes what the Store
+   suggests, and the Store names none of them. The four highest-priority pieces are one interest
+   each, a tab's or chip's asked with its name first (`main.tf` says Terraform where its resources
+   do not). What the person chose to install (the Installed shelf: not what comes with Localix, nor
+   what they wrote) is grouped by category, and an install counts half as much every 70 days (one
+   the event log does not hold counts 0.3, as an old one); the three groups that weigh most are one
+   interest each. The open project's words (`project-signals.ts`: root markers and every
+   `package.json` dependency) are the last. Each carries a weight — linked 1, open 0.9, provider
+   0.8, installs 0.7 (0.6 to 1 of it by how recent the group's newest install is), project 0.6 — and
+   a reason.
+2. **Candidates** (`recommend-candidates.ts`). Each text interest, clipped to 600 characters,
+   searches the Store's semantic collection through global search with `related: true`, thirty hits
+   each, never what is installed: only meaning finds a listing, because a word the working set
+   shares with a summary is no reason to call a package suited. One query made of everything at once
+   would land between the topics and lose the pieces at its end. A group of installs asks with what
+   its packages are instead: the weighted mean of the vectors their cards are stored with
+   (`SemanticReader.similarToItems`, nothing embedded), and a package near it counts from one
+   deviation under a search's standout gate, since a mean is not a question with an answer that
+   stands out. While none of them has a vector, the group asks with its names and summaries.
+3. **What a package says it is for** (`recommend-rules.ts`). A listing may carry `suits`: file names
+   (`compose.yaml`, `*.tf`) and dependencies (`prisma`). An editorial marketplace sets them under
+   `metadata.localix.suits`, by entry name (below); the Localix mini app catalog, as each app's
+   `suits`. Both are read leniently (`sourceSuitsSchema`), and from no other source. Each is held
+   against the open tabs' names, then the project's root names and its dependencies as written
+   (`project-signals.ts`, `facts`); a match is an interest of its own, scored 0.9 — above anything
+   meaning finds — with the reason `open` or `project` naming the file or the dependency. The core
+   names no package; the sources do.
+4. **Fusion and filters** (`recommend-rank.ts`). The hits' scores share one scale (the meaning z,
+   standardized against the whole collection), so they are combined, not their ranks:
+   `max(wᵢ·sᵢ) + 0.25·(Σ wᵢ·sᵢ − max)`. The interest with the largest share is the reason. What the
+   person turned down is left out (below).
+5. **Rest and diversity.** A package shown on more than two days in the last 30 and never opened
+   loses a fifth of its score for each further day, down to 0.4, so the next suited one gets its
+   place. The row is then picked greedily, each candidate's score discounted by 0.75 for every
+   earlier pick from the same publisher and again from the same interest — a discount, not a cap, so
+   a row with nothing else still fills. Those are the first `matched` listings.
+6. **Fill.** The answer is never empty while anything is left to install: trusted listings by score,
+   lifted by the project, then any listing, fill it to ten, each with the reason `trusted`.
+
+`reasons` maps every listing (`kind:id`) to `{ source, label? }`: `linked`, `open`, `context`,
+`installed`, `project` or `trusted`, with the file, the installs or the project's words.
+
+**Not interested.** `PUT /rpc/store/recommendations/dismissals` (`{ ref, dismissed }`, `204`) turns
+a package down for that person, or takes it back; `GET /rpc/store/recommendations/dismissals` lists
+what is turned down, newest first, with the reason (`not-interested` or `removed`). A package they
+remove through the Store is turned down too (`removed`; the first reason stands). Dismissals are the
+person's decision, not derived data, so they live in the database
+(`store_recommendation_dismissals`, `dismissals-repository.ts`), not the Store index a sync
+rebuilds; only recommendations read them, and search and the shelves still list the package. A
+dismissal leaves every remembered answer of that person at once (one poke) and each is worked out
+again to fill the place.
+
+**What happened to recommendations.** A surface reports what it showed and what the person opened
+from it with `POST /rpc/store/recommendations/events`
+(`{ events: [{ ref, event, slot, source? }] }`, `202`): `shown` once per day, surface and package,
+`opened` on a click. An install through the Store is logged with its time, and counted for the
+interest that showed the package in the last 30 days, if one did. The log
+(`store_recommendation_events`, `recommendation-events-repository.ts`) stays on this computer, keeps
+90 days, and feeds the rest above and the recency of installs.
+`GET /rpc/store/recommendations/stats` answers, per kind of interest over the last 90 days, how many
+were shown, opened and installed: which evidence leads to installs.
 
 The work runs off the request path (`recommend-board.ts`). A report settles for 1.5 seconds and an
 unchanged working set is not worked out again; the answers live in memory, one per project and chat
@@ -435,10 +487,35 @@ pokes `store-recommendations`; one that did not pokes nobody, and a failed one k
 
 The embedding model runs on this computer (EmbeddingGemma), so the working set never leaves it.
 
-In the UI, Discover's **For your work** row and its **See all** list (`RecommendedView`) read the
-answer, and the composer's strip shows **Recommended for you** when something `matched` is new on
-this device (`shared/lib/recommendationsSeen.ts`): opening the list or hiding the notice marks it
-seen. The strip gives the app's update and the Store's update offers the place first.
+In the UI, Discover's **For your work** row shows the `matched` listings only (the fill is Start
+here's already) and is left out when there are none; its **See all** list (`RecommendedView`) shows
+all ten with each one's reason and a **Not interested** button, and under them **Not recommended**
+(`NotRecommended`): what the person turned down or removed, each with **Recommend again**. Above the
+composer, one piece of advice shows at a time (`shared/lib/composerAdvice.ts`): while something
+`matched` is new on this device (`shared/lib/recommendationsSeen.ts`), the notice line —
+"Recommended · Docker tools and 2 more for compose.yaml", the best one named, no glyph — holds the
+place and the tip line waits. Opening the list or hiding the notice marks it seen. The app's update
+and the Store's update offers come first.
+
+#### Measuring recommendations
+
+`recommend-eval.integration.test.ts` runs a golden set through the Store and the semantic index as
+`bootstrap/` builds them, with EmbeddingGemma 2 in a llama-server of its own: a catalog of about
+forty packages with the near misses a real marketplace has (`testing/recommend-golden.ts`), and
+cases a person would recognize — a compose file, a Terraform file, a pandas script, a chat asking
+for a deck, two databases installed, a project's dependencies, a CI workflow — each naming what
+must, should and must not be shown (`testing/recommend-golden-cases.ts`). It reports nDCG@10 and
+recall@10 per case (`testing/recommend-eval.ts`) and fails on any bad pick or when a mean falls
+under its gate, set a little under the score when it was written. It needs the downloaded model and
+runtime (`~/.localix/models`, or `LOCALIX_EVAL_MODELS`) and is skipped without them:
+
+```sh
+bun test apps/api/src/features/store/recommend-eval.integration.test.ts
+```
+
+A change to the ranking states what it does to that table. Recall is low on purpose: only what
+stands out by meaning, or a package's own `suits`, counts as matched, and trusted packages fill the
+rest of the row.
 
 ### Sources and project installs
 

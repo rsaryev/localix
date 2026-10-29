@@ -21,9 +21,13 @@ import {
   listingsQuerySchema,
   listingsResponseSchema,
   parseShelf,
+  recommendDismissalSchema,
+  recommendDismissalsSchema,
+  recommendEventsSchema,
   recommendQuerySchema,
   recommendReadSchema,
   recommendRequestSchema,
+  recommendStatsSchema,
   sourceAutoUpdateSchema,
   sourceInputSchema,
   sourcePreviewSchema,
@@ -76,6 +80,29 @@ export function createStoreRoutes(store: StoreService) {
       const where = c.req.valid('query')
       const answer = await store.readRecommendations(actor(c, where.projectId), where)
       return c.json(recommendReadSchema.parse(answer), 200)
+    })
+    .post('/recommendations/events', zValidator('json', recommendEventsSchema), async (c) => {
+      await store.recordRecommendationEvents(actor(c), c.req.valid('json').events)
+      return c.body(null, 202)
+    })
+    .get('/recommendations/stats', async (c) =>
+      c.json(
+        recommendStatsSchema.parse({ sources: await store.recommendationStats(actor(c)) }),
+        200,
+      ),
+    )
+    .get('/recommendations/dismissals', async (c) =>
+      c.json(
+        recommendDismissalsSchema.parse({
+          dismissed: await store.dismissedRecommendations(actor(c)),
+        }),
+        200,
+      ),
+    )
+    .put('/recommendations/dismissals', zValidator('json', recommendDismissalSchema), async (c) => {
+      const { ref, dismissed } = c.req.valid('json')
+      await store.dismissRecommendation(actor(c), ref, dismissed)
+      return c.body(null, 204)
     })
     .get('/activity', async (c) =>
       c.json(storeActivitySchema.parse(await store.activity(actor(c))), 200),

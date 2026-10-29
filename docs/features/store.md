@@ -54,13 +54,30 @@ Discover is one answer from the Store, top to bottom: a strip of updates when th
 here**, **For your work**, a row for the open project when its languages match something, editorial
 **Collections**, a row per kind and **New & updated**, then the categories.
 
-**For your work** is ten packages you have not installed. First come the ones that suit what you
-work on: your open tabs, the chips in the composer, the open project and what you already installed.
-Localix finds them by meaning with the built-in embedding model, which runs on your computer, and
-works them out in the background as you open things. Trusted packages fill the rest, so the row is
-never empty. **See all** lists every recommendation, best first. When something new suits your work,
-the strip above the composer says **Recommended for you**; **See** opens the list in the Store, and
-hiding it keeps it hidden until there is something new.
+**For your work** shows the packages you have not installed that suit what you work on: your open
+tabs, the chips in the composer, what you chose to install and the open project. Localix asks about
+each of them on its own, so one large file does not crowd out the rest, and finds packages by
+meaning with the built-in embedding model, which runs on your computer.
+
+What you installed lately counts for more than what you installed long ago, and a package whose
+marketplace says it is for a file you have open (`*.tf`) or a package your project uses (`prisma`)
+comes first. Localix works them out in the background as you open things; no single publisher or
+file takes the whole row while others fit too, and a package shown day after day that you never open
+makes room for the next.
+
+**See all** lists ten recommendations, best first, each saying why it is there: _Because
+compose.yaml is open_, _Because you use Pen_, _Suits this project: typescript_. Trusted packages
+fill the rest of the ten and say _A trusted pick_. **Not interested** (the thumbs-down beside
+**Get**) takes a package off your recommendations for good; one you remove through the Store is not
+recommended again either. Search and the shelves still list both, and **Not recommended**, under the
+list, holds them with **Recommend again**.
+
+When something new suits your work, one quiet line above the composer says so — _Recommended ·
+Docker tools and 2 more for compose.yaml_ — and the tip line waits until it is gone. **See** opens
+the list in the Store, and hiding it keeps it hidden until there is something new.
+
+What was shown, opened and installed from recommendations is kept on your computer for 90 days, so
+the Store can rest what you pass over; it is never sent anywhere.
 
 ![Discover: For your work under Start here, none of it installed](../assets/screenshots/store/for-your-work--2026-10-27.png)
 

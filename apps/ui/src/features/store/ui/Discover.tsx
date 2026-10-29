@@ -1,11 +1,21 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { ChevronRight, RefreshCw } from 'lucide-react'
-import type { Collection, DiscoverResponse, Listing, ListingRef } from '@localixai/store'
+import type {
+  Collection,
+  DiscoverResponse,
+  Listing,
+  ListingRef,
+  RecommendReason,
+} from '@localixai/store'
 import { Button } from '@localixai/kit/button'
 import { SectionHeading } from '@localixai/kit/section-heading'
 import { ShelfRow } from '@localixai/kit/shelf-row'
 import { Skeleton } from '@localixai/kit/skeleton'
 import { WorkbenchNoticeBar } from '@localixai/kit/workbench-notice-bar'
+import {
+  reportRecommendationOpened,
+  reportRecommendationsShown,
+} from '@/shared/lib/recommendationEvents'
 import { plural } from '../model/presentation'
 import { tileColumns, useStoreFrame } from '../model/layout'
 import { useStoreScope } from '../model/storeContext'
@@ -64,6 +74,7 @@ function CollectionCard({ collection, listings }: { collection: Collection; list
 }
 
 const NONE: readonly Listing[] = []
+const NO_REASONS: Readonly<Record<string, RecommendReason>> = {}
 
 /** The first look while Discover is read: two rows in outline. */
 export function DiscoverSkeleton() {
@@ -101,13 +112,25 @@ const ROWS = 2
 export function Discover({
   data,
   recommended = NONE,
+  reasons = NO_REASONS,
 }: {
   data: DiscoverResponse
   recommended?: readonly Listing[]
+  /** Why each recommendation is there, by `kind:id`: what the row reports it showed. */
+  reasons?: Readonly<Record<string, RecommendReason>>
 }) {
   const store = useStoreScope()
   const { layout, width } = useStoreFrame()
   const columns = tileColumns(width)
+  // What the For your work row has on screen: its first rows of tiles.
+  useEffect(() => {
+    reportRecommendationsShown(
+      store.client,
+      'discover',
+      recommended.slice(0, columns * ROWS),
+      reasons,
+    )
+  }, [store.client, recommended, reasons, columns])
   const byKey = useMemo(() => {
     const map = new Map(data.listings.map((listing) => [keyOf(listing.ref), listing]))
     return (ref: ListingRef) => map.get(keyOf(ref))
@@ -121,6 +144,7 @@ export function Discover({
     collection: Collection,
     listings = listingsOf(collection),
     onSeeAll?: () => void,
+    onOpened?: (listing: Listing, slot: number) => void,
   ) => {
     if (listings.length === 0) return null
     const seeAll = SEE_ALL[collection.id]
@@ -142,8 +166,12 @@ export function Discover({
             }))
         }
       >
-        {listings.map((listing) => (
-          <ListingTileCard key={keyOf(listing.ref)} listing={listing} />
+        {listings.map((listing, slot) => (
+          <ListingTileCard
+            key={keyOf(listing.ref)}
+            listing={listing}
+            {...(onOpened ? { onOpened: () => onOpened(listing, slot) } : {})}
+          />
         ))}
       </ShelfRow>
     )
@@ -180,6 +208,7 @@ export function Discover({
         },
         [...recommended],
         () => store.show({ type: 'recommended' }),
+        (listing, slot) => reportRecommendationOpened(store.client, listing, slot, reasons),
       )}
       {computed((id) => id === 'project').map((collection) => row(collection))}
       {editorial.length > 0 && (

@@ -75,6 +75,28 @@ describe('semantic index', () => {
     expect(best!.z).toBeGreaterThan(query.zGate)
   })
 
+  test('items like these items are found by their stored vectors, weighted, nothing embedded', async () => {
+    const { store, cache, engine, reader, calls } = await setup()
+    await ingestItems({ store, cache, engine }, 'c', [
+      ...filler,
+      item('retry', 'webhook retry backoff'),
+      item('redeliver', 'webhook redelivery with exponential backoff'),
+      item('font', 'font choice and typography'),
+      item('serif', 'serif typeface pairing for typography'),
+    ])
+    calls.length = 0
+
+    const near = await reader.similarToItems('u1', 'c', [
+      { key: 'retry', weight: 1 },
+      { key: 'font', weight: 0.1 },
+    ])
+    const nearest = near!.find((match) => match.key !== 'retry' && match.key !== 'font')
+
+    expect(nearest?.key).toBe('redeliver')
+    expect(calls).toEqual([])
+    expect(await reader.similarToItems('u1', 'c', [{ key: 'gone', weight: 1 }])).toBeNull()
+  })
+
   test("a query never sees another user's items, and scope filters", async () => {
     const { store, cache, engine, reader } = await setup()
     await ingestItems({ store, cache, engine }, 'c', [

@@ -66,6 +66,9 @@ function rankOf(eb: Eb, boost: readonly string[]) {
   return eb(eb.ref('l.score'), '*', eb(eb.val<number>(1), '+', lift))
 }
 
+/** Listings that say what they are for, read at most. */
+const SUITED = 500
+
 const ROW = [
   'l.card',
   's.state',
@@ -172,6 +175,20 @@ export function createIndexReads(db: Kysely<StoreIndexTables>) {
       const kept = rows.filter((row) => wanted.has(refKey(row as ListingRef)))
       for (const listing of await assemble(kept)) out.set(refKey(listing.ref), listing)
       return out
+    },
+
+    /**
+     * The listings whose source says what they are for (`Listing.suits`), none the person has
+     * installed, best score first: few, so read whole and matched in memory (`recommend-rules.ts`).
+     */
+    async suited(userId: string, limit = SUITED): Promise<Listing[]> {
+      const rows = await narrowed(visibleListings(db, userId), { installed: false })
+        .select(ROW)
+        .where(sql<unknown>`json_extract(l.card, '$.suits')`, 'is not', null)
+        .orderBy('l.score', 'desc')
+        .limit(limit)
+        .execute()
+      return assemble(rows)
     },
 
     /** Word candidates: listings matching the FTS5 query, best `bm25` first. */

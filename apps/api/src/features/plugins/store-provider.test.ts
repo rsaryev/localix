@@ -37,6 +37,7 @@ function fixture() {
         localix: {
           recommended: ['review'],
           featured: ['pg'],
+          suits: { pg: { files: ['*.sql'], dependencies: ['pg', 42] } },
           collections: [{ id: 'data', title: 'Work with data', items: ['pg', 'mini-app:ledger'] }],
         },
       },
@@ -63,7 +64,11 @@ function fixture() {
       name: COMMUNITY,
       owner: { name: 'Anthropic' },
       metadata: {
-        localix: { recommended: ['pg'], collections: [{ id: 'x', title: 'X', items: ['pg'] }] },
+        localix: {
+          recommended: ['pg'],
+          collections: [{ id: 'x', title: 'X', items: ['pg'] }],
+          suits: { pg: { files: ['*.sql'] } },
+        },
       },
       plugins: [{ name: 'pg', source: pg, description: 'Postgres tools' }],
     }),
@@ -197,6 +202,17 @@ describe('plugins in the Store', () => {
         ],
       },
     ])
+  })
+
+  test('an editorial marketplace says what its entries are for; a community one says nothing', async () => {
+    const { provider } = fixture()
+    const { listings } = await provider.listings(actor)
+    expect(byId(listings, `pg@${OFFICIAL}`).suits).toEqual({
+      files: ['*.sql'],
+      dependencies: ['pg'],
+    })
+    expect(byId(listings, `review@${OFFICIAL}`).suits).toBeUndefined()
+    expect(byId(listings, `pg@${COMMUNITY}`).suits).toBeUndefined()
   })
 
   test('two marketplaces listing one repository name one origin', async () => {

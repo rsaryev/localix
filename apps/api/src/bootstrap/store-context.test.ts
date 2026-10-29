@@ -115,4 +115,38 @@ describe('the working set a recommendation reads', () => {
     const open = pieces.find((item) => item.content.includes('notes.md'))!
     expect(linked.priority).toBeGreaterThan(open.priority)
   })
+
+  test('each piece names the tab or chip it was read from; what a provider added names none', async () => {
+    const context = workingContext((registry) => {
+      registry.register(files('files', ['recommendation']))
+      registry.register({
+        provider: {
+          id: 'mini-app',
+          version: '1',
+          destinations: ['recommendation'],
+          sensitivity: 'project',
+          provide: async () => [piece('mini-app', 'board', 'a tasks board is open')],
+        },
+        destinations: ['recommendation'],
+        activation: 'automatic',
+        defaultEnabled: true,
+        maxTokens: 100,
+        timeoutMs: 100,
+        sensitivity: 'project',
+      })
+    })
+
+    const pieces = await context('u1', {
+      sessionId: 's1',
+      references: [tab('notes.md', 'ambient'), tab('Cargo.toml', 'linked')],
+    })
+
+    const named = (text: string) => {
+      const { label, linked } = pieces.find((item) => item.content.includes(text))!
+      return { label, linked }
+    }
+    expect(named('Cargo.toml')).toEqual({ label: 'Cargo.toml', linked: true })
+    expect(named('notes.md')).toEqual({ label: 'notes.md', linked: false })
+    expect(named('tasks board')).toEqual({ label: undefined, linked: undefined })
+  })
 })

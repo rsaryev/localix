@@ -5,9 +5,12 @@ import { installedMiniApps, seedStore } from './store-seed.mjs'
  * What the Store recommends for the work (`docs/internals/store.md`, "Recommendations"): the For
  * your work row on Discover and its See all view. They run in the Store's capture runtime started
  * offline (README, "Composer surfaces and recommendations"): its own `HOME`, three mini apps
- * installed and no plugin marketplace read, so the answer is the same on every run. The assertions check what any answer looks like: never a package already
- * installed, never a third party's, no Community badge, no unreadable listing. The answer is worked
- * out in the background, so each scenario waits for the row rather than for a spinner.
+ * installed and no plugin marketplace read, so the answer is the same on every run. The
+ * assertions check what any answer looks like: never a package already installed, never a third
+ * party's, no Community badge, no unreadable listing, and in See all a reason and a Not interested
+ * button on each. The row on Discover holds only what meaning found, so it needs the embedding
+ * model; the answer is worked out in the background, so each scenario waits for the row rather
+ * than for a spinner.
  */
 const deck = (page, name) => page.locator(`section[aria-label="${name}"]`)
 const WORKED_OUT = { timeout: 60_000 }
@@ -71,6 +74,11 @@ export async function verifyRecommendations(page, scenario) {
     // The whole answer, at most ten, one row each, best first.
     expect(await rows.count()).toBeGreaterThan(2)
     expect(await rows.count()).toBeLessThanOrEqual(10)
+    // Each says why it is there and can be turned down.
+    for (let at = 0; at < (await rows.count()); at++) {
+      await expect(rows.nth(at)).toContainText(/Because |Suits |A trusted pick/)
+      await expect(rows.nth(at).getByRole('button', { name: /^Not interested in / })).toBeVisible()
+    }
     await expectFirstParty(page, page.locator('[data-layout]'))
   }
 }

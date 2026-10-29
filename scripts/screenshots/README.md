@@ -114,10 +114,10 @@ menu. `agents/context-and-limits` needs the demo agents (`demo-agents.mjs`) and 
 `/agents list` in the fixture conversation; it maximizes the Store pane so the chat beside it stays
 out of the image.
 
-Not captured: the **Recommended for you** row above the composer (it shows only when meaning finds a
-match, and a catalog of Localix's own mini apps rarely clears the semantic gate for a fixed working
-set, so it cannot be made deterministic without a live marketplace); the language-server install
-status and Stop returning queued messages (they need a genuinely running install or run).
+Not captured: the **Recommended** line above the composer (it shows only when meaning finds a match,
+and a catalog of Localix's own mini apps rarely clears the semantic gate for a fixed working set, so
+it cannot be made deterministic without a live marketplace); the language-server install status and
+Stop returning queued messages (they need a genuinely running install or run).
 
 ## Demo HTTP responses
 

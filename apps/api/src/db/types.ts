@@ -337,6 +337,32 @@ export interface UserViewStateTable {
   updated_at: string
 }
 
+/** A package the person does not want recommended (`features/store/dismissals-repository.ts`). */
+export interface StoreRecommendationDismissalsTable {
+  user_id: string
+  kind: string
+  listing_id: string
+  /** `not-interested`: they said so; `removed`: they removed it through the Store. */
+  reason: 'not-interested' | 'removed'
+  dismissed_at: string
+}
+
+/**
+ * What happened to a recommendation (`features/store/recommendation-events-repository.ts`): it was
+ * shown or opened (in which place, found by which interest), or installed after it was shown.
+ */
+export interface StoreRecommendationEventsTable {
+  id: Generated<number>
+  user_id: string
+  kind: string
+  listing_id: string
+  event: 'shown' | 'opened' | 'installed'
+  slot: number | null
+  /** The kind of interest that found it (`RecommendReason['source']`). */
+  source: string | null
+  at: string
+}
+
 export interface UserProfilesTable {
   user_id: string
   /** JSON string — UI-only settings (font, etc.), not injected into agent context */
@@ -482,6 +508,8 @@ export interface AppDatabase {
   mcp_channel_bindings: McpChannelBindingsTable
   mini_app_catalogs: MiniAppCatalogsTable
   user_view_state: UserViewStateTable
+  store_recommendation_dismissals: StoreRecommendationDismissalsTable
+  store_recommendation_events: StoreRecommendationEventsTable
   semantic_settings: SemanticSettingsTable
   semantic_collections: SemanticCollectionsTable
   change_events: ChangeEventsTable

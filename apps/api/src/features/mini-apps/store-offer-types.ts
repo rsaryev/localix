@@ -1,3 +1,5 @@
+import type { ListingSuits } from '@localixai/store'
+
 /** Who publishes an app, and whether Localix vouches for them. */
 export interface MiniAppPublisher {
   name: string
@@ -35,6 +37,8 @@ export interface OfferStore {
   featured?: boolean
   /** Installed on its own on a new installation; set only by a catalog Localix vouches for. */
   recommended?: boolean
+  /** What it is for, for recommendations; set only by a catalog Localix vouches for. */
+  suits?: ListingSuits
   surfaces?: string[]
   commands?: string[]
 }

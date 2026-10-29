@@ -4,6 +4,30 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+### Changed
+
+- **Better recommendations in the Store**: **For your work** asks about each open tab, chip, group
+  of installs and the project on its own, so one large file no longer crowds out the rest, and no
+  single publisher takes the whole row. Packages that come with Localix no longer count as your
+  choices, and the project's dependencies now say what it uses. What you installed lately counts for
+  more, a package made for the file you have open comes first, and one shown day after day that you
+  never open makes room for the next. The row in Discover shows only what suits your work.
+- **Quieter composer strips**: the recommendation line reads _Recommended · Docker tools and 2 more
+  for compose.yaml_, without icons, and the tip waits while it shows, so there is one piece of
+  advice above the composer at a time.
+
+### Added
+
+- **Why a package is recommended**: each recommendation in **See all**, and the strip above the
+  composer, says what found it — the open file, a chip, what you installed or the project.
+- **Not interested**: the thumbs-down beside **Get** in the recommendations removes a package from
+  them for good, and a package you remove through the Store is not recommended again. **Not
+  recommended**, under the list, brings any of them back.
+- **Packages say what they are for**: the Localix marketplace lists the files and dependencies each
+  plugin and mini app suits — Database for `.sql` files and database drivers, DevOps for a
+  Dockerfile or compose file, Documents for Office files — and the Store recommends it when one of
+  them is open or in the project.
+
 ## v0.1.0-beta.18 — 2026-10-29
 
 Localix's own mini apps and plugins now come from the

@@ -179,6 +179,8 @@ export async function renderStore(options: RenderStoreOptions) {
     change,
     changeSources,
     recommendationsReady,
+    /** What surfaces told the Store about recommendations, in order. */
+    recommendEvents: () => [...(fake.recommendEvents ?? [])],
     retarget,
     /** The failing reads answer again, and the Store is poked to read. */
     recover: () => {

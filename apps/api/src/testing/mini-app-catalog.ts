@@ -14,6 +14,8 @@ export interface CatalogEntry {
   corrupt?: boolean
   featured?: boolean
   recommended?: boolean
+  /** What the catalog says it is for (`Listing.suits`), as it is written. */
+  suits?: unknown
   tags?: string[]
   surfaces?: string[]
   commands?: string[]
@@ -75,6 +77,7 @@ export function hostedMiniAppCatalog(
         ...(apiVersion ? { apiVersion } : {}),
         ...(featured ? { featured } : {}),
         ...(recommended ? { recommended } : {}),
+        ...(app.suits ? { suits: app.suits } : {}),
         ...(app.tags ? { tags: app.tags } : {}),
         ...(app.surfaces ? { surfaces: app.surfaces } : {}),
         ...(app.commands ? { commands: app.commands } : {}),

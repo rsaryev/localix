@@ -119,6 +119,22 @@ describe('the mini apps in the Store', () => {
     expect(added!.featured).toBe(false)
   })
 
+  test('what Localix’s catalog says an app is for reaches recommendations; an added one says nothing', async () => {
+    const { offer, provider, catalogs } = setup()
+    offer('atlas', {
+      suits: { files: ['*.pgn', 42], dependencies: ['chess.js'] },
+    })
+    offer('clock', { suits: { files: 'clock.txt' } })
+
+    const [atlas, clock] = (await provider.listings(actor)).listings
+    expect(atlas!.suits).toEqual({ files: ['*.pgn'], dependencies: ['chess.js'] })
+    expect(clock!.suits).toBeUndefined()
+
+    catalogs[0]!.builtIn = false
+    const [added] = (await provider.listings(actor)).listings
+    expect(added!.suits).toBeUndefined()
+  })
+
   test('Localix’s picks for Discover: and collections', async () => {
     const { catalog, offer, provider, catalogs } = setup({
       editorial: {

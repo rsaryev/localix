@@ -24,6 +24,7 @@ function board(answer: (request: RecommendRequest) => string[]) {
         listings: answer(request).map((id) => listings[id as keyof typeof listings]),
         matched: answer(request).length,
         strategy: { mode: 'hybrid' },
+        reasons: {},
       }
     },
     schedule: (run) => {

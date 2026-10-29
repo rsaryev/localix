@@ -97,10 +97,43 @@ export function fakeClient(fake: StoreFake): StoreClient {
     },
     recommendations: async () => {
       if (fake.recommendPending)
-        return { listings: [], matched: 0, strategy: { mode: 'hybrid' }, pending: true }
+        return {
+          listings: [],
+          matched: 0,
+          strategy: { mode: 'hybrid' },
+          reasons: {},
+          pending: true,
+        }
       const listings = (fake.recommended ?? []).map(find)
-      return { listings, matched: listings.length, strategy: { mode: 'hybrid' }, pending: false }
+      return {
+        listings,
+        matched: Math.min(fake.recommendMatched ?? listings.length, listings.length),
+        strategy: { mode: 'hybrid' },
+        reasons: fake.recommendReasons ?? {},
+        pending: false,
+      }
     },
+    /** Answered as the server does: the answer moves, and its poke is the test's to send. */
+    dismissRecommendation: async (ref, dismissed) => {
+      call(`${dismissed ? 'not interested' : 'interested again'} ${ref.kind}/${ref.id}`)
+      const others = (fake.dismissed ?? []).filter((item) => item.id !== ref.id)
+      if (dismissed) {
+        fake.recommended = fake.recommended?.filter((id) => id !== ref.id)
+        fake.dismissed = [{ id: ref.id, reason: 'not-interested' }, ...others]
+      } else fake.dismissed = others
+    },
+    recordRecommendationEvents: async (events) => {
+      for (const event of events)
+        fake.recommendEvents?.push(
+          `${event.event} ${event.ref.kind}/${event.ref.id}@${event.slot}${event.source ? ` ${event.source}` : ''}`,
+        )
+    },
+    dismissedRecommendations: async () => ({
+      dismissed: (fake.dismissed ?? []).map((item) => ({
+        listing: find(item.id),
+        reason: item.reason,
+      })),
+    }),
     discover: async () => {
       if (fake.failing?.discover) throw new ApiError('Could not read it', 503, 'unavailable')
       return {

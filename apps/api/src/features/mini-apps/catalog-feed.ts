@@ -5,6 +5,7 @@ import {
   MINI_APP_TAGS_MAX,
   MINI_APP_NAME_RE,
 } from '@localixai/mini-app-sdk/manifest-primitives'
+import { sourceSuitsSchema } from '@localixai/store'
 
 /**
  * A catalog: one `catalog.json` that lists mini apps and where each one's archive is. It may be
@@ -66,6 +67,8 @@ const storeFieldsSchema = {
    * vouches for only.
    */
   recommended: optional(z.boolean()),
+  /** What it is for (`Listing.suits`), for recommendations — the catalog Localix vouches for only. */
+  suits: sourceSuitsSchema,
   surfaces: optional(z.array(z.string().max(32)).max(16)),
   commands: optional(z.array(z.string().max(64)).max(64)),
 }

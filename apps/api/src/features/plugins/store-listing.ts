@@ -121,6 +121,7 @@ export function pluginListing(
       : []),
   ]
   const origin = entryOrigin(view, entry)
+  const suits = view.editorial ? marketPicks(view).suits.get(entry.name) : undefined
   return {
     ref: { kind: 'plugin', id },
     name: entry.name,
@@ -136,6 +137,7 @@ export function pluginListing(
     ...(entry.version ? { version: entry.version } : {}),
     ...(entry.homepage ? { homepage: entry.homepage } : {}),
     ...(origin ? { origin } : {}),
+    ...(suits ? { suits } : {}),
     contents: state.contents ? countsOf(state.contents) : 'unknown',
     ...(state.contents ? { components: state.contents.components } : {}),
     runsCode: state.contents ? state.contents.runs.length > 0 : 'unknown',

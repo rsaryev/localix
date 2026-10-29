@@ -2,10 +2,11 @@ import type { StoreProvider } from '@localixai/store'
 
 import type { SemanticQuery } from '@localixai/mini-app-sdk/backend'
 import { createSearchProviderRegistry } from '../../agent-core/search/provider'
-import { createSearchService } from '../../search/service'
+import { createSearchService, type SearchStrategyPort } from '../../search/service'
 import { createStoreIndexRepository } from '../index-repository'
 import { openStoreIndexDatabase } from '../index-repository-open'
 import { createStoreService, type StoreContextPort } from '../service'
+import type { StoreItemMeaningPort } from '../service-types'
 import { TEST_NOW } from './index'
 
 /**
@@ -18,11 +19,21 @@ export function makeStore(
   opts: {
     meaning?: (text: string) => Array<{ key: string; z: number }>
     projectWords?: string[]
+    /** The open project's root names and dependencies, as they are written. */
+    projectFacts?: { files: string[]; dependencies: string[] }
     resyncMeaning?: () => void
     meaningChanged?: (keys: string[]) => void
     /** What the working set says, as Context Fabric would admit it. */
     context?: StoreContextPort
     schedule?: (work: () => void) => () => void
+    /** What the stored vectors of these installed listings are near, as the semantic index says. */
+    itemMeaning?: (
+      members: ReadonlyArray<{ key: string; weight: number }>,
+    ) => Array<{ key: string; z: number }>
+    /** A real semantic index instead of `meaning` and `itemMeaning` (the offline evaluation). */
+    semantic?: { strategy: SearchStrategyPort; similarToItems: StoreItemMeaningPort }
+    /** The clock the Store reads; `TEST_NOW` when absent. */
+    now?: () => number
   } = {},
 ) {
   const { db, close } = openStoreIndexDatabase(':memory:')
@@ -31,6 +42,7 @@ export function makeStore(
   const semantic = opts.meaning
   const search = createSearchService({
     registry,
+    ...(opts.semantic ? { strategy: opts.semantic.strategy } : {}),
     ...(semantic
       ? {
           strategy: {
@@ -55,11 +67,21 @@ export function makeStore(
     providers,
     index,
     search: (userId, request) => search.search(userId, request),
-    now: () => TEST_NOW,
+    now: opts.now ?? (() => TEST_NOW),
     ...(opts.projectWords ? { projectWords: async () => new Set(opts.projectWords) } : {}),
+    ...(opts.projectFacts ? { projectFacts: async () => opts.projectFacts! } : {}),
     ...(opts.resyncMeaning ? { resyncMeaning: opts.resyncMeaning } : {}),
     ...(opts.meaningChanged ? { meaningChanged: opts.meaningChanged } : {}),
     ...(opts.context ? { workingContext: opts.context } : {}),
+    ...(opts.semantic ? { similarToItems: opts.semantic.similarToItems } : {}),
+    ...(opts.itemMeaning
+      ? {
+          similarToItems: async (
+            _userId: string,
+            members: ReadonlyArray<{ key: string; weight: number }>,
+          ) => opts.itemMeaning!(members).map((match) => ({ ...match, gate: 2 })),
+        }
+      : {}),
     ...(opts.schedule ? { scheduleRecommendation: opts.schedule } : {}),
   })
   registry.register(store.searchProvider)

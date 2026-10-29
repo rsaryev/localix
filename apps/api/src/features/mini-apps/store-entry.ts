@@ -1,3 +1,5 @@
+import type { ListingSuits } from '@localixai/store'
+
 import { iconOf, isIncompatible } from './store-activity'
 import type { MiniAppPublisher, Offer } from './store-offers'
 
@@ -30,6 +32,8 @@ export interface MiniAppStoreEntry {
   featured?: boolean
   /** Installed on its own on a new installation (the Localix catalog only, `recommended.ts`). */
   recommended?: boolean
+  /** What it is for, for recommendations (the Localix catalog only). */
+  suits?: ListingSuits
   surfaces?: string[]
   /** The names of the `/<app>:<command>` commands its manifest declares. */
   commands?: string[]
@@ -49,7 +53,7 @@ export function storeEntry(
   job: MiniAppJob | undefined,
 ): MiniAppStoreEntry {
   const installedVersion = typeof installed?.version === 'string' ? installed.version : undefined
-  const { tags, featured, recommended, surfaces, commands } = offer.store
+  const { tags, featured, recommended, suits, surfaces, commands } = offer.store
   const icon = iconOf(offer)
   return {
     name: offer.name,
@@ -63,6 +67,7 @@ export function storeEntry(
     ...(tags.length ? { tags } : {}),
     ...(featured ? { featured: true } : {}),
     ...(recommended ? { recommended: true } : {}),
+    ...(suits ? { suits } : {}),
     ...(surfaces ? { surfaces } : {}),
     ...(commands?.length ? { commands } : {}),
     installed: installed ? (installedVersion ? { version: installedVersion } : {}) : null,

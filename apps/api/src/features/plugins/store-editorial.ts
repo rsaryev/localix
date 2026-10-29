@@ -1,13 +1,20 @@
 import { z } from 'zod'
-import { packageKindSchema, type Editorial, type ListingRef } from '@localixai/store'
+import {
+  packageKindSchema,
+  sourceSuitsSchema,
+  type Editorial,
+  type ListingRef,
+  type ListingSuits,
+} from '@localixai/store'
 
 import type { MarketView } from './store-listing'
 
 /**
  * A MARKETPLACE'S PICKS FOR THE STORE: Localix's own optional key `metadata.localix` in
  * `.claude-plugin/marketplace.json`, which Claude Code ignores (it validates the known metadata
- * keys only). It names the entries Discover recommends and features, and collections whose
- * items are entry names, or `<kind>:<id>` for another kind. Read for an editorial marketplace
+ * keys only). It names the entries Discover recommends and features, collections whose items
+ * are entry names, or `<kind>:<id>` for another kind, and what entries are for (`suits`: by entry
+ * name, the files and dependencies recommendations show it for). Read for an editorial marketplace
  * only (`@localixai/store`'s default sources); a community one picks nothing.
  */
 const names = z
@@ -15,6 +22,19 @@ const names = z
   .transform((all) => all.filter((name): name is string => typeof name === 'string'))
   .catch([])
 const optionalText = z.string().min(1).max(240).optional().catch(undefined)
+/** What each entry, by name, is for (`Listing.suits`); an entry that says nothing is left out. */
+const suitsSchema = z
+  .record(z.string(), z.unknown())
+  .transform((all) => {
+    const out = new Map<string, ListingSuits>()
+    for (const [name, raw] of Object.entries(all)) {
+      const suits = sourceSuitsSchema.parse(raw)
+      if (suits) out.set(name, suits)
+    }
+    return out
+  })
+  .optional()
+  .catch(undefined)
 const picksSchema = z.object({
   featured: names.optional(),
   recommended: names.optional(),
@@ -36,6 +56,7 @@ const picksSchema = z.object({
     )
     .optional()
     .catch(undefined),
+  suits: suitsSchema,
 })
 
 const read = new WeakMap<MarketView, ReturnType<typeof readPicks>>()
@@ -57,6 +78,7 @@ function readPicks(view: MarketView) {
     featured: new Set(picks.featured ?? []),
     recommended: new Set(picks.recommended ?? []),
     collections: picks.collections ?? [],
+    suits: picks.suits ?? new Map<string, ListingSuits>(),
   }
 }
 

@@ -80,6 +80,7 @@ export function miniAppListing(
     runsCode: hasBackend(entry),
     featured: editorial && (entry.featured ?? false),
     recommended: editorial && (entry.recommended ?? false),
+    ...(editorial && entry.suits ? { suits: entry.suits } : {}),
     installs: entry.installed
       ? [
           {

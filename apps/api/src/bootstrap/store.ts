@@ -21,7 +21,9 @@ import type { createMiniAppService } from '../features/mini-apps/service'
 import type { SemanticService } from '../features/embeddings/service'
 import type { RealtimeResource } from '../features/realtime/resources'
 import type { SearchService } from '../features/search/service'
+import { createDismissalsRepository } from '../features/store/dismissals-repository'
 import { createStoreIndexRepository } from '../features/store/index-repository'
+import { createRecommendationEventsRepository } from '../features/store/recommendation-events-repository'
 import { openStoreIndexDatabase } from '../features/store/index-repository-open'
 import { createProjectSignals } from '../features/store/project-signals'
 import { createStoreSemanticSource } from '../features/store/semantic'
@@ -57,7 +59,7 @@ export function createStorePhase(deps: {
   agentModelChoices?: AgentModelChoicesPort
   /** The plugin service: its marketplaces are the plugins provider's sources. */
   pluginService?: PluginService
-  semanticService?: Pick<SemanticService, 'registerSource' | 'resync' | 'changed'>
+  semanticService?: Pick<SemanticService, 'registerSource' | 'resync' | 'changed' | 'reader'>
   resolveProjectCwd: (userId: string, projectId: string) => Promise<string | null>
   /** What the working set says, for recommendations (`store-context.ts`). */
   workingContext?: StoreContextPort
@@ -128,12 +130,17 @@ export function createStorePhase(deps: {
       return search.search(...args)
     },
     projectWords: (...args) => signals.of(...args),
+    projectFacts: (...args) => signals.facts(...args),
+    dismissals: createDismissalsRepository(deps.db),
+    recommendationEvents: createRecommendationEventsRepository(deps.db),
     ...(deps.workingContext ? { workingContext: deps.workingContext } : {}),
     ...(deps.semanticService
       ? {
           resyncMeaning: () => void deps.semanticService!.resync(STORE_COLLECTION).catch(() => {}),
           meaningChanged: (keys: string[]) =>
             void deps.semanticService!.changed(STORE_COLLECTION, keys).catch(() => {}),
+          similarToItems: (userId, members, options) =>
+            deps.semanticService!.reader.similarToItems(userId, STORE_COLLECTION, members, options),
         }
       : {}),
   })

@@ -1,10 +1,14 @@
-import { resolveCompletionReferences } from '../features/autocomplete/completion-references'
+import {
+  completionReferenceId,
+  resolveCompletionReferences,
+} from '../features/autocomplete/completion-references'
 import type { ContextManager } from '../features/context-fabric/manager'
 import {
   resolveContextWorkspace,
   type SessionWorkspacePorts,
 } from '../features/context-fabric/session-workspace'
 import type { StoreContextPort } from '../features/store/service'
+import type { WorkingPiece } from '../features/store/service-types'
 
 /**
  * The Store's working context (`features/store/recommend.ts`), composed here because it joins two
@@ -61,8 +65,22 @@ export function createStoreWorkingContext(deps: {
         )
         .catch(() => undefined),
     ])
+    // Which tab or chip each contribution was read from, so a recommendation can say so.
+    const byId = new Map(
+      request.references.map((reference) => [completionReferenceId(reference), reference]),
+    )
+    const from = new Map<string, (typeof request.references)[number]>()
+    for (const outcome of explicit?.referenceOutcomes ?? []) {
+      const reference = byId.get(outcome.referenceId)
+      if (reference) for (const id of outcome.contributionIds) from.set(id, reference)
+    }
     return [...(explicit?.contributions ?? []), ...(automatic?.contributions ?? [])].map(
-      ({ content, priority }) => ({ content, priority }),
+      ({ id, content, priority }): WorkingPiece => {
+        const reference = from.get(id)
+        return reference
+          ? { content, priority, label: reference.label, linked: reference.origin !== 'ambient' }
+          : { content, priority }
+      },
     )
   }
 }

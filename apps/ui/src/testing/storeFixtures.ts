@@ -13,6 +13,7 @@ import {
   type ListingDetail,
   type ListingsResponse,
   type PackageKind,
+  type RecommendReason,
   type Scope,
   type ShelfPlan,
   type SourceView,
@@ -118,6 +119,14 @@ export interface StoreFake {
   discover?: Partial<DiscoverResponse>
   /** What a recommendation answers, by listing id. */
   recommended?: string[]
+  /** How many of the recommended were found for the work; the rest fill. All when absent. */
+  recommendMatched?: number
+  /** Why each recommendation is there, by `kind:id`. */
+  recommendReasons?: Record<string, RecommendReason>
+  /** What is kept out of the recommendations, newest first, by listing id and why. */
+  dismissed?: Array<{ id: string; reason: 'not-interested' | 'removed' }>
+  /** What surfaces told the Store about recommendations: `shown plugin/docs@0 open`. */
+  recommendEvents?: string[]
   /** The background has not worked the recommendations out yet. */
   recommendPending?: boolean
   /** Each recommendation asked, as its references' labels and the chat: `Dockerfile in s1`. */

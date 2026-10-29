@@ -50,8 +50,11 @@ export function mergeCompletionReferences(
     .slice(0, COMPLETION_REFERENCE_LIMIT)
 }
 
-/** A stable id per reference: the same reference in two calls is the same cache key. */
-function referenceId(reference: CompletionReference): string {
+/**
+ * A stable id per reference: the same reference in two calls is the same cache key, and a caller
+ * can tell which contributions it produced.
+ */
+export function completionReferenceId(reference: CompletionReference): string {
   return `cref:${createHash('sha256').update(identity(reference)).digest('hex').slice(0, 24)}`
 }
 
@@ -61,7 +64,7 @@ export function mintCompletionReference(
 ): ContextReference {
   return {
     version: 1,
-    id: referenceId(reference),
+    id: completionReferenceId(reference),
     kind: reference.kind,
     ...(reference.uri ? { uri: reference.uri } : {}),
     presentation: { token: reference.token, label: reference.label },

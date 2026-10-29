@@ -269,6 +269,134 @@ describe('Discover', () => {
     }
   })
 
+  test('For your work holds what suits the work; the trusted picks that fill the list stay in See all', async () => {
+    const view = await renderStore({
+      listings: LISTINGS,
+      discover: DISCOVER,
+      recommended: ['docs', 'puzzle'],
+      recommendMatched: 1,
+    })
+    try {
+      const mine = section(view.host, 'For your work')!
+      expect(mine.querySelector('[data-listing="docs"]')).not.toBeNull()
+      expect(mine.querySelector('[data-listing="puzzle"]')).toBeNull()
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('every recommendation in See all says why it is there', async () => {
+    const view = await renderStore({
+      listings: LISTINGS,
+      discover: DISCOVER,
+      recommended: ['docs', 'puzzle', 'planner'],
+      recommendMatched: 2,
+      recommendReasons: {
+        'plugin:docs': { source: 'open', label: 'Dockerfile' },
+        'mini-app:puzzle': { source: 'installed', label: 'Chess and Go' },
+        'mini-app:planner': { source: 'trusted' },
+      },
+      target: { recommended: true },
+    })
+    try {
+      expect(view.card('docs')!.textContent).toContain('Because Dockerfile is open')
+      expect(view.card('puzzle')!.textContent).toContain('Because you use Chess and Go')
+      expect(view.card('planner')!.textContent).toContain('A trusted pick')
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('Not interested takes a recommendation away, and it does not come back', async () => {
+    const view = await renderStore({
+      listings: LISTINGS,
+      discover: DISCOVER,
+      recommended: ['docs', 'puzzle'],
+      target: { recommended: true },
+    })
+    try {
+      await view.click(view.button('Not interested in Docs'))
+      expect(view.calls).toEqual(['not interested plugin/docs'])
+      await view.recommendationsReady()
+      const recommended = section(view.host, 'Recommended packages')!
+      expect(recommended.querySelector('[data-listing="docs"]')).toBeNull()
+      expect(recommended.querySelector('[data-listing="puzzle"]')).not.toBeNull()
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('what was turned down is listed under the recommendations, and can be recommended again', async () => {
+    const view = await renderStore({
+      listings: LISTINGS,
+      discover: DISCOVER,
+      recommended: ['docs', 'puzzle'],
+      dismissed: [{ id: 'planner', reason: 'removed' }],
+      target: { recommended: true },
+    })
+    try {
+      await view.click(view.button('Not interested in Docs'))
+      await view.recommendationsReady()
+      const turned = section(view.host, 'Not recommended')!
+      expect(turned.querySelector('[data-listing="docs"]')!.textContent).toContain(
+        'You were not interested',
+      )
+      expect(turned.querySelector('[data-listing="planner"]')!.textContent).toContain(
+        'You removed it',
+      )
+      await view.click(view.button('Recommend Docs again'))
+      expect(view.calls).toEqual(['not interested plugin/docs', 'interested again plugin/docs'])
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('See all tells the Store what it showed, each with its place and what found it, once', async () => {
+    const view = await renderStore({
+      listings: LISTINGS,
+      discover: DISCOVER,
+      recommended: ['docs', 'puzzle'],
+      recommendMatched: 1,
+      recommendReasons: {
+        'plugin:docs': { source: 'open', label: 'Dockerfile' },
+        'mini-app:puzzle': { source: 'trusted' },
+      },
+      recommendEvents: [],
+      target: { recommended: true },
+    })
+    try {
+      await view.recommendationsReady()
+      await view.click(view.button('Docs', view.card('docs')!))
+      expect(view.recommendEvents()).toEqual([
+        'shown plugin/docs@0 open',
+        'shown mini-app/puzzle@1 trusted',
+        'opened plugin/docs@0 open',
+      ])
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('For your work on Discover tells the Store what it showed and what was opened', async () => {
+    const view = await renderStore({
+      listings: LISTINGS,
+      discover: DISCOVER,
+      recommended: ['docs'],
+      recommendReasons: { 'plugin:docs': { source: 'linked', label: 'Dockerfile' } },
+      recommendEvents: [],
+    })
+    try {
+      const mine = section(view.host, 'For your work')!
+      await view.click(view.button('Docs', mine))
+      expect(view.recommendEvents()).toEqual([
+        'shown plugin/docs@0 linked',
+        'opened plugin/docs@0 linked',
+      ])
+    } finally {
+      await view.done()
+    }
+  })
+
   test('opened at its recommendations, the Store shows them', async () => {
     const view = await renderStore({
       listings: LISTINGS,

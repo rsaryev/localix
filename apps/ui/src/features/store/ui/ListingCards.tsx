@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, type ReactNode } from 'react'
 import type { Listing } from '@localixai/store'
 import { ItemCard } from '@localixai/kit/item-card'
 import { TileCard } from '@localixai/kit/tile-card'
@@ -12,7 +12,14 @@ import { ListingIcon, TrustMark, VerifiedMark } from './StoreMarks'
  * A listing in a Discover row: the compact lockup — icon, name, one quiet line of who publishes it
  * and what it is (the name gives way before the kind does), and its Get button at the right. Resting on it starts reading its page, so the page opens at once.
  */
-export const ListingTileCard = memo(function ListingTileCard({ listing }: { listing: Listing }) {
+export const ListingTileCard = memo(function ListingTileCard({
+  listing,
+  onOpened,
+}: {
+  listing: Listing
+  /** Heard before its page opens (a recommendation reports it). */
+  onOpened?: () => void
+}) {
   const store = useStoreScope()
   return (
     <div data-listing={listing.ref.id} data-kind={listing.ref.kind} className="h-full">
@@ -28,7 +35,10 @@ export const ListingTileCard = memo(function ListingTileCard({ listing }: { list
         }
         action={<GetAction listing={listing} />}
         openLabel={listing.displayName}
-        onOpen={() => store.open(listing)}
+        onOpen={() => {
+          onOpened?.()
+          store.open(listing)
+        }}
         onIntent={() => store.prefetch(listing.ref)}
       />
     </div>
@@ -42,10 +52,19 @@ export const ListingTileCard = memo(function ListingTileCard({ listing }: { list
 export const ListingRow = memo(function ListingRow({
   listing,
   showKind = true,
+  why,
+  more,
+  onOpened,
 }: {
   listing: Listing
   /** Off its own kind's shelf, where the kind goes without saying. */
   showKind?: boolean
+  /** Why it is shown here (a recommendation's reason), leading its footer. */
+  why?: string
+  /** Controls of the list it is in, after its Get button. */
+  more?: ReactNode
+  /** Heard before its page opens (a recommendation reports it). */
+  onOpened?: () => void
 }) {
   const store = useStoreScope()
   const problem =
@@ -66,13 +85,22 @@ export const ListingRow = memo(function ListingRow({
       note={problem}
       footer={
         <span className="pointer-events-none truncate text-2xs text-text-faint">
+          {why && `${why} · `}
           {listing.publisher.name}
           {showKind && ` · ${KIND_LABELS[listing.ref.kind].one}`}
           {listing.category && ` · ${listing.category}`}
         </span>
       }
-      actions={<GetAction listing={listing} />}
-      onOpen={() => store.open(listing)}
+      actions={
+        <>
+          <GetAction listing={listing} />
+          {more}
+        </>
+      }
+      onOpen={() => {
+        onOpened?.()
+        store.open(listing)
+      }}
       onPointerEnter={() => store.prefetch(listing.ref)}
       onFocus={() => store.prefetch(listing.ref)}
     />

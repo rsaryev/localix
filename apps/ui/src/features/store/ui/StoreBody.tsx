@@ -58,7 +58,15 @@ function DiscoverSection() {
     ) : (
       <DiscoverSkeleton />
     )
-  return <Discover data={discover.data} recommended={recommended.data?.listings ?? []} />
+  // What suits the work only: the trusted packages that fill the answer are Start here's already.
+  const answer = recommended.data
+  return (
+    <Discover
+      data={discover.data}
+      recommended={answer ? answer.listings.slice(0, answer.matched) : []}
+      reasons={answer?.reasons}
+    />
+  )
 }
 
 /** What the Store shows for where it is: a search, a page over the section, or the section. */

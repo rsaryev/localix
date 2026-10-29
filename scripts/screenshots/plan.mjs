@@ -189,7 +189,8 @@ export const capturePlan = {
   },
   'store/for-your-work-all': {
     guide: 'features/store.md',
-    purpose: 'See all on For your work opens every recommendation, best first',
+    purpose:
+      'See all on For your work opens every recommendation, best first, each saying why with Not interested beside Get',
     scenario: 'for-your-work-all',
     start: 'home',
   },

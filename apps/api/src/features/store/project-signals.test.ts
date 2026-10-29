@@ -32,6 +32,44 @@ describe('what the open project is written in', () => {
     )
   })
 
+  test('any package its manifest names says what it uses, not only the well-known ones', async () => {
+    writeTree(dir(), {
+      'package.json': JSON.stringify({
+        dependencies: {
+          'drizzle-orm': '1',
+          '@sentry/node': '9',
+          hono: '4',
+          'class-variance-authority': '1',
+          next: '16',
+        },
+        devDependencies: { '@types/node': '22' },
+      }),
+    })
+    const signals = createProjectSignals({ projectDir: async () => dir() })
+
+    const words = await signals.of('u1', 'p1')
+
+    for (const word of ['drizzle', 'sentry', 'hono', 'nextjs']) expect(words).toContain(word)
+    for (const word of ['types', 'class', 'next']) expect(words).not.toContain(word)
+  })
+
+  test('the names at its root and the packages it depends on, as they are written', async () => {
+    writeTree(dir(), {
+      'package.json': JSON.stringify({
+        dependencies: { '@sentry/node': '9' },
+        devDependencies: { prisma: '6' },
+      }),
+      'compose.yaml': '',
+    })
+    const signals = createProjectSignals({ projectDir: async () => dir() })
+
+    const facts = await signals.facts('u1', 'p1')
+
+    expect(facts.files.sort()).toEqual(['compose.yaml', 'package.json'])
+    expect(facts.dependencies.sort()).toEqual(['@sentry/node', 'prisma'])
+    expect(await signals.facts('u1', null)).toEqual({ files: [], dependencies: [] })
+  })
+
   test('nothing for no project, or a folder it cannot read', async () => {
     const signals = createProjectSignals({ projectDir: async () => null })
     expect(await signals.of('u1', null)).toEqual(new Set())

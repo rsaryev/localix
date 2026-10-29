@@ -152,8 +152,11 @@ so a bad icon never hides its app.
 
 An app whose name, version or archive does not read is left out, and the rest of the catalog still
 loads. `featured: true` puts an app in Discover's featured carousel and its rows, and
-`recommended: true` has a new installation install it on its own, but both only in the Localix
-marketplace's catalog, which its repository sets.
+`recommended: true` has a new installation install it on its own, and `suits` says what the app is
+for — `{ "files": ["*.sql", "compose.yaml"], "dependencies": ["pg"] }`, file names where `*` stands
+for any characters and packages a project depends on — so the Store recommends it when one of them
+is open or in the project. All three are read only in the Localix marketplace's catalog, which its
+repository sets.
 
 The same file may name the Store's **Discover** picks, which the catalog carries as an optional
 top-level `editorial`, also read for the Localix marketplace's catalog only: `collections`, each

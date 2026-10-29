@@ -41,6 +41,16 @@ export interface SemanticReader {
     text: string,
     options?: SemanticSimilarOptions & { task?: SemanticTask },
   ): Promise<SemanticMatch[]>
+  /**
+   * What is near these items, by the vectors they are stored with (their weighted mean): nothing
+   * is embedded. Null when none of them has a vector yet.
+   */
+  similarToItems(
+    userId: string,
+    collection: string,
+    members: ReadonlyArray<{ key: string; weight: number }>,
+    options?: SemanticSimilarOptions,
+  ): Promise<SemanticMatch[] | null>
 }
 
 export function createSemanticReader(deps: {
@@ -121,6 +131,10 @@ export function createSemanticReader(deps: {
           return v ? similar(userId, collection, v, options) : []
         },
       }
+    },
+    async similarToItems(userId, collection, members, options) {
+      const vector = await cache.centroid(collection, userId, members)
+      return vector ? similar(userId, collection, vector, options) : null
     },
     async query(userId, collection, text, options = {}) {
       const vector = await queryVector(text, options.task ?? 'search')
