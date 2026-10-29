@@ -17,14 +17,15 @@ export const DEFAULT_MINI_APP_CATALOG_URL = defaultSource('localix-mini-apps')!.
  * is vouched for as the real one is, so it is for the people who build Localix, never a setting.
  *
  * Its signature is checked against the key Localix pins for it (`LOCALIX_MARKETPLACE.catalogKey`),
- * never one it serves; `LOCALIX_MINI_APP_CATALOG_KEY` names the builder's own key for a local
- * build. With no key pinned its apps are listed as unsigned and update only when asked.
+ * never one it serves. A local build is not checked against it: `LOCALIX_MINI_APP_CATALOG_KEY`
+ * names the builder's own key, and without one the build's apps read as unsigned.
  */
 export async function builtInMiniAppSources(
   env: Record<string, string | undefined> = process.env,
   pinned: string | undefined = LOCALIX_MARKETPLACE.catalogKey,
 ): Promise<MiniAppStoreSource[]> {
-  const url = env.LOCALIX_MINI_APP_CATALOG_URL?.trim() || DEFAULT_MINI_APP_CATALOG_URL
-  const key = env.LOCALIX_MINI_APP_CATALOG_KEY?.trim() || pinned
+  const local = env.LOCALIX_MINI_APP_CATALOG_URL?.trim()
+  const url = local || DEFAULT_MINI_APP_CATALOG_URL
+  const key = env.LOCALIX_MINI_APP_CATALOG_KEY?.trim() || (local ? undefined : pinned)
   return [{ kind: 'catalog', url, vouches: true, ...(key ? { key } : {}) }]
 }

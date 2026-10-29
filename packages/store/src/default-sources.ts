@@ -42,9 +42,11 @@ export const LOCALIX_MARKETPLACE = {
   paths: ['.claude-plugin', 'plugins'],
   /**
    * The Ed25519 public key (base64) its mini app catalog is signed with: its apps update on their
-   * own only while the catalog's signature holds for it. Unset until the marketplace signs.
+   * own only while the catalog's signature holds for it. Its private key signs each release in the
+   * marketplace's CI (the `MINI_APP_SIGNING_KEY` secret); changing it stops every installation's
+   * updates, so it changes only with a Localix release that ships the new one.
    */
-  catalogKey: undefined as string | undefined,
+  catalogKey: 'bwCq5MPyZb+OxOHQnaBtzi9GmXBvu1U6WnGeyEPhdXg=' as string | undefined,
 } as const
 
 /** The mini app catalog a GitHub repository's latest release publishes. */

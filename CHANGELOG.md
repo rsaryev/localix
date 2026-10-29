@@ -13,8 +13,16 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 - **Recommended plugins install on their own**: the plugins the Localix marketplace recommends are
   installed once in the background, like its recommended mini apps; one you remove is not added
   back.
+- **Signed mini app catalogs**: a mini app's page in the Store says whether its catalog is
+  **Signed**, **Not signed**, or its **Signature changed**, and a signed app's Versions tab has
+  **Update automatically**, which you can switch off for that app. Publishing a mini app with the
+  authoring plugin now signs its catalog with your own key.
 
 ### Changed
+
+- **Only signed mini apps update on their own**: apps from a signed catalog, the Localix one
+  included, still update within six hours; an unsigned app updates when you choose **Update**. A
+  catalog whose signature changed installs nothing until you remove it and add it again.
 
 - **What's inside, by kind**: a package's page groups its parts (**Skills · 6**, **Hook**) in the
   order you use them, and each row says what it does: a skill's description, or when a hook runs.

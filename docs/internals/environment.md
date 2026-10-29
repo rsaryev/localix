@@ -98,6 +98,7 @@ and the AppImage filter in `apps/api/src/lib/appimage-env.ts`.
 | `HF_TOKEN`                     | unset                   | A Hugging Face token for the local-model catalog: higher API rate limits, gated models. |
 | `LOCALIX_CLI_ENTRY`            | unset                   | Staged `localix` launcher used by shell-command installation.                           |
 | `LOCALIX_MINI_APP_CATALOG_URL` | the Localix catalog     | Catalog the Store vouches for, in place of the released one; `https:` or `file:`.       |
+| `LOCALIX_MINI_APP_CATALOG_KEY` | unset                   | Public key (base64 Ed25519) that catalog's signature is checked against.                |
 
 `LOCALIX_UI_ORIGINS` adds to the packaged app's origins; it accepts only exact `http` or `https`
 origins, and an invalid entry stops startup. `scripts/dev-servers.mjs` sets it to the Vite origin. A
@@ -107,7 +108,9 @@ only loopback names. The "Local API browser boundary" section of the desktop int
 
 `LOCALIX_MINI_APP_CATALOG_URL` is for people who build Localix: point it at a marketplace build
 (`bun run pack` writes `dist/catalog/mini-app-catalog.json`) to try catalog changes before they are
-released.
+released. The released catalog is checked against the key Localix ships with; a local build is not.
+Its apps read as unsigned unless `LOCALIX_MINI_APP_CATALOG_KEY` names the key it was signed with
+(`mini-app sign` with that key, after `bun run pack`).
 
 ### Agent shell and MCP
 
