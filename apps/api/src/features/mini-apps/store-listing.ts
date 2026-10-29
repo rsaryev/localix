@@ -120,6 +120,8 @@ export interface OwnMiniApp {
   version?: string
   description?: string
   icon?: string
+  /** Where it lives, read from its manifest (`miniAppWebsite`): its page links there. */
+  homepage?: string
   surfaces?: string[]
   commands?: string[]
 }

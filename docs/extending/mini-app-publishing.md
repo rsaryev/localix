@@ -57,12 +57,12 @@ app's folder:
 }
 ```
 
-| Field         | Rule                                                                                                                                                   |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `icon`        | Required to publish. `.svg` (recommended), `.png` or `.webp` of at least 512×512, or `.ico`; square; at most 256 KB; an SVG holds no script.           |
-| `screenshots` | At most 10, each `{ path, caption? }`: `.png`, `.jpg`, `.jpeg` or `.webp`, at most 5 MB. The store shows the file you publish; it is never downscaled. |
-| `tags`        | At most 8 lower-case words joined by dashes (`board-game`); the store filters and searches by them.                                                    |
-| `homepage`    | An `https://` address, linked from the store page's Details.                                                                                           |
+| Field         | Rule                                                                                                                                                                                         |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `icon`        | Required to publish. `.svg` (recommended), `.png` or `.webp` of at least 512×512, or `.ico`; square; at most 256 KB; an SVG holds no script.                                                 |
+| `screenshots` | At most 10, each `{ path, caption? }`: `.png`, `.jpg`, `.jpeg` or `.webp`, at most 5 MB. The store shows the file you publish; it is never downscaled.                                       |
+| `tags`        | At most 8 lower-case words joined by dashes (`board-game`); the store filters and searches by them.                                                                                          |
+| `homepage`    | An `https://` address, linked from the store page's Details. Without one, the page links the `repository` it names (`git@github.com:you/notes.git` reads as `https://github.com/you/notes`). |
 
 `mini-app check` checks these in its **store media** step and says what to fix; a problem there does
 not hold back the build, because the app runs without an icon. Packing refuses an app whose icon is

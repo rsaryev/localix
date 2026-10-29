@@ -108,6 +108,8 @@ export const miniAppRecordSchema = z.object({
   version: z.string().optional(),
   description: z.string(),
   category: z.enum(MINI_APP_CATEGORIES).optional(),
+  /** Where people read about it: its homepage, else its repository's page (`miniAppWebsite`). */
+  homepage: z.string().optional(),
   surfaces: z.array(z.string()),
   scope: z.enum(['global', 'project']),
   projectId: z.string(),

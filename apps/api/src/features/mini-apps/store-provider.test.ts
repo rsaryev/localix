@@ -474,6 +474,23 @@ describe('the mini apps in the Store', () => {
     await expect(provider.plan('bitcoin-price', 'user', actor)).rejects.toThrow()
   })
 
+  test('a mini app the person published links its page to where it lives', async () => {
+    const { provider, own } = setup()
+    own.push({
+      name: 'bitcoin-price',
+      version: '0.2.0',
+      description: 'Shows the Bitcoin price.',
+      homepage: 'https://github.com/you/bitcoin-price',
+      enabled: true,
+      config: [],
+    })
+    const page = await provider.detail('bitcoin-price', actor)
+    expect(page.facts).toContainEqual({
+      label: 'Homepage',
+      value: 'https://github.com/you/bitcoin-price',
+    })
+  })
+
   test('a file finds the mini apps that open it, from what each catalog entry declares', async () => {
     const { offer, provider } = setup()
     offer('documents', {

@@ -119,7 +119,11 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
     entry: ownMiniAppEntry(app),
     readme: null,
     screenshots: [],
-    details: { ...(app.version ? { version: app.version } : {}), author: 'You' },
+    details: {
+      ...(app.version ? { version: app.version } : {}),
+      author: 'You',
+      ...(app.homepage ? { homepage: app.homepage } : {}),
+    },
   })
 
   // The offers and the person's own apps, as listings: `listings` and what opens a file.

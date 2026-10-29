@@ -37,6 +37,23 @@ export function miniAppConfigFields(
 }
 
 /**
+ * Where people read about an app: its manifest's https:// homepage, else the repository it names,
+ * as a page address (`git+https://…/app.git` and `git@host:owner/app.git` both read as
+ * `https://host/owner/app`). Anything else names no place a link can open.
+ */
+export function miniAppWebsite(
+  manifest: { homepage?: string; repository?: string } | null | undefined,
+): string | undefined {
+  if (manifest?.homepage?.startsWith('https://')) return manifest.homepage
+  const repository = manifest?.repository
+    ?.trim()
+    .replace(/^git\+/, '')
+    .replace(/^git@([^:/\s]+):/, 'https://$1/')
+    .replace(/\.git$/, '')
+  return repository && /^https:\/\/[^\s/]+\/\S+$/.test(repository) ? repository : undefined
+}
+
+/**
  * One mini app as the UI shows it. Its code is imported only while it may run (the same gate the
  * loader asks), to read what its backend actually registers; a disabled app shows what its
  * manifest declares.
@@ -60,12 +77,14 @@ export async function toMiniAppRecord(input: {
     readMiniAppUiDescriptor(app),
   ])
   const error = [blocked, inspected?.error].filter(Boolean).join('; ') || undefined
+  const homepage = miniAppWebsite(app.manifest)
   return {
     name: app.name,
     ...(app.manifest?.displayName ? { displayName: app.manifest.displayName } : {}),
     ...(app.manifest?.version ? { version: app.manifest.version } : {}),
     description: app.manifest?.description ?? '',
     ...(app.manifest?.category ? { category: app.manifest.category } : {}),
+    ...(homepage ? { homepage } : {}),
     surfaces: normalizeMiniAppSurfaces(app.manifest?.surfaces),
     scope: app.scope,
     projectId: app.projectId,

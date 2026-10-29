@@ -80,4 +80,40 @@ describe('the mini app service', () => {
     const left = await fs.readdir(join(home, '.localix', 'mini-apps'))
     expect(left.some((name) => name.startsWith('.sync-retired-tiles-'))).toBe(true)
   })
+
+  // A published app's folder names the repository it was published from; the Store's page of an
+  // app made on this computer links there, as a catalog's page links to its homepage.
+  test('an app says where people read about it: its homepage, else the repository it names', async () => {
+    const db = createDatabase()
+    await migrateToLatest(db)
+    const write = async (name: string, manifest: Record<string, unknown>) => {
+      const dir = join(home, '.localix', 'mini-apps', name)
+      await fs.mkdir(dir, { recursive: true })
+      await fs.writeFile(
+        join(dir, 'mini-app.json'),
+        JSON.stringify({ name, version: '1.0.0', description: name, ...manifest }),
+      )
+    }
+    await write('journal', { repository: 'git+https://github.com/you/journal.git' })
+    await write('ledger', { repository: 'git@github.com:you/ledger.git' })
+    await write('atlas', {
+      homepage: 'https://atlas.example.test',
+      repository: 'https://github.com/you/atlas',
+    })
+    await write('scratch', { repository: 'not a place' })
+    const service = createMiniAppService({
+      db,
+      capabilityStores: {
+        sources: createCapabilitySourceRepository,
+        rules: createCapabilityRuleRepository,
+      },
+      homeDir: home,
+    })
+    const { miniApps } = await service.list('u1')
+    const homepage = (name: string) => miniApps.find((app) => app.name === name)?.homepage
+    expect(homepage('journal')).toBe('https://github.com/you/journal')
+    expect(homepage('ledger')).toBe('https://github.com/you/ledger')
+    expect(homepage('atlas')).toBe('https://atlas.example.test')
+    expect(homepage('scratch')).toBeUndefined()
+  })
 })

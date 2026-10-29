@@ -54,6 +54,9 @@ the rest of Localix asks.
 - **A mini app screen that moved into each chat opens there**: when an update makes a mini app's
   screen belong to each chat, its old app-wide tab closes and the rail opens the screen in the open
   chat; before, the old tab stayed and the screen worked without the chat.
+- **A mini app you made links to its repository**: its Store page shows a **Website** from the
+  `homepage` or `repository` in its `mini-app.json`, and publishing it with the authoring plugin now
+  records the repository there.
 - **A plugin you removed installs again**: **Get** on a plugin removed from the Store no longer
   fails with "A plugin already exists at this destination".
 - **A mini app whose screen fails to load says so**: its tabs stay open while the screen is tried
