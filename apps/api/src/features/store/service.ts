@@ -247,6 +247,12 @@ export function createStoreService(deps: StoreServiceDeps) {
       await provider.setEnabled(ref.id, scope, enabled, actor)
     },
 
+    async setAutoUpdate(ref: ListingRef, on: boolean, actor: StoreActor) {
+      const provider = providerOf(ref.kind)
+      if (!provider.setAutoUpdate) throw unsupported(ref.kind, 'switch auto-update')
+      await provider.setAutoUpdate(ref.id, on, actor)
+    },
+
     ...configService(providerOf),
 
     ...itemService(deps.providers, providerOf, runs.invalidate),

@@ -105,6 +105,13 @@ export const TRUST_LABELS: Record<Trust, string> = {
   community: 'Community',
 }
 
+/** Whether the catalog a package comes from is signed with the key Localix keeps for it. */
+export const SIGNATURE_LABELS: Record<NonNullable<Listing['signature']>, string> = {
+  signed: 'Signed',
+  unsigned: 'Not signed',
+  mismatch: 'Signature changed',
+}
+
 /**
  * What the listing's source says of itself. None for what has no source to rate — the person's own
  * items, built-in types, files of theirs: the provider leaves `trust` out and nothing is labelled.

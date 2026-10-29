@@ -215,6 +215,8 @@ const VERIFY = {
       detail.locator('header').getByRole('button', { name: /^(?:Get|Open) / }),
     ).toBeVisible()
     await expect(detail.getByRole('tabpanel')).toContainText('A screen of its own')
+    // Whether its catalog is signed, among the facts: what decides if it updates on its own.
+    await expect(detail.getByLabel('Information').first()).toContainText('Signature')
   },
   async 'store-consent'(page) {
     const sheet = page.getByRole('dialog')

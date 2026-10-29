@@ -164,6 +164,17 @@ export const listingSchema = z.object({
   /** Why it cannot be installed here. */
   incompatible: z.string().optional(),
   /**
+   * Whether the source it comes from is signed with the key Localix keeps for it (a mini app
+   * catalog's `.sig`): `mismatch` when it is signed with another, or no longer signed. Absent for
+   * what no signed source carries.
+   */
+  signature: z.enum(['signed', 'unsigned', 'mismatch']).optional(),
+  /**
+   * Installed and able to update on its own: whether it does (`setAutoUpdate`). Absent when it
+   * updates only when the person asks.
+   */
+  autoUpdate: z.boolean().optional(),
+  /**
    * Written by the person (`user`) or kept in a project (`project`) rather than fetched from a
    * source: the Yours and Project shelves list it, installed or not.
    */

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { generateKeyPairSync } from 'node:crypto'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
@@ -11,18 +12,31 @@ const root = tempDirPerTest('mini-app-store-provider-')
 const actor = { userId: 'u1' }
 const ADA = 'https://ada.test/mini-app-catalog.json'
 
-function setup(opts: { verified?: boolean; editorial?: unknown } = {}) {
-  const catalog = hostedMiniAppCatalog([], { editorial: opts.editorial })
+function setup(opts: { verified?: boolean; editorial?: unknown; signed?: boolean } = {}) {
+  const author = generateKeyPairSync('ed25519')
+  const key = Buffer.from(author.publicKey.export({ format: 'jwk' }).x!, 'base64url')
+  const catalog = hostedMiniAppCatalog([], {
+    editorial: opts.editorial,
+    ...(opts.signed ? { signWith: author.privateKey } : {}),
+  })
   /** Offer an app in the catalog; what a catalog says is read when the store next asks. */
   const offer = (name: string, extra: Partial<CatalogEntry> = {}) =>
     void catalog.apps.push({ name, verified: opts.verified, ...extra })
   const store = createMiniAppStore({
     homeDir: join(root(), 'home'),
-    sources: () => [{ kind: 'catalog', url: catalog.url, vouches: true }],
+    sources: () => [
+      {
+        kind: 'catalog',
+        url: catalog.url,
+        vouches: true,
+        ...(opts.signed ? { key: key.toString('base64') } : {}),
+      },
+    ],
     onInstalled: async () => {},
     fetchImpl: catalog.fetchImpl,
   })
   const calls: string[] = []
+  const autoUpdateOff = new Set<string>()
   const enabled = new Map<string, boolean>()
   const configs = new Map<string, MiniAppConfigField[]>()
   const own: Record<string, unknown>[] = []
@@ -57,6 +71,14 @@ function setup(opts: { verified?: boolean; editorial?: unknown } = {}) {
         void calls.push(`config ${name} ${JSON.stringify(values)}`),
       setEnabled: async (_userId, { name, enabled: on }) => void calls.push(`enable ${name} ${on}`),
       remove: async (_userId, { name }) => void calls.push(`remove ${name}`),
+    },
+    autoUpdate: {
+      off: async () => new Set(autoUpdateOff),
+      set: async (name, on) => {
+        calls.push(`auto-update ${name} ${on}`)
+        if (on) autoUpdateOff.delete(name)
+        else autoUpdateOff.add(name)
+      },
     },
   })
   return { catalog, offer, store, provider, calls, enabled, catalogs, configs, own }
@@ -385,6 +407,36 @@ describe('the mini apps in the Store', () => {
     expect(heard).toBeGreaterThan(1)
   })
 
+  test('an install from a signed catalog says so and updates on its own until switched off', async () => {
+    const { offer, store, provider, calls } = setup({ signed: true })
+    offer('atlas')
+    offer('notes')
+    await store.install('atlas')
+    await store.settled()
+
+    const listed = async () => (await provider.listings(actor)).listings
+    const [atlas, notes] = await listed()
+    expect(atlas).toMatchObject({ signature: 'signed', autoUpdate: true })
+    // Not installed: nothing to update yet.
+    expect(notes!.signature).toBe('signed')
+    expect(notes!.autoUpdate).toBeUndefined()
+
+    await provider.setAutoUpdate!('atlas', false, actor)
+    expect(calls).toEqual(['auto-update atlas false'])
+    expect((await listed())[0]!.autoUpdate).toBe(false)
+  })
+
+  test('an install from an unsigned catalog says so, and has no switch: it updates when asked', async () => {
+    const { offer, store, provider } = setup()
+    offer('atlas')
+    await store.install('atlas')
+    await store.settled()
+
+    const [atlas] = (await provider.listings(actor)).listings
+    expect(atlas!.signature).toBe('unsigned')
+    expect(atlas!.autoUpdate).toBeUndefined()
+  })
+
   test('a mini app the person made, which no catalog offers, is in the Store as installed', async () => {
     const { offer, provider, own } = setup()
     offer('atlas')
@@ -407,6 +459,9 @@ describe('the mini apps in the Store', () => {
       source: { label: 'Made on this computer' },
       authored: 'user',
     })
+    // No catalog: nothing to sign, nothing updates it but the person.
+    expect(mine!.signature).toBeUndefined()
+    expect(mine!.autoUpdate).toBeUndefined()
     expect(listings.filter((listing) => listing.ref.id === 'atlas')).toHaveLength(1)
     const page = await provider.detail('bitcoin-price', actor)
     expect(page.components.map((component) => component.kind)).toEqual([

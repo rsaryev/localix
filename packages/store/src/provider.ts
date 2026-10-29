@@ -56,6 +56,8 @@ export interface StoreProvider {
   update?(id: string, scope: Scope, actor: StoreActor): Promise<void>
   remove(id: string, scope: Scope, actor: StoreActor): Promise<void>
   setEnabled?(id: string, scope: Scope, enabled: boolean, actor: StoreActor): Promise<void>
+  /** Whether an installed package that can update on its own does (`Listing.autoUpdate`). */
+  setAutoUpdate?(id: string, on: boolean, actor: StoreActor): Promise<void>
   /**
    * The settings of one install: what its package declares and what the person set. Null where
    * the package has none or is not installed in that scope. The provider keeps the storage.

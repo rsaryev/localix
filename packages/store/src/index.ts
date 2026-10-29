@@ -74,6 +74,7 @@ export {
   createParamsSchema,
   creatableResponseSchema,
   discoverResponseSchema,
+  autoUpdateRequestSchema,
   enableRequestSchema,
   installRequestSchema,
   LISTINGS_PAGE,

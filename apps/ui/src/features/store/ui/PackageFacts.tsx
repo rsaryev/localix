@@ -1,7 +1,7 @@
 import type { Listing, ListingDetail } from '@localixai/store'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { ExternalAnchor } from '@/shared/ui/external-anchor'
-import { KIND_LABELS, TRUST_LABELS, trustOf } from '../model/presentation'
+import { KIND_LABELS, SIGNATURE_LABELS, TRUST_LABELS, trustOf } from '../model/presentation'
 
 interface Fact {
   label: string
@@ -33,6 +33,9 @@ export function packageFacts(listing: Listing, detail?: ListingDetail): Fact[] {
       label: 'Source',
       value: trust ? `${listing.source.label} · ${TRUST_LABELS[trust]}` : listing.source.label,
     },
+    ...(listing.signature
+      ? [{ label: 'Signature', value: SIGNATURE_LABELS[listing.signature] }]
+      : []),
     {
       label: 'Runs code',
       value: runs === 'unknown' ? 'Not known yet' : runs ? 'Yes, on this computer' : 'No',

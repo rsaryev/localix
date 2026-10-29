@@ -26,8 +26,8 @@ export interface MiniAppStoreEntry {
   publisher: MiniAppPublisher
   /** The catalog it comes from, as the catalog list names it. */
   source: string
-  /** Whether its catalog is signed with the key kept for it (`catalog-signature.ts`). */
-  signature: CatalogSignatureState
+  /** Whether its catalog is signed with the key kept for it; absent with no catalog. */
+  signature?: CatalogSignatureState
   /** Where the host serves its icon; the row draws a monogram when it has none. */
   icon?: string
   tags?: string[]

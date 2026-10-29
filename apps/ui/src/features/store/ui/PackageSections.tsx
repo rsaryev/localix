@@ -10,6 +10,7 @@ import { groupParts, partDescription } from '../model/parts'
 import { capabilityLabel, COMPONENT_LABELS } from '../model/presentation'
 import { PackageSettings } from './PackageSettings'
 import { PlanSummary } from './PlanSummary'
+import { PackageUpdates } from './PackageUpdates'
 
 type Part = Pick<StoreComponent, 'kind' | 'name' | 'description'>
 
@@ -132,31 +133,36 @@ export const PACKAGE_TABS: readonly PackageTab[] = [
     label: 'Versions',
     available: ({ listing }) => Boolean(listing.version || listing.installs.length),
     render: ({ listing }) => (
-      <dl className="grid max-w-md grid-cols-[minmax(7rem,auto)_1fr] gap-x-4 gap-y-2 text-sm">
-        {listing.version && (
-          <>
-            <dt className="text-text-faint">Offered</dt>
-            <dd className="text-foreground tabular-nums">{listing.version}</dd>
-          </>
-        )}
-        {listing.installs.map((install) => (
-          <div key={install.scope} className="contents">
-            <dt className="text-text-faint">
-              {install.scope === 'user' ? 'Installed for you' : 'Installed in this project'}
-            </dt>
-            <dd className="text-foreground tabular-nums">
-              {install.version ?? '—'}
-              {install.updateTo && ` → ${install.updateTo}`}
-            </dd>
-          </div>
-        ))}
-        {listing.updatedAt && (
-          <>
-            <dt className="text-text-faint">Published</dt>
-            <dd className="text-foreground">{new Date(listing.updatedAt).toLocaleDateString()}</dd>
-          </>
-        )}
-      </dl>
+      <div className="flex flex-col gap-4">
+        <dl className="grid max-w-md grid-cols-[minmax(7rem,auto)_1fr] gap-x-4 gap-y-2 text-sm">
+          {listing.version && (
+            <>
+              <dt className="text-text-faint">Offered</dt>
+              <dd className="text-foreground tabular-nums">{listing.version}</dd>
+            </>
+          )}
+          {listing.installs.map((install) => (
+            <div key={install.scope} className="contents">
+              <dt className="text-text-faint">
+                {install.scope === 'user' ? 'Installed for you' : 'Installed in this project'}
+              </dt>
+              <dd className="text-foreground tabular-nums">
+                {install.version ?? '—'}
+                {install.updateTo && ` → ${install.updateTo}`}
+              </dd>
+            </div>
+          ))}
+          {listing.updatedAt && (
+            <>
+              <dt className="text-text-faint">Published</dt>
+              <dd className="text-foreground">
+                {new Date(listing.updatedAt).toLocaleDateString()}
+              </dd>
+            </>
+          )}
+        </dl>
+        <PackageUpdates listing={listing} />
+      </div>
     ),
   },
   {

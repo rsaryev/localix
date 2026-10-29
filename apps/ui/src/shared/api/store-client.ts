@@ -107,6 +107,11 @@ export const storeApi = {
     )
   },
 
+  /** Whether an installed package that can update on its own does (`Listing.autoUpdate`). */
+  async setAutoUpdate(ref: ListingRef, autoUpdate: boolean): Promise<void> {
+    await assertOk(await listing()['auto-update'].$post({ ...param(ref), json: { autoUpdate } }))
+  },
+
   async setEnabled(
     ref: ListingRef,
     scope: Scope,

@@ -26,6 +26,27 @@ const LISTINGS = [
     publisher: { name: 'Someone', verified: false },
     tags: ['music'],
   }),
+  listing({
+    id: 'clock',
+    displayName: 'Clock',
+    version: '1.1.0',
+    signature: 'signed',
+    autoUpdate: true,
+    installs: [{ scope: 'user', version: '1.0.0', enabled: true }],
+  }),
+  listing({
+    id: 'notes',
+    displayName: 'Notes',
+    version: '2.0.0',
+    signature: 'unsigned',
+    installs: [{ scope: 'user', version: '2.0.0', enabled: true }],
+  }),
+  listing({
+    id: 'forged',
+    displayName: 'Forged',
+    version: '1.0.0',
+    signature: 'mismatch',
+  }),
 ]
 
 async function open(id = 'puzzle', name = 'Puzzle') {
@@ -323,6 +344,46 @@ describe('a package’s page', () => {
       const gone = view.host.querySelector('[role="status"][aria-label="Not in the Store"]')
       expect(gone?.textContent).toContain('tracker is no longer installed or offered')
       expect(view.host.querySelector('[data-store-back]')).not.toBeNull()
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('the facts say whether its catalog is signed', async () => {
+    for (const [id, name, said] of [
+      ['clock', 'Clock', 'Signed'],
+      ['notes', 'Notes', 'Not signed'],
+      ['forged', 'Forged', 'Signature changed'],
+    ] as const) {
+      const { view, page } = await open(id, name)
+      try {
+        expect(page()!.querySelector('[aria-label="Information"]')!.textContent).toContain(said)
+      } finally {
+        await view.done()
+      }
+    }
+  })
+
+  test('an app from a signed catalog updates on its own until the person switches it off', async () => {
+    const { view, page, tab } = await open('clock', 'Clock')
+    try {
+      await view.click(tab('Versions'))
+      const toggle = page()!.querySelector<HTMLInputElement>('[role="switch"]')!
+      expect(toggle.getAttribute('aria-label') ?? '').toContain('Update automatically')
+      expect(toggle.checked).toBe(true)
+      await view.click(toggle)
+      expect(view.calls).toContain('auto-update mini-app/clock false')
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('an app from an unsigned catalog has no switch: it says it updates when asked', async () => {
+    const { view, page, tab } = await open('notes', 'Notes')
+    try {
+      await view.click(tab('Versions'))
+      expect(page()!.querySelector('[role="switch"]')).toBeNull()
+      expect(page()!.textContent).toContain('when you choose Update')
     } finally {
       await view.done()
     }

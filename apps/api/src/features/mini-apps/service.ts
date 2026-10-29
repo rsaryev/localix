@@ -157,11 +157,16 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
     await recordCoreChanges(deps.db, { entity: 'mini-app', op: 'resync' })
   }
 
-  const { catalogs, store, installRecommended } = createMiniAppStoreParts(deps, setEnabled)
+  const { catalogs, store, autoUpdate, installRecommended } = createMiniAppStoreParts(
+    deps,
+    setEnabled,
+  )
 
   return {
     catalogs,
     store,
+    /** Which installed apps update on their own (`auto-update.ts`). */
+    autoUpdate,
     /** The one-time install of the apps the Localix catalog recommends (`recommended.ts`). */
     installRecommended,
     /** Folders changed under the host (a re-staged bundle, `/mini-app reload`): re-read every one. */

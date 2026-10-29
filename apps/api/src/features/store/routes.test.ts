@@ -151,6 +151,13 @@ describe('/rpc/store', () => {
     ])
   })
 
+  test('whether an install updates on its own is switched, 204', async () => {
+    const { apps, post } = app()
+    expect((await post('/mini-app/tasks/auto-update', { autoUpdate: false })).status).toBe(204)
+    expect(apps.calls.at(-1)).toBe('auto-update tasks false')
+    expect((await post('/mini-app/tasks/auto-update', {})).status).toBe(400)
+  })
+
   test('sources: listed, previewed, added and removed by kind', async () => {
     const { apps, get, post } = app()
     expect((await (await get('/sources')).json()).sources[0].label).toBe('Localix')

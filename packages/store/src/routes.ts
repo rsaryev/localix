@@ -107,6 +107,9 @@ export const installRequestSchema = scopedSchema.extend({
 
 export const enableRequestSchema = scopedSchema.extend({ enabled: z.boolean() })
 
+/** `POST /:kind/:id/auto-update`: whether an install that can update on its own does. */
+export const autoUpdateRequestSchema = z.object({ autoUpdate: z.boolean() })
+
 /** `POST /:kind/:id/action`: one of the install's actions, by id. */
 export const actionRequestSchema = scopedSchema.extend({ action: z.string().min(1).max(64) })
 

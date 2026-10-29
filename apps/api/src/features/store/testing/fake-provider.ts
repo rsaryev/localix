@@ -84,6 +84,7 @@ export function fakeProvider(
       ? {}
       : {
           setEnabled: async (id, scope, enabled) => record(`enable ${id} ${scope} ${enabled}`),
+          setAutoUpdate: async (id, on) => record(`auto-update ${id} ${on}`),
           previewSource: async (input) => ({
             kind,
             id: input,

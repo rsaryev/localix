@@ -13,6 +13,7 @@ import {
   shelfPlanSchema,
   shelfRunRequestSchema,
   discoverResponseSchema,
+  autoUpdateRequestSchema,
   enableRequestSchema,
   installPlanSchema,
   installRequestSchema,
@@ -291,6 +292,15 @@ export function createStoreRoutes(store: StoreService) {
       async (c) => {
         const { scope, enabled, projectId } = c.req.valid('json')
         await store.setEnabled(c.req.valid('param'), scope, enabled, actor(c, projectId))
+        return c.body(null, 204)
+      },
+    )
+    .post(
+      '/:kind/:id/auto-update',
+      zValidator('param', listingParamsSchema),
+      zValidator('json', autoUpdateRequestSchema),
+      async (c) => {
+        await store.setAutoUpdate(c.req.valid('param'), c.req.valid('json').autoUpdate, actor(c))
         return c.body(null, 204)
       },
     )

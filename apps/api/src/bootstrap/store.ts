@@ -87,6 +87,7 @@ export function createStorePhase(deps: {
         store: miniAppService.store,
         catalogs: miniAppService.catalogs,
         apps: miniAppService,
+        autoUpdate: miniAppService.autoUpdate,
       }),
       mcpStoreProviderOf({
         db: deps.db,

@@ -58,7 +58,14 @@ export function catalogTrust(builtIn: boolean) {
 
 export function miniAppListing(
   entry: MiniAppStoreEntry,
-  context: { sourceLabel: string; enabled: boolean; builtIn: boolean; configurable?: boolean },
+  context: {
+    sourceLabel: string
+    enabled: boolean
+    builtIn: boolean
+    configurable?: boolean
+    /** The person keeps it from updating on its own (`auto-update.ts`). */
+    autoUpdateOff?: boolean
+  },
 ): Listing {
   const { trust, weight, editorial } = catalogTrust(context.builtIn)
   const displayName = entry.displayName ?? entry.name
@@ -95,6 +102,11 @@ export function miniAppListing(
     ...(entry.job ? { job: { action: entry.installed ? 'update' : 'install', ...entry.job } } : {}),
     ...(entry.incompatible ? { incompatible: 'Needs a newer Localix' } : {}),
     ...(entry.installed && context.configurable ? { configurable: true } : {}),
+    ...(entry.signature ? { signature: entry.signature } : {}),
+    // Only an app from a signed catalog updates on its own (`store.ts`, `updateInstalled`).
+    ...(entry.installed && entry.signature === 'signed'
+      ? { autoUpdate: !context.autoUpdateOff }
+      : {}),
   }
 }
 
@@ -125,8 +137,6 @@ export function ownMiniAppEntry(app: OwnMiniApp): MiniAppStoreEntry {
     ...(app.icon ? { icon: app.icon } : {}),
     publisher: { name: 'You', verified: false },
     source: OWN_SOURCE.id,
-    // From the person's own folder, through no catalog: nothing updates it but them.
-    signature: 'unsigned',
     surfaces: app.surfaces ?? [],
     commands: app.commands ?? [],
     installed: app.version ? { version: app.version } : {},

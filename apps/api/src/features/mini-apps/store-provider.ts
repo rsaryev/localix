@@ -47,6 +47,11 @@ export interface MiniAppStoreProviderDeps {
     setEnabled(userId: string, input: { name: string; enabled: boolean }): Promise<void>
     remove(userId: string, input: { name: string }): Promise<void>
   }
+  /** Which installed apps the person keeps from updating on their own (`auto-update.ts`). */
+  autoUpdate: {
+    off(): Promise<ReadonlySet<string>>
+    set(name: string, on: boolean): Promise<void>
+  }
 }
 
 /** A pick's item: an app's name, or `<kind>:<id>` for another kind. */
@@ -82,10 +87,11 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
     )
 
   const listingFor = async (name: string, actor: StoreActor) => {
-    const [page, label, enabled] = await Promise.all([
+    const [page, label, enabled, off] = await Promise.all([
       deps.store.detail(name),
       labels(),
       deps.apps.list(actor.userId),
+      deps.autoUpdate.off(),
     ])
     const app = enabled.miniApps.find((found) => found.name === name)
     const catalog = label.get(page.entry.source)
@@ -94,6 +100,7 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
       builtIn: catalog?.builtIn ?? false,
       enabled: app?.enabled ?? true,
       configurable: (app?.config.length ?? 0) > 0,
+      autoUpdateOff: off.has(name),
     })
     return { page, listing }
   }
@@ -117,10 +124,11 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
 
   // The offers and the person's own apps, as listings: `listings` and what opens a file.
   const listings = async (actor: StoreActor) => {
-    const [{ entries, problems }, label, apps] = await Promise.all([
+    const [{ entries, problems }, label, apps, off] = await Promise.all([
       deps.store.list(),
       labels(),
       deps.apps.list(actor.userId),
+      deps.autoUpdate.off(),
     ])
     const installed = new Map(apps.miniApps.map((app) => [app.name, app]))
     const offered = new Set(entries.map((entry) => entry.name))
@@ -133,6 +141,7 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
             builtIn: label.get(entry.source)?.builtIn ?? false,
             enabled: installed.get(entry.name)?.enabled ?? true,
             configurable: (installed.get(entry.name)?.config.length ?? 0) > 0,
+            autoUpdateOff: off.has(entry.name),
           }),
         ),
         ...own.map((app) => ownListing(app)),
@@ -200,6 +209,11 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
     async setEnabled(id, scope, enabled, actor) {
       personOnly(scope)
       await deps.apps.setEnabled(actor.userId, { name: id, enabled })
+    },
+
+    // An app is installed for the whole computer, so the switch is too.
+    async setAutoUpdate(id, on) {
+      await deps.autoUpdate.set(id, on)
     },
 
     /** The settings its manifest declares; a mini app is the person's, so only `user` has them. */
