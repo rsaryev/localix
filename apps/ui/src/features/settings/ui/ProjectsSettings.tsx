@@ -19,6 +19,15 @@ export interface ProjectSettingsFormProps {
 export function ProjectSettingsForm({ project, onDeleted, picker }: ProjectSettingsFormProps) {
   const [name, setName] = useState(project.name)
   const [systemPrompt, setSystemPrompt] = useState(project.settings?.customSystemPrompt ?? '')
+  // The project changed on the server (renamed elsewhere, by an agent): a field the person has
+  // not edited follows it, so a later save never writes the old value back.
+  const serverPrompt = project.settings?.customSystemPrompt ?? ''
+  const [seen, setSeen] = useState({ name: project.name, systemPrompt: serverPrompt })
+  if (seen.name !== project.name || seen.systemPrompt !== serverPrompt) {
+    if (name === seen.name) setName(project.name)
+    if (systemPrompt === seen.systemPrompt) setSystemPrompt(serverPrompt)
+    setSeen({ name: project.name, systemPrompt: serverPrompt })
+  }
   const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)

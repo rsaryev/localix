@@ -152,4 +152,53 @@ describe('Vault workspace presentation', () => {
     await act(async () => root.unmount())
     list.mockRestore()
   })
+
+  test('an item removed elsewhere while its editor is open closes the editor', async () => {
+    const React = await import('react')
+    const { act } = React
+    const { createRoot } = await import('react-dom/client')
+    const { secretsApi } = await import('@/shared/api/secretsApi')
+    const { resourceSync } = await import('@/shared/api/resourceSync')
+    const { VaultWorkspace } = await import('./VaultWorkspace')
+    let items = [item({})]
+    const list = spyOn(secretsApi, 'list').mockImplementation(async () => items)
+    const bindings = spyOn(secretsApi, 'bindings').mockResolvedValue([])
+    const activity = spyOn(secretsApi, 'activity').mockResolvedValue([])
+    const container = document.createElement('div')
+    document.body.append(container)
+    const root = createRoot(container)
+    await act(async () => {
+      root.render(<VaultWorkspace requestedKey="PERSONAL_TOKEN" />)
+      await settle()
+    })
+    const trigger = container.querySelector<HTMLElement>('[aria-label="Item actions"]')!
+    await act(async () => {
+      trigger.focus()
+      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      await settle()
+    })
+    const edit = [...document.body.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
+      (entry) => entry.textContent?.includes('Edit metadata'),
+    )
+    await act(async () => {
+      edit!.click()
+      await settle()
+    })
+    expect(document.body.querySelector('[role="dialog"]')).not.toBeNull()
+
+    items = []
+    await act(async () => {
+      resourceSync.invalidate(['vault'])
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await settle()
+    })
+    expect(container.textContent).not.toContain('PERSONAL_TOKEN')
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull()
+
+    await act(async () => root.unmount())
+    container.remove()
+    list.mockRestore()
+    bindings.mockRestore()
+    activity.mockRestore()
+  })
 })

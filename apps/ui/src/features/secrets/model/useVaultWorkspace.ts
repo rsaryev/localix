@@ -126,6 +126,9 @@ export function useVaultWorkspace(requestedKey?: string) {
   }, [items, query, sourceFilter, typeFilter])
 
   const selected = items.find((item) => item.key === selectedKey)
+  // The item being edited or rotated was removed (elsewhere, by an agent): its dialog closes
+  // rather than going on with a blank form for something that is gone.
+  if ((editor === 'edit' || editor === 'rotate') && !loading && !selected) setEditor(null)
   const personalCount = items.filter((item) => item.source === 'user').length
   const managedCount = items.length - personalCount
 

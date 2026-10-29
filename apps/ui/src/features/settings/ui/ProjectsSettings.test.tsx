@@ -108,4 +108,39 @@ describe('project settings presentation', () => {
     })
     update.mockRestore()
   })
+
+  test('a rename made elsewhere shows in the form, and the next save keeps it', async () => {
+    const React = await import('react')
+    const { act } = React
+    const { createRoot } = await import('react-dom/client')
+    const update = spyOn(backendClient, 'updateProject').mockResolvedValue(project)
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    await act(async () => {
+      root.render(<ProjectSettingsForm project={project} />)
+    })
+    const renamed = {
+      ...project,
+      name: 'Renamed',
+      settings: { customSystemPrompt: 'Be brief' },
+    } as Project
+    await act(async () => {
+      root.render(<ProjectSettingsForm project={renamed} />)
+    })
+    expect(container.querySelector('input')?.value).toBe('Renamed')
+    expect(container.querySelector('textarea')?.value).toBe('Be brief')
+
+    await act(async () => {
+      container
+        .querySelector('textarea')
+        ?.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+      await settle()
+    })
+    expect(update.mock.calls[0]?.[1]).toMatchObject({
+      name: 'Renamed',
+      settingsPatch: { customSystemPrompt: 'Be brief' },
+    })
+    await act(async () => root.unmount())
+    update.mockRestore()
+  })
 })

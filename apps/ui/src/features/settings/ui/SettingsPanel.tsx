@@ -7,7 +7,7 @@ import { EditorSettings } from './EditorSettings'
 import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings'
 import { SystemSettings } from './SystemSettings'
 import { PermissionsSettings } from './permissions/PermissionsSettings'
-import { ProjectSettingsForm } from './ProjectsSettings'
+import { ProjectSettingsTab } from './ProjectSettingsTab'
 import { backendClient } from '@/shared/api/client'
 import { toast } from '@/shared/lib/notify'
 import { useSettingsProjects } from '../model/useSettingsProjects'
@@ -21,7 +21,6 @@ import { subscribeSettingsNav, consumeSettingsNav } from '@/shared/lib/settingsN
 import { useSettingsAnchorMaterializer } from '../model/useSettingsAnchorMaterializer'
 import { navigateUi } from '@/shared/lib/uiNavigation'
 import { primarySettingsSection } from '../model/settingsNavigation'
-import { SettingsPage } from './SettingsScaffold'
 
 export type { SettingsTabId }
 
@@ -118,7 +117,6 @@ export function SettingsPanel({
       return <PermissionsSettings projectId={requestedScope ?? defaultScope ?? ''} />
     }
     if (onProjectTab || activeTab === 'project') {
-      const proj = projects.find((p) => p.id === activeProjId)
       // Which project these settings apply to: the page header's action, as every page's own.
       const picker = (
         <ProjectScopeSelect
@@ -130,21 +128,13 @@ export function SettingsPanel({
           }}
         />
       )
-      return proj ? (
-        <ProjectSettingsForm
-          key={proj.id}
-          project={proj}
+      return (
+        <ProjectSettingsTab
+          projects={projects}
+          activeId={activeProjId}
           picker={picker}
-          onDeleted={() => onTabChange?.('preferences')}
+          onClose={() => onTabChange?.('preferences')}
         />
-      ) : (
-        <SettingsPage
-          title="Project"
-          description="Select a project, or create one."
-          actions={picker}
-        >
-          {null}
-        </SettingsPage>
       )
     }
     return null
