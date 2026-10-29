@@ -19,18 +19,26 @@ export interface JudgmentChat {
   sessionId: string
 }
 
-export type DecisionMissReason = Exclude<DecisionOutcome['status'], 'answered'> | 'unsure'
+/**
+ * Why `decide` fell back: the model's own outcome, `unsure` below the confidence asked for, or
+ * `no-host` when this load reaches no decision model at all (a host too old to lend one).
+ */
+export type DecisionMissReason =
+  | Exclude<DecisionOutcome['status'], 'answered'>
+  | 'unsure'
+  | 'no-host'
 
 export type DecisionResult<K extends string> =
   | { pick: K; by: 'model' }
   | { pick: K; by: 'fallback'; reason: DecisionMissReason }
 
 /**
- * Ask a decision model to pick one of `options` for `state`. Below `confidence` (default 0.7), or
- * when no decision model answers, the pick is `fallback`, with the reason.
+ * Ask a decision model to pick one of `options` for `state`, from a route or a tool alike. Below
+ * `confidence` (default 0.7), or when no decision model answers, the pick is `fallback`, with
+ * the reason.
  */
 export async function decide<K extends string>(
-  ctx: Pick<MiniAppContext, 'host'>,
+  ctx: Pick<MiniAppContext, 'host' | 'decisions'>,
   request: JudgmentChat & {
     /** What the decision is for (`triage`): names it in the host's log and usage. */
     purpose: string
@@ -44,13 +52,13 @@ export async function decide<K extends string>(
     deadlineMs?: number
   },
 ): Promise<DecisionResult<K>> {
-  const decisions = ctx.host?.decisions
+  const decisions = ctx.decisions ?? ctx.host?.decisions
   const miss = (reason: DecisionMissReason): DecisionResult<K> => ({
     pick: request.fallback,
     by: 'fallback',
     reason,
   })
-  if (!decisions) return miss('unavailable')
+  if (!decisions) return miss('no-host')
   const outcome = await decisions.decide(
     request.userId,
     {

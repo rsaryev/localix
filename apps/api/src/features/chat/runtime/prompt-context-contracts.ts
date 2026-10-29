@@ -55,6 +55,8 @@ export interface PromptContextDeps {
   miniAppSessionStorage?: LoadMiniAppsOptions['sessionStorageFor']
   /** The agents a mini app may name (`mini-apps/agent-directory.ts`); pure, like the storage. */
   miniAppAgentDirectory?: LoadMiniAppsOptions['agentDirectory']
+  /** The decision model per mini app (`decisions/mini-app-host.ts`); pure, like the storage. */
+  miniAppDecisions?: LoadMiniAppsOptions['decisionsFor']
 }
 
 export interface PreparedRunContext {

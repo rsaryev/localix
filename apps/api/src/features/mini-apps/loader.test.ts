@@ -143,6 +143,19 @@ beforeAll(async () => {
       '}',
     ].join('\n'),
   )
+  await app(
+    'decider',
+    {},
+    [
+      'export function register(ctx) {',
+      '  return { tools: [{ name: "decider_pick", description: "x", inputSchema: {}, execute: async (_id, _input, _signal, _update, context) => {',
+      '    if (!ctx.decisions) return { content: "no decision model" }',
+      '    const outcome = await ctx.decisions.decide(ctx.userId, { state: {}, questions: {} }, { purpose: "pick", sessionId: context.session.id })',
+      '    return { content: `${outcome.status} by ${outcome.model}` }',
+      '  } }] }',
+      '}',
+    ].join('\n'),
+  )
   await app('guided', {})
   await fs.writeFile(join(dir, '.localix', 'mini-apps', 'guided', 'guide.md'), '# Guided\n')
 })
@@ -201,6 +214,27 @@ describe('loadEnabledMiniApps', () => {
     // Changed settings are a new revision of the same scope.
     await load(allowing('counted'), settings('hello'))
     expect(registers()).toBe(first + 2)
+  })
+
+  // A tool's load used to carry no decision model: `decide` in a tool answered `unavailable` in
+  // every chat, while the same call from the app's route reached the model.
+  it("hands a tool's load the decision model, bound to its app, for the chat that calls it", async () => {
+    const loaded = await load(allowing('decider'), {
+      decisionsFor: (miniApp) => ({
+        available: async () => ({ model: 'jev' }),
+        decide: async (_userId, _ask, options) => ({
+          status: 'answered',
+          model: `${miniApp} in ${options.sessionId}`,
+          ms: 1,
+          answers: {},
+        }),
+      }),
+    })
+    const pick = loaded.tools.find((t) => t.name === 'decider_pick')!
+    const result = await pick.execute('c', {}, undefined, undefined, {
+      session: { id: 'chat-1' },
+    } as never)
+    expect(result.content).toBe('answered by decider in chat-1')
   })
 
   it('passes the session cwd to register(ctx)', async () => {

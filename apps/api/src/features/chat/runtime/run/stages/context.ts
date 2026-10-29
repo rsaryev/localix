@@ -21,6 +21,7 @@ import { capabilitiesInMode } from '../../../../capabilities/permission-mode-pol
 import { miniAppProblemNotice } from '../../mini-app-problem-notice'
 import { resolveMiniAppSessionDataDir } from '../../../../mini-apps/session-storage'
 import { createMiniAppAgentDirectory } from '../../../../mini-apps/agent-directory'
+import { createMiniAppDecisionHost } from '../../../../decisions/mini-app-host'
 import { runHumanAssignedHooks } from '../../../../mini-apps/hooks-lifecycle'
 import type { LoadedMiniAppHook } from '../../../../mini-apps/loader-contract'
 import { publishHumanAssignment } from '../human-assignment'
@@ -78,6 +79,17 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
             },
           }),
       }),
+      // A tool's decision model, attributed to its app and billed to the chat it names, behind
+      // the same ownership gate: the route's (boot load) and the tool's answer alike.
+      ...(deps.decisions
+        ? {
+            miniAppDecisions: (app: string) =>
+              createMiniAppDecisionHost(deps.decisions!, app, async (user, session) => {
+                if (!(await env.repo.getSession(user, session)))
+                  throw new Error('Session not found')
+              }),
+          }
+        : {}),
       // The agents a mini app tool may name, behind the same ownership gate: the session is
       // read for the user first, then only the enabled agents of its scope are listed.
       miniAppAgentDirectory: createMiniAppAgentDirectory({

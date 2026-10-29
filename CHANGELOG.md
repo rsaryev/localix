@@ -46,6 +46,9 @@ the rest of Localix asks.
   no longer wait for the page to be opened again.
 - **A package you turned off says so**: its page shows **Enable** instead of **Installed**, and the
   **⋯** menu beside it has **Disable**, which turns it off without removing it.
+- **A mini app's decision model works from the chat**: a mini app that lets a decision model pick
+  for it (a habit's category, a card's column) now gets an answer when the agent uses its tools, not
+  only from its own screen; before, it always fell back to its default.
 - **A plugin you removed installs again**: **Get** on a plugin removed from the Store no longer
   fails with "A plugin already exists at this destination".
 - **A mini app whose screen fails to load says so**: its tabs stay open while the screen is tried

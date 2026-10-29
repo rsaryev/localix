@@ -43,10 +43,11 @@ export function makeContext(
   home: string,
   host?: MiniAppHostServices,
   reportProblem?: MiniAppProblemReporter,
-  /** The per-run load's session storage; the boot load already carries it in `host`. */
-  sessionStorage?: MiniAppContext['sessionStorage'],
-  /** The per-run load's agent directory; the boot load already carries it in `host`. */
-  agents?: MiniAppContext['agents'],
+  /**
+   * What the per-run load (tools, hooks) carries without a `host`: the boot load already has each
+   * in `host`, and both loads hand the mini app the same field on its context.
+   */
+  perRun: Pick<MiniAppContext, 'sessionStorage' | 'agents' | 'decisions'> = {},
 ): MiniAppContext {
   const stateDir = miniAppStateDir(miniAppName, home)
   const dataDir = miniAppDataDir(miniAppName, home)
@@ -96,11 +97,15 @@ export function makeContext(
     dataDir,
     // One folder per session on every load: routes (boot, through `host`) and tools (per run)
     // resolve the same place, so a tool and a route never disagree about a session's data.
-    ...((host?.sessionStorage ?? sessionStorage)
-      ? { sessionStorage: host?.sessionStorage ?? sessionStorage }
+    ...((host?.sessionStorage ?? perRun.sessionStorage)
+      ? { sessionStorage: host?.sessionStorage ?? perRun.sessionStorage }
       : {}),
     // Same rule for the agent directory: a route and a tool resolve a name against one registry.
-    ...((host?.agents ?? agents) ? { agents: host?.agents ?? agents } : {}),
+    ...((host?.agents ?? perRun.agents) ? { agents: host?.agents ?? perRun.agents } : {}),
+    // And for the decision model: `decide` from a tool used to answer `unavailable` in every chat.
+    ...((host?.decisions ?? perRun.decisions)
+      ? { decisions: host?.decisions ?? perRun.decisions }
+      : {}),
     runtime: { ...address, webhookUrl: resolveWebhookUrl() },
     host,
   }

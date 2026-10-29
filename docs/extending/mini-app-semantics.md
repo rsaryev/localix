@@ -29,10 +29,12 @@ returns `null` until the model is ready.
 
 ## Ask a decision model
 
-`ctx.host.decisions` asks a decision model (Jev through OpenRouter) typed questions about a
-structured `state`. A `choice` question picks among option keys and a `bool` question gives the
-probability that a statement is true. All questions are answered in one pass, with probabilities and
-without text.
+`ctx.decisions` asks a decision model (Jev through OpenRouter) typed questions about a structured
+`state`. It is on every load, a route's and a tool's alike (`ctx.host.decisions` is the same one, on
+the route's load only), so pass the chat you were given: `c.env.sessionId` in a route,
+`context.session.id` in a tool. A `choice` question picks among option keys and a `bool` question
+gives the probability that a statement is true. All questions are answered in one pass, with
+probabilities and without text.
 
 `decide(userId, { state, questions }, { purpose, sessionId })` resolves to an outcome. It is
 `answered` with `answers` keyed like your questions; otherwise its status says why: `unavailable`
@@ -44,6 +46,13 @@ user does not own. `available(userId)` says whether a decision would be answered
 
 `confidentChoice(answer, 0.8)` returns a `choice` answer's pick when it reaches that probability,
 else `null`.
+
+`decide(ctx, { userId, sessionId, purpose, state, question, options, fallback })` from
+`@localixai/mini-app-sdk/backend` asks one `choice` question and always answers:
+`{ pick, by: 'model' }`, or `{ pick: fallback, by: 'fallback', reason }`, where `reason` is the
+outcome's status, `unsure` below the confidence asked for, or `no-host` when the load reaches no
+decision model at all. In a tool the agent is a model already: when it can name the pick, take it as
+the tool's input and keep `decide` for the screen and for events no agent sees.
 
 A game whose other side can be the decision model keeps the choice with its table
 (`@localixai/mini-app-sdk/opponent`), asks for a turn with `askDecisionForTurn` (one `choice`

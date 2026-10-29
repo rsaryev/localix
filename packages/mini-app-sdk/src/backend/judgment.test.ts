@@ -82,10 +82,37 @@ describe('decide', () => {
       reason: 'unsure',
     })
     expect(await decide(late, column)).toEqual({ pick: 'todo', by: 'fallback', reason: 'deadline' })
-    expect(await decide(withHost(undefined), column)).toEqual({
+    const none = withHost({
+      decisions: decisionsAnswering({ status: 'unavailable', ms: 0 }),
+    })
+    expect(await decide(none, column)).toEqual({
       pick: 'todo',
       by: 'fallback',
       reason: 'unavailable',
+    })
+  })
+
+  // A tool's load carries the decision model on the context itself, as it does `sessionStorage`:
+  // `host` is the boot load's alone.
+  test('reaches the decision model a tool’s load carries, with no host', async () => {
+    const ctx = {
+      decisions: decisionsAnswering({
+        status: 'answered',
+        model: 'jev',
+        ms: 40,
+        answers: { answer: { type: 'choice', choice: 'done', probabilities: { done: 0.95 } } },
+      }),
+    } as MiniAppContext
+    expect(await decide(ctx, column)).toEqual({ pick: 'done', by: 'model' })
+  })
+
+  // "No model connected" sent the person to their provider settings; a load with no decision
+  // model at all is the app's or the host's to fix, and says so apart.
+  test('says the load has no decision model apart from no model answering', async () => {
+    expect(await decide(withHost(undefined), column)).toEqual({
+      pick: 'todo',
+      by: 'fallback',
+      reason: 'no-host',
     })
   })
 })

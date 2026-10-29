@@ -49,7 +49,7 @@ contract, and the larger ones run to tens of thousands of lines.
 | -------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
 | The chat agent                   | `tools` from `register(ctx)` register with the agent; no glue code                         | [Native module contract](#native-module-contract)                |
 | A turn started by the app        | `ctx.host.wake` with a message and the app's own tools                                     | [Wakes](mini-app-wakes.md)                                       |
-| Decision models                  | `ctx.host.decisions.decide`: typed `choice` and `bool` questions, spend recorded per chat  | [Semantics](mini-app-semantics.md#ask-a-decision-model)          |
+| Decision models                  | `ctx.decisions.decide` or `decide(ctx, …)`: typed questions, spend recorded per chat       | [Semantics](mini-app-semantics.md#ask-a-decision-model)          |
 | Embeddings and semantic search   | `ctx.host.semantic`: index its own items, `query` by meaning, `rank` or `embed` texts      | [Semantics](mini-app-semantics.md)                               |
 | Suggestions in its own fields    | `textInputCompletionSurfaces` and `useMiniAppTextInputCompletion`                          | [Workbench UI](mini-app-ui.md#what-you-can-do)                   |
 | Vault secrets                    | `ctx.host.resolveSecret`, `storeSecret` (a free key only) and `bindSecret`                 | [Vault](../features/secrets.md)                                  |
@@ -61,9 +61,10 @@ contract, and the larger ones run to tens of thousands of lines.
 | Routes and screens               | `routeMount` with `routeValidator`; `ui/register.tsx` built against the host's kit         | [Routes](mini-app-routes.md), [UI](mini-app-ui.md)               |
 | Its own Mac app                  | **Install _Name_ as App** from its tab, rail button or the command palette                 | [Mac apps](../features/mini-app-mac-apps.md)                     |
 
-**Availability:** `ctx.host` and most of its services are optional; a per-run load can lack the
-boot-time ones, so a backend checks before it calls. Decision models need a connection that serves
-one; semantic search answers once its model is on this computer.
+**Availability:** `ctx.host` and most of its services are optional; a per-run load (tools, hooks)
+has no `host`, so a backend checks before it calls. What both loads need is on the context itself:
+`ctx.sessionStorage`, `ctx.agents` and `ctx.decisions`. Decision models need a connection that
+serves one; semantic search answers once its model is on this computer.
 
 ## How it works
 

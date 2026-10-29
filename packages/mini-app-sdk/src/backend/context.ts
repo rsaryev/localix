@@ -4,6 +4,7 @@ import type { z } from 'zod'
 import type { UiNavigationAction } from '../ui/anchors'
 import type { MiniAppHelpers } from './helpers'
 import type { MiniAppOAuth } from './oauth'
+import type { DecisionHost } from './decision'
 import type { MiniAppHostServices } from './host-services'
 import type { TerminalRead } from './terminal-read'
 
@@ -255,6 +256,13 @@ export interface MiniAppContext {
    */
   agents?: MiniAppAgentDirectory
   /**
+   * The decision model (see {@link DecisionHost}), attributed to this mini app. Present on every
+   * load — the boot-time backend (routes) and each run's tools alike — so `decide` answers the
+   * same from a route and from a tool. Name the chat the host gave you (`c.env.sessionId`,
+   * `context.session.id`): its owner is checked and its spend recorded there.
+   */
+  decisions?: DecisionHost
+  /**
    * Host runtime facts (address + inbound-webhook URL). Use this instead of
    * reconstructing the host's address from env — the host is the authority on
    * how it can be reached (it knows the real HOST/PORT and the route path).
@@ -263,7 +271,9 @@ export interface MiniAppContext {
   /**
    * Generic host-service capabilities for a bundled BACKEND subsystem (see
    * {@link MiniAppHostServices}). Present only on the boot-time backend load; a mini app
-   * that reads it must tolerate its absence (undefined) on the per-run tool/hook load.
+   * that reads it must tolerate its absence (undefined) on the per-run tool/hook load. What
+   * both loads need is on the context itself: {@link sessionStorage}, {@link agents},
+   * {@link decisions}.
    */
   host?: MiniAppHostServices
 }

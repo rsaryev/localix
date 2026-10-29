@@ -19,7 +19,7 @@ const context = (host?: MiniAppHostServices, perRun?: ReturnType<typeof storage>
     join(tmpdir(), 'localix-native-session-storage-home'),
     host,
     undefined,
-    perRun,
+    perRun ? { sessionStorage: perRun } : {},
   )
 
 describe('session storage on the mini app context', () => {

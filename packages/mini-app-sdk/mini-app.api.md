@@ -3935,11 +3935,16 @@ export declare const GameStatus: (props: {
 ```ts
 export declare const GetButton: (props: {
     emphasis?: "quiet" | "strong";
+    menu?: {
+        choose?: boolean | undefined;
+        entries: MenuEntry[];
+        label: string;
+    };
     name: string;
     onPress?: (() => void);
     size?: "lg" | "md" | "sm";
     state: GetState;
-} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "emphasis" | "name" | "onPress" | "size" | "state"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "emphasis" | "menu" | "name" | "onPress" | "size" | "state"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
 ### GetButtonProps
@@ -4041,6 +4046,11 @@ export type GetButtonProps = {
     itemType?: string | undefined;
     key?: React.Key | null | undefined;
     lang?: string | undefined;
+    menu?: undefined | {
+        choose?: boolean | undefined;
+        entries: MenuEntry[];
+        label: string;
+    };
     name: string;
     nonce?: string | undefined;
     onAbort?: React.ReactEventHandler<HTMLButtonElement> | undefined;
@@ -4246,6 +4256,8 @@ export type GetButtonProps = {
 
 ```ts
 export type GetState = {
+    kind: "enable";
+} | {
     kind: "get";
 } | {
     kind: "installed";
@@ -7893,7 +7905,7 @@ export interface DecisionHost {
 ### DecisionMissReason
 
 ```ts
-export type DecisionMissReason = 'unsure' | Exclude<DecisionOutcome['status'], 'answered'>;
+export type DecisionMissReason = 'no-host' | 'unsure' | Exclude<DecisionOutcome['status'], 'answered'>;
 ```
 
 ### DecisionOptions
@@ -8365,6 +8377,7 @@ export interface MiniAppContext {
         }[]>;
     };
     agents?: MiniAppAgentDirectory;
+    decisions?: DecisionHost;
     runtime: MiniAppRuntimeInfo;
     host?: MiniAppHostServices;
 }
@@ -9995,7 +10008,7 @@ export declare function createWsFrameRegistry(): WsFrameRegistry;
 ### decide
 
 ```ts
-export declare function decide<K extends string>(ctx: Pick<MiniAppContext, 'host'>, request: JudgmentChat & {
+export declare function decide<K extends string>(ctx: Pick<MiniAppContext, 'decisions' | 'host'>, request: JudgmentChat & {
     confidence?: number;
     deadlineMs?: number;
     fallback: NoInfer<K>;
@@ -21246,6 +21259,80 @@ type IconComponent = React.ComponentClass<{
 }, any> | React.FunctionComponent<{
     className?: string | undefined;
 }>;
+```
+
+### kit/get-button.d.ts#IconComponent
+
+```ts
+type IconComponent = React.ComponentClass<{
+    className?: string | undefined;
+}, any> | React.FunctionComponent<{
+    className?: string | undefined;
+}>;
+```
+
+### kit/get-button.d.ts#MenuActionEntry
+
+```ts
+type MenuActionEntry = {
+    checked?: boolean | undefined;
+    chordId?: string | undefined;
+    danger?: boolean | undefined;
+    description?: string | undefined;
+    disabled?: boolean | undefined;
+    hint?: string | undefined;
+    icon?: IconComponent | undefined;
+    id: string;
+    keepOpen?: boolean | undefined;
+    label: string;
+    onSelect: () => void;
+    recommended?: boolean | undefined;
+    selected?: boolean | undefined;
+    trailingAction?: undefined | {
+        checked?: boolean | undefined;
+        disabled?: boolean | undefined;
+        icon: IconComponent;
+        label: string;
+        onSelect: () => void;
+    };
+};
+```
+
+### kit/get-button.d.ts#MenuEntry
+
+```ts
+type MenuEntry = MenuActionEntry | MenuHeaderEntry | MenuSeparatorEntry | MenuSubmenuEntry;
+```
+
+### kit/get-button.d.ts#MenuHeaderEntry
+
+```ts
+type MenuHeaderEntry = {
+    header: string;
+};
+```
+
+### kit/get-button.d.ts#MenuSeparatorEntry
+
+```ts
+type MenuSeparatorEntry = {
+    separator: true;
+};
+```
+
+### kit/get-button.d.ts#MenuSubmenuEntry
+
+```ts
+type MenuSubmenuEntry = {
+    description?: string | undefined;
+    disabled?: boolean | undefined;
+    emptyLabel?: string | undefined;
+    hint?: string | undefined;
+    icon?: IconComponent | undefined;
+    id: string;
+    items: readonly MenuEntry[];
+    label: string;
+};
 ```
 
 ### kit/hover-card.d.ts#Boundary

@@ -76,6 +76,8 @@ export interface LoadMiniAppsOptions {
   reportProblem?: MiniAppProblemSink
   sessionStorageFor?: (app: string) => NonNullable<MiniAppHostServices['sessionStorage']>
   agentDirectory?: MiniAppHostServices['agents']
+  /** The decision model for the per-run load, attributed to each app (the boot load's is in `host`). */
+  decisionsFor?: (app: string) => NonNullable<MiniAppHostServices['decisions']>
 }
 
 /**
@@ -134,8 +136,11 @@ export async function loadEnabledMiniApps(opts: LoadMiniAppsOptions): Promise<Lo
       opts.homeDir,
       opts.hostForMiniApp?.(app.name) ?? opts.host,
       miniAppProblemReporter(opts.userId, opts.reportProblem),
-      opts.sessionStorageFor?.(app.name),
-      opts.agentDirectory,
+      {
+        sessionStorage: opts.sessionStorageFor?.(app.name),
+        agents: opts.agentDirectory,
+        decisions: opts.decisionsFor?.(app.name),
+      },
     )
 
     // Hashed: the revision is compared and kept, and the settings can hold secrets.

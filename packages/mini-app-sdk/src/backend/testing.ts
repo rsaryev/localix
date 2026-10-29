@@ -44,6 +44,9 @@ export async function testMiniAppContext(options: {
     sessionStorage: {
       resolveDataDir: async (_userId: string, sessionId: string) => join(root, 'chats', sessionId),
     },
+    // What every real load carries is on the context, as the host puts it there: a tool test then
+    // reaches the decision model through the same field the tool's own load gives it.
+    ...(options.host?.decisions ? { decisions: options.host.decisions } : {}),
     ...(options.host ? { host: options.host } : {}),
     [Symbol.asyncDispose]: () => rm(root, { recursive: true, force: true }),
   }
