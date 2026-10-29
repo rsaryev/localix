@@ -83,8 +83,12 @@ export function formatElapsed(milliseconds: number): string {
 // call, and a sidebar row older than a week calls this on every render.
 const SHORT_DATE = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' })
 
-export function formatRelativeTime(timestamp: number): string {
-  const seconds = Math.floor((Date.now() - timestamp) / 1000)
+/**
+ * `now`, `5m`, `3h`, `2d`, then a short date. A view that stays on screen passes the time from a
+ * clock (`useNow`): read here during render, the built app's React Compiler keeps the first answer.
+ */
+export function formatRelativeTime(timestamp: number, now = Date.now()): string {
+  const seconds = Math.floor((now - timestamp) / 1000)
   const minutes = Math.floor(seconds / 60)
   const hours = Math.floor(minutes / 60)
   const days = Math.floor(hours / 24)

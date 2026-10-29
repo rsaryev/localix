@@ -22,12 +22,14 @@ import { ListSkeleton } from './PagedList'
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { Switch } from '@localixai/kit/switch'
 import { TRUST_LABELS, ago, plural, SOURCE_LABELS } from '../model/presentation'
+import { useNow } from '@localixai/mini-app-sdk/ui/now'
 import { useStoreScope } from '../model/storeContext'
 import { useStoreSources } from '../model/useStoreData'
 
 /** One source: who it is, how many packages, when it was read, its switch and its menu. */
 function SourceRow({ source, onRemove }: { source: SourceView; onRemove: () => void }) {
   const store = useStoreScope()
+  const now = useNow(60_000)
   const captionId = useId()
   const titleId = useId()
   const entries: MenuEntry[] = [
@@ -86,7 +88,7 @@ function SourceRow({ source, onRemove }: { source: SourceView; onRemove: () => v
             </span>
             <span className="truncate text-xs text-text-soft">
               {plural(source.count, 'package')}
-              {source.syncedAt && ` · read ${ago(source.syncedAt)}`}
+              {source.syncedAt && ` · read ${ago(source.syncedAt, now)}`}
               {' · '}
               {source.url}
             </span>

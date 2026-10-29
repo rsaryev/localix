@@ -21,25 +21,16 @@ import { useSyncExternalStore } from 'react'
  */
 const present = new Set<string>()
 const listeners = new Set<() => void>()
-let version = 0
+/** What a render reads: replaced, never changed, so a new answer is a new value. */
+let snapshot: ReadonlySet<string> = new Set()
 
 /** Report (from an effect, never during render) whether one item currently draws anything. */
 export function reportStatusItemPresence(id: string, live: boolean): void {
   if (present.has(id) === live) return
   if (live) present.add(id)
   else present.delete(id)
-  version += 1
+  snapshot = new Set(present)
   for (const listener of listeners) listener()
-}
-
-/**
- * Whether one item drew something the last time its slot rendered.
- *
- * False also covers "has not reported yet", which is the right reading for both callers: an item
- * nobody has heard from cannot be placed, and it must still be allowed to draw its first frame.
- */
-export function isStatusItemPresent(id: string): boolean {
-  return present.has(id)
 }
 
 function subscribe(listener: () => void): () => void {
@@ -49,11 +40,18 @@ function subscribe(listener: () => void): () => void {
   }
 }
 
-function stamp(): number {
-  return version
+function current(): ReadonlySet<string> {
+  return snapshot
 }
 
-/** The re-read signal for anything laid out on the live set. */
-export function useStatusItemPresence(): number {
-  return useSyncExternalStore(subscribe, stamp, stamp)
+/**
+ * The ids that drew something the last time their slot rendered, for anything laid out on the live
+ * set. Absent also covers "has not reported yet", the right reading for both callers: an item
+ * nobody has heard from cannot be placed, and it must still be allowed to draw its first frame.
+ *
+ * A value, not a signal beside a getter: the built app's React Compiler keeps a render's call to a
+ * module function on its arguments, so such a call kept its first answer.
+ */
+export function useStatusItemPresence(): ReadonlySet<string> {
+  return useSyncExternalStore(subscribe, current, current)
 }

@@ -79,3 +79,13 @@ function toolCardsVersion(): number {
 export function useToolCardsVersion(): number {
   return useSyncExternalStore(subscribeToolCards, toolCardsVersion, toolCardsVersion)
 }
+
+/**
+ * {@link toolCardFor} as a render reads it: the answer is the hook's value, read again on every
+ * registration or toggle. A call beside {@link useToolCardsVersion} is not enough in the built app,
+ * whose React Compiler keeps the call on its argument and so kept the generic card.
+ */
+export function useToolCardFor(tool: string): ToolCardContribution | undefined {
+  const read = () => toolCardFor(tool)
+  return useSyncExternalStore(subscribeToolCards, read, read)
+}

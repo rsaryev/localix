@@ -8,7 +8,7 @@ import { BrowserCard } from './BrowserCard'
 import { PlanToolCard } from './PlanToolCard'
 import { AgentCard, SendMessageCard, TaskStopCard } from './AgentCards'
 import { isCoreToolMetaName, type PresentableToolName } from './meta'
-import { toolCardFor } from '@/shared/contrib/toolCards'
+import { toolCardFor, useToolCardFor } from '@/shared/contrib/toolCards'
 
 export type ToolCardComponent = ComponentType<{ item: ToolCallItem }>
 
@@ -62,4 +62,10 @@ export function getToolCard(name: string): ToolCardComponent | undefined {
 export function contributedToolCard(name: string): ToolCardComponent | undefined {
   if (isCoreToolMetaName(name)) return undefined
   return toolCardFor(name)?.Component
+}
+
+/** {@link contributedToolCard} for a render: it follows registrations made after it mounted. */
+export function useContributedToolCard(name: string): ToolCardComponent | undefined {
+  const contribution = useToolCardFor(name)
+  return isCoreToolMetaName(name) ? undefined : contribution?.Component
 }

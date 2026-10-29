@@ -2,8 +2,13 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import type { StatusItemState } from '@localixai/mini-app-sdk/ui'
 import { registerDom } from '@localixai/kit/testing/dom'
 
+import { compileLikeTheBuild } from '@/testing/reactCompiler'
 import { setEnabledMiniAppNames } from './miniAppActivation'
-import { registerStatusItem, StatusItems, statusItemsFor } from './statusItems'
+
+// The bars as the desktop build ships them: a strip that keeps its first answer there still
+// updates uncompiled.
+compileLikeTheBuild(/shared\/contrib\/statusItems\.tsx$/)
+const { registerStatusItem, StatusItems, statusItemsFor } = await import('./statusItems')
 
 /** Every fixture owner, so the activation gate lets them through — see the fail-closed test. */
 const FIXTURE_MINI_APPS = [

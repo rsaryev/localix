@@ -11,7 +11,7 @@ import {
 import { IconButton } from '@localixai/kit/icon-button'
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
-import { storeOpenAddress } from '@/shared/lib/storeInstallExtra'
+import { useStoreOpenAddress } from '@/shared/lib/storeInstallExtra'
 import { getStateOf } from '../model/getState'
 import { useStoreScope } from '../model/storeContext'
 import { KIND_SCOPES } from '../model/useStoreActions'
@@ -28,12 +28,13 @@ export const GetAction = memo(function GetAction({
   size?: 'sm' | 'md'
 }) {
   const store = useStoreScope()
+  const opens = Boolean(useStoreOpenAddress(listing))
   if (listing.incompatible)
     return <span className="text-2xs text-text-faint">{listing.incompatible}</span>
   return (
     <GetButton
       name={listing.displayName}
-      state={getStateOf(listing, Boolean(storeOpenAddress(listing)))}
+      state={getStateOf(listing, opens)}
       size={size}
       onPress={() => store.get(listing)}
     />
@@ -48,7 +49,7 @@ export const GetAction = memo(function GetAction({
  */
 export function PageGetAction({ listing, className }: { listing: Listing; className?: string }) {
   const store = useStoreScope()
-  const state = getStateOf(listing, Boolean(storeOpenAddress(listing)))
+  const state = getStateOf(listing, Boolean(useStoreOpenAddress(listing)))
   const project = store.project
   const scopes = KIND_SCOPES[listing.ref.kind].filter((scope) => scope === 'user' || project)
   const installedIn = new Set(listing.installs.map((install) => install.scope))

@@ -1,13 +1,8 @@
-import { useMemo, useSyncExternalStore } from 'react'
+import { useMemo } from 'react'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { invokeUi } from '@/shared/lib/uiNavigation'
 import type { PaletteCommand } from './uiCommands'
-import {
-  buildUiLocationUri,
-  listUiLocations,
-  subscribeUiLocations,
-  uiLocationRevision,
-} from './uiLocations'
+import { buildUiLocationUri, useUiLocations } from './uiLocations'
 
 /**
  * Palette adapter over the live location catalog. A feature opts in once in its
@@ -18,30 +13,27 @@ import {
  */
 export function useUiLocationCommands(sessionId: string | null): PaletteCommand[] {
   const navigation = useUiNavigation({ sessionId })
-  const revision = useSyncExternalStore(
-    subscribeUiLocations,
-    uiLocationRevision,
-    uiLocationRevision,
-  )
+  const locations = useUiLocations('palette')
 
-  return useMemo(() => {
-    void revision
-    return listUiLocations({ exposure: 'palette' }).flatMap((location) => {
-      const access = location.effect === 'write' ? { allowWrite: true as const } : {}
-      const uri = buildUiLocationUri(location.id, {}, access)
-      if (!uri) return []
-      return [
-        {
-          id: `ui-location.${location.id}`,
-          label: location.title,
-          group: location.group ?? 'View',
-          effect: location.effect,
-          keywords: [...location.keywords],
-          run: () => {
-            invokeUi(uri, navigation, access)
+  return useMemo(
+    () =>
+      locations.flatMap((location) => {
+        const access = location.effect === 'write' ? { allowWrite: true as const } : {}
+        const uri = buildUiLocationUri(location.id, {}, access)
+        if (!uri) return []
+        return [
+          {
+            id: `ui-location.${location.id}`,
+            label: location.title,
+            group: location.group ?? 'View',
+            effect: location.effect,
+            keywords: [...location.keywords],
+            run: () => {
+              invokeUi(uri, navigation, access)
+            },
           },
-        },
-      ]
-    })
-  }, [navigation, revision])
+        ]
+      }),
+    [navigation, locations],
+  )
 }

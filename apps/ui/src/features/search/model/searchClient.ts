@@ -110,6 +110,8 @@ export function searchUiLocations(
 export function buildClientGroups(opts: {
   query: string
   commands?: SearchCommandEntry[]
+  /** The searchable places, from `useUiLocations('search')` in a render. */
+  locations?: readonly UiLocationDescriptor[]
   limit?: number
 }): SearchGroup[] {
   const limit = opts.limit ?? 6
@@ -123,7 +125,7 @@ export function buildClientGroups(opts: {
       hits: settings.slice(0, limit),
       total: settings.length,
     })
-  const locations = searchUiLocations(opts.query)
+  const locations = searchUiLocations(opts.query, opts.locations)
   if (locations.length) {
     groups.push({
       domain: 'ui',

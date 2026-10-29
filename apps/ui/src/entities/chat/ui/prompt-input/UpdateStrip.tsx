@@ -10,7 +10,7 @@ import { storeApi } from '@/shared/api/store-client'
 import { useStoreRecommendations } from '@/shared/hooks/useStoreRecommendations'
 import {
   isUpdateOfferDismissed,
-  useUpdateDismissals,
+  useHiddenUpdateOffer,
 } from '@/shared/lib/background-activity/dismissals'
 import { openStore } from '@/shared/lib/openStore'
 import { useChatStore } from '../../model/store'
@@ -82,7 +82,7 @@ export const UpdateStrip = memo(function UpdateStrip({ isFocused }: { isFocused:
 function FocusedUpdateStrip() {
   const { state, applyUpdate, noticeDismissed, dismissNotice } = useDesktopUpdate({ poll: false })
   const { updates } = useBackgroundActivity()
-  useUpdateDismissals()
+  const hidden = useHiddenUpdateOffer()
   if (state?.available && (!noticeDismissed || state.installing)) {
     return (
       <UpdateRow
@@ -92,7 +92,7 @@ function FocusedUpdateStrip() {
       />
     )
   }
-  if (updates.some((each) => each.id !== 'app' && !isUpdateOfferDismissed(each)))
+  if (updates.some((each) => each.id !== 'app' && !isUpdateOfferDismissed(each, hidden)))
     return <UpdateOffersRow offers={updates} />
   return <RecommendationsStrip />
 }

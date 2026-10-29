@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import type { UiSession } from '@/shared/api/contracts'
 import { StatusDot } from '@localixai/kit/status-dot'
 import { formatRelativeTime } from '@localixai/mini-app-sdk/ui/utilities'
+import { useNow } from '@localixai/mini-app-sdk/ui/now'
 
 import { attentionBySession } from '../model/attention/select'
 import { useAttentionStore } from '../model/attention/store'
@@ -75,14 +76,18 @@ export function SessionRowContent({
   )
 }
 
+/** The labels count whole minutes, so a minute's clock keeps them right. */
+const MINUTE = 60_000
+
 /** The same time and status column for root conversations and nested sessions. */
 export function SessionRowTimestamp({ session }: { session: UiSession }) {
+  const now = useNow(MINUTE)
   return (
     <span
       className="text-2xs tabular-nums text-sidebar-foreground/45"
       title={`Updated ${new Date(session.updatedAt).toLocaleString()}`}
     >
-      {formatRelativeTime(session.updatedAt)}
+      {formatRelativeTime(session.updatedAt, now)}
     </span>
   )
 }

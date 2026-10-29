@@ -1,6 +1,10 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import type { ToolCallItem } from '@localixai/agent/agents'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { compileLikeTheBuild } from '@/testing/reactCompiler'
+
+// The transcript's dispatcher as the desktop build ships it.
+compileLikeTheBuild(/tool-parts\/ItemView\.tsx$/)
 
 let teardown: () => Promise<void>
 
@@ -233,6 +237,37 @@ describe('subagent cards', () => {
       expect(stop.title()).toBe('Stop bg-2')
     } finally {
       await stop.dispose()
+    }
+  })
+})
+
+describe('ItemView and a mini app card', () => {
+  test("a mini app's card registered after the call painted replaces the generic one", async () => {
+    const { setEnabledMiniAppNames } = await import('@/shared/contrib/miniAppActivation')
+    const { registerToolCard, removeToolCardsOf } = await import('@/shared/contrib/toolCards')
+    setEnabledMiniAppNames(new Set(['late-card']))
+    const view = await mount(call('late_board'), false)
+    try {
+      expect(view.host.textContent).not.toContain('Board card')
+      await view.act(async () =>
+        registerToolCard({
+          tool: 'late_board',
+          miniAppName: 'late-card',
+          presentation: {
+            label: 'Board',
+            noun: 'boards',
+            verb: 'Updating',
+            Icon: () => null,
+            stackable: false,
+          },
+          Component: () => <p>Board card</p>,
+        }),
+      )
+      expect(view.host.textContent).toContain('Board card')
+    } finally {
+      await view.dispose()
+      removeToolCardsOf('late-card')
+      setEnabledMiniAppNames(null)
     }
   })
 })

@@ -8,7 +8,7 @@ import {
   markRecommendationsSeen,
   recommendationKey,
   unseenRecommendations,
-  useRecommendationsSeen,
+  useSeenRecommendations,
 } from '@/shared/lib/recommendationsSeen'
 
 /**
@@ -33,10 +33,10 @@ export function RecommendationsRow({
   /** The package it names is on screen (the Store counts it as shown). */
   onShown?: (named: readonly Listing[]) => void
 }) {
-  useRecommendationsSeen()
+  const seen = useSeenRecommendations()
   const suited = answer.listings.slice(0, answer.matched)
   const keys = suited.map((listing) => recommendationKey(listing.ref))
-  const fresh = unseenRecommendations(keys)
+  const fresh = unseenRecommendations(keys, seen)
   const told = fresh.length ? suited.slice(0, 1) : []
   const toldKey = told.map((listing) => recommendationKey(listing.ref)).join(',')
   useHoldComposerAdvice(fresh.length > 0)

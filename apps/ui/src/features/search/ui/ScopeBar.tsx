@@ -1,7 +1,7 @@
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { SELECTED_ROW } from '@localixai/kit/selected-row'
 import { TogglePill } from '@localixai/kit/toggle-pill'
-import { ALL_SCOPE, allScopes, type ScopeDef } from '../model/scopes'
+import { ALL_SCOPE, type ScopeDef, useSearchScopes } from '../model/scopes'
 import { searchIconEl } from './searchIcons'
 
 /**
@@ -18,7 +18,7 @@ export function ScopeBar({
   scope: ScopeDef
   onPick: (id: string | null) => void
 }) {
-  const pills = [ALL_SCOPE, ...allScopes()]
+  const pills = [ALL_SCOPE, ...useSearchScopes()]
   return (
     <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
       {pills.map((s) => {

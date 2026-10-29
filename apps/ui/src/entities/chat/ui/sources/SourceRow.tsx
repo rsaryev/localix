@@ -2,7 +2,7 @@ import { createElement } from 'react'
 import { Braces, ExternalLink, FileText, Globe2 } from 'lucide-react'
 import type { AgentSource } from '@localixai/agent/agents'
 
-import { canNavigateUi, navigateUi, type UiNavigationHost } from '@/shared/lib/uiNavigation'
+import { navigateUi, useCanNavigateUi, type UiNavigationHost } from '@/shared/lib/uiNavigation'
 import { refKindIcon } from '../refKindPresentation'
 import { ExternalAnchor } from '@/shared/ui/external-anchor'
 
@@ -65,7 +65,8 @@ export function SourceRow({
   onNavigate?: () => void
 }) {
   const href = httpHref(source.uri)
-  const internal = !href && canNavigateUi(source.uri)
+  const navigable = useCanNavigateUi(source.uri)
+  const internal = !href && navigable
   const sourceGlyph = sourceIcon(source, href)
   const domain = sourceDomain(source)
   const badge =

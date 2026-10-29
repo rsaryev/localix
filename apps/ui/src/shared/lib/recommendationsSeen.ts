@@ -14,7 +14,8 @@ const KEPT = 200
 export const recommendationKey = (ref: { kind: string; id: string }) => `${ref.kind}:${ref.id}`
 
 const listeners = new Set<() => void>()
-let revision = 0
+/** The stored list last read, and the set made of it: a new set only when the list changed. */
+let told: { raw: string | null; keys: ReadonlySet<string> } | null = null
 const subscribe = (listener: () => void) => {
   listeners.add(listener)
   return () => void listeners.delete(listener)
@@ -36,20 +37,28 @@ export function markRecommendationsSeen(keys: readonly string[]): void {
   if (!fresh.length) return
   // A blocked store keeps nothing; the notice then shows again on the next launch.
   saveString(SEEN, JSON.stringify([...known, ...fresh].slice(-KEPT)))
-  revision += 1
   for (const listener of listeners) listener()
 }
 
-/** The keys among these the person has not been told about. */
-export function unseenRecommendations(keys: readonly string[]): string[] {
-  const known = new Set(seen())
-  return keys.filter((key) => !known.has(key))
+/** The keys among these the person has not been told about; `seen` from {@link useSeenRecommendations}. */
+export function unseenRecommendations(
+  keys: readonly string[],
+  seen: ReadonlySet<string>,
+): string[] {
+  return keys.filter((key) => !seen.has(key))
 }
 
-/** Re-render when something is marked seen, in this window. */
-export const useRecommendationsSeen = (): number =>
-  useSyncExternalStore(
-    subscribe,
-    () => revision,
-    () => 0,
-  )
+const EMPTY: ReadonlySet<string> = new Set()
+function current(): ReadonlySet<string> {
+  const raw = loadString(SEEN)
+  if (told?.raw !== raw) told = { raw, keys: new Set(seen()) }
+  return told.keys
+}
+
+/**
+ * What the person has been told about, read again when something is marked seen in this window. A
+ * value rather than a re-render signal: the built app's React Compiler keeps a render's call to a
+ * module function on its arguments, so the notice stayed after it was seen.
+ */
+export const useSeenRecommendations = (): ReadonlySet<string> =>
+  useSyncExternalStore(subscribe, current, () => EMPTY)

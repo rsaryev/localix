@@ -39,14 +39,20 @@ export function useStoreSources(client: StoreClient) {
   return useSWR(['store-sources', generation], () => client.sources(), { keepPreviousData: true })
 }
 
-const detailKey = (ref: ListingRef, projectId: string | null) =>
-  ['store-detail', ref.kind, ref.id, projectId, resourceGeneration('store')] as const
+const detailKey = (ref: ListingRef, projectId: string | null, generation: number) =>
+  ['store-detail', ref.kind, ref.id, projectId, generation] as const
 
+/**
+ * The generation is passed in, never read inside the key: the React Compiler memoizes the key on
+ * its arguments, so a key that read it itself stayed on the first one and the page never re-read.
+ */
 export function useListingDetail(client: StoreClient, ref: ListingRef, projectId: string | null) {
-  useResourceGeneration('store')
-  return useSWR(detailKey(ref, projectId), () => client.detail(ref, projectId ?? undefined), {
-    keepPreviousData: true,
-  })
+  const generation = useResourceGeneration('store')
+  return useSWR(
+    detailKey(ref, projectId, generation),
+    () => client.detail(ref, projectId ?? undefined),
+    { keepPreviousData: true },
+  )
 }
 
 /** The kinds whose provider can make a new item, and the form of one. */
@@ -90,9 +96,9 @@ export function useListingConfig(
  * lands in the cache the page reads, so the page opens on it; a second ask is the same request.
  */
 export function prefetchDetail(client: StoreClient, ref: ListingRef, projectId: string | null) {
-  void preload(detailKey(ref, projectId), () => client.detail(ref, projectId ?? undefined)).catch(
-    () => {},
-  )
+  void preload(detailKey(ref, projectId, resourceGeneration('store')), () =>
+    client.detail(ref, projectId ?? undefined),
+  ).catch(() => {})
 }
 
 /** The plan, read only when it is shown: it may fetch the package. */

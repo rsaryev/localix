@@ -1,4 +1,4 @@
-import { memo, useReducer } from 'react'
+import { memo } from 'react'
 import { CircleDollarSign } from 'lucide-react'
 import type { ChatUsagePayload } from '@localixai/agent'
 import { formatCost } from '../../model/usageFormat'
@@ -6,6 +6,7 @@ import {
   dismissSpendAlert,
   isSpendAlertVisible,
   spendLevel,
+  useDismissedSpendLevel,
   useSpendThreshold,
 } from '@/shared/lib/spendAlert'
 import { WorkbenchNoticeBar } from '@localixai/kit/workbench-notice-bar'
@@ -63,15 +64,15 @@ export const SpendAlertStrip = memo(function SpendAlertStrip({
   sessionUsage?: ChatUsagePayload
 }) {
   const threshold = useSpendThreshold()
-  const [, bump] = useReducer((n: number) => n + 1, 0)
+  const dismissed = useDismissedSpendLevel(sessionId)
 
   const cost = sessionUsage?.totalCost
-  const level = spendLevel(cost)
+  const level = spendLevel(cost, threshold)
   if (
     !sessionId ||
     threshold <= 0 ||
     sessionUsage?.costSource === 'subscription' ||
-    !isSpendAlertVisible(sessionId, level)
+    !isSpendAlertVisible(level, dismissed)
   ) {
     return null
   }
@@ -81,10 +82,7 @@ export const SpendAlertStrip = memo(function SpendAlertStrip({
       cost={cost ?? 0}
       threshold={threshold}
       level={level}
-      onDismiss={() => {
-        dismissSpendAlert(sessionId, level)
-        bump()
-      }}
+      onDismiss={() => dismissSpendAlert(sessionId, level)}
     />
   )
 })

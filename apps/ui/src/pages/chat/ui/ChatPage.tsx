@@ -45,7 +45,7 @@ import { FolderTree } from 'lucide-react'
 import { discoverUi } from '@/shared/contrib/discover'
 import { standaloneApp } from '@/shared/lib/standaloneApp'
 import { useMiniApp } from '../model/useMiniApp'
-import { railSectionRegistry, railViewletRegistry } from '@/shared/contrib/uiContrib'
+import { MiniAppBackgroundMounts, useContributedRailSections } from './MiniAppRail'
 import { useSystemToggle } from '@/shared/hooks/useSystemToggle'
 import { useIsMobile, isMobileViewport } from '@/shared/hooks/useIsMobile'
 import { initialSidebarOpen, rememberSidebarOpen } from '../model/sidebarOpenState'
@@ -73,9 +73,7 @@ import {
   subscribeRuntimeStatus,
   type RuntimeStatus,
 } from '@/shared/lib/runtimeReady'
-import { capabilityResourceUri } from '@localixai/mini-app-sdk/navigation'
 import { WorkspaceConnectionStatus } from './WorkspaceConnectionStatus'
-import { SurfaceErrorBoundary } from '@/shared/ui/SurfaceErrorBoundary'
 
 // The Files rail is closed on the common chat startup path. Its tree, search,
 // drag/drop, source-control decoration, and mutation graph should be paid for
@@ -421,29 +419,7 @@ export function ChatPage() {
     setConfirmKeepAwake,
   })
 
-  // Rail sections contributed by bundled subsystems via the open registry. Mapped
-  // to the shell's RailSection shape; workbench sections default into the "…"
-  // overflow, matching the core db entry.
-  const contributedRailSections = useMemo(() => {
-    void enabledMiniAppNames
-    return railSectionRegistry.list().map((s) => ({
-      id: s.id,
-      icon: <s.Icon className="size-4.5" />,
-      label: s.title,
-      content: <s.Sidebar />,
-      defaultArea: 'overflow' as const,
-      miniApp: true,
-      miniAppName: s.miniAppName,
-      resourceUri: capabilityResourceUri({
-        kind: 'view',
-        id: s.id,
-        scope: capabilityScope,
-        label: s.title,
-        description: `View contributed by ${s.miniAppName || 'a mini app'}`,
-        enabled: true,
-      }),
-    }))
-  }, [capabilityScope, enabledMiniAppNames])
+  const contributedRailSections = useContributedRailSections(capabilityScope)
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -572,39 +548,7 @@ export function ChatPage() {
       </Suspense>
       {hasHydrated && (
         <>
-          {/* Always-mounted subsystem lifecycle components contributed via the open
-          registries (render null) — core mounts them generically, naming none. A
-          rail SECTION's Mount (e.g. k8s port-forward cleanup) and a rail VIEWLET's
-          Mount components both land here. */}
-          {/* Each behind its own boundary. These are ALWAYS mounted, so a mini app that throws
-              here is strictly worse than one that throws in a tab: without containment it takes
-              the workspace down at composition, on every start, with no tab to close. The
-              fallback renders nothing visible for a render-null component — the console name and
-              the surviving app are the signal. */}
-          {railSectionRegistry.list().flatMap((s) =>
-            s.Mount
-              ? [
-                  <SurfaceErrorBoundary
-                    key={`mount:${s.id}`}
-                    surface={`The ${s.id} background`}
-                    fallback="silent"
-                  >
-                    <s.Mount />
-                  </SurfaceErrorBoundary>,
-                ]
-              : [],
-          )}
-          {railViewletRegistry.list().map((v) =>
-            v.Mount ? (
-              <SurfaceErrorBoundary
-                key={`vmount:${v.kind}`}
-                surface={`The ${v.kind} background`}
-                fallback="silent"
-              >
-                <v.Mount />
-              </SurfaceErrorBoundary>
-            ) : null,
-          )}
+          <MiniAppBackgroundMounts />
           {commandPaletteMounted && (
             <Suspense fallback={null}>
               <CommandPalette

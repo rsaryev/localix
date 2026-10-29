@@ -13,7 +13,6 @@ import type { UpdateOffer } from './activityItems'
 const DISMISSED_STORE_UPDATES = 'localix.update.dismissed.store'
 
 const listeners = new Set<() => void>()
-let revision = 0
 const subscribe = (listener: () => void) => {
   listeners.add(listener)
   return () => void listeners.delete(listener)
@@ -23,19 +22,23 @@ export function dismissUpdateOffer(offer: Pick<UpdateOffer, 'id' | 'fingerprint'
   if (offer.id === 'app') return
   // A blocked store keeps nothing; the offer then shows again on the next launch.
   saveString(DISMISSED_STORE_UPDATES, offer.fingerprint)
-  revision += 1
   for (const listener of listeners) listener()
 }
 
-export function isUpdateOfferDismissed(offer: Pick<UpdateOffer, 'id' | 'fingerprint'>): boolean {
-  if (offer.id === 'app') return false
-  return loadString(DISMISSED_STORE_UPDATES) === offer.fingerprint
+/** Whether `offer` is the one hidden; `hidden` is what {@link useHiddenUpdateOffer} returned. */
+export function isUpdateOfferDismissed(
+  offer: Pick<UpdateOffer, 'id' | 'fingerprint'>,
+  hidden: string | null,
+): boolean {
+  return offer.id !== 'app' && hidden === offer.fingerprint
 }
 
-/** Re-render when an offer is hidden, in this window. */
-export const useUpdateDismissals = (): number =>
-  useSyncExternalStore(
-    subscribe,
-    () => revision,
-    () => 0,
-  )
+const hiddenOffer = () => loadString(DISMISSED_STORE_UPDATES)
+
+/**
+ * The fingerprint of the offer hidden, read again when one is hidden in this window. A value
+ * rather than a re-render signal: the built app's React Compiler keeps a render's call to a module
+ * function on its arguments, so a hidden offer stayed on screen.
+ */
+export const useHiddenUpdateOffer = (): string | null =>
+  useSyncExternalStore(subscribe, hiddenOffer, () => null)

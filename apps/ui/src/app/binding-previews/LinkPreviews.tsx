@@ -6,6 +6,7 @@ import { ItemView } from '@/entities/chat/ui/tool-parts/ItemView'
 import { ToolTimingProvider } from '@/entities/chat/ui/tool-parts/toolTimingContext'
 import type { UiSession } from '@/shared/api/contracts'
 import { formatRelativeTime } from '@/shared/ui/code-editor/inlineBlame'
+import { useNow } from '@localixai/mini-app-sdk/ui/now'
 import { MarkdownRenderer } from '@/shared/ui/MarkdownRenderer'
 import {
   findToolCall,
@@ -27,7 +28,7 @@ const text = (binding: MessageContextBindingDraft, name: string) => {
   const value = binding.target.attributes?.[name]
   return typeof value === 'string' && value ? value : undefined
 }
-const ago = (ms: number) => formatRelativeTime(Math.floor(ms / 1000))
+const ago = (ms: number, now: number) => formatRelativeTime(Math.floor(ms / 1000), now)
 
 function Gone({ what, className }: { what: string; className?: string }) {
   return <p className={cn('px-3 py-2 text-2xs text-text-faint', className)}>{what}</p>
@@ -52,6 +53,7 @@ export function SessionPreview({ binding, className }: PreviewProps) {
   const listed = useListedSession(ref)
   const linked = useLinkedSession(ref)
   const session = linked.state === 'ready' ? linked.session : listed
+  const now = useNow(60_000)
   if (!session)
     return linked.state === 'loading' ? null : <Gone what="This session is not on this machine." />
   const status = STATUS[session.runtimeStatus] ?? STATUS.idle
@@ -75,7 +77,7 @@ export function SessionPreview({ binding, className }: PreviewProps) {
           </>
         )}
         <span>·</span>
-        <span className="shrink-0">{ago(session.updatedAt)}</span>
+        <span className="shrink-0">{ago(session.updatedAt, now)}</span>
       </div>
       {/* The last word as the chat renders it — clipped to three lines, never raw markdown. */}
       {said && (

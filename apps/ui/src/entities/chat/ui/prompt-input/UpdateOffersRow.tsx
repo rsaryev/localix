@@ -6,7 +6,7 @@ import type { UpdateOffer } from '@/shared/lib/background-activity/activityItems
 import {
   dismissUpdateOffer,
   isUpdateOfferDismissed,
-  useUpdateDismissals,
+  useHiddenUpdateOffer,
 } from '@/shared/lib/background-activity/dismissals'
 
 /**
@@ -16,8 +16,8 @@ import {
  * shows how far it is instead of its action. The app's own update has its own row.
  */
 export function UpdateOffersRow({ offers }: { offers: readonly UpdateOffer[] }) {
-  useUpdateDismissals()
-  const offer = offers.find((each) => each.id !== 'app' && !isUpdateOfferDismissed(each))
+  const hidden = useHiddenUpdateOffer()
+  const offer = offers.find((each) => each.id !== 'app' && !isUpdateOfferDismissed(each, hidden))
   if (!offer) return null
   return (
     <WorkbenchNoticeBar

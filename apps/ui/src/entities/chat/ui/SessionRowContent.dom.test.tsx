@@ -1,7 +1,11 @@
-import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, describe, expect, jest, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { AttentionItem } from '@localixai/api/client'
 import type { UiSession } from '@/shared/api/contracts'
+import { compileLikeTheBuild } from '@/testing/reactCompiler'
+
+// The rows as the desktop build ships them.
+compileLikeTheBuild(/entities\/chat\/ui\/SessionRowContent\.tsx$/)
 
 let teardown: () => Promise<void>
 const cleanups: Array<() => unknown> = []
@@ -63,5 +67,25 @@ describe('the sidebar row badge', () => {
 
   test('falls back to the unread dot when nothing waits', async () => {
     expect(await badge([], { isUnread: true })).toBe('Unread conversation')
+  })
+})
+
+describe('the time beside a session', () => {
+  test('moves on while the row stays on screen', async () => {
+    jest.useFakeTimers({ now: Date.parse('2026-10-29T12:00:00Z') })
+    const React = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { SessionRowTimestamp } = await import('./SessionRowContent')
+    const host = document.createElement('div')
+    const root = createRoot(host)
+    cleanups.push(async () => {
+      await React.act(async () => root.unmount())
+      jest.useRealTimers()
+    })
+    const session = { id: 's1', updatedAt: Date.now() } as UiSession
+    await React.act(async () => root.render(<SessionRowTimestamp session={session} />))
+    expect(host.textContent).toBe('now')
+    await React.act(async () => void jest.advanceTimersByTime(5 * 60_000))
+    expect(host.textContent).toBe('5m')
   })
 })

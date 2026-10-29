@@ -1,5 +1,6 @@
-import type { ComponentType } from 'react'
+import { useCallback, type ComponentType } from 'react'
 import type { Listing } from '@localixai/store'
+import { useMiniAppRegistrySlice } from '@/shared/contrib/useMiniAppRegistrySlice'
 
 /**
  * Something a listing can get beside a plain install, offered by the feature that knows which
@@ -69,6 +70,20 @@ export function storeOpenAddress(listing: Listing): string | undefined {
     if (address) return address
   }
   return undefined
+}
+
+const openKey = (listing: Listing) =>
+  `store-open:${listing.ref.kind}:${listing.ref.id}:${listing.installs.length}`
+
+/**
+ * {@link storeOpenAddress} for a render. An opener answers from what the mini apps registered (an
+ * installed mini app's screen), which loads after the install lands: read through the registries'
+ * subscription, Get turns into Open once it is there. A plain call kept its first answer in the
+ * built app, whose React Compiler memoizes it on the listing alone.
+ */
+export function useStoreOpenAddress(listing: Listing): string | undefined {
+  const select = useCallback(() => storeOpenAddress(listing), [listing])
+  return useMiniAppRegistrySlice(openKey(listing), select)
 }
 
 /** Every extra offered here. */

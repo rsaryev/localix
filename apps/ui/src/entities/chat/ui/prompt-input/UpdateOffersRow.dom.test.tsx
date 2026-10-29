@@ -1,6 +1,10 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { compileLikeTheBuild } from '@/testing/reactCompiler'
 import type { UpdateOffer } from '@/shared/lib/background-activity/activityItems'
+
+// The row as the desktop build ships it.
+compileLikeTheBuild(/prompt-input\/UpdateOffersRow\.tsx$/)
 
 let teardown: () => Promise<void>
 beforeAll(() => {

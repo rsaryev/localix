@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { SearchInput } from '@localixai/kit/search-input'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'
 import { Search } from 'lucide-react'
@@ -12,7 +12,7 @@ import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { activateSearchHit } from '../model/activateSearch'
 import { buildClientGroups, mergeClientGroups } from '../model/searchClient'
 import { getUiCommands } from '@/shared/contrib/uiCommands'
-import { subscribeUiLocations, uiLocationRevision } from '@/shared/contrib/uiLocations'
+import { useUiLocations } from '@/shared/contrib/uiLocations'
 import { ALL_SCOPE } from '../model/scopes'
 import { ScopeBar } from './ScopeBar'
 import { SearchProjectScope } from './SearchProjectScope'
@@ -38,11 +38,7 @@ export function GlobalSearchTab({
   // B's hits once the person switched chats.
   const sessionId = useWorkItemSessionId()
   const { projectId, projects } = useSearchProject(sessionId)
-  const uiLocationsRevision = useSyncExternalStore(
-    subscribeUiLocations,
-    uiLocationRevision,
-    uiLocationRevision,
-  )
+  const searchable = useUiLocations('search')
   const search = useGlobalSearch({ initialQuery, initialScope, sessionId, projectId })
   const activate = useUiNavigation({
     sessionId,
@@ -104,14 +100,16 @@ export function GlobalSearchTab({
   // Settings is a client-only navigation domain merged alongside the server groups
   // (the ⌘⇧F palette additionally merges Commands). Show them all when Settings is
   // the focused scope.
-  const clientGroups = useMemo(() => {
-    void uiLocationsRevision
-    return buildClientGroups({
-      query: trimmed,
-      commands: getUiCommands(),
-      limit: search.scope.clientOnly ? 100 : 6,
-    })
-  }, [trimmed, search.scope.clientOnly, uiLocationsRevision])
+  const clientGroups = useMemo(
+    () =>
+      buildClientGroups({
+        query: trimmed,
+        commands: getUiCommands(),
+        locations: searchable,
+        limit: search.scope.clientOnly ? 100 : 6,
+      }),
+    [trimmed, search.scope.clientOnly, searchable],
+  )
   const displayGroups = useMemo(
     () => mergeClientGroups(search.scope, search.groups, clientGroups),
     [search.scope, search.groups, clientGroups],

@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { SearchGroup } from '@localixai/api/client'
 import { searchApi, SearchApiError } from '../api/searchApi'
-import { ALL_SCOPE, parseScope, scopeById, scopeToDomains, type ScopeDef } from './scopes'
+import {
+  ALL_SCOPE,
+  parseScope,
+  scopeById,
+  scopeToDomains,
+  type ScopeDef,
+  useSearchScopes,
+} from './scopes'
 import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { SearchRequestCoordinator, type SearchRequestTicket } from './searchRequestCoordinator'
 import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
@@ -112,7 +119,8 @@ export function useGlobalSearch(opts: UseGlobalSearchOptions = {}): GlobalSearch
     return () => clearTimeout(t)
   }, [queryText, debounceMs])
 
-  const scope = scopeById(scopeId) ?? ALL_SCOPE
+  const scopes = useSearchScopes()
+  const scope = scopeById(scopeId, scopes) ?? ALL_SCOPE
   const clientOnly = !!scope.clientOnly
   const scopedMode = scope.id !== ALL_SCOPE.id && !clientOnly
 

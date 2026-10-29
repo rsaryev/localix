@@ -2,6 +2,10 @@ import { afterAll, afterEach, beforeAll, describe, expect, mock, spyOn, test } f
 import { registerDom } from '@localixai/kit/testing/dom'
 import { answer, listing, SOURCES } from '@/testing/store'
 import { stubStoreLayout } from '@/testing/storeLayout'
+import { compileLikeTheBuild } from '@/testing/reactCompiler'
+
+// The Get button as the desktop build ships it.
+compileLikeTheBuild(/features\/store\/ui\/GetAction\.tsx$/)
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -32,7 +36,7 @@ const board = listing({
  * tab (one board per chat) in the rail, and a chat open beside it. Every request the Store sends
  * to the grid is recorded.
  */
-async function mountStore(target: { shelf?: string; ref?: unknown }) {
+async function mountStore(target: { shelf?: string; ref?: unknown }, late = false) {
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { SWRConfig } = await import('swr')
@@ -48,16 +52,22 @@ async function mountStore(target: { shelf?: string; ref?: unknown }) {
   const { registerUi, withdrawUi } = await import('@/features/mini-app-store/contrib')
   const { registerInspectorHandler } = await import('@/shared/lib/inspectorBus')
   const { useChatStore } = await import('@/entities/chat/model/store')
+  const { flushRegistryChanges } = await import('@/shared/contrib/registryChanges')
   const Nothing = () => null
   const host = miniAppUiHostFor('sample')
-  host.workItems.register({ kind: KIND, Component: Nothing, Icon: Nothing, scope: 'session' })
-  host.railViewlets.register({
-    kind: KIND,
-    title: 'Sample board',
-    label: 'Sample',
-    Icon: Nothing,
-    defaultArea: 'bar',
-  })
+  // The mini app's screen: registered by its UI chunk, which may load after the page painted.
+  const loadMiniAppUi = () => {
+    host.workItems.register({ kind: KIND, Component: Nothing, Icon: Nothing, scope: 'session' })
+    host.railViewlets.register({
+      kind: KIND,
+      title: 'Sample board',
+      label: 'Sample',
+      Icon: Nothing,
+      defaultArea: 'bar',
+    })
+    flushRegistryChanges()
+  }
+  if (!late) loadMiniAppUi()
   setEnabledMiniAppNames(new Set(['sample']))
   registerUi(host)
   const opened: Array<Record<string, unknown>> = []
@@ -90,6 +100,11 @@ async function mountStore(target: { shelf?: string; ref?: unknown }) {
     [...mount.querySelectorAll<HTMLButtonElement>('button')].find(
       (b) => b.textContent?.trim() === 'Open',
     )
+  if (late) {
+    for (let turn = 0; turn < 20; turn++)
+      await React.act(() => new Promise<void>((resolve) => setImmediate(resolve)))
+    await React.act(async () => loadMiniAppUi())
+  }
   for (let turn = 0; turn < 100 && !openButton(); turn++)
     await React.act(() => new Promise<void>((resolve) => setImmediate(resolve)))
   expect(openButton()).toBeDefined()
@@ -109,5 +124,13 @@ describe('Open on an installed mini app in the Store', () => {
 
   test('a tile on the Discover shelf opens it', async () => {
     expectOpened(await mountStore({ shelf: 'package:mini-app' }))
+  })
+
+  test("the package page offers Open once the mini app's screen has loaded", async () => {
+    expectOpened(await mountStore({ ref: { kind: 'mini-app', id: 'sample' } }, true))
+  })
+
+  test("a tile offers Open once the mini app's screen has loaded", async () => {
+    expectOpened(await mountStore({ shelf: 'package:mini-app' }, true))
   })
 })

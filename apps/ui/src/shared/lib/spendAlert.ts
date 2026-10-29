@@ -54,9 +54,9 @@ export function useSpendThreshold(): number {
  * threshold it has crossed. 0 = under budget (or alert off). Used both to decide
  * whether to show the strip and to re-alert when spend climbs into a new bracket.
  */
-export function spendLevel(costUsd: number | undefined): number {
-  if (threshold <= 0 || costUsd === undefined || costUsd <= 0) return 0
-  return Math.floor(costUsd / threshold)
+export function spendLevel(costUsd: number | undefined, budget: number): number {
+  if (budget <= 0 || costUsd === undefined || costUsd <= 0) return 0
+  return Math.floor(costUsd / budget)
 }
 
 // Ephemeral per-session dismissal: the highest level the user has dismissed.
@@ -68,14 +68,35 @@ export function spendLevel(costUsd: number | undefined): number {
 // ancient session is still open and re-crosses the threshold — acceptable. A render's
 // visibility check `peek`s, so only a dismissal counts as a use.
 const dismissedLevel = createBoundedCache<string, number>({ maxEntries: 500 })
+const dismissalListeners = new Set<() => void>()
 
-/** True when the strip for this session+level is not currently dismissed. */
-export function isSpendAlertVisible(sessionId: string, level: number): boolean {
-  if (level < 1) return false
-  return (dismissedLevel.peek(sessionId) ?? 0) < level
+/** True when the strip at `level` is above the one dismissed ({@link useDismissedSpendLevel}). */
+export function isSpendAlertVisible(level: number, dismissed: number): boolean {
+  return level >= 1 && dismissed < level
 }
 
 /** Suppress the strip for this session until spend crosses a higher multiple. */
 export function dismissSpendAlert(sessionId: string, level: number): void {
   dismissedLevel.set(sessionId, level)
+  for (const fn of dismissalListeners) fn()
+}
+
+function subscribeDismissals(fn: () => void): () => void {
+  dismissalListeners.add(fn)
+  return () => dismissalListeners.delete(fn)
+}
+
+/**
+ * The level dismissed for this session, 0 for none, read again on a dismissal. A value rather than
+ * a re-render beside a lookup: the built app's React Compiler keeps a render's call to a module
+ * function on its arguments, so a dismissed strip stayed on screen.
+ */
+export function useDismissedSpendLevel(sessionId: string | null): number {
+  const read = () => (sessionId ? dismissedSpendLevel(sessionId) : 0)
+  return useSyncExternalStore(subscribeDismissals, read, read)
+}
+
+/** The level dismissed for this session, 0 for none, outside a render. */
+export function dismissedSpendLevel(sessionId: string): number {
+  return dismissedLevel.peek(sessionId) ?? 0
 }

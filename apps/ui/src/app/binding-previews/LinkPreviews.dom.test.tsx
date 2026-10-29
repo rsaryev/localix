@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, jest, spyOn, test } from 'bun:test'
 import type { MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
 import { createMessageBindingDraft } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import type { UiSession } from '@/shared/api/contracts'
@@ -97,6 +97,20 @@ describe('a link to the conversation, drawn outside the chat', () => {
       } finally {
         await view.dispose()
       }
+    }
+  })
+
+  test('how long ago the session moved keeps counting while the card stays up', async () => {
+    jest.useFakeTimers({ now: Date.now() })
+    const view = await mount(createMessageBindingDraft('session', 's1', 'old title'))
+    try {
+      expect(view.text()).toContain('3 minutes ago')
+      const { act } = await import('react')
+      await act(async () => void jest.advanceTimersByTime(10 * 60_000))
+      expect(view.text()).toContain('13 minutes ago')
+    } finally {
+      jest.useRealTimers()
+      await view.dispose()
     }
   })
 

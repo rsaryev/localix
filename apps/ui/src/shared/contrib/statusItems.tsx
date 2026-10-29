@@ -2,11 +2,7 @@ import { Component, useEffect, useSyncExternalStore, type ReactNode } from 'reac
 import type { StatusItemContribution, StatusItemState } from '@localixai/mini-app-sdk/ui'
 
 import { isMiniAppContributionEnabled, subscribeMiniAppActivation } from './miniAppActivation'
-import {
-  isStatusItemPresent,
-  reportStatusItemPresence,
-  useStatusItemPresence,
-} from './statusItemPresence'
+import { reportStatusItemPresence, useStatusItemPresence } from './statusItemPresence'
 import { StatusItemControl } from '@/shared/ui/status-item'
 
 const contributions = new Map<string, StatusItemContribution>()
@@ -63,20 +59,33 @@ function subscribeStatusItems(listener: () => void): () => void {
   }
 }
 
-function statusItemsVersion(): number {
-  return version
+/** Each placement's answer at the version it was read: the same list until something moves. */
+const snapshots = new Map<string, { version: number; items: StatusItemContribution[] }>()
+
+function statusItemsSnapshot(placement: string): StatusItemContribution[] {
+  const known = snapshots.get(placement)
+  if (known?.version === version) return known.items
+  const items = statusItemsFor(placement)
+  snapshots.set(placement, { version, items })
+  return items
 }
 
 /**
- * The re-read signal every host bar needs: a registration, or a change to which mini apps are on.
+ * The items every host bar shows for one placement, read again on a registration or a change to
+ * which mini apps are on.
  *
  * It replaces `useMiniAppContribVersion()`, which was the wrong store for this. That counter
  * advances only when the capability SET moves, so a relaunch that restores the previous session's
  * mini apps — same revision, same names — published its snapshot without ever bumping it, and the
  * titlebar stayed empty for the whole session.
+ *
+ * The list is the hook's value rather than a signal beside a call to {@link statusItemsFor}: the
+ * built app's React Compiler keeps such a call on its arguments (the placement), so the bar kept
+ * the items it found at mount.
  */
-export function useStatusItemsVersion(): number {
-  return useSyncExternalStore(subscribeStatusItems, statusItemsVersion, statusItemsVersion)
+export function useStatusItemsFor(placement: string): StatusItemContribution[] {
+  const read = () => statusItemsSnapshot(placement)
+  return useSyncExternalStore(subscribeStatusItems, read, read)
 }
 
 /**
@@ -106,8 +115,11 @@ export function statusItemsFor(placement: string): StatusItemContribution[] {
  * where it was, not at the end. That is the whole reason this filters a sorted list rather than
  * keeping its own.
  */
-export function liveStatusItemsFor(placement: string): StatusItemContribution[] {
-  return statusItemsFor(placement).filter((item) => isStatusItemPresent(item.id))
+function liveOf(
+  items: readonly StatusItemContribution[],
+  present: ReadonlySet<string>,
+): StatusItemContribution[] {
+  return items.filter((item) => present.has(item.id))
 }
 
 /**
@@ -181,9 +193,8 @@ export class StatusItemBoundary extends Component<
 /**
  * Render every contributed item for one placement.
  *
- * {@link useStatusItemsVersion} is the re-read signal: a mini app registering an item, or being
- * enabled or disabled, changes what `statusItemsFor` returns, and nothing else would tell React to
- * ask again.
+ * {@link useStatusItemsFor} reads the items again when a mini app registers one or is enabled or
+ * disabled, and nothing else would tell React to ask again.
  */
 export function StatusItems({
   placement,
@@ -206,13 +217,12 @@ export function StatusItems({
   compact?: boolean
   renderOverflow?: (hidden: StatusItemContribution[]) => ReactNode
 }) {
-  useStatusItemsVersion()
-  useStatusItemPresence()
-  const items = statusItemsFor(placement)
+  const items = useStatusItemsFor(placement)
+  const present = useStatusItemPresence()
   // The window is spent on items that are DRAWING. Slicing the declarations instead is what put
   // four glyphs and a dead `…` in a titlebar with ten mini apps: six of the ten slots went to items
   // whose `useItem` returns `null` for this session, and the two that overflowed were `null` too.
-  const live = items.filter((item) => isStatusItemPresent(item.id))
+  const live = liveOf(items, present)
   const visible = new Set((max === undefined ? live : live.slice(0, max)).map((item) => item.id))
   const hidden = max === undefined ? [] : live.slice(max)
 
@@ -228,7 +238,7 @@ export function StatusItems({
             // Its first frame, before it has reported anything: draw. An item whose place is the
             // overflow menu settles there on the next frame, whereas an item held back until it
             // has proven itself would make every strip open empty.
-            visible={visible.has(contribution.id) || !isStatusItemPresent(contribution.id)}
+            visible={visible.has(contribution.id) || !present.has(contribution.id)}
           />
         </StatusItemBoundary>
       ))}
@@ -245,8 +255,7 @@ export function StatusItems({
  * strip that sized itself on that would re-shape as the user moves between sessions.
  */
 export function useStatusItemCount(placement: string): number {
-  useStatusItemsVersion()
-  return statusItemsFor(placement).length
+  return useStatusItemsFor(placement).length
 }
 
 /**
@@ -261,9 +270,7 @@ export function useStatusItemCount(placement: string): number {
  * exactly the frame `fitStatusStrip` has no measurement for either, and it renders everything.
  */
 export function useLiveStatusItemCount(placement: string): number {
-  useStatusItemsVersion()
-  useStatusItemPresence()
-  return liveStatusItemsFor(placement).length
+  return liveOf(useStatusItemsFor(placement), useStatusItemPresence()).length
 }
 
 /**

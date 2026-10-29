@@ -13,8 +13,7 @@ import { CommandCard } from './cards/CommandCard'
 import { FileChangeCard } from './cards/FileChangeCard'
 import { McpCard } from './cards/McpCard'
 import { GenericToolCard } from './cards/GenericToolCard'
-import { contributedToolCard, getToolCard } from './cards/registry'
-import { useToolCardsVersion } from '@/shared/contrib/toolCards'
+import { getToolCard, type ToolCardComponent, useContributedToolCard } from './cards/registry'
 import type { PresentableToolName } from './cards/meta'
 import { useToolEventFocus } from './eventFocusTarget'
 import { useRevealEnd } from '../useRunEventFocus'
@@ -35,7 +34,11 @@ const INTERACTIVE: Partial<Record<PresentableToolName, (item: ToolCallItem) => R
   AskUserQuestion: (item) => <AskToolPart item={item} />,
 }
 
-function renderItemInner(item: AgentItem, isForeign: boolean) {
+function renderItemInner(
+  item: AgentItem,
+  isForeign: boolean,
+  Contributed: ToolCardComponent | undefined,
+) {
   switch (item.type) {
     case 'text':
     case 'reasoning':
@@ -70,7 +73,6 @@ function renderItemInner(item: AgentItem, isForeign: boolean) {
       // A mini app's card for its own tool comes BEFORE the navigation sniff: the card
       // owns its output, an offered destination included, and a bare button would hide
       // everything else the call returned.
-      const Contributed = contributedToolCard(item.name)
       if (Contributed) return <Contributed item={item} />
       // Standard serialized navigation actions are tool-name agnostic: built-ins
       // and mini apps without a card get the same minimal, host-resolved button.
@@ -99,9 +101,9 @@ export const ItemView = memo(function ItemView({ item }: { item: AgentItem }) {
   // ToolLine reads it via context and renders the explain-shield for any card.
   const gate = 'toolCallId' in item ? (item.gate ?? null) : null
   const isForeign = useIsForeignTranscript()
-  // A mini app's card registers after the transcript painted; subscribing re-renders this item
-  // into it instead of leaving the generic card up until the item next changes.
-  useToolCardsVersion()
+  // A mini app's card registers after the transcript painted; reading it through a subscription
+  // re-renders this item into it instead of leaving the generic card up until the item changes.
+  const Contributed = useContributedToolCard(item.type === 'tool_call' ? item.name : '')
   return (
     <div
       data-event-tool-target={dragRef?.toolCallId}
@@ -111,7 +113,7 @@ export const ItemView = memo(function ItemView({ item }: { item: AgentItem }) {
         <ToolCallDragContext.Provider value={dragRef}>
           <ToolActionsProvider actions={'actions' in item ? item.actions : undefined}>
             <ToolGateContext.Provider value={gate}>
-              {renderItemInner(item, isForeign)}
+              {renderItemInner(item, isForeign, Contributed)}
             </ToolGateContext.Provider>
           </ToolActionsProvider>
         </ToolCallDragContext.Provider>

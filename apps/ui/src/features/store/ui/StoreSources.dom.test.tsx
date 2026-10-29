@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, jest, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { ADA, HOSTED, listing, renderStore } from '@/testing/store'
 
@@ -71,6 +71,20 @@ describe('the Store’s sources', () => {
       expect(apps.querySelector('h3')?.textContent).toBe('Mini app catalogs')
     } finally {
       await view.done()
+    }
+  })
+
+  test('when a source was read keeps counting while the page stays open', async () => {
+    jest.useFakeTimers({ now: Date.now() })
+    const view = await open()
+    try {
+      const apps = () => view.host.querySelector('section[aria-label="Mini app catalogs"]')!
+      expect(apps().textContent).toContain('read 3 hours ago')
+      await view.act(async () => void jest.advanceTimersByTime(3_600_000))
+      expect(apps().textContent).toContain('read 4 hours ago')
+    } finally {
+      await view.done()
+      jest.useRealTimers()
     }
   })
 

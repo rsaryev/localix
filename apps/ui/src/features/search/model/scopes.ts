@@ -15,6 +15,7 @@
  */
 
 import { searchDomainScopes } from '@/shared/contrib/searchDomains'
+import { useMiniAppRegistrySlice } from '@/shared/contrib/useMiniAppRegistrySlice'
 
 export interface ScopeDef {
   /** Backend provider id / client domain — the `domains` value sent to the endpoint. */
@@ -155,11 +156,23 @@ export function allScopes(): ScopeDef[] {
   return [...serverBase, ...contributed, ...clientBase]
 }
 
-/** Resolve a scope by its id (including `all`); undefined when unknown. */
-export function scopeById(id: string | null | undefined): ScopeDef | undefined {
+/**
+ * {@link allScopes} as a render reads it: read again when a mini app's search domain registers or
+ * is switched. A plain call kept the scopes found at mount in the built app, whose React Compiler
+ * memoizes it.
+ */
+export function useSearchScopes(): ScopeDef[] {
+  return useMiniAppRegistrySlice('search-scopes', allScopes)
+}
+
+/** Resolve a scope by its id (including `all`) among `scopes`; undefined when unknown. */
+export function scopeById(
+  id: string | null | undefined,
+  scopes: readonly ScopeDef[] = allScopes(),
+): ScopeDef | undefined {
   if (!id) return undefined
   if (id === ALL_SCOPE.id) return ALL_SCOPE
-  return allScopes().find((s) => s.id === id)
+  return scopes.find((s) => s.id === id)
 }
 
 /**

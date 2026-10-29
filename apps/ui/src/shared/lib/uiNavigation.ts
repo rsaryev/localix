@@ -1,8 +1,13 @@
+import { useSyncExternalStore } from 'react'
 import type { UiAnchorOpenResult, UiNavigationAction } from '@localixai/mini-app-sdk/ui'
 import { parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
 import { resolveUiAnchor } from '@/shared/contrib/uiAnchors'
-import { hasUiCommand, uiCommandEffect } from '@/shared/contrib/uiCommands'
-import { isRegisteredUiLocationUri, resolveUiLocation } from '@/shared/contrib/uiLocations'
+import { hasUiCommand, subscribeUiCommands, uiCommandEffect } from '@/shared/contrib/uiCommands'
+import {
+  isRegisteredUiLocationUri,
+  resolveUiLocation,
+  subscribeUiLocations,
+} from '@/shared/contrib/uiLocations'
 import { parseSettingsAnchorUri } from './settingsAnchors'
 import { requestUiReveal } from './uiTargetRegistry'
 
@@ -105,6 +110,25 @@ export function resolveUiNavigation(
 
 export function canNavigateUi(uri: string): boolean {
   return resolveUiNavigation(uri) !== null
+}
+
+function subscribeUiDestinations(listener: () => void): () => void {
+  const stopLocations = subscribeUiLocations(listener)
+  const stopCommands = subscribeUiCommands(listener)
+  return () => {
+    stopLocations()
+    stopCommands()
+  }
+}
+
+/**
+ * `canNavigateUi` for a render: the answer follows the registries, so a place a mini app adds
+ * after the row painted (an install, an enable) makes it clickable. A plain call is memoized on
+ * `uri` by the React Compiler in the built app and keeps its first answer.
+ */
+export function useCanNavigateUi(uri: string): boolean {
+  const read = () => canNavigateUi(uri)
+  return useSyncExternalStore(subscribeUiDestinations, read, read)
 }
 
 /**
