@@ -57,8 +57,8 @@ Localix is not running), so the agent reads the SDK's declarations inside the ap
    data model, the tools and the screen. After every edit, the plugin's hook reports what in that
    file breaks Localix's rules.
 3. `mini-app check` runs template residue (including an icon that is still the template's),
-   manifest, style, routes, store media, message context, the backend and UI builds, types and
-   tests, and reports each.
+   manifest, style, routes, store media, message context, private keys, the backend and UI builds,
+   types and tests, and reports each.
 4. `mini-app install` builds the package — the built backend and UI, the manifest, guide and icon,
    without sources or tests — and hands it to the running Localix, which validates it, installs it
    under `~/.localix/mini-apps/<name>` and switches it on. Installing again from the same folder
