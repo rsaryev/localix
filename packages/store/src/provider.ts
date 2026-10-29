@@ -6,8 +6,8 @@ import type {
   ListingConfig,
   ShelfPlan,
 } from './config'
+import type { Editorial } from './collections'
 import type {
-  Editorial,
   InstallPlan,
   Listing,
   ListingDetail,

@@ -1,7 +1,4 @@
 export {
-  collectionSchema,
-  collectionStyleSchema,
-  editorialSchema,
   COMPONENT_KINDS,
   PACKAGE_KINDS,
   componentKindSchema,
@@ -22,10 +19,9 @@ export {
   TRUSTS,
   trustSchema,
 } from './contract'
+export { collectionSchema, collectionStyleSchema, editorialSchema } from './collections'
+export type { Collection, CollectionStyle, Editorial } from './collections'
 export type {
-  Collection,
-  CollectionStyle,
-  Editorial,
   ComponentKind,
   InstallPlan,
   JobPhase,
@@ -82,16 +78,6 @@ export {
   listingParamsSchema,
   listingsQuerySchema,
   listingsResponseSchema,
-  recommendDismissalSchema,
-  recommendDismissalsSchema,
-  recommendEventSchema,
-  recommendEventsSchema,
-  recommendStatsSchema,
-  recommendQuerySchema,
-  recommendReadSchema,
-  recommendReasonSchema,
-  recommendRequestSchema,
-  recommendResponseSchema,
   shelfActionsResponseSchema,
   shelfRunRequestSchema,
   sourceInputSchema,
@@ -104,13 +90,32 @@ export {
   storeFacetsSchema,
   storeProblemSchema,
   updatesApplyResponseSchema,
-  workingReferenceSchema,
 } from './routes'
 export type {
   DiscoverResponse,
   ListingsQuery,
   ListingsResponse,
   OpenersResponse,
+  ShelfActionsResponse,
+  SourcesResponse,
+  StoreActivity,
+  StoreFacets,
+  StoreProblem,
+} from './routes'
+export {
+  recommendDismissalSchema,
+  recommendDismissalsSchema,
+  recommendEventSchema,
+  recommendEventsSchema,
+  recommendStatsSchema,
+  recommendQuerySchema,
+  recommendReadSchema,
+  recommendReasonSchema,
+  recommendRequestSchema,
+  recommendResponseSchema,
+  workingReferenceSchema,
+} from './recommend-routes'
+export type {
   RecommendDismissal,
   RecommendDismissals,
   RecommendEvent,
@@ -118,13 +123,8 @@ export type {
   RecommendReason,
   RecommendRequest,
   RecommendResponse,
-  ShelfActionsResponse,
-  SourcesResponse,
-  StoreActivity,
-  StoreFacets,
-  StoreProblem,
   WorkingReference,
-} from './routes'
+} from './recommend-routes'
 export {
   BROWSABLE_COMPONENT_KINDS,
   PACKAGE_SHELF_KINDS,

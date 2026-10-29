@@ -1,4 +1,3 @@
-import { useSyncExternalStore } from 'react'
 import type {
   ResolvedUiLocation,
   UiAgentLocationCatalogSnapshot,
@@ -285,24 +284,3 @@ export const uiAgentLocationCatalogSnapshot = (): UiAgentLocationCatalogSnapshot
 })
 export const subscribeUiLocations = (listener: () => void): (() => void) =>
   registry.subscribe(listener)
-
-/** Each audience's list at the revision it was read: the same array until a location moves. */
-const listed = new Map<string, { revision: number; locations: UiLocationDescriptor[] }>()
-
-/**
- * {@link listUiLocations} as a render reads it: the list is the hook's value, read again when a
- * location is registered or removed. A list read beside a revision kept its first answer in the
- * built app, whose React Compiler memoizes on what a body reads and drops `void revision`.
- */
-export function useUiLocations(exposure?: UiLocationAudience): UiLocationDescriptor[] {
-  const read = () => {
-    const key = exposure ?? ''
-    const revision = registry.revision()
-    const held = listed.get(key)
-    if (held?.revision === revision) return held.locations
-    const locations = registry.list(exposure ? { exposure } : undefined)
-    listed.set(key, { revision, locations })
-    return locations
-  }
-  return useSyncExternalStore(subscribeUiLocations, read, read)
-}

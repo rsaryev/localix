@@ -54,10 +54,10 @@ describe('contributed mini app surfaces render inside a boundary', () => {
     expect(sites.map((site) => site.path).sort()).toEqual([
       // A named hole in a host surface, and the chain of hooks a mini app wraps an open file in.
       // Both render a registry entry's `Component`, which is what puts them on this list.
-      'apps/ui/src/shared/contrib/FileEditorEnhancements.tsx',
-      'apps/ui/src/shared/contrib/WorkItemSlot.tsx',
+      'apps/ui/src/features/inspector/ui/FileEditorEnhancements.tsx',
       'apps/ui/src/widgets/editor-grid/ui/FileEditorPicker.tsx',
       'apps/ui/src/widgets/editor-grid/ui/MiniAppWorkItemBody.tsx',
+      'apps/ui/src/widgets/editor-grid/ui/WorkItemSlot.tsx',
     ])
   })
 

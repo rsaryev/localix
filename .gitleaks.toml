@@ -16,3 +16,9 @@ paths = [
   # Removed with the old vendored runtime, but `gitleaks git` scans history, where its content hashes remain.
   '''^vendor/[^/]+/packages/ai/src/providers/data/\.manifest\.json$''',
 ]
+
+[[allowlists]]
+# An Ed25519 public key: what a signed catalog is checked against, published on purpose. Its private
+# half lives only in the marketplace's release secret.
+description = "The Localix marketplace's public catalog key"
+regexes = ['''bwCq5MPyZb\+OxOHQnaBtzi9GmXBvu1U6WnGeyEPhdXg=''']
