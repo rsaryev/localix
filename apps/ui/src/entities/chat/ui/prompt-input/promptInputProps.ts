@@ -24,6 +24,12 @@ export interface PromptInputProps {
   isGenerating: boolean
   /** Whether this is the single focused warm-mounted chat surface. */
   isFocused: boolean
+  /**
+   * Whether the composer is on screen (its tab is the one its group shows), focused or not: the
+   * strips above it show while it is, so clicking into another pane does not take them away.
+   * Defaults to `isFocused`.
+   */
+  isVisible?: boolean
   activeSessionId: string | null
   activeConnectionId: string | null
   hasConnection: boolean

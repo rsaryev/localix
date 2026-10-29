@@ -138,7 +138,7 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
         title={
           activeConnection ? `Model: ${modelLabel} · ${activeConnection.label}` : 'Choose a model'
         }
-        className="h-[var(--chrome-control-lg)] min-w-0 max-w-72 gap-2 rounded-lg px-2.5 text-xs font-normal"
+        className="h-[var(--chrome-control-lg)] min-w-0 max-w-72 gap-1.5 rounded-lg pr-2 pl-1.5 text-xs font-normal"
         onPointerEnter={() => void loadModelPickerDrawer()}
         onFocus={() => void loadModelPickerDrawer()}
         onClick={() => {

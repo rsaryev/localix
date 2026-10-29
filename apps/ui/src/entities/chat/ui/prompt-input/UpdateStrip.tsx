@@ -60,15 +60,15 @@ export function UpdateRow({
 }
 
 /**
- * A new version is ready: one quiet row above the composer, shown in the focused chat only (every
- * warm composer renders this stack, and one button per window is the one that can be pressed).
+ * A new version is ready: one quiet row above the composer, shown in a chat on screen (every warm
+ * composer renders this stack; one behind another tab shows nothing), focused or not.
  * Pressing it goes through the same `restartToUpdate` as the rail and Settings, so a restart that
  * would cut off a running turn or a background job asks first and names what stops; with nothing
  * running the download starts at once. The rail's button owns the check and the progress listener;
  * this only reads their state.
  */
 export const UpdateStrip = memo(function UpdateStrip({ isFocused }: { isFocused: boolean }) {
-  // Only the focused composer reads the offers: every warm composer renders this stack.
+  // Only a composer on screen reads the offers: every warm composer renders this stack.
   return isFocused ? <FocusedUpdateStrip /> : null
 })
 

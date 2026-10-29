@@ -276,7 +276,7 @@ describe('UpdateStrip with other updates on offer', () => {
     await checkDesktopUpdate()
     const view = await mountStrip()
     expect(view.host.textContent).toContain('Recommended for you')
-    expect(view.host.textContent).toContain('Docker tools suit what you work on')
+    expect(view.host.textContent).toContain('Docker tools suits what you work on')
     await view.unmount()
     spies.forEach((spy) => spy.mockRestore())
   })

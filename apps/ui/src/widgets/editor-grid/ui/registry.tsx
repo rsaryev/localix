@@ -144,6 +144,7 @@ function WorkItemBodyInner({
         ? createElement(surface, {
             sessionId: p<string>(item, 'sessionId') ?? null,
             isFocused: focused,
+            isVisible: visible,
             resolvedTheme,
           })
         : null

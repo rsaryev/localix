@@ -5,6 +5,8 @@ export interface ChatSurfaceSlotProps {
   sessionId: string | null
   /** The one focused surface; it drives the singleton side effects. */
   isFocused: boolean
+  /** On screen: its tab is the one its group shows, focused or not. */
+  isVisible: boolean
   resolvedTheme: ResolvedTheme
 }
 

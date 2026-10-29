@@ -134,21 +134,20 @@ export function ActionButtons({
           >
             <StopIcon className="size-3.5" />
           </IconButton>
-        ) : !hasPrompt ? (
-          canRecord && hasApiKey ? (
-            <IconButton
-              size={size}
-              tooltip="Record voice message"
-              tooltipSide="top"
-              disabled={!hasApiKey || !canRecord}
-              onClick={onMicClick}
-              aria-label="Voice input"
-              className={subtleAction}
-            >
-              <MicIcon className="size-4" />
-            </IconButton>
-          ) : null
+        ) : !hasPrompt && canRecord && hasApiKey ? (
+          <IconButton
+            size={size}
+            tooltip="Record voice message"
+            tooltipSide="top"
+            onClick={onMicClick}
+            aria-label="Voice input"
+            className={subtleAction}
+          >
+            <MicIcon className="size-4" />
+          </IconButton>
         ) : (
+          // Nothing typed yet, Send keeps its place, unavailable: the row does not jump on the
+          // first key, and there is always one place that sends.
           <IconButton
             size={size}
             emphasis="solid"

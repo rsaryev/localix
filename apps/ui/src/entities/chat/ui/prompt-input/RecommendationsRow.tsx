@@ -39,7 +39,7 @@ export function RecommendationsRow({
       role="status"
       icon={<Sparkles className="size-3.5" />}
       title="Recommended for you"
-      description={`${named(suited)} suit what you work on`}
+      description={`${named(suited)} ${suited.length === 1 ? 'suits' : 'suit'} what you work on`}
       actionsLabel="Recommendation actions"
       actions={
         <Button

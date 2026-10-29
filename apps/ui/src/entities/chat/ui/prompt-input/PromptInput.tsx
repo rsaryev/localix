@@ -68,6 +68,7 @@ export function PromptInput(props: PromptInputProps) {
   const { onAddFiles, onRemoveAttachment, attachmentGate, readOnlyReason, onSend } = props
   const { hasInteraction = false, editingOriginalText, onCancelEdit, connectionsState } = props
   const isEditing = editingOriginalText != null
+  const onScreen = props.isVisible ?? isFocused
   const completionMenuId = useId()
   const [focused, setFocused] = useState(false)
   const [caretAtEnd, setCaretAtEnd] = useState(true)
@@ -128,8 +129,8 @@ export function PromptInput(props: PromptInputProps) {
   })
   const { tip: streamTip, dismiss: dismissTip } = useComposerStreamTip({
     activeSessionId,
-    isFocused,
-    active: isFocused && !sessionView.awaitingAnswer,
+    isFocused: onScreen,
+    active: onScreen && !sessionView.awaitingAnswer,
     running: isGenerating,
     idleDraft: prompt.trim().length === 0 && !readOnlyReason && !isEditing,
     usage: props.usage,
@@ -330,7 +331,7 @@ export function PromptInput(props: PromptInputProps) {
           onDismissTip={dismissTip}
           runtimePanel={props.runtimePanel}
           activeSessionId={activeSessionId}
-          isFocused={isFocused}
+          isFocused={onScreen}
           sessionUsage={props.sessionUsage}
           loops={props.loops}
         />

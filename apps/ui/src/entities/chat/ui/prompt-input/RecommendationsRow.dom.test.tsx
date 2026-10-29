@@ -65,6 +65,17 @@ describe('the composer’s recommendations row', () => {
     }
   })
 
+  test('one package suits the work; several suit it', async () => {
+    const view = await mount([docker], 1)
+    try {
+      expect(view.host.textContent).toContain('Docker tools suits what you work on')
+      await view.render([docker, k8s], 2)
+      expect(view.host.textContent).toContain('Docker tools and Kubernetes suit what you work on')
+    } finally {
+      await view.unmount()
+    }
+  })
+
   test('packages that only fill the row are no news: nothing suited, nothing shown', async () => {
     const view = await mount([filler], 0)
     try {

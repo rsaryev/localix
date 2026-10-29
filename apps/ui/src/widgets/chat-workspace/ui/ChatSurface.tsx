@@ -79,6 +79,8 @@ interface ChatSurfaceProps {
   /** True for the single focused surface — owns the global side-effects (the git
    *  poller). Background surfaces render + stream only. */
   isFocused: boolean
+  /** On screen: its tab is the one its group shows. The composer's strips show while it is. */
+  isVisible?: boolean
   resolvedTheme: ResolvedTheme
 }
 
@@ -87,7 +89,7 @@ interface ChatSurfaceProps {
  * with its OWN scroll instance and runtime actions. Mountable N times (one per editor
  * group); the focused instance additionally drives the singleton side-effects.
  */
-export function ChatSurface({ sessionId, isFocused, resolvedTheme }: ChatSurfaceProps) {
+export function ChatSurface({ sessionId, isFocused, isVisible, resolvedTheme }: ChatSurfaceProps) {
   // The focused editor tab's link candidate — the composer's auto-link chip.
   const activeTabLinks = useActiveTabRefs()
   // Stable global actions — session data uses narrow selectors below.
@@ -495,6 +497,7 @@ export function ChatSurface({ sessionId, isFocused, resolvedTheme }: ChatSurface
             setPrompt={setPrompt}
             isGenerating={isGenerating}
             isFocused={isFocused}
+            isVisible={isVisible}
             activeSessionId={activeSessionId}
             activeConnectionId={connectionsState.activeId}
             hasConnection={Boolean(connectionsState.activeConnection)}

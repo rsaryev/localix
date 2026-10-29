@@ -67,6 +67,10 @@ describe('ActionButtons', () => {
         ),
       )
       expect(host.querySelector('button[aria-label="Voice input"]')).toBeNull()
+      // Nothing typed and no voice input: Send stays in its place, unavailable, so the row does
+      // not jump on the first key and there is always a place that sends.
+      const idleSend = host.querySelector<HTMLButtonElement>('button[aria-label="Send"]')
+      expect(idleSend?.disabled).toBe(true)
       await act(async () =>
         root.render(
           <ActionButtons
