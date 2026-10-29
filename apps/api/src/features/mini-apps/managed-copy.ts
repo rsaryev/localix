@@ -14,31 +14,24 @@ import { retainPreviousHashedFiles } from './ui-retained-files'
  */
 
 /**
- * Marks a directory as a staged first-party copy that an earlier Localix build installed. Nothing
- * writes it any more; it is still read so such a copy is recognized as ours and moves to the
- * catalog's version, not mistaken for a folder of the person's own.
+ * Marks a copy an earlier Localix build installed, from before X5, when the app carried its own
+ * mini apps. Nothing writes it any more; it is still read so such a copy is recognized as a
+ * catalog's to update, not mistaken for a folder of the person's own.
  */
 export const MARKER_FILE = '.localix-managed.json'
 export const MARKER_KIND = 'localix-bundled-mini-app'
 /** Retired copies: the `.sync-` prefix keeps them invisible to discovery like every sync artifact. */
 const RETIRED_PREFIX = '.sync-retired-'
 
-/**
- * The content fingerprint a managed copy was installed with, or null for a directory that is not
- * one of ours (a user install) or whose marker is unreadable. The fingerprint is a hash of the
- * whole staged tree, so a caller keying derived data on it is invalidated by every re-stage.
- */
-export async function readManagedFingerprint(dir: string): Promise<string | null> {
+/** Whether `dir` is such a copy. */
+export async function isManagedCopy(dir: string): Promise<boolean> {
   try {
     const parsed = JSON.parse(await fs.readFile(join(dir, MARKER_FILE), 'utf8')) as {
       kind?: unknown
-      fingerprint?: unknown
     }
-    return parsed.kind === MARKER_KIND && typeof parsed.fingerprint === 'string'
-      ? parsed.fingerprint
-      : null
+    return parsed.kind === MARKER_KIND
   } catch {
-    return null
+    return false
   }
 }
 
@@ -109,9 +102,20 @@ export async function retireManagedCopy(installDir: string): Promise<void> {
 }
 
 /**
+ * `.sync-retired-<app>-<pid>-<uuid>` → `<app>`. The name may hold dashes and digits of its own, so
+ * the pid and the uuid are matched by their exact shape at the end.
+ */
+const retiredAppName = (entry: string): string | null =>
+  /^\.sync-retired-(.+)-\d+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u.exec(
+    entry,
+  )?.[1] ?? null
+
+/**
  * Delete the copies earlier installs retired. Safe only while nothing from them is loaded, so the
  * first discovery of a process runs it before any mini app module is imported; a later install in
- * the same process leaves them alone (see {@link installCopy}).
+ * the same process leaves them alone (see {@link installCopy}). A retired copy whose app is not
+ * there any more is an install that stopped between its two renames: it is put back, not swept.
+ * Returns how many were deleted.
  */
 export async function pruneRetiredManagedCopies(installRoot: string): Promise<number> {
   let entries: string[]
@@ -121,8 +125,16 @@ export async function pruneRetiredManagedCopies(installRoot: string): Promise<nu
     return 0
   }
   const retired = entries.filter((name) => name.startsWith(RETIRED_PREFIX))
-  await Promise.all(
-    retired.map((name) => fs.rm(join(installRoot, name), { recursive: true, force: true })),
-  )
-  return retired.length
+  let deleted = 0
+  for (const name of retired) {
+    const app = retiredAppName(name)
+    if (app && !entries.includes(app)) {
+      await fs.rename(join(installRoot, name), join(installRoot, app))
+      entries.push(app)
+      continue
+    }
+    await fs.rm(join(installRoot, name), { recursive: true, force: true })
+    deleted += 1
+  }
+  return deleted
 }

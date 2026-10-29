@@ -3,7 +3,7 @@ import { existsSync, promises as fs } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { installCopy } from './managed-copy'
+import { installCopy, pruneRetiredManagedCopies } from './managed-copy'
 
 const roots: string[] = []
 
@@ -62,4 +62,39 @@ test('an update retains the installed revision chunks even when the archive skip
   await fs.rm(sourceUi, { recursive: true })
   await install('no-ui')
   expect(existsSync(installedUi)).toBe(false)
+})
+
+// An install retires the old copy, then places the new one. A process that stops between the two
+// renames leaves no app in place, and the sweep on the next start used to delete the retired copy:
+// the app was gone until it was installed again.
+test('an install that stopped after retiring the old copy is undone on the next start', async () => {
+  const root = await fs.mkdtemp(join(tmpdir(), 'managed-crash-'))
+  roots.push(root)
+  const source = join(root, 'source')
+  const installed = join(root, 'apps', 'notes')
+  await fs.mkdir(source, { recursive: true })
+  await fs.writeFile(join(source, 'mini-app.json'), '{"name":"notes","version":"1.0.0"}')
+  await installCopy(source, installed, { file: '.marker.json', contents: { version: '1.0.0' } })
+  await fs.rename(
+    installed,
+    join(root, 'apps', '.sync-retired-notes-4242-5a86794c-c17e-4394-bc5b-08b53bfc7550'),
+  )
+
+  expect(await pruneRetiredManagedCopies(join(root, 'apps'))).toBe(0)
+  expect(await fs.readFile(join(installed, 'mini-app.json'), 'utf8')).toContain('"notes"')
+  expect(await fs.readdir(join(root, 'apps'))).toEqual(['notes'])
+})
+
+test('a retired copy whose app was replaced is swept', async () => {
+  const root = await fs.mkdtemp(join(tmpdir(), 'managed-sweep-'))
+  roots.push(root)
+  const source = join(root, 'source')
+  const installed = join(root, 'apps', 'notes')
+  await fs.mkdir(source, { recursive: true })
+  await fs.writeFile(join(source, 'mini-app.json'), '{"name":"notes","version":"1.0.0"}')
+  await installCopy(source, installed, { file: '.marker.json', contents: { version: '1.0.0' } })
+  await installCopy(source, installed, { file: '.marker.json', contents: { version: '1.0.1' } })
+
+  expect(await pruneRetiredManagedCopies(join(root, 'apps'))).toBe(1)
+  expect(await fs.readdir(join(root, 'apps'))).toEqual(['notes'])
 })

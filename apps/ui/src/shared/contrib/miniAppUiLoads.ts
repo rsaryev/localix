@@ -6,6 +6,7 @@ import {
   type StartupRetryCancel,
   type StartupRetrySchedule,
 } from '@/shared/lib/startupRetry'
+import { reportMiniAppUiFailed, reportMiniAppUiLoaded } from './miniAppUiProblems'
 
 /**
  * Which enabled mini apps' UI is still due in this page, who owns settling it, and the retry of a
@@ -37,6 +38,8 @@ const UI_RETRY_BUDGET = 7
 
 /** Mini apps whose UI registered at least once in this page; a later pass is not a first load. */
 const everLoaded = new Set<string>()
+/** The mini apps the owning publish enabled with a UI: a settle for any other name is not ours. */
+let claimed = new Set<string>()
 let loading = new Set<string>()
 let failed = new Set<string>()
 let owner = 0
@@ -54,10 +57,10 @@ export function claimMiniAppUiLoads(miniApps: readonly MiniAppRecord[]): number 
   owner += 1
   stopRetry?.()
   stopRetry = null
-  const withUi = new Set(miniApps.flatMap((p) => (p.enabled && p.ui ? [p.name] : [])))
+  claimed = new Set(miniApps.flatMap((p) => (p.enabled && p.ui ? [p.name] : [])))
   // A mini app that left is unloaded by the runtime; enabling it again is a first load again.
-  for (const name of everLoaded) if (!withUi.has(name)) everLoaded.delete(name)
-  loading = new Set([...withUi].filter((name) => !everLoaded.has(name)))
+  for (const name of everLoaded) if (!claimed.has(name)) everLoaded.delete(name)
+  loading = new Set([...claimed].filter((name) => !everLoaded.has(name)))
   failed = new Set()
   return owner
 }
@@ -78,12 +81,15 @@ export async function runMiniAppUiLoads(
   const owns = () => claim === owner
   const failedThisPass = new Set<string>()
   const settled: MiniAppUiSettled = (name, ok) => {
-    if (!owns()) return
+    // The runtime settles every name it reconciles, one it just unloaded as ok: that one is not a
+    // load, and counting it as one made the mini app's next enable no first load.
+    if (!owns() || !claimed.has(name)) return
     if (!ok) {
       if (loading.has(name)) failedThisPass.add(name)
       return
     }
     everLoaded.add(name)
+    reportMiniAppUiLoaded(name)
     if (loading.delete(name) || failed.delete(name)) changed(loading.size === 0)
   }
   /** One pass; true when no first load failed in it (or the pass is no longer ours). */
@@ -106,6 +112,7 @@ export async function runMiniAppUiLoads(
         for (const name of failedThisPass) {
           loading.delete(name)
           failed.add(name)
+          reportMiniAppUiFailed(name)
         }
         changed(loading.size === 0)
       })

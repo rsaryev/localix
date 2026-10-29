@@ -6,14 +6,14 @@ workbench, its registry entries, or its enable and disable lifecycle.
 
 ## Terminology
 
-| Term                | Meaning                                                                    | Boundary                                                                         |
-| ------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Backend subsystem   | One `BackendSubsystem` returned by a mini app's native `register()` call.  | It is process-global while the owning mini app is enabled in at least one scope. |
-| Backend host        | Reconciler that wires desired mini app subsystems into live registries.    | It keeps an already-wired instance instead of rebuilding it on every refresh.    |
-| Host service        | Narrow capability supplied to mini app code through `MiniAppContext.host`. | Services are optional and do not expose their owning core subsystem directly.    |
-| Mini app UI host    | Registration façade passed to a mini app's `registerUi(host)`.             | Mini app code must not import host registry modules.                             |
-| Native workbench UI | React contribution built into its own artifact and loaded by URL.          | Mini apps once the user enabled them (consent).                                  |
-| Manifest UI         | Sandboxed view described as data in the mini app manifest.                 | Runs in a sandboxed frame, whatever the mini app's origin.                       |
+| Term                | Meaning                                                                                                                            | Boundary                                                                         |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Backend subsystem   | One `BackendSubsystem` returned by a mini app's native `register()` call.                                                          | It is process-global while the owning mini app is enabled in at least one scope. |
+| Backend host        | Reconciler that wires desired mini app subsystems into live registries.                                                            | It keeps an already-wired instance instead of rebuilding it on every refresh.    |
+| Host service        | Narrow capability supplied to mini app code through `MiniAppContext.host`.                                                         | Services are optional and do not expose their owning core subsystem directly.    |
+| Mini app UI host    | Registration façade passed to a mini app's `registerUi(host)`; `disposeUi()` runs first when the mini app is replaced or disabled. | Mini app code must not import host registry modules.                             |
+| Native workbench UI | React contribution built into its own artifact and loaded by URL.                                                                  | Mini apps once the user enabled them (consent).                                  |
+| Manifest UI         | Sandboxed view described as data in the mini app manifest.                                                                         | Runs in a sandboxed frame, whatever the mini app's origin.                       |
 
 ## What you can do
 

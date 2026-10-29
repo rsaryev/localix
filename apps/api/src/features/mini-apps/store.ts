@@ -180,6 +180,9 @@ export function createMiniAppStore(deps: {
           'mini_app_unverified',
           `"${name}" comes from an unverified publisher (${offer.publisher.name}); confirm to install it`,
         )
+      // Asked again while the checks above waited (a double click): the job that got there first
+      // is the one running.
+      if (busy(name)) return
       enqueue(offer, opts.userId)
     },
 
@@ -192,8 +195,8 @@ export function createMiniAppStore(deps: {
       const { offers } = await readOffers({ fresh: true })
       const queued: string[] = []
       for (const offer of offers.values()) {
-        // A staged first-party copy an earlier build installed moves to the catalog's on its next
-        // version; a folder the person made is theirs (`isUpdatable`).
+        // A copy an earlier Localix build installed moves to the catalog's on its next version; a
+        // folder the person made is theirs (`isUpdatable`).
         if (busy(offer.name) || !(await isUpdatable(offer, installRoot))) continue
         enqueue(offer)
         queued.push(offer.name)

@@ -59,6 +59,13 @@ describe('the mini app store', () => {
     expect(entries.find((entry) => entry.name === 'notes')?.installed).toBeNull()
   })
 
+  test('two installs of one app asked at once run one job', async () => {
+    const { store, changes } = setup()
+    await Promise.all([store.install('atlas'), store.install('atlas')])
+    await store.settled()
+    expect(changes).toEqual(['atlas'])
+  })
+
   test('a newer version offered than installed is an update', async () => {
     const { catalog, store } = setup()
     await store.install('atlas')

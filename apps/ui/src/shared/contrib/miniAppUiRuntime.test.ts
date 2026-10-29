@@ -9,11 +9,15 @@ type Modules = Record<string, () => unknown>
  * A runtime whose "network" maps `name@revision` to a module factory. Every host-side effect —
  * styles, removals, registrations, announcements — lands in ONE log, so a test reads the order.
  */
-function harness(build: (log: string[]) => Modules) {
+function harness(
+  build: (log: string[]) => Modules,
+  opts: { deadline?: <T>(task: Promise<T>, what: string) => Promise<T> } = {},
+) {
   const log: string[] = []
   const failures: string[] = []
   const modules = build(log)
   const runtime = createMiniAppUiRuntime({
+    ...opts,
     importEntry: async ({ name, revision }) => {
       const factory = modules[`${name}@${revision}`]
       if (!factory) throw new Error(`no ${name}@${revision}`)
@@ -115,9 +119,68 @@ describe('converging on the snapshot', () => {
     await runtime.reconcile([artifact('fast', 'r1')], (name) => again.push(name))
     expect(again).toContain('fast')
   })
+
+  // One `import()` that never settled held that mini app's queue for the life of the page: no
+  // report, no retry, and the pass that owned its first load never ended.
+  test('an import that never settles is given up at the deadline, reported, and the pass ends', async () => {
+    const { runtime, failures } = harness(
+      () => ({ 'hung@r1': () => new Promise(() => {}), 'fine@r1': () => ({}) }),
+      {
+        deadline: (task, what) =>
+          what.includes('"hung"') ? Promise.reject(new Error(`${what} hung`)) : task,
+      },
+    )
+    const settled: Array<[string, boolean]> = []
+    await runtime.reconcile([artifact('hung', 'r1'), artifact('fine', 'r1')], (name, ok) =>
+      settled.push([name, ok]),
+    )
+    expect(failures).toEqual(['hung'])
+    expect(settled.sort()).toEqual([
+      ['fine', true],
+      ['hung', false],
+    ])
+  })
 })
 
 describe('replacing and unloading in place', () => {
+  // A module's own timers and listeners are not registrations the host can take back by owner.
+  test('a module that exports disposeUi is told before it is replaced or unloaded', async () => {
+    const { runtime, log } = harness((log) => ({
+      'sample@r1': () => ({
+        ...version(log, 'r1')(),
+        disposeUi: () => log.push('dispose sample@r1'),
+      }),
+      'sample@r2': version(log, 'r2'),
+    }))
+    await runtime.reconcile([artifact('sample', 'r1')])
+    await runtime.reconcile([artifact('sample', 'r2')])
+    expect(log.slice(2)).toEqual([
+      'styles+ sample@r2',
+      'dispose sample@r1',
+      'remove sample',
+      'register sample@r2',
+      'styles- sample@r1',
+      'announce',
+    ])
+    const { runtime: again, log: unloadLog } = harness((log) => ({
+      'sample@r1': () => ({
+        ...version(log, 'r1')(),
+        disposeUi: () => {
+          log.push('dispose sample@r1')
+          throw new Error('a dispose that throws is not fatal')
+        },
+      }),
+    }))
+    await again.reconcile([artifact('sample', 'r1')])
+    await again.reconcile([])
+    expect(unloadLog.slice(2)).toEqual([
+      'dispose sample@r1',
+      'remove sample',
+      'styles- sample@r1',
+      'announce',
+    ])
+  })
+
   test('a new revision is imported and styled first, then swapped, then the old styles go', async () => {
     const { runtime, log } = harness((log) => ({
       'sample@r1': version(log, 'r1'),

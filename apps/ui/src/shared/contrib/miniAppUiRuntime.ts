@@ -23,7 +23,23 @@ import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
  *    rest.
  */
 
-type MiniAppUiModule = { registerUi?: (host: MiniAppUiHost) => void }
+type MiniAppUiModule = {
+  registerUi?: (host: MiniAppUiHost) => void
+  /** Told before the module is replaced or unloaded: stop its own timers, listeners, sockets. */
+  disposeUi?: () => void
+}
+
+/** A load that has not settled by then is given up: reported, and retried on a later pass. */
+export const MINI_APP_UI_LOAD_TIMEOUT_MS = 30_000
+
+/** `task`, or a rejection once `ms` have passed; the timer is cleared either way. */
+export function withDeadline<T>(task: Promise<T>, what: string, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${what} did not finish within ${ms} ms`)), ms)
+  })
+  return Promise.race([task, late]).finally(() => clearTimeout(timer))
+}
 
 /** One enabled mini app's artifact, from the snapshot. */
 export interface MiniAppUiArtifact {
@@ -48,6 +64,8 @@ export interface MiniAppUiRuntimeDeps {
   /** Registries changed without a capability publish: every surface re-reads. */
   announce: () => void
   report: MiniAppUiFailureReporter
+  /** Bounds one import or style mount; the production one gives up after 30 s. */
+  deadline?: <T>(task: Promise<T>, what: string) => Promise<T>
 }
 
 export interface MiniAppUiRuntime {
@@ -86,22 +104,39 @@ export function createMiniAppUiRuntime(deps: MiniAppUiRuntimeDeps): MiniAppUiRun
     return next
   }
 
+  const deadline =
+    deps.deadline ??
+    (<T>(task: Promise<T>, what: string) => withDeadline(task, what, MINI_APP_UI_LOAD_TIMEOUT_MS))
+
   function register(name: string, module: MiniAppUiModule): void {
     module.registerUi?.(deps.hostFor(name))
+  }
+
+  /** The module's own cleanup, before the host takes back what it registered; never fatal. */
+  function dispose(name: string, module: MiniAppUiModule): void {
+    try {
+      module.disposeUi?.()
+    } catch (error) {
+      deps.report(name, error)
+    }
   }
 
   async function install(artifact: MiniAppUiArtifact): Promise<void> {
     let module: MiniAppUiModule
     let unmountStyles: () => void
+    const what = (step: string) => `${step} of the "${artifact.name}" mini app UI`
     try {
-      module = (await deps.importEntry(artifact)) as MiniAppUiModule
-      unmountStyles = await deps.mountStyles(artifact)
+      module = (await deadline(deps.importEntry(artifact), what('the import'))) as MiniAppUiModule
+      unmountStyles = await deadline(deps.mountStyles(artifact), what('the styles'))
     } catch (error) {
       deps.report(artifact.name, error)
       return
     }
     const previous = loaded.get(artifact.name)
-    if (previous) deps.remove(artifact.name)
+    if (previous) {
+      dispose(artifact.name, previous.module)
+      deps.remove(artifact.name)
+    }
     try {
       register(artifact.name, module)
       loaded.set(artifact.name, { revision: artifact.revision, module, unmountStyles })
@@ -128,6 +163,7 @@ export function createMiniAppUiRuntime(deps: MiniAppUiRuntimeDeps): MiniAppUiRun
     const current = loaded.get(name)
     if (!current) return
     loaded.delete(name)
+    dispose(name, current.module)
     deps.remove(name)
     current.unmountStyles()
     deps.announce()

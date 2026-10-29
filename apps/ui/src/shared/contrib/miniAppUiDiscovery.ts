@@ -4,16 +4,13 @@ import { announceMiniAppUiChanged } from './enabledMiniApps'
 import { dropHostDuplicates, hostRuleTexts } from './miniAppStyleDedupe'
 import { miniAppUiHostFor, removeMiniAppUiContributions } from './host'
 import { setMiniAppSources, type MiniAppUiSource } from './miniAppAttribution'
+import { rememberMiniAppUiError } from './miniAppUiProblems'
 import {
   MINI_APP_UI_PRELOADED_MODULES,
   MINI_APP_UI_SHARED_GLOBAL,
   type MiniAppUiSharedModules,
 } from '@localixai/mini-app-sdk/ui-artifact'
-import {
-  createMiniAppUiRuntime,
-  type MiniAppUiArtifact,
-  type MiniAppUiFailureReporter,
-} from './miniAppUiRuntime'
+import { createMiniAppUiRuntime, type MiniAppUiArtifact } from './miniAppUiRuntime'
 
 /**
  * The workbench's ONE mini app UI runtime, wired to the host: artifacts come from the capability
@@ -22,17 +19,10 @@ import {
  * enabled mini apps, so no mini app code or loader metadata sits on first paint.
  *
  * Nothing here knows about development or about who built a mini app: a UI edit becomes a new
- * artifact revision (staged for a first-party mini app, built by the API for a user mini app), the
+ * artifact revision (built by the authoring plugin or a marketplace release), the
  * API announces it, the next snapshot carries it, and the runtime replaces that mini app — the same
  * path a release takes.
  */
-
-const warnMiniAppUiFailure: MiniAppUiFailureReporter = (miniAppName, error) => {
-  console.warn(
-    `[mini-app-ui] "${miniAppName}" could not load its UI; the running version (if any) stays`,
-    error,
-  )
-}
 
 /** An artifact URL at one revision, against the API origin the rest of the client uses. */
 function artifactUrl(path: string, revision: string): string {
@@ -140,7 +130,7 @@ function miniAppUiRuntime() {
     hostFor: miniAppUiHostFor,
     remove: removeMiniAppUiContributions,
     announce: announceMiniAppUiChanged,
-    report: warnMiniAppUiFailure,
+    report: rememberMiniAppUiError,
   })
   return runtime
 }

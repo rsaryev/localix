@@ -19,6 +19,7 @@ import {
   type MiniAppUiDiscovery,
   type MiniAppUiSettled,
 } from './miniAppUiLoads'
+import { __setMiniAppUiProblemHost } from './miniAppUiProblems'
 import { __setRegistryFlushScheduler, flushRegistryChanges } from './registryChanges'
 
 const withUi = (name: string) =>
@@ -58,6 +59,7 @@ beforeEach(() => __setRegistryFlushScheduler(() => () => {}))
 afterEach(() => {
   __resetMiniAppContrib()
   __resetMiniAppUiLoads()
+  __setMiniAppUiProblemHost(null)
   __setRegistryFlushScheduler(null)
 })
 
@@ -109,6 +111,66 @@ describe('a failed first UI load is not a settle', () => {
     }
     expect(miniAppUiPending().loading.size).toBe(0)
     expect([...miniAppUiPending().failed]).toEqual(['broken'])
+  })
+
+  // A console line was all a mini app whose UI never came up left behind; the person looked at a
+  // workbench without its screens and was told nothing.
+  test('past its budget the person is told, under the mini app; a later load settles it', async () => {
+    const rows: string[] = []
+    __setMiniAppUiProblemHost({
+      problems: (report, options) => {
+        rows.push(`${options.scope}: ${report.problems[0]?.message}`)
+        return undefined
+      },
+      problemsCleared: (_subject, scope) => void rows.push(`${scope}: cleared`),
+    })
+    const clock = manualClock()
+    let importWorks = false
+    const discover: MiniAppUiDiscovery = async (_miniApps, settled) =>
+      settled?.('broken', importWorks)
+    const publish = (miniApps: MiniAppRecord[]) =>
+      runMiniAppUiLoads(
+        claimMiniAppUiLoads(miniApps),
+        miniApps,
+        discover,
+        () => {},
+        clock.schedule,
+        clock.cancel,
+      )
+    await publish([withUi('broken')])
+    while (clock.queued.length > 0) {
+      clock.queued.shift()!.run()
+      await ticks()
+    }
+    expect(rows).toEqual(['mini-app-ui:broken: The "broken" mini app could not load its UI.'])
+    importWorks = true
+    await publish([withUi('broken')])
+    expect(rows.at(-1)).toBe('mini-app-ui:broken: cleared')
+  })
+
+  // The runtime settles every name it reconciles, an unloaded one as ok; that settle used to put the
+  // mini app back among the ever-loaded, so enabling it again was no first load, and its broken
+  // import was neither loading nor failed: the grid closed its restored tabs.
+  test('enabling a mini app again after it was disabled is a first load again', async () => {
+    const clock = manualClock()
+    let importWorks = true
+    const discover: MiniAppUiDiscovery = async (_miniApps, settled) =>
+      settled?.('again', importWorks)
+    const publish = (miniApps: MiniAppRecord[]) =>
+      runMiniAppUiLoads(
+        claimMiniAppUiLoads(miniApps),
+        miniApps,
+        discover,
+        () => {},
+        clock.schedule,
+        clock.cancel,
+      )
+    await publish([withUi('again')])
+    expect(miniAppUiPending().loading.size).toBe(0)
+    await publish([])
+    importWorks = false
+    claimMiniAppUiLoads([withUi('again')])
+    expect([...miniAppUiPending().loading]).toEqual(['again'])
   })
 
   test('a newer publish disowns the older pass: its settles and its retry timer', async () => {

@@ -1,7 +1,9 @@
 /**
  * Workbench UI contribution surface — the contracts a mini app's `ui/register.tsx`
  * compiles against. The host (`apps/ui`) implements the registries and passes a
- * {@link MiniAppUiHost} into `registerUi(host)`.
+ * {@link MiniAppUiHost} into `registerUi(host)`. What `registerUi` registered the host takes back
+ * by owner when the mini app is disabled or replaced; a module may also export `disposeUi()`,
+ * called before that, for what the host cannot see — its own timers, listeners and sockets.
  */
 export type {
   MessageBindingTargetKind,
