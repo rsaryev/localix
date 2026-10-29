@@ -102,7 +102,7 @@ export function contentsOfPlugin(
     components.push({ kind: 'monitor', name: monitor.name })
     runs.push({ kind: 'monitor', name: monitor.name, command: monitor.command })
   }
-  for (const file of bin) runs.push({ kind: 'command', name: 'bin/', command: file })
+  for (const file of bin) runs.push({ kind: 'command', name: file, command: `bin/${file}` })
   return { components, runs, network: [...network].sort() }
 }
 

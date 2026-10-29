@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { Scope } from '@localixai/store'
+import { Download } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
-import { Field } from '@localixai/kit/field'
+import { DialogHero } from '@localixai/kit/dialog-hero'
 import {
   Dialog,
   DialogBody,
@@ -41,32 +42,39 @@ export function ConsentSheet({
   const read = useListingPlan(listing, scope)
   return (
     <Dialog open onOpenChange={(open) => !open && onAnswer(null)}>
-      <DialogContent size="sm">
-        <DialogHeader>
+      <DialogContent size="sm" showCloseButton={false}>
+        {/* Centred under its mark, like every question the app asks (`ConfirmDialog`). */}
+        <DialogHeader className="pt-6 pr-4 text-center [&>[data-slot=dialog-header-main]]:items-center">
+          <DialogHero icon={<Download />} />
           <DialogTitle>Install {listing.displayName}?</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-balance">
             {KIND_LABELS[listing.ref.kind].one} from {listing.source.label}
             {trust && TRUST_LABELS[trust] !== listing.source.label && ` · ${TRUST_LABELS[trust]}`}
           </DialogDescription>
         </DialogHeader>
-        <DialogBody className="flex flex-col gap-5">
+        <DialogBody className="flex flex-col gap-4">
           <ConsentPlan {...read} />
+          {/* Its options say who it is for, so it needs no label above it in the centred column. */}
           {scopes.length > 1 && (
-            <Field label="Install for">
-              <Select
-                value={scope}
-                onValueChange={(value) => setScope(value as Scope)}
-                options={scopes.map((s) => ({
-                  value: s,
-                  label: s === 'user' ? 'You, in every project' : `Only ${store.project!.name}`,
-                }))}
-                size="md"
-                className="w-64"
-              />
-            </Field>
+            <Select
+              aria-label="Install for"
+              value={scope}
+              onValueChange={(value) => setScope(value as Scope)}
+              options={scopes.map((s) => ({
+                value: s,
+                label:
+                  s === 'user' ? 'For you, in every project' : `Only for ${store.project!.name}`,
+              }))}
+              size="md"
+              className="w-full"
+            />
           )}
         </DialogBody>
-        <DialogFooter>
+        {/* The two answers side by side at equal width, as a confirmation ends. */}
+        <DialogFooter
+          actionsLabel="Install actions"
+          className="border-t-0 pt-1 pb-4 [&>[data-slot=dialog-footer-actions]]:w-full [&>[data-slot=dialog-footer-actions]]:flex-row [&>[data-slot=dialog-footer-actions]>*]:flex-1"
+        >
           <Button variant="ghost" className="text-text-soft" onClick={() => onAnswer(null)}>
             Cancel
           </Button>

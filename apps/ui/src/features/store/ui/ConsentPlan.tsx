@@ -31,10 +31,13 @@ export function ConsentPlan({ plan, error, retry }: ReturnType<typeof useListing
     return plural(count, one.toLowerCase(), many.toLowerCase())
   })
   return (
-    <div className="flex flex-col gap-2 text-sm text-text-soft">
+    <div className="flex flex-col gap-1.5 text-center text-xs/relaxed text-balance text-text-soft">
       {plan.warnings.map((warning) => (
-        <p key={warning} className="flex items-start gap-2">
-          <CircleAlert className="mt-0.5 size-3.5 shrink-0 text-status-warning" aria-hidden />
+        <p key={warning}>
+          <CircleAlert
+            className="mr-1.5 inline size-3.5 -translate-y-px text-status-warning"
+            aria-hidden
+          />
           {warning}
         </p>
       ))}

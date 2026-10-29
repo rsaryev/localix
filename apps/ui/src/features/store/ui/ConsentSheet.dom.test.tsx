@@ -28,12 +28,10 @@ async function ask(project: { id: string; name: string } | null) {
   return { view, sheet }
 }
 
-/** The select a person reaches by its visible label: the combobox the label names. */
+/** The select a person reaches by its name. */
 const picker = (within: ParentNode, label: string) =>
-  [...within.querySelectorAll<HTMLElement>('[role="combobox"]')].find((node) =>
-    document
-      .getElementById(node.getAttribute('aria-labelledby') ?? '')
-      ?.textContent?.startsWith(label),
+  [...within.querySelectorAll<HTMLElement>('[role="combobox"]')].find(
+    (node) => node.getAttribute('aria-label') === label,
   ) ?? null
 
 describe('the consent sheet', () => {
@@ -69,7 +67,7 @@ describe('the consent sheet', () => {
       expect(select).not.toBeNull()
       await view.openMenu(select)
       const option = [...document.body.querySelectorAll<HTMLElement>('[role="option"]')].find((o) =>
-        o.textContent?.includes('Only Atlas'),
+        o.textContent?.includes('Only for Atlas'),
       )!
       await view.click(option)
       await view.click(view.button('Install', sheet))

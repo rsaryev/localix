@@ -46,7 +46,7 @@ describe('what a plugin folder adds and runs, read without installing it', () =>
       expect.arrayContaining([
         { kind: 'hook', name: 'PostToolUse', command: 'lint.sh' },
         { kind: 'mcp-server', name: 'local', command: 'node server.js' },
-        { kind: 'command', name: 'bin/', command: 'review-cli' },
+        { kind: 'command', name: 'review-cli', command: 'bin/review-cli' },
       ]),
     )
     expect(found.network).toEqual(['api.acme.test'])
