@@ -37,6 +37,11 @@ describe('what a plugin folder adds and runs, read without installing it', () =>
         'skill:review-pr',
       ].sort(),
     )
+    expect(found.components).toContainEqual({
+      kind: 'skill',
+      name: 'review-pr',
+      description: 'Review a PR',
+    })
     expect(found.runs).toEqual(
       expect.arrayContaining([
         { kind: 'hook', name: 'PostToolUse', command: 'lint.sh' },
@@ -53,7 +58,7 @@ describe('what a plugin folder adds and runs, read without installing it', () =>
       'words/skills/write/SKILL.md': '---\nname: write\ndescription: Write well\n---\nWrite',
     })
     const found = await scanPluginContents(join(dir(), 'words'), 'words@acme')
-    expect(found.components).toEqual([{ kind: 'skill', name: 'write' }])
+    expect(found.components).toEqual([{ kind: 'skill', name: 'write', description: 'Write well' }])
     expect(found.runs).toEqual([])
   })
 })

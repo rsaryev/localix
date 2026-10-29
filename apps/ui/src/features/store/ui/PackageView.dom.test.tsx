@@ -118,6 +118,38 @@ describe('a package’s page', () => {
     }
   })
 
+  test('What’s inside groups the parts by what they are, each row saying what it does', async () => {
+    const kit = listing({
+      id: 'kit',
+      displayName: 'Kit',
+      ref: { kind: 'plugin', id: 'kit' },
+      components: [
+        { kind: 'hook', name: 'PostToolUse' },
+        { kind: 'skill', name: 'install', description: 'Install a mini app from its folder' },
+        { kind: 'agent', name: 'reviewer', description: 'Reviews a mini app' },
+        { kind: 'skill', name: 'check' },
+        { kind: 'command', name: '/kit:new', description: 'Start a mini app' },
+      ],
+    })
+    const view = await renderStore({ listings: [kit], target: { shelf: 'package:plugin' } })
+    try {
+      await view.click(view.button('Kit', view.card('kit')!))
+      const panel = view.host.querySelector('[data-store-page="kit"] [role="tabpanel"]')!
+      const groups = [...panel.querySelectorAll('section')].map((group) => ({
+        heading: group.querySelector('h3')?.textContent,
+        rows: [...group.querySelectorAll('li')].map((row) => row.textContent),
+      }))
+      expect(groups).toEqual([
+        { heading: 'Command', rows: ['/kit:newStart a mini app'] },
+        { heading: 'Skills · 2', rows: ['installInstall a mini app from its folder', 'check'] },
+        { heading: 'Agent', rows: ['reviewerReviews a mini app'] },
+        { heading: 'Hook', rows: ['PostToolUseAfter each tool the agent uses'] },
+      ])
+    } finally {
+      await view.done()
+    }
+  })
+
   test('a community package asks first, and its sheet carries the plan’s warning', async () => {
     const { view, page } = await open('radio', 'Radio')
     try {

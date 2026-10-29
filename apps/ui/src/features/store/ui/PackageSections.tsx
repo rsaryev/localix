@@ -3,15 +3,21 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Listing, ListingDetail, StoreComponent } from '@localixai/store'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { DIVIDED_LIST } from '@localixai/kit/divided-list'
+import { SectionLabel } from '@localixai/kit/section-label'
 import { Skeleton } from '@localixai/kit/skeleton'
 import { TabBar, TabPanel, useTabPanelIds } from '@localixai/kit/tabs'
-import { COMPONENT_LABELS } from '../model/presentation'
+import { groupParts, partDescription } from '../model/parts'
+import { capabilityLabel, COMPONENT_LABELS } from '../model/presentation'
 import { PackageSettings } from './PackageSettings'
 import { PlanSummary } from './PlanSummary'
 
 type Part = Pick<StoreComponent, 'kind' | 'name' | 'description'>
 
-/** A list of parts: each with its kind's glyph, its name and what it does; `marked` stands out. */
+/**
+ * A package's parts, grouped by kind under a label with their count (Skills · 6, a lone one just
+ * Hook), in the order a person meets them. Each row is a name and what it does; a part that says
+ * nothing is its name alone, not its kind again under it. `marked` stands out.
+ */
 export function Parts({
   parts,
   marked,
@@ -22,31 +28,45 @@ export function Parts({
   const markedRow = useRef<HTMLLIElement>(null)
   useEffect(() => markedRow.current?.scrollIntoView?.({ block: 'nearest' }), [])
   return (
-    <ul className={DIVIDED_LIST}>
-      {parts.map(({ kind, name, description }) => {
-        const Icon = COMPONENT_LABELS[kind].icon
-        const isMarked = marked?.kind === kind && marked.name === name
+    <div className="flex flex-col gap-5">
+      {groupParts(parts).map((group) => {
+        const Icon = COMPONENT_LABELS[group.kind].icon
         return (
-          <li
-            key={`${kind}:${name}`}
-            ref={isMarked ? markedRow : undefined}
-            aria-current={isMarked ? 'true' : undefined}
-            className={cn(
-              'flex min-h-10 min-w-0 items-start gap-2.5 px-2 py-2',
-              isMarked && 'bg-surface-active',
-            )}
-          >
-            <Icon className="mt-0.5 size-4 shrink-0 text-text-faint" aria-hidden />
-            <span className="flex min-w-0 flex-col">
-              <span className="truncate text-sm text-foreground">{name}</span>
-              <span className="line-clamp-2 text-xs text-text-soft">
-                {description ?? COMPONENT_LABELS[kind].one}
-              </span>
-            </span>
-          </li>
+          <section key={group.kind} className="flex flex-col gap-1">
+            <SectionLabel as="h3" className="px-2">
+              {group.parts.length === 1
+                ? COMPONENT_LABELS[group.kind].one
+                : `${capabilityLabel(group.kind)} · ${group.parts.length}`}
+            </SectionLabel>
+            <ul className={DIVIDED_LIST}>
+              {group.parts.map((part) => {
+                const isMarked = marked?.kind === part.kind && marked.name === part.name
+                const description = partDescription(part)
+                return (
+                  <li
+                    key={part.name}
+                    ref={isMarked ? markedRow : undefined}
+                    aria-current={isMarked ? 'true' : undefined}
+                    className={cn(
+                      'flex min-h-10 min-w-0 items-start gap-2.5 px-2 py-2',
+                      isMarked && 'bg-surface-active',
+                    )}
+                  >
+                    <Icon className="mt-0.5 size-4 shrink-0 text-text-faint" aria-hidden />
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate text-sm text-foreground">{part.name}</span>
+                      {description && (
+                        <span className="line-clamp-2 text-xs text-text-soft">{description}</span>
+                      )}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
         )
       })}
-    </ul>
+    </div>
   )
 }
 

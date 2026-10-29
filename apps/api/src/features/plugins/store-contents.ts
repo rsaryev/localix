@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import type { InstallPlan, StoreComponent } from '@localixai/store'
 
 import { isRecord } from '../../lib/record'
+import { readSkillsFromRoot } from '../agent-core/skill-discovery'
 import { withEntry } from './claude-code-installs'
 import type { DiscoveredPlugin } from './discovery-types'
 import type { MarketplaceEntry } from './marketplace'
@@ -47,7 +48,12 @@ const hostOf = (url: unknown) => {
   }
 }
 
-export function contentsOfPlugin(plugin: DiscoveredPlugin, bin: string[]): PluginContents {
+export function contentsOfPlugin(
+  plugin: DiscoveredPlugin,
+  bin: string[],
+  /** What each skill says it does, by name, from its `SKILL.md`. */
+  skillDescriptions: ReadonlyMap<string, string> = new Map(),
+): PluginContents {
   const name = plugin.manifest.name
   const described = (kind: StoreComponent['kind'], part: { name: string; description?: string }) =>
     ({
@@ -56,7 +62,9 @@ export function contentsOfPlugin(plugin: DiscoveredPlugin, bin: string[]): Plugi
       ...(part.description ? { description: part.description } : {}),
     }) as StoreComponent
   const components: StoreComponent[] = [
-    ...plugin.provides.skills.map((skill) => ({ kind: 'skill' as const, name: skill })),
+    ...plugin.provides.skills.map((skill) =>
+      described('skill', { name: skill, description: skillDescriptions.get(skill) }),
+    ),
     ...plugin.commands.map((command) =>
       described('command', { ...command, name: `/${name}:${command.name}` }),
     ),
@@ -108,7 +116,14 @@ export async function scanPluginContents(
     loadManifest(dir, 'global', '', withEntry(id, entry)),
     fs.readdir(join(dir, 'bin')).catch(() => [] as string[]),
   ])
-  return contentsOfPlugin(plugin, bin.sort())
+  // A skill's description is in its own file; a folder that cannot be read just says less.
+  const skills = await Promise.all(
+    plugin.entrypoints.skillDirs.map((root) => readSkillsFromRoot(root, 'global').catch(() => [])),
+  )
+  const descriptions = new Map(
+    skills.flat().flatMap((skill) => (skill.description ? [[skill.name, skill.description]] : [])),
+  )
+  return contentsOfPlugin(plugin, bin.sort(), descriptions)
 }
 
 /** A plugin folder's README, at most this long: a page of text, not a book. */

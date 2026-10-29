@@ -78,6 +78,8 @@ const COMPOSE = {
       .first()
       .waitFor()
     await page.getByRole('tab', { name: 'What’s inside', exact: true }).click()
+    // Its parts in groups of one kind, each under its label and count.
+    await page.locator(`[data-store-page="${id}"] [role="tabpanel"] section > h3`).first().waitFor()
   },
   async 'store-consent'(page) {
     await openStore(page)
