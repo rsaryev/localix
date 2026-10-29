@@ -4,6 +4,40 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+## v0.1.0-beta.18 — 2026-10-29
+
+Localix's own mini apps and plugins now come from the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace) and install, update and are
+trusted like anyone else's. Localix itself ships the mini app SDK and kit to build them with.
+
+### Changed
+
+- **Our mini apps and plugins install from the Store**: Project Space, the task board, Git,
+  Database, the games and the rest, and the mini-app-authoring and Team plugins, are no longer built
+  in. They are listed in the Store under the Localix marketplace, which is already added; install
+  the ones you use again. Your data stays where it was.
+- **Mini apps ask before they run**: every mini app, ours included, waits for your consent the first
+  time, and the Store marks the Localix marketplace's packages as verified.
+- **A compact Store page**: a package's page has a smaller header, with **Get** under the name.
+- **Faster edits in a project with a language server**: after the assistant writes a file, Localix
+  waits only until the language server goes quiet instead of a fixed deadline.
+
+### Added
+
+- **Build mini apps outside Localix**: each release publishes the mini app kit, so a mini app can
+  live in its own repository, with its own checks and CI, and test its screens and backend with the
+  SDK's testing helpers.
+
+### Fixed
+
+- **Plugin commands in a terminal pane**: commands a plugin ships in its `bin/` folder now run in a
+  terminal pane too, not only in the assistant's own shell.
+
+### Removed
+
+- **Desktop file associations for mini app formats**: Localix no longer offers to open SQLite, SQL,
+  PDF, Office, EPUB and request files from Finder; open them in a mini app that handles them.
+
 ## v0.1.0-beta.17 — 2026-10-28
 
 This release makes Localix work the way Claude Code does: one agent per chat with subagents, Claude
