@@ -84,8 +84,12 @@ function vendorVersions(kitDir, kit) {
   }
   for (const [name, file] of Object.entries(kit.uiVendorModules ?? {})) {
     if (name in versions) continue
-    const root = file.split('/').slice(0, file.split('/').indexOf(name) + 1)
-    const manifest = join(kitDir, ...root, 'package.json')
+    // The package's folder is where its name's segments (`@scope`, `codec`) appear in the path.
+    const parts = file.split('/')
+    const segments = name.split('/')
+    const at = parts.findIndex((_, i) => segments.every((segment, j) => parts[i + j] === segment))
+    if (at < 0) throw new Error(`${name}: ${file} is not inside a folder named for the package`)
+    const manifest = join(kitDir, ...parts.slice(0, at + segments.length), 'package.json')
     versions[name] = JSON.parse(readFileSync(manifest, 'utf8')).version
   }
   return versions

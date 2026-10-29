@@ -40,12 +40,22 @@ describe('the contract of a staged kit', () => {
       typePaths: { '@localixai/mini-app-sdk/backend': 'types/backend.d.ts' },
       authoring: { typeRoots: 'types', backendSharedModules: [] },
       uiSharedExports: {},
-      uiVendorModules: { mediabunny: 'ui/vendor/mediabunny/dist/modules/src/index.js' },
+      uiVendorModules: {
+        mediabunny: 'ui/vendor/mediabunny/dist/modules/src/index.js',
+        '@scope/codec': 'ui/vendor/@scope/codec/dist/index.js',
+      },
     }),
     'types/backend.d.ts': 'export declare const x: number;',
     'ui/vendor/mediabunny/package.json': JSON.stringify({ name: 'mediabunny', version: '1.62.0' }),
+    'ui/vendor/@scope/codec/package.json': JSON.stringify({
+      name: '@scope/codec',
+      version: '3.1.0',
+    }),
   })
   test('names each package the kit lends the UI, with its version', () => {
-    expect(readContract(lending()).vendors).toEqual({ mediabunny: '1.62.0' })
+    expect(readContract(lending()).vendors).toEqual({
+      mediabunny: '1.62.0',
+      '@scope/codec': '3.1.0',
+    })
   })
 })
