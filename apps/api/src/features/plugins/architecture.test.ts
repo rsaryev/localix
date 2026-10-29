@@ -117,11 +117,11 @@ describe('validatePlugin — required config and built-in path variables', () =>
   })
 })
 
-describe('defaultEnabled flag + the trust gate', () => {
-  it('NEVER default-enables a plugin, even with defaultEnabled: true', () => {
-    const droppedIn = mkPlugin({ name: 'a', defaultEnabled: true })
-    expect(pluginTrustClass(droppedIn)).toBe('untrusted')
-    expect(trustFallback(pluginTrustClass(droppedIn))).not.toBe('allow')
+describe('the trust gate', () => {
+  // Whatever a plugin says of itself (`defaultEnabled: true`), its tools still ask first.
+  it('NEVER lets a plugin run its tools without asking', () => {
+    expect(pluginTrustClass()).toBe('untrusted')
+    expect(trustFallback(pluginTrustClass())).not.toBe('allow')
   })
 })
 

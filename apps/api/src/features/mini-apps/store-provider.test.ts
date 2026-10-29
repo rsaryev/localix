@@ -389,6 +389,7 @@ describe('the mini apps in the Store', () => {
         setConfig: async () => {},
         remove: async () => {},
       },
+      autoUpdate: { off: async () => new Set(), set: async () => {} },
     })
     const [ada] = await provider.sources()
     expect(ada).toMatchObject({ id: ADA, count: 0 })

@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import type { AvailabilityReader } from '../../capabilities/availability'
 import type { CapabilitySourceRepository } from '../../capabilities/source-repository'
 import { loadEnabledMiniApps } from '../../mini-apps/loader'
-import { makeContext } from '../../mini-apps/native'
+import { makeContext } from '../../mini-apps/native-context'
 import { miniAppProblemReporter } from '../../mini-apps/problem-reporter'
 import {
   createMiniAppConditions,
