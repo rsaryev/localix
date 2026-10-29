@@ -6,7 +6,7 @@
 // that breaks mini apps built against the committed one is refused even then, until
 // `MINI_APP_API_VERSION` moves too. `--write` also records the contract's digest for the API, which
 // reports it (`GET /health`), so a kit and the Localix it was staged with name the same one.
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
@@ -45,7 +45,8 @@ if (import.meta.main) {
       { cwd: root, stdio: 'inherit' },
     )
   }
-  const current = readFileSync(join(kitDir, KIT_CONTRACT_FILE), 'utf8')
+  const kitContract = join(kitDir, KIT_CONTRACT_FILE)
+  const current = readFileSync(kitContract, 'utf8')
   const committed = read(join(root, CONTRACT_FILE))
   const verdict = committed
     ? contractVerdict(committed, current, { write })
@@ -65,6 +66,15 @@ if (import.meta.main) {
     `'${contractDigest(read(join(root, CONTRACT_FILE)) ?? '')}'`,
   )
   if (!verdict.ok) {
+    // What moved, as text: a machine that stages the kit differently shows here how.
+    const diff = spawnSync(
+      'git',
+      ['--no-pager', 'diff', '--no-index', '--unified=1', join(root, CONTRACT_FILE), kitContract],
+      { encoding: 'utf8' },
+    ).stdout
+    const lines = diff.split('\n')
+    console.log(lines.slice(0, 200).join('\n'))
+    if (lines.length > 200) console.log(`… ${lines.length - 200} more lines`)
     console.error(
       verdict.breaking.length
         ? 'The mini app contract breaks: keep what mini apps rely on, or move MINI_APP_API_VERSION (packages/mini-app-sdk/src/manifest/primitives.ts) and write it again.'

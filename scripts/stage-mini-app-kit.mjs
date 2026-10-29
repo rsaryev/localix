@@ -55,7 +55,7 @@ import {
   KIT_TOOLS_INPUTS,
   localixVersion,
 } from './stage-mini-app-kit-tools.mjs'
-import { stageMiniAppKitTypes } from './stage-mini-app-kit-types.mjs'
+import { sdkDeclarationDependencies, stageMiniAppKitTypes } from './stage-mini-app-kit-types.mjs'
 import {
   contractDigest,
   KIT_CONTRACT_FILE,
@@ -101,11 +101,11 @@ export const MINI_APP_KIT_INPUTS = [
   'packages/kit/src',
   'packages/kit/styles',
   'packages/mini-app-sdk/dist',
+  'packages/mini-app-sdk/package.json',
   // Declarations the SDK's own declarations import (`stage-mini-app-kit-types.mjs`).
-  'packages/agent/dist',
-  'packages/dataview/dist',
-  'packages/search/dist',
-  'packages/uri/dist',
+  ...sdkDeclarationDependencies(join(import.meta.dir, '..', 'packages', 'mini-app-sdk')).map(
+    (name) => `packages/${name.replace('@localixai/', '')}/dist`,
+  ),
 ]
 
 /** Value exports of an ES module, following its `export *` chains (relative or a package). */

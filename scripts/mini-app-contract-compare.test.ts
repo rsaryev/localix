@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { renderContract } from './mini-app-contract.mjs'
+import { canonicalDeclaration, renderContract } from './mini-app-contract.mjs'
 import { compareContracts, contractVerdict, parseContract } from './mini-app-contract-compare.mjs'
 
 type Contract = Parameters<typeof renderContract>[0]
@@ -41,6 +41,20 @@ describe('the committed mini app contract, read back', () => {
     )
     expect(parsed.served.ui['@localixai/kit/button']).toEqual(['Button'])
     expect(parsed.vendors.zod).toBe('4.6.7')
+  })
+})
+
+// The compiler prints an inferred union in the order it created the members' types, which differs
+// between machines; the committed contract must not.
+describe('a declaration as the contract writes it', () => {
+  test('reads the same whatever order its unions were printed in', () => {
+    const a = canonicalDeclaration(
+      'export declare const Button: (props: {\n    size?: "sm" | "lg" | null;\n    tone?: { kind: "b" | "a" };\n}) => void;',
+    )
+    const b = canonicalDeclaration(
+      'export declare const Button: (props: {\n    size?: null | "lg" | "sm";\n    tone?: { kind: "a" | "b" };\n}) => void;',
+    )
+    expect(a).toBe(b)
   })
 })
 

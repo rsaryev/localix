@@ -48,13 +48,16 @@ declare module '*.woff2' {
 }
 `
 const DECLARATION = /\.d\.[cm]?ts$/u
-/** Workspace packages `@localixai/mini-app-sdk`'s declarations import (see the staging loop). */
-export const SDK_DECLARATION_DEPENDENCIES = [
-  '@localixai/agent',
-  '@localixai/dataview',
-  '@localixai/search',
-  '@localixai/uri',
-]
+/**
+ * Workspace packages `@localixai/mini-app-sdk`'s declarations may import (see the staging loop):
+ * every one it depends on, so a new one cannot be left out by hand.
+ */
+export function sdkDeclarationDependencies(sdkDir) {
+  const manifest = JSON.parse(readFileSync(join(sdkDir, 'package.json'), 'utf8'))
+  return Object.keys(manifest.dependencies ?? {})
+    .filter((name) => name.startsWith('@localixai/'))
+    .sort()
+}
 
 /** A package's directory, found by walking `node_modules` upward (exports may hide package.json). */
 function packageDir(name, fromDir) {
@@ -150,7 +153,7 @@ export function stageMiniAppKitTypes({ repoRoot, outKit, uiSharedExports, sdkDir
   // `skipLibCheck` turns nothing into `any` without a word: an installed app type-checked a tool
   // with `executionMode: 'serial'` and `execute(input)` as clean. A kit staged inside the checkout
   // never showed it — resolution walked up to the repository's own node_modules.
-  for (const name of SDK_DECLARATION_DEPENDENCIES) {
+  for (const name of sdkDeclarationDependencies(sdkDir)) {
     copyDeclarations(join(repoRoot, 'packages', name.replace('@localixai/', '')), out, name)
   }
   // The data views are bundled into a mini app from the kit (`bundledModules`), so importable.

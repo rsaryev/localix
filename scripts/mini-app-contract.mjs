@@ -25,6 +25,35 @@ const byCodeUnit = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
 /** The digest a kit and a running Localix name their contract by. */
 export const contractDigest = (text) => createHash('sha256').update(text).digest('hex')
 
+const plainPrinter = ts.createPrinter({ removeComments: true })
+
+/**
+ * A declaration as the contract writes it: its unions' members in plain string order. The compiler
+ * prints an inferred union in the order it created the members' types, which differs between
+ * machines, and the order of a union says nothing.
+ */
+export function canonicalDeclaration(text) {
+  const source = ts.createSourceFile('contract.d.ts', text, ts.ScriptTarget.Latest, true)
+  const sortUnions = (context) => {
+    const visit = (node) => {
+      const visited = ts.visitEachChild(node, visit, context)
+      if (!ts.isUnionTypeNode(visited)) return visited
+      const keyed = visited.types.map((member) => ({
+        member,
+        key: plainPrinter.printNode(ts.EmitHint.Unspecified, member, source),
+      }))
+      keyed.sort((a, b) => byCodeUnit(a.key, b.key))
+      return context.factory.updateUnionTypeNode(
+        visited,
+        context.factory.createNodeArray(keyed.map(({ member }) => member)),
+      )
+    }
+    return (file) => ts.visitNode(file, visit)
+  }
+  const [sorted] = ts.transform(source, [sortUnions]).transformed
+  return plainPrinter.printFile(sorted).trim()
+}
+
 /** The vendor packages under the kit's types, by name, with their versions. */
 function vendorVersions(kitDir, typePaths) {
   const versions = {}
@@ -78,12 +107,17 @@ export function readContract(kitAt) {
     symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol
   const print = (declaration) => {
     const node = ts.isVariableDeclaration(declaration) ? declaration.parent.parent : declaration
-    return printer.printNode(ts.EmitHint.Unspecified, node, declaration.getSourceFile()).trim()
+    return canonicalDeclaration(
+      printer.printNode(ts.EmitHint.Unspecified, node, declaration.getSourceFile()),
+    )
   }
 
   /** Public symbols by identity, so a type a declaration names is printed once, where it is public. */
   const publicSymbols = new Set()
   const modules = {}
+  const inKit = (node) => !relative(kitDir, node.getSourceFile().fileName).startsWith('..')
+  /** Exports a mini app would see as `any`: declared nowhere in the kit. */
+  const missing = []
   for (const [specifier, file] of owned) {
     const source = program.getSourceFile(join(kitDir, file))
     const module = source && checker.getSymbolAtLocation(source)
@@ -92,11 +126,18 @@ export function readContract(kitAt) {
       const target = resolved(symbol)
       publicSymbols.add(target)
       const declarations = target.declarations ?? []
-      exports[symbol.name] = declarations.length
-        ? [...new Set(declarations.map(print))].join('\n')
-        : 'unknown'
+      if (!declarations.length || !declarations.every(inKit)) {
+        missing.push(`${specifier}: ${symbol.name}`)
+        continue
+      }
+      exports[symbol.name] = [...new Set(declarations.map(print))].join('\n')
     }
     modules[specifier] = exports
+  }
+  if (missing.length) {
+    throw new Error(
+      `The kit at ${kitDir} leaves out the declarations of:\n${missing.map((name) => `  - ${name}`).join('\n')}`,
+    )
   }
 
   /** Localix types the public declarations name without exporting them: part of the contract too. */

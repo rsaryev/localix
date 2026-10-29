@@ -50,6 +50,9 @@ Localix in step. The Store's recommendations look at your work more closely and 
   back; a project removed while its settings are open steps back to Preferences.
 - **The Store keeps up while a package page is open**: a package removed meanwhile no longer says
   Installed in the list behind it, and its open page steps back to where you came from.
+- **Typed path and secret helpers in the mini app kit**: `isPathWithin`, `resolveWithin`,
+  `redactSecrets` and the SDK's other path and secret helpers are typed in a mini app built outside
+  Localix, where they were `any`.
 
 ## v0.1.0-beta.18 — 2026-10-29
 

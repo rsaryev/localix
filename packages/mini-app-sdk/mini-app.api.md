@@ -223,8 +223,8 @@ export declare const CHART_KINDS: readonly ChartKind[];
 
 ```ts
 export interface ChartEncodingReq {
-    x: 'required' | 'optional';
-    y: 'required' | 'optional';
+    x: 'optional' | 'required';
+    y: 'optional' | 'required';
     multiY: boolean;
     numericY: boolean;
 }
@@ -233,7 +233,7 @@ export interface ChartEncodingReq {
 ### ChartKind
 
 ```ts
-export type ChartKind = 'bar' | 'line' | 'area' | 'pie' | 'scatter';
+export type ChartKind = 'area' | 'bar' | 'line' | 'pie' | 'scatter';
 ```
 
 ### ChartSpec
@@ -298,13 +298,13 @@ export declare const OPEN_TARGETS: readonly OpenTarget[];
 ### OpenMode
 
 ```ts
-export type OpenMode = 'default' | 'app' | 'reveal';
+export type OpenMode = 'app' | 'default' | 'reveal';
 ```
 
 ### OpenPlatform
 
 ```ts
-export type OpenPlatform = 'darwin' | 'win32' | 'linux';
+export type OpenPlatform = 'darwin' | 'linux' | 'win32';
 ```
 
 ### OpenTarget
@@ -372,19 +372,19 @@ export interface SortSpec {
 ### TableAlign
 
 ```ts
-export type TableAlign = 'left' | 'right' | 'center';
+export type TableAlign = 'center' | 'left' | 'right';
 ```
 
 ### TableCellType
 
 ```ts
-export type TableCellType = 'text' | 'number' | 'int' | 'float' | 'bool' | 'date';
+export type TableCellType = 'bool' | 'date' | 'float' | 'int' | 'number' | 'text';
 ```
 
 ### TableCellValue
 
 ```ts
-export type TableCellValue = string | number | boolean | null;
+export type TableCellValue = boolean | null | number | string;
 ```
 
 ### TableColumn
@@ -418,14 +418,14 @@ export interface TableExporter {
     label: string;
     mimeType: string;
     extension: string;
-    serialize(columns: TableColumn[], rows: TableRow[]): string | Uint8Array;
+    serialize(columns: TableColumn[], rows: TableRow[]): Uint8Array | string;
 }
 ```
 
 ### TableFormat
 
 ```ts
-export type TableFormat = 'csv' | 'tsv' | 'json';
+export type TableFormat = 'csv' | 'json' | 'tsv';
 ```
 
 ### TableModel
@@ -482,7 +482,7 @@ export declare const XLSX_MIME = "application/vnd.openxmlformats-officedocument.
 ### coerceCell
 
 ```ts
-export declare function coerceCell(raw: string | number | boolean | null | undefined, type: TableCellType): TableCellValue;
+export declare function coerceCell(raw: boolean | null | number | string | undefined, type: TableCellType): TableCellValue;
 ```
 
 ### createDefaultExporterRegistry
@@ -554,7 +554,7 @@ export declare function inferColumnsFromObjects(rows: TableRow[]): TableColumn[]
 ### inferType
 
 ```ts
-export declare function inferType(values: Array<string | null | undefined>): TableCellType;
+export declare function inferType(values: Array<null | string | undefined>): TableCellType;
 ```
 
 ### isChartKind
@@ -752,7 +752,7 @@ export type ActionFeedbackStore = {
 ### ActionFeedbackTone
 
 ```ts
-export type ActionFeedbackTone = "info" | "warning" | "success";
+export type ActionFeedbackTone = "info" | "success" | "warning";
 ```
 
 ### createActionFeedbackStore
@@ -777,7 +777,7 @@ export declare const ActionPill: (props: {
     recommended?: boolean;
     active?: boolean;
     elevated?: boolean;
-} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "asChild" | "recommended" | "active" | "elevated"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "active" | "asChild" | "elevated" | "recommended"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
 ## module @localixai/kit/activity-orb
@@ -874,14 +874,14 @@ export declare const AutocompleteList: (props: {
     "aria-label"?: string;
     "aria-labelledby"?: string;
     asChild?: boolean;
-    side?: "left" | "right" | "top" | "bottom";
+    side?: "bottom" | "left" | "right" | "top";
     sideOffset?: number;
     align?: "center" | "end" | "start";
     alignOffset?: number;
     arrowPadding?: number;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
-    collisionPadding?: number | Partial<Record<"left" | "right" | "top" | "bottom", number>>;
+    collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
     sticky?: Sticky;
     hideWhenDetached?: boolean;
     updatePositionStrategy?: UpdatePositionStrategy;
@@ -889,12 +889,12 @@ export declare const AutocompleteList: (props: {
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
     onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
-    onInteractOutside?: ((event: PointerDownOutsideEvent | FocusOutsideEvent) => void);
+    onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     onOpenAutoFocus?: ((event: Event) => void);
     onCloseAutoFocus?: ((event: Event) => void);
     forceMount?: true;
     material?: "app" | "foreign";
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "aria-label" | "aria-labelledby" | "asChild" | "side" | "sideOffset" | "align" | "alignOffset" | "arrowPadding" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "sticky" | "hideWhenDetached" | "updatePositionStrategy" | "deferPointerDownOutside" | "onEscapeKeyDown" | "onPointerDownOutside" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onCloseAutoFocus" | "forceMount" | "material"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "aria-label" | "aria-labelledby" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "deferPointerDownOutside" | "forceMount" | "hideWhenDetached" | "material" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onPointerDownOutside" | "side" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### AutocompleteListProps
@@ -903,7 +903,7 @@ export declare const AutocompleteList: (props: {
 export type AutocompleteListProps = Omit<Omit<PopoverContentProps & React.RefAttributes<HTMLDivElement>, "ref"> & {
     layout?: PopoverContentLayout | undefined;
     material?: "app" | "foreign" | undefined;
-} & React.RefAttributes<HTMLDivElement>, "role" | "aria-label" | "aria-labelledby" | "layout"> & AccessibleListboxName;
+} & React.RefAttributes<HTMLDivElement>, "aria-label" | "aria-labelledby" | "layout" | "role"> & AccessibleListboxName;
 ```
 
 ### AutocompleteOption
@@ -918,7 +918,7 @@ export declare const AutocompleteOption: (props: {
 ### AutocompleteOptionProps
 
 ```ts
-export type AutocompleteOptionProps = Omit<Omit<React.DetailedHTMLProps<React.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "tabIndex" | "role" | "aria-selected" | "type"> & {
+export type AutocompleteOptionProps = Omit<Omit<React.DetailedHTMLProps<React.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "aria-selected" | "role" | "tabIndex" | "type"> & {
     active: boolean;
     activeClassName?: string | undefined;
 };
@@ -936,7 +936,7 @@ export declare const AutocompleteOptions: (props: {
 ### AutocompleteOptionsProps
 
 ```ts
-export type AutocompleteOptionsProps = Omit<Omit<React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>, "ref">, "role" | "aria-label" | "aria-labelledby"> & AccessibleListboxName;
+export type AutocompleteOptionsProps = Omit<Omit<React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>, "ref">, "aria-label" | "aria-labelledby" | "role"> & AccessibleListboxName;
 ```
 
 ### AutocompletePanel
@@ -944,14 +944,14 @@ export type AutocompleteOptionsProps = Omit<Omit<React.DetailedHTMLProps<React.H
 ```ts
 export declare const AutocompletePanel: (props: {
     asChild?: boolean;
-    side?: "left" | "right" | "top" | "bottom";
+    side?: "bottom" | "left" | "right" | "top";
     sideOffset?: number;
     align?: "center" | "end" | "start";
     alignOffset?: number;
     arrowPadding?: number;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
-    collisionPadding?: number | Partial<Record<"left" | "right" | "top" | "bottom", number>>;
+    collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
     sticky?: Sticky;
     hideWhenDetached?: boolean;
     updatePositionStrategy?: UpdatePositionStrategy;
@@ -959,12 +959,12 @@ export declare const AutocompletePanel: (props: {
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
     onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
-    onInteractOutside?: ((event: PointerDownOutsideEvent | FocusOutsideEvent) => void);
+    onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     onOpenAutoFocus?: ((event: Event) => void);
     onCloseAutoFocus?: ((event: Event) => void);
     forceMount?: true;
     material?: "app" | "foreign";
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "side" | "sideOffset" | "align" | "alignOffset" | "arrowPadding" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "sticky" | "hideWhenDetached" | "updatePositionStrategy" | "deferPointerDownOutside" | "onEscapeKeyDown" | "onPointerDownOutside" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onCloseAutoFocus" | "forceMount" | "material"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "deferPointerDownOutside" | "forceMount" | "hideWhenDetached" | "material" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onPointerDownOutside" | "side" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### AutocompletePanelProps
@@ -977,25 +977,25 @@ export type AutocompletePanelProps = {
     ref?: React.Ref<HTMLDivElement> | undefined;
     key?: React.Key | null | undefined;
     defaultChecked?: boolean | undefined;
-    defaultValue?: string | number | readonly string[] | undefined;
+    defaultValue?: number | readonly string[] | string | undefined;
     suppressContentEditableWarning?: boolean | undefined;
     suppressHydrationWarning?: boolean | undefined;
     accessKey?: string | undefined;
-    autoCapitalize?: "off" | "none" | (string & {}) | "on" | "sentences" | "words" | "characters" | undefined;
+    autoCapitalize?: "characters" | "none" | "off" | "on" | "sentences" | "words" | (string & {}) | undefined;
     autoFocus?: boolean | undefined;
     className?: string | undefined;
-    contentEditable?: any | "inherit" | "plaintext-only" | undefined;
+    contentEditable?: "inherit" | "plaintext-only" | any | undefined;
     contextMenu?: string | undefined;
     dir?: string | undefined;
     draggable?: any | undefined;
-    enterKeyHint?: "search" | "enter" | "done" | "go" | "next" | "previous" | "send" | undefined;
+    enterKeyHint?: "done" | "enter" | "go" | "next" | "previous" | "search" | "send" | undefined;
     hidden?: boolean | undefined;
     id?: string | undefined;
     lang?: string | undefined;
     nonce?: string | undefined;
     spellCheck?: any | undefined;
     tabIndex?: number | undefined;
-    translate?: "yes" | "no" | undefined;
+    translate?: "no" | "yes" | undefined;
     radioGroup?: string | undefined;
     about?: string | undefined;
     content?: string | undefined;
@@ -1019,44 +1019,44 @@ export type AutocompletePanelProps = {
     results?: number | undefined;
     security?: string | undefined;
     unselectable?: "off" | "on" | undefined;
-    popover?: "" | "auto" | "manual" | "hint" | undefined;
-    popoverTargetAction?: "toggle" | "show" | "hide" | undefined;
+    popover?: "" | "auto" | "hint" | "manual" | undefined;
+    popoverTargetAction?: "hide" | "show" | "toggle" | undefined;
     popoverTarget?: string | undefined;
     inert?: boolean | undefined;
-    inputMode?: "search" | "text" | "none" | "tel" | "url" | "email" | "numeric" | "decimal" | undefined;
+    inputMode?: "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url" | undefined;
     is?: string | undefined;
     exportparts?: string | undefined;
     part?: string | undefined;
     "aria-activedescendant"?: string | undefined;
     "aria-atomic"?: any | undefined;
-    "aria-autocomplete"?: "list" | "none" | "inline" | "both" | undefined;
+    "aria-autocomplete"?: "both" | "inline" | "list" | "none" | undefined;
     "aria-braillelabel"?: string | undefined;
     "aria-brailleroledescription"?: string | undefined;
     "aria-busy"?: any | undefined;
-    "aria-checked"?: boolean | "true" | "false" | "mixed" | undefined;
+    "aria-checked"?: "false" | "mixed" | "true" | boolean | undefined;
     "aria-colcount"?: number | undefined;
     "aria-colindex"?: number | undefined;
     "aria-colindextext"?: string | undefined;
     "aria-colspan"?: number | undefined;
     "aria-controls"?: string | undefined;
-    "aria-current"?: boolean | "time" | "step" | "true" | "false" | "page" | "location" | "date" | undefined;
+    "aria-current"?: "date" | "false" | "location" | "page" | "step" | "time" | "true" | boolean | undefined;
     "aria-describedby"?: string | undefined;
     "aria-description"?: string | undefined;
     "aria-details"?: string | undefined;
     "aria-disabled"?: any | undefined;
-    "aria-dropeffect"?: "link" | "none" | "copy" | "execute" | "move" | "popup" | undefined;
+    "aria-dropeffect"?: "copy" | "execute" | "link" | "move" | "none" | "popup" | undefined;
     "aria-errormessage"?: string | undefined;
     "aria-expanded"?: any | undefined;
     "aria-flowto"?: string | undefined;
     "aria-grabbed"?: any | undefined;
-    "aria-haspopup"?: boolean | "dialog" | "menu" | "grid" | "listbox" | "tree" | "true" | "false" | undefined;
+    "aria-haspopup"?: "dialog" | "false" | "grid" | "listbox" | "menu" | "tree" | "true" | boolean | undefined;
     "aria-hidden"?: any | undefined;
-    "aria-invalid"?: boolean | "true" | "false" | "grammar" | "spelling" | undefined;
+    "aria-invalid"?: "false" | "grammar" | "spelling" | "true" | boolean | undefined;
     "aria-keyshortcuts"?: string | undefined;
     "aria-label"?: string | undefined;
     "aria-labelledby"?: string | undefined;
     "aria-level"?: number | undefined;
-    "aria-live"?: "off" | "polite" | "assertive" | undefined;
+    "aria-live"?: "assertive" | "off" | "polite" | undefined;
     "aria-modal"?: any | undefined;
     "aria-multiline"?: any | undefined;
     "aria-multiselectable"?: any | undefined;
@@ -1064,9 +1064,9 @@ export type AutocompletePanelProps = {
     "aria-owns"?: string | undefined;
     "aria-placeholder"?: string | undefined;
     "aria-posinset"?: number | undefined;
-    "aria-pressed"?: boolean | "true" | "false" | "mixed" | undefined;
+    "aria-pressed"?: "false" | "mixed" | "true" | boolean | undefined;
     "aria-readonly"?: any | undefined;
-    "aria-relevant"?: "text" | "additions" | "additions removals" | "additions text" | "all" | "removals" | "removals additions" | "removals text" | "text additions" | "text removals" | undefined;
+    "aria-relevant"?: "additions removals" | "additions text" | "additions" | "all" | "removals additions" | "removals text" | "removals" | "text additions" | "text removals" | "text" | undefined;
     "aria-required"?: any | undefined;
     "aria-roledescription"?: string | undefined;
     "aria-rowcount"?: number | undefined;
@@ -1075,15 +1075,15 @@ export type AutocompletePanelProps = {
     "aria-rowspan"?: number | undefined;
     "aria-selected"?: any | undefined;
     "aria-setsize"?: number | undefined;
-    "aria-sort"?: "none" | "ascending" | "descending" | "other" | undefined;
+    "aria-sort"?: "ascending" | "descending" | "none" | "other" | undefined;
     "aria-valuemax"?: number | undefined;
     "aria-valuemin"?: number | undefined;
     "aria-valuenow"?: number | undefined;
     "aria-valuetext"?: string | undefined;
     children?: React.ReactNode;
-    dangerouslySetInnerHTML?: {
-        __html: string | any;
-    } | undefined;
+    dangerouslySetInnerHTML?: undefined | {
+        __html: any | string;
+    };
     onCopy?: React.ClipboardEventHandler<HTMLDivElement> | undefined;
     onCopyCapture?: React.ClipboardEventHandler<HTMLDivElement> | undefined;
     onCut?: React.ClipboardEventHandler<HTMLDivElement> | undefined;
@@ -1253,14 +1253,14 @@ export type AutocompletePanelProps = {
     onTransitionStart?: React.TransitionEventHandler<HTMLDivElement> | undefined;
     onTransitionStartCapture?: React.TransitionEventHandler<HTMLDivElement> | undefined;
     asChild?: boolean | undefined;
-    side?: "left" | "right" | "top" | "bottom" | undefined;
+    side?: "bottom" | "left" | "right" | "top" | undefined;
     sideOffset?: number | undefined;
     align?: "center" | "end" | "start" | undefined;
     alignOffset?: number | undefined;
     arrowPadding?: number | undefined;
     avoidCollisions?: boolean | undefined;
     collisionBoundary?: Boundary | Boundary[] | undefined;
-    collisionPadding?: number | Partial<Record<"left" | "right" | "top" | "bottom", number>> | undefined;
+    collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number | undefined;
     sticky?: Sticky | undefined;
     hideWhenDetached?: boolean | undefined;
     updatePositionStrategy?: UpdatePositionStrategy | undefined;
@@ -1268,7 +1268,7 @@ export type AutocompletePanelProps = {
     onEscapeKeyDown?: ((event: KeyboardEvent) => void) | undefined;
     onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void) | undefined;
     onFocusOutside?: ((event: FocusOutsideEvent) => void) | undefined;
-    onInteractOutside?: ((event: PointerDownOutsideEvent | FocusOutsideEvent) => void) | undefined;
+    onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void) | undefined;
     onOpenAutoFocus?: ((event: Event) => void) | undefined;
     onCloseAutoFocus?: ((event: Event) => void) | undefined;
     forceMount?: true | undefined;
@@ -1334,7 +1334,7 @@ export declare const BreadcrumbSelect: (props: {
     onOpenChange?: ((open: boolean) => void);
     placeholder?: string;
     ariaLabel: string;
-    ariaCurrent?: boolean | "time" | "step" | "true" | "false" | "page" | "location" | "date";
+    ariaCurrent?: "date" | "false" | "location" | "page" | "step" | "time" | "true" | boolean;
     className?: string;
     density?: "compact" | "default";
     onNavigate?: (() => void);
@@ -1363,11 +1363,11 @@ export type BreadcrumbSelectItem = {
 
 ```ts
 export declare const Button: (props: {
-    size?: "default" | "xs" | "sm" | "lg" | "xl" | "icon" | "icon-xs" | "icon-sm" | "icon-lg" | "icon-xl" | "icon-touch" | null;
-    variant?: "link" | "default" | "mono" | "field" | "secondary" | "ghost" | "destructive" | "destructive-solid" | null;
+    size?: "default" | "icon" | "icon-lg" | "icon-sm" | "icon-touch" | "icon-xl" | "icon-xs" | "lg" | "sm" | "xl" | "xs" | null;
+    variant?: "default" | "destructive" | "destructive-solid" | "field" | "ghost" | "link" | "mono" | "secondary" | null;
     asChild?: boolean;
     recommended?: boolean;
-} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "size" | "variant" | "asChild" | "recommended"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "asChild" | "recommended" | "size" | "variant"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
 ### WorkbenchSash
@@ -1382,7 +1382,7 @@ export declare const WorkbenchSash: (props: {
     valueText?: string;
     resetLabel?: string;
     active?: boolean;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "label" | "orientation" | "valueNow" | "valueMin" | "valueMax" | "valueText" | "resetLabel" | "active"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "active" | "label" | "orientation" | "resetLabel" | "valueMax" | "valueMin" | "valueNow" | "valueText"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ## module @localixai/kit/canvas
@@ -1489,26 +1489,26 @@ export declare const Canvas: <N extends Node = Node, E extends Edge = Edge>(prop
 ```ts
 export type CanvasCamera = {
     get: () => CameraViewport;
-    set: (viewport: CameraViewport, options?: {
+    set: (viewport: CameraViewport, options?: undefined | {
         duration?: number | undefined;
-    } | undefined) => void;
+    }) => void;
     panBy: (dx: number, dy: number) => void;
-    zoom: (direction: 1 | -1) => void;
+    zoom: (direction: -1 | 1) => void;
     actualSize: () => void;
-    fit: (options?: {
+    fit: (options?: undefined | {
         nodes?: readonly string[] | undefined;
         maxZoom?: number | undefined;
         duration?: number | undefined;
-    } | undefined) => void;
+    }) => void;
     fitSelection: () => boolean;
-    focus: (rect: CanvasRect, options?: {
+    focus: (rect: CanvasRect, options?: undefined | {
         padding?: number | undefined;
         duration?: number | undefined;
-    } | undefined) => void;
-    focusNode: (id: string, options?: {
+    }) => void;
+    focusNode: (id: string, options?: undefined | {
         padding?: number | undefined;
         duration?: number | undefined;
-    } | undefined) => boolean;
+    }) => boolean;
     toBoard: (clientX: number, clientY: number) => {
         x: number;
         y: number;
@@ -1517,10 +1517,10 @@ export type CanvasCamera = {
         x: number;
         y: number;
     };
-    size: () => {
+    size: () => null | {
         width: number;
         height: number;
-    } | null;
+    };
     run: (command: CameraCommand) => void;
 };
 ```
@@ -1563,8 +1563,8 @@ export declare const CanvasEdge: (props: {
         number
     ];
     labelBgBorderRadius?: number;
-    sourceHandleId?: string | null;
-    targetHandleId?: string | null;
+    sourceHandleId?: null | string;
+    targetHandleId?: null | string;
     markerStart?: string;
     markerEnd?: string;
     pathOptions?: any;
@@ -1581,14 +1581,14 @@ export type CanvasEdgeData = {
     weight?: number | undefined;
     arrow?: "always" | "focus" | "never" | undefined;
     label?: string | undefined;
-    route?: "step" | "bezier" | "straight" | undefined;
+    route?: "bezier" | "step" | "straight" | undefined;
     float?: boolean | undefined;
     fromSide?: HandleSide | undefined;
     toSide?: HandleSide | undefined;
     tail?: boolean | undefined;
-    startCap?: "circle" | "none" | "arrow" | "triangle" | "diamond" | "bar" | undefined;
-    endCap?: "circle" | "none" | "arrow" | "triangle" | "diamond" | "bar" | undefined;
-    stroke?: "solid" | "dashed" | "dotted" | undefined;
+    startCap?: "arrow" | "bar" | "circle" | "diamond" | "none" | "triangle" | undefined;
+    endCap?: "arrow" | "bar" | "circle" | "diamond" | "none" | "triangle" | undefined;
+    stroke?: "dashed" | "dotted" | "solid" | undefined;
     labelAlways?: boolean | undefined;
     caption?: boolean | undefined;
     labelAt?: number | undefined;
@@ -1601,13 +1601,13 @@ export type CanvasEdgeData = {
 ### CanvasEdgeEmphasis
 
 ```ts
-export type CanvasEdgeEmphasis = "focus" | "idle" | "dimmed";
+export type CanvasEdgeEmphasis = "dimmed" | "focus" | "idle";
 ```
 
 ### CanvasEdgeTone
 
 ```ts
-export type CanvasEdgeTone = "neutral" | "info" | "warning";
+export type CanvasEdgeTone = "info" | "neutral" | "warning";
 ```
 
 ### CanvasEdgeType
@@ -1616,17 +1616,17 @@ export type CanvasEdgeTone = "neutral" | "info" | "warning";
 export type CanvasEdgeType = EdgeBase<CanvasEdgeData, string | undefined> & EdgeLabelOptions & {
     style?: React.CSSProperties | undefined;
     className?: string | undefined;
-    reconnectable?: boolean | HandleType | undefined;
+    reconnectable?: HandleType | boolean | undefined;
     focusable?: boolean | undefined;
     ariaRole?: React.AriaRole | undefined;
-    domAttributes?: Omit<React.SVGAttributes<SVGGElement>, "style" | "className" | "id" | "role" | "aria-label" | "dangerouslySetInnerHTML"> | undefined;
+    domAttributes?: Omit<React.SVGAttributes<SVGGElement>, "aria-label" | "className" | "dangerouslySetInnerHTML" | "id" | "role" | "style"> | undefined;
 };
 ```
 
 ### CanvasInteraction
 
 ```ts
-export type CanvasInteraction = "navigate" | "edit";
+export type CanvasInteraction = "edit" | "navigate";
 ```
 
 ### CanvasPoint
@@ -1781,9 +1781,9 @@ export declare const Handle: (props: {
     isConnectableStart?: boolean;
     isConnectableEnd?: boolean;
     isValidConnection?: IsValidConnection;
-    id?: string | null;
+    id?: null | string;
     onConnect?: OnConnect;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "type" | "position" | "isConnectable" | "isConnectableStart" | "isConnectableEnd" | "isValidConnection" | "id" | "onConnect"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "id" | "isConnectable" | "isConnectableEnd" | "isConnectableStart" | "isValidConnection" | "onConnect" | "position" | "type"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### HiddenHandles
@@ -1843,7 +1843,7 @@ export declare const NodeToolbar: (props: {
     position?: Position;
     offset?: number;
     align?: Align;
-} & Omit<React.HTMLAttributes<HTMLElement>, "nodeId" | "isVisible" | "position" | "offset" | "align">) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLElement>, "align" | "isVisible" | "nodeId" | "offset" | "position">) => React.ReactElement | null;
 ```
 
 ### NodeTypes
@@ -1939,7 +1939,7 @@ export declare const readableViewport: (bounds: CanvasRect, size: CanvasSize, op
 ### useCameraPlacement
 
 ```ts
-export declare const useCameraPlacement: (key: string, place: (size: CanvasSize) => void | (() => void)) => boolean;
+export declare const useCameraPlacement: (key: string, place: (size: CanvasSize) => (() => void) | void) => boolean;
 ```
 
 ### useCanvasCamera
@@ -2003,8 +2003,8 @@ export declare const Checkbox: (props: {
 
 ```ts
 export declare const Chip: (props: {
-    size?: "dense" | "default" | "counter" | null;
-    tone?: "active" | "neutral" | "info" | "warning" | "error" | "success" | "accent" | null;
+    size?: "counter" | "default" | "dense" | null;
+    tone?: "accent" | "active" | "error" | "info" | "neutral" | "success" | "warning" | null;
 } & Omit<React.HTMLAttributes<HTMLSpanElement>, "size" | "tone"> & React.RefAttributes<HTMLSpanElement>) => React.ReactElement | null;
 ```
 
@@ -2012,8 +2012,8 @@ export declare const Chip: (props: {
 
 ```ts
 export declare const ChipButton: (props: {
-    size?: "dense" | "default" | "counter" | null;
-    tone?: "active" | "neutral" | "info" | "warning" | "error" | "success" | "accent" | null;
+    size?: "counter" | "default" | "dense" | null;
+    tone?: "accent" | "active" | "error" | "info" | "neutral" | "success" | "warning" | null;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "size" | "tone"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
@@ -2223,19 +2223,19 @@ export type EditorCompletionItem = {
     kind?: number | undefined;
     insertText?: string | undefined;
     insertTextFormat?: "plainText" | "snippet" | undefined;
-    range?: {
+    range?: undefined | {
         start: EditorPosition;
         end: EditorPosition;
-    } | undefined;
+    };
     filterText?: string | undefined;
     sortText?: string | undefined;
     preselect?: boolean | undefined;
     commitCharacters?: string[] | undefined;
-    command?: {
+    command?: undefined | {
         id: string;
         title?: string | undefined;
-        arguments?: unknown[] | undefined;
-    } | undefined;
+        arguments?: undefined | unknown[];
+    };
     documentation?: string | undefined;
 };
 ```
@@ -2248,10 +2248,10 @@ export type EditorDiagnostic = {
     character: number;
     endLine: number;
     endCharacter: number;
-    severity: "info" | "warning" | "hint" | "error";
+    severity: "error" | "hint" | "info" | "warning";
     message: string;
     source?: string | undefined;
-    code?: string | number | undefined;
+    code?: number | string | undefined;
     tags?: EditorDiagnosticTag[] | undefined;
 };
 ```
@@ -2300,8 +2300,8 @@ export type EditorPosition = {
 ```ts
 export type EditorSuggestion = {
     id: string;
-    kind: "suggestion" | "comment";
-    source?: "review" | "edit-prediction" | undefined;
+    kind: "comment" | "suggestion";
+    source?: "edit-prediction" | "review" | undefined;
     startLine: number;
     endLine: number;
     original: string;
@@ -2333,7 +2333,7 @@ export type InlineBlameSource = (signal: AbortSignal) => Promise<InlineBlameLine
 
 ```ts
 export type MonacoEditorExtension = {
-    setup: (context: MonacoEditorExtensionContext) => void | IDisposable | IDisposable[];
+    setup: (context: MonacoEditorExtensionContext) => IDisposable | IDisposable[] | void;
 };
 ```
 
@@ -2500,7 +2500,7 @@ export declare const Combobox: (props: {
     modal?: boolean;
     className?: string;
     contentClassName?: string;
-} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "value" | "onValueChange" | "options" | "placeholder" | "searchPlaceholder" | "emptyLabel" | "menuHeader" | "size" | "modal" | "className" | "contentClassName"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "className" | "contentClassName" | "emptyLabel" | "menuHeader" | "modal" | "onValueChange" | "options" | "placeholder" | "searchPlaceholder" | "size" | "value"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
 ### ComboboxOption
@@ -2533,7 +2533,7 @@ export type ComboboxProps = {
     contentClassName?: string | undefined;
     id?: string | undefined;
     "aria-describedby"?: string | undefined;
-    "aria-invalid"?: boolean | "true" | "false" | "grammar" | "spelling" | undefined;
+    "aria-invalid"?: "false" | "grammar" | "spelling" | "true" | boolean | undefined;
     "aria-label"?: string | undefined;
     "aria-labelledby"?: string | undefined;
     disabled?: boolean | undefined;
@@ -2556,7 +2556,7 @@ export declare const Command: (props: {
     loop?: boolean;
     disablePointerSelection?: boolean;
     vimBindings?: boolean;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "children" | "asChild" | "label" | "shouldFilter" | "filter" | "value" | "onValueChange" | "loop" | "disablePointerSelection" | "vimBindings"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "children" | "disablePointerSelection" | "filter" | "label" | "loop" | "onValueChange" | "shouldFilter" | "value" | "vimBindings"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### CommandDialog
@@ -2581,7 +2581,7 @@ export declare const CommandDialog: (props: {
 export declare const CommandEmpty: (props: {
     children?: React.ReactNode;
     asChild?: boolean;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "children" | "asChild"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "children"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### CommandGroup
@@ -2593,7 +2593,7 @@ export declare const CommandGroup: (props: {
     heading?: React.ReactNode;
     value?: string;
     forceMount?: boolean;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "children" | "asChild" | "heading" | "value" | "forceMount"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "children" | "forceMount" | "heading" | "value"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### CommandInput
@@ -2607,7 +2607,7 @@ export declare const CommandInput: (props: {
     containerClassName?: string;
     inputGroupClassName?: string;
     trailing?: React.ReactNode;
-} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "asChild" | "value" | "onValueChange" | "icon" | "containerClassName" | "inputGroupClassName" | "trailing"> & React.RefAttributes<HTMLInputElement>) => React.ReactElement | null;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "asChild" | "containerClassName" | "icon" | "inputGroupClassName" | "onValueChange" | "trailing" | "value"> & React.RefAttributes<HTMLInputElement>) => React.ReactElement | null;
 ```
 
 ### CommandItem
@@ -2622,7 +2622,7 @@ export declare const CommandItem: (props: {
     keywords?: string[];
     forceMount?: boolean;
     showCheck?: boolean;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "children" | "asChild" | "disabled" | "onSelect" | "value" | "keywords" | "forceMount" | "showCheck"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "children" | "disabled" | "forceMount" | "keywords" | "onSelect" | "showCheck" | "value"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### CommandList
@@ -2632,7 +2632,7 @@ export declare const CommandList: (props: {
     children?: React.ReactNode;
     asChild?: boolean;
     label?: string;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "children" | "asChild" | "label"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "children" | "label"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### CommandSeparator
@@ -2641,7 +2641,7 @@ export declare const CommandList: (props: {
 export declare const CommandSeparator: (props: {
     asChild?: boolean;
     alwaysRender?: boolean;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "alwaysRender"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "alwaysRender" | "asChild"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### CommandShortcut
@@ -2681,7 +2681,7 @@ export declare const CommentsManager: (props: {
     recommendSubmit?: boolean;
     onNavigate?: ((comment: Comment) => void);
     onAction?: ((action: CommentActionContribution) => void);
-    runningAction?: string | null;
+    runningAction?: null | string;
     elevated?: boolean;
     description?: string;
 }) => React.ReactElement | null;
@@ -2716,7 +2716,7 @@ export declare const COMPOSER_CHIP: "lx-glass lx-glass-self inline-flex cursor-p
 
 ```ts
 export declare const ComposerChip: (props: {
-    tone?: "strong" | "default" | "danger";
+    tone?: "danger" | "default" | "strong";
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "tone"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
@@ -2726,16 +2726,16 @@ export declare const ComposerChip: (props: {
 
 ```ts
 export declare const ComposerCommandButton: (props: {
-    size?: "default" | "xs" | "sm" | "lg" | "xl" | "icon" | "icon-xs" | "icon-sm" | "icon-lg" | "icon-xl" | "icon-touch" | null;
+    size?: "default" | "icon" | "icon-lg" | "icon-sm" | "icon-touch" | "icon-xl" | "icon-xs" | "lg" | "sm" | "xl" | "xs" | null;
     asChild?: boolean;
-    variant?: "link" | "default" | "mono" | "field" | "secondary" | "ghost" | "destructive" | "destructive-solid" | null;
+    variant?: "default" | "destructive" | "destructive-solid" | "field" | "ghost" | "link" | "mono" | "secondary" | null;
     recommended?: boolean;
     command: string;
     insertText?: string;
-    sessionId?: string | null;
+    sessionId?: null | string;
     replace?: boolean;
     glyph?: boolean;
-} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "size" | "asChild" | "variant" | "recommended" | "command" | "insertText" | "sessionId" | "replace" | "glyph"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "asChild" | "command" | "glyph" | "insertText" | "recommended" | "replace" | "sessionId" | "size" | "variant"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
 ## module @localixai/kit/confirm-dialog
@@ -2792,25 +2792,25 @@ export declare const ContextMenu: (props: {
 ```ts
 export declare const ContextMenuContent: (props: {
     asChild?: boolean;
-    side?: "left" | "right" | "top" | "bottom";
+    side?: "bottom" | "left" | "right" | "top";
     sideOffset?: number;
     align?: "center" | "end" | "start";
     alignOffset?: number;
     arrowPadding?: number;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
-    collisionPadding?: number | Partial<Record<"left" | "right" | "top" | "bottom", number>>;
+    collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
     sticky?: Sticky;
     hideWhenDetached?: boolean;
     updatePositionStrategy?: UpdatePositionStrategy;
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
     onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
-    onInteractOutside?: ((event: PointerDownOutsideEvent | FocusOutsideEvent) => void);
+    onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     onCloseAutoFocus?: ((event: Event) => void);
     forceMount?: true;
     loop?: boolean;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "side" | "sideOffset" | "align" | "alignOffset" | "arrowPadding" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "sticky" | "hideWhenDetached" | "updatePositionStrategy" | "onEscapeKeyDown" | "onPointerDownOutside" | "onFocusOutside" | "onInteractOutside" | "onCloseAutoFocus" | "forceMount" | "loop"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "forceMount" | "hideWhenDetached" | "loop" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onPointerDownOutside" | "side" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### ContextMenuItem
@@ -2823,7 +2823,7 @@ export declare const ContextMenuItem: (props: {
     textValue?: string;
     inset?: boolean;
     tone?: MenuItemTone;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "onSelect" | "disabled" | "asChild" | "textValue" | "inset" | "tone"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "disabled" | "inset" | "onSelect" | "textValue" | "tone"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### ContextMenuSeparator
@@ -2840,7 +2840,7 @@ export declare const ContextMenuSeparator: (props: {
 export declare const ContextMenuTrigger: (props: {
     disabled?: boolean;
     asChild?: boolean;
-} & Omit<React.HTMLAttributes<HTMLSpanElement>, "disabled" | "asChild"> & React.RefAttributes<HTMLSpanElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLSpanElement>, "asChild" | "disabled"> & React.RefAttributes<HTMLSpanElement>) => React.ReactElement | null;
 ```
 
 ## module @localixai/kit/context-ring
@@ -2879,7 +2879,7 @@ export declare const CoordinateMenu: (props: {
 export declare const CoordinateMenuItem: (props: {
     tone?: MenuItemTone;
     onSelect?: (() => void);
-} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "tone" | "onSelect"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onSelect" | "tone"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
 ### CoordinateMenuSeparator
@@ -2938,26 +2938,26 @@ export declare const DialogContent: (props: {
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
     onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
-    onInteractOutside?: ((event: PointerDownOutsideEvent | FocusOutsideEvent) => void);
+    onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     onOpenAutoFocus?: ((event: Event) => void);
     onCloseAutoFocus?: ((event: Event) => void);
     showCloseButton?: boolean;
-    size?: "fit" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
+    size?: "2xl" | "3xl" | "fit" | "lg" | "md" | "sm" | "xl" | "xs";
     layout?: DialogContentLayout;
     appearance?: "media" | "surface";
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "forceMount" | "asChild" | "deferPointerDownOutside" | "onEscapeKeyDown" | "onPointerDownOutside" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onCloseAutoFocus" | "showCloseButton" | "size" | "layout" | "appearance"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "appearance" | "asChild" | "deferPointerDownOutside" | "forceMount" | "layout" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onPointerDownOutside" | "showCloseButton" | "size"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### DialogContentLayout
 
 ```ts
-export type DialogContentLayout = "standard" | "edge-to-edge";
+export type DialogContentLayout = "edge-to-edge" | "standard";
 ```
 
 ### DialogContentSize
 
 ```ts
-export type DialogContentSize = "fit" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
+export type DialogContentSize = "2xl" | "3xl" | "fit" | "lg" | "md" | "sm" | "xl" | "xs";
 ```
 
 ### DialogDescription
@@ -2976,7 +2976,7 @@ export declare const DialogFooter: (props: {
     children: React.ReactNode;
     actionsLabel?: string;
     showCloseButton?: boolean;
-} & Omit<React.HTMLAttributes<HTMLElement>, "aside" | "children" | "actionsLabel" | "showCloseButton">) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLElement>, "actionsLabel" | "aside" | "children" | "showCloseButton">) => React.ReactElement | null;
 ```
 
 ### DialogHeader
@@ -2986,7 +2986,7 @@ export declare const DialogHeader: (props: {
     children: React.ReactNode;
     actions?: React.ReactNode;
     actionsLabel?: string;
-} & Omit<React.HTMLAttributes<HTMLElement>, "children" | "actions" | "actionsLabel">) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLElement>, "actions" | "actionsLabel" | "children">) => React.ReactElement | null;
 ```
 
 ### DialogOverlay
@@ -2995,7 +2995,7 @@ export declare const DialogHeader: (props: {
 export declare const DialogOverlay: (props: {
     forceMount?: true;
     asChild?: boolean;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "forceMount" | "asChild"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "forceMount"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### DialogPortal
@@ -3003,7 +3003,7 @@ export declare const DialogOverlay: (props: {
 ```ts
 export declare const DialogPortal: (props: {
     children?: React.ReactNode;
-    container?: Element | DocumentFragment | null;
+    container?: DocumentFragment | Element | null;
     forceMount?: true;
 }) => React.ReactElement | null;
 ```
@@ -3051,10 +3051,10 @@ export declare const PaneDialogContent: (props: {
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
     onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
-    onInteractOutside?: ((event: PointerDownOutsideEvent | FocusOutsideEvent) => void);
+    onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     onOpenAutoFocus?: ((event: Event) => void);
     onCloseAutoFocus?: ((event: Event) => void);
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "forceMount" | "asChild" | "deferPointerDownOutside" | "onEscapeKeyDown" | "onPointerDownOutside" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onCloseAutoFocus"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "deferPointerDownOutside" | "forceMount" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onPointerDownOutside"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### PaneDialogDescription
@@ -3072,7 +3072,7 @@ export declare const PaneDialogFooter: (props: {
     aside?: React.ReactNode;
     children: React.ReactNode;
     actionsLabel?: string;
-} & Omit<React.HTMLAttributes<HTMLElement>, "aside" | "children" | "actionsLabel">) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLElement>, "actionsLabel" | "aside" | "children">) => React.ReactElement | null;
 ```
 
 ### PaneDialogHeader
@@ -3082,7 +3082,7 @@ export declare const PaneDialogHeader: (props: {
     children: React.ReactNode;
     actions?: React.ReactNode;
     actionsLabel?: string;
-} & Omit<React.HTMLAttributes<HTMLElement>, "children" | "actions" | "actionsLabel">) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLElement>, "actions" | "actionsLabel" | "children">) => React.ReactElement | null;
 ```
 
 ### PaneDialogTitle
@@ -3101,7 +3101,7 @@ export declare const PaneDialogTitle: (props: {
 export declare const DialogHero: (props: {
     icon: React.ReactNode;
     tone?: DialogHeroTone;
-    size?: "sm" | "lg";
+    size?: "lg" | "sm";
     badge?: React.ReactNode;
     children?: React.ReactNode;
     className?: string;
@@ -3111,7 +3111,7 @@ export declare const DialogHero: (props: {
 ### DialogHeroTone
 
 ```ts
-export type DialogHeroTone = "neutral" | "danger" | "accent";
+export type DialogHeroTone = "accent" | "danger" | "neutral";
 ```
 
 ## module @localixai/kit/diff
@@ -3259,7 +3259,7 @@ export declare const diffDocumentFromPatch: (patch: string) => DiffDocument;
 ### languageFromPath
 
 ```ts
-export declare const languageFromPath: (path: string | undefined) => "html" | "ruby" | "text" | "go" | "typescript" | "tsx" | "javascript" | "jsx" | "json" | "xml" | "css" | "scss" | "python" | "markdown" | "rust" | "c" | "cpp" | "java" | "bash" | "dockerfile" | "yaml" | "sql" | "toml";
+export declare const languageFromPath: (path: string | undefined) => "bash" | "c" | "cpp" | "css" | "dockerfile" | "go" | "html" | "java" | "javascript" | "json" | "jsx" | "markdown" | "python" | "ruby" | "rust" | "scss" | "sql" | "text" | "toml" | "tsx" | "typescript" | "xml" | "yaml";
 ```
 
 ### useDiffViewMode
@@ -3312,8 +3312,8 @@ export declare const DocumentThumbnail: (props: {
 
 ```ts
 export declare const Drawer: (props: {
-    activeSnapPoint?: string | number | null;
-    setActiveSnapPoint?: ((snapPoint: string | number | null) => void);
+    activeSnapPoint?: null | number | string;
+    setActiveSnapPoint?: ((snapPoint: null | number | string) => void);
     children?: React.ReactNode;
     open?: boolean;
     closeThreshold?: number;
@@ -3330,7 +3330,7 @@ export declare const Drawer: (props: {
     modal?: boolean;
     nested?: boolean;
     onClose?: (() => void);
-    direction?: "left" | "right" | "top" | "bottom";
+    direction?: "bottom" | "left" | "right" | "top";
     defaultOpen?: boolean;
     disablePreventScroll?: boolean;
     repositionInputs?: boolean;
@@ -3339,7 +3339,7 @@ export declare const Drawer: (props: {
     onAnimationEnd?: ((open: boolean) => void);
     preventScrollRestoration?: boolean;
     autoFocus?: boolean;
-    snapPoints?: (string | number)[];
+    snapPoints?: (number | string)[];
     fadeFromIndex?: number;
 }) => React.ReactElement | null;
 ```
@@ -3359,12 +3359,12 @@ export declare const DrawerContent: (props: {
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
     onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
-    onInteractOutside?: ((event: PointerDownOutsideEvent | FocusOutsideEvent) => void);
+    onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     onOpenAutoFocus?: ((event: Event) => void);
     onCloseAutoFocus?: ((event: Event) => void);
     forceMount?: true;
-    material?: "popover" | "modal";
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "deferPointerDownOutside" | "onEscapeKeyDown" | "onPointerDownOutside" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onCloseAutoFocus" | "forceMount" | "material"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+    material?: "modal" | "popover";
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "deferPointerDownOutside" | "forceMount" | "material" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onPointerDownOutside"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### DrawerDescription
@@ -3382,7 +3382,7 @@ export declare const DrawerFooter: (props: {
     aside?: React.ReactNode;
     children: React.ReactNode;
     actionsLabel?: string;
-} & Omit<React.HTMLAttributes<HTMLElement>, "aside" | "children" | "actionsLabel">) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLElement>, "actionsLabel" | "aside" | "children">) => React.ReactElement | null;
 ```
 
 ### DrawerHeader
@@ -3392,7 +3392,7 @@ export declare const DrawerHeader: (props: {
     children: React.ReactNode;
     actions?: React.ReactNode;
     actionsLabel?: string;
-} & Omit<React.HTMLAttributes<HTMLElement>, "children" | "actions" | "actionsLabel">) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLElement>, "actions" | "actionsLabel" | "children">) => React.ReactElement | null;
 ```
 
 ### DrawerTitle
@@ -3503,7 +3503,7 @@ export declare const DropdownMenuCheckboxItem: (props: {
     textValue?: string;
     onCheckedChange?: ((checked: boolean) => void);
     inset?: boolean;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "onSelect" | "disabled" | "checked" | "asChild" | "textValue" | "onCheckedChange" | "inset"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "checked" | "disabled" | "inset" | "onCheckedChange" | "onSelect" | "textValue"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### DropdownMenuContent
@@ -3511,26 +3511,26 @@ export declare const DropdownMenuCheckboxItem: (props: {
 ```ts
 export declare const DropdownMenuContent: (props: {
     asChild?: boolean;
-    side?: "left" | "right" | "top" | "bottom";
+    side?: "bottom" | "left" | "right" | "top";
     sideOffset?: number;
     align?: "center" | "end" | "start";
     alignOffset?: number;
     arrowPadding?: number;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
-    collisionPadding?: number | Partial<Record<"left" | "right" | "top" | "bottom", number>>;
+    collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
     sticky?: Sticky;
     hideWhenDetached?: boolean;
     updatePositionStrategy?: UpdatePositionStrategy;
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
     onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
-    onInteractOutside?: ((event: PointerDownOutsideEvent | FocusOutsideEvent) => void);
+    onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     onCloseAutoFocus?: ((event: Event) => void);
     forceMount?: true;
     loop?: boolean;
     onOpenAutoFocus?: ((event: Event) => void);
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "side" | "sideOffset" | "align" | "alignOffset" | "arrowPadding" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "sticky" | "hideWhenDetached" | "updatePositionStrategy" | "onEscapeKeyDown" | "onPointerDownOutside" | "onFocusOutside" | "onInteractOutside" | "onCloseAutoFocus" | "forceMount" | "loop" | "onOpenAutoFocus"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "forceMount" | "hideWhenDetached" | "loop" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onPointerDownOutside" | "side" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### DropdownMenuGroup
@@ -3551,7 +3551,7 @@ export declare const DropdownMenuItem: (props: {
     textValue?: string;
     inset?: boolean;
     tone?: MenuItemTone;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "onSelect" | "disabled" | "asChild" | "textValue" | "inset" | "tone"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "disabled" | "inset" | "onSelect" | "textValue" | "tone"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### DropdownMenuLabel
@@ -3568,7 +3568,7 @@ export declare const DropdownMenuLabel: (props: {
 ```ts
 export declare const DropdownMenuPortal: (props: {
     children?: React.ReactNode;
-    container?: Element | DocumentFragment | null;
+    container?: DocumentFragment | Element | null;
     forceMount?: true;
 }) => React.ReactElement | null;
 ```
@@ -3580,7 +3580,7 @@ export declare const DropdownMenuRadioGroup: (props: {
     value?: string;
     asChild?: boolean;
     onValueChange?: ((value: string) => void);
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "value" | "asChild" | "onValueChange"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "onValueChange" | "value"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### DropdownMenuRadioItem
@@ -3592,7 +3592,7 @@ export declare const DropdownMenuRadioItem: (props: {
     value: string;
     asChild?: boolean;
     textValue?: string;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "onSelect" | "disabled" | "value" | "asChild" | "textValue"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "disabled" | "onSelect" | "textValue" | "value"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### DropdownMenuSeparator
@@ -3631,17 +3631,17 @@ export declare const DropdownMenuSubContent: (props: {
     arrowPadding?: number;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
-    collisionPadding?: number | Partial<Record<"left" | "right" | "top" | "bottom", number>>;
+    collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
     sticky?: Sticky;
     hideWhenDetached?: boolean;
     updatePositionStrategy?: UpdatePositionStrategy;
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
     onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
-    onInteractOutside?: ((event: PointerDownOutsideEvent | FocusOutsideEvent) => void);
+    onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     forceMount?: true;
     loop?: boolean;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "sideOffset" | "align" | "alignOffset" | "arrowPadding" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "sticky" | "hideWhenDetached" | "updatePositionStrategy" | "onEscapeKeyDown" | "onPointerDownOutside" | "onFocusOutside" | "onInteractOutside" | "forceMount" | "loop"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "forceMount" | "hideWhenDetached" | "loop" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onPointerDownOutside" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### DropdownMenuSubTrigger
@@ -3652,7 +3652,7 @@ export declare const DropdownMenuSubTrigger: (props: {
     asChild?: boolean;
     textValue?: string;
     inset?: boolean;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "disabled" | "asChild" | "textValue" | "inset"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "disabled" | "inset" | "textValue"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### DropdownMenuTrigger
@@ -3708,7 +3708,7 @@ export declare const OS_FAMILY: OsFamily;
 ### OsFamily
 
 ```ts
-export type OsFamily = "mac" | "windows" | "linux" | "unknown";
+export type OsFamily = "linux" | "mac" | "unknown" | "windows";
 ```
 
 ### REDUCED_MOTION_QUERY
@@ -3811,7 +3811,7 @@ export declare const Field: (props: {
     readOnly?: boolean;
     layout?: "inline" | "stacked";
     children: React.ReactNode;
-} & Omit<React.HTMLAttributes<HTMLElement>, "controlId" | "label" | "description" | "error" | "required" | "optional" | "disabled" | "readOnly" | "layout" | "children">) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLElement>, "children" | "controlId" | "description" | "disabled" | "error" | "label" | "layout" | "optional" | "readOnly" | "required">) => React.ReactElement | null;
 ```
 
 ## module @localixai/kit/file-chip
@@ -3820,7 +3820,7 @@ export declare const Field: (props: {
 
 ```ts
 export declare const FileChip: (props: {
-    kind: "image" | "text" | "file";
+    kind: "file" | "image" | "text";
     name: string;
     size: number;
     imageSrc?: string;
@@ -3874,7 +3874,7 @@ export declare const FindWidgetCount: (props: {
     query: string;
     count: number;
     index: number;
-} & Omit<React.HTMLAttributes<HTMLElement>, "query" | "count" | "index">) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLElement>, "count" | "index" | "query">) => React.ReactElement | null;
 ```
 
 ### FindWidgetInput
@@ -3936,9 +3936,9 @@ export declare const GetButton: (props: {
     state: GetState;
     name: string;
     onPress?: (() => void);
-    size?: "sm" | "md" | "lg";
-    emphasis?: "strong" | "quiet";
-} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "state" | "name" | "onPress" | "size" | "emphasis"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
+    size?: "lg" | "md" | "sm";
+    emphasis?: "quiet" | "strong";
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "emphasis" | "name" | "onPress" | "size" | "state"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
 ### GetButtonProps
@@ -3948,33 +3948,33 @@ export type GetButtonProps = {
     state: GetState;
     name: string;
     onPress?: (() => void) | undefined;
-    size?: "sm" | "md" | "lg" | undefined;
-    emphasis?: "strong" | "quiet" | undefined;
+    size?: "lg" | "md" | "sm" | undefined;
+    emphasis?: "quiet" | "strong" | undefined;
     form?: string | undefined;
     slot?: string | undefined;
     style?: React.CSSProperties | undefined;
     title?: string | undefined;
     key?: React.Key | null | undefined;
     defaultChecked?: boolean | undefined;
-    defaultValue?: string | number | readonly string[] | undefined;
+    defaultValue?: number | readonly string[] | string | undefined;
     suppressContentEditableWarning?: boolean | undefined;
     suppressHydrationWarning?: boolean | undefined;
     accessKey?: string | undefined;
-    autoCapitalize?: "off" | "none" | (string & {}) | "on" | "sentences" | "words" | "characters" | undefined;
+    autoCapitalize?: "characters" | "none" | "off" | "on" | "sentences" | "words" | (string & {}) | undefined;
     autoFocus?: boolean | undefined;
     className?: string | undefined;
-    contentEditable?: any | "inherit" | "plaintext-only" | undefined;
+    contentEditable?: "inherit" | "plaintext-only" | any | undefined;
     contextMenu?: string | undefined;
     dir?: string | undefined;
     draggable?: any | undefined;
-    enterKeyHint?: "search" | "enter" | "done" | "go" | "next" | "previous" | "send" | undefined;
+    enterKeyHint?: "done" | "enter" | "go" | "next" | "previous" | "search" | "send" | undefined;
     hidden?: boolean | undefined;
     id?: string | undefined;
     lang?: string | undefined;
     nonce?: string | undefined;
     spellCheck?: any | undefined;
     tabIndex?: number | undefined;
-    translate?: "yes" | "no" | undefined;
+    translate?: "no" | "yes" | undefined;
     radioGroup?: string | undefined;
     role?: React.AriaRole | undefined;
     about?: string | undefined;
@@ -3999,44 +3999,44 @@ export type GetButtonProps = {
     results?: number | undefined;
     security?: string | undefined;
     unselectable?: "off" | "on" | undefined;
-    popover?: "" | "auto" | "manual" | "hint" | undefined;
-    popoverTargetAction?: "toggle" | "show" | "hide" | undefined;
+    popover?: "" | "auto" | "hint" | "manual" | undefined;
+    popoverTargetAction?: "hide" | "show" | "toggle" | undefined;
     popoverTarget?: string | undefined;
     inert?: boolean | undefined;
-    inputMode?: "search" | "text" | "none" | "tel" | "url" | "email" | "numeric" | "decimal" | undefined;
+    inputMode?: "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url" | undefined;
     is?: string | undefined;
     exportparts?: string | undefined;
     part?: string | undefined;
     "aria-activedescendant"?: string | undefined;
     "aria-atomic"?: any | undefined;
-    "aria-autocomplete"?: "list" | "none" | "inline" | "both" | undefined;
+    "aria-autocomplete"?: "both" | "inline" | "list" | "none" | undefined;
     "aria-braillelabel"?: string | undefined;
     "aria-brailleroledescription"?: string | undefined;
     "aria-busy"?: any | undefined;
-    "aria-checked"?: boolean | "true" | "false" | "mixed" | undefined;
+    "aria-checked"?: "false" | "mixed" | "true" | boolean | undefined;
     "aria-colcount"?: number | undefined;
     "aria-colindex"?: number | undefined;
     "aria-colindextext"?: string | undefined;
     "aria-colspan"?: number | undefined;
     "aria-controls"?: string | undefined;
-    "aria-current"?: boolean | "time" | "step" | "true" | "false" | "page" | "location" | "date" | undefined;
+    "aria-current"?: "date" | "false" | "location" | "page" | "step" | "time" | "true" | boolean | undefined;
     "aria-describedby"?: string | undefined;
     "aria-description"?: string | undefined;
     "aria-details"?: string | undefined;
     "aria-disabled"?: any | undefined;
-    "aria-dropeffect"?: "link" | "none" | "copy" | "execute" | "move" | "popup" | undefined;
+    "aria-dropeffect"?: "copy" | "execute" | "link" | "move" | "none" | "popup" | undefined;
     "aria-errormessage"?: string | undefined;
     "aria-expanded"?: any | undefined;
     "aria-flowto"?: string | undefined;
     "aria-grabbed"?: any | undefined;
-    "aria-haspopup"?: boolean | "dialog" | "menu" | "grid" | "listbox" | "tree" | "true" | "false" | undefined;
+    "aria-haspopup"?: "dialog" | "false" | "grid" | "listbox" | "menu" | "tree" | "true" | boolean | undefined;
     "aria-hidden"?: any | undefined;
-    "aria-invalid"?: boolean | "true" | "false" | "grammar" | "spelling" | undefined;
+    "aria-invalid"?: "false" | "grammar" | "spelling" | "true" | boolean | undefined;
     "aria-keyshortcuts"?: string | undefined;
     "aria-label"?: string | undefined;
     "aria-labelledby"?: string | undefined;
     "aria-level"?: number | undefined;
-    "aria-live"?: "off" | "polite" | "assertive" | undefined;
+    "aria-live"?: "assertive" | "off" | "polite" | undefined;
     "aria-modal"?: any | undefined;
     "aria-multiline"?: any | undefined;
     "aria-multiselectable"?: any | undefined;
@@ -4044,9 +4044,9 @@ export type GetButtonProps = {
     "aria-owns"?: string | undefined;
     "aria-placeholder"?: string | undefined;
     "aria-posinset"?: number | undefined;
-    "aria-pressed"?: boolean | "true" | "false" | "mixed" | undefined;
+    "aria-pressed"?: "false" | "mixed" | "true" | boolean | undefined;
     "aria-readonly"?: any | undefined;
-    "aria-relevant"?: "text" | "additions" | "additions removals" | "additions text" | "all" | "removals" | "removals additions" | "removals text" | "text additions" | "text removals" | undefined;
+    "aria-relevant"?: "additions removals" | "additions text" | "additions" | "all" | "removals additions" | "removals text" | "removals" | "text additions" | "text removals" | "text" | undefined;
     "aria-required"?: any | undefined;
     "aria-roledescription"?: string | undefined;
     "aria-rowcount"?: number | undefined;
@@ -4055,14 +4055,14 @@ export type GetButtonProps = {
     "aria-rowspan"?: number | undefined;
     "aria-selected"?: any | undefined;
     "aria-setsize"?: number | undefined;
-    "aria-sort"?: "none" | "ascending" | "descending" | "other" | undefined;
+    "aria-sort"?: "ascending" | "descending" | "none" | "other" | undefined;
     "aria-valuemax"?: number | undefined;
     "aria-valuemin"?: number | undefined;
     "aria-valuenow"?: number | undefined;
     "aria-valuetext"?: string | undefined;
-    dangerouslySetInnerHTML?: {
-        __html: string | any;
-    } | undefined;
+    dangerouslySetInnerHTML?: undefined | {
+        __html: any | string;
+    };
     onCopy?: React.ClipboardEventHandler<HTMLButtonElement> | undefined;
     onCopyCapture?: React.ClipboardEventHandler<HTMLButtonElement> | undefined;
     onCut?: React.ClipboardEventHandler<HTMLButtonElement> | undefined;
@@ -4231,13 +4231,13 @@ export type GetButtonProps = {
     onTransitionStart?: React.TransitionEventHandler<HTMLButtonElement> | undefined;
     onTransitionStartCapture?: React.TransitionEventHandler<HTMLButtonElement> | undefined;
     disabled?: boolean | undefined;
-    formAction?: string | ((formData: FormData) => void | Promise<void>) | undefined;
+    formAction?: ((formData: FormData) => Promise<void> | void) | string | undefined;
     formEncType?: string | undefined;
     formMethod?: string | undefined;
     formNoValidate?: boolean | undefined;
     formTarget?: string | undefined;
-    type?: "button" | "submit" | "reset" | undefined;
-    value?: string | number | readonly string[] | undefined;
+    type?: "button" | "reset" | "submit" | undefined;
+    value?: number | readonly string[] | string | undefined;
 };
 ```
 
@@ -4247,17 +4247,17 @@ export type GetButtonProps = {
 export type GetState = {
     kind: "get";
 } | {
-    kind: "progress";
-    percent: number | null;
-    label: string;
+    kind: "installed";
 } | {
     kind: "open";
 } | {
-    kind: "update";
+    kind: "progress";
+    percent: null | number;
+    label: string;
 } | {
     kind: "retry";
 } | {
-    kind: "installed";
+    kind: "update";
 };
 ```
 
@@ -4281,23 +4281,23 @@ export declare const HoverCard: (props: {
 ```ts
 export declare const HoverCardContent: (props: {
     asChild?: boolean;
-    side?: "left" | "right" | "top" | "bottom";
+    side?: "bottom" | "left" | "right" | "top";
     sideOffset?: number;
     align?: "center" | "end" | "start";
     alignOffset?: number;
     arrowPadding?: number;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
-    collisionPadding?: number | Partial<Record<"left" | "right" | "top" | "bottom", number>>;
+    collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
     sticky?: Sticky;
     hideWhenDetached?: boolean;
     updatePositionStrategy?: UpdatePositionStrategy;
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
     onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
-    onInteractOutside?: ((event: PointerDownOutsideEvent | FocusOutsideEvent) => void);
+    onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     forceMount?: true;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "side" | "sideOffset" | "align" | "alignOffset" | "arrowPadding" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "sticky" | "hideWhenDetached" | "updatePositionStrategy" | "onEscapeKeyDown" | "onPointerDownOutside" | "onFocusOutside" | "onInteractOutside" | "forceMount"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "forceMount" | "hideWhenDetached" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onPointerDownOutside" | "side" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### HoverCardTrigger
@@ -4318,13 +4318,13 @@ export declare const IconButton: (props: {
     recommended?: boolean;
     "aria-label": string;
     children: React.ReactNode;
-    tone?: "default" | "danger";
+    tone?: "danger" | "default";
     emphasis?: "solid" | "subtle";
     surface?: "content" | "sidebar";
-    size?: "xs" | "sm" | "md" | "lg" | "xl" | "touch";
+    size?: "lg" | "md" | "sm" | "touch" | "xl" | "xs";
     tooltip?: React.ReactNode;
-    tooltipSide?: "left" | "right" | "top" | "bottom";
-} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "asChild" | "recommended" | "aria-label" | "children" | "tone" | "emphasis" | "surface" | "size" | "tooltip" | "tooltipSide"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
+    tooltipSide?: "bottom" | "left" | "right" | "top";
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "aria-label" | "asChild" | "children" | "emphasis" | "recommended" | "size" | "surface" | "tone" | "tooltip" | "tooltipSide"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
 ### IconButtonProps
@@ -4333,15 +4333,15 @@ export declare const IconButton: (props: {
 export type IconButtonProps = Omit<Omit<Omit<React.DetailedHTMLProps<React.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref"> & ButtonVariants & {
     asChild?: boolean | undefined;
     recommended?: boolean | undefined;
-} & React.RefAttributes<HTMLButtonElement>, "ref">, "title" | "aria-label" | "children" | "size" | "variant"> & {
+} & React.RefAttributes<HTMLButtonElement>, "ref">, "aria-label" | "children" | "size" | "title" | "variant"> & {
     'aria-label': string;
     children: React.ReactNode;
-    tone?: "default" | "danger" | undefined;
+    tone?: "danger" | "default" | undefined;
     emphasis?: "solid" | "subtle" | undefined;
     surface?: "content" | "sidebar" | undefined;
-    size?: "xs" | "sm" | "md" | "lg" | "xl" | "touch" | undefined;
+    size?: "lg" | "md" | "sm" | "touch" | "xl" | "xs" | undefined;
     tooltip?: React.ReactNode;
-    tooltipSide?: "left" | "right" | "top" | "bottom" | undefined;
+    tooltipSide?: "bottom" | "left" | "right" | "top" | undefined;
 };
 ```
 
@@ -4361,7 +4361,7 @@ export declare const InlineCompletionGhost: (props: {
 
 ```ts
 export declare const Input: (props: {
-    size?: "md" | "lg" | "xl";
+    size?: "lg" | "md" | "xl";
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> & React.RefAttributes<HTMLInputElement>) => React.ReactElement | null;
 ```
 
@@ -4377,7 +4377,7 @@ export declare const InputGroup: (props: {} & React.HTMLAttributes<HTMLDivElemen
 
 ```ts
 export declare const InputGroupAddon: (props: {
-    align?: "inline-start" | "inline-end" | "block-start" | "block-end" | null;
+    align?: "block-end" | "block-start" | "inline-end" | "inline-start" | null;
     focusOnClick?: boolean;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "focusOnClick"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
@@ -4387,17 +4387,17 @@ export declare const InputGroupAddon: (props: {
 ```ts
 export declare const InputGroupButton: (props: {
     asChild?: boolean;
-    variant?: "link" | "default" | "mono" | "field" | "secondary" | "ghost" | "destructive" | "destructive-solid" | null;
+    variant?: "default" | "destructive" | "destructive-solid" | "field" | "ghost" | "link" | "mono" | "secondary" | null;
     recommended?: boolean;
-    size?: "xs" | "sm" | "icon" | "icon-sm" | null;
-} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "asChild" | "variant" | "recommended" | "size"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
+    size?: "icon" | "icon-sm" | "sm" | "xs" | null;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "asChild" | "recommended" | "size" | "variant"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
 ### InputGroupInput
 
 ```ts
 export declare const InputGroupInput: (props: {
-    size?: "md" | "lg" | "xl";
+    size?: "lg" | "md" | "xl";
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> & React.RefAttributes<HTMLInputElement>) => React.ReactElement | null;
 ```
 
@@ -4416,7 +4416,7 @@ export declare const ItemCard: (props: {
     actions?: React.ReactNode;
     openLabel: string;
     onOpen: () => void;
-} & Omit<React.HTMLAttributes<HTMLElement>, "tile" | "title" | "marks" | "description" | "note" | "footer" | "actions" | "openLabel" | "onOpen">) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLElement>, "actions" | "description" | "footer" | "marks" | "note" | "onOpen" | "openLabel" | "tile" | "title">) => React.ReactElement | null;
 ```
 
 ### ItemCardProps
@@ -4435,25 +4435,25 @@ export type ItemCardProps = {
     slot?: string | undefined;
     style?: React.CSSProperties | undefined;
     defaultChecked?: boolean | undefined;
-    defaultValue?: string | number | readonly string[] | undefined;
+    defaultValue?: number | readonly string[] | string | undefined;
     suppressContentEditableWarning?: boolean | undefined;
     suppressHydrationWarning?: boolean | undefined;
     accessKey?: string | undefined;
-    autoCapitalize?: "off" | "none" | (string & {}) | "on" | "sentences" | "words" | "characters" | undefined;
+    autoCapitalize?: "characters" | "none" | "off" | "on" | "sentences" | "words" | (string & {}) | undefined;
     autoFocus?: boolean | undefined;
     className?: string | undefined;
-    contentEditable?: any | "inherit" | "plaintext-only" | undefined;
+    contentEditable?: "inherit" | "plaintext-only" | any | undefined;
     contextMenu?: string | undefined;
     dir?: string | undefined;
     draggable?: any | undefined;
-    enterKeyHint?: "search" | "enter" | "done" | "go" | "next" | "previous" | "send" | undefined;
+    enterKeyHint?: "done" | "enter" | "go" | "next" | "previous" | "search" | "send" | undefined;
     hidden?: boolean | undefined;
     id?: string | undefined;
     lang?: string | undefined;
     nonce?: string | undefined;
     spellCheck?: any | undefined;
     tabIndex?: number | undefined;
-    translate?: "yes" | "no" | undefined;
+    translate?: "no" | "yes" | undefined;
     radioGroup?: string | undefined;
     role?: React.AriaRole | undefined;
     about?: string | undefined;
@@ -4478,44 +4478,44 @@ export type ItemCardProps = {
     results?: number | undefined;
     security?: string | undefined;
     unselectable?: "off" | "on" | undefined;
-    popover?: "" | "auto" | "manual" | "hint" | undefined;
-    popoverTargetAction?: "toggle" | "show" | "hide" | undefined;
+    popover?: "" | "auto" | "hint" | "manual" | undefined;
+    popoverTargetAction?: "hide" | "show" | "toggle" | undefined;
     popoverTarget?: string | undefined;
     inert?: boolean | undefined;
-    inputMode?: "search" | "text" | "none" | "tel" | "url" | "email" | "numeric" | "decimal" | undefined;
+    inputMode?: "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url" | undefined;
     is?: string | undefined;
     exportparts?: string | undefined;
     part?: string | undefined;
     "aria-activedescendant"?: string | undefined;
     "aria-atomic"?: any | undefined;
-    "aria-autocomplete"?: "list" | "none" | "inline" | "both" | undefined;
+    "aria-autocomplete"?: "both" | "inline" | "list" | "none" | undefined;
     "aria-braillelabel"?: string | undefined;
     "aria-brailleroledescription"?: string | undefined;
     "aria-busy"?: any | undefined;
-    "aria-checked"?: boolean | "true" | "false" | "mixed" | undefined;
+    "aria-checked"?: "false" | "mixed" | "true" | boolean | undefined;
     "aria-colcount"?: number | undefined;
     "aria-colindex"?: number | undefined;
     "aria-colindextext"?: string | undefined;
     "aria-colspan"?: number | undefined;
     "aria-controls"?: string | undefined;
-    "aria-current"?: boolean | "time" | "step" | "true" | "false" | "page" | "location" | "date" | undefined;
+    "aria-current"?: "date" | "false" | "location" | "page" | "step" | "time" | "true" | boolean | undefined;
     "aria-describedby"?: string | undefined;
     "aria-description"?: string | undefined;
     "aria-details"?: string | undefined;
     "aria-disabled"?: any | undefined;
-    "aria-dropeffect"?: "link" | "none" | "copy" | "execute" | "move" | "popup" | undefined;
+    "aria-dropeffect"?: "copy" | "execute" | "link" | "move" | "none" | "popup" | undefined;
     "aria-errormessage"?: string | undefined;
     "aria-expanded"?: any | undefined;
     "aria-flowto"?: string | undefined;
     "aria-grabbed"?: any | undefined;
-    "aria-haspopup"?: boolean | "dialog" | "menu" | "grid" | "listbox" | "tree" | "true" | "false" | undefined;
+    "aria-haspopup"?: "dialog" | "false" | "grid" | "listbox" | "menu" | "tree" | "true" | boolean | undefined;
     "aria-hidden"?: any | undefined;
-    "aria-invalid"?: boolean | "true" | "false" | "grammar" | "spelling" | undefined;
+    "aria-invalid"?: "false" | "grammar" | "spelling" | "true" | boolean | undefined;
     "aria-keyshortcuts"?: string | undefined;
     "aria-label"?: string | undefined;
     "aria-labelledby"?: string | undefined;
     "aria-level"?: number | undefined;
-    "aria-live"?: "off" | "polite" | "assertive" | undefined;
+    "aria-live"?: "assertive" | "off" | "polite" | undefined;
     "aria-modal"?: any | undefined;
     "aria-multiline"?: any | undefined;
     "aria-multiselectable"?: any | undefined;
@@ -4523,9 +4523,9 @@ export type ItemCardProps = {
     "aria-owns"?: string | undefined;
     "aria-placeholder"?: string | undefined;
     "aria-posinset"?: number | undefined;
-    "aria-pressed"?: boolean | "true" | "false" | "mixed" | undefined;
+    "aria-pressed"?: "false" | "mixed" | "true" | boolean | undefined;
     "aria-readonly"?: any | undefined;
-    "aria-relevant"?: "text" | "additions" | "additions removals" | "additions text" | "all" | "removals" | "removals additions" | "removals text" | "text additions" | "text removals" | undefined;
+    "aria-relevant"?: "additions removals" | "additions text" | "additions" | "all" | "removals additions" | "removals text" | "removals" | "text additions" | "text removals" | "text" | undefined;
     "aria-required"?: any | undefined;
     "aria-roledescription"?: string | undefined;
     "aria-rowcount"?: number | undefined;
@@ -4534,15 +4534,15 @@ export type ItemCardProps = {
     "aria-rowspan"?: number | undefined;
     "aria-selected"?: any | undefined;
     "aria-setsize"?: number | undefined;
-    "aria-sort"?: "none" | "ascending" | "descending" | "other" | undefined;
+    "aria-sort"?: "ascending" | "descending" | "none" | "other" | undefined;
     "aria-valuemax"?: number | undefined;
     "aria-valuemin"?: number | undefined;
     "aria-valuenow"?: number | undefined;
     "aria-valuetext"?: string | undefined;
     children?: React.ReactNode;
-    dangerouslySetInnerHTML?: {
-        __html: string | any;
-    } | undefined;
+    dangerouslySetInnerHTML?: undefined | {
+        __html: any | string;
+    };
     onCopy?: React.ClipboardEventHandler<HTMLLIElement> | undefined;
     onCopyCapture?: React.ClipboardEventHandler<HTMLLIElement> | undefined;
     onCut?: React.ClipboardEventHandler<HTMLLIElement> | undefined;
@@ -4750,13 +4750,13 @@ export type BindingOverrides = {
 ### Chord
 
 ```ts
-export type Chord = string | null;
+export type Chord = null | string;
 ```
 
 ### ChordModifier
 
 ```ts
-export type ChordModifier = "alt" | "shift" | "secondary" | "mod";
+export type ChordModifier = "alt" | "mod" | "secondary" | "shift";
 ```
 
 ### KeyChordEvent
@@ -4775,7 +4775,7 @@ export type KeyChordEvent = {
 ### NativeEditCommand
 
 ```ts
-export type NativeEditCommand = "undo" | "redo" | "select_all";
+export type NativeEditCommand = "redo" | "select_all" | "undo";
 ```
 
 ### PrimaryModifierEvent
@@ -4798,7 +4798,7 @@ export type ResolvedBindings = {
 ### ShortcutCategory
 
 ```ts
-export type ShortcutCategory = "search" | "navigation" | "layout" | "editor" | "composer" | "files";
+export type ShortcutCategory = "composer" | "editor" | "files" | "layout" | "navigation" | "search";
 ```
 
 ### ShortcutCommand
@@ -4842,7 +4842,7 @@ export declare const formatChordText: (chord: Chord, os?: OsFamily) => string;
 ### formatModifierText
 
 ```ts
-export declare const formatModifierText: (modifier: "alt" | "shift" | "secondary" | "mod", os?: OsFamily) => string;
+export declare const formatModifierText: (modifier: "alt" | "mod" | "secondary" | "shift", os?: OsFamily) => string;
 ```
 
 ### isPrimaryModifier
@@ -5043,7 +5043,7 @@ export declare const setRootFontPx: (px: number) => void;
 ### useElementWidth
 
 ```ts
-export declare const useElementWidth: <T extends HTMLElement>(ref: React.RefObject<T | null>) => number | null;
+export declare const useElementWidth: <T extends HTMLElement>(ref: React.RefObject<T | null>) => null | number;
 ```
 
 ### useHorizontalWheelScroll
@@ -5189,11 +5189,11 @@ export type MediaCarouselItem = {
 
 ```ts
 export declare const MediaOverlayButton: (props: {
-    size?: "xs" | "sm" | "md" | "lg" | "xl";
+    size?: "lg" | "md" | "sm" | "xl" | "xs";
     shape?: "round" | "square";
     destructive?: boolean;
     "aria-label": string;
-} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "size" | "shape" | "destructive" | "aria-label"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "aria-label" | "destructive" | "shape" | "size"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
 ### mediaOverlayClasses
@@ -5267,7 +5267,7 @@ export declare const OpponentMenu: (props: {
     onChange: (opponent: "agent" | "decision") => void;
     disabled?: boolean;
     heading?: string;
-    size?: "default" | "sm" | "lg";
+    size?: "default" | "lg" | "sm";
     className?: string;
 }) => React.ReactElement | null;
 ```
@@ -5280,7 +5280,7 @@ export type OpponentMenuProps = {
     onChange: (opponent: "agent" | "decision") => void;
     disabled?: boolean | undefined;
     heading?: string | undefined;
-    size?: "default" | "sm" | "lg" | undefined;
+    size?: "default" | "lg" | "sm" | undefined;
     className?: string | undefined;
 };
 ```
@@ -5323,7 +5323,7 @@ export declare const startResizeSession: (event: {
 ```ts
 export declare const usePaneResize: (opts: {
     axis: "x" | "y";
-    direction?: 1 | -1 | undefined;
+    direction?: -1 | 1 | undefined;
     initial: number;
     min: number;
     max: number;
@@ -5340,7 +5340,7 @@ export declare const usePaneResize: (opts: {
 
 ```ts
 export declare const PaneStateOverlay: (props: {
-    material?: "dimmed" | "solid" | "subtle" | "plain";
+    material?: "dimmed" | "plain" | "solid" | "subtle";
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "material"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -5356,7 +5356,7 @@ export declare const PanelHeader: (props: {
     actions?: React.ReactNode;
     actionsLabel?: string;
     tone?: "content" | "sidebar";
-} & Omit<React.HTMLAttributes<HTMLElement>, "title" | "icon" | "summary" | "actions" | "actionsLabel" | "tone"> & React.RefAttributes<HTMLElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLElement>, "actions" | "actionsLabel" | "icon" | "summary" | "title" | "tone"> & React.RefAttributes<HTMLElement>) => React.ReactElement | null;
 ```
 
 ## module @localixai/kit/pdf-pages
@@ -5437,14 +5437,14 @@ export declare const PopoverClose: (props: {
 ```ts
 export declare const PopoverContent: (props: {
     asChild?: boolean;
-    side?: "left" | "right" | "top" | "bottom";
+    side?: "bottom" | "left" | "right" | "top";
     sideOffset?: number;
     align?: "center" | "end" | "start";
     alignOffset?: number;
     arrowPadding?: number;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
-    collisionPadding?: number | Partial<Record<"left" | "right" | "top" | "bottom", number>>;
+    collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
     sticky?: Sticky;
     hideWhenDetached?: boolean;
     updatePositionStrategy?: UpdatePositionStrategy;
@@ -5452,13 +5452,13 @@ export declare const PopoverContent: (props: {
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
     onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
-    onInteractOutside?: ((event: PointerDownOutsideEvent | FocusOutsideEvent) => void);
+    onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     onOpenAutoFocus?: ((event: Event) => void);
     onCloseAutoFocus?: ((event: Event) => void);
     forceMount?: true;
     layout?: PopoverContentLayout;
     material?: "app" | "foreign";
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "side" | "sideOffset" | "align" | "alignOffset" | "arrowPadding" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "sticky" | "hideWhenDetached" | "updatePositionStrategy" | "deferPointerDownOutside" | "onEscapeKeyDown" | "onPointerDownOutside" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onCloseAutoFocus" | "forceMount" | "layout" | "material"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "deferPointerDownOutside" | "forceMount" | "hideWhenDetached" | "layout" | "material" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onPointerDownOutside" | "side" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### PopoverDescription
@@ -5566,16 +5566,16 @@ export declare const statusBtnActive: "bg-surface-active text-foreground before:
 ```ts
 export declare const RefreshAction: (props: {
     "aria-label": string;
-    size?: "xs" | "sm" | "md" | "lg" | "xl" | "touch";
+    size?: "lg" | "md" | "sm" | "touch" | "xl" | "xs";
     tooltip?: React.ReactNode;
     asChild?: boolean;
-    tone?: "default" | "danger";
+    tone?: "danger" | "default";
     recommended?: boolean;
     emphasis?: "solid" | "subtle";
     surface?: "content" | "sidebar";
-    tooltipSide?: "left" | "right" | "top" | "bottom";
+    tooltipSide?: "bottom" | "left" | "right" | "top";
     busy?: boolean;
-} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "aria-label" | "size" | "tooltip" | "asChild" | "tone" | "recommended" | "emphasis" | "surface" | "tooltipSide" | "busy"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "aria-label" | "asChild" | "busy" | "emphasis" | "recommended" | "size" | "surface" | "tone" | "tooltip" | "tooltipSide"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
 ## module @localixai/kit/resource-context-button
@@ -5587,8 +5587,8 @@ export declare const ResourceContextButton: (props: {
     uri: string;
     label: string;
     className?: string;
-    mode?: "icon" | "action";
-    sessionId?: string | null;
+    mode?: "action" | "icon";
+    sessionId?: null | string;
 }) => React.ReactElement | null;
 ```
 
@@ -5620,7 +5620,7 @@ export type RichTextEditorProps = {
     id?: string | undefined;
     className?: string | undefined;
     "aria-describedby"?: string | undefined;
-    "aria-invalid"?: boolean | "true" | "false" | "grammar" | "spelling" | undefined;
+    "aria-invalid"?: "false" | "grammar" | "spelling" | "true" | boolean | undefined;
     "aria-label"?: string | undefined;
     "aria-labelledby"?: string | undefined;
     "aria-readonly"?: any | undefined;
@@ -5665,7 +5665,7 @@ export declare const observeScrollPercentTarget: (el: HTMLElement, apply: (perce
 ### percentToScrollTop
 
 ```ts
-export declare const percentToScrollTop: (percent: number, m: Pick<ScrollGeometry, "scrollHeight" | "clientHeight">) => number;
+export declare const percentToScrollTop: (percent: number, m: Pick<ScrollGeometry, "clientHeight" | "scrollHeight">) => number;
 ```
 
 ### publishScrollPercent
@@ -5689,12 +5689,12 @@ export declare const SearchInput: (props: {
     value: string;
     onValueChange: (value: string) => void;
     bare?: boolean;
-    size?: "md" | "lg" | "xl";
+    size?: "lg" | "md" | "xl";
     inset?: boolean;
     tone?: "default" | "sidebar";
     className?: string;
     trailing?: React.ReactNode;
-} & Omit<React.InputHTMLAttributes<HTMLElement>, "value" | "onValueChange" | "bare" | "size" | "inset" | "tone" | "className" | "trailing">) => React.ReactElement | null;
+} & Omit<React.InputHTMLAttributes<HTMLElement>, "bare" | "className" | "inset" | "onValueChange" | "size" | "tone" | "trailing" | "value">) => React.ReactElement | null;
 ```
 
 ## module @localixai/kit/section-heading
@@ -5706,7 +5706,7 @@ export declare const SectionHeading: (props: {
     title: React.ReactNode;
     description?: React.ReactNode;
     actions?: React.ReactNode;
-    level?: "section" | "page";
+    level?: "page" | "section";
     as?: "h1" | "h2" | "h3";
     className?: string;
 }) => React.ReactElement | null;
@@ -5719,7 +5719,7 @@ export type SectionHeadingProps = {
     title: React.ReactNode;
     description?: React.ReactNode;
     actions?: React.ReactNode;
-    level?: "section" | "page" | undefined;
+    level?: "page" | "section" | undefined;
     as?: "h1" | "h2" | "h3" | undefined;
     className?: string | undefined;
 };
@@ -5733,7 +5733,7 @@ export type SectionHeadingProps = {
 export declare const SectionLabel: (props: {
     children: React.ReactNode;
     as?: "div" | "h2" | "h3" | "h4" | "span";
-    size?: "xs" | "2xs";
+    size?: "2xs" | "xs";
     weight?: "medium" | "semibold";
     className?: string;
 }) => React.ReactElement | null;
@@ -5753,7 +5753,7 @@ export declare const Select: (props: {
     align?: "center" | "end" | "start";
     className?: string;
     contentClassName?: string;
-} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "value" | "onValueChange" | "options" | "placeholder" | "size" | "align" | "className" | "contentClassName"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "align" | "className" | "contentClassName" | "onValueChange" | "options" | "placeholder" | "size" | "value"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
 ### SelectOption
@@ -5835,7 +5835,7 @@ export declare const SidebarNav: (props: {
     search?: React.ReactNode;
     className?: string;
     onToggle?: (() => void);
-    selectSize?: "md" | "lg" | "xl";
+    selectSize?: "lg" | "md" | "xl";
 }) => React.ReactElement | null;
 ```
 
@@ -5867,7 +5867,7 @@ export type SidebarNavItem = {
 ### SidebarNavMode
 
 ```ts
-export type SidebarNavMode = "select" | "compact" | "full";
+export type SidebarNavMode = "compact" | "full" | "select";
 ```
 
 ## module @localixai/kit/skeleton
@@ -5887,13 +5887,13 @@ export declare const Slider: (props: {
     steps: readonly string[];
     value: number;
     onValueChange: (index: number) => void;
-} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "steps" | "value" | "onValueChange"> & React.RefAttributes<HTMLInputElement>) => React.ReactElement | null;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onValueChange" | "steps" | "value"> & React.RefAttributes<HTMLInputElement>) => React.ReactElement | null;
 ```
 
 ### SliderProps
 
 ```ts
-export type SliderProps = Omit<Omit<React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>, "ref">, "defaultValue" | "onChange" | "type" | "value" | "max" | "min" | "step"> & {
+export type SliderProps = Omit<Omit<React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>, "ref">, "defaultValue" | "max" | "min" | "onChange" | "step" | "type" | "value"> & {
     steps: readonly string[];
     value: number;
     onValueChange: (index: number) => void;
@@ -5906,9 +5906,9 @@ export type SliderProps = Omit<Omit<React.DetailedHTMLProps<React.InputHTMLAttri
 
 ```ts
 export declare const Spinner: (props: {
-    size?: "xs" | "sm" | "md" | "lg";
+    size?: "lg" | "md" | "sm" | "xs";
     label?: string;
-} & Omit<React.SVGAttributes<SVGElement>, "size" | "label"> & React.RefAttributes<SVGSVGElement>) => React.ReactElement | null;
+} & Omit<React.SVGAttributes<SVGElement>, "label" | "size"> & React.RefAttributes<SVGSVGElement>) => React.ReactElement | null;
 ```
 
 ## module @localixai/kit/stat
@@ -5918,7 +5918,7 @@ export declare const Spinner: (props: {
 ```ts
 export declare const StatCard: (props: {
     label: string;
-    value: string | number;
+    value: number | string;
     dot?: string;
     hint?: string;
     hintTone?: "good" | "muted";
@@ -5954,7 +5954,7 @@ export declare const StateNotice: (props: {
     className?: string;
     bodyClassName?: string;
     role?: "alert" | "status";
-    ariaLive?: "off" | "polite" | "assertive";
+    ariaLive?: "assertive" | "off" | "polite";
 }) => React.ReactElement | null;
 ```
 
@@ -5970,7 +5970,7 @@ export declare const STATUS_TONE_DOT: Record<WorkStatusTone, string>;
 
 ```ts
 export declare const StatusDot: (props: {
-    size?: "sm" | "md" | "lg";
+    size?: "lg" | "md" | "sm";
     className?: string;
     label?: string;
 }) => React.ReactElement | null;
@@ -5979,7 +5979,7 @@ export declare const StatusDot: (props: {
 ### WorkStatusTone
 
 ```ts
-export type WorkStatusTone = "idle" | "done" | "running" | "queued" | "review" | "error";
+export type WorkStatusTone = "done" | "error" | "idle" | "queued" | "review" | "running";
 ```
 
 ## module @localixai/kit/status-tone
@@ -5987,7 +5987,7 @@ export type WorkStatusTone = "idle" | "done" | "running" | "queued" | "review" |
 ### STATUS_BADGE_CLASS
 
 ```ts
-export declare const STATUS_BADGE_CLASS: Record<"info" | "warning" | "error" | "success", string>;
+export declare const STATUS_BADGE_CLASS: Record<"error" | "info" | "success" | "warning", string>;
 ```
 
 ## module @localixai/kit/switch
@@ -6053,7 +6053,7 @@ export type TabItem<T extends string = string> = {
     tabId?: string | undefined;
     panelId?: string | undefined;
     icon?: LucideIcon | undefined;
-    badge?: string | number | undefined;
+    badge?: number | string | undefined;
     disabled?: boolean | undefined;
 };
 ```
@@ -6065,7 +6065,7 @@ export declare const TabPanel: (props: {
     id: string;
     "aria-labelledby": string;
     active: boolean;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "id" | "aria-labelledby" | "active"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "active" | "aria-labelledby" | "id"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### TabStrip
@@ -6254,7 +6254,7 @@ export declare const warmMiniAppUiComponents: () => Promise<unknown>;
 ```ts
 export declare const TextAction: (props: {
     tooltip?: React.ReactNode;
-    tooltipSide?: "left" | "right" | "top" | "bottom";
+    tooltipSide?: "bottom" | "left" | "right" | "top";
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "tooltip" | "tooltipSide"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
@@ -6264,7 +6264,7 @@ export declare const TextAction: (props: {
 
 ```ts
 export declare const Textarea: (props: {
-    size?: "md" | "lg" | "xl";
+    size?: "lg" | "md" | "xl";
 } & Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "size"> & React.RefAttributes<HTMLTextAreaElement>) => React.ReactElement | null;
 ```
 
@@ -6272,7 +6272,7 @@ export declare const Textarea: (props: {
 
 ```ts
 export type TextareaProps = Omit<React.DetailedHTMLProps<React.TextareaHTMLAttributes<HTMLTextAreaElement>, HTMLTextAreaElement>, "ref"> & {
-    size?: "md" | "lg" | "xl" | undefined;
+    size?: "lg" | "md" | "xl" | undefined;
 };
 ```
 
@@ -6384,7 +6384,7 @@ export declare const ToolHeaderAction: (props: {
     label: string;
     onClick: () => void;
     disabled?: boolean;
-    tone?: "default" | "danger";
+    tone?: "danger" | "default";
 }) => React.ReactElement | null;
 ```
 
@@ -6414,7 +6414,7 @@ export declare const ToolLine: (props: {
 ### ToolSectionLabel
 
 ```ts
-export type ToolSectionLabel = number | "In" | "Out" | "Error";
+export type ToolSectionLabel = "Error" | "In" | "Out" | number;
 ```
 
 ### hasItemError
@@ -6441,9 +6441,9 @@ export declare const itemErrorMessage: (item: ToolBackedItem) => string | undefi
 
 ```ts
 export declare const ActionTooltip: (props: {
-    children: React.ReactElement<unknown, string | React.JSXElementConstructor<any>>;
+    children: React.ReactElement<unknown, React.JSXElementConstructor<any> | string>;
     label: React.ReactNode;
-    side?: "left" | "right" | "top" | "bottom";
+    side?: "bottom" | "left" | "right" | "top";
     disabled?: boolean;
     accessibleLabel?: string;
     open?: boolean;
@@ -6455,9 +6455,9 @@ export declare const ActionTooltip: (props: {
 
 ```ts
 export declare const MetadataTooltip: (props: {
-    children: React.ReactElement<unknown, string | React.JSXElementConstructor<any>>;
+    children: React.ReactElement<unknown, React.JSXElementConstructor<any> | string>;
     label: React.ReactNode;
-    side?: "left" | "right" | "top" | "bottom";
+    side?: "bottom" | "left" | "right" | "top";
     align?: "center" | "end" | "start";
 }) => React.ReactElement | null;
 ```
@@ -6466,9 +6466,9 @@ export declare const MetadataTooltip: (props: {
 
 ```ts
 export type MetadataTooltipProps = {
-    children: React.ReactElement<unknown, string | React.JSXElementConstructor<any>>;
+    children: React.ReactElement<unknown, React.JSXElementConstructor<any> | string>;
     label: React.ReactNode;
-    side?: "left" | "right" | "top" | "bottom" | undefined;
+    side?: "bottom" | "left" | "right" | "top" | undefined;
     align?: "center" | "end" | "start" | undefined;
 };
 ```
@@ -6495,18 +6495,18 @@ export declare const TooltipContent: (props: {
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
     onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     asChild?: boolean;
-    side?: "left" | "right" | "top" | "bottom";
+    side?: "bottom" | "left" | "right" | "top";
     sideOffset?: number;
     align?: "center" | "end" | "start";
     alignOffset?: number;
     arrowPadding?: number;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
-    collisionPadding?: number | Partial<Record<"left" | "right" | "top" | "bottom", number>>;
+    collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
     sticky?: Sticky;
     hideWhenDetached?: boolean;
     updatePositionStrategy?: UpdatePositionStrategy;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "forceMount" | "aria-label" | "onEscapeKeyDown" | "onPointerDownOutside" | "asChild" | "side" | "sideOffset" | "align" | "alignOffset" | "arrowPadding" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "sticky" | "hideWhenDetached" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "aria-label" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "forceMount" | "hideWhenDetached" | "onEscapeKeyDown" | "onPointerDownOutside" | "side" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### TooltipProvider
@@ -6559,7 +6559,7 @@ export declare const indentGuideStyle: (depth: number) => React.CSSProperties;
 ```ts
 export declare const treeNavKeyDown: (e: React.KeyboardEvent<HTMLElement>, opts: {
     toggleDir: (path: string) => void;
-    parentOf: (path: string) => string | null;
+    parentOf: (path: string) => null | string;
 }) => void;
 ```
 
@@ -6569,7 +6569,7 @@ export declare const treeNavKeyDown: (e: React.KeyboardEvent<HTMLElement>, opts:
 export declare const useTreeRovingFocus: () => {
     attachContainer: (el: HTMLElement | null) => void;
     onFocus: (e: React.FocusEvent<Element, Element>) => void;
-    tabIndexFor: (path: string) => 0 | -1;
+    tabIndexFor: (path: string) => -1 | 0;
 };
 ```
 
@@ -6616,7 +6616,7 @@ export declare const WorkbenchBreadcrumb: (props: {
     dragRegion?: boolean;
     scrollable?: boolean;
     scrollToEndKey?: string;
-} & Omit<React.HTMLAttributes<HTMLElement>, "aria-label" | "density" | "bordered" | "dragRegion" | "scrollable" | "scrollToEndKey"> & React.RefAttributes<HTMLElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLElement>, "aria-label" | "bordered" | "density" | "dragRegion" | "scrollToEndKey" | "scrollable"> & React.RefAttributes<HTMLElement>) => React.ReactElement | null;
 ```
 
 ## module @localixai/kit/workbench-filter-bar
@@ -6638,10 +6638,10 @@ export declare const WorkbenchFilterBar: (props: {
 
 ```ts
 export declare const WorkbenchListRow: (props: {
-    density?: "dense" | "compact" | "default";
+    density?: "compact" | "default" | "dense";
     active?: boolean;
     dragging?: boolean;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "density" | "active" | "dragging"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "active" | "density" | "dragging"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### WorkbenchListRowActions
@@ -6651,7 +6651,7 @@ export declare const WorkbenchListRowActions: (props: {
     "aria-label": string;
     visibility?: "always" | "hover";
     fallback?: React.ReactNode;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "aria-label" | "visibility" | "fallback"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "aria-label" | "fallback" | "visibility"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### WorkbenchListRowLeading
@@ -6688,7 +6688,7 @@ export declare const WorkbenchListRowTrigger: (props: {} & React.ButtonHTMLAttri
 
 ```ts
 export declare const WorkbenchNoticeBar: (props: {
-    tone?: "neutral" | "info" | "warning" | "error" | "success";
+    tone?: "error" | "info" | "neutral" | "success" | "warning";
     icon?: React.ReactNode;
     title: React.ReactNode;
     description?: React.ReactNode;
@@ -6697,7 +6697,7 @@ export declare const WorkbenchNoticeBar: (props: {
     onDismiss?: (() => void);
     dismissLabel?: string;
     layout?: WorkbenchNoticeLayout;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "tone" | "icon" | "title" | "description" | "actions" | "actionsLabel" | "onDismiss" | "dismissLabel" | "layout"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "actions" | "actionsLabel" | "description" | "dismissLabel" | "icon" | "layout" | "onDismiss" | "title" | "tone"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ## module @localixai/kit/workbench-statusbar
@@ -6756,7 +6756,7 @@ export type StatusStripFit = {
 
 ```ts
 export type StatusStripFitInput = {
-    containerWidth: number | null;
+    containerWidth: null | number;
     count: number;
     max: number;
     breadcrumbDepth?: number | undefined;
@@ -6776,10 +6776,10 @@ export declare const WorkbenchStatusBar: (props: {
     "aria-label": string;
     align?: "end" | "start";
     divided?: boolean;
-    seam?: "top" | "bottom";
+    seam?: "bottom" | "top";
     tone?: "content" | "sidebar";
     wrap?: boolean;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "aria-label" | "align" | "divided" | "seam" | "tone" | "wrap"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "aria-label" | "divided" | "seam" | "tone" | "wrap"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### WorkbenchStatusButton
@@ -6848,7 +6848,7 @@ export declare const FloatingActionDivider: (props: {} & React.HTMLAttributes<HT
 ```ts
 export declare const FloatingActionGroup: (props: {
     "aria-label": string;
-    placement?: "top-start" | "top-end" | "bottom-start" | "bottom-end";
+    placement?: "bottom-end" | "bottom-start" | "top-end" | "top-start";
     wrap?: boolean;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "aria-label" | "placement" | "wrap"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
@@ -6863,7 +6863,7 @@ export declare const WorkbenchToolbar: (props: {
     tone?: WorkbenchToolbarTone;
     layout?: WorkbenchToolbarLayout;
     wrap?: boolean;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "aria-label" | "as" | "density" | "tone" | "layout" | "wrap"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "aria-label" | "as" | "density" | "layout" | "tone" | "wrap"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ### WorkbenchToolbarSection
@@ -6874,7 +6874,7 @@ export declare const WorkbenchToolbarSection: (props: {
     spacing?: "compact" | "default";
     wrap?: boolean;
     "aria-label"?: string;
-} & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "spacing" | "wrap" | "aria-label"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "aria-label" | "spacing" | "wrap"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
 ## module @localixai/mini-app-sdk/agent-wait
@@ -7111,8 +7111,8 @@ export interface AgentTool<TInput = unknown, TDetails = unknown> {
         readonly name: string;
         readonly source: string;
     };
-    executionMode?: 'sequential' | 'parallel';
-    executionModeFor?: (input: unknown) => 'sequential' | 'parallel';
+    executionMode?: 'parallel' | 'sequential';
+    executionModeFor?: (input: unknown) => 'parallel' | 'sequential';
     parallelScopePaths?: (input: unknown) => string[];
     mutates?: boolean;
     classify?: (input: unknown) => CallClass;
@@ -7121,7 +7121,7 @@ export interface AgentTool<TInput = unknown, TDetails = unknown> {
     behaviorHints?: AgentToolBehaviorHints;
     background?: boolean;
     promoteAfterMs?: number;
-    contextClass?: 'readResult' | 'mutate' | 'patch' | 'nonidempotent';
+    contextClass?: 'mutate' | 'nonidempotent' | 'patch' | 'readResult';
     exposure?: ToolExposure;
     standalone?: boolean;
     presentation?: AgentToolPresentation;
@@ -7153,7 +7153,7 @@ export interface AgentToolExecutionContext {
 export interface AgentToolResult<TDetails = unknown> {
     content: string;
     sources?: AgentSource[];
-    contentParts?: Array<TextContent | ImageContent | FileContent>;
+    contentParts?: Array<FileContent | ImageContent | TextContent>;
     details?: TDetails;
     isError?: boolean;
     error?: ToolErrorPayload;
@@ -7269,7 +7269,7 @@ export interface BackendSubsystem {
     textInputCompletionSurfaces?: MiniAppTextInputCompletionSurface[];
     wsFrames?: WsFrameContribution[];
     capabilities?: Capabilities;
-    onShutdown?: () => void | Promise<void>;
+    onShutdown?: () => Promise<void> | void;
 }
 ```
 
@@ -7278,11 +7278,11 @@ export interface BackendSubsystem {
 ```ts
 export interface BodySchema<T> {
     safeParse(value: unknown): {
-        success: true;
-        data: T;
-    } | {
         success: false;
         error: ZodIssueBearer;
+    } | {
+        success: true;
+        data: T;
     };
 }
 ```
@@ -7321,7 +7321,7 @@ export interface CallClass {
 ### CallEffect
 
 ```ts
-export type CallEffect = 'read' | 'view' | 'session' | 'files' | 'host' | 'external';
+export type CallEffect = 'external' | 'files' | 'host' | 'read' | 'session' | 'view';
 ```
 
 ### Capabilities
@@ -7409,19 +7409,19 @@ export interface ChannelModelOption {
 
 ```ts
 export type ChannelRunEvent = {
-    type: 'progress';
-    text: string;
-    activity?: string;
-} | {
-    type: 'status';
-    status: 'running' | 'completed' | 'failed';
-} | {
     type: 'hitl';
     requestId: string;
     kind: string;
     title?: string;
     toolName: string;
     payload: unknown;
+} | {
+    type: 'progress';
+    text: string;
+    activity?: string;
+} | {
+    type: 'status';
+    status: 'completed' | 'failed' | 'running';
 };
 ```
 
@@ -7432,7 +7432,7 @@ export interface ChannelSessionSummary {
     id: string;
     title: string;
     projectId: string;
-    runtimeStatus: 'idle' | 'running' | 'completed' | 'failed' | 'stopped';
+    runtimeStatus: 'completed' | 'failed' | 'idle' | 'running' | 'stopped';
     modelId: string;
     reasoningEffort: ReasoningEffort;
     updatedAt: string;
@@ -7448,13 +7448,13 @@ export interface ChannelWorkspaceApi {
         name: string;
     }>>;
     listSessions(opts?: {
-        projectId?: string | null;
+        projectId?: null | string;
         limit?: number;
     }): Promise<ChannelSessionSummary[]>;
     getSession(sessionId: string): Promise<ChannelSessionSummary | null>;
     createSession(input: {
         title?: string;
-        projectId?: string | null;
+        projectId?: null | string;
     }): Promise<ChannelSessionSummary>;
     stopSession(sessionId: string): Promise<boolean>;
     listModels(): Promise<ChannelModelOption[]>;
@@ -7489,7 +7489,7 @@ export interface ChatRef {
 
 ```ts
 export interface ChildGone {
-    code: number | null;
+    code: null | number;
     error?: Error;
     viaExit: boolean;
 }
@@ -7538,7 +7538,7 @@ export interface CollectionSpec<T extends {
 
 ```ts
 export interface CollectionWhere {
-    sessionId?: string | null;
+    sessionId?: null | string;
     userId?: string;
 }
 ```
@@ -7584,7 +7584,7 @@ export interface ConfigChangeResponsePayload {
 ### ConfigReloadClass
 
 ```ts
-export type ConfigReloadClass = 'immediate' | 'next-run' | 'new-session' | 'restart';
+export type ConfigReloadClass = 'immediate' | 'new-session' | 'next-run' | 'restart';
 ```
 
 ### ConfirmGrantOption
@@ -7592,7 +7592,7 @@ export type ConfigReloadClass = 'immediate' | 'next-run' | 'new-session' | 'rest
 ```ts
 export interface ConfirmGrantOption {
     id: string;
-    kind: 'program' | 'path' | 'folder' | 'resource' | 'tool';
+    kind: 'folder' | 'path' | 'program' | 'resource' | 'tool';
     label: string;
     covers: string;
     target?: string;
@@ -7632,7 +7632,7 @@ export type ConfirmToolResponse = HumanInLoopResponseBase<'confirm', ConfirmTool
 export interface ConfirmToolResponsePayload {
     answers: {
         confirmed: boolean;
-        scope?: 'once' | 'session' | 'always';
+        scope?: 'always' | 'once' | 'session';
         grant?: string;
         message?: string;
     };
@@ -7686,7 +7686,7 @@ export interface ContextContribution {
 ### ContextDestination
 
 ```ts
-export type ContextDestination = 'chat' | 'edit-prediction' | 'inline-completion' | 'title-generation' | 'subagent' | 'recommendation';
+export type ContextDestination = 'chat' | 'edit-prediction' | 'inline-completion' | 'recommendation' | 'subagent' | 'title-generation';
 ```
 
 ### ContextEstimate
@@ -7703,9 +7703,9 @@ export interface ContextEstimate {
 
 ```ts
 export interface ContextProviderContribution {
-    provider: ContextResolver | AutomaticContextProvider;
+    provider: AutomaticContextProvider | ContextResolver;
     destinations: readonly ContextDestination[];
-    activation: 'explicit' | 'automatic';
+    activation: 'automatic' | 'explicit';
     defaultEnabled: boolean;
     maxTokens: number;
     timeoutMs: number;
@@ -7740,7 +7740,7 @@ export interface ContextReference {
 ### ContextReferenceAttributes
 
 ```ts
-export type ContextReferenceAttributes = Readonly<Record<string, string | number | boolean>>;
+export type ContextReferenceAttributes = Readonly<Record<string, boolean | number | string>>;
 ```
 
 ### ContextResolver
@@ -7758,13 +7758,13 @@ export interface ContextResolver {
 ### ContextScope
 
 ```ts
-export type ContextScope = 'document' | 'project' | 'session' | 'global';
+export type ContextScope = 'document' | 'global' | 'project' | 'session';
 ```
 
 ### ContextSensitivity
 
 ```ts
-export type ContextSensitivity = 'public' | 'project' | 'sensitive' | 'forbidden';
+export type ContextSensitivity = 'forbidden' | 'project' | 'public' | 'sensitive';
 ```
 
 ### CoreDeletion
@@ -7824,7 +7824,7 @@ export declare class DeadlineExceededError extends Error {
 ### DecisionAnswer
 
 ```ts
-export type DecisionAnswer = DecisionChoiceAnswer | DecisionBoolAnswer;
+export type DecisionAnswer = DecisionBoolAnswer | DecisionChoiceAnswer;
 ```
 
 ### DecisionAsk
@@ -7882,9 +7882,9 @@ export interface DecisionChoiceQuestion {
 
 ```ts
 export interface DecisionHost {
-    available(userId: string): Promise<{
+    available(userId: string): Promise<null | {
         model: string;
-    } | null>;
+    }>;
     decide(userId: string, ask: DecisionAsk, options: DecisionOptions): Promise<DecisionOutcome>;
 }
 ```
@@ -7892,7 +7892,7 @@ export interface DecisionHost {
 ### DecisionMissReason
 
 ```ts
-export type DecisionMissReason = Exclude<DecisionOutcome['status'], 'answered'> | 'unsure';
+export type DecisionMissReason = 'unsure' | Exclude<DecisionOutcome['status'], 'answered'>;
 ```
 
 ### DecisionOptions
@@ -7915,7 +7915,7 @@ export type DecisionOutcome = {
     ms: number;
     answers: Record<string, DecisionAnswer>;
 } | {
-    status: 'unavailable' | 'deadline' | 'cancelled' | 'failed';
+    status: 'cancelled' | 'deadline' | 'failed' | 'unavailable';
     model?: string;
     ms: number;
 };
@@ -7924,7 +7924,7 @@ export type DecisionOutcome = {
 ### DecisionQuestion
 
 ```ts
-export type DecisionQuestion = DecisionChoiceQuestion | DecisionBoolQuestion;
+export type DecisionQuestion = DecisionBoolQuestion | DecisionChoiceQuestion;
 ```
 
 ### DecisionResult
@@ -7932,11 +7932,11 @@ export type DecisionQuestion = DecisionChoiceQuestion | DecisionBoolQuestion;
 ```ts
 export type DecisionResult<K extends string> = {
     pick: K;
-    by: 'model';
-} | {
-    pick: K;
     by: 'fallback';
     reason: DecisionMissReason;
+} | {
+    pick: K;
+    by: 'model';
 };
 ```
 
@@ -7964,7 +7964,7 @@ export interface DocExtractParams {
         start: number;
         end?: number;
     };
-    sheet?: string | number;
+    sheet?: number | string;
     offset?: number;
 }
 ```
@@ -7972,7 +7972,7 @@ export interface DocExtractParams {
 ### DocExtractResult
 
 ```ts
-export type DocExtractResult = DocExtractText | DocExtractTable;
+export type DocExtractResult = DocExtractTable | DocExtractText;
 ```
 
 ### DocExtractTable
@@ -7981,7 +7981,7 @@ export type DocExtractResult = DocExtractText | DocExtractTable;
 export interface DocExtractTable {
     kind: 'table';
     columns: string[];
-    rows: Array<Array<string | number | boolean | null>>;
+    rows: Array<Array<boolean | null | number | string>>;
     metadata: DocExtractMetadata;
 }
 ```
@@ -7990,7 +7990,7 @@ export interface DocExtractTable {
 
 ```ts
 export interface DocExtractText {
-    kind: 'text' | 'slides';
+    kind: 'slides' | 'text';
     markdown: string;
     metadata: DocExtractMetadata;
 }
@@ -8005,7 +8005,7 @@ export type DocExtractWindow = Pick<DocExtractParams, 'pageRange' | 'sheet'>;
 ### DocGenerateFormat
 
 ```ts
-export type DocGenerateFormat = 'docx' | 'xlsx' | 'pdf';
+export type DocGenerateFormat = 'docx' | 'pdf' | 'xlsx';
 ```
 
 ### DocGenerateParams
@@ -8047,7 +8047,7 @@ export interface DocumentGeneratePort {
 ### DocumentTextExtractor
 
 ```ts
-export type DocumentTextExtractor = (targetPath: string, offset?: number, window?: DocExtractWindow) => Promise<string | null>;
+export type DocumentTextExtractor = (targetPath: string, offset?: number, window?: DocExtractWindow) => Promise<null | string>;
 ```
 
 ### EXIT_DRAIN_MS
@@ -8074,7 +8074,7 @@ export type EntityPatch<T extends {
 export interface HitlRequestEvent {
     sessionId: string;
     requestId: string;
-    kind: 'confirm' | 'ask' | 'quiz' | 'config_change';
+    kind: 'ask' | 'config_change' | 'confirm' | 'quiz';
     toolName: string;
     title?: string;
     payload: unknown;
@@ -8087,7 +8087,7 @@ export interface HitlRequestEvent {
 export interface HitlResolvedEvent {
     sessionId: string;
     requestId: string;
-    kind: 'confirm' | 'ask' | 'quiz' | 'config_change';
+    kind: 'ask' | 'config_change' | 'confirm' | 'quiz';
     toolName: string;
     response?: unknown;
     dismissed?: boolean;
@@ -8114,7 +8114,7 @@ export type HostRouteContext = {
 ### HttpFetch
 
 ```ts
-export type HttpFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+export type HttpFetch = (input: Request | URL | string, init?: RequestInit) => Promise<Response>;
 ```
 
 ### HumanAssignedEvent
@@ -8153,7 +8153,7 @@ export type JsonErrorStatus = 400 | 401 | 403 | 404 | 409 | 422 | 500 | 503;
 ```ts
 export interface JsonStore<T> {
     read(): Promise<T>;
-    update(change: (current: T) => T | Promise<T>): Promise<T>;
+    update(change: (current: T) => Promise<T> | T): Promise<T>;
 }
 ```
 
@@ -8176,7 +8176,7 @@ export declare const KILL_ESCALATION_MS = 2000;
 
 ```ts
 export interface KillablePipedProcess extends PipedProcess {
-    kill(signal?: number | NodeJS.Signals): void;
+    kill(signal?: NodeJS.Signals | number): void;
 }
 ```
 
@@ -8216,12 +8216,12 @@ export interface ManifestOAuthSpec {
         clientId?: string;
         scopes?: string[];
         params?: Record<string, string>;
-        paramNames?: Partial<Record<'redirectUri' | 'state' | 'challenge' | 'challengeMethod' | 'clientId' | 'scope' | 'responseType', string>>;
+        paramNames?: Partial<Record<'challenge' | 'challengeMethod' | 'clientId' | 'redirectUri' | 'responseType' | 'scope' | 'state', string>>;
     };
     token: ManifestOAuthTokenSpec;
     refresh?: {
         url?: string;
-        format?: 'json' | 'form';
+        format?: 'form' | 'json';
         headers?: Record<string, string>;
         params?: Record<string, string>;
     };
@@ -8233,7 +8233,7 @@ export interface ManifestOAuthSpec {
 ```ts
 export interface MemoryLoadContextEvent {
     sessionId: string;
-    projectId: string | null;
+    projectId: null | string;
     prompt: string;
     builtinContext: string;
 }
@@ -8243,14 +8243,14 @@ export interface MemoryLoadContextEvent {
 
 ```ts
 export interface MemoryProvider {
-    loadContext(event: MemoryLoadContextEvent): Promise<{
+    loadContext(event: MemoryLoadContextEvent): Promise<void | {
         context?: string;
-        mode?: 'replace' | 'append';
-    } | void> | {
+        mode?: 'append' | 'replace';
+    }> | void | {
         context?: string;
-        mode?: 'replace' | 'append';
-    } | void;
-    onRunEnd?(event: MemoryRunEndEvent): void | Promise<void>;
+        mode?: 'append' | 'replace';
+    };
+    onRunEnd?(event: MemoryRunEndEvent): Promise<void> | void;
 }
 ```
 
@@ -8259,7 +8259,7 @@ export interface MemoryProvider {
 ```ts
 export interface MemoryRunEndEvent {
     sessionId: string;
-    projectId: string | null;
+    projectId: null | string;
     userText: string;
     assistantText: string;
 }
@@ -8312,7 +8312,7 @@ export interface MiniAppAgentSummary {
 ```ts
 export type MiniAppChange<Entity extends string = string> = {
     entity: Entity;
-    op: 'upserted' | 'deleted';
+    op: 'deleted' | 'upserted';
     ref: Record<string, unknown>;
 } | {
     entity: Entity;
@@ -8325,15 +8325,15 @@ export type MiniAppChange<Entity extends string = string> = {
 ```ts
 export interface MiniAppChannel {
     name: string;
-    start: (ctx: ChannelContext) => void | Promise<void>;
-    stop?: () => void | Promise<void>;
+    start: (ctx: ChannelContext) => Promise<void> | void;
+    stop?: () => Promise<void> | void;
 }
 ```
 
 ### MiniAppConfigValues
 
 ```ts
-export type MiniAppConfigValues = Record<string, string | number | boolean>;
+export type MiniAppConfigValues = Record<string, boolean | number | string>;
 ```
 
 ### MiniAppContext
@@ -8399,18 +8399,18 @@ export interface MiniAppHelpers {
 
 ```ts
 export interface MiniAppHooks {
-    onSessionStart?: (ctx: MiniAppContext) => void | Promise<void>;
-    onUserMessage?: (event: UserMessageEvent) => UserMessageHookResult | Promise<UserMessageHookResult>;
+    onSessionStart?: (ctx: MiniAppContext) => Promise<void> | void;
+    onUserMessage?: (event: UserMessageEvent) => Promise<UserMessageHookResult> | UserMessageHookResult;
     onPreToolCall?: (event: PreToolCallEvent) => PreToolCallHookResult | Promise<PreToolCallHookResult>;
     onPostToolCall?: (event: PostToolCallEvent) => PostToolCallHookResult | Promise<PostToolCallHookResult>;
     onAssistantMessage?: (event: AssistantMessageEvent) => AssistantMessageHookResult | Promise<AssistantMessageHookResult>;
     onSessionEnd?: (event: {
         sessionId: string;
-    }) => void | Promise<void>;
-    onSubagentStop?: (event: SubagentStopEvent) => void | Promise<void>;
-    onHitlRequest?: (event: HitlRequestEvent) => void | Promise<void>;
-    onHitlResolved?: (event: HitlResolvedEvent) => void | Promise<void>;
-    onHumanAssigned?: (event: HumanAssignedEvent) => void | Promise<void>;
+    }) => Promise<void> | void;
+    onSubagentStop?: (event: SubagentStopEvent) => Promise<void> | void;
+    onHitlRequest?: (event: HitlRequestEvent) => Promise<void> | void;
+    onHitlResolved?: (event: HitlResolvedEvent) => Promise<void> | void;
+    onHumanAssigned?: (event: HumanAssignedEvent) => Promise<void> | void;
 }
 ```
 
@@ -8476,7 +8476,7 @@ export interface MiniAppOAuthLogin {
 ### MiniAppPathWatch
 
 ```ts
-export type MiniAppPathWatch = (path: string, recursive: boolean, onEvent: (name: string | null) => void, onError: () => void) => () => void;
+export type MiniAppPathWatch = (path: string, recursive: boolean, onEvent: (name: null | string) => void, onError: () => void) => () => void;
 ```
 
 ### MiniAppProblem
@@ -8619,13 +8619,13 @@ export interface MiniAppUiDestination {
 export type MiniAppWakeOutcome = {
     status: 'delivered';
 } | {
+    status: 'failed';
+    reason: string;
+} | {
     status: 'missed';
     reason: string;
 } | {
     status: 'refused';
-    reason: string;
-} | {
-    status: 'failed';
     reason: string;
 };
 ```
@@ -8647,8 +8647,8 @@ export interface MiniAppWakeRequest {
 ```ts
 export interface OAuthCredential {
     accessToken: string;
-    refreshToken?: string | null;
-    expiresAt?: number | null;
+    refreshToken?: null | string;
+    expiresAt?: null | number;
 }
 ```
 
@@ -8784,7 +8784,7 @@ export interface Prerequisite {
 ### PrerequisiteState
 
 ```ts
-export type PrerequisiteState = 'missing' | 'stopped' | 'signed-out';
+export type PrerequisiteState = 'missing' | 'signed-out' | 'stopped';
 ```
 
 ### Problem
@@ -8805,7 +8805,7 @@ export interface Problem {
 ### ProblemSeverity
 
 ```ts
-export type ProblemSeverity = 'error' | 'warning' | 'info';
+export type ProblemSeverity = 'error' | 'info' | 'warning';
 ```
 
 ### ProcessOutput
@@ -8823,7 +8823,7 @@ export interface ProcessOutput {
 
 ```ts
 export interface RankSearchOptions<T> {
-    queries: string | readonly string[];
+    queries: readonly string[] | string;
     limit?: number;
     minScore?: number;
     scoreOptions?: ScoreSearchOptions;
@@ -8889,8 +8889,8 @@ export interface ResourceBrowseGroup {
 export interface ResourceBrowseResult {
     version: 1;
     partial: string;
-    parent: string | null;
-    provider: string | null;
+    parent: null | string;
+    provider: null | string;
     segment: string;
     groups: ResourceBrowseGroup[];
     notices: ResourceNode[];
@@ -8934,7 +8934,7 @@ export interface ResourceContextProviderSpec {
     revisionPrefix?: string;
     destinations?: readonly ContextDestination[];
     sensitivity?: ContextSensitivity;
-    priority?: number | ((uri: string, language: string | undefined) => number);
+    priority?: ((uri: string, language: string | undefined) => number) | number;
     maxTokens?: number;
     timeoutMs?: number;
     defaultEnabled?: boolean;
@@ -8956,9 +8956,9 @@ export interface ResourceExpansion {
 
 ```ts
 export interface ResourceNavTarget {
-    parent: string | null;
+    parent: null | string;
     segment: string;
-    provider: string | null;
+    provider: null | string;
 }
 ```
 
@@ -8988,7 +8988,7 @@ export interface ResourceProviderRegistry {
     unregister(provider: ResourceRefProvider | string): void;
     get(provider: string): ResourceRefProvider | undefined;
     list(): ResourceRefProvider[];
-    listChildren(userId: string, parentUri: string | null, query?: string, scope?: ResourceRefScope): Promise<ResourceNode[]>;
+    listChildren(userId: string, parentUri: null | string, query?: string, scope?: ResourceRefScope): Promise<ResourceNode[]>;
     browse(userId: string, partial: string, scope?: ResourceRefScope): Promise<ResourceBrowseResult>;
     expand(userId: string, uri: string, scope?: ResourceRefScope): Promise<ResourceExpansion>;
 }
@@ -9000,7 +9000,7 @@ export interface ResourceProviderRegistry {
 export interface ResourceRefProvider {
     provider: string;
     title: string;
-    listChildren(userId: string, parentUri: string | null, query?: string, scope?: ResourceRefScope): Promise<ResourceNode[]>;
+    listChildren(userId: string, parentUri: null | string, query?: string, scope?: ResourceRefScope): Promise<ResourceNode[]>;
     expand(userId: string, uri: string, scope?: ResourceRefScope): Promise<ResourceExpansion>;
 }
 ```
@@ -9016,7 +9016,7 @@ export interface ResourceRefScope {
 ### RouteValidationTarget
 
 ```ts
-export type RouteValidationTarget = 'json' | 'query' | 'param';
+export type RouteValidationTarget = 'json' | 'param' | 'query';
 ```
 
 ### RouteValidator
@@ -9052,7 +9052,7 @@ export type RouteValidatorInput<Target extends RouteValidationTarget, In, Out> =
 
 ```ts
 export interface RouteValidatorOptions {
-    envelope?: 'nested' | 'flat' | 'text';
+    envelope?: 'flat' | 'nested' | 'text';
     code?: string;
 }
 ```
@@ -9074,7 +9074,7 @@ export declare const STORE_FEED_WINDOW_MS = 50;
 ```ts
 export interface SafeFetchOptions extends RequestInit {
     resolve?: HostResolver;
-    check?: (url: URL) => Promise<string | null>;
+    check?: (url: URL) => Promise<null | string>;
     maxRedirects?: number;
 }
 ```
@@ -9083,12 +9083,12 @@ export interface SafeFetchOptions extends RequestInit {
 
 ```ts
 export type SafeFetchResult = {
+    ok: false;
+    error: string;
+} | {
     ok: true;
     response: Response;
     url: string;
-} | {
-    ok: false;
-    error: string;
 };
 ```
 
@@ -9134,7 +9134,7 @@ export interface SearchFanOut {
 
 ```ts
 export interface SearchField {
-    text: string | null | undefined;
+    text: null | string | undefined;
     weight?: number;
 }
 ```
@@ -9151,7 +9151,7 @@ export interface SearchHit {
     snippet?: string;
     icon?: string;
     score: number;
-    matchedBy?: 'words' | 'meaning' | 'both';
+    matchedBy?: 'both' | 'meaning' | 'words';
 }
 ```
 
@@ -9201,8 +9201,8 @@ export interface SearchQuery {
     text: string;
     domains?: string[];
     limitPerProvider?: number;
-    sessionId?: string | null;
-    projectId?: string | null;
+    sessionId?: null | string;
+    projectId?: null | string;
     signal?: AbortSignal;
     semantic?: SemanticQuery;
     providerOptions?: unknown;
@@ -9247,11 +9247,11 @@ export interface SemanticIndexHost extends Omit<SemanticVectors, 'ready'> {
 ```ts
 export interface SemanticIndexStatus {
     ready: boolean;
-    model: {
+    model: null | {
         id: string;
         label: string;
         dimensions: number;
-    } | null;
+    };
 }
 ```
 
@@ -9265,7 +9265,7 @@ export interface SemanticMatch {
     z: number;
     gate: number;
     cosine: number;
-    scope: string | null;
+    scope: null | string;
 }
 ```
 
@@ -9296,7 +9296,7 @@ export interface SemanticRanking {
 ```ts
 export interface SemanticSimilarOptions {
     limit?: number;
-    scope?: string | readonly string[];
+    scope?: readonly string[] | string;
     minZ?: number;
 }
 ```
@@ -9308,7 +9308,7 @@ export interface SemanticSource {
     collection: string;
     label?: string;
     version: number;
-    scan(cursor: string | null, limit: number): Promise<SemanticSourcePage>;
+    scan(cursor: null | string, limit: number): Promise<SemanticSourcePage>;
     read(keys: string[]): Promise<SemanticSourceItem[]>;
     count?(): Promise<number>;
 }
@@ -9322,8 +9322,8 @@ export interface SemanticSourceItem {
     userId: string;
     text: string;
     title?: string;
-    scope?: string | null;
-    parent?: string | null;
+    scope?: null | string;
+    parent?: null | string;
     task?: SemanticTask;
 }
 ```
@@ -9333,32 +9333,32 @@ export interface SemanticSourceItem {
 ```ts
 export interface SemanticSourcePage {
     items: SemanticSourceItem[];
-    next: string | null;
+    next: null | string;
 }
 ```
 
 ### SemanticTask
 
 ```ts
-export type SemanticTask = 'search' | 'question' | 'code' | 'similarity' | 'classification';
+export type SemanticTask = 'classification' | 'code' | 'question' | 'search' | 'similarity';
 ```
 
 ### SemanticVectors
 
 ```ts
 export interface SemanticVectors {
-    ready(): {
+    ready(): null | {
         model: string;
         dimensions: number;
-    } | null;
+    };
     embed(texts: readonly string[], options: {
-        role: 'query' | 'document';
+        role: 'document' | 'query';
         task?: SemanticTask;
-    }): Promise<{
+    }): Promise<null | {
         model: string;
         dimensions: number;
         vectors: Float32Array[];
-    } | null>;
+    }>;
     rank(query: string, candidates: readonly SemanticCandidate[], options?: {
         task?: SemanticTask;
     }): Promise<SemanticRanking | null>;
@@ -9398,23 +9398,23 @@ export interface SubagentStopEvent {
 ```ts
 export interface TerminalRead {
     screen(input: {
-        sessionId: string | null;
+        sessionId: null | string;
         terminalId: string;
     }): Promise<MiniAppScreenSnapshot | null>;
     finalScreen(input: {
-        sessionId: string | null;
+        sessionId: null | string;
         terminalId: string;
     }): Promise<MiniAppScreenSnapshot | null>;
     list(input: {
-        sessionId: string | null;
+        sessionId: null | string;
     }): {
         terminalId: string;
         command?: string;
     }[];
     watch?(input: {
-        sessionId: string | null;
+        sessionId: null | string;
         terminalId: string;
-    }, onEvent: (event: 'output' | 'exit') => void): (() => void) | null;
+    }, onEvent: (event: 'exit' | 'output') => void): (() => void) | null;
 }
 ```
 
@@ -9424,26 +9424,26 @@ export interface TerminalRead {
 export interface TerminalReadHost {
     screen(input: {
         userId: string;
-        sessionId: string | null;
+        sessionId: null | string;
         terminalId: string;
     }): Promise<MiniAppScreenSnapshot | null>;
     finalScreen(input: {
         userId: string;
-        sessionId: string | null;
+        sessionId: null | string;
         terminalId: string;
     }): Promise<MiniAppScreenSnapshot | null>;
     list(input: {
         userId: string;
-        sessionId: string | null;
+        sessionId: null | string;
     }): {
         terminalId: string;
         command?: string;
     }[];
     watch?(input: {
         userId: string;
-        sessionId: string | null;
+        sessionId: null | string;
         terminalId: string;
-    }, onEvent: (event: 'output' | 'exit') => void): (() => void) | null;
+    }, onEvent: (event: 'exit' | 'output') => void): (() => void) | null;
 }
 ```
 
@@ -9465,12 +9465,12 @@ export type ToolBackedItem = CommandItem | FileChangeItem | McpCallItem | ToolCa
 
 ```ts
 export type ToolCommandReplyOutcome = {
-    ok: true;
-    result: unknown;
-} | {
     ok: false;
     error: string;
     noReply?: boolean;
+} | {
+    ok: true;
+    result: unknown;
 };
 ```
 
@@ -9653,8 +9653,8 @@ export type Wake = (request: MiniAppWakeRequest) => Promise<MiniAppWakeOutcome>;
 
 ```ts
 export interface WorkspaceScopeHost {
-    resolveSessionRoot(userId: string, sessionId: string): Promise<string | null>;
-    resolveProjectRoot(userId: string, projectId: string): Promise<string | null>;
+    resolveSessionRoot(userId: string, sessionId: string): Promise<null | string>;
+    resolveProjectRoot(userId: string, projectId: string): Promise<null | string>;
 }
 ```
 
@@ -9665,13 +9665,13 @@ export interface WorkspacesHost {
     listProjects(userId: string): Promise<readonly {
         id: string;
         name: string;
-        workingDirectory: string | null;
+        workingDirectory: null | string;
     }[]>;
-    resolveProjectDirectory(userId: string, projectId: string): Promise<string | null>;
-    resolveSessionDirectory?(userId: string, sessionId: string): Promise<string | null>;
-    readSessionMetadata?(userId: string, sessionId: string): Promise<{
-        model?: string | null;
-    } | null>;
+    resolveProjectDirectory(userId: string, projectId: string): Promise<null | string>;
+    resolveSessionDirectory?(userId: string, sessionId: string): Promise<null | string>;
+    readSessionMetadata?(userId: string, sessionId: string): Promise<null | {
+        model?: null | string;
+    }>;
 }
 ```
 
@@ -9799,7 +9799,7 @@ export declare function askDecisionForTurn(decisions: DecisionHost | undefined, 
 ### atomicWriteFile
 
 ```ts
-export declare function atomicWriteFile(path: string, content: string | Uint8Array, opts?: {
+export declare function atomicWriteFile(path: string, content: Uint8Array | string, opts?: {
     mode?: number;
 }): Promise<void>;
 ```
@@ -9808,7 +9808,7 @@ export declare function atomicWriteFile(path: string, content: string | Uint8Arr
 
 ```ts
 export declare function awaitBunChildGone(proc: BunChild, opts?: {
-    signal?: 'SIGTERM' | 'SIGKILL';
+    signal?: 'SIGKILL' | 'SIGTERM';
     timeoutMs?: number;
 }): Promise<boolean>;
 ```
@@ -9825,7 +9825,7 @@ export declare function awaitChildGone(child: ChildProcess, opts?: {
 ### bestFieldScore
 
 ```ts
-export declare function bestFieldScore(fields: Array<string | null | undefined>, needle: string): number;
+export declare function bestFieldScore(fields: Array<null | string | undefined>, needle: string): number;
 ```
 
 ### buildResourceUri
@@ -9859,7 +9859,7 @@ export declare function chatAnswer<G, V = G>(options: {
 ### checkUrlSafety
 
 ```ts
-export declare function checkUrlSafety(parsed: URL, resolve?: HostResolver): Promise<string | null>;
+export declare function checkUrlSafety(parsed: URL, resolve?: HostResolver): Promise<null | string>;
 ```
 
 ### classifyByAction
@@ -9891,7 +9891,7 @@ export declare function completionDraftTail(draft: string, maxBytes: number): st
 ### confidentChoice
 
 ```ts
-export declare function confidentChoice(answer: DecisionAnswer | undefined, confidence: number): string | null;
+export declare function confidentChoice(answer: DecisionAnswer | undefined, confidence: number): null | string;
 ```
 
 ### createJsonStoreFeed
@@ -9941,7 +9941,7 @@ export declare function createStaticContextProvider(spec: StaticContextProviderS
 ```ts
 export declare function createStoreChangeFeed(options: {
     miniApp: string;
-    resolveDir: (userId: string, sessionId: string | null) => Promise<string | null>;
+    resolveDir: (userId: string, sessionId: null | string) => Promise<null | string>;
     subscribeWrites: (listener: (path: string) => void) => () => void;
     watchPath?: MiniAppPathWatch;
     onExternalChange?: (userId: string) => void;
@@ -10055,7 +10055,7 @@ export declare function defineTypedError<Code extends string>(name: string, frie
 ### embeddedV4
 
 ```ts
-export declare function embeddedV4(bytes: number[]): string | null;
+export declare function embeddedV4(bytes: number[]): null | string;
 ```
 
 ### encodeResourceSegment
@@ -10111,7 +10111,7 @@ export declare function fnv1aHex(input: string): string;
 ### hasBinarySignature
 
 ```ts
-export declare function hasBinarySignature(content: string | Uint8Array): boolean;
+export declare function hasBinarySignature(content: Uint8Array | string): boolean;
 ```
 
 ### hasSecretTokens
@@ -10123,7 +10123,7 @@ export declare function hasSecretTokens(input: string): boolean;
 ### ipv6ToBytes
 
 ```ts
-export declare function ipv6ToBytes(ip: string): number[] | null;
+export declare function ipv6ToBytes(ip: string): null | number[];
 ```
 
 ### isApiError
@@ -10190,13 +10190,13 @@ export declare function jsonBody<T>(schema: BodySchema<T>): import("hono").Middl
     out: {
         json: T extends Promise<infer PR> ? PR extends Response | import("hono").TypedResponse<any, any, any> ? never : PR : T extends Response | import("hono").TypedResponse<any, any, any> ? never : T;
     };
-}, import("hono").TypedResponse<{
+}, (T extends Promise<infer PR_1> ? PR_1 extends import("hono").TypedResponse<infer T_1, infer S extends import("hono/utils/http-status").StatusCode, infer F extends string> ? import("hono").TypedResponse<T_1, S, F> : PR_1 extends Response ? PR_1 : PR_1 extends undefined ? never : never : T extends import("hono").TypedResponse<infer T_2, infer S_1 extends import("hono/utils/http-status").StatusCode, infer F_1 extends string> ? import("hono").TypedResponse<T_2, S_1, F_1> : T extends Response ? T : T extends undefined ? never : never) | import("hono").TypedResponse<{
     error: {
         code: string;
         message: string;
         detail?: string | undefined;
     };
-}, 400 | 401 | 403 | 404 | 409 | 422 | 500 | 503, "json"> | (T extends Promise<infer PR_1> ? PR_1 extends import("hono").TypedResponse<infer T_1, infer S extends import("hono/utils/http-status").StatusCode, infer F extends string> ? import("hono").TypedResponse<T_1, S, F> : PR_1 extends Response ? PR_1 : PR_1 extends undefined ? never : never : T extends import("hono").TypedResponse<infer T_2, infer S_1 extends import("hono/utils/http-status").StatusCode, infer F_1 extends string> ? import("hono").TypedResponse<T_2, S_1, F_1> : T extends Response ? T : T extends undefined ? never : never)>;
+}, 400 | 401 | 403 | 404 | 409 | 422 | 500 | 503, "json">>;
 ```
 
 ### jsonError
@@ -10220,7 +10220,7 @@ export declare function linkAction(label: string): ResourceNodeAction[];
 ### localixUriNamespace
 
 ```ts
-export declare function localixUriNamespace(uri: string): string | null;
+export declare function localixUriNamespace(uri: string): null | string;
 ```
 
 ### mediaTypeForExtension
@@ -10323,7 +10323,7 @@ export declare function pollDeviceCode<T>(options: DeviceCodePollOptions<T>): Pr
 ### providerSegments
 
 ```ts
-export declare function providerSegments(provider: string, uri: string): string[] | null;
+export declare function providerSegments(provider: string, uri: string): null | string[];
 ```
 
 ### rankByMeaning
@@ -10331,7 +10331,7 @@ export declare function providerSegments(provider: string, uri: string): string[
 ```ts
 export declare function rankByMeaning<T>(ctx: Pick<MiniAppContext, 'host'>, query: string, items: readonly T[], text: (item: T) => string): Promise<{
     items: T[];
-    by: 'model' | 'fallback';
+    by: 'fallback' | 'model';
 }>;
 ```
 
@@ -10383,13 +10383,13 @@ export declare function renderDocumentForModel(doc: DocExtractResult, offset?: n
 ### resolveExecutable
 
 ```ts
-export declare function resolveExecutable(name: string): string | null;
+export declare function resolveExecutable(name: string): null | string;
 ```
 
 ### resolveSecretTokens
 
 ```ts
-export declare function resolveSecretTokens(input: string, resolve: (key: string) => Promise<string | null>): Promise<string>;
+export declare function resolveSecretTokens(input: string, resolve: (key: string) => Promise<null | string>): Promise<string>;
 ```
 
 ### resolveTargetPath
@@ -10437,7 +10437,7 @@ export declare function routeValidator(options?: RouteValidatorOptions): RouteVa
 ### safeFetch
 
 ```ts
-export declare function safeFetch(input: string | URL, options?: SafeFetchOptions): Promise<SafeFetchResult>;
+export declare function safeFetch(input: URL | string, options?: SafeFetchOptions): Promise<SafeFetchResult>;
 ```
 
 ### safeFileKey
@@ -11230,7 +11230,7 @@ export declare function humanizeMiniAppId(id: string): string;
 ### isWorkbenchMiniApp
 
 ```ts
-export declare function isWorkbenchMiniApp(surfaces?: readonly string[] | null): boolean;
+export declare function isWorkbenchMiniApp(surfaces?: null | readonly string[]): boolean;
 ```
 
 ### miniAppConfigOptionSchema
@@ -11286,7 +11286,7 @@ export declare const miniAppFileAssociationSchema: z.ZodObject<{
 ```ts
 export declare function miniAppLabel(app: {
     name: string;
-    displayName?: string | null;
+    displayName?: null | string;
 }): string;
 ```
 
@@ -11356,7 +11356,7 @@ export declare function normalizeFileAssociationExt(ext: string): string;
 ### normalizeMiniAppSurfaces
 
 ```ts
-export declare function normalizeMiniAppSurfaces(declared?: readonly string[] | null): string[];
+export declare function normalizeMiniAppSurfaces(declared?: null | readonly string[]): string[];
 ```
 
 ## module @localixai/mini-app-sdk/manifest-label
@@ -11372,7 +11372,7 @@ export declare function humanizeMiniAppId(id: string): string;
 ```ts
 export declare function miniAppLabel(app: {
     name: string;
-    displayName?: string | null;
+    displayName?: null | string;
 }): string;
 ```
 
@@ -11582,13 +11582,13 @@ export declare function isAppRelativePath(path: string): boolean;
 ### isWorkbenchMiniApp
 
 ```ts
-export declare function isWorkbenchMiniApp(surfaces?: readonly string[] | null): boolean;
+export declare function isWorkbenchMiniApp(surfaces?: null | readonly string[]): boolean;
 ```
 
 ### normalizeMiniAppSurfaces
 
 ```ts
-export declare function normalizeMiniAppSurfaces(declared?: readonly string[] | null): string[];
+export declare function normalizeMiniAppSurfaces(declared?: null | readonly string[]): string[];
 ```
 
 ## module @localixai/mini-app-sdk/navigation
@@ -11609,7 +11609,7 @@ export interface CapabilityResource {
 ### CapabilityResourceKind
 
 ```ts
-export type CapabilityResourceKind = 'plugin' | 'mini-app' | 'skill' | 'tool' | 'agent' | 'mcp' | 'view';
+export type CapabilityResourceKind = 'agent' | 'mcp' | 'mini-app' | 'plugin' | 'skill' | 'tool' | 'view';
 ```
 
 ### LOCALIX_UI_PRIMITIVES
@@ -11627,13 +11627,13 @@ export declare const LOCALIX_URI_MAX_CHARS = 4096;
 ### LocalixUiPrimitive
 
 ```ts
-export type LocalixUiPrimitive = 'page' | 'sidebar' | 'work-item' | 'overlay' | 'picker' | 'settings' | 'mini-app' | 'command' | 'action';
+export type LocalixUiPrimitive = 'action' | 'command' | 'mini-app' | 'overlay' | 'page' | 'picker' | 'settings' | 'sidebar' | 'work-item';
 ```
 
 ### LocalixUriPrimitive
 
 ```ts
-export type LocalixUriPrimitive = 'ui' | 'resource';
+export type LocalixUriPrimitive = 'resource' | 'ui';
 ```
 
 ### ParsedLocalixUri
@@ -11803,7 +11803,7 @@ export interface Prerequisite {
 ### PrerequisiteState
 
 ```ts
-export type PrerequisiteState = 'missing' | 'stopped' | 'signed-out';
+export type PrerequisiteState = 'missing' | 'signed-out' | 'stopped';
 ```
 
 ### isMissingExecutable
@@ -11821,7 +11821,7 @@ export declare function parsePrerequisite(value: unknown): Prerequisite | null;
 ### prerequisiteActionLabel
 
 ```ts
-export declare function prerequisiteActionLabel(prerequisite: Prerequisite): string | null;
+export declare function prerequisiteActionLabel(prerequisite: Prerequisite): null | string;
 ```
 
 ### prerequisiteHint
@@ -11889,8 +11889,8 @@ export interface ResourceBrowseGroup {
 export interface ResourceBrowseResult {
     version: 1;
     partial: string;
-    parent: string | null;
-    provider: string | null;
+    parent: null | string;
+    provider: null | string;
     segment: string;
     groups: ResourceBrowseGroup[];
     notices: ResourceNode[];
@@ -11914,9 +11914,9 @@ export interface ResourceExpansion {
 
 ```ts
 export interface ResourceNavTarget {
-    parent: string | null;
+    parent: null | string;
     segment: string;
-    provider: string | null;
+    provider: null | string;
 }
 ```
 
@@ -11946,7 +11946,7 @@ export interface ResourceProviderRegistry {
     unregister(provider: ResourceRefProvider | string): void;
     get(provider: string): ResourceRefProvider | undefined;
     list(): ResourceRefProvider[];
-    listChildren(userId: string, parentUri: string | null, query?: string, scope?: ResourceRefScope): Promise<ResourceNode[]>;
+    listChildren(userId: string, parentUri: null | string, query?: string, scope?: ResourceRefScope): Promise<ResourceNode[]>;
     browse(userId: string, partial: string, scope?: ResourceRefScope): Promise<ResourceBrowseResult>;
     expand(userId: string, uri: string, scope?: ResourceRefScope): Promise<ResourceExpansion>;
 }
@@ -11969,7 +11969,7 @@ export interface ResourceProviderRegistryOptions {
 export interface ResourceRefProvider {
     provider: string;
     title: string;
-    listChildren(userId: string, parentUri: string | null, query?: string, scope?: ResourceRefScope): Promise<ResourceNode[]>;
+    listChildren(userId: string, parentUri: null | string, query?: string, scope?: ResourceRefScope): Promise<ResourceNode[]>;
     expand(userId: string, uri: string, scope?: ResourceRefScope): Promise<ResourceExpansion>;
 }
 ```
@@ -12033,7 +12033,7 @@ export declare function parseResourceUri(uri: string): ParsedResourceUri | null;
 ### providerSegments
 
 ```ts
-export declare function providerSegments(provider: string, uri: string): string[] | null;
+export declare function providerSegments(provider: string, uri: string): null | string[];
 ```
 
 ### resourceBrowseFailureNotice
@@ -12078,7 +12078,7 @@ export type RichBlock = RichParagraph | {
     type: 'orderedList';
     attrs?: {
         start?: number;
-        type?: '1' | 'a' | 'A' | 'i' | 'I' | null;
+        type?: '1' | 'A' | 'I' | 'a' | 'i' | null;
     };
     content: RichListItem[];
 };
@@ -12088,11 +12088,11 @@ export type RichBlock = RichParagraph | {
 
 ```ts
 export type RichInline = {
+    type: 'hardBreak';
+} | {
     type: 'text';
     text: string;
     marks?: RichMark[];
-} | {
-    type: 'hardBreak';
 };
 ```
 
@@ -12117,8 +12117,8 @@ export type RichMark = {
     type: 'link';
     attrs: {
         href: string;
-        target?: string | null;
-        rel?: string | null;
+        target?: null | string;
+        rel?: null | string;
         class?: null;
     };
 };
@@ -12145,7 +12145,7 @@ export interface RichTextDocument {
 ### RichTextValue
 
 ```ts
-export type RichTextValue = string | RichTextDocument;
+export type RichTextValue = RichTextDocument | string;
 ```
 
 ### isRichTextHref
@@ -12273,7 +12273,7 @@ export declare function redactSecrets(input: string): string;
 export declare function sessionResourceAddress(provider: string, name: string): {
     uri: string;
     forSession: (sessionId: string) => string;
-    sessionOf: (candidate: string) => string | null | undefined;
+    sessionOf: (candidate: string) => null | string | undefined;
 };
 ```
 
@@ -12395,9 +12395,9 @@ export interface ActionContribution extends MiniAppOwnedContribution {
     Icon: IconComponent;
     when(context: ActionContext): boolean;
     subscribe?(context: ActionContext, onChange: () => void): () => void;
-    run(context: ActionContext): Promise<{
+    run(context: ActionContext): Promise<void | {
         message?: string;
-    } | void>;
+    }>;
 }
 ```
 
@@ -12405,7 +12405,7 @@ export interface ActionContribution extends MiniAppOwnedContribution {
 
 ```ts
 export declare function ActionSurfaceProvider({ surface, children, }: {
-    surface: string | null;
+    surface: null | string;
     children: ReactNode;
 }): import("react").JSX.Element;
 ```
@@ -12419,20 +12419,10 @@ export type ActionTarget = {
     language?: string;
     title?: string;
 } | {
-    kind: 'visualization';
-    format: string;
-    source: string;
+    kind: 'file';
+    path: string;
+    line?: number;
     title?: string;
-    svg?: string;
-    width?: number;
-    height?: number;
-} | {
-    kind: 'markdown';
-    markdown: string;
-    block: 'paragraph' | 'heading' | 'list' | 'quote' | 'callout' | 'math' | 'other';
-} | {
-    kind: 'table';
-    markdown: string;
 } | {
     kind: 'image';
     src: string;
@@ -12445,10 +12435,20 @@ export type ActionTarget = {
     url: string;
     title?: string;
 } | {
-    kind: 'file';
-    path: string;
-    line?: number;
+    kind: 'markdown';
+    markdown: string;
+    block: 'callout' | 'heading' | 'list' | 'math' | 'other' | 'paragraph' | 'quote';
+} | {
+    kind: 'table';
+    markdown: string;
+} | {
+    kind: 'visualization';
+    format: string;
+    source: string;
     title?: string;
+    svg?: string;
+    width?: number;
+    height?: number;
 };
 ```
 
@@ -12526,9 +12526,9 @@ export interface CommentActionContribution extends MiniAppOwnedContribution {
     label: string;
     title?: string;
     Icon: IconComponent;
-    run(batch: CommentBatch): Promise<{
+    run(batch: CommentBatch): Promise<void | {
         message?: string;
-    } | void>;
+    }>;
 }
 ```
 
@@ -12694,7 +12694,7 @@ export interface FileTreeDecoration {
 ```ts
 export interface FileTreeDecorationContribution extends MiniAppOwnedContribution {
     id: string;
-    useIndex: (sessionId: string | null) => FileTreeDecorationIndex;
+    useIndex: (sessionId: null | string) => FileTreeDecorationIndex;
 }
 ```
 
@@ -12712,7 +12712,7 @@ export interface FileTreeDecorationIndex {
 ### FileViewerKind
 
 ```ts
-export type FileViewerKind = 'pdf' | 'document' | 'spreadsheet' | 'editor';
+export type FileViewerKind = 'document' | 'editor' | 'pdf' | 'spreadsheet';
 ```
 
 ### HOST_THEME_VARIABLES
@@ -12812,13 +12812,13 @@ export declare const LIVE_SNIPPET_CONTENT_MAX = 40000;
 ### LocalixUiPrimitive
 
 ```ts
-export type LocalixUiPrimitive = 'page' | 'sidebar' | 'work-item' | 'overlay' | 'picker' | 'settings' | 'mini-app' | 'command' | 'action';
+export type LocalixUiPrimitive = 'action' | 'command' | 'mini-app' | 'overlay' | 'page' | 'picker' | 'settings' | 'sidebar' | 'work-item';
 ```
 
 ### LocalixUriPrimitive
 
 ```ts
-export type LocalixUriPrimitive = 'ui' | 'resource';
+export type LocalixUriPrimitive = 'resource' | 'ui';
 ```
 
 ### MESSAGE_BINDING_DRAG_MAX_BYTES
@@ -12887,7 +12887,7 @@ export interface MenuActionEntry {
 ### MenuEntry
 
 ```ts
-export type MenuEntry = MenuActionEntry | MenuSubmenuEntry | MenuSeparatorEntry | MenuHeaderEntry;
+export type MenuEntry = MenuActionEntry | MenuHeaderEntry | MenuSeparatorEntry | MenuSubmenuEntry;
 ```
 
 ### MenuHeaderEntry
@@ -12953,7 +12953,7 @@ export type MessageBindingDragPayload = Extract<MessageBindingDraft, {
 ### MessageBindingTargetKind
 
 ```ts
-export type MessageBindingTargetKind = 'file' | 'session' | 'project' | 'message' | 'terminal' | 'call' | 'resource' | 'snippet';
+export type MessageBindingTargetKind = 'call' | 'file' | 'message' | 'project' | 'resource' | 'session' | 'snippet' | 'terminal';
 ```
 
 ### MessageContextBindingDraft
@@ -12961,7 +12961,7 @@ export type MessageBindingTargetKind = 'file' | 'session' | 'project' | 'message
 ```ts
 export interface MessageContextBindingDraft {
     kind: 'context';
-    source: 'drag' | 'active-tab' | 'mini-app';
+    source: 'active-tab' | 'drag' | 'mini-app';
     assets?: MessageAttachment[];
     miniApp?: string;
     target: {
@@ -12969,7 +12969,7 @@ export interface MessageContextBindingDraft {
         token: string;
         label: string;
         uri?: string;
-        attributes?: Record<string, string | number | boolean>;
+        attributes?: Record<string, boolean | number | string>;
     };
 }
 ```
@@ -12987,11 +12987,11 @@ export interface MicrotaskHost {
 ```ts
 export declare class MiniAppApiError extends Error {
     readonly status: number;
-    readonly code: string | null;
+    readonly code: null | string;
     readonly detail?: string;
     readonly prerequisite?: Prerequisite;
     readonly request?: ProblemRequest;
-    constructor(message: string, status: number, code?: string | null, detail?: string, extra?: {
+    constructor(message: string, status: number, code?: null | string, detail?: string, extra?: {
         prerequisite?: Prerequisite;
         request?: ProblemRequest;
     });
@@ -13039,7 +13039,7 @@ export interface MiniAppBridgeMessage<P = unknown> {
 ### MiniAppBridgeMessageType
 
 ```ts
-export type MiniAppBridgeMessageType = 'ready' | 'theme' | 'invoke' | 'result' | 'error' | 'event';
+export type MiniAppBridgeMessageType = 'error' | 'event' | 'invoke' | 'ready' | 'result' | 'theme';
 ```
 
 ### MiniAppBridgeSessionEventData
@@ -13055,7 +13055,7 @@ export interface MiniAppBridgeSessionEventData {
 
 ```ts
 export interface MiniAppBridgeThemePayload {
-    theme: 'light' | 'dark';
+    theme: 'dark' | 'light';
     vars: Record<string, string>;
 }
 ```
@@ -13104,8 +13104,8 @@ export interface MiniAppCompletionReference {
     token: string;
     label: string;
     uri?: string;
-    attributes?: Record<string, string | number | boolean>;
-    origin?: 'linked' | 'ambient';
+    attributes?: Record<string, boolean | number | string>;
+    origin?: 'ambient' | 'linked';
 }
 ```
 
@@ -13137,7 +13137,7 @@ export interface MiniAppContextBindingIconProps {
 ```ts
 export interface MiniAppContextBindingPreviewProps {
     binding: MessageContextBindingDraft;
-    sessionId: string | null;
+    sessionId: null | string;
     className?: string;
     onIntrinsicSize?: (size: {
         width: number;
@@ -13152,7 +13152,7 @@ export interface MiniAppContextBindingPreviewProps {
 export interface MiniAppConversationImport {
     title: string;
     messages: readonly MiniAppTranscriptMessage[];
-    projectId?: string | null;
+    projectId?: null | string;
 }
 ```
 
@@ -13194,18 +13194,18 @@ export interface MiniAppEditPredictionRequest {
 
 ```ts
 export type MiniAppEditPredictionResult = {
-    outcome: 'predicted';
-    edits: MiniAppEditPrediction[];
-} | {
     outcome: 'empty' | 'stale_delivery';
     edits: null;
     diagnostic?: {
+        code: 'empty';
+        outcome: 'cancelled' | 'deadline_exceeded' | 'empty' | 'no_model' | 'provider_error';
+    } | {
         code: 'stale_delivery';
         mismatch: string;
-    } | {
-        code: 'empty';
-        outcome: 'empty' | 'cancelled' | 'deadline_exceeded' | 'no_model' | 'provider_error';
     };
+} | {
+    outcome: 'predicted';
+    edits: MiniAppEditPrediction[];
 };
 ```
 
@@ -13264,7 +13264,7 @@ export interface MiniAppFileContent {
     bytes: number;
     truncated: boolean;
     mimeType?: string;
-    encoding?: 'utf8' | 'base64';
+    encoding?: 'base64' | 'utf8';
     hash?: string;
     unchanged?: true;
 }
@@ -13288,7 +13288,7 @@ export interface MiniAppFileTabProps {
     onRun?: (context: MiniAppEditorRunContext) => void;
     bindRunContext?: (get: () => MiniAppEditorRunContext) => void;
     extensions?: unknown[];
-    formatText?: (text: string) => string | Promise<string>;
+    formatText?: (text: string) => Promise<string> | string;
     publishMessageContext?: PublishMessageContext;
 }
 ```
@@ -13297,7 +13297,7 @@ export interface MiniAppFileTabProps {
 
 ```ts
 export type MiniAppInputProps = Omit<ComponentPropsWithoutRef<'input'>, 'size'> & {
-    size?: 'md' | 'lg' | 'xl';
+    size?: 'lg' | 'md' | 'xl';
 };
 ```
 
@@ -13393,7 +13393,7 @@ export interface MiniAppProblemsOptions {
 
 ```ts
 export interface MiniAppResourceBrowseResult {
-    parent: string | null;
+    parent: null | string;
     nodes: MiniAppResourceNode[];
     notices: MiniAppResourceNode[];
     total: number;
@@ -13437,18 +13437,18 @@ export interface MiniAppSecretReference {
 export interface MiniAppSession {
     id: string;
     title: string;
-    projectId: string | null;
-    parentSessionId: string | null;
-    rootSessionId: string | null;
-    sessionKind: 'chat' | 'subagent' | 'job' | 'system';
+    projectId: null | string;
+    parentSessionId: null | string;
+    rootSessionId: null | string;
+    sessionKind: 'chat' | 'job' | 'subagent' | 'system';
     agent: {
         name: string;
-        providerConnectionId: string | null;
+        providerConnectionId: null | string;
         modelId: string;
         reasoningEffort: string;
     };
-    runtimeStatus: 'idle' | 'running' | 'completed' | 'failed' | 'stopped';
-    sourceToolCallId: string | null;
+    runtimeStatus: 'completed' | 'failed' | 'idle' | 'running' | 'stopped';
+    sourceToolCallId: null | string;
     isRunning: boolean;
     createdAt: number;
     updatedAt: number;
@@ -13464,7 +13464,7 @@ export interface MiniAppSession {
 ### MiniAppSessionPhase
 
 ```ts
-export type MiniAppSessionPhase = 'run-started' | 'run-completed' | 'run-failed';
+export type MiniAppSessionPhase = 'run-completed' | 'run-failed' | 'run-started';
 ```
 
 ### MiniAppStagedTableChanges
@@ -13473,9 +13473,9 @@ export type MiniAppSessionPhase = 'run-started' | 'run-completed' | 'run-failed'
 export interface MiniAppStagedTableChanges {
     updates: {
         row: TableRow;
-        values: Record<string, string | null>;
+        values: Record<string, null | string>;
     }[];
-    inserts: Record<string, string | null>[];
+    inserts: Record<string, null | string>[];
     deletes: TableRow[];
 }
 ```
@@ -13493,8 +13493,8 @@ export interface MiniAppTableGridProps {
     onRowActivate?: (index: number) => void;
     editable?: boolean;
     editableColumns?: Set<string>;
-    onCellEdit?: (row: TableRow, columnId: string, next: string | null) => void;
-    onAddRow?: (values: Record<string, string | null>) => void;
+    onCellEdit?: (row: TableRow, columnId: string, next: null | string) => void;
+    onAddRow?: (values: Record<string, null | string>) => void;
     onDeleteRow?: (row: TableRow) => void;
     showColumnTypes?: boolean;
     showColumnIcons?: boolean;
@@ -13503,7 +13503,7 @@ export interface MiniAppTableGridProps {
     allowNullValues?: boolean;
     columnActions?: {
         rename?: (id: string, title: string) => void;
-        insert?: (id: string, side: 'before' | 'after') => void;
+        insert?: (id: string, side: 'after' | 'before') => void;
         move?: (id: string, direction: 'left' | 'right') => void;
         remove?: (id: string) => void;
     };
@@ -13525,7 +13525,7 @@ export interface MiniAppTableGridProps {
 ```ts
 export interface MiniAppTextInputCompletion {
     suggestion: string;
-    accept: (unit?: 'all' | 'word' | 'line') => boolean;
+    accept: (unit?: 'all' | 'line' | 'word') => boolean;
     dismiss: () => boolean;
     request: () => boolean;
     handleKeyDown: (event: ReactKeyboardEvent) => boolean;
@@ -13539,7 +13539,7 @@ export interface MiniAppTextInputCompletion {
 ```ts
 export interface MiniAppTextInputCompletionInput<TPayload = unknown> {
     surface: string;
-    sessionId: string | null;
+    sessionId: null | string;
     value: string;
     setValue: (value: string) => void;
     payload: TPayload;
@@ -13555,7 +13555,7 @@ export interface MiniAppTextInputCompletionInput<TPayload = unknown> {
 
 ```ts
 export type MiniAppTextareaProps = ComponentPropsWithoutRef<'textarea'> & {
-    size?: 'md' | 'lg' | 'xl';
+    size?: 'lg' | 'md' | 'xl';
 };
 ```
 
@@ -13577,7 +13577,7 @@ export interface MiniAppToast extends MiniAppToastMethod {
 ### MiniAppToastId
 
 ```ts
-export type MiniAppToastId = string | number;
+export type MiniAppToastId = number | string;
 ```
 
 ### MiniAppToastOptions
@@ -13638,7 +13638,7 @@ export interface MiniAppTranscriptInput {
 ```ts
 export interface MiniAppTranscriptMessage {
     id: string;
-    role: 'user' | 'assistant';
+    role: 'assistant' | 'user';
     content?: string;
     items?: AgentItem[];
 }
@@ -13654,7 +13654,7 @@ export interface MiniAppUiApi {
     callBackend<T = unknown>(action: string, payload?: unknown, options?: MiniAppUiInvokeOptions): Promise<T>;
     getState<T = unknown>(): Promise<T | null>;
     setState<T>(value: T): Promise<T>;
-    getTheme(): 'light' | 'dark';
+    getTheme(): 'dark' | 'light';
     onTheme(listener: (payload: MiniAppBridgeThemePayload) => void): () => void;
     onEvent(listener: (payload: MiniAppBridgeEventPayload) => void): () => void;
 }
@@ -13761,7 +13761,7 @@ export interface MiniAppUiRuntime {
             everyChat?: boolean;
         }): void;
         focusWorkItem(id: string): void;
-        openSidebarSection(sectionId: string | null): void;
+        openSidebarSection(sectionId: null | string): void;
         getSnapshot(): MiniAppWorkspaceSnapshot;
         subscribe(listener: () => void): () => void;
     };
@@ -13795,10 +13795,10 @@ export interface MiniAppUiRuntime {
             extensions?: readonly string[];
         }): Promise<string[]>;
         bindingsFromFiles(files: readonly File[]): Promise<MessageBindingDraft[]>;
-        droppedPaths(files: readonly File[]): Promise<{
+        droppedPaths(files: readonly File[]): Promise<null | {
             path: string;
             isDir: boolean;
-        }[] | null>;
+        }[]>;
         read(sessionId: string, path: string, options?: {
             full?: boolean;
             knownHash?: string;
@@ -13835,10 +13835,10 @@ export interface MiniAppUiRuntime {
     };
     navigation: {
         revealSession(sessionId: string, projectId?: string): void;
-        openBinding(binding: MessageContextBindingDraft, sessionId: string | null): boolean | Promise<boolean>;
+        openBinding(binding: MessageContextBindingDraft, sessionId: null | string): Promise<boolean> | boolean;
     };
     resources: {
-        browse(partial: string, sessionId?: string | null): Promise<MiniAppResourceBrowseResult>;
+        browse(partial: string, sessionId?: null | string): Promise<MiniAppResourceBrowseResult>;
     };
     projects: {
         resolvePath(path: string): Promise<{
@@ -13879,7 +13879,7 @@ export interface MiniAppWorkItemRequest {
     workKind: string;
     id: string;
     title: string;
-    scope: string | null;
+    scope: null | string;
     payload?: Record<string, unknown>;
     ephemeral?: boolean;
     replace?: boolean;
@@ -13891,7 +13891,7 @@ export interface MiniAppWorkItemRequest {
 ```ts
 export interface MiniAppWorkspaceChange {
     sessionId: string;
-    paths: readonly string[] | null;
+    paths: null | readonly string[];
 }
 ```
 
@@ -13900,7 +13900,7 @@ export interface MiniAppWorkspaceChange {
 ```ts
 export interface MiniAppWorkspaceSnapshot {
     items: Readonly<Record<string, WorkItemLike>>;
-    focusedId: string | null;
+    focusedId: null | string;
 }
 ```
 
@@ -13908,7 +13908,7 @@ export interface MiniAppWorkspaceSnapshot {
 
 ```ts
 export interface MiniAppWorkspaceWatchHandlers {
-    onChange(paths: readonly string[] | null): void;
+    onChange(paths: null | readonly string[]): void;
     onLive(live: boolean): void;
 }
 ```
@@ -14028,7 +14028,7 @@ export interface Problem {
 ### ProblemConsequence
 
 ```ts
-export type ProblemConsequence = 'stale' | 'blocked' | 'none';
+export type ProblemConsequence = 'blocked' | 'none' | 'stale';
 ```
 
 ### ProblemLine
@@ -14052,7 +14052,7 @@ export interface ProblemLocation {
 export interface ProblemRecovery {
     id: string;
     label: string;
-    run: () => void | Promise<void>;
+    run: () => Promise<void> | void;
     durable?: boolean;
     primary?: boolean;
 }
@@ -14084,7 +14084,7 @@ export interface ProblemRequest {
 ### ProblemSeverity
 
 ```ts
-export type ProblemSeverity = 'error' | 'warning' | 'info';
+export type ProblemSeverity = 'error' | 'info' | 'warning';
 ```
 
 ### ProblemSubject
@@ -14106,7 +14106,7 @@ export type PublishMessageContext = (context: PublishedMessageContext | null) =>
 
 ```ts
 export interface PublishedMessageContext {
-    strategy: 'replace' | 'append';
+    strategy: 'append' | 'replace';
     bindings: readonly PublishedMessageContextBindingDraft[];
 }
 ```
@@ -14146,7 +14146,7 @@ export interface RailViewletContribution extends MiniAppOwnedContribution {
 ```ts
 export interface ResolvedUiLocation {
     descriptor: UiLocationDescriptor;
-    args: Record<string, string | string[] | boolean | number>;
+    args: Record<string, boolean | number | string | string[]>;
     target: UiAnchorOpenResult;
     presentation: UiLocationPresentation;
 }
@@ -14161,7 +14161,7 @@ export declare function ResultCountStatus({ count, singular, plural, formatCount
 ### ResultCountStatusProps
 
 ```ts
-export type ResultCountStatusProps = Omit<ComponentPropsWithoutRef<'span'>, 'children' | 'role' | 'aria-live' | 'aria-atomic'> & {
+export type ResultCountStatusProps = Omit<ComponentPropsWithoutRef<'span'>, 'aria-atomic' | 'aria-live' | 'children' | 'role'> & {
     count: number;
     singular?: string;
     plural?: string;
@@ -14262,7 +14262,7 @@ export declare function SegmentedRadioGroup<T extends string>({ value, onValueCh
 ### SegmentedRadioGroupProps
 
 ```ts
-export type SegmentedRadioGroupProps<T extends string> = Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange' | 'aria-label' | 'aria-labelledby'> & SegmentedRadioAccessibleName & {
+export type SegmentedRadioGroupProps<T extends string> = Omit<React.HTMLAttributes<HTMLDivElement>, 'aria-label' | 'aria-labelledby' | 'onChange'> & SegmentedRadioAccessibleName & {
     value: T;
     onValueChange: (value: T) => void;
     options: readonly SegmentedRadioOption<T>[];
@@ -14292,13 +14292,13 @@ export interface SegmentedRadioOption<T extends string> {
 ### SegmentedRadioSize
 
 ```ts
-export type SegmentedRadioSize = 'sm' | 'lg';
+export type SegmentedRadioSize = 'lg' | 'sm';
 ```
 
 ### SegmentedVariant
 
 ```ts
-export type SegmentedVariant = 'raised' | 'muted' | 'ghost' | 'outlined';
+export type SegmentedVariant = 'ghost' | 'muted' | 'outlined' | 'raised';
 ```
 
 ### SessionActivity
@@ -14324,7 +14324,7 @@ export interface SessionSurfaceContribution extends MiniAppOwnedContribution {
 
 ```ts
 export interface SessionSurfaceProps {
-    sessionId: string | null;
+    sessionId: null | string;
     context?: unknown;
 }
 ```
@@ -14334,7 +14334,7 @@ export interface SessionSurfaceProps {
 ```ts
 export interface SessionTreeNode {
     id: string;
-    parentSessionId?: string | null;
+    parentSessionId?: null | string;
 }
 ```
 
@@ -14344,7 +14344,7 @@ export interface SessionTreeNode {
 export interface StatusItemContribution extends MiniAppOwnedContribution {
     id: string;
     placement: string;
-    useItem: (sessionId: string | null) => StatusItemState | null;
+    useItem: (sessionId: null | string) => StatusItemState | null;
 }
 ```
 
@@ -14397,14 +14397,14 @@ export interface StatusMetric {
 ### StatusTone
 
 ```ts
-export type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'error';
+export type StatusTone = 'error' | 'info' | 'neutral' | 'success' | 'warning';
 ```
 
 ### StorageReader
 
 ```ts
 export interface StorageReader {
-    getItem(key: string): string | null;
+    getItem(key: string): null | string;
 }
 ```
 
@@ -14546,7 +14546,7 @@ export interface UiAnchorContribution extends MiniAppOwnedContribution {
     namespaces: readonly string[];
     icons?: Record<string, IconComponent>;
     resolve(uri: string): UiAnchorOpenResult | null;
-    listChildren?(parentUri: string | null, query?: string): UiAnchorNode[];
+    listChildren?(parentUri: null | string, query?: string): UiAnchorNode[];
 }
 ```
 
@@ -14574,19 +14574,19 @@ export type UiAnchorInspector = {
     searchScope?: string;
 } | {
     kind: 'inspector';
-    target: 'terminal';
-    sessionId?: string;
-    terminalMode?: 'reuse' | 'new';
-    command?: string;
-    title?: string;
-} | {
-    kind: 'inspector';
     target: 'message-replay';
     sessionId: string;
     messageId: string;
 } | {
     kind: 'inspector';
     target: 'stats';
+} | {
+    kind: 'inspector';
+    target: 'terminal';
+    sessionId?: string;
+    terminalMode?: 'new' | 'reuse';
+    command?: string;
+    title?: string;
 };
 ```
 
@@ -14620,7 +14620,7 @@ export type UiAnchorNode = AddressableResource;
 ### UiAnchorOpenResult
 
 ```ts
-export type UiAnchorOpenResult = UiAnchorWorkItem | UiAnchorWorkItemFocus | UiAnchorSession | UiAnchorProject | UiAnchorMessage | UiAnchorFile | UiAnchorRailSection | UiAnchorSettings | UiAnchorInspector | UiAnchorCommand | UiAnchorModelPicker | UiAnchorOverlay;
+export type UiAnchorOpenResult = UiAnchorCommand | UiAnchorFile | UiAnchorInspector | UiAnchorMessage | UiAnchorModelPicker | UiAnchorOverlay | UiAnchorProject | UiAnchorRailSection | UiAnchorSession | UiAnchorSettings | UiAnchorWorkItem | UiAnchorWorkItemFocus;
 ```
 
 ### UiAnchorOverlay
@@ -14636,7 +14636,7 @@ export interface UiAnchorOverlay {
 ### UiAnchorOverlayParam
 
 ```ts
-export type UiAnchorOverlayParam = string | number | boolean | readonly string[];
+export type UiAnchorOverlayParam = boolean | number | readonly string[] | string;
 ```
 
 ### UiAnchorProject
@@ -14653,7 +14653,7 @@ export interface UiAnchorProject {
 ```ts
 export interface UiAnchorRailSection {
     kind: 'rail-section';
-    sectionId: string | null;
+    sectionId: null | string;
 }
 ```
 
@@ -14808,13 +14808,6 @@ export interface UiLocationExposure {
 
 ```ts
 export type UiLocationParamDefinition = {
-    type: 'string';
-    description?: string;
-    optional?: boolean;
-    allowEmpty?: boolean;
-    maxLength?: number;
-    values?: readonly string[];
-} | {
     type: 'boolean';
     description?: string;
     optional?: boolean;
@@ -14824,6 +14817,13 @@ export type UiLocationParamDefinition = {
     optional?: boolean;
     minimum?: number;
     maximum?: number;
+} | {
+    type: 'string';
+    description?: string;
+    optional?: boolean;
+    allowEmpty?: boolean;
+    maxLength?: number;
+    values?: readonly string[];
 } | {
     type: 'string-array';
     description?: string;
@@ -14913,8 +14913,8 @@ export type UiSurfaceKind = LocalixUiPrimitive;
 ```ts
 export interface VisiblePollingOptions {
     enabled?: boolean;
-    intervalMs: number | null;
-    onTick: () => void | Promise<unknown>;
+    intervalMs: null | number;
+    onTick: () => Promise<unknown> | void;
     refreshOnFocus?: boolean;
     immediate?: boolean;
     resetKey?: unknown;
@@ -14935,7 +14935,7 @@ export interface WorkItemAgentContext {
 
 ```ts
 export interface WorkItemBindingContext {
-    session: string | null;
+    session: null | string;
 }
 ```
 
@@ -14948,12 +14948,12 @@ export interface WorkItemKindContribution extends MiniAppOwnedContribution {
     Icon: IconComponent;
     restorable?: boolean;
     scope?: 'global' | 'session';
-    iconTint?: (item: WorkItemLike) => string | null | undefined;
-    agentContext?: WorkItemAgentContext | ((item: WorkItemLike) => WorkItemAgentContext);
+    iconTint?: (item: WorkItemLike) => null | string | undefined;
+    agentContext?: ((item: WorkItemLike) => WorkItemAgentContext) | WorkItemAgentContext;
     toMessageBinding?: (item: WorkItemLike, context: WorkItemBindingContext) => MessageContextBindingDraft | null;
     toMessageBindings?: (item: WorkItemLike, context: WorkItemBindingContext) => readonly MessageContextBindingDraft[];
-    siblingGroupKey?: (item: WorkItemLike) => string | null;
-    placement?: 'editor' | 'aux';
+    siblingGroupKey?: (item: WorkItemLike) => null | string;
+    placement?: 'aux' | 'editor';
 }
 ```
 
@@ -15060,7 +15060,7 @@ export declare function buildUiLocationUri(descriptor: {
     uri: string;
     surface: UiSurfaceKind;
     params: UiLocationParamSchema;
-}, args?: Readonly<Record<string, unknown>>): string | null;
+}, args?: Readonly<Record<string, unknown>>): null | string;
 ```
 
 ### clamp
@@ -15072,7 +15072,7 @@ export declare function clamp(value: number, min: number, max: number): number;
 ### cleanMiniAppQuery
 
 ```ts
-export declare function cleanMiniAppQuery(values?: Record<string, string | number | null | undefined>): Record<string, string>;
+export declare function cleanMiniAppQuery(values?: Record<string, null | number | string | undefined>): Record<string, string>;
 ```
 
 ### clearMessageBindingDragAvailability
@@ -15102,31 +15102,31 @@ export declare function composerDropHint(kind: string): string;
 ### contextBindingFileName
 
 ```ts
-export declare function contextBindingFileName(binding: MessageContextBindingDraft): string | null;
+export declare function contextBindingFileName(binding: MessageContextBindingDraft): null | string;
 ```
 
 ### contextBindingFilePath
 
 ```ts
-export declare function contextBindingFilePath(binding: MessageContextBindingDraft): string | null;
+export declare function contextBindingFilePath(binding: MessageContextBindingDraft): null | string;
 ```
 
 ### contextBindingFileType
 
 ```ts
-export declare function contextBindingFileType(binding: MessageContextBindingDraft): string | null;
+export declare function contextBindingFileType(binding: MessageContextBindingDraft): null | string;
 ```
 
 ### contextBindingImageMimeType
 
 ```ts
-export declare function contextBindingImageMimeType(binding: MessageContextBindingDraft): string | null;
+export declare function contextBindingImageMimeType(binding: MessageContextBindingDraft): null | string;
 ```
 
 ### contextBindingMediaId
 
 ```ts
-export declare function contextBindingMediaId(binding: MessageContextBindingDraft): string | null;
+export declare function contextBindingMediaId(binding: MessageContextBindingDraft): null | string;
 ```
 
 ### contextBindingPreviewKind
@@ -15226,7 +15226,7 @@ export declare function forwardableSessionPhase(type: string): MiniAppSessionPha
 ### getSessionActivity
 
 ```ts
-export declare function getSessionActivity(sessionId: string | null | undefined): SessionActivity;
+export declare function getSessionActivity(sessionId: null | string | undefined): SessionActivity;
 ```
 
 ### groupComments
@@ -15326,7 +15326,7 @@ export declare function loadJSON<T>(key: string, storage?: StorageReader): T | n
 ### loadString
 
 ```ts
-export declare function loadString(key: string, storage?: StorageReader): string | null;
+export declare function loadString(key: string, storage?: StorageReader): null | string;
 ```
 
 ### localixResourceUri
@@ -15350,7 +15350,7 @@ export declare function localixUri(primitive: LocalixUriPrimitive, segments?: re
 ### localixUriNamespace
 
 ```ts
-export declare function localixUriNamespace(uri: string): string | null;
+export declare function localixUriNamespace(uri: string): null | string;
 ```
 
 ### messageBindingDraft
@@ -15362,7 +15362,7 @@ export declare function messageBindingDraft(sessionId: string, messageId: string
 ### messageBindingDragKind
 
 ```ts
-export declare function messageBindingDragKind(types: readonly string[]): string | null;
+export declare function messageBindingDragKind(types: readonly string[]): null | string;
 ```
 
 ### messageBindingToken
@@ -15452,10 +15452,10 @@ export declare const miniAppFiles: {
         extensions?: readonly string[];
     }) => Promise<string[]>;
     bindingsFromFiles: (files: readonly File[]) => Promise<MessageBindingDraft[]>;
-    droppedPaths: (files: readonly File[]) => Promise<{
+    droppedPaths: (files: readonly File[]) => Promise<null | {
         path: string;
         isDir: boolean;
-    }[] | null>;
+    }[]>;
     read: (sessionId: string, path: string, options?: {
         full?: boolean;
         knownHash?: string;
@@ -15473,7 +15473,7 @@ export declare const miniAppFiles: {
 ```ts
 export declare const miniAppNavigation: {
     revealSession: (sessionId: string, projectId?: string) => void;
-    openBinding: (binding: MessageContextBindingDraft, sessionId: string | null) => Promise<boolean>;
+    openBinding: (binding: MessageContextBindingDraft, sessionId: null | string) => Promise<boolean>;
 };
 ```
 
@@ -15512,7 +15512,7 @@ export declare const miniAppRealtime: {
 
 ```ts
 export declare const miniAppResources: {
-    browse: (partial: string, sessionId?: string | null) => Promise<MiniAppResourceBrowseResult>;
+    browse: (partial: string, sessionId?: null | string) => Promise<MiniAppResourceBrowseResult>;
 };
 ```
 
@@ -15581,7 +15581,7 @@ export declare const miniAppWorkspace: {
         everyChat?: boolean;
     }) => void;
     focusWorkItem: (id: string) => void;
-    openSidebarSection: (sectionId: string | null) => void;
+    openSidebarSection: (sectionId: null | string) => void;
     getSnapshot: () => MiniAppWorkspaceSnapshot;
     subscribe: (listener: () => void) => (() => void);
 };
@@ -15608,7 +15608,7 @@ export declare function normalizeUiAgentLocationDescriptor(value: unknown): UiAg
 ### normalizeUiLocationBaseUri
 
 ```ts
-export declare function normalizeUiLocationBaseUri(value: string, surface: UiSurfaceKind): string | null;
+export declare function normalizeUiLocationBaseUri(value: string, surface: UiSurfaceKind): null | string;
 ```
 
 ### parseLocalixResourceUri
@@ -15698,7 +15698,7 @@ export declare const readyMessage: () => MiniAppBridgeMessage<unknown>;
 ### resourceMessageBindingDraft
 
 ```ts
-export declare function resourceMessageBindingDraft(resource: Pick<AddressableResource, 'uri' | 'label'>, source?: MessageContextBindingDraft['source']): PublishedMessageContextBindingDraft;
+export declare function resourceMessageBindingDraft(resource: Pick<AddressableResource, 'label' | 'uri'>, source?: MessageContextBindingDraft['source']): PublishedMessageContextBindingDraft;
 ```
 
 ### resultMessage
@@ -15730,7 +15730,7 @@ export declare function saveJSON(key: string, value: unknown, storage?: StorageW
 ### saveString
 
 ```ts
-export declare function saveString(key: string, value: string | null, storage?: StorageWriter): void;
+export declare function saveString(key: string, value: null | string, storage?: StorageWriter): void;
 ```
 
 ### sessionEventMessage
@@ -15834,7 +15834,7 @@ export declare function unwrapMiniAppResponse<T>(response: FetchResponse): Promi
 ### useActionSurface
 
 ```ts
-export declare function useActionSurface(): string | null;
+export declare function useActionSurface(): null | string;
 ```
 
 ### useComments
@@ -15894,13 +15894,13 @@ export declare function useProblemReport(report: ProblemReport | null, options: 
 ### useScopeComments
 
 ```ts
-export declare function useScopeComments(scope: string | null | undefined): Comment[];
+export declare function useScopeComments(scope: null | string | undefined): Comment[];
 ```
 
 ### useSessionActivity
 
 ```ts
-export declare function useSessionActivity(sessionId: string | null | undefined): SessionActivity;
+export declare function useSessionActivity(sessionId: null | string | undefined): SessionActivity;
 ```
 
 ### useVisiblePolling
@@ -15998,7 +15998,7 @@ export declare function isMiniAppUiSharedModule(specifier: string): boolean;
 export interface CollectionView<T, Input> {
     items: T[];
     loading: boolean;
-    error: string | null;
+    error: null | string;
     sending: boolean;
     add: (input: Input) => Promise<T[] | null>;
     update: (id: string, patch: Partial<Input>) => Promise<T[] | null>;
@@ -16035,10 +16035,10 @@ export declare function screenUi(screen: {
 ### useAgentContext
 
 ```ts
-export declare function useAgentContext(publish: PublishMessageContext | undefined, active: boolean, context: {
+export declare function useAgentContext(publish: PublishMessageContext | undefined, active: boolean, context: null | {
     label: string;
     content: string;
-} | null): void;
+}): void;
 ```
 
 ### useCollection
@@ -16059,7 +16059,7 @@ export declare function useCollection<T, Input = Omit<T, 'id'>>(options: {
 export declare function useScreenProblem(options: {
     app: string;
     subject: string;
-    failure: string | null;
+    failure: null | string;
     showingData: boolean;
 }): MiniAppProblemLineProps | null;
 ```
@@ -16222,7 +16222,7 @@ export declare const useComments: import("zustand").UseBoundStore<import("zustan
 ### useScopeComments
 
 ```ts
-export declare function useScopeComments(scope: string | null | undefined): Comment[];
+export declare function useScopeComments(scope: null | string | undefined): Comment[];
 ```
 
 ## module @localixai/mini-app-sdk/ui/components
@@ -16271,7 +16271,7 @@ export interface MiniAppContextBindingIconProps {
 ```ts
 export interface MiniAppContextBindingPreviewProps {
     binding: MessageContextBindingDraft;
-    sessionId: string | null;
+    sessionId: null | string;
     className?: string;
     onIntrinsicSize?: (size: {
         width: number;
@@ -16344,7 +16344,7 @@ export interface MiniAppFileTabProps {
     onRun?: (context: MiniAppEditorRunContext) => void;
     bindRunContext?: (get: () => MiniAppEditorRunContext) => void;
     extensions?: unknown[];
-    formatText?: (text: string) => string | Promise<string>;
+    formatText?: (text: string) => Promise<string> | string;
     publishMessageContext?: PublishMessageContext;
 }
 ```
@@ -16353,7 +16353,7 @@ export interface MiniAppFileTabProps {
 
 ```ts
 export type MiniAppInputProps = Omit<ComponentPropsWithoutRef<'input'>, 'size'> & {
-    size?: 'md' | 'lg' | 'xl';
+    size?: 'lg' | 'md' | 'xl';
 };
 ```
 
@@ -16399,9 +16399,9 @@ export interface MiniAppProblemStateProps extends MiniAppProblemLineProps {
 export interface MiniAppStagedTableChanges {
     updates: {
         row: TableRow;
-        values: Record<string, string | null>;
+        values: Record<string, null | string>;
     }[];
-    inserts: Record<string, string | null>[];
+    inserts: Record<string, null | string>[];
     deletes: TableRow[];
 }
 ```
@@ -16419,8 +16419,8 @@ export interface MiniAppTableGridProps {
     onRowActivate?: (index: number) => void;
     editable?: boolean;
     editableColumns?: Set<string>;
-    onCellEdit?: (row: TableRow, columnId: string, next: string | null) => void;
-    onAddRow?: (values: Record<string, string | null>) => void;
+    onCellEdit?: (row: TableRow, columnId: string, next: null | string) => void;
+    onAddRow?: (values: Record<string, null | string>) => void;
     onDeleteRow?: (row: TableRow) => void;
     showColumnTypes?: boolean;
     showColumnIcons?: boolean;
@@ -16429,7 +16429,7 @@ export interface MiniAppTableGridProps {
     allowNullValues?: boolean;
     columnActions?: {
         rename?: (id: string, title: string) => void;
-        insert?: (id: string, side: 'before' | 'after') => void;
+        insert?: (id: string, side: 'after' | 'before') => void;
         move?: (id: string, direction: 'left' | 'right') => void;
         remove?: (id: string) => void;
     };
@@ -16450,7 +16450,7 @@ export interface MiniAppTableGridProps {
 
 ```ts
 export type MiniAppTextareaProps = ComponentPropsWithoutRef<'textarea'> & {
-    size?: 'md' | 'lg' | 'xl';
+    size?: 'lg' | 'md' | 'xl';
 };
 ```
 
@@ -16505,7 +16505,7 @@ export declare function bindMiniAppUiComponents(next: MiniAppUiComponents): () =
 
 ```ts
 export interface FileResourceSyncOptions<T> extends ResourceSyncReader<T> {
-    sessionId: string | null;
+    sessionId: null | string;
     prefix: string;
     enabled?: boolean;
     resetKey?: unknown;
@@ -16527,7 +16527,7 @@ export declare function useFileResourceSync<T>(options: FileResourceSyncOptions<
 ### workspacePathsTouch
 
 ```ts
-export declare function workspacePathsTouch(paths: readonly string[] | null, prefix: string): boolean;
+export declare function workspacePathsTouch(paths: null | readonly string[], prefix: string): boolean;
 ```
 
 ## module @localixai/mini-app-sdk/ui/file-types
@@ -16563,7 +16563,7 @@ export interface DedicatedViewerType {
 ### FileViewerKind
 
 ```ts
-export type FileViewerKind = 'pdf' | 'document' | 'spreadsheet' | 'editor';
+export type FileViewerKind = 'document' | 'editor' | 'pdf' | 'spreadsheet';
 ```
 
 ### ODT_CONTENT_TYPE
@@ -16599,7 +16599,7 @@ export declare function fileExtension(path: string): string;
 ### hasBinarySignature
 
 ```ts
-export declare function hasBinarySignature(content: string | Uint8Array): boolean;
+export declare function hasBinarySignature(content: Uint8Array | string): boolean;
 ```
 
 ### mediaTypeForExtension
@@ -16650,7 +16650,7 @@ export interface FocusEntryOptions {
 ### FocusKind
 
 ```ts
-export type FocusKind = 'dialog' | 'menu' | 'overlay' | 'text-input' | 'editor' | 'surface';
+export type FocusKind = 'dialog' | 'editor' | 'menu' | 'overlay' | 'surface' | 'text-input';
 ```
 
 ### GlobalKeyPolicy
@@ -16743,7 +16743,7 @@ export declare function useTableGame<T>(options: {
     failureMessage: string;
 }): {
     snapshot: T | null;
-    error: string | null;
+    error: null | string;
     loading: boolean;
     sending: boolean;
     send: (body: unknown, options?: import("./route-snapshot").SendOptions) => Promise<T | null>;
@@ -16863,7 +16863,7 @@ export declare function messageBindingDraft(sessionId: string, messageId: string
 ### messageBindingDragKind
 
 ```ts
-export declare function messageBindingDragKind(types: readonly string[]): string | null;
+export declare function messageBindingDragKind(types: readonly string[]): null | string;
 ```
 
 ### messageBindingToken
@@ -16985,7 +16985,7 @@ export declare function prerequisiteProblem(prerequisite: Prerequisite, extra?: 
 ### prerequisiteRecovery
 
 ```ts
-export declare function prerequisiteRecovery(prerequisite: Prerequisite, sessionId: string | null): ProblemRecovery | null;
+export declare function prerequisiteRecovery(prerequisite: Prerequisite, sessionId: null | string): ProblemRecovery | null;
 ```
 
 ### usePrerequisiteRecovery
@@ -17014,7 +17014,7 @@ export interface Problem {
 ### ProblemConsequence
 
 ```ts
-export type ProblemConsequence = 'stale' | 'blocked' | 'none';
+export type ProblemConsequence = 'blocked' | 'none' | 'stale';
 ```
 
 ### ProblemLocation
@@ -17032,7 +17032,7 @@ export interface ProblemLocation {
 export interface ProblemRecovery {
     id: string;
     label: string;
-    run: () => void | Promise<void>;
+    run: () => Promise<void> | void;
     durable?: boolean;
     primary?: boolean;
 }
@@ -17064,7 +17064,7 @@ export interface ProblemRequest {
 ### ProblemSeverity
 
 ```ts
-export type ProblemSeverity = 'error' | 'warning' | 'info';
+export type ProblemSeverity = 'error' | 'info' | 'warning';
 ```
 
 ### ProblemSubject
@@ -17155,7 +17155,7 @@ export interface RealtimeFeedSpec<Key, Frame> {
     readonly unsubscribe: (key: Key) => Record<string, unknown>;
     readonly id?: (key: Key) => string;
     readonly decode: (json: string) => Frame | null | undefined;
-    readonly route?: (frame: Frame) => string | ((key: Key) => boolean) | null;
+    readonly route?: (frame: Frame) => ((key: Key) => boolean) | null | string;
     readonly status?: (frame: Frame) => boolean | undefined;
     readonly pauseWhileHidden?: boolean;
 }
@@ -17210,7 +17210,7 @@ export declare function createResourceSync<Resource extends string = string>(opt
 export interface ResourceTopic {
     readonly name: string;
     invalidate(key?: string): void;
-    subscribe(listener: (key: string | null) => void): () => void;
+    subscribe(listener: (key: null | string) => void): () => void;
 }
 ```
 
@@ -17223,7 +17223,7 @@ export declare function resetResourceTopics(): void;
 ### resourceKeyAffected
 
 ```ts
-export declare function resourceKeyAffected(watched: string | null | undefined, changed: string | null): boolean;
+export declare function resourceKeyAffected(watched: null | string | undefined, changed: null | string): boolean;
 ```
 
 ### resourceTopic
@@ -17243,7 +17243,7 @@ export declare function ResultCountStatus({ count, singular, plural, formatCount
 ### ResultCountStatusProps
 
 ```ts
-export type ResultCountStatusProps = Omit<ComponentPropsWithoutRef<'span'>, 'children' | 'role' | 'aria-live' | 'aria-atomic'> & {
+export type ResultCountStatusProps = Omit<ComponentPropsWithoutRef<'span'>, 'aria-atomic' | 'aria-live' | 'children' | 'role'> & {
     count: number;
     singular?: string;
     plural?: string;
@@ -17258,7 +17258,7 @@ export type ResultCountStatusProps = Omit<ComponentPropsWithoutRef<'span'>, 'chi
 ```ts
 export interface PolledSnapshot<T> {
     snapshot: T | null;
-    error: string | null;
+    error: null | string;
     loading: boolean;
     sending: boolean;
     send: (body: unknown, options?: SendOptions) => Promise<T | null>;
@@ -17271,7 +17271,7 @@ export interface PolledSnapshot<T> {
 ```ts
 export interface SendOptions {
     path?: string;
-    method?: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+    method?: 'DELETE' | 'PATCH' | 'POST' | 'PUT';
 }
 ```
 
@@ -17281,7 +17281,7 @@ export interface SendOptions {
 export declare function usePolledSnapshot<T>({ path, schema, intervalMs, active, timeoutMs, failureMessage, }: {
     path: string;
     schema: z.ZodType<T>;
-    intervalMs: number | null;
+    intervalMs: null | number;
     active?: boolean;
     timeoutMs?: number;
     failureMessage: string;
@@ -17298,8 +17298,8 @@ export interface MiniAppCompletionReference {
     token: string;
     label: string;
     uri?: string;
-    attributes?: Record<string, string | number | boolean>;
-    origin?: 'linked' | 'ambient';
+    attributes?: Record<string, boolean | number | string>;
+    origin?: 'ambient' | 'linked';
 }
 ```
 
@@ -17323,7 +17323,7 @@ export interface MiniAppComposerInsert {
 export interface MiniAppConversationImport {
     title: string;
     messages: readonly MiniAppTranscriptMessage[];
-    projectId?: string | null;
+    projectId?: null | string;
 }
 ```
 
@@ -17365,18 +17365,18 @@ export interface MiniAppEditPredictionRequest {
 
 ```ts
 export type MiniAppEditPredictionResult = {
-    outcome: 'predicted';
-    edits: MiniAppEditPrediction[];
-} | {
     outcome: 'empty' | 'stale_delivery';
     edits: null;
     diagnostic?: {
+        code: 'empty';
+        outcome: 'cancelled' | 'deadline_exceeded' | 'empty' | 'no_model' | 'provider_error';
+    } | {
         code: 'stale_delivery';
         mismatch: string;
-    } | {
-        code: 'empty';
-        outcome: 'empty' | 'cancelled' | 'deadline_exceeded' | 'no_model' | 'provider_error';
     };
+} | {
+    outcome: 'predicted';
+    edits: MiniAppEditPrediction[];
 };
 ```
 
@@ -17389,7 +17389,7 @@ export interface MiniAppFileContent {
     bytes: number;
     truncated: boolean;
     mimeType?: string;
-    encoding?: 'utf8' | 'base64';
+    encoding?: 'base64' | 'utf8';
     hash?: string;
     unchanged?: true;
 }
@@ -17455,7 +17455,7 @@ export interface MiniAppPendingInteraction {
 
 ```ts
 export interface MiniAppResourceBrowseResult {
-    parent: string | null;
+    parent: null | string;
     nodes: MiniAppResourceNode[];
     notices: MiniAppResourceNode[];
     total: number;
@@ -17499,18 +17499,18 @@ export interface MiniAppSecretReference {
 export interface MiniAppSession {
     id: string;
     title: string;
-    projectId: string | null;
-    parentSessionId: string | null;
-    rootSessionId: string | null;
-    sessionKind: 'chat' | 'subagent' | 'job' | 'system';
+    projectId: null | string;
+    parentSessionId: null | string;
+    rootSessionId: null | string;
+    sessionKind: 'chat' | 'job' | 'subagent' | 'system';
     agent: {
         name: string;
-        providerConnectionId: string | null;
+        providerConnectionId: null | string;
         modelId: string;
         reasoningEffort: string;
     };
-    runtimeStatus: 'idle' | 'running' | 'completed' | 'failed' | 'stopped';
-    sourceToolCallId: string | null;
+    runtimeStatus: 'completed' | 'failed' | 'idle' | 'running' | 'stopped';
+    sourceToolCallId: null | string;
     isRunning: boolean;
     createdAt: number;
     updatedAt: number;
@@ -17528,7 +17528,7 @@ export interface MiniAppSession {
 ```ts
 export interface MiniAppTextInputCompletion {
     suggestion: string;
-    accept: (unit?: 'all' | 'word' | 'line') => boolean;
+    accept: (unit?: 'all' | 'line' | 'word') => boolean;
     dismiss: () => boolean;
     request: () => boolean;
     handleKeyDown: (event: ReactKeyboardEvent) => boolean;
@@ -17542,7 +17542,7 @@ export interface MiniAppTextInputCompletion {
 ```ts
 export interface MiniAppTextInputCompletionInput<TPayload = unknown> {
     surface: string;
-    sessionId: string | null;
+    sessionId: null | string;
     value: string;
     setValue: (value: string) => void;
     payload: TPayload;
@@ -17595,7 +17595,7 @@ export interface MiniAppTranscriptInput {
 ```ts
 export interface MiniAppTranscriptMessage {
     id: string;
-    role: 'user' | 'assistant';
+    role: 'assistant' | 'user';
     content?: string;
     items?: AgentItem[];
 }
@@ -17615,7 +17615,7 @@ export interface MiniAppUiRuntime {
             everyChat?: boolean;
         }): void;
         focusWorkItem(id: string): void;
-        openSidebarSection(sectionId: string | null): void;
+        openSidebarSection(sectionId: null | string): void;
         getSnapshot(): MiniAppWorkspaceSnapshot;
         subscribe(listener: () => void): () => void;
     };
@@ -17649,10 +17649,10 @@ export interface MiniAppUiRuntime {
             extensions?: readonly string[];
         }): Promise<string[]>;
         bindingsFromFiles(files: readonly File[]): Promise<MessageBindingDraft[]>;
-        droppedPaths(files: readonly File[]): Promise<{
+        droppedPaths(files: readonly File[]): Promise<null | {
             path: string;
             isDir: boolean;
-        }[] | null>;
+        }[]>;
         read(sessionId: string, path: string, options?: {
             full?: boolean;
             knownHash?: string;
@@ -17689,10 +17689,10 @@ export interface MiniAppUiRuntime {
     };
     navigation: {
         revealSession(sessionId: string, projectId?: string): void;
-        openBinding(binding: MessageContextBindingDraft, sessionId: string | null): boolean | Promise<boolean>;
+        openBinding(binding: MessageContextBindingDraft, sessionId: null | string): Promise<boolean> | boolean;
     };
     resources: {
-        browse(partial: string, sessionId?: string | null): Promise<MiniAppResourceBrowseResult>;
+        browse(partial: string, sessionId?: null | string): Promise<MiniAppResourceBrowseResult>;
     };
     projects: {
         resolvePath(path: string): Promise<{
@@ -17724,7 +17724,7 @@ export interface MiniAppWorkItemRequest {
     workKind: string;
     id: string;
     title: string;
-    scope: string | null;
+    scope: null | string;
     payload?: Record<string, unknown>;
     ephemeral?: boolean;
     replace?: boolean;
@@ -17736,7 +17736,7 @@ export interface MiniAppWorkItemRequest {
 ```ts
 export interface MiniAppWorkspaceChange {
     sessionId: string;
-    paths: readonly string[] | null;
+    paths: null | readonly string[];
 }
 ```
 
@@ -17745,7 +17745,7 @@ export interface MiniAppWorkspaceChange {
 ```ts
 export interface MiniAppWorkspaceSnapshot {
     items: Readonly<Record<string, WorkItemLike>>;
-    focusedId: string | null;
+    focusedId: null | string;
 }
 ```
 
@@ -17753,7 +17753,7 @@ export interface MiniAppWorkspaceSnapshot {
 
 ```ts
 export interface MiniAppWorkspaceWatchHandlers {
-    onChange(paths: readonly string[] | null): void;
+    onChange(paths: null | readonly string[]): void;
     onLive(live: boolean): void;
 }
 ```
@@ -17817,10 +17817,10 @@ export declare const miniAppFiles: {
         extensions?: readonly string[];
     }) => Promise<string[]>;
     bindingsFromFiles: (files: readonly File[]) => Promise<MessageBindingDraft[]>;
-    droppedPaths: (files: readonly File[]) => Promise<{
+    droppedPaths: (files: readonly File[]) => Promise<null | {
         path: string;
         isDir: boolean;
-    }[] | null>;
+    }[]>;
     read: (sessionId: string, path: string, options?: {
         full?: boolean;
         knownHash?: string;
@@ -17838,7 +17838,7 @@ export declare const miniAppFiles: {
 ```ts
 export declare const miniAppNavigation: {
     revealSession: (sessionId: string, projectId?: string) => void;
-    openBinding: (binding: MessageContextBindingDraft, sessionId: string | null) => Promise<boolean>;
+    openBinding: (binding: MessageContextBindingDraft, sessionId: null | string) => Promise<boolean>;
 };
 ```
 
@@ -17871,7 +17871,7 @@ export declare const miniAppRealtime: {
 
 ```ts
 export declare const miniAppResources: {
-    browse: (partial: string, sessionId?: string | null) => Promise<MiniAppResourceBrowseResult>;
+    browse: (partial: string, sessionId?: null | string) => Promise<MiniAppResourceBrowseResult>;
 };
 ```
 
@@ -17940,7 +17940,7 @@ export declare const miniAppWorkspace: {
         everyChat?: boolean;
     }) => void;
     focusWorkItem: (id: string) => void;
-    openSidebarSection: (sectionId: string | null) => void;
+    openSidebarSection: (sectionId: null | string) => void;
     getSnapshot: () => MiniAppWorkspaceSnapshot;
     subscribe: (listener: () => void) => (() => void);
 };
@@ -17987,7 +17987,7 @@ export declare function useMiniAppWorkspace(): MiniAppWorkspaceSnapshot;
 ### useMiniAppWorkspaceChanges
 
 ```ts
-export declare function useMiniAppWorkspaceChanges(sessionId: string | null, onChange: (change: MiniAppWorkspaceChange) => void, options?: {
+export declare function useMiniAppWorkspaceChanges(sessionId: null | string, onChange: (change: MiniAppWorkspaceChange) => void, options?: {
     windowMs?: number;
     enabled?: boolean;
 }): boolean | null;
@@ -18049,7 +18049,7 @@ export declare function SegmentedRadioGroup<T extends string>({ value, onValueCh
 ### SegmentedRadioGroupProps
 
 ```ts
-export type SegmentedRadioGroupProps<T extends string> = Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange' | 'aria-label' | 'aria-labelledby'> & SegmentedRadioAccessibleName & {
+export type SegmentedRadioGroupProps<T extends string> = Omit<React.HTMLAttributes<HTMLDivElement>, 'aria-label' | 'aria-labelledby' | 'onChange'> & SegmentedRadioAccessibleName & {
     value: T;
     onValueChange: (value: T) => void;
     options: readonly SegmentedRadioOption<T>[];
@@ -18079,13 +18079,13 @@ export interface SegmentedRadioOption<T extends string> {
 ### SegmentedRadioSize
 
 ```ts
-export type SegmentedRadioSize = 'sm' | 'lg';
+export type SegmentedRadioSize = 'lg' | 'sm';
 ```
 
 ### SegmentedVariant
 
 ```ts
-export type SegmentedVariant = 'raised' | 'muted' | 'ghost' | 'outlined';
+export type SegmentedVariant = 'ghost' | 'muted' | 'outlined' | 'raised';
 ```
 
 ## module @localixai/mini-app-sdk/ui/session-activity
@@ -18121,7 +18121,7 @@ export declare function clearSessionActivity(sessionId: string): void;
 ### getSessionActivity
 
 ```ts
-export declare function getSessionActivity(sessionId: string | null | undefined): SessionActivity;
+export declare function getSessionActivity(sessionId: null | string | undefined): SessionActivity;
 ```
 
 ### retainSessionActivity
@@ -18147,7 +18147,7 @@ export declare function subscribeSessionActivity(sessionId: string, listener: ()
 ### useSessionActivity
 
 ```ts
-export declare function useSessionActivity(sessionId: string | null | undefined): SessionActivity;
+export declare function useSessionActivity(sessionId: null | string | undefined): SessionActivity;
 ```
 
 ## module @localixai/mini-app-sdk/ui/session-game
@@ -18168,7 +18168,7 @@ export declare function sessionGameUi(game: {
     }>;
     loading: ReactNode;
     agentContext: WorkItemAgentContext;
-    sessionOf: (uri: string) => string | null | undefined;
+    sessionOf: (uri: string) => null | string | undefined;
 }): (host: MiniAppUiHost) => void;
 ```
 
@@ -18179,7 +18179,7 @@ export declare function sessionGameUi(game: {
 ```ts
 export interface SessionTreeNode {
     id: string;
-    parentSessionId?: string | null;
+    parentSessionId?: null | string;
 }
 ```
 
@@ -18201,9 +18201,9 @@ export declare const GLOBAL_RESOURCE_KEY = "global";
 
 ```ts
 export interface SharedResource<T> {
-    use(key: string | null | undefined): T | undefined;
+    use(key: null | string | undefined): T | undefined;
     refresh(key: string): void;
-    peek(key: string | null | undefined): T | undefined;
+    peek(key: null | string | undefined): T | undefined;
     subscribe(listener: () => void): () => void;
     reset(): void;
     dispose(): void;
@@ -18227,7 +18227,7 @@ export declare function createSharedResource<T>(load: (key: string, signal?: Abo
 ### useResourceTopic
 
 ```ts
-export declare function useResourceTopic(topic: ResourceTopic, onChange: () => void, key?: string | null): void;
+export declare function useResourceTopic(topic: ResourceTopic, onChange: () => void, key?: null | string): void;
 ```
 
 ## module @localixai/mini-app-sdk/ui/stats-charts
@@ -18274,7 +18274,7 @@ export declare function TrendChart({ points, formatValue, bucketLabel, emptyLabe
 
 ```ts
 export interface StorageReader {
-    getItem(key: string): string | null;
+    getItem(key: string): null | string;
 }
 ```
 
@@ -18296,7 +18296,7 @@ export declare function loadJSON<T>(key: string, storage?: StorageReader): T | n
 ### loadString
 
 ```ts
-export declare function loadString(key: string, storage?: StorageReader): string | null;
+export declare function loadString(key: string, storage?: StorageReader): null | string;
 ```
 
 ### saveJSON
@@ -18308,7 +18308,7 @@ export declare function saveJSON(key: string, value: unknown, storage?: StorageW
 ### saveString
 
 ```ts
-export declare function saveString(key: string, value: string | null, storage?: StorageWriter): void;
+export declare function saveString(key: string, value: null | string, storage?: StorageWriter): void;
 ```
 
 ## module @localixai/mini-app-sdk/ui/store-resource
@@ -18324,7 +18324,7 @@ export type StoreScope = Pick<StoreFrame, 'miniApp' | 'sessionId'>;
 ```ts
 export declare const storeFeed: import("./realtime-feed").RealtimeFeed<StoreScope, {
     miniApp: string;
-    sessionId: string | null;
+    sessionId: null | string;
     live?: boolean | undefined;
 }>;
 ```
@@ -18348,7 +18348,7 @@ export declare const STORE_BACKSTOP_POLL_MS: null;
 ```ts
 export declare const storeFeed: import("./realtime-feed").RealtimeFeed<StoreScope, {
     miniApp: string;
-    sessionId: string | null;
+    sessionId: null | string;
     live?: boolean | undefined;
 }>;
 ```
@@ -18358,8 +18358,8 @@ export declare const storeFeed: import("./realtime-feed").RealtimeFeed<StoreScop
 ```ts
 export declare function useStoreSnapshot<T>(options: Parameters<typeof usePolledSnapshot<T>>[0] & {
     miniApp: string;
-    sessionId: string | null;
-    backstopMs?: number | null;
+    sessionId: null | string;
+    backstopMs?: null | number;
 }): PolledSnapshot<T> & {
     live: boolean;
 };
@@ -18412,11 +18412,11 @@ export declare function recordingMiniAppUiHost(): {
 ```ts
 export declare class MiniAppApiError extends Error {
     readonly status: number;
-    readonly code: string | null;
+    readonly code: null | string;
     readonly detail?: string;
     readonly prerequisite?: Prerequisite;
     readonly request?: ProblemRequest;
-    constructor(message: string, status: number, code?: string | null, detail?: string, extra?: {
+    constructor(message: string, status: number, code?: null | string, detail?: string, extra?: {
         prerequisite?: Prerequisite;
         request?: ProblemRequest;
     });
@@ -18453,7 +18453,7 @@ export declare function bindMiniAppUiTransport(next: MiniAppUiTransport): () => 
 ### cleanMiniAppQuery
 
 ```ts
-export declare function cleanMiniAppQuery(values?: Record<string, string | number | null | undefined>): Record<string, string>;
+export declare function cleanMiniAppQuery(values?: Record<string, null | number | string | undefined>): Record<string, string>;
 ```
 
 ### markResponseTrace
@@ -18544,7 +18544,7 @@ export declare function useProblemReport(report: ProblemReport | null, options: 
 ### MatchKind
 
 ```ts
-export type MatchKind = 'exact' | 'prefix' | 'substring' | 'subsequence';
+export type MatchKind = 'exact' | 'prefix' | 'subsequence' | 'substring';
 ```
 
 ### PointerPoint
@@ -18584,7 +18584,7 @@ export interface ScoreSearchOptions {
 
 ```ts
 export interface SearchField {
-    text: string | null | undefined;
+    text: null | string | undefined;
     weight?: number;
 }
 ```
@@ -18622,7 +18622,7 @@ export declare function formatBucketLabel(bucket: string): string;
 ### formatDuration
 
 ```ts
-export declare function formatDuration(milliseconds: number | null | undefined): string;
+export declare function formatDuration(milliseconds: null | number | undefined): string;
 ```
 
 ### formatElapsed
@@ -18734,8 +18734,8 @@ export declare function toggleInSet<T>(set: ReadonlySet<T>, value: T): Set<T>;
 ```ts
 export interface VisiblePollingOptions {
     enabled?: boolean;
-    intervalMs: number | null;
-    onTick: () => void | Promise<unknown>;
+    intervalMs: null | number;
+    onTick: () => Promise<unknown> | void;
     refreshOnFocus?: boolean;
     immediate?: boolean;
     resetKey?: unknown;
@@ -18796,7 +18796,7 @@ export declare function useWorkItemVisible(): boolean;
 
 ```ts
 export declare function WorkItemSessionProvider({ sessionId, children, }: {
-    sessionId: string | null;
+    sessionId: null | string;
     children: ReactNode;
 }): import("react").JSX.Element;
 ```
@@ -18804,7 +18804,7 @@ export declare function WorkItemSessionProvider({ sessionId, children, }: {
 ### useWorkItemSessionId
 
 ```ts
-export declare function useWorkItemSessionId(): string | null;
+export declare function useWorkItemSessionId(): null | string;
 ```
 
 ## Types the modules name
@@ -18835,7 +18835,7 @@ export interface HumanInLoopRecord<TRequest extends HumanInLoopRequestBase = Hum
 ### @localixai/agent/dist/agents/human-in-loop.d.ts#HumanInLoopRecordStatus
 
 ```ts
-export type HumanInLoopRecordStatus = 'pending' | 'responded' | 'rejected' | 'expired' | 'aborted' | 'dismissed';
+export type HumanInLoopRecordStatus = 'aborted' | 'dismissed' | 'expired' | 'pending' | 'rejected' | 'responded';
 ```
 
 ### @localixai/agent/dist/agents/human-in-loop.d.ts#HumanInLoopRequestBase
@@ -18871,25 +18871,28 @@ export interface HumanInLoopResponseBase<TKind extends HumanInLoopRequestKind = 
 ### @localixai/agent/dist/agents/human-in-loop.d.ts#TKind
 
 ```ts
-TKind extends HumanInLoopRequestKind = HumanInLoopRequestKind
+TKind;
+HumanInLoopRequestKind = HumanInLoopRequestKind;
 ```
 
 ### @localixai/agent/dist/agents/human-in-loop.d.ts#TPayload
 
 ```ts
-TPayload = unknown
+TPayload = unknown;
 ```
 
 ### @localixai/agent/dist/agents/human-in-loop.d.ts#TRequest
 
 ```ts
-TRequest extends HumanInLoopRequestBase = HumanInLoopRequestBase
+TRequest;
+HumanInLoopRequestBase = HumanInLoopRequestBase;
 ```
 
 ### @localixai/agent/dist/agents/human-in-loop.d.ts#TResponse
 
 ```ts
-TResponse extends HumanInLoopResponseBase = HumanInLoopResponseBase
+TResponse;
+HumanInLoopResponseBase = HumanInLoopResponseBase;
 ```
 
 ### @localixai/agent/dist/agents/item-model.d.ts#AgentItem
@@ -18918,7 +18921,7 @@ interface AgentItemBase {
 ### @localixai/agent/dist/agents/item-model.d.ts#AgentItemStatus
 
 ```ts
-export type AgentItemStatus = 'pending' | 'running' | 'completed' | 'failed' | 'aborted';
+export type AgentItemStatus = 'aborted' | 'completed' | 'failed' | 'pending' | 'running';
 ```
 
 ### @localixai/agent/dist/agents/item-model.d.ts#CommandItem
@@ -18938,7 +18941,7 @@ export interface CommandItem extends ToolBackedBase {
 ### @localixai/agent/dist/agents/item-model.d.ts#CommandJobStatus
 
 ```ts
-export type CommandJobStatus = 'running' | 'completed' | 'failed' | 'killed' | 'timeout' | 'lost';
+export type CommandJobStatus = 'completed' | 'failed' | 'killed' | 'lost' | 'running' | 'timeout';
 ```
 
 ### @localixai/agent/dist/agents/item-model.d.ts#FileChange
@@ -18965,7 +18968,7 @@ export interface FileChangeItem extends ToolBackedBase {
 ### @localixai/agent/dist/agents/item-model.d.ts#FileChangeKind
 
 ```ts
-export type FileChangeKind = 'add' | 'modify' | 'delete' | 'rename';
+export type FileChangeKind = 'add' | 'delete' | 'modify' | 'rename';
 ```
 
 ### @localixai/agent/dist/agents/item-model.d.ts#McpCallItem
@@ -18983,7 +18986,7 @@ export interface McpCallItem extends ToolBackedBase {
 ### @localixai/agent/dist/agents/item-model.d.ts#NarrativeItem
 
 ```ts
-export type NarrativeItem = TextItem | ReasoningItem;
+export type NarrativeItem = ReasoningItem | TextItem;
 ```
 
 ### @localixai/agent/dist/agents/item-model.d.ts#ReasoningItem
@@ -19056,12 +19059,12 @@ export interface AgentSource {
     kind: string;
     title: string;
     uri: string;
-    role: 'discovered' | 'consulted' | 'cited';
+    role: 'cited' | 'consulted' | 'discovered';
     status: 'available' | 'failed';
     provider?: string;
     snippet?: string;
     retrievedAt?: string;
-    metadata?: Record<string, string | number | boolean>;
+    metadata?: Record<string, boolean | number | string>;
 }
 ```
 
@@ -19102,7 +19105,7 @@ export interface ToolAction {
     label: string;
     icon?: string;
     enabled?: boolean;
-    tone?: 'neutral' | 'danger';
+    tone?: 'danger' | 'neutral';
     execute(payload?: unknown): void;
 }
 ```
@@ -19116,7 +19119,7 @@ export interface ToolActionDescriptor {
     label: string;
     icon?: string;
     enabled?: boolean;
-    tone?: 'neutral' | 'danger';
+    tone?: 'danger' | 'neutral';
 }
 ```
 
@@ -19124,7 +19127,7 @@ export interface ToolActionDescriptor {
 
 ```ts
 export interface ToolGateProvenance {
-    decision: 'user-approved' | 'session-grant' | 'rule-allow';
+    decision: 'rule-allow' | 'session-grant' | 'user-approved';
     detail?: string;
 }
 ```
@@ -19144,7 +19147,7 @@ export interface AgentToolBehaviorHints {
 
 ```ts
 export interface AgentToolPresentation {
-    transcript?: 'tool' | 'content' | 'hidden';
+    transcript?: 'content' | 'hidden' | 'tool';
     sealed?: AgentToolSealing;
 }
 ```
@@ -19152,13 +19155,13 @@ export interface AgentToolPresentation {
 ### @localixai/agent/dist/agents/tool-definition.d.ts#TDetails
 
 ```ts
-TDetails = unknown
+TDetails = unknown;
 ```
 
 ### @localixai/agent/dist/agents/tool-definition.d.ts#TInput
 
 ```ts
-TInput = unknown
+TInput = unknown;
 ```
 
 ### @localixai/agent/dist/agents/tool-execution-context.d.ts#ToolSessionContext
@@ -19179,13 +19182,13 @@ export interface ToolSessionContext {
 ### @localixai/agent/dist/agents/tool-exposure.d.ts#ExposureLevel
 
 ```ts
-export type ExposureLevel = 'default' | 'opt-in' | 'never';
+export type ExposureLevel = 'default' | 'never' | 'opt-in';
 ```
 
 ### @localixai/agent/dist/agents/tool-exposure.d.ts#RunShape
 
 ```ts
-export type RunShape = 'chat' | 'subagent' | 'automation';
+export type RunShape = 'automation' | 'chat' | 'subagent';
 ```
 
 ### @localixai/agent/dist/agents/tool-exposure.d.ts#ToolExposure
@@ -19197,22 +19200,22 @@ export type ToolExposure = Readonly<Record<RunShape, ExposureLevel>>;
 ### @localixai/agent/dist/agents/tool-guards.d.ts#GuardVerdict
 
 ```ts
-export type GuardVerdict<TDetails = unknown> = {
+export type GuardVerdict<TDetails = unknown> = undefined | {
     block: true;
     result: AgentToolResult<TDetails>;
-} | undefined;
+};
 ```
 
 ### @localixai/agent/dist/agents/tool-guards.d.ts#TDetails
 
 ```ts
-TDetails = unknown
+TDetails = unknown;
 ```
 
 ### @localixai/agent/dist/agents/tool-guards.d.ts#TInput
 
 ```ts
-TInput = unknown
+TInput = unknown;
 ```
 
 ### @localixai/agent/dist/agents/tool-guards.d.ts#ToolGuardContext
@@ -19230,7 +19233,7 @@ export interface ToolGuardContext<TInput = unknown> {
 ```ts
 export interface ToolStreamGuard<TDetails = unknown> {
     requiredFields: string[];
-    evaluate(partialInput: Record<string, unknown>): Promise<GuardVerdict<TDetails>> | GuardVerdict<TDetails>;
+    evaluate(partialInput: Record<string, unknown>): GuardVerdict<TDetails> | Promise<GuardVerdict<TDetails>>;
 }
 ```
 
@@ -19243,7 +19246,7 @@ export type AgentToolUpdateCallback<TDetails = unknown> = (details: Partial<TDet
 ### @localixai/agent/dist/agents/tool-result.d.ts#TDetails
 
 ```ts
-TDetails = unknown
+TDetails = unknown;
 ```
 
 ### @localixai/agent/dist/agents/tool-tags.d.ts#ToolRole
@@ -19255,22 +19258,31 @@ export type ToolRole = 'task-board';
 ### @localixai/agent/dist/agents/toolset.d.ts#TDetails
 
 ```ts
-TDetails = unknown
+TDetails = unknown;
 ```
 
 ### @localixai/agent/dist/agents/toolset.d.ts#TInput
 
 ```ts
-TInput = unknown
+TInput = unknown;
 ```
 
 ### @localixai/agent/dist/chat.d.ts#MessageAttachment
 
 ```ts
 export type MessageAttachment = {
-    kind: 'path';
-    path: string;
+    kind: 'audio';
     mediaType: string;
+    data?: string;
+    mediaId?: string;
+    name: string;
+    size: number;
+    durationMs?: number;
+} | {
+    kind: 'file';
+    mediaType: string;
+    data?: string;
+    mediaId?: string;
     name: string;
     size: number;
 } | {
@@ -19281,27 +19293,11 @@ export type MessageAttachment = {
     name: string;
     size: number;
 } | {
-    kind: 'video';
+    kind: 'path';
+    path: string;
     mediaType: string;
-    data?: string;
-    mediaId?: string;
     name: string;
     size: number;
-} | {
-    kind: 'file';
-    mediaType: string;
-    data?: string;
-    mediaId?: string;
-    name: string;
-    size: number;
-} | {
-    kind: 'audio';
-    mediaType: string;
-    data?: string;
-    mediaId?: string;
-    name: string;
-    size: number;
-    durationMs?: number;
 } | {
     kind: 'text';
     name: string;
@@ -19311,6 +19307,13 @@ export type MessageAttachment = {
     path?: string;
     lineCount?: number;
     contextRef?: boolean;
+} | {
+    kind: 'video';
+    mediaType: string;
+    data?: string;
+    mediaId?: string;
+    name: string;
+    size: number;
 };
 ```
 
@@ -19327,24 +19330,24 @@ export interface MessageBindingContribution {
     id: string;
     providerId: string;
     providerVersion: string;
-    scope: 'document' | 'project' | 'session' | 'global';
+    scope: 'document' | 'global' | 'project' | 'session';
     kind: string;
     content: string;
     revision?: string;
-    sensitivity: 'public' | 'project' | 'sensitive' | 'forbidden';
+    sensitivity: 'forbidden' | 'project' | 'public' | 'sensitive';
 }
 ```
 
 ### @localixai/agent/dist/chat.d.ts#MessageBindingSource
 
 ```ts
-export type MessageBindingSource = 'upload' | 'mention' | 'drag' | 'active-tab' | 'slash' | 'mini-app' | 'system';
+export type MessageBindingSource = 'active-tab' | 'drag' | 'mention' | 'mini-app' | 'slash' | 'system' | 'upload';
 ```
 
 ### @localixai/agent/dist/chat.d.ts#MessageBindingStatus
 
 ```ts
-export type MessageBindingStatus = 'pending' | 'resolved' | 'empty' | 'unsupported' | 'out_of_scope' | 'denied' | 'timeout' | 'deadline_exceeded' | 'aborted' | 'error';
+export type MessageBindingStatus = 'aborted' | 'deadline_exceeded' | 'denied' | 'empty' | 'error' | 'out_of_scope' | 'pending' | 'resolved' | 'timeout' | 'unsupported';
 ```
 
 ### @localixai/agent/dist/chat.d.ts#MessageContextBinding
@@ -19361,7 +19364,7 @@ export interface MessageContextBinding {
         token: string;
         label: string;
         uri?: string;
-        attributes?: Record<string, string | number | boolean>;
+        attributes?: Record<string, boolean | number | string>;
     };
     resolution: {
         status: MessageBindingStatus;
@@ -19377,12 +19380,12 @@ export interface MessageContextBinding {
 export interface MessageInvocationBinding {
     kind: 'invocation';
     id: string;
-    source: 'slash' | 'plugin' | 'system';
+    source: 'plugin' | 'slash' | 'system';
     invocation: {
-        kind: 'skill' | 'plugin-command' | 'workflow' | (string & {});
+        kind: 'plugin-command' | 'skill' | 'workflow' | (string & {});
         name: string;
         arguments?: string;
-        lifetime: 'turn' | 'session';
+        lifetime: 'session' | 'turn';
     };
     presentation: {
         label: string;
@@ -19395,7 +19398,7 @@ export interface MessageInvocationBinding {
 ### @localixai/agent/dist/chat.d.ts#ToolErrorKind
 
 ```ts
-export type ToolErrorKind = 'aborted' | 'dismissed' | 'timeout' | 'validation' | 'not_found' | 'blocked' | 'provider' | 'execution' | (string & {});
+export type ToolErrorKind = 'aborted' | 'blocked' | 'dismissed' | 'execution' | 'not_found' | 'provider' | 'timeout' | 'validation' | (string & {});
 ```
 
 ### @localixai/agent/dist/chat.d.ts#ToolErrorPayload
@@ -19429,7 +19432,7 @@ export interface FileContent {
 ```ts
 export interface ImageContent {
     type: 'image';
-    mediaType: 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp';
+    mediaType: 'image/gif' | 'image/jpeg' | 'image/png' | 'image/webp';
     data: string;
 }
 ```
@@ -19437,7 +19440,7 @@ export interface ImageContent {
 ### @localixai/agent/dist/types.d.ts#ReasoningEffort
 
 ```ts
-export type ReasoningEffort = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+export type ReasoningEffort = 'high' | 'low' | 'max' | 'medium' | 'minimal' | 'off' | 'xhigh';
 ```
 
 ### @localixai/agent/dist/types.d.ts#TextContent
@@ -19453,13 +19456,15 @@ export interface TextContent {
 ### @localixai/mini-app-sdk/dist/backend/app.d.ts#S
 
 ```ts
-S extends z.ZodRawShape
+S;
+z.ZodRawShape;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/app.d.ts#T
 
 ```ts
-T extends {
+T;
+{
     id: string;
 }
 ```
@@ -19467,19 +19472,22 @@ T extends {
 ### @localixai/mini-app-sdk/dist/backend/changes.d.ts#Entity
 
 ```ts
-Entity extends string = string
+Entity;
+string = string;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/collection.d.ts#S
 
 ```ts
-S extends z.ZodRawShape
+S;
+z.ZodRawShape;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/collection.d.ts#T
 
 ```ts
-T extends {
+T;
+{
     id: string;
 }
 ```
@@ -19487,79 +19495,84 @@ T extends {
 ### @localixai/mini-app-sdk/dist/backend/helpers.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/http.d.ts#F
 
 ```ts
-F extends string
+F;
+string;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/http.d.ts#F_1
 
 ```ts
-F_1 extends string
+F_1;
+string;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/http.d.ts#PR
 
 ```ts
-PR
+PR;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/http.d.ts#PR_1
 
 ```ts
-PR_1
+PR_1;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/http.d.ts#S
 
 ```ts
-S extends import("hono/utils/http-status").StatusCode
+S;
+import("hono/utils/http-status").StatusCode;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/http.d.ts#S_1
 
 ```ts
-S_1 extends import("hono/utils/http-status").StatusCode
+S_1;
+import("hono/utils/http-status").StatusCode;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/http.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/http.d.ts#T_1
 
 ```ts
-T_1
+T_1;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/http.d.ts#T_2
 
 ```ts
-T_2
+T_2;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/json-store.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/judgment.d.ts#K
 
 ```ts
-K extends string
+K;
+string;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/judgment.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/oauth-device-code.d.ts#DeviceCodePollOptions
@@ -19578,22 +19591,22 @@ export interface DeviceCodePollOptions<T> {
 
 ```ts
 export type DeviceCodePollResult<T> = {
-    status: 'pending';
-} | {
-    status: 'slow_down';
+    status: 'complete';
+    value: T;
 } | {
     status: 'failed';
     message: string;
 } | {
-    status: 'complete';
-    value: T;
+    status: 'pending';
+} | {
+    status: 'slow_down';
 };
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/oauth-device-code.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/oauth-manifest.d.ts#ManifestOAuthTokenSpec
@@ -19601,11 +19614,11 @@ T
 ```ts
 export interface ManifestOAuthTokenSpec {
     url: string;
-    format?: 'json' | 'form';
+    format?: 'form' | 'json';
     headers?: Record<string, string>;
     params?: Record<string, string>;
-    include?: Array<'grantType' | 'clientId' | 'code' | 'redirectUri' | 'verifier' | 'state'>;
-    fieldNames?: Partial<Record<'grantType' | 'clientId' | 'code' | 'redirectUri' | 'verifier' | 'state', string>>;
+    include?: Array<'clientId' | 'code' | 'grantType' | 'redirectUri' | 'state' | 'verifier'>;
+    fieldNames?: Partial<Record<'clientId' | 'code' | 'grantType' | 'redirectUri' | 'state' | 'verifier', string>>;
     accessTokenField?: string;
     refreshTokenField?: string;
     expiresInField?: string;
@@ -19675,7 +19688,7 @@ export interface OAuthAdapter {
 ### @localixai/mini-app-sdk/dist/backend/oauth-types.d.ts#OAuthCallbackMode
 
 ```ts
-export type OAuthCallbackMode = 'app-redirect' | 'local-server' | 'device-code';
+export type OAuthCallbackMode = 'app-redirect' | 'device-code' | 'local-server';
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/oauth-types.d.ts#OAuthRequestAuth
@@ -19687,33 +19700,36 @@ export type OAuthRequestAuth = 'api-key' | 'oauth';
 ### @localixai/mini-app-sdk/dist/backend/observe-mutations.d.ts#A
 
 ```ts
-A
+A;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/observe-mutations.d.ts#K
 
 ```ts
-K extends keyof T
+K;
+keyof;
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/observe-mutations.d.ts#MutationResources
 
 ```ts
 type MutationResources<T, Resource extends string> = {
-    [K in UserMutationKeys<T>]?: readonly Resource[] | (T[K] extends (...args: infer A) => unknown ? (...args: A) => readonly Resource[] : never);
+    [K in UserMutationKeys<T>]?: (T[K] extends (...args: infer A) => unknown ? (...args: A) => readonly Resource[] : never) | readonly Resource[];
 };
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/observe-mutations.d.ts#Resource
 
 ```ts
-Resource extends string
+Resource;
+string;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/observe-mutations.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/observe-mutations.d.ts#UserMutationKeys
@@ -19727,13 +19743,14 @@ type UserMutationKeys<T> = {
 ### @localixai/mini-app-sdk/dist/backend/resource-ref-contracts.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/route-validator.d.ts#E
 
 ```ts
-E extends Env = Env
+E;
+Env = Env;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/route-validator.d.ts#HasUndefined
@@ -19745,91 +19762,99 @@ type HasUndefined<T> = undefined extends T ? true : false;
 ### @localixai/mini-app-sdk/dist/backend/route-validator.d.ts#In
 
 ```ts
-In
+In;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/route-validator.d.ts#K
 
 ```ts
-K extends Target
+K;
+Target;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/route-validator.d.ts#Out
 
 ```ts
-Out
+Out;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/route-validator.d.ts#P
 
 ```ts
-P extends string = string
+P;
+string = string;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/route-validator.d.ts#Schema
 
 ```ts
-Schema extends $ZodType
+Schema;
+$ZodType;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/route-validator.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/route-validator.d.ts#Target
 
 ```ts
-Target extends RouteValidationTarget
+Target;
+RouteValidationTarget;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/timeout.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/turn-routes.d.ts#G
 
 ```ts
-G
+G;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/turn-routes.d.ts#V
 
 ```ts
-V = G
+V = G;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/turn-table.d.ts#A
 
 ```ts
-A
+A;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/turn-table.d.ts#G
 
 ```ts
-G extends TurnGameState
+G;
+TurnGameState;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/typed-error.d.ts#Code
 
 ```ts
-Code extends string
+Code;
+string;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/user-entity-store.d.ts#K
 
 ```ts
-K extends Exclude<keyof T, 'id'>
+K;
+Exclude<keyof T, 'id'>;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/user-entity-store.d.ts#T
 
 ```ts
-T extends {
+T;
+{
     id: string;
 }
 ```
@@ -19837,13 +19862,13 @@ T extends {
 ### @localixai/mini-app-sdk/dist/backend/ws-frame-registry.d.ts#Handle
 
 ```ts
-Handle = unknown
+Handle = unknown;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/ws-frame-registry.d.ts#Params
 
 ```ts
-Params = Record<string, unknown>
+Params = Record<string, unknown>;
 ```
 
 ### @localixai/mini-app-sdk/dist/backend/ws-frame-registry.d.ts#WsFrameConnectionOptions
@@ -19857,43 +19882,43 @@ export interface WsFrameConnectionOptions {
 ### @localixai/mini-app-sdk/dist/bounded-cache.d.ts#K
 
 ```ts
-K
+K;
 ```
 
 ### @localixai/mini-app-sdk/dist/bounded-cache.d.ts#V
 
 ```ts
-V
+V;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/app.d.ts#Input
 
 ```ts
-Input
+Input;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/app.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/bridge-requests.d.ts#T
 
 ```ts
-T = unknown
+T = unknown;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/bridge.d.ts#P
 
 ```ts
-P = unknown
+P = unknown;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/bridge.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/commands.d.ts#Handler
@@ -19917,7 +19942,7 @@ interface CommentsState {
 ### @localixai/mini-app-sdk/dist/ui/file-resource-sync.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/focus/store.d.ts#FocusStackState
@@ -19940,49 +19965,55 @@ type OverlayKind = Extract<FocusKind, 'dialog' | 'menu' | 'overlay'>;
 ### @localixai/mini-app-sdk/dist/ui/focus/useOverlayFocus.d.ts#T
 
 ```ts
-T extends Element
+T;
+Element;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/game-table.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/host.d.ts#TParams
 
 ```ts
-const TParams extends UiLocationParamSchema
+const TParams, UiLocationParamSchema;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/location-args.d.ts#NormalizedUiLocationArgs
 
 ```ts
-type NormalizedUiLocationArgs = Record<string, string | string[] | boolean | number>;
+type NormalizedUiLocationArgs = Record<string, boolean | number | string | string[]>;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/locations.d.ts#K
 
 ```ts
-K extends keyof T
+K;
+keyof;
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/locations.d.ts#T
 
 ```ts
-T extends UiLocationParamSchema
+T;
+UiLocationParamSchema;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/locations.d.ts#TParams
 
 ```ts
-TParams extends UiLocationParamSchema
+TParams;
+UiLocationParamSchema;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/locations.d.ts#TValue
 
 ```ts
-TValue extends string
+TValue;
+string;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/locations.d.ts#UiLocationOptionalKeys
@@ -20027,67 +20058,69 @@ type MiniAppToastMethod = (message: string, options?: MiniAppToastOptions) => Mi
 ### @localixai/mini-app-sdk/dist/ui/path-tree.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/realtime-feed.d.ts#Frame
 
 ```ts
-Frame
+Frame;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/realtime-feed.d.ts#Key
 
 ```ts
-Key
+Key;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/resource-sync.d.ts#Resource
 
 ```ts
-Resource extends string = string
+Resource;
+string = string;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/resource-sync.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/route-snapshot.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/runtime-completion-payloads.d.ts#TPayload
 
 ```ts
-TPayload = unknown
+TPayload = unknown;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/runtime-hooks.d.ts#A
 
 ```ts
-A extends unknown[]
+A;
+unknown[];
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/runtime-hooks.d.ts#R
 
 ```ts
-R
+R;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/runtime-hooks.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/runtime.d.ts#T
 
 ```ts
-T = unknown
+T = unknown;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/segmented-control.d.ts#SegmentedRadioAccessibleName
@@ -20105,79 +20138,81 @@ type SegmentedRadioAccessibleName = {
 ### @localixai/mini-app-sdk/dist/ui/segmented-control.d.ts#T
 
 ```ts
-T extends string
+T;
+string;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/session-tree.d.ts#T
 
 ```ts
-T extends SessionTreeNode
+T;
+SessionTreeNode;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/shared-resource.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/status-menu.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/storage.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/store-snapshot.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/transport.d.ts#FetchResponse
 
 ```ts
-type FetchResponse = Pick<Response, 'ok' | 'status' | 'url' | 'headers' | 'json' | 'text'>;
+type FetchResponse = Pick<Response, 'headers' | 'json' | 'ok' | 'status' | 'text' | 'url'>;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/transport.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/utilities.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/mini-app-sdk/dist/ui/visibility.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/search/dist/contracts.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### @localixai/search/dist/index.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### kit/activity-orb.d.ts#ActivityOrbState
 
 ```ts
-type ActivityOrbState = "working" | "thinking";
+type ActivityOrbState = "thinking" | "working";
 ```
 
 ### kit/autocomplete.d.ts#AccessibleListboxName
@@ -20260,18 +20295,18 @@ type Align = any;
 
 ```ts
 type CameraCommand = {
-    kind: "pan";
-    dx: number;
-    dy: number;
-} | {
-    kind: "zoom";
-    direction: 1 | -1;
+    kind: "actual-size";
 } | {
     kind: "fit";
 } | {
     kind: "fit-selection";
 } | {
-    kind: "actual-size";
+    kind: "pan";
+    dx: number;
+    dy: number;
+} | {
+    kind: "zoom";
+    direction: -1 | 1;
 };
 ```
 
@@ -20284,7 +20319,8 @@ type CoordinateExtent = any;
 ### kit/canvas.d.ts#E
 
 ```ts
-E extends Edge = Edge
+E;
+Edge = Edge;
 ```
 
 ### kit/canvas.d.ts#EdgeBase
@@ -20330,7 +20366,7 @@ type FitViewOptions<NodeType = any> = any;
 ### kit/canvas.d.ts#HandleSide
 
 ```ts
-type HandleSide = "left" | "right" | "top" | "bottom";
+type HandleSide = "bottom" | "left" | "right" | "top";
 ```
 
 ### kit/canvas.d.ts#HandleType
@@ -20348,7 +20384,8 @@ type IsValidConnection<EdgeType = any> = any;
 ### kit/canvas.d.ts#N
 
 ```ts
-N extends Node = Node
+N;
+Node = Node;
 ```
 
 ### kit/canvas.d.ts#NodeMouseHandler
@@ -20495,22 +20532,22 @@ type DefinitionSource = (pos: EditorPosition) => Promise<EditorDefinition[]>;
 ### kit/code-editor.d.ts#DefinitionTargetSource
 
 ```ts
-type DefinitionTargetSource = (file: string, signal: AbortSignal) => Promise<{
+type DefinitionTargetSource = (file: string, signal: AbortSignal) => Promise<null | {
     content: string;
     language: string;
-} | null>;
+}>;
 ```
 
 ### kit/code-editor.d.ts#DirtyChangeLayer
 
 ```ts
-type DirtyChangeLayer = "both" | "secondary" | "primary";
+type DirtyChangeLayer = "both" | "primary" | "secondary";
 ```
 
 ### kit/code-editor.d.ts#DirtyChangeType
 
 ```ts
-type DirtyChangeType = "added" | "modified" | "deleted";
+type DirtyChangeType = "added" | "deleted" | "modified";
 ```
 
 ### kit/code-editor.d.ts#DocumentColorSource
@@ -20589,7 +20626,7 @@ type EditorDefinition = {
 ### kit/code-editor.d.ts#EditorDiagnosticTag
 
 ```ts
-type EditorDiagnosticTag = "unnecessary" | "deprecated";
+type EditorDiagnosticTag = "deprecated" | "unnecessary";
 ```
 
 ### kit/code-editor.d.ts#EditorDocumentHighlight
@@ -20632,10 +20669,10 @@ type EditorReference = {
 
 ```ts
 type EditorRenamePrepare = {
-    range: {
+    range: null | {
         start: EditorPosition;
         end: EditorPosition;
-    } | null;
+    };
     placeholder?: string | undefined;
 };
 ```
@@ -20698,15 +20735,15 @@ type FormatSource = () => Promise<BufferEdit | null>;
 ### kit/code-editor.d.ts#FormatTextSource
 
 ```ts
-type FormatTextSource = (text: string) => string | Promise<string>;
+type FormatTextSource = (text: string) => Promise<string> | string;
 ```
 
 ### kit/code-editor.d.ts#HoverSource
 
 ```ts
-type HoverSource = (pos: EditorPosition) => Promise<{
+type HoverSource = (pos: EditorPosition) => Promise<null | {
     value: string;
-} | null>;
+}>;
 ```
 
 ### kit/code-editor.d.ts#HunkSource
@@ -20820,7 +20857,7 @@ type WordDiffMark = {
 ### kit/combobox.d.ts#ChoiceControlSize
 
 ```ts
-type ChoiceControlSize = "md" | "lg" | "xl";
+type ChoiceControlSize = "lg" | "md" | "xl";
 ```
 
 ### kit/command.d.ts#CommandFilter
@@ -20838,7 +20875,7 @@ type State = any;
 ### kit/command.d.ts#T
 
 ```ts
-T = any
+T = any;
 ```
 
 ### kit/comments.d.ts#Comment
@@ -20906,9 +20943,18 @@ type IconComponent = React.ComponentClass<{
 
 ```ts
 type MessageAttachment = {
-    kind: "path";
-    path: string;
+    kind: "audio";
     mediaType: string;
+    data?: string | undefined;
+    mediaId?: string | undefined;
+    name: string;
+    size: number;
+    durationMs?: number | undefined;
+} | {
+    kind: "file";
+    mediaType: string;
+    data?: string | undefined;
+    mediaId?: string | undefined;
     name: string;
     size: number;
 } | {
@@ -20919,27 +20965,11 @@ type MessageAttachment = {
     name: string;
     size: number;
 } | {
-    kind: "video";
+    kind: "path";
+    path: string;
     mediaType: string;
-    data?: string | undefined;
-    mediaId?: string | undefined;
     name: string;
     size: number;
-} | {
-    kind: "file";
-    mediaType: string;
-    data?: string | undefined;
-    mediaId?: string | undefined;
-    name: string;
-    size: number;
-} | {
-    kind: "audio";
-    mediaType: string;
-    data?: string | undefined;
-    mediaId?: string | undefined;
-    name: string;
-    size: number;
-    durationMs?: number | undefined;
 } | {
     kind: "text";
     name: string;
@@ -20949,6 +20979,13 @@ type MessageAttachment = {
     path?: string | undefined;
     lineCount?: number | undefined;
     contextRef?: boolean | undefined;
+} | {
+    kind: "video";
+    mediaType: string;
+    data?: string | undefined;
+    mediaId?: string | undefined;
+    name: string;
+    size: number;
 };
 ```
 
@@ -20956,9 +20993,18 @@ type MessageAttachment = {
 
 ```ts
 type MessageAttachment = {
-    kind: "path";
-    path: string;
+    kind: "audio";
     mediaType: string;
+    data?: string | undefined;
+    mediaId?: string | undefined;
+    name: string;
+    size: number;
+    durationMs?: number | undefined;
+} | {
+    kind: "file";
+    mediaType: string;
+    data?: string | undefined;
+    mediaId?: string | undefined;
     name: string;
     size: number;
 } | {
@@ -20969,27 +21015,11 @@ type MessageAttachment = {
     name: string;
     size: number;
 } | {
-    kind: "video";
+    kind: "path";
+    path: string;
     mediaType: string;
-    data?: string | undefined;
-    mediaId?: string | undefined;
     name: string;
     size: number;
-} | {
-    kind: "file";
-    mediaType: string;
-    data?: string | undefined;
-    mediaId?: string | undefined;
-    name: string;
-    size: number;
-} | {
-    kind: "audio";
-    mediaType: string;
-    data?: string | undefined;
-    mediaId?: string | undefined;
-    name: string;
-    size: number;
-    durationMs?: number | undefined;
 } | {
     kind: "text";
     name: string;
@@ -20999,13 +21029,20 @@ type MessageAttachment = {
     path?: string | undefined;
     lineCount?: number | undefined;
     contextRef?: boolean | undefined;
+} | {
+    kind: "video";
+    mediaType: string;
+    data?: string | undefined;
+    mediaId?: string | undefined;
+    name: string;
+    size: number;
 };
 ```
 
 ### kit/context-links.d.ts#MessageBindingTargetKind
 
 ```ts
-type MessageBindingTargetKind = "resource" | "file" | "message" | "session" | "snippet" | "project" | "terminal" | "call";
+type MessageBindingTargetKind = "call" | "file" | "message" | "project" | "resource" | "session" | "snippet" | "terminal";
 ```
 
 ### kit/context-links.d.ts#MessageContextBindingDraft
@@ -21013,7 +21050,7 @@ type MessageBindingTargetKind = "resource" | "file" | "message" | "session" | "s
 ```ts
 type MessageContextBindingDraft = {
     kind: "context";
-    source: "drag" | "active-tab" | "mini-app";
+    source: "active-tab" | "drag" | "mini-app";
     assets?: MessageAttachment[] | undefined;
     miniApp?: string | undefined;
     target: {
@@ -21021,7 +21058,7 @@ type MessageContextBindingDraft = {
         token: string;
         label: string;
         uri?: string | undefined;
-        attributes?: Record<string, string | number | boolean> | undefined;
+        attributes?: Record<string, boolean | number | string> | undefined;
     };
 };
 ```
@@ -21047,7 +21084,7 @@ type FocusOutsideEvent = any;
 ### kit/context-menu.d.ts#MenuItemTone
 
 ```ts
-type MenuItemTone = "default" | "danger";
+type MenuItemTone = "danger" | "default";
 ```
 
 ### kit/context-menu.d.ts#PointerDownOutsideEvent
@@ -21071,7 +21108,7 @@ type UpdatePositionStrategy = any;
 ### kit/coordinate-menu.d.ts#MenuItemTone
 
 ```ts
-type MenuItemTone = "default" | "danger";
+type MenuItemTone = "danger" | "default";
 ```
 
 ### kit/dialog.d.ts#FocusOutsideEvent
@@ -21089,13 +21126,13 @@ type PointerDownOutsideEvent = any;
 ### kit/diff.d.ts#DiffLineType
 
 ```ts
-type DiffLineType = "del" | "meta" | "add" | "ctx";
+type DiffLineType = "add" | "ctx" | "del" | "meta";
 ```
 
 ### kit/diff.d.ts#DiffViewMode
 
 ```ts
-type DiffViewMode = "unified" | "split";
+type DiffViewMode = "split" | "unified";
 ```
 
 ### kit/diff.d.ts#DocHunk
@@ -21170,7 +21207,7 @@ type FocusOutsideEvent = any;
 ### kit/dropdown-menu.d.ts#MenuItemTone
 
 ```ts
-type MenuItemTone = "default" | "danger";
+type MenuItemTone = "danger" | "default";
 ```
 
 ### kit/dropdown-menu.d.ts#PointerDownOutsideEvent
@@ -21244,8 +21281,8 @@ type UpdatePositionStrategy = any;
 
 ```ts
 type ButtonVariants = {
-    size?: "default" | "xs" | "sm" | "lg" | "xl" | "icon" | "icon-xs" | "icon-sm" | "icon-lg" | "icon-xl" | "icon-touch" | null | undefined;
-    variant?: "link" | "default" | "mono" | "field" | "secondary" | "ghost" | "destructive" | "destructive-solid" | null | undefined;
+    size?: "default" | "icon" | "icon-lg" | "icon-sm" | "icon-touch" | "icon-xl" | "icon-xs" | "lg" | "sm" | "xl" | "xs" | null | undefined;
+    variant?: "default" | "destructive" | "destructive-solid" | "field" | "ghost" | "link" | "mono" | "secondary" | null | undefined;
 };
 ```
 
@@ -21267,7 +21304,7 @@ type EditTarget = (command: NativeEditCommand) => boolean;
 ### kit/keybindings.d.ts#OsFamily
 
 ```ts
-type OsFamily = "mac" | "windows" | "linux" | "unknown";
+type OsFamily = "linux" | "mac" | "unknown" | "windows";
 ```
 
 ### kit/keybindings.d.ts#StoreApi
@@ -21312,19 +21349,20 @@ type BoundedCacheOptions<K, V> = {
 ### kit/lib.d.ts#K
 
 ```ts
-K
+K;
 ```
 
 ### kit/lib.d.ts#T
 
 ```ts
-T extends HTMLElement
+T;
+HTMLElement;
 ```
 
 ### kit/lib.d.ts#V
 
 ```ts
-V
+V;
 ```
 
 ### kit/lib.d.ts#WheelOutcome
@@ -21342,7 +21380,7 @@ type WheelOutcome = {
 
 ```ts
 type ListReorder = {
-    draggingId: string | null;
+    draggingId: null | string;
     rowProps: (id: string) => ReorderRow;
     announcement: string;
 };
@@ -21396,13 +21434,13 @@ type ReorderRowProps = {
 ### kit/list-reorder.d.ts#T
 
 ```ts
-T
+T;
 ```
 
 ### kit/localix-border-beam.d.ts#LocalixBeamIntensity
 
 ```ts
-type LocalixBeamIntensity = 0 | 2 | 1 | 3 | 4 | 5;
+type LocalixBeamIntensity = 0 | 1 | 2 | 3 | 4 | 5;
 ```
 
 ### kit/markdown.d.ts#MermaidLook
@@ -21427,7 +21465,7 @@ type MermaidRenderer = {
 
 ```ts
 type MediaOverlayStyleOptions = {
-    size?: "xs" | "sm" | "md" | "lg" | "xl" | undefined;
+    size?: "lg" | "md" | "sm" | "xl" | "xs" | undefined;
     shape?: "round" | "square" | undefined;
     destructive?: boolean | undefined;
     className?: string | undefined;
@@ -21455,13 +21493,13 @@ type MenuActionEntry = {
     hint?: string | undefined;
     description?: string | undefined;
     disabled?: boolean | undefined;
-    trailingAction?: {
+    trailingAction?: undefined | {
         label: string;
         icon: IconComponent;
         checked?: boolean | undefined;
         disabled?: boolean | undefined;
         onSelect: () => void;
-    } | undefined;
+    };
     checked?: boolean | undefined;
     selected?: boolean | undefined;
     keepOpen?: boolean | undefined;
@@ -21474,7 +21512,7 @@ type MenuActionEntry = {
 ### kit/menu-entries.d.ts#MenuEntry
 
 ```ts
-type MenuEntry = MenuActionEntry | MenuSubmenuEntry | MenuSeparatorEntry | MenuHeaderEntry;
+type MenuEntry = MenuActionEntry | MenuHeaderEntry | MenuSeparatorEntry | MenuSubmenuEntry;
 ```
 
 ### kit/menu-entries.d.ts#MenuFamilyName
@@ -21549,12 +21587,12 @@ type InvokeFn = (cmd: string, args?: Record<string, unknown> | undefined) => Pro
 ```ts
 type ListenFn = (event: string, handler: (event: {
     payload: unknown;
-}) => void, options?: {
+}) => void, options?: undefined | {
     target: {
         kind: "Webview" | "Window";
         label: string;
     };
-} | undefined) => Promise<UnlistenFn>;
+}) => Promise<UnlistenFn>;
 ```
 
 ### kit/platform.d.ts#PlatformCapabilities
@@ -21563,7 +21601,7 @@ type ListenFn = (event: string, handler: (event: {
 type PlatformCapabilities = {
     clipboard: {
         writeText: (text: string) => Promise<boolean>;
-        readText: () => Promise<string | null>;
+        readText: () => Promise<null | string>;
         writeBlob: (blob: Blob, mediaType?: string | undefined) => Promise<boolean>;
     };
     navigation: {
@@ -21584,7 +21622,7 @@ type PlatformCapabilities = {
 ### kit/platform.d.ts#T
 
 ```ts
-T = unknown
+T = unknown;
 ```
 
 ### kit/platform.d.ts#UnlistenFn
@@ -21643,10 +21681,10 @@ type RichBlock = RichParagraph | {
     content: RichListItem[];
 } | {
     type: "orderedList";
-    attrs?: {
+    attrs?: undefined | {
         start?: number | undefined;
-        type?: "a" | "i" | "1" | "A" | "I" | null | undefined;
-    } | undefined;
+        type?: "1" | "A" | "I" | "a" | "i" | null | undefined;
+    };
     content: RichListItem[];
 };
 ```
@@ -21655,11 +21693,11 @@ type RichBlock = RichParagraph | {
 
 ```ts
 type RichInline = {
+    type: "hardBreak";
+} | {
     type: "text";
     text: string;
     marks?: RichMark[] | undefined;
-} | {
-    type: "hardBreak";
 };
 ```
 
@@ -21684,8 +21722,8 @@ type RichMark = {
     type: "link";
     attrs: {
         href: string;
-        target?: string | null | undefined;
-        rel?: string | null | undefined;
+        target?: null | string | undefined;
+        rel?: null | string | undefined;
         class?: null | undefined;
     };
 };
@@ -21712,7 +21750,7 @@ type RichTextDocument = {
 ### kit/rich-text-view.d.ts#RichTextValue
 
 ```ts
-type RichTextValue = string | RichTextDocument;
+type RichTextValue = RichTextDocument | string;
 ```
 
 ### kit/rich-text.d.ts#RichBlock
@@ -21723,10 +21761,10 @@ type RichBlock = RichParagraph | {
     content: RichListItem[];
 } | {
     type: "orderedList";
-    attrs?: {
+    attrs?: undefined | {
         start?: number | undefined;
-        type?: "a" | "i" | "1" | "A" | "I" | null | undefined;
-    } | undefined;
+        type?: "1" | "A" | "I" | "a" | "i" | null | undefined;
+    };
     content: RichListItem[];
 };
 ```
@@ -21735,11 +21773,11 @@ type RichBlock = RichParagraph | {
 
 ```ts
 type RichInline = {
+    type: "hardBreak";
+} | {
     type: "text";
     text: string;
     marks?: RichMark[] | undefined;
-} | {
-    type: "hardBreak";
 };
 ```
 
@@ -21764,8 +21802,8 @@ type RichMark = {
     type: "link";
     attrs: {
         href: string;
-        target?: string | null | undefined;
-        rel?: string | null | undefined;
+        target?: null | string | undefined;
+        rel?: null | string | undefined;
         class?: null | undefined;
     };
 };
@@ -21792,7 +21830,7 @@ type RichTextDocument = {
 ### kit/rich-text.d.ts#RichTextValue
 
 ```ts
-type RichTextValue = string | RichTextDocument;
+type RichTextValue = RichTextDocument | string;
 ```
 
 ### kit/scroll-sync.d.ts#ScrollGeometry
@@ -21817,7 +21855,7 @@ type ScrollSyncGuard = {
 ### kit/select.d.ts#ChoiceControlSize
 
 ```ts
-type ChoiceControlSize = "md" | "lg" | "xl";
+type ChoiceControlSize = "lg" | "md" | "xl";
 ```
 
 ### kit/shelf-row.d.ts#ShelfRowShape
@@ -21837,13 +21875,14 @@ type ShelfRowShape = {
 ### kit/switch.d.ts#SwitchSize
 
 ```ts
-type SwitchSize = "sm" | "md";
+type SwitchSize = "md" | "sm";
 ```
 
 ### kit/tabs.d.ts#T
 
 ```ts
-T extends string = string
+T;
+string = string;
 ```
 
 ### kit/tabs.d.ts#TabMenuItem
@@ -21880,23 +21919,23 @@ type AutomaticContextProvider = {
 
 ```ts
 type AutomaticContextRequest = {
-    document?: {
+    document?: undefined | {
         uri: string;
         languageId: string;
         revision: string;
         content: string;
-    } | undefined;
-    editHistory?: {
+    };
+    editHistory?: undefined | {
         before?: string[] | undefined;
         lines: string[];
         startLine?: number | undefined;
         endLine?: number | undefined;
-    }[] | undefined;
-    cursor?: {
+    }[];
+    cursor?: undefined | {
         line: number;
         character: number;
-    } | undefined;
-    selection?: {
+    };
+    selection?: undefined | {
         start: {
             line: number;
             character: number;
@@ -21905,17 +21944,17 @@ type AutomaticContextRequest = {
             line: number;
             character: number;
         };
-    } | undefined;
+    };
     destination: ContextDestination;
     userId: string;
     projectId?: string | undefined;
     sessionId?: string | undefined;
     isolationId?: string | undefined;
-    workspace?: {
+    workspace?: undefined | {
         rootPath: string;
         isolationId?: string | undefined;
         excludedRelativePaths?: string[] | undefined;
-    } | undefined;
+    };
     maxBytes: number;
     maxTokens?: number | undefined;
     maxItems?: number | undefined;
@@ -21934,10 +21973,10 @@ type ContextContribution = {
     kind: string;
     content: string;
     uri?: string | undefined;
-    source?: {
+    source?: undefined | {
         path: string;
-    } | undefined;
-    range?: {
+    };
+    range?: undefined | {
         start: {
             line: number;
             character: number;
@@ -21946,15 +21985,15 @@ type ContextContribution = {
             line: number;
             character: number;
         };
-    } | undefined;
+    };
     revision?: string | undefined;
     priority: number;
     sensitivity: ContextSensitivity;
-    relevanceHints?: {
+    relevanceHints?: undefined | {
         symbols?: string[] | undefined;
         recency?: number | undefined;
         explicit?: boolean | undefined;
-    } | undefined;
+    };
     ttlMs?: number | undefined;
 };
 ```
@@ -21962,7 +22001,7 @@ type ContextContribution = {
 ### kit/testing-context-contract.d.ts#ContextDestination
 
 ```ts
-type ContextDestination = "edit-prediction" | "chat" | "subagent" | "inline-completion" | "title-generation" | "recommendation";
+type ContextDestination = "chat" | "edit-prediction" | "inline-completion" | "recommendation" | "subagent" | "title-generation";
 ```
 
 ### kit/testing-context-contract.d.ts#ContextEstimate
@@ -21979,7 +22018,7 @@ type ContextEstimate = {
 
 ```ts
 type ContextProviderContribution = {
-    provider: ContextResolver | AutomaticContextProvider;
+    provider: AutomaticContextProvider | ContextResolver;
     destinations: readonly ContextDestination[];
     activation: "automatic" | "explicit";
     defaultEnabled: boolean;
@@ -22002,14 +22041,14 @@ type ContextReference = {
         token?: string | undefined;
         label: string;
     };
-    freshness: "snapshot" | "resolve-at-send";
+    freshness: "resolve-at-send" | "snapshot";
     scope: {
         userId: string;
         projectId?: string | undefined;
         sessionId?: string | undefined;
         isolationId?: string | undefined;
     };
-    attributes?: Readonly<Record<string, string | number | boolean>> | undefined;
+    attributes?: Readonly<Record<string, boolean | number | string>> | undefined;
 };
 ```
 
@@ -22028,13 +22067,13 @@ type ContextResolver = {
 ### kit/testing-context-contract.d.ts#ContextScope
 
 ```ts
-type ContextScope = "document" | "session" | "project" | "global";
+type ContextScope = "document" | "global" | "project" | "session";
 ```
 
 ### kit/testing-context-contract.d.ts#ContextSensitivity
 
 ```ts
-type ContextSensitivity = "project" | "public" | "sensitive" | "forbidden";
+type ContextSensitivity = "forbidden" | "project" | "public" | "sensitive";
 ```
 
 ### kit/testing-context-contract.d.ts#ResolveContext
@@ -22046,11 +22085,11 @@ type ResolveContext = {
     projectId?: string | undefined;
     sessionId?: string | undefined;
     isolationId?: string | undefined;
-    workspace?: {
+    workspace?: undefined | {
         rootPath: string;
         isolationId?: string | undefined;
         excludedRelativePaths?: string[] | undefined;
-    } | undefined;
+    };
     maxBytes: number;
     maxTokens?: number | undefined;
     maxItems?: number | undefined;
@@ -22076,7 +22115,7 @@ type ThemeChangeOrigin = {
 ### kit/theme.d.ts#ThemeMode
 
 ```ts
-type ThemeMode = "system" | "dark" | "light";
+type ThemeMode = "dark" | "light" | "system";
 ```
 
 ### kit/tool-card.d.ts#AgentItem
@@ -22088,7 +22127,7 @@ type AgentItem = NarrativeItem | ToolBackedItem;
 ### kit/tool-card.d.ts#AgentItemStatus
 
 ```ts
-type AgentItemStatus = "running" | "completed" | "failed" | "pending" | "aborted";
+type AgentItemStatus = "aborted" | "completed" | "failed" | "pending" | "running";
 ```
 
 ### kit/tool-card.d.ts#AgentSource
@@ -22099,12 +22138,12 @@ type AgentSource = {
     kind: string;
     title: string;
     uri: string;
-    role: "discovered" | "consulted" | "cited";
-    status: "failed" | "available";
+    role: "cited" | "consulted" | "discovered";
+    status: "available" | "failed";
     provider?: string | undefined;
     snippet?: string | undefined;
     retrievedAt?: string | undefined;
-    metadata?: Record<string, string | number | boolean> | undefined;
+    metadata?: Record<string, boolean | number | string> | undefined;
 };
 ```
 
@@ -22112,7 +22151,7 @@ type AgentSource = {
 
 ```ts
 type AgentToolPresentation = {
-    transcript?: "hidden" | "content" | "tool" | undefined;
+    transcript?: "content" | "hidden" | "tool" | undefined;
     sealed?: AgentToolSealing | undefined;
 };
 ```
@@ -22143,14 +22182,14 @@ type CommandItem = {
     thoughtSignature?: string | undefined;
     resultText?: string | undefined;
     sources?: AgentSource[] | undefined;
-    attachments?: {
+    attachments?: undefined | {
         kind: "image";
         mediaType: string;
         data?: string | undefined;
         mediaId?: string | undefined;
         name: string;
         size: number;
-    }[] | undefined;
+    }[];
     isBackground?: boolean | undefined;
     jobStatus?: CommandJobStatus | undefined;
     errorText?: string | undefined;
@@ -22176,7 +22215,7 @@ type CommandItem = {
 ### kit/tool-card.d.ts#CommandJobStatus
 
 ```ts
-type CommandJobStatus = "running" | "completed" | "failed" | "killed" | "timeout" | "lost";
+type CommandJobStatus = "completed" | "failed" | "killed" | "lost" | "running" | "timeout";
 ```
 
 ### kit/tool-card.d.ts#FileChange
@@ -22203,14 +22242,14 @@ type FileChangeItem = {
     thoughtSignature?: string | undefined;
     resultText?: string | undefined;
     sources?: AgentSource[] | undefined;
-    attachments?: {
+    attachments?: undefined | {
         kind: "image";
         mediaType: string;
         data?: string | undefined;
         mediaId?: string | undefined;
         name: string;
         size: number;
-    }[] | undefined;
+    }[];
     isBackground?: boolean | undefined;
     jobStatus?: CommandJobStatus | undefined;
     errorText?: string | undefined;
@@ -22236,7 +22275,7 @@ type FileChangeItem = {
 ### kit/tool-card.d.ts#FileChangeKind
 
 ```ts
-type FileChangeKind = "add" | "modify" | "delete" | "rename";
+type FileChangeKind = "add" | "delete" | "modify" | "rename";
 ```
 
 ### kit/tool-card.d.ts#McpCallItem
@@ -22254,14 +22293,14 @@ type McpCallItem = {
     thoughtSignature?: string | undefined;
     resultText?: string | undefined;
     sources?: AgentSource[] | undefined;
-    attachments?: {
+    attachments?: undefined | {
         kind: "image";
         mediaType: string;
         data?: string | undefined;
         mediaId?: string | undefined;
         name: string;
         size: number;
-    }[] | undefined;
+    }[];
     isBackground?: boolean | undefined;
     jobStatus?: CommandJobStatus | undefined;
     errorText?: string | undefined;
@@ -22287,7 +22326,7 @@ type McpCallItem = {
 ### kit/tool-card.d.ts#NarrativeItem
 
 ```ts
-type NarrativeItem = TextItem | ReasoningItem;
+type NarrativeItem = ReasoningItem | TextItem;
 ```
 
 ### kit/tool-card.d.ts#ReasoningItem
@@ -22340,7 +22379,7 @@ type ToolActionDescriptor = {
     label: string;
     icon?: string | undefined;
     enabled?: boolean | undefined;
-    tone?: "neutral" | "danger" | undefined;
+    tone?: "danger" | "neutral" | undefined;
 };
 ```
 
@@ -22363,14 +22402,14 @@ type ToolCallItem = {
     thoughtSignature?: string | undefined;
     resultText?: string | undefined;
     sources?: AgentSource[] | undefined;
-    attachments?: {
+    attachments?: undefined | {
         kind: "image";
         mediaType: string;
         data?: string | undefined;
         mediaId?: string | undefined;
         name: string;
         size: number;
-    }[] | undefined;
+    }[];
     isBackground?: boolean | undefined;
     jobStatus?: CommandJobStatus | undefined;
     errorText?: string | undefined;
@@ -22396,7 +22435,7 @@ type ToolCallItem = {
 ### kit/tool-card.d.ts#ToolErrorKind
 
 ```ts
-type ToolErrorKind = (string & {}) | "timeout" | "aborted" | "dismissed" | "validation" | "not_found" | "blocked" | "provider" | "execution";
+type ToolErrorKind = "aborted" | "blocked" | "dismissed" | "execution" | "not_found" | "provider" | "timeout" | "validation" | (string & {});
 ```
 
 ### kit/tool-card.d.ts#ToolErrorPayload
@@ -22418,7 +22457,7 @@ type ToolErrorPayload = {
 
 ```ts
 type ToolGateProvenance = {
-    decision: "user-approved" | "session-grant" | "rule-allow";
+    decision: "rule-allow" | "session-grant" | "user-approved";
     detail?: string | undefined;
 };
 ```
@@ -22451,7 +22490,7 @@ type UpdatePositionStrategy = any;
 
 ```ts
 type Typeahead = {
-    handleChar: (char: string, rows: readonly TypeaheadRow[], currentPath: string | null) => string | null;
+    handleChar: (char: string, rows: readonly TypeaheadRow[], currentPath: null | string) => null | string;
     reset: () => void;
 };
 ```
@@ -22466,65 +22505,65 @@ type SettingsActions = {
     loadFromBackend: () => Promise<boolean>;
     applyBackendProfile: (profile: {
         userId: string;
-        uiSettings: {
-            fontFamily?: "system" | "inter" | "geist" | "dm-sans" | "jetbrains-mono" | "fira-code" | undefined;
-            codeFont?: "jetbrains-mono" | "fira-code" | "fragment-mono" | "system-mono" | undefined;
-            fontSize?: "sm" | "md" | "lg" | "xl" | undefined;
-            keybindings?: Record<string, string | null> | undefined;
+        uiSettings: null | {
+            fontFamily?: "dm-sans" | "fira-code" | "geist" | "inter" | "jetbrains-mono" | "system" | undefined;
+            codeFont?: "fira-code" | "fragment-mono" | "jetbrains-mono" | "system-mono" | undefined;
+            fontSize?: "lg" | "md" | "sm" | "xl" | undefined;
+            keybindings?: Record<string, null | string> | undefined;
             keymapPreset?: string | undefined;
-        } | null;
-        agentSettings: {
+        };
+        agentSettings: null | {
             schemaVersion?: 1 | undefined;
             contextExclusions?: string[] | undefined;
             maxTurns?: number | undefined;
             toolBudgetWarn?: number | undefined;
             outputStyle?: string | undefined;
-            modelRouting?: Partial<Record<"session" | "titleGeneration" | "inlineCompletion" | "sessionRecap", {
+            modelRouting?: Partial<Record<"inlineCompletion" | "session" | "sessionRecap" | "titleGeneration", {
                 enabled?: boolean | undefined;
                 providerConnectionId?: string | undefined;
                 modelId?: string | undefined;
-                reasoningEffort?: "off" | "max" | "medium" | "minimal" | "low" | "high" | "xhigh" | undefined;
-                reasoningPreferences?: {
+                reasoningEffort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
+                reasoningPreferences?: undefined | {
                     providerId: string;
                     modelId: string;
-                    effort: "off" | "max" | "medium" | "minimal" | "low" | "high" | "xhigh";
-                }[] | undefined;
+                    effort: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh";
+                }[];
             }>> | undefined;
-            agentModelChoices?: {
+            agentModelChoices?: undefined | {
                 agentId: string;
-                providerConnectionId?: string | null | undefined;
+                providerConnectionId?: null | string | undefined;
                 modelId?: string | undefined;
-                effort?: "off" | "max" | "medium" | "minimal" | "low" | "high" | "xhigh" | undefined;
-            }[] | undefined;
-            agentModelSettings?: {
+                effort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
+            }[];
+            agentModelSettings?: undefined | {
                 agentId: string;
                 providerId: string;
                 modelId: string;
-                effort?: "off" | "max" | "medium" | "minimal" | "low" | "high" | "xhigh" | undefined;
+                effort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
                 maxTurns?: number | undefined;
-                contextLimit?: number | "full" | undefined;
-            }[] | undefined;
-            gitBlame?: {
+                contextLimit?: "full" | number | undefined;
+            }[];
+            gitBlame?: undefined | {
                 enabled: boolean;
-            } | undefined;
-            editorScrollbarMarkers?: {
+            };
+            editorScrollbarMarkers?: undefined | {
                 enabled: boolean;
-            } | undefined;
-            bracketPairColorization?: {
+            };
+            bracketPairColorization?: undefined | {
                 enabled: boolean;
-            } | undefined;
-            editorSave?: {
+            };
+            editorSave?: undefined | {
                 trimTrailingWhitespace?: boolean | undefined;
                 ensureFinalNewline?: boolean | undefined;
                 formatOnSave?: boolean | undefined;
-            } | undefined;
-            research?: {
+            };
+            research?: undefined | {
                 allowPrivate?: boolean | undefined;
-            } | undefined;
-            storage?: {
+            };
+            storage?: undefined | {
                 retentionDays?: number | undefined;
-            } | undefined;
-        } | null;
+            };
+        };
         updatedAt: string;
     }) => void;
 };
@@ -22536,67 +22575,67 @@ type SettingsActions = {
 type SettingsState = {
     settings: UserSettings;
     synced: boolean;
-    syncError: string | null;
+    syncError: null | string;
     _debounceTimer: Timeout | null;
     _pending: Partial<UserSettings>;
     _pendingUiSettingsPatch: {
-        fontFamily?: "system" | "inter" | "geist" | "dm-sans" | "jetbrains-mono" | "fira-code" | null | undefined;
-        codeFont?: "jetbrains-mono" | "fira-code" | "fragment-mono" | "system-mono" | null | undefined;
-        fontSize?: "sm" | "md" | "lg" | "xl" | null | undefined;
-        keybindings?: Record<string, string | null> | null | undefined;
-        keymapPreset?: string | null | undefined;
+        fontFamily?: "dm-sans" | "fira-code" | "geist" | "inter" | "jetbrains-mono" | "system" | null | undefined;
+        codeFont?: "fira-code" | "fragment-mono" | "jetbrains-mono" | "system-mono" | null | undefined;
+        fontSize?: "lg" | "md" | "sm" | "xl" | null | undefined;
+        keybindings?: Record<string, null | string> | null | undefined;
+        keymapPreset?: null | string | undefined;
     };
     _pendingAgentSettingsPatch: {
         schemaVersion?: 1 | null | undefined;
-        contextExclusions?: string[] | null | undefined;
-        maxTurns?: number | null | undefined;
-        toolBudgetWarn?: number | null | undefined;
-        outputStyle?: string | null | undefined;
-        modelRouting?: Partial<Record<"session" | "titleGeneration" | "inlineCompletion" | "sessionRecap", {
+        contextExclusions?: null | string[] | undefined;
+        maxTurns?: null | number | undefined;
+        toolBudgetWarn?: null | number | undefined;
+        outputStyle?: null | string | undefined;
+        modelRouting?: Partial<Record<"inlineCompletion" | "session" | "sessionRecap" | "titleGeneration", {
             enabled?: boolean | undefined;
             providerConnectionId?: string | undefined;
             modelId?: string | undefined;
-            reasoningEffort?: "off" | "max" | "medium" | "minimal" | "low" | "high" | "xhigh" | undefined;
-            reasoningPreferences?: {
+            reasoningEffort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
+            reasoningPreferences?: undefined | {
                 providerId: string;
                 modelId: string;
-                effort: "off" | "max" | "medium" | "minimal" | "low" | "high" | "xhigh";
-            }[] | undefined;
+                effort: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh";
+            }[];
         }>> | null | undefined;
-        agentModelChoices?: {
+        agentModelChoices?: null | undefined | {
             agentId: string;
-            providerConnectionId?: string | null | undefined;
+            providerConnectionId?: null | string | undefined;
             modelId?: string | undefined;
-            effort?: "off" | "max" | "medium" | "minimal" | "low" | "high" | "xhigh" | undefined;
-        }[] | null | undefined;
-        agentModelSettings?: {
+            effort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
+        }[];
+        agentModelSettings?: null | undefined | {
             agentId: string;
             providerId: string;
             modelId: string;
-            effort?: "off" | "max" | "medium" | "minimal" | "low" | "high" | "xhigh" | undefined;
+            effort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
             maxTurns?: number | undefined;
-            contextLimit?: number | "full" | undefined;
-        }[] | null | undefined;
-        gitBlame?: {
+            contextLimit?: "full" | number | undefined;
+        }[];
+        gitBlame?: null | undefined | {
             enabled: boolean;
-        } | null | undefined;
-        editorScrollbarMarkers?: {
+        };
+        editorScrollbarMarkers?: null | undefined | {
             enabled: boolean;
-        } | null | undefined;
-        bracketPairColorization?: {
+        };
+        bracketPairColorization?: null | undefined | {
             enabled: boolean;
-        } | null | undefined;
-        editorSave?: {
+        };
+        editorSave?: null | undefined | {
             trimTrailingWhitespace?: boolean | undefined;
             ensureFinalNewline?: boolean | undefined;
             formatOnSave?: boolean | undefined;
-        } | null | undefined;
-        research?: {
+        };
+        research?: null | undefined | {
             allowPrivate?: boolean | undefined;
-        } | null | undefined;
-        storage?: {
+        };
+        storage?: null | undefined | {
             retentionDays?: number | undefined;
-        } | null | undefined;
+        };
     };
 };
 ```
@@ -22624,10 +22663,10 @@ type UseBoundStore<S = any> = any;
 ```ts
 type UserSettings = {
     uiSettings: {
-        fontFamily?: "system" | "inter" | "geist" | "dm-sans" | "jetbrains-mono" | "fira-code" | undefined;
-        codeFont?: "jetbrains-mono" | "fira-code" | "fragment-mono" | "system-mono" | undefined;
-        fontSize?: "sm" | "md" | "lg" | "xl" | undefined;
-        keybindings?: Record<string, string | null> | undefined;
+        fontFamily?: "dm-sans" | "fira-code" | "geist" | "inter" | "jetbrains-mono" | "system" | undefined;
+        codeFont?: "fira-code" | "fragment-mono" | "jetbrains-mono" | "system-mono" | undefined;
+        fontSize?: "lg" | "md" | "sm" | "xl" | undefined;
+        keybindings?: Record<string, null | string> | undefined;
         keymapPreset?: string | undefined;
     };
     agentSettings: {
@@ -22636,51 +22675,51 @@ type UserSettings = {
         maxTurns?: number | undefined;
         toolBudgetWarn?: number | undefined;
         outputStyle?: string | undefined;
-        modelRouting?: Partial<Record<"session" | "titleGeneration" | "inlineCompletion" | "sessionRecap", {
+        modelRouting?: Partial<Record<"inlineCompletion" | "session" | "sessionRecap" | "titleGeneration", {
             enabled?: boolean | undefined;
             providerConnectionId?: string | undefined;
             modelId?: string | undefined;
-            reasoningEffort?: "off" | "max" | "medium" | "minimal" | "low" | "high" | "xhigh" | undefined;
-            reasoningPreferences?: {
+            reasoningEffort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
+            reasoningPreferences?: undefined | {
                 providerId: string;
                 modelId: string;
-                effort: "off" | "max" | "medium" | "minimal" | "low" | "high" | "xhigh";
-            }[] | undefined;
+                effort: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh";
+            }[];
         }>> | undefined;
-        agentModelChoices?: {
+        agentModelChoices?: undefined | {
             agentId: string;
-            providerConnectionId?: string | null | undefined;
+            providerConnectionId?: null | string | undefined;
             modelId?: string | undefined;
-            effort?: "off" | "max" | "medium" | "minimal" | "low" | "high" | "xhigh" | undefined;
-        }[] | undefined;
-        agentModelSettings?: {
+            effort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
+        }[];
+        agentModelSettings?: undefined | {
             agentId: string;
             providerId: string;
             modelId: string;
-            effort?: "off" | "max" | "medium" | "minimal" | "low" | "high" | "xhigh" | undefined;
+            effort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
             maxTurns?: number | undefined;
-            contextLimit?: number | "full" | undefined;
-        }[] | undefined;
-        gitBlame?: {
+            contextLimit?: "full" | number | undefined;
+        }[];
+        gitBlame?: undefined | {
             enabled: boolean;
-        } | undefined;
-        editorScrollbarMarkers?: {
+        };
+        editorScrollbarMarkers?: undefined | {
             enabled: boolean;
-        } | undefined;
-        bracketPairColorization?: {
+        };
+        bracketPairColorization?: undefined | {
             enabled: boolean;
-        } | undefined;
-        editorSave?: {
+        };
+        editorSave?: undefined | {
             trimTrailingWhitespace?: boolean | undefined;
             ensureFinalNewline?: boolean | undefined;
             formatOnSave?: boolean | undefined;
-        } | undefined;
-        research?: {
+        };
+        research?: undefined | {
             allowPrivate?: boolean | undefined;
-        } | undefined;
-        storage?: {
+        };
+        storage?: undefined | {
             retentionDays?: number | undefined;
-        } | undefined;
+        };
     };
 };
 ```
@@ -22712,13 +22751,13 @@ type MenuActionEntry = {
     hint?: string | undefined;
     description?: string | undefined;
     disabled?: boolean | undefined;
-    trailingAction?: {
+    trailingAction?: undefined | {
         label: string;
         icon: IconComponent;
         checked?: boolean | undefined;
         disabled?: boolean | undefined;
         onSelect: () => void;
-    } | undefined;
+    };
     checked?: boolean | undefined;
     selected?: boolean | undefined;
     keepOpen?: boolean | undefined;
@@ -22731,7 +22770,7 @@ type MenuActionEntry = {
 ### kit/workbench-statusbar.d.ts#MenuEntry
 
 ```ts
-type MenuEntry = MenuActionEntry | MenuSubmenuEntry | MenuSeparatorEntry | MenuHeaderEntry;
+type MenuEntry = MenuActionEntry | MenuHeaderEntry | MenuSeparatorEntry | MenuSubmenuEntry;
 ```
 
 ### kit/workbench-statusbar.d.ts#MenuHeaderEntry
@@ -22773,11 +22812,11 @@ type StatusItemState = {
     Icon?: IconComponent | undefined;
     text?: string | undefined;
     metrics?: readonly StatusMetric[] | undefined;
-    badge?: {
+    badge?: undefined | {
         count: number;
     } | {
         dot: true;
-    } | undefined;
+    };
     tone?: StatusTone | undefined;
     active?: boolean | undefined;
     busy?: boolean | undefined;
@@ -22801,7 +22840,7 @@ type StatusMetric = {
 ### kit/workbench-statusbar.d.ts#StatusTone
 
 ```ts
-type StatusTone = "neutral" | "info" | "warning" | "error" | "success";
+type StatusTone = "error" | "info" | "neutral" | "success" | "warning";
 ```
 
 ### kit/workbench-toolbar.d.ts#WorkbenchToolbarLayout
