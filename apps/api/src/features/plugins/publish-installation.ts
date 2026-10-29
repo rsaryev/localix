@@ -133,7 +133,9 @@ export async function publishPluginInstallation(input: {
                 source: input.parent.directory,
                 name: input.versioned?.name ?? input.parent.name,
                 ...(input.versioned ? { root: input.versioned.root } : {}),
-                replace: input.replace,
+                // A version folder an install record holds was refused before this
+                // (`existingVersion`); one no record holds is a version an uninstall orphaned.
+                replace: input.replace || !!input.versioned,
                 linkRoot: input.parent.linkRoot,
                 prepare: input.prepare,
               },

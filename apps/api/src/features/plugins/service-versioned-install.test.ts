@@ -117,4 +117,14 @@ describe('versioned marketplace installs', () => {
     expect(existsSync(join(dir, '.orphaned_at'))).toBe(true)
     expect(await listedTool()).toBeUndefined()
   })
+
+  // The Store's Remove then Get: the version left orphaned is the folder the install publishes to.
+  test('installing it again after an uninstall takes back the orphaned version', async () => {
+    await service.refreshMarketplaces('u1')
+    const installed = await service.install('u1', { source: 'tool@shop', enable: true })
+    const dir = cachedVersionDir(home, 'shop', 'tool', '2.0.0')
+    expect(installed).toMatchObject({ dir, version: '2.0.0', enabled: true })
+    expect(existsSync(join(dir, '.orphaned_at'))).toBe(false)
+    expect((await readInstallRecords(home))['tool@shop']?.version).toBe('2.0.0')
+  })
 })
