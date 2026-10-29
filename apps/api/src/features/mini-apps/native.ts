@@ -2,91 +2,46 @@ import { errorMessage } from '../../lib/errors'
 import { importFreshModule } from '../../lib/module-url'
 
 import type { AgentTool } from '@localixai/agent/agents'
+import type {
+  MemoryProvider,
+  MiniAppChannel,
+  MiniAppContext,
+  MiniAppHooks,
+  MiniAppHostServices,
+} from '@localixai/mini-app-sdk/backend'
 
-import type { DiscoveredMiniApp } from './discovery'
+import type { DiscoveredMiniApp } from './folder'
 import type { MiniAppConfigValues } from './config'
 import { capMiniAppToolDescription, isAcceptableToolName } from './tool-policy'
 import type { MiniAppToolDescriptor } from './contracts'
-import { isRecord } from '../../lib/record'
-
 import { makeContext } from './native-context'
-export { makeContext } from './native-context'
-
-/**
- * Native-mini-app runtime: the context handed to a mini app's `register(ctx)`, the
- * dynamic-import of its entrypoint, and the structural shaping/validation of whatever
- * it exports into real AgentTools. Importing a module here RUNS its top-level code,
- * so callers must only do so for enabled mini apps (the trust gate lives in the loader).
- *
- * Native mini apps are TRUSTED LOCAL CODE — imported in-process, not sandboxed. The
- * enable toggle is the security boundary; there is no isolation beyond it by design.
- *
- * The mini-app-facing CONTRACT (MiniAppContext + hook/channel types) is OWNED by
- * `@localixai/mini-app-sdk` — this module implements it and re-exports the types so
- * the historical `./native` import surface stays stable.
- */
-import type { MiniAppContext, MiniAppHostServices } from '@localixai/mini-app-sdk/backend'
-export type {
-  MiniAppContext,
-  MiniAppHostServices,
-  MiniAppProblem,
-} from '@localixai/mini-app-sdk/backend'
-
-export { type MiniAppProblemSink } from './problem-reporter'
-
-// Lifecycle-hook + memory-provider type contracts live in hook-contracts.ts; the
-// values + types are re-exported here so the historical './native' import surface
-// (hooks.ts, loader.ts, prompt-context.ts, finalize.ts, mini app tests) stays stable.
-export {
-  ASSISTANT_BINDINGS_MAX,
-  ASSISTANT_BINDING_DATA_CAP_BYTES,
-  MEMORY_CONTEXT_CAP_CHARS,
-  MEMORY_TIMEOUT_MS,
-} from './hook-contracts'
-export type {
-  AssistantMessageEvent,
-  SubagentStopEvent,
-  HitlRequestEvent,
-  HitlResolvedEvent,
-  HumanAssignedEvent,
-  MiniAppHooks,
-  MemoryLoadContextEvent,
-  MemoryRunEndEvent,
-  MemoryProvider,
-} from './hook-contracts'
-
-import type { MiniAppHooks, MemoryProvider } from './hook-contracts'
-
-// ---------------------------------------------------------------------------
-// Channels — long-running external conversation bridges.
-// ---------------------------------------------------------------------------
-// Type contracts live in channel-contracts.ts; re-exported here so the
-// historical './native' import surface (channel-host, chat/service, loader, …)
-// stays stable.
-export type {
-  ChannelRunEvent,
-  ChannelInboundMessage,
-  ChannelInboundResult,
-  ChannelWorkspaceApi,
-  ChannelContext,
-  MiniAppChannel,
-} from './channel-contracts'
-
-import type { MiniAppChannel } from './channel-contracts'
-
-// Structural coercion of a native module's register()/default/tools export into
-// the real runtime shapes lives in native-coerce.ts.
 import {
   asBackendSubsystemArray,
   asChannelArray,
   asMemoryProvider,
   asToolArray,
-  looksLikeTool,
   type NativeModuleExports,
 } from './native-coerce'
 import type { BackendSubsystem } from '../ext/subsystem-contrib'
 
-/** Dynamic-import a native entrypoint and extract its tools + hooks; failures propagate to the caller. */
+/**
+ * Native-mini-app runtime: the dynamic import of a backend entrypoint and the structural shaping of
+ * what its `register(ctx)` returns into real AgentTools, hooks, channels and backend subsystems.
+ * Importing a module here RUNS its top-level code, so callers only do so for enabled mini apps
+ * (the trust gate lives in the loader). The context it receives is built in `native-context.ts`.
+ *
+ * Native mini apps are TRUSTED LOCAL CODE — imported in-process, not sandboxed. The enable toggle
+ * is the security boundary; there is no isolation beyond it by design.
+ *
+ * The mini-app-facing CONTRACT (`MiniAppContext`, the hook and channel types) is OWNED by
+ * `@localixai/mini-app-sdk/backend`; the host imports it from there.
+ */
+
+/**
+ * Dynamic-import a native entrypoint and run its `register(ctx)`; failures propagate to the caller.
+ * `register` is the one entry a backend has (the SDK's `MiniAppRegistration`): a module without it
+ * contributes nothing.
+ */
 export async function importNativeModule(
   absPath: string,
   ctx: MiniAppContext,
@@ -99,32 +54,15 @@ export async function importNativeModule(
   backends: BackendSubsystem[]
 }> {
   const mod = (await importFreshModule(absPath)) as NativeModuleExports
-
-  if (typeof mod.register === 'function') {
-    const result = await mod.register(ctx)
-    return {
-      tools: asToolArray(result?.tools),
-      hooks: result?.hooks ?? mod.hooks,
-      channels: asChannelArray(result?.channels),
-      memory: asMemoryProvider(result?.memory),
-      backends: asBackendSubsystemArray(result?.backend),
-    }
+  if (typeof mod.register !== 'function') return { tools: [], channels: [], backends: [] }
+  const result = await mod.register(ctx)
+  return {
+    tools: asToolArray(result?.tools),
+    hooks: result?.hooks,
+    channels: asChannelArray(result?.channels),
+    memory: asMemoryProvider(result?.memory),
+    backends: asBackendSubsystemArray(result?.backend),
   }
-
-  const def = mod.default
-  if (def !== undefined) {
-    if (Array.isArray(def) || looksLikeTool(def))
-      return { tools: asToolArray(def), hooks: mod.hooks, channels: [], backends: [] }
-    if (isRecord(def)) {
-      return {
-        tools: asToolArray(def.tools),
-        hooks: (def.hooks as MiniAppHooks | undefined) ?? mod.hooks,
-        channels: asChannelArray(def.channels),
-        backends: [],
-      }
-    }
-  }
-  return { tools: asToolArray(mod.tools), hooks: mod.hooks, channels: [], backends: [] }
 }
 
 /**

@@ -117,8 +117,8 @@ export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppB
       // this function already follows (wsFrames + context providers return `rejected`,
       // capabilities warn, `capabilitiesWired` guards). `routeMount.path` is a free
       // string from the mini app ('/rpc/<id>' is a convention, not a constraint), so two
-      // mini apps CAN claim one path — and mini-app-builder tells authors to copy a bundled
-      // mini app's structure. Overwriting served the first mini app's route from the
+      // mini apps CAN claim one path — and authors copy another mini app's structure.
+      // Overwriting served the first mini app's route from the
       // SECOND's app, silently, while every id-keyed guard beside it stayed happy.
       const taken = mounts.get(backend.routeMount.path)
       if (taken) {
@@ -179,11 +179,10 @@ export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppB
   }
 
   async function reconcileNow(): Promise<void> {
-    // Fresh load = fresh `register()` runs for every enabled mini app. That is the
-    // per-run loader's status quo (register() already runs per turn); for a mini app
-    // that is ALREADY wired the fresh duplicate is simply discarded and the wired
-    // instance kept, so live streams/services are never churned by an unrelated
-    // toggle.
+    // Fresh load = fresh `register()` runs for every enabled mini app (the host's load is
+    // never cached: unwiring shuts the instance down). For a mini app that is ALREADY
+    // wired the fresh duplicate is simply discarded and the wired instance kept, so live
+    // streams/services are never churned by an unrelated toggle.
     const desired = await deps.loadBackends()
     // The load is the slow part; a shutdown that landed meanwhile must not get new wiring.
     if (stopped) return

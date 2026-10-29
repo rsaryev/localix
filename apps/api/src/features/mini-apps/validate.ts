@@ -1,6 +1,6 @@
 import { checkApiVersion } from '../ext/manifest-validate'
 import { MINI_APP_API_VERSION } from './contracts-base'
-import type { DiscoveredMiniApp } from './discovery'
+import type { DiscoveredMiniApp } from './folder'
 
 export interface MiniAppValidation {
   errors: string[]

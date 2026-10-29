@@ -1,6 +1,6 @@
 import { apiVersionTooNew } from '../ext/manifest-validate'
 import { MINI_APP_API_VERSION } from './contracts-base'
-import type { DiscoveredMiniApp } from './discovery'
+import type { DiscoveredMiniApp } from './folder'
 
 /**
  * May this host RUN this mini app's code — and if not, why?

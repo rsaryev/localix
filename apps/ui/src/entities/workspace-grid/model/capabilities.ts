@@ -86,7 +86,7 @@ export function isBuiltInWorkItemKind(kind: WorkItemKind): boolean {
   return builtInCapsOf(kind) !== undefined
 }
 
-/** Resolve only mini-app-exclusive work-item kinds. A bundled mini app colliding
+/** Resolve only mini-app-exclusive work-item kinds. A mini app colliding
  * with a reserved core kind must never replace core rendering, placement,
  * capabilities, icons, or message-binding behavior. */
 export function activeWorkItemContribution(
@@ -128,7 +128,7 @@ export function isRestorableForPersistence(kind: WorkItemKind): boolean {
   const builtIn = builtInCapsOf(kind)
   if (!contributed) {
     if (builtIn) return builtIn.restorable === true
-    // Lazy bundled mini app modules are deliberately not registered until the
+    // Mini app modules are deliberately not registered until the
     // backend confirms they are enabled. Preserve their serialized tabs during
     // that cold window; the authoritative pass below removes true leftovers.
     return areMiniAppContributionsPending()

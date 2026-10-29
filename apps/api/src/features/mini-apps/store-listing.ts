@@ -110,7 +110,6 @@ export interface OwnMiniApp {
   icon?: string
   surfaces?: string[]
   commands?: string[]
-  bundled?: boolean
 }
 
 /**

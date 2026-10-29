@@ -4,46 +4,21 @@ import type { RESOURCE_CLASSES } from '../agent-core/capability-resource-classes
 /**
  * WHAT AN ARTIFACT IS, so a rule can say something about it.
  *
- * This replaced `resolveEnabledByDefault` — a decision table that answered "is this on when
- * nobody has decided". That question had two owners pulling in opposite directions: the
- * matrix knew about bundling and third-party code, and the rules knew what the user wanted,
- * and the only way to combine them was a three-valued `decided()` feeding a `??`.
- *
  * A trust class is not a decision. It is a FACT about the artifact, carried into the rule's
  * `resource` slot exactly like `dangerous` is carried for a shell command — so
  * `plugin:* untrusted ask` is an ordinary row a person can read, write and delete, and
  * `plugin:office * allow` is the ordinary row that answers over it.
+ *
+ * `untrusted` is the hard boundary: a folder that appeared in `~/.localix/plugins` or
+ * `~/.localix/mini-apps` is not a decision anybody made, whether or not it carries code, so every
+ * plugin and mini app is `untrusted` (Localix ships none: X5). `bundled` is what ships with the
+ * application, today the agent types; `opt-in` is kept for rules written when a shipped plugin
+ * could ask before running.
  */
 export type TrustClass = Extract<
   (typeof RESOURCE_CLASSES)[number]['value'],
   'bundled' | 'opt-in' | 'untrusted'
 >
-
-export interface TrustFacts {
-  /** True when the artifact ships with the application. */
-  isBundled: boolean
-  /** True when enabling it would import code into this process. */
-  isCodeBearing: boolean
-  /** The manifest's own `defaultEnabled`, when it states one. */
-  defaultEnabled: boolean | undefined
-}
-
-/**
- * The class an artifact belongs to.
- *
- * `untrusted` is the hard boundary and it is the bundle boundary: a folder that appeared in
- * `~/.localix/plugins` is not a decision anybody made, whether or not it carries code.
- *
- * `opt-in` is ours but asks anyway — a bundled plugin that imports code and does not claim
- * `defaultEnabled`. It is a separate class rather than the same one because the question a
- * person should be asked differs: "this ships with Localix but is off by default" is not
- * "this came from somewhere else".
- */
-export function trustClassOf(facts: TrustFacts): TrustClass {
-  if (!facts.isBundled) return 'untrusted'
-  if (facts.isCodeBearing && facts.defaultEnabled !== true) return 'opt-in'
-  return facts.defaultEnabled === false ? 'opt-in' : 'bundled'
-}
 
 /**
  * What the class means when NO rule mentions the artifact.

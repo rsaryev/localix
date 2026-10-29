@@ -54,7 +54,7 @@ export function useMiniAppContributions({
     prepareMiniAppContribScope(routeProjectId)
     return startUiLocationCatalogSync(routeProjectId, whenUiSurfacesReady())
   }, [routeProjectId])
-  // Bridged views declared by enabled INSTALLED (non-bundled) mini apps — the runtime
+  // Bridged views declared by enabled mini apps — the runtime
   // discovery pass (runtimeViews). A subscribe/version store, not React state,
   // because the same set feeds several surfaces (rail sections, rail buttons, and
   // the palette commands below); the version bumps on every (re)sync.

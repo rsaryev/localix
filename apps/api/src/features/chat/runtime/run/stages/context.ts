@@ -21,7 +21,7 @@ import { capabilitiesInMode } from '../../../../capabilities/permission-mode-pol
 import { miniAppProblemNotice } from '../../mini-app-problem-notice'
 import { resolveMiniAppSessionDataDir } from '../../../../mini-apps/session-storage'
 import { createMiniAppAgentDirectory } from '../../../../mini-apps/agent-directory'
-import { runHumanAssignedHooks } from '../../../../mini-apps/hooks'
+import { runHumanAssignedHooks } from '../../../../mini-apps/hooks-lifecycle'
 import type { LoadedMiniAppHook } from '../../../../mini-apps/loader-contract'
 import { publishHumanAssignment } from '../human-assignment'
 import { applyMainAgent, runToolsAgent } from '../plugin-main-agent'

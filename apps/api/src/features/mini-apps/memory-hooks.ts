@@ -5,7 +5,7 @@ import {
   MEMORY_TIMEOUT_MS,
   type MemoryLoadContextEvent,
   type MemoryRunEndEvent,
-} from './native'
+} from '@localixai/mini-app-sdk/backend'
 import type { LoadedMiniApps } from './loader-contract'
 
 /**

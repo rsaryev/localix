@@ -16,7 +16,7 @@
  * persisted history after a rewrite resurrects the `uiOnly` rows the first step removed —
  * rows that would then reach the model.
  */
-import { runUserMessageHooks } from '../../../mini-apps/hooks'
+import { runUserMessageHooks } from '../../../mini-apps/hooks-messages'
 import type { PersistedMessage } from '../../contracts'
 import type { SessionRecord } from '../../repository'
 import type { LoadedPlugins } from '../../../plugins/loader'

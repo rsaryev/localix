@@ -1,12 +1,12 @@
 import { buildScopedExtCatalog } from '../ext/catalog'
-import { trustClassOf } from '../ext/trust'
 import type { AvailabilityReader } from '../capabilities/availability'
 import type {
   CapabilitySourceRecord,
   CapabilitySourceRepository,
 } from '../capabilities/source-repository'
 import { miniAppOptions } from './config-vault'
-import { discoverMiniApps, type DiscoveredMiniApp } from './discovery'
+import { discoverMiniApps } from './discovery'
+import type { DiscoveredMiniApp } from './folder'
 
 /** One mini app with its stored settings and whether it may run in this scope. */
 export interface MiniAppCatalogEntry {
@@ -23,19 +23,6 @@ export interface MiniAppCatalog {
   /** Names of the mini apps waiting on a decision: installed, not refused, not loaded. */
   awaitingConsent: string[]
   find(name: string, projectId: string): MiniAppCatalogEntry | undefined
-}
-
-/**
- * Whether a mini app may run, decided as for any capability: a `mini-app:<name>` rule, and where
- * none speaks, its trust class. One Localix ships is trusted; any other one that would import code
- * waits to be asked about.
- */
-export function miniAppTrustClass(app: DiscoveredMiniApp) {
-  return trustClassOf({
-    isBundled: app.bundled,
-    isCodeBearing: app.backendEntries.length > 0,
-    defaultEnabled: app.bundled ? true : undefined,
-  })
 }
 
 export async function buildMiniAppCatalog(opts: {
@@ -62,7 +49,8 @@ export async function buildMiniAppCatalog(opts: {
       miniAppOptions.hydrateSecretOptions(userId, await opts.repo.listForScope(userId, projectId)),
     kind: 'mini-app',
     availability: opts.availability,
-    trustOf: (item) => miniAppTrustClass(item.app),
+    // Localix ships no mini app (X5): every one was installed, and waits to be asked about.
+    trustOf: () => 'untrusted',
     toEntry: (entry): MiniAppCatalogEntry => ({
       app: entry.item.app,
       state: entry.state,

@@ -2,8 +2,8 @@ import type { PaletteCommand } from './uiCommands'
 import { listThirdPartyViews } from './runtimeViews'
 
 /**
- * Build the command-palette entries for INSTALLED third-party mini app views — the
- * counterpart of the bundled-subsystem "Open/Show …" commands. Pure over the
+ * Build the command-palette entries for mini apps' sandboxed views — the
+ * counterpart of the core features' "Open/Show …" commands. Pure over the
  * runtime-views store + injected openers, so it is unit-testable without React:
  * because it reads {@link listThirdPartyViews}, a view that dropped out of the store
  * (disabled/uninstalled mini app) yields no command on the next call — the command

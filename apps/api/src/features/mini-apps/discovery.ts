@@ -7,9 +7,6 @@ import { type DiscoveredMiniApp, loadMiniApp } from './folder'
 import { pruneRetiredManagedCopies } from './managed-copy'
 import { MINI_APPS_SUBDIR } from './paths'
 
-export { MINI_APPS_SUBDIR }
-export { type DiscoveredMiniApp, loadMiniApp }
-
 /**
  * How a mini app is found and read (`paths.ts` says where). A mini app is Localix's own format
  * and shares nothing with a plugin (docs/internals/plugins-and-mini-apps.md): this module reads

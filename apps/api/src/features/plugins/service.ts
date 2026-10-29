@@ -172,9 +172,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       userId,
       agentId: agentId || DEFAULT_AGENT_ID,
     })
-    return (
-      availability.effectFor('plugin', plugin.manifest.name, pluginTrustClass(plugin)) === 'allow'
-    )
+    return availability.effectFor('plugin', plugin.manifest.name, pluginTrustClass()) === 'allow'
   }
 
   /** Resolve a discovered plugin or throw the canonical 404. */

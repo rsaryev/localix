@@ -114,7 +114,7 @@ export const eventSocket = {
   },
   /**
    * Subscribe to a GENERIC subsystem live-stream frame tagged with `tag` (a single
-   * wire char). Backend subsystems (bundled mini apps) contribute a live stream that
+   * wire char). Backend subsystems (mini apps) contribute a live stream that
    * pushes `<tag>\n<payload-json>` frames NOT tied to a chat session — they ride the
    * tab-global socket rather than the per-session firehose. The handler receives the
    * raw payload JSON string (JSON.parse it). The caller starts/stops the server-side

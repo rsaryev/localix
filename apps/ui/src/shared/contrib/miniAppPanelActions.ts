@@ -152,7 +152,7 @@ export function createPanelActions(deps: PanelActionDeps, miniAppName?: string):
     return { saved: true }
   })
 
-  // Sandboxed views use the same central live-context contract as bundled React
+  // Sandboxed views use the same central live-context contract as native React
   // contributions. The SDK validator clamps content, bounds facet count and
   // forces `source: mini-app`; the iframe cannot spoof active-tab provenance.
   table.set('publishMessageContext', (payload) => {

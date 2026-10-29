@@ -124,7 +124,7 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
     ])
     const installed = new Map(apps.miniApps.map((app) => [app.name, app]))
     const offered = new Set(entries.map((entry) => entry.name))
-    const own = apps.miniApps.filter((app) => !app.bundled && !offered.has(app.name))
+    const own = apps.miniApps.filter((app) => !offered.has(app.name))
     return {
       listings: [
         ...entries.map((entry) =>
@@ -157,7 +157,7 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
     async detail(id, actor) {
       const offered = await listingFor(id, actor).catch(async (error: unknown) => {
         const app = (await deps.apps.list(actor.userId)).miniApps.find((it) => it.name === id)
-        if (!app || app.bundled) throw error
+        if (!app) throw error
         return { listing: ownListing(app), page: ownPage(app) }
       })
       return miniAppDetail(offered.listing, offered.page)

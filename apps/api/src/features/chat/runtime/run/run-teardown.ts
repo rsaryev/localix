@@ -10,7 +10,7 @@ import path from 'node:path'
 import { rm } from 'node:fs/promises'
 
 import type { LoadedMiniAppHook } from '../../../mini-apps/loader-contract'
-import { runSessionEndHooks } from '../../../mini-apps/hooks'
+import { runSessionEndHooks } from '../../../mini-apps/hooks-lifecycle'
 import type { SessionRecord } from '../../repository'
 import { consoleWarnLogger } from '../plugin-hook-logger'
 import type { RuntimeState } from '../agent-runner-state'

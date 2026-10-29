@@ -3,8 +3,7 @@ import { promises as fs, type Dirent } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import type { DiscoveredMiniApp } from './discovery'
-import { readManagedFingerprint } from './managed-copy'
+import type { DiscoveredMiniApp } from './folder'
 import type { inspectMiniAppTools } from './native'
 
 /**
@@ -99,8 +98,7 @@ export async function durableInspectionFingerprint(
   miniApp: DiscoveredMiniApp,
   memoryFingerprint: string,
 ): Promise<string | null> {
-  const managed = await readManagedFingerprint(miniApp.dir)
-  const code = managed ? `managed:${managed}` : await userTreeStamp(miniApp.dir)
+  const code = await userTreeStamp(miniApp.dir)
   if (code === null) return null
   return createHash('sha256')
     .update(JSON.stringify([STORE_VERSION, await hostBuildStamp(), memoryFingerprint, code]))

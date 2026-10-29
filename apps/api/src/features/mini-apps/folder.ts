@@ -15,7 +15,7 @@ import { miniAppHostFieldsSchema, type MiniAppCommand, type MiniAppHostFields } 
 /**
  * One mini app folder read the way Localix runs it: `mini-app.json` by the SDK's schema, the fields
  * the host validates itself, the backend entries and the guide, each confined to the folder. Kept
- * apart from discovery (which scans roots and synchronizes the bundled apps) because the mini app
+ * apart from discovery (which scans the roots) because the mini app
  * kit's tools judge a folder with exactly this before Localix ever sees it.
  */
 
@@ -32,8 +32,6 @@ export interface DiscoveredMiniApp {
   manifest: MiniAppManifest | null
   /** Why it cannot run; set, it contributes nothing. */
   error?: string
-  /** Always false: Localix ships no mini app (rule X5). Kept for the contract the clients read. */
-  bundled: boolean
   /** The backend entrypoints, absolute and inside the folder. */
   backendEntries: string[]
   /** Its guide, absolute and inside the folder. */
@@ -58,7 +56,6 @@ export async function loadMiniApp(
     scope,
     projectId,
     backendEntries: [],
-    bundled: false,
     views: [],
     promptSections: [],
     commands: [],

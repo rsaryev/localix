@@ -395,7 +395,6 @@ describe('the mini apps in the Store', () => {
       description: 'Shows the Bitcoin price.',
       surfaces: ['agent', 'workbench'],
       commands: [],
-      bundled: false,
       enabled: true,
       config: [],
     })

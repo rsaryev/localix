@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, utimes, writeFile } from 'node:fs/promise
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import type { DiscoveredMiniApp } from './discovery'
+import type { DiscoveredMiniApp } from './folder'
 import {
   createMiniAppInspectionStore,
   durableInspectionFingerprint,

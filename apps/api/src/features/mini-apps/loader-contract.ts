@@ -1,7 +1,12 @@
 import type { AgentTool } from '@localixai/agent/agents'
 
 import type { BackendSubsystem } from '../ext/subsystem-contrib'
-import type { MemoryProvider, MiniAppChannel, MiniAppContext, MiniAppHooks } from './native'
+import type {
+  MemoryProvider,
+  MiniAppChannel,
+  MiniAppContext,
+  MiniAppHooks,
+} from '@localixai/mini-app-sdk/backend'
 
 /**
  * WHAT A MINI APP LOAD PRODUCES — the shape every consumer of `loadEnabledMiniApps` reads. Only

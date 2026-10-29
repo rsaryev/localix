@@ -7,8 +7,8 @@ import type {
 import { isMiniAppContributionEnabled } from './miniAppActivation'
 
 /**
- * OPEN UI registries mirroring the backend `SubsystemRegistry`: a bundled
- * subsystem contributes its editor-grid WorkItem kind(s) and its left-rail
+ * OPEN UI registries mirroring the backend `SubsystemRegistry`: a core feature or a mini
+ * app contributes its editor-grid WorkItem kind(s) and its left-rail
  * section here instead of core hardcoding them in the render/icon/capability/
  * section maps. Each feature registers itself from its `contrib.{ts,tsx}`
  * (discovered generically — see `shared/contrib/discover.ts`), so CORE names no

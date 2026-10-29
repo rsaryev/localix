@@ -1,6 +1,8 @@
 import { join } from 'node:path'
 import { MINI_APP_API_VERSION } from '@localixai/mini-app-sdk/manifest-primitives'
 
+import { apiVersionTooNew } from '../ext/manifest-validate'
+
 import { installedBy } from './store-install'
 import { storeMediaUrl } from './store-media'
 import { readManifest, type Offer } from './store-offers'
@@ -32,14 +34,15 @@ export const ACTIVE_PHASES: ReadonlySet<MiniAppJob['phase']> = new Set([
 ])
 
 /** Built for a newer mini app contract than this Localix runs. */
-export const isIncompatible = (offer: Offer) => (offer.apiVersion ?? 1) > MINI_APP_API_VERSION
+export const isIncompatible = (offer: Offer) =>
+  apiVersionTooNew('Mini app', MINI_APP_API_VERSION, offer.apiVersion) !== null
 
 export const iconOf = (offer: Offer) =>
   offer.store.icon ? storeMediaUrl(offer.name, 'icon', offer.store.icon) : undefined
 
 /**
- * Whether Update all would take this offer: an app a catalog (or an earlier build's staged
- * first-party copy) put here, at another version, that this Localix can run. A folder the person made is theirs.
+ * Whether Update all would take this offer: an app a catalog (or an earlier Localix build) put
+ * here, at another version, that this Localix can run. A folder the person made is theirs.
  */
 export async function isUpdatable(offer: Offer, installRoot: string): Promise<boolean> {
   if (isIncompatible(offer)) return false

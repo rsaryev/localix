@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'bun:test'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { makeContext } from './native'
-import type { MiniAppProblem } from './native'
+import { makeContext } from './native-context'
+import type { MiniAppProblem } from '@localixai/mini-app-sdk/backend'
 
 /** A context creates its mini app's state and data roots under this home, never the real one. */
 const TEST_HOME = join(tmpdir(), 'localix-mini-app-problem-home')

@@ -44,7 +44,7 @@ export function assertEnableChanges(input: {
 }): void {
   const name = input.plugin.manifest.name
   if (input.refuseNoop) {
-    const effect = input.availability.effectFor('plugin', name, pluginTrustClass(input.plugin))
+    const effect = input.availability.effectFor('plugin', name, pluginTrustClass())
     // Awaiting consent is neither: disabling it is a decision, so it goes through.
     if (effect === (input.enabled ? 'allow' : 'deny'))
       throw new ConflictError(

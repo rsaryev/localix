@@ -226,7 +226,7 @@ export function miniAppContribSourceFor(projectId: string | null): MiniAppContri
  *
  * It used to be `miniAppContribSourceFor(null)`, a constant, so any caller that did not
  * hand in a source silently queried the GLOBAL scope. That is not a smaller answer, it
- * is a different one: bundled mini apps carry their enabled state per project (an exact
+ * is a different one: mini apps carry their enabled state per project (an exact
  * `projectId:name` match, no fallback to the global row), so against the live API the
  * same install reports **4 of 19 mini apps enabled with no projectId and 13 of 17 with
  * one**. Every gated surface — rail sections, palette commands, workbench mounts —

@@ -3,7 +3,7 @@ import type { AgentTool } from '@localixai/agent/agents'
 import { wrapToolsWithStuckRunBreaker } from '../../../agent-core/tools/stuck-run-breaker'
 import { wrapToolsWithTimeoutPromoter } from '../../../agent-core/tools/timeout-promoter'
 import { wrapToolsWithCcHooks } from '../../../cc-hooks'
-import { wrapToolsWithHooks } from '../../../mini-apps/hooks'
+import { wrapToolsWithHooks } from '../../../mini-apps/hooks-tools'
 import { wrapToolsWithMods, type ModRunScope } from '../../../mods/run-scope'
 import { wrapToolsWithPermissionGate, type ChainGate } from './chain-gate'
 

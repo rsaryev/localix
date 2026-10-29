@@ -129,7 +129,7 @@ function assertMiniAppOwnedIdentity(miniAppName: string, surface: string, identi
 }
 
 /**
- * Host façade for one statically discovered bundled mini app. Ownership is stamped by
+ * Host façade for one mini app's UI. Ownership is stamped by
  * discovery, never trusted from mini app code, and drives live enable/disable gating.
  */
 export function miniAppUiHostFor(miniAppName: string): MiniAppUiHost {

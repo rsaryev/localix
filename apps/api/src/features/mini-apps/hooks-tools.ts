@@ -11,6 +11,17 @@ import { HOOK_TIMEOUT_MS, invokeHook, type HookRunOptions } from './hook-invoke'
 // so the wrapping logic and its schema-reparse guard stand on their own; the
 // historical `./hooks` import surface re-exports these unchanged.
 
+/**
+ * MINI APP HOOK EXECUTION — the runtime side of the SDK's `MiniAppHooks`. The loader collects
+ * `{ app, hooks, ctx }` from enabled mini apps (`loader-contract.ts`); the chat runtime calls the
+ * three clusters: this one wraps EVERY tool's `execute` (built-in, mini app, MCP alike) so
+ * `onPreToolCall` can audit, block or rewrite and `onPostToolCall` can annotate;
+ * `hooks-messages.ts` rewrites the model-facing prompt and the persisted assistant reply;
+ * `hooks-lifecycle.ts` holds the observer-only notifications and `runSessionEndHooks`;
+ * `memory-hooks.ts` the memory provider. Every hook runs under the same guarantees: per-mini-app
+ * isolation (a throwing hook is logged and NEVER breaks the turn) and a hard timeout per
+ * invocation (`HOOK_TIMEOUT_MS`, a timeout reads as a void return).
+ */
 /** Max bytes of `appendContent` a post hook may add to a tool result. */
 export const POST_APPEND_CAP_BYTES = 1024
 

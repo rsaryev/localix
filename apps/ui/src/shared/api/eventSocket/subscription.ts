@@ -10,7 +10,7 @@ export type SessionEventHandler = (sessionId: string, event: AgentStreamEvent) =
 /**
  * A generic subsystem live-stream frame handler — receives the raw payload JSON string for a
  * given single-char frame tag (the caller JSON.parses it). Backs the registry-driven live
- * streams contributed by bundled subsystem mini apps.
+ * streams contributed by mini app backends.
  */
 export type FrameHandler = (json: string) => void
 

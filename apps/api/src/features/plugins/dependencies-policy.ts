@@ -45,7 +45,7 @@ export async function planDependencyEnables(
   const result = await cascadeEnableDependencies(input.plugin, {
     discovered: input.discovered,
     isEnabled: (plugin) =>
-      availability.effectFor('plugin', plugin.manifest.name, pluginTrustClass(plugin)) === 'allow',
+      availability.effectFor('plugin', plugin.manifest.name, pluginTrustClass()) === 'allow',
     enable: async (plugin) => {
       changes.push({
         action: actionFor('plugin', plugin.manifest.name),

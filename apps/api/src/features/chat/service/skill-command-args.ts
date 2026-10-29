@@ -1,3 +1,5 @@
+import { shellQuote } from '@localixai/mini-app-sdk/backend'
+
 import { splitSkillArgs } from './slash-commands'
 
 /**
@@ -7,11 +9,6 @@ import { splitSkillArgs } from './slash-commands'
 export interface SkillShellArgs {
   raw: string
   names?: readonly string[]
-}
-
-/** One argument as a single shell word: `'…'`, an embedded `'` closed, escaped and reopened. */
-export function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, `'\\''`)}'`
 }
 
 /** An injected command with its arguments bound, ready to run. */

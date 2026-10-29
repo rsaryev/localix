@@ -5,7 +5,7 @@ import { scalarConfig, type CapabilitySourceRecord } from '../capabilities/sourc
 import { resolveMiniAppConfig } from './config'
 import { miniAppOptions } from './config-vault'
 import type { MiniAppConfigField, MiniAppRecord } from './contracts'
-import type { DiscoveredMiniApp } from './discovery'
+import type { DiscoveredMiniApp } from './folder'
 import type { MiniAppInspections } from './inspection-snapshots'
 import { miniAppLoadBlockReason } from './loadable'
 import { readMiniAppUiDescriptor } from './ui-artifact'
@@ -70,7 +70,6 @@ export async function toMiniAppRecord(input: {
     scope: app.scope,
     projectId: app.projectId,
     dir: app.dir,
-    bundled: app.bundled,
     enabled,
     ...(input.awaitingConsent ? { awaitingConsent: true } : {}),
     ...(error ? { error } : {}),

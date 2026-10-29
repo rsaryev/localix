@@ -1,5 +1,4 @@
-import { trustClassOf, type TrustClass } from '../ext/trust'
-import type { DiscoveredPlugin } from './discovery'
+import type { TrustClass } from '../ext/trust'
 
 /**
  * What KIND of artifact a plugin is, so a rule can name it.
@@ -11,10 +10,4 @@ import type { DiscoveredPlugin } from './discovery'
  * `plugin:office * allow`. An install that switches a plugin on writes that rule
  * (`publish-installation.ts`).
  */
-export function pluginTrustClass(plugin: DiscoveredPlugin): TrustClass {
-  return trustClassOf({
-    isBundled: false,
-    isCodeBearing: false,
-    defaultEnabled: plugin.manifest.defaultEnabled,
-  })
-}
+export const pluginTrustClass = (): TrustClass => 'untrusted'

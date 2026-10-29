@@ -9,10 +9,9 @@ import {
 } from './uiLocations'
 
 /**
- * The RUNTIME third-party UI discovery pass — the installed-mini-app counterpart
- * to the build-time eager glob in `discover.ts`. Where `discover.ts` statically
- * imports BUNDLED mini app UI (trusted, native, never removed), THIS module holds
- * the views declared by ENABLED third-party mini apps, fetched as DATA from
+ * The RUNTIME sandboxed-view discovery pass — the counterpart to the build-time eager glob in
+ * `discover.ts`. Where `discover.ts` statically imports the core features' contributions (never
+ * removed), THIS module holds the views declared by ENABLED mini apps, fetched as DATA from
  * `GET /rpc/mini-apps/views` (never code), each rendered as a sandboxed bridged
  * iframe in a work-item TAB — the single placement, so this store is one flat map. Because
  * installed mini apps can be disabled/uninstalled, these registrations are REMOVABLE: {@link

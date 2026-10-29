@@ -1,4 +1,4 @@
-import type { ChannelRunEvent } from '../../mini-apps/native'
+import type { ChannelRunEvent } from '@localixai/mini-app-sdk/backend'
 import type { SessionStreamRegistry } from '../runtime/session-stream-registry'
 
 /**

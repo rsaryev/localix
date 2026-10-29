@@ -3,7 +3,10 @@ import { assetBindings, type MessageBinding } from '@localixai/agent'
 import type { LoadedMiniAppHook } from './loader-contract'
 import { isRecord } from '../../lib/record'
 import { HOOK_TIMEOUT_MS, invokeHook, type HookRunOptions } from './hook-invoke'
-import { ASSISTANT_BINDINGS_MAX, ASSISTANT_BINDING_DATA_CAP_BYTES } from './native'
+import {
+  ASSISTANT_BINDINGS_MAX,
+  ASSISTANT_BINDING_DATA_CAP_BYTES,
+} from '@localixai/mini-app-sdk/backend'
 
 // Message hooks: the user-prompt and assistant-reply rewrite/annotate hooks.
 // Split out of hooks.ts; the historical `./hooks` import surface re-exports these.

@@ -40,7 +40,6 @@ function miniApp(over: Partial<MiniAppRecord> & { name: string; enabled: boolean
     scope: 'global',
     projectId: '',
     dir: `/mini-apps/${over.name}`,
-    bundled: false,
     hasBackend: false,
     tools: [],
     backendSubsystems: [],

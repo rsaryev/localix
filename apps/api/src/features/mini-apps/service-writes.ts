@@ -5,7 +5,7 @@ import type { CapabilitySourceRecord } from '../capabilities/source-repository'
 import type { MiniAppCatalog } from './catalog'
 import { miniAppOptions } from './config-vault'
 import { retireManagedCopy } from './managed-copy'
-import type { DiscoveredMiniApp } from './discovery'
+import type { DiscoveredMiniApp } from './folder'
 import type { MiniAppInspections } from './inspection-snapshots'
 import type { MiniAppServiceDeps } from './service'
 

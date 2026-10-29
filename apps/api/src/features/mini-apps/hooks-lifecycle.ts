@@ -6,7 +6,7 @@ import type {
   HumanAssignedEvent,
   MiniAppHooks,
   SubagentStopEvent,
-} from './native'
+} from '@localixai/mini-app-sdk/backend'
 
 // Lifecycle + observer hooks: fire-and-forget notifications a mini app can observe
 // (subagent-stop, HITL request/resolved, session-end). Split out of hooks.ts;

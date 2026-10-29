@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
 import type { MiniAppCatalog } from './catalog'
-import type { DiscoveredMiniApp } from './discovery'
+import type { DiscoveredMiniApp } from './folder'
 import { createMiniAppRoutes, type MiniAppRoutesService } from './routes'
 import { readMiniAppUiDescriptor, resolveMiniAppUiFile } from './ui-artifact'
 
@@ -17,17 +17,14 @@ function write(path: string, content: string) {
 }
 
 /** An installed copy of `name` whose artifact manifest is `manifest` (or none). */
-function installed(
-  name: string,
-  { bundled = true, manifest }: { bundled?: boolean; manifest?: unknown },
-) {
+function installed(name: string, { manifest }: { manifest?: unknown }) {
   const dir = join(root, name)
   write(join(dir, 'mini-app.json'), JSON.stringify({ name }))
   if (manifest !== undefined)
     write(join(dir, 'dist', 'ui', 'manifest.json'), JSON.stringify(manifest))
   write(join(dir, 'dist', 'ui', 'entry.js'), 'export function registerUi() {}\n')
   write(join(dir, 'dist', 'ui', 'chunks', 'panel-abc.js'), 'export const panel = 1\n')
-  return { name, dir, bundled, manifest: { name } } as unknown as DiscoveredMiniApp
+  return { name, dir, manifest: { name } } as unknown as DiscoveredMiniApp
 }
 
 const catalogOf = (...apps: (DiscoveredMiniApp & { enabled?: boolean })[]) =>
@@ -53,8 +50,8 @@ describe('the mini app record ui descriptor', () => {
     ).toBeUndefined()
   })
 
-  test('a user mini app built by the app advertises its UI like a first-party one', async () => {
-    const user = installed('user-built', { bundled: false, manifest: artifact })
+  test('a user mini app built by the app advertises its UI', async () => {
+    const user = installed('user-built', { manifest: artifact })
     expect((await readMiniAppUiDescriptor(user))?.entry).toBe(
       '/rpc/mini-apps/user-built/ui/entry.js',
     )
@@ -62,15 +59,15 @@ describe('the mini app record ui descriptor', () => {
 })
 
 describe('serving artifact files', () => {
-  const demo = installed('served', { manifest: artifact })
-  const outsider = installed('outsider', { bundled: false, manifest: artifact })
+  const demo = { ...installed('served', { manifest: artifact }), enabled: true }
+  const outsider = installed('outsider', { manifest: artifact })
   const consented = {
-    ...installed('consented', { bundled: false, manifest: artifact }),
+    ...installed('consented', { manifest: artifact }),
     enabled: true,
   }
   const catalog = catalogOf(demo, outsider, consented)
 
-  test('a non-first-party mini app is served only once the user consented to it', () => {
+  test('a mini app is served only once the user consented to it', () => {
     expect(() => resolveMiniAppUiFile(catalog, 'outsider', 'entry.js')).toThrow('ships no UI')
     expect(resolveMiniAppUiFile(catalog, 'consented', 'entry.js')).toBe(
       join(consented.dir, 'dist', 'ui', 'entry.js'),

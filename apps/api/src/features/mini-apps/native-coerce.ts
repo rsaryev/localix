@@ -2,23 +2,22 @@ import type { AgentTool } from '@localixai/agent/agents'
 
 import { isRecord } from '../../lib/record'
 import { withAppViewResults } from './native-app-view'
-import type { MiniAppChannel } from './channel-contracts'
-import type { MiniAppHooks, MemoryProvider } from './hook-contracts'
-import type { MiniAppContext } from './native'
 import type { BackendSubsystem } from '../ext/subsystem-contrib'
-import type { MiniAppRegistration } from '@localixai/mini-app-sdk/backend'
+import type {
+  MemoryProvider,
+  MiniAppChannel,
+  MiniAppContext,
+  MiniAppRegistration,
+} from '@localixai/mini-app-sdk/backend'
 
 /**
- * Structural shaping of whatever a native mini app's `register()` (or default/tools
- * export) returns into the real runtime shapes. Native mini apps are TRUSTED but
- * untyped JS, so every exported value is structurally validated here before use.
+ * Structural shaping of whatever a native mini app's `register()` returns into the real runtime
+ * shapes. Native mini apps are TRUSTED but untyped JS, so every exported value is structurally
+ * validated here before use.
  */
 
 export interface NativeModuleExports {
   register?: (ctx: MiniAppContext) => RegisterResult | Promise<RegisterResult>
-  tools?: unknown
-  hooks?: MiniAppHooks
-  default?: unknown
 }
 
 export type RegisterResult = MiniAppRegistration | undefined
@@ -48,7 +47,7 @@ export function asChannelArray(value: unknown): MiniAppChannel[] {
 }
 
 /** Structural check that an exported value looks like an AgentTool. */
-export function looksLikeTool(t: unknown): t is AgentTool {
+function looksLikeTool(t: unknown): t is AgentTool {
   if (!isRecord(t)) return false
   return (
     typeof t.name === 'string' &&

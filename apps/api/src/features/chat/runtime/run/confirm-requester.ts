@@ -3,7 +3,7 @@ import type {
   ConfirmToolResponse,
 } from '../../../agent-core/tools/hitl/confirm'
 import type { ConfirmOutcome, RequestConfirmArgs } from '../../../agent-core/permission-engine'
-import { runHitlRequestHooks, runHitlResolvedHooks } from '../../../mini-apps/hooks'
+import { runHitlRequestHooks, runHitlResolvedHooks } from '../../../mini-apps/hooks-lifecycle'
 import type { RunHookContext } from './run-hook-context'
 import type { CcHookToolRef } from '../../../cc-hooks'
 import { isDangerous } from '../../../agent-core/tools/bash/bash-command-safety'

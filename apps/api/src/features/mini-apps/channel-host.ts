@@ -10,7 +10,7 @@ import type {
   ChannelWorkspaceApi,
   MiniAppChannel,
   MiniAppContext,
-} from './native'
+} from '@localixai/mini-app-sdk/backend'
 import { createDebouncer } from '../../lib/debounce'
 import { withTimeout } from '../../lib/timeout'
 import type { MiniAppConditions } from '../notifications/conditions/mini-apps'

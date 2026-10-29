@@ -12,13 +12,10 @@ import { buildMiniAppCatalog } from './catalog'
 import { resolveMiniAppConfig } from './config'
 import { miniAppLoadBlockReason } from './loadable'
 import { emptyLoadedMiniApps, type LoadedMiniApps } from './loader-contract'
-import {
-  importNativeModule,
-  makeContext,
-  type MiniAppHostServices,
-  type MiniAppProblemSink,
-} from './native'
-import { miniAppProblemReporter } from './problem-reporter'
+import type { MiniAppHostServices } from '@localixai/mini-app-sdk/backend'
+import { importNativeModule } from './native'
+import { makeContext } from './native-context'
+import { miniAppProblemReporter, type MiniAppProblemSink } from './problem-reporter'
 import {
   capMiniAppToolDescription,
   isAcceptableToolName,
@@ -34,6 +31,30 @@ const fillSettings = (text: string, config: Record<string, unknown>) =>
     if (value === undefined) return ''
     return typeof value === 'string' ? value : JSON.stringify(value)
   })
+
+/** What one backend entry's `register(ctx)` produced, kept while its code and settings stand. */
+type Imported = Awaited<ReturnType<typeof importNativeModule>>
+const imported = new Map<string, { revision: string; result: Imported }>()
+
+/**
+ * Run `register(ctx)` once per scope, not once per turn. The context it receives is bound to the
+ * scope (user, project, working directory) and to nothing of the turn, so the tools, hooks and
+ * memory provider it returned answer the next turn as well; a rebuilt backend or changed settings
+ * are a new `revision` and run it again. Only the per-run load is kept: the backend host's load
+ * must stay fresh, because unwiring a mini app shuts the instance it was handed down.
+ */
+async function importOnce(
+  key: string | null,
+  revision: string,
+  entry: string,
+  ctx: Parameters<typeof importNativeModule>[1],
+): Promise<Imported> {
+  const kept = key === null ? undefined : imported.get(key)
+  if (kept && kept.revision === revision) return kept.result
+  const result = await importNativeModule(entry, ctx)
+  if (key !== null) imported.set(key, { revision, result })
+  return result
+}
 
 export interface LoadMiniAppsOptions {
   /** What the scope's rules say; a trust gate decides whatever they do not. */
@@ -119,10 +140,18 @@ export async function loadEnabledMiniApps(opts: LoadMiniAppsOptions): Promise<Lo
 
     // Hashed: the revision is compared and kept, and the settings can hold secrets.
     const settingsRevision = createHash('sha256').update(JSON.stringify(config)).digest('hex')
+    const perRun = !opts.host && !opts.hostForMiniApp
     const importStartedAt = performance.now()
     for (const entry of app.backendEntries) {
+      const revision = `${freshModuleUrl(entry)}#${settingsRevision}`
+      const key = perRun ? [opts.userId, opts.projectId, opts.cwd, app.dir, entry].join('\0') : null
       try {
-        const { tools, hooks, channels, memory, backends } = await importNativeModule(entry, ctx)
+        const { tools, hooks, channels, memory, backends } = await importOnce(
+          key,
+          revision,
+          entry,
+          ctx,
+        )
         for (const channel of channels) result.channels.push({ app: app.name, channel, ctx })
         for (const backend of backends) {
           result.backends.push({
@@ -131,7 +160,7 @@ export async function loadEnabledMiniApps(opts: LoadMiniAppsOptions): Promise<Lo
             backend,
             // The path and mtime it was imported under, and the settings it was given: a rebuilt
             // backend, or one whose settings changed, is a new revision the host wires again.
-            revision: `${freshModuleUrl(entry)}#${settingsRevision}`,
+            revision,
           })
         }
         if (memory) {

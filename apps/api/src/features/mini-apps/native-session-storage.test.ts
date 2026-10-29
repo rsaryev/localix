@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { MiniAppHostServices } from '@localixai/mini-app-sdk/backend'
 
-import { makeContext } from './native'
+import { makeContext } from './native-context'
 
 const storage = (label: string) => ({
   resolveDataDir: async (userId: string, sessionId: string) => `${label}:${userId}:${sessionId}`,

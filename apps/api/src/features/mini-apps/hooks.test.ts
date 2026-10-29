@@ -2,19 +2,15 @@ import { describe, it, expect } from 'bun:test'
 import { z } from 'zod'
 import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
 
+import { wrapToolsWithHooks, ToolCallBlockedError, POST_APPEND_CAP_BYTES } from './hooks-tools'
 import {
-  wrapToolsWithHooks,
   runSessionEndHooks,
-  runUserMessageHooks,
-  runAssistantMessageHooks,
-  loadMemoryProviderContext,
-  runMemoryProviderRunEnd,
   runSubagentStopHooks,
   runHitlRequestHooks,
   runHitlResolvedHooks,
-  ToolCallBlockedError,
-  POST_APPEND_CAP_BYTES,
-} from './hooks'
+} from './hooks-lifecycle'
+import { runUserMessageHooks, runAssistantMessageHooks } from './hooks-messages'
+import { loadMemoryProviderContext, runMemoryProviderRunEnd } from './memory-hooks'
 import type { LoadedMiniAppHook } from './loader-contract'
 import {
   ASSISTANT_BINDINGS_MAX,
@@ -23,7 +19,7 @@ import {
   type MiniAppContext,
   type MiniAppHooks,
   type MemoryProvider,
-} from './native'
+} from '@localixai/mini-app-sdk/backend'
 
 /** Minimal hook entry — ctx is unused by the hook runner itself. */
 function entry(app: string, hooks: MiniAppHooks): LoadedMiniAppHook {

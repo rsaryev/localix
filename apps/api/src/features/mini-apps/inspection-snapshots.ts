@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 
 import type { MiniAppConfigValues } from './config'
-import type { DiscoveredMiniApp } from './discovery'
+import type { DiscoveredMiniApp } from './folder'
 import {
   createMiniAppInspectionStore,
   durableInspectionFingerprint,

@@ -5,7 +5,7 @@
  * Extracted from event-handlers.ts to keep the per-event dispatcher focused.
  */
 import type { HumanInLoopRequestBase } from '@localixai/agent/agents'
-import { runHitlRequestHooks, runHitlResolvedHooks } from '../../../mini-apps/hooks'
+import { runHitlRequestHooks, runHitlResolvedHooks } from '../../../mini-apps/hooks-lifecycle'
 import type { EventOf, TurnEventContext } from './event-handlers'
 import { hostPolicy } from '../../policy/session-policy'
 

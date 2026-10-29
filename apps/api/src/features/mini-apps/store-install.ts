@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { downloadPinned, type DownloadProgress } from '../../lib/pinned-download'
 import { unpackMiniAppArchive } from './archive'
-import { installCopy, readManagedFingerprint } from './managed-copy'
+import { installCopy, isManagedCopy } from './managed-copy'
 import { MINI_APPS_SUBDIR } from './paths'
 import type { MiniAppPublisher, Offer } from './store-offers'
 
@@ -30,12 +30,12 @@ export async function readInstallRecord(dir: string): Promise<InstallRecord | nu
 }
 
 /**
- * Who put the folder at `dir`: a catalog, a staged first-party copy an earlier build installed
- * (`managed-copy.ts`), the person, or nobody.
+ * Who put the folder at `dir`: a catalog, an earlier Localix build (before X5, when the app
+ * carried copies of its own mini apps: `managed-copy.ts`), the person, or nobody.
  */
 export async function installedBy(dir: string): Promise<'catalog' | 'staged' | 'person' | null> {
   if (await readInstallRecord(dir)) return 'catalog'
-  if (await readManagedFingerprint(dir)) return 'staged'
+  if (await isManagedCopy(dir)) return 'staged'
   return (await fs.stat(dir).catch(() => null))?.isDirectory() ? 'person' : null
 }
 

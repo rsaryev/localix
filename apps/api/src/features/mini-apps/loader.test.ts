@@ -17,6 +17,8 @@ import { MINI_APP_TOOL_DESCRIPTION_MAX_CHARS } from './tool-policy'
 declare global {
   // eslint-disable-next-line no-var
   var __TEST_MINI_APP_IMPORTS__: number | undefined
+  // eslint-disable-next-line no-var
+  var __TEST_MINI_APP_REGISTERS__: number | undefined
 }
 
 function repo(rows: CapabilitySourceRecord[] = []): CapabilitySourceRepository {
@@ -96,8 +98,7 @@ beforeAll(async () => {
     },
     [
       'globalThis.__TEST_MINI_APP_IMPORTS__ = (globalThis.__TEST_MINI_APP_IMPORTS__ ?? 0) + 1',
-      `export const tools = [${[tool('hello'), tool('bash'), tool('Bash'), tool('MixedTool')].join(', ')}]`,
-      'export const hooks = { onSessionStart: () => {} }',
+      `export function register() { return { tools: [${[tool('hello'), tool('bash'), tool('Bash'), tool('MixedTool')].join(', ')}], hooks: { onSessionStart: () => {} } } }`,
     ].join('\n'),
   )
   await app(
@@ -112,15 +113,19 @@ beforeAll(async () => {
   await app(
     'verbose',
     {},
-    `export const tools = [{ name: "verbose_lookup", description: "${'x'.repeat(
+    `export function register() { return { tools: [{ name: "verbose_lookup", description: "${'x'.repeat(
       MINI_APP_TOOL_DESCRIPTION_MAX_CHARS + 500,
-    )}", inputSchema: {}, execute: async () => ({ content: "ok" }) }]`,
+    )}", inputSchema: {}, execute: async () => ({ content: "ok" }) }] } }`,
   )
-  await app('boarder', {}, `export const tools = [${tool('work_items', 'roles: ["task-board"],')}]`)
+  await app(
+    'boarder',
+    {},
+    `export function register() { return { tools: [${tool('work_items', 'roles: ["task-board"],')}] } }`,
+  )
   await app(
     'classer',
     {},
-    `export const tools = [${tool('classy_read', 'contextClass: "readResult",')}]`,
+    `export function register() { return { tools: [${tool('classy_read', 'contextClass: "readResult",')}] } }`,
   )
   for (const name of ['mem-a', 'mem-b'])
     await app(
@@ -128,12 +133,23 @@ beforeAll(async () => {
       {},
       `export function register() { return { memory: { loadContext: () => ({ context: 'from ${name}' }) } } }`,
     )
+  await app(
+    'counted',
+    { config: { GREETING: { type: 'string' } } },
+    [
+      'export function register() {',
+      '  globalThis.__TEST_MINI_APP_REGISTERS__ = (globalThis.__TEST_MINI_APP_REGISTERS__ ?? 0) + 1',
+      '  return { tools: [{ name: "counted_tool", description: "x", inputSchema: {}, execute: async () => ({ content: "ok" }) }] }',
+      '}',
+    ].join('\n'),
+  )
   await app('guided', {})
   await fs.writeFile(join(dir, '.localix', 'mini-apps', 'guided', 'guide.md'), '# Guided\n')
 })
 
 afterAll(async () => {
   delete globalThis.__TEST_MINI_APP_IMPORTS__
+  delete globalThis.__TEST_MINI_APP_REGISTERS__
   await fs.rm(dir, { recursive: true, force: true })
 })
 
@@ -165,6 +181,26 @@ describe('loadEnabledMiniApps', () => {
   it("keeps the roles a mini app's tool declares", async () => {
     const loaded = await load(allowing('boarder'))
     expect(loaded.tools.find((t) => t.name === 'work_items')?.roles).toEqual(['task-board'])
+  })
+
+  // `register()` used to run on every turn: a backend that opens a watcher or a socket there
+  // opened another one per message, and a turn paid every backend's start-up again.
+  it('runs register() once per scope while the backend and its settings stand', async () => {
+    const registers = () => globalThis.__TEST_MINI_APP_REGISTERS__ ?? 0
+    const settings = (greeting: string) => ({
+      repo: repo([row('counted', { GREETING: greeting })]),
+    })
+    await load(allowing('counted'), settings('hi'))
+    const first = registers()
+    const again = await load(allowing('counted'), settings('hi'))
+    expect(registers()).toBe(first)
+    expect(again.tools.map((t) => t.name)).toEqual(['counted_tool'])
+    // Another project is another scope: its own context, its own register().
+    await load(allowing('counted'), { ...settings('hi'), projectId: 'p2' })
+    expect(registers()).toBe(first + 1)
+    // Changed settings are a new revision of the same scope.
+    await load(allowing('counted'), settings('hello'))
+    expect(registers()).toBe(first + 2)
   })
 
   it('passes the session cwd to register(ctx)', async () => {

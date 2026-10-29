@@ -4,9 +4,10 @@ import { buildMiniAppCatalog } from './catalog'
 import type { AvailabilityReader } from '../capabilities/availability'
 import { resolveMiniAppConfig } from './config'
 import { miniAppLoadBlockReason } from './loadable'
-import { makeContext, importNativeModule } from './native'
+import { importNativeModule } from './native'
+import { makeContext } from './native-context'
 import { miniAppProblemReporter } from './problem-reporter'
-import type { MiniAppChannel, MiniAppContext } from './native'
+import type { MiniAppChannel, MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { type CapabilitySourceRepository, scalarConfig } from '../capabilities/source-repository'
 
 /**

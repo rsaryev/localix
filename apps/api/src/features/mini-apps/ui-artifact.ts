@@ -11,20 +11,19 @@ import {
 import { isPathBelow } from '../../lib/path-containment'
 import type { MiniAppCatalog } from './catalog'
 import type { MiniAppUiDescriptor } from './contracts'
-import type { DiscoveredMiniApp } from './discovery'
+import type { DiscoveredMiniApp } from './folder'
 
 /**
  * A mini app's workbench UI, as the API advertises and serves it.
  *
- * The UI is a built artifact inside the mini app's folder (`dist/ui/`: written by staging for a
- * first-party miniApp, by the app's own build for a user miniApp), not source compiled into the
- * host. The API reads the artifact's own manifest into the miniApp record — the host imports the
+ * The UI is a built artifact inside the mini app's folder (`dist/ui/`, written by the app's build and
+ * shipped in its archive), not source compiled into the host. The API reads the artifact's own manifest into the miniApp record — the host imports the
  * entry by URL and replaces the miniApp when `revision` moves — and serves the files under
  * {@link miniAppUiUrl}. Nothing outside the artifact directory is ever served.
  *
- * Native UI runs in the host's page, so it follows the same trust rule as a native backend: a
- * first-party miniApp ships trusted, anything else needs the user's consent (its enable rule)
- * before a byte of it is served. The host imports only what its snapshot lists as enabled.
+ * Native UI runs in the host's page, so it follows the same trust rule as a native backend: a mini
+ * app needs the user's consent (its enable rule) before a byte of it is served. The host imports
+ * only what its snapshot lists as enabled.
  */
 
 export const MINI_APP_UI_ROUTE = '/rpc/mini-apps'
@@ -63,15 +62,10 @@ export async function readMiniAppUiDescriptor(
   }
 }
 
-/**
- * The absolute path of one artifact file, or a 404. A first-party mini app's files are served
- * whatever its enablement — inert code the host imports only when its snapshot says enabled, and
- * a module URL carries no project scope to check enablement against. Any other mini app's files are
- * served only once the user consented to it.
- */
+/** The absolute path of one artifact file, or a 404: served only once the user consented to it. */
 export function resolveMiniAppUiFile(catalog: MiniAppCatalog, name: string, file: string): string {
   const entry = catalog.all.find(({ app }) => app.name === name)
-  if (!entry || (!entry.app.bundled && !entry.enabled)) {
+  if (!entry?.enabled) {
     throw new NotFoundError('mini_app_ui_not_found', `Mini app "${name}" ships no UI`)
   }
   const root = artifactDir(entry.app)

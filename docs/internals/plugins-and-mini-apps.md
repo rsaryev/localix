@@ -114,13 +114,14 @@ weather/
 
 ### Runtime
 
-| Part     | Where                                                                                                                 |
-| -------- | --------------------------------------------------------------------------------------------------------------------- |
-| SDK      | `packages/mini-app-sdk` (`@localixai/mini-app-sdk`): manifest, backend and UI contracts. The host serves its modules. |
-| Runtime  | `apps/api/src/features/mini-apps/`: catalog, install and update, backend host, UI artifacts, views, the kit.          |
-| Disk     | `~/.localix/mini-apps/<name>/` (the installed build) and `~/.localix/mini-apps-data/<name>/` (its state).             |
-| Surfaces | `/rpc/mini-apps`, the Store (Mini apps), `/mini-app`.                                                                 |
-| Agent    | Backend tools, `guide.md`, commands.                                                                                  |
+| Part     | Where                                                                                                                                                                                                                   |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SDK      | `packages/mini-app-sdk` (`@localixai/mini-app-sdk`): manifest, backend and UI contracts. The host serves its modules.                                                                                                   |
+| Runtime  | `apps/api/src/features/mini-apps/`: catalog, install and update, backend host, UI artifacts, views, the kit.                                                                                                            |
+| Backend  | `register(ctx)` is the one entry. It runs once per scope (user, project, working directory) for a turn's tools and hooks, again when the backend is rebuilt or its settings change, and once more for the backend host. |
+| Disk     | `~/.localix/mini-apps/<name>/` (the installed build) and `~/.localix/mini-apps-data/<name>/` (its state).                                                                                                               |
+| Surfaces | `/rpc/mini-apps`, the Store (Mini apps), `/mini-app`.                                                                                                                                                                   |
+| Agent    | Backend tools, `guide.md`, commands.                                                                                                                                                                                    |
 
 ### State and events
 

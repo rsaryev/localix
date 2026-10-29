@@ -112,8 +112,6 @@ export const miniAppRecordSchema = z.object({
   scope: z.enum(['global', 'project']),
   projectId: z.string(),
   dir: z.string(),
-  /** A copy Localix ships, kept by the app; the person did not make it. */
-  bundled: z.boolean(),
   enabled: z.boolean(),
   /** Installed and waiting for the person's yes; its code is not loaded. */
   awaitingConsent: z.boolean().optional(),

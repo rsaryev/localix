@@ -18,7 +18,7 @@ const ALL_OFF: AvailabilityReader = { effectFor: () => 'deny' }
 import { loadEnabledMiniApps } from './loader'
 import { loadEnabledMiniAppChannels } from './loader-channels'
 import { createMiniAppChannelHost } from './channel-host'
-import type { ChannelWorkspaceApi } from './native'
+import type { ChannelWorkspaceApi } from '@localixai/mini-app-sdk/backend'
 
 /** Inert workspace stub — these tests only exercise lifecycle + inbound. */
 const stubWorkspace: ChannelWorkspaceApi = {

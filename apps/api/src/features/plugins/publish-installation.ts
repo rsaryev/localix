@@ -93,7 +93,7 @@ export async function publishPluginInstallation(input: {
             userId: input.userId,
             agentId: DEFAULT_AGENT_ID,
           })
-        ).effectFor('plugin', plugin.manifest.name, pluginTrustClass(plugin)) === 'allow'
+        ).effectFor('plugin', plugin.manifest.name, pluginTrustClass()) === 'allow'
       if (enabled && hasDependencies) {
         const cascade = await planDependencyEnables(transaction, {
           userId: input.userId,

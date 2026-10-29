@@ -61,13 +61,13 @@ import { fitStatusStrip } from '@localixai/kit/workbench-statusbar'
 /**
  * The CEILING on contributed items in the titlebar; how many actually show is a question of room.
  *
- * A cap rather than trust: every bundled mini app could want a glyph here, and a titlebar that
+ * A cap rather than trust: every mini app could want a glyph here, and a titlebar that
  * grows until the breadcrumb has nowhere left to truncate is worse for the user than a menu.
  * Overflow, never truncation — an item that silently vanished would be indistinguishable from a
  * mini app that broke.
  *
  * It used to be a flat four on a window of any size, which was the wrong half of the trade, and
- * then a ten chosen to match the bundled set — a number that has to be edited every time a mini app
+ * then a ten chosen to match the installed set — a number that has to be edited every time a mini app
  * starts or stops contributing. `fitStatusStrip` spends the MEASURED room instead, dropping the
  * items' live text before dropping the items themselves, so this is no longer the number that
  * decides anything on a normal window. It is the sanity ceiling above which a status bar has
@@ -105,7 +105,7 @@ export function BreadcrumbTrailingActions({
     focusedKind === kind && focusedId ? closeGridTab(focusedId) : open()
 
   // How many mini apps are DRAWING, against how much room the strip has. Counting declarations
-  // instead was the bug behind the report: most bundled titlebar items return `null` until they
+  // instead was the bug behind the report: most titlebar items return `null` until they
   // have something to say (no open books, no environments, no running forwards), so a budget spent
   // on declarations reserved room for the silent ones and folded the speaking ones into `…`. The
   // set changes as a session does — that is the point of a live strip, not a reason to size it on

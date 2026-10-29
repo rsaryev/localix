@@ -4,7 +4,7 @@ import type {
   ChannelModelOption,
   ChannelSessionSummary,
   ChannelWorkspaceApi,
-} from './channel-contracts'
+} from '@localixai/mini-app-sdk/backend'
 
 /** Raw session shape (a superset of ChannelSessionSummary) the chat service returns. */
 /**

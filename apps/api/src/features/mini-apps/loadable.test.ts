@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { miniAppLoadBlockReason } from './loadable'
 import { MINI_APP_API_VERSION } from './contracts-base'
-import type { DiscoveredMiniApp } from './discovery'
+import type { DiscoveredMiniApp } from './folder'
 
 /**
  * A manifest's incompatible `apiVersion` used to be reported only in the Settings list, where
@@ -17,7 +17,6 @@ const app = (over: { apiVersion?: number; error?: string }): DiscoveredMiniApp =
     projectId: '',
     manifest: { name: 'x', version: '1.0.0', apiVersion: over.apiVersion },
     backendEntries: [],
-    bundled: true,
     views: [],
     promptSections: [],
     contributions: [],

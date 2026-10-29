@@ -51,7 +51,6 @@ function miniAppRecord(over: {
     scope: 'global',
     projectId: '',
     dir: `/mini-apps/${over.name}`,
-    bundled: false,
     enabled: over.enabled,
     hasBackend: Boolean(over.tools?.length),
     tools: over.tools ?? [],

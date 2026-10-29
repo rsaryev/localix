@@ -262,7 +262,7 @@ export function useStatusItemCount(placement: string): number {
  * How many items for a placement are currently DRAWING — the number an adaptive strip spends.
  *
  * The sibling above counts declarations, which is the right question for "does this bar need to
- * exist at all" and the wrong one for "how many glyphs am I laying out": most bundled mini apps
+ * exist at all" and the wrong one for "how many glyphs am I laying out": most mini apps
  * declare a titlebar item and draw nothing until they have something to say. Sizing on
  * declarations reserved room for the silent ones and folded the speaking ones into `…`.
  *

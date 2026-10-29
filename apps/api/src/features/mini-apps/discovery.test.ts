@@ -3,7 +3,8 @@ import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
-import { discoverMiniApps, MINI_APPS_SUBDIR } from './discovery'
+import { discoverMiniApps } from './discovery'
+import { MINI_APPS_SUBDIR } from './paths'
 
 const home = tempDirPerTest('mini-apps-home-')
 const project = tempDirPerTest('mini-apps-project-')
@@ -104,7 +105,6 @@ describe('discoverMiniApps', () => {
     expect((await discoverMiniApps({ homeDir: home() })).map((entry) => entry.name)).toEqual([
       'notes',
     ])
-    expect((await discoverMiniApps({ homeDir: home() }))[0]!.bundled).toBe(false)
   })
 
   test('the copies an update retired earlier are swept on the first discovery of a process', async () => {

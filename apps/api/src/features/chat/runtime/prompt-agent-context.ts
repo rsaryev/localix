@@ -6,7 +6,7 @@ import {
   skillOverridesRevision,
   type SkillOverrides,
 } from '../../agent-core/skill-overrides'
-import { loadMemoryProviderContext } from '../../mini-apps/hooks'
+import { loadMemoryProviderContext } from '../../mini-apps/memory-hooks'
 import type { LoadedMiniApps } from '../../mini-apps/loader-contract'
 import type { SessionRecord } from '../repository'
 import type { PersistedMessage } from '../contracts'

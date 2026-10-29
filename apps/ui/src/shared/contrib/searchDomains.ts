@@ -6,7 +6,7 @@ import type {
 import { isMiniAppContributionEnabled } from './miniAppActivation'
 
 /**
- * OPEN search-domain registry — a bundled subsystem contributes its own search
+ * OPEN search-domain registry — a feature or a mini app contributes its own search
  * behaviour (scope metadata + result icons) here instead of
  * core search hardcoding it. Mirrors `uiContrib`: each feature registers from its
  * `contrib.{ts,tsx}` (discovered generically — see `shared/contrib/discover.ts`),

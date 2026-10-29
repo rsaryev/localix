@@ -31,7 +31,7 @@ interface ViewletDef {
   defaultArea: RailArea
   /** Keybinding id whose live chord annotates the rail tooltip (opt-in). */
   chordId?: string
-  /** Contributed by a bundled mini app's `ui/register.tsx`; grouped by manifest category. */
+  /** Contributed by a mini app's `ui/register.tsx`; grouped by manifest category. */
   miniApp?: boolean
   miniAppName?: string
   resourceUri?: string
@@ -139,7 +139,7 @@ export function useRailActions({
         label: v.label,
         defaultArea: v.defaultArea,
         chordId: v.chordId,
-        // Core feature contribs use the same open registry as bundled mini apps.
+        // Core feature contribs use the same open registry as mini apps.
         // Ownership is stamped only by miniAppUiHostFor(), so provenance—not the
         // fact that an entry was contributed—decides which overflow group owns it.
         miniApp: isMiniAppRailViewlet(v),

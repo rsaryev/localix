@@ -1,7 +1,7 @@
 import { noteRegistryChange } from './registryChanges'
 
 /**
- * Authoritative enabled set for statically imported bundled mini app UI. Core feature
+ * Authoritative enabled set for mini app UI. Core feature
  * contributions have no owner and remain active; mini-app-owned entries fail closed
  * until the API snapshot arrives.
  */
