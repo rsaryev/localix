@@ -140,27 +140,27 @@ Find the job, take the door, and check the last column before hand-rolling the n
 is written from the kit catalog (`packages/kit/src/catalog/`), which stays the full list; the Store
 and Settings are drawn with these.
 
-| Job                                                 | Door (`@localixai/kit/…`)                           | Not                                                    |
-| --------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------ |
-| Title, description and actions of a page or section | `section-heading` (`level` page or section)         | A hand-made `h2` plus a `text-sm` paragraph            |
-| The pane's own title row                            | `panel-header`                                      | A heading with a search beside it is `section-heading` |
-| A small uppercase label over a group                | `section-label` (`as="h3"` when it heads the group) | A heading of a page or section (`section-heading`)     |
-| A command with a label                              | `button`                                            | A native `<button>`                                    |
-| Text that is a command inside prose                 | `text-action`                                       | A `Button` styled as a link; a row's open target       |
-| A labelled control with help and error              | `field` (stacked; `inline` puts a switch first)     | A hand-made `<label>` and a `<span>`                   |
-| A list separated by hairlines                       | `divided-list` (`DIVIDED_LIST`)                     | A bordered card with `divide-y`                        |
-| A navigable row: open target, meta, actions         | `workbench-list-row` (+ Trigger, Meta, Actions)     | A `<li>` of hand-placed flex children                  |
-| A pane-wide search and filter row                   | `workbench-filter-bar` with `search-input`          | A `flex-wrap` div of a field and chips                 |
-| A chip that filters, pressed or not                 | `toggle-pill`                                       | `ChipButton` (it acts, it holds no state)              |
-| A pill for a count or label                         | `chip` (`Chip`)                                     | A `rounded-full` span                                  |
-| A pill that acts: a tag, a category to browse       | `chip` (`ChipButton`)                               | `composer-chip` (the glass pill of the composer)       |
-| A notice above content, with actions                | `workbench-notice-bar` (set `role` yourself)        | A bordered `div` with an icon and two buttons          |
-| Nothing here, or a failure with a retry             | `empty-hint`, `state-notice`                        | A centred `<p>`                                        |
-| A storefront row of tiles with See all              | `shelf-row` with `tile-card`                        | A full list of item cards (`card-grid`)                |
-| A browsable card that opens a page                  | `item-card` inside `card-grid`                      | A navigable sidebar row                                |
-| The install control of a package                    | `get-button`                                        | A generic `button`                                     |
-| Tabs inside a pane                                  | `tabs`                                              | A `role="tablist"` row of buttons                      |
-| A section sidebar                                   | `sidebar-nav`                                       | Tabs, or the application rail                          |
+| Job                                                 | Door (`@localixai/kit/…`)                            | Not                                                    |
+| --------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------ |
+| Title, description and actions of a page or section | `section-heading` (`level` page or section)          | A hand-made `h2` plus a `text-sm` paragraph            |
+| The pane's own title row                            | `panel-header`                                       | A heading with a search beside it is `section-heading` |
+| A small uppercase label over a group                | `section-label` (`as="h3"` when it heads the group)  | A heading of a page or section (`section-heading`)     |
+| A command with a label                              | `button`                                             | A native `<button>`                                    |
+| Text that is a command inside prose                 | `text-action`                                        | A `Button` styled as a link; a row's open target       |
+| A labelled control with help and error              | `field` (stacked; `inline` puts a switch first)      | A hand-made `<label>` and a `<span>`                   |
+| A list separated by hairlines                       | `divided-list` (`DIVIDED_LIST`)                      | A bordered card with `divide-y`                        |
+| A navigable row: open target, meta, actions         | `workbench-list-row` (+ Trigger, Meta, Actions)      | A `<li>` of hand-placed flex children                  |
+| A pane-wide search and filter row                   | `workbench-filter-bar` with `search-input`           | A `flex-wrap` div of a field and chips                 |
+| A chip that filters, pressed or not                 | `toggle-pill`                                        | `ChipButton` (it acts, it holds no state)              |
+| A pill for a count or label                         | `chip` (`Chip`)                                      | A `rounded-full` span                                  |
+| A pill that acts: a tag, a category to browse       | `chip` (`ChipButton`)                                | `composer-chip` (the glass pill of the composer)       |
+| A notice above content, with actions                | `workbench-notice-bar` (set `role`; `icon` optional) | A bordered `div` with an icon and two buttons          |
+| Nothing here, or a failure with a retry             | `empty-hint`, `state-notice`                         | A centred `<p>`                                        |
+| A storefront row of tiles with See all              | `shelf-row` with `tile-card`                         | A full list of item cards (`card-grid`)                |
+| A browsable card that opens a page                  | `item-card` inside `card-grid`                       | A navigable sidebar row                                |
+| The install control of a package                    | `get-button`                                         | A generic `button`                                     |
+| Tabs inside a pane                                  | `tabs`                                               | A `role="tablist"` row of buttons                      |
+| A section sidebar                                   | `sidebar-nav`                                        | Tabs, or the application rail                          |
 
 Things only the Store draws, left on purpose: the category tile of Discover (an icon, a name and a
 count in one button, wider than a chip), the collection card, and the facts card of a package page

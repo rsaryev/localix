@@ -13,8 +13,12 @@ type WorkbenchNoticeLayout = 'inline' | 'stacked'
 type WorkbenchNoticeBarProps = Omit<ComponentProps<'div'>, 'title'> & {
   /** Signal colour belongs to the glyph; the structural surface stays neutral and quiet. */
   tone?: WorkbenchNoticeTone
-  /** Every workbench notice starts with one decorative, semantically redundant signal glyph. */
-  icon: ReactNode
+  /**
+   * One decorative signal glyph before the title, coloured by `tone`. Leave it out of a quiet
+   * notice whose title already says what it is (a tip, a recommendation): a glyph that only
+   * repeats the title is noise, and several stacked strips of them read as clutter.
+   */
+  icon?: ReactNode
   title: ReactNode
   description?: ReactNode
   actions?: ReactNode
@@ -46,6 +50,7 @@ export function WorkbenchNoticeBar({
   ...props
 }: WorkbenchNoticeBarProps) {
   const stacked = layout === 'stacked'
+  const glyphed = icon != null
 
   return (
     <div
@@ -58,18 +63,23 @@ export function WorkbenchNoticeBar({
         // where the pane ground is denser than the popover's. A veil is one band everywhere.
         'shrink-0 border-b border-border-soft bg-foreground/[0.04] px-3 text-2xs text-text-soft',
         stacked
-          ? 'grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1.5 py-2'
+          ? cn(
+              'grid items-start gap-x-2 gap-y-1.5 py-2',
+              glyphed ? 'grid-cols-[auto_minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,1fr)_auto]',
+            )
           : 'flex min-h-[var(--chrome-control-lg)] flex-wrap items-center gap-x-2 gap-y-1 py-1',
         className,
       )}
       {...props}
     >
-      <span
-        aria-hidden="true"
-        className={cn('flex shrink-0', stacked && 'mt-0.5', ICON_TONE[tone])}
-      >
-        {icon}
-      </span>
+      {glyphed && (
+        <span
+          aria-hidden="true"
+          className={cn('flex shrink-0', stacked && 'mt-0.5', ICON_TONE[tone])}
+        >
+          {icon}
+        </span>
+      )}
 
       <div
         className={cn(
@@ -100,7 +110,7 @@ export function WorkbenchNoticeBar({
           aria-label={actionsLabel}
           className={cn(
             'flex max-w-full flex-wrap items-center gap-1.5',
-            stacked ? 'col-start-2 row-start-2 w-full' : 'ml-auto',
+            stacked ? cn(glyphed ? 'col-start-2' : 'col-start-1', 'row-start-2 w-full') : 'ml-auto',
           )}
         >
           {actions}
@@ -113,7 +123,10 @@ export function WorkbenchNoticeBar({
           onClick={onDismiss}
           aria-label={dismissLabel}
           tooltip={dismissLabel}
-          className={cn(stacked && 'col-start-3 row-start-1')}
+          className={cn(
+            stacked && (glyphed ? 'col-start-3' : 'col-start-2'),
+            stacked && 'row-start-1',
+          )}
         >
           <X className="size-3" />
         </IconButton>

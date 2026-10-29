@@ -33,6 +33,15 @@ describe('WorkbenchNoticeBar', () => {
     expect(html).toContain('aria-label="Dismiss connection notice"')
   })
 
+  test('a notice whose title says it all leads with the title, with no glyph before it', () => {
+    const html = renderToStaticMarkup(
+      <WorkbenchNoticeBar title="Tip" description="Pin a chat to keep it on top" />,
+    )
+
+    expect(html).not.toContain('aria-hidden="true"')
+    expect(html.indexOf('Tip')).toBeLessThan(html.indexOf('Pin a chat'))
+  })
+
   test('keeps detailed lifecycle copy and actions on a stable stacked grid', () => {
     const html = renderToStaticMarkup(
       <WorkbenchNoticeBar
