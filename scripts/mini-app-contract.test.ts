@@ -31,4 +31,21 @@ describe('the contract of a staged kit', () => {
       '@localixai/mini-app-sdk/backend: isPathWithin',
     )
   })
+
+  // A package the kit lends a mini app's UI is part of what the app relies on, whether or not the
+  // kit ships its types: taking it away or moving its major version breaks the app's build.
+  const lending = tempDirPerTest('mini-app-contract-vendor', {
+    'kit.json': JSON.stringify({
+      apiVersion: 1,
+      typePaths: { '@localixai/mini-app-sdk/backend': 'types/backend.d.ts' },
+      authoring: { typeRoots: 'types', backendSharedModules: [] },
+      uiSharedExports: {},
+      uiVendorModules: { mediabunny: 'ui/vendor/mediabunny/dist/modules/src/index.js' },
+    }),
+    'types/backend.d.ts': 'export declare const x: number;',
+    'ui/vendor/mediabunny/package.json': JSON.stringify({ name: 'mediabunny', version: '1.62.0' }),
+  })
+  test('names each package the kit lends the UI, with its version', () => {
+    expect(readContract(lending()).vendors).toEqual({ mediabunny: '1.62.0' })
+  })
 })
