@@ -1,5 +1,4 @@
 import type { Listing, SourceView } from '@localixai/store'
-import { tap } from './hookProbe'
 import type { StoreInstallExtra } from '@/shared/lib/storeInstallExtra'
 import type { StoreTarget } from '@/shared/lib/openStore'
 import type { StoreProject } from '@/features/store/model/storeContext'
@@ -50,23 +49,15 @@ export async function renderStore(options: RenderStoreOptions) {
   const fake: StoreFake = { calls: [], reads: [], ...rest }
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
-  const { SWRConfig, useSWRConfig } = await import('swr')
+  const { SWRConfig } = await import('swr')
   const { StoreView } = await import('@/features/store/ui/StoreView')
   const restoreLayout = stubStoreLayout(width)
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
-  const revalidator = tap<() => Promise<unknown>>()
-  const revalidate = () => revalidator.value?.() ?? Promise.resolve()
-  function Probe() {
-    const { mutate } = useSWRConfig()
-    revalidator.put(() => mutate(() => true))
-    return null
-  }
   const client = fakeClient(fake)
   const tree = (at?: StoreTarget) => (
     <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
-      <Probe />
       <StoreView
         client={client}
         target={at}
@@ -129,13 +120,12 @@ export async function renderStore(options: RenderStoreOptions) {
     act(() => {
       at?.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
     })
-  /** The server's listings changed and it poked the Store. */
+  /** The server's listings changed and it poked the Store: what shows them reads again on the poke alone. */
   const change = (listings: Listing[]) =>
     act(async () => {
       fake.listings = listings
       resourceSync.invalidate(['store'])
       await timerTurns()
-      await revalidate()
     })
   /** The server's sources changed and it poked the Store's sources. */
   const changeSources = (sources: SourceView[]) =>
@@ -143,7 +133,6 @@ export async function renderStore(options: RenderStoreOptions) {
       fake.sources = sources
       resourceSync.invalidate(['store-sources'])
       await timerTurns()
-      await revalidate()
     })
   /** The background worked the recommendations out and poked their topic; nothing else is read. */
   const recommendationsReady = () =>

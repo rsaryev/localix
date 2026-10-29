@@ -181,6 +181,25 @@ describe('a package’s page', () => {
     }
   })
 
+  test('removed while its page is open, Back finds the shelf no longer calling it Installed', async () => {
+    const installed = [{ scope: 'user' as const, version: '1.0.0', enabled: true }]
+    const view = await renderStore({
+      listings: LISTINGS.map((it) =>
+        it.ref.id === 'planner' ? { ...it, installs: installed } : it,
+      ),
+      target: { shelf: 'package:mini-app' },
+    })
+    try {
+      expect(view.card('planner')!.textContent).toContain('Installed')
+      await view.click(view.button('Planner', view.card('planner')!))
+      await view.change(LISTINGS)
+      await view.click(view.button(/^Back to /))
+      expect(view.card('planner')!.textContent).not.toContain('Installed')
+    } finally {
+      await view.done()
+    }
+  })
+
   test('a tag opens a list of what carries it, and Back returns to the page', async () => {
     const { view, page } = await open()
     try {
@@ -239,20 +258,38 @@ describe('a package’s page', () => {
     }
   })
 
-  test('removed elsewhere, its page says it is gone instead of still showing Installed', async () => {
+  test('removed while its page is open, the Store steps back to where the page was opened from', async () => {
     const mine = listing({
       id: 'tracker',
       displayName: 'Tracker',
       installs: [{ scope: 'user' as const, version: '1.0.0', enabled: true }],
     })
-    const view = await renderStore({ listings: [mine], target: { ref: mine.ref } })
+    const view = await renderStore({
+      listings: [mine, ...LISTINGS],
+      target: { shelf: 'package:mini-app' },
+    })
     try {
+      await view.click(view.button('Tracker', view.card('tracker')!))
       const page = () => view.host.querySelector<HTMLElement>('[data-store-page="tracker"]')
       expect(page()!.textContent).toContain('Installed')
-      await view.change([])
+      await view.change(LISTINGS)
       expect(page()).toBeNull()
+      expect(view.host.querySelector('[aria-label="Not in the Store"]')).toBeNull()
+      expect(view.card('planner')).not.toBeNull()
+      expect(view.card('tracker')).toBeNull()
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('opened at a package that is already gone, its page says so', async () => {
+    const view = await renderStore({
+      listings: LISTINGS,
+      target: { ref: { kind: 'mini-app', id: 'tracker' } },
+    })
+    try {
       const gone = view.host.querySelector('[role="status"][aria-label="Not in the Store"]')
-      expect(gone?.textContent).toContain('Tracker is no longer installed or offered')
+      expect(gone?.textContent).toContain('tracker is no longer installed or offered')
       expect(view.host.querySelector('[data-store-back]')).not.toBeNull()
     } finally {
       await view.done()

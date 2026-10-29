@@ -108,10 +108,15 @@ export function useInstallPlan(
   )
 }
 
+/** The `store` generation each list's pages were last read at, by its query. */
+const pagesReadAt = new Map<string, number>()
+
 /**
  * A shelf, a search or a filtered list, a page at a time on the server's keyset cursor: the
  * first page shows at once and the next is read as the list nears its end. A poke reads the
- * loaded pages again in place.
+ * loaded pages again in place. The pages are cached under their query alone, so a list mounted
+ * again after a poke it missed (its package page was open over it) reads them again first: an
+ * infinite list does not revalidate on mount.
  */
 export function usePagedListings(client: StoreClient, query: StorePageQuery | null) {
   const id = query ? JSON.stringify(query) : null
@@ -120,12 +125,18 @@ export function usePagedListings(client: StoreClient, query: StorePageQuery | nu
       if (!id || (previous && !previous.nextCursor)) return null
       return ['store-page', id, index === 0 ? '' : previous!.nextCursor]
     },
-    ([, , cursor]: [string, string, string]) =>
-      client.page({ ...query!, ...(cursor ? { cursor } : {}) }),
+    ([, key, cursor]: [string, string, string]) => {
+      pagesReadAt.set(key, resourceGeneration('store'))
+      return client.page({ ...query!, ...(cursor ? { cursor } : {}) })
+    },
     { keepPreviousData: true, revalidateFirstPage: false, revalidateOnFocus: false },
   )
   const { mutate } = pages
-  useEffect(() => subscribeResourceGeneration('store', () => void mutate()), [mutate])
+  useEffect(() => {
+    const readAt = id ? pagesReadAt.get(id) : undefined
+    if (readAt !== undefined && readAt !== resourceGeneration('store')) void mutate()
+    return subscribeResourceGeneration('store', () => void mutate())
+  }, [mutate, id])
   const data = pages.data
   const listings = useMemo(() => (data ?? []).flatMap((page) => page.listings), [data])
   const last = data?.at(-1)

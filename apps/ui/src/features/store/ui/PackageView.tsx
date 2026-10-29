@@ -131,7 +131,16 @@ export function PackageView({
   const heading = useRef<HTMLHeadingElement>(null)
   // The page replaces the list: focus its heading, so a screen reader starts here.
   useEffect(() => heading.current?.focus(), [reference.kind, reference.id])
-  // The owner says it no longer exists (removed here or elsewhere): the last copy is not shown.
+  // The owner says it no longer exists. Removed while its page was open — here, in Settings or
+  // by an agent — the Store steps back to where it was opened from; opened at something already
+  // gone, the page says so. The last copy is never shown.
+  const [shown, setShown] = useState(false)
+  if (detail && !shown) setShown(true)
+  const removed = isGone(error) && shown
+  useEffect(() => {
+    if (removed) onBack()
+  }, [removed, onBack])
+  if (removed) return null
   if (isGone(error))
     return (
       <div className="flex flex-col gap-3">
