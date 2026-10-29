@@ -17,12 +17,10 @@ import { configService } from './config'
 import { itemService } from './items'
 import { discoverOf, relatedOf } from './discover'
 import { recommendationService } from './service-recommend'
-import type { StoreIndexRepository } from './index-repository'
 import { refKey } from './index-rows'
 import { pageProblems } from './page-problems'
 import { matching, projectAuthored, withProjectCount } from './project-authored'
 import { withProjectInstalls } from './project-installs'
-import type { ProjectFacts } from './project-signals'
 import { staticScore } from './ranking'
 import { unsupported } from './unsupported'
 import { createStoreSearchProvider, refOfStoreHit, STORE_SEARCH_DOMAIN } from './search-provider'
@@ -31,20 +29,14 @@ import { createStoreSync, watchProviders } from './store-runs'
 
 export type {
   ListingQuery,
+  StoreServiceDeps,
   StoreContextPort,
   StoreDismissalsPort,
   StoreItemMeaningPort,
   StoreRecommendationEventsPort,
   StoreSearchPort,
 } from './service-types'
-import type {
-  ListingQuery,
-  StoreContextPort,
-  StoreDismissalsPort,
-  StoreItemMeaningPort,
-  StoreRecommendationEventsPort,
-  StoreSearchPort,
-} from './service-types'
+import type { ListingQuery, StoreServiceDeps } from './service-types'
 import { applyUpdates, sourceActions } from './service-updates'
 
 /**
@@ -55,31 +47,7 @@ import { applyUpdates, sourceActions } from './service-updates'
  * something moved starts a sync off the request path, and the poke goes out once it is written
  * (P9, P11). A search goes through the global search service, to the Store's own provider there.
  */
-export function createStoreService(deps: {
-  providers: readonly StoreProvider[]
-  index: StoreIndexRepository
-  /** The global search service; it reaches the provider this service registers. */
-  search: StoreSearchPort
-  /** The Store's semantic collection read its listings again. */
-  resyncMeaning?: () => void
-  /** These listings' cards changed: the semantic collection reads them alone again. */
-  meaningChanged?: (keys: string[]) => void
-  /** The open project's words, for the boost (`project-signals.ts`). */
-  projectWords?: (userId: string, projectId: string | null | undefined) => Promise<Set<string>>
-  /** The open project's root names and dependencies, as written (`recommend-rules.ts`). */
-  projectFacts?: (userId: string, projectId: string | null | undefined) => Promise<ProjectFacts>
-  /** What the working set says, admitted for `recommendation` (`recommend.ts`). */
-  workingContext?: StoreContextPort
-  /** What the person turned down for recommendations (`dismissals-repository.ts`). */
-  dismissals?: StoreDismissalsPort
-  /** What happened to recommendations (`recommendation-events-repository.ts`). */
-  recommendationEvents?: StoreRecommendationEventsPort
-  /** What installed packages are near in the semantic collection (`recommend-candidates.ts`). */
-  similarToItems?: StoreItemMeaningPort
-  /** When background recommendations run (`recommend-board.ts`); tests run them by hand. */
-  scheduleRecommendation?: (work: () => void) => () => void
-  now?: () => number
-}) {
+export function createStoreService(deps: StoreServiceDeps) {
   const now = deps.now ?? Date.now
   const providers = new Map(deps.providers.map((provider) => [provider.kind, provider]))
   const runs = createStoreSync({

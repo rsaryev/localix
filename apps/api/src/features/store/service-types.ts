@@ -1,5 +1,6 @@
 import type {
   ListingRef,
+  StoreProvider,
   RecommendEvent,
   Scope,
   ShelfId,
@@ -7,6 +8,9 @@ import type {
   Trust,
   WorkingReference,
 } from '@localixai/store'
+
+import type { StoreIndexRepository } from './index-repository'
+import type { ProjectFacts } from './project-signals'
 
 /** What narrows a page: a shelf, a search, a scope, installed or not, and the facets' filters. */
 export interface ListingQuery {
@@ -101,4 +105,31 @@ export interface StoreRecommendationEventsPort {
     userId: string,
     since: string,
   ): Promise<Record<string, { shown: number; opened: number; installed: number }>>
+}
+
+/** What `createStoreService` is built from (`bootstrap/store.ts`). */
+export interface StoreServiceDeps {
+  providers: readonly StoreProvider[]
+  index: StoreIndexRepository
+  /** The global search service; it reaches the provider this service registers. */
+  search: StoreSearchPort
+  /** The Store's semantic collection read its listings again. */
+  resyncMeaning?: () => void
+  /** These listings' cards changed: the semantic collection reads them alone again. */
+  meaningChanged?: (keys: string[]) => void
+  /** The open project's words, for the boost (`project-signals.ts`). */
+  projectWords?: (userId: string, projectId: string | null | undefined) => Promise<Set<string>>
+  /** The open project's root names and dependencies, as written (`recommend-rules.ts`). */
+  projectFacts?: (userId: string, projectId: string | null | undefined) => Promise<ProjectFacts>
+  /** What the working set says, admitted for `recommendation` (`recommend.ts`). */
+  workingContext?: StoreContextPort
+  /** What the person turned down for recommendations (`dismissals-repository.ts`). */
+  dismissals?: StoreDismissalsPort
+  /** What happened to recommendations (`recommendation-events-repository.ts`). */
+  recommendationEvents?: StoreRecommendationEventsPort
+  /** What installed packages are near in the semantic collection (`recommend-candidates.ts`). */
+  similarToItems?: StoreItemMeaningPort
+  /** When background recommendations run (`recommend-board.ts`); tests run them by hand. */
+  scheduleRecommendation?: (work: () => void) => () => void
+  now?: () => number
 }
