@@ -62,10 +62,10 @@ release actually published.
 
 ## Configuration
 
-| Toolchain | Recorded version | Scope                                                                                          |
-| --------- | ---------------- | ---------------------------------------------------------------------------------------------- |
-| Bun       | 1.4.4            | Package manager, the only JavaScript runtime (scripts, tools, CI), and bundled API sidecar.    |
-| Rust      | 1.96.1           | Pinned by `apps/desktop-tauri/src-tauri/rust-toolchain.toml`; rustup installs it on first use. |
+| Toolchain | Recorded version | Scope                                                                                       |
+| --------- | ---------------- | ------------------------------------------------------------------------------------------- |
+| Bun       | 1.4.4            | Package manager, the only JavaScript runtime (scripts, tools, CI), and bundled API sidecar. |
+| Rust      | 1.96.1           | Pinned by `apps/desktop-tauri/rust-toolchain.toml`; rustup installs it on first use.        |
 
 Native desktop builds also require Rust, Cargo, and the platform compiler and WebView dependencies
 used by Tauri. The repository pins the Linux release image and installs these Ubuntu packages:
