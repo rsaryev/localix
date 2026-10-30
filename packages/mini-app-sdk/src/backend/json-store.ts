@@ -27,11 +27,13 @@ export interface JsonStore<T> {
 }
 
 /**
- * The write queue of each file, shared by every opener. Only the queue: each opener reads and
- * writes through its own schema, since an app updated in place opens the same file with a newer
- * one, and the first opener's would drop every field it adds.
+ * What every opener of one file shares: its write queue, and the value it reads as before it is
+ * first written — the first opener's `initial`, so a value dealt at random (a fleet, a hand) is the
+ * same at every read until a write keeps it. Not the schema: each opener reads and writes through
+ * its own, since an app updated in place opens the same file with a newer one, and the first
+ * opener's would drop every field it adds.
  */
-const queues = new Map<string, { tail: Promise<unknown> }>()
+const files = new Map<string, { tail: Promise<unknown>; initial?: { value: unknown } }>()
 
 /**
  * Who hears that a store's file was written: the store feed (`createJsonStoreFeed`), which nudges an
@@ -56,18 +58,24 @@ export function openJsonStore<T>(options: {
   initial: T
 }): JsonStore<T> {
   const path = join(options.dir, options.file)
-  let queue = queues.get(path)
-  if (!queue) {
-    queue = { tail: Promise.resolve() }
-    queues.set(path, queue)
+  let file = files.get(path)
+  if (!file) {
+    file = { tail: Promise.resolve() }
+    files.set(path, file)
   }
-  const shared = queue
+  const shared = file
+  shared.initial ??= { value: options.initial }
+  // Through this opener's schema; one that no longer fits it (a newer version's) is its own.
+  const initial = (): T => {
+    const parsed = options.schema.safeParse(shared.initial?.value)
+    return parsed.success ? parsed.data : options.initial
+  }
   const load = async (): Promise<T> => {
     try {
       const parsed = options.schema.safeParse(JSON.parse(await readFile(path, 'utf8')))
-      return parsed.success ? parsed.data : options.initial
+      return parsed.success ? parsed.data : initial()
     } catch {
-      return options.initial
+      return initial()
     }
   }
   // The SDK's write, not a hand-rolled one: a fixed `<file>.<pid>.tmp` is shared by every write

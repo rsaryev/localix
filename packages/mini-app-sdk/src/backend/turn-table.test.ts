@@ -113,6 +113,18 @@ const decisionHost = (available: boolean): DecisionHost => ({
   decide: async () => ({ status: 'failed', ms: 0 }),
 })
 
+describe('a new table', () => {
+  // Its initial game is dealt at random (a fleet, a hand): the one the board shows before anyone
+  // moves is the one the first move plays.
+  test('reads as one game until the first move, which plays that game', async () => {
+    const { table } = setup()
+    const shown = await table.read(S1)
+    expect(await table.read(S1)).toEqual(shown)
+    const after = await table.personTurn(S1, (game) => add(game, 'you', 2))
+    expect(after.id).toBe(shown.id)
+  })
+})
+
 describe('a person’s turn', () => {
   test('is written first, then the agent is asked once for the position it owes', async () => {
     const { table, woke } = setup()
