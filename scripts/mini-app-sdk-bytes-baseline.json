@@ -3,7 +3,7 @@
     "bytes": 514
   },
   "./app-manifest": {
-    "bytes": 3381
+    "bytes": 3466
   },
   "./backend": {
     "bytes": 52223,
@@ -32,6 +32,12 @@
   },
   "./manifest-primitives": {
     "bytes": 1197
+  },
+  "./marketplace": {
+    "bytes": 13722
+  },
+  "./marketplace-signature": {
+    "bytes": 1520
   },
   "./navigation": {
     "bytes": 443
