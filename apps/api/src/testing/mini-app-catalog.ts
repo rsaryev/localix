@@ -55,13 +55,25 @@ export function hostedMiniAppCatalog(
   const apps = [...initial]
   const fetched: string[] = []
   const signing: { key?: KeyObject } = { key: opts.signWith }
+  // Packed once per content: a tarball records the time it was packed, so packing on every request
+  // served an archive whose sha256 was not the one the catalog read a second earlier listed.
+  const packed = new Map<string, Promise<Uint8Array>>()
+  const pack = (files: Parameters<typeof packMiniAppFiles>[0]) => {
+    const key = JSON.stringify(files)
+    let archive = packed.get(key)
+    if (!archive) {
+      archive = packMiniAppFiles(files)
+      packed.set(key, archive)
+    }
+    return archive
+  }
 
   async function serve() {
     const files = new Map<string, Uint8Array>()
     const listed: Record<string, unknown>[] = []
     for (const app of apps) {
       const version = app.version ?? '1.0.0'
-      const archive = await packMiniAppFiles({
+      const archive = await pack({
         'mini-app.json': JSON.stringify({ name: app.name, version }),
         'guide.md': `# ${app.name} ${version}`,
         ...app.files,
