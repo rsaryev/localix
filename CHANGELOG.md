@@ -4,6 +4,10 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+## v0.1.0-beta.22 — 2026-10-30
+
+A fix for the Store after the move to mini app marketplaces.
+
 ### Fixed
 
 - **Open in the Store**: an installed mini app from a marketplace shows **Open** on its Store tile
