@@ -1,10 +1,8 @@
 import {
   listingConfigFromFields,
-  packageKindSchema,
   scalarConfigValues,
   type Editorial,
   type InstallPlan,
-  type ListingRef,
   type Scope,
   type StoreActor,
   type InstallableProvider,
@@ -24,6 +22,7 @@ import {
   miniAppListing,
   OWN_SOURCE,
   ownMiniAppEntry,
+  refOfPick,
   type OwnMiniApp,
 } from './store-listing'
 
@@ -52,14 +51,6 @@ export interface MiniAppStoreProviderDeps {
     off(): Promise<ReadonlySet<string>>
     set(name: string, on: boolean): Promise<void>
   }
-}
-
-/** A pick's item: an app's name, or `<kind>:<id>` for another kind. */
-function refOfPick(item: string): ListingRef | null {
-  const at = item.indexOf(':')
-  if (at < 0) return { kind: 'mini-app', id: item }
-  const kind = packageKindSchema.safeParse(item.slice(0, at))
-  return kind.success && at < item.length - 1 ? { kind: kind.data, id: item.slice(at + 1) } : null
 }
 
 /** A mini app belongs to the person: it has no project install (`docs/internals/store.md`). */

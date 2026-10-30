@@ -2,9 +2,11 @@ import {
   catalogOrigin,
   COMMUNITY_SOURCE,
   defaultSource,
+  packageKindSchema,
   type ComponentKind,
   type Listing,
   type ListingDetail,
+  type ListingRef,
   type StoreComponent,
 } from '@localixai/store'
 
@@ -196,4 +198,12 @@ export function miniAppDetail(
     facts: facts.flatMap(([label, value]) => (value ? [{ label, value }] : [])),
     components: miniAppComponents(page.entry),
   }
+}
+
+/** A pick's item: an app's name, or `<kind>:<id>` for another kind. */
+export function refOfPick(item: string): ListingRef | null {
+  const at = item.indexOf(':')
+  if (at < 0) return { kind: 'mini-app', id: item }
+  const kind = packageKindSchema.safeParse(item.slice(0, at))
+  return kind.success && at < item.length - 1 ? { kind: kind.data, id: item.slice(at + 1) } : null
 }
