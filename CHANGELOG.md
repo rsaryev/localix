@@ -4,6 +4,11 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+## v0.1.0-beta.21 — 2026-10-30
+
+Mini app catalogs become marketplaces, in the shape of Claude Code's: an app is known by its name
+and its marketplace, a marketplace can change its signing key, and it can take an app back.
+
 ### Added
 
 - **Apps taken back by their marketplace**: a marketplace can revoke an app, or one version of it.
@@ -16,6 +21,8 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
   Store → Sources lists them under **Mini app marketplaces**; add one by its GitHub repository
   (`owner/repo`) or address, or with `/mini-app marketplace add`. An app is known by its name and
   its marketplace (`notes@ada`), so the same name from two marketplaces is two different apps.
+  Catalogs you added yourself are not carried over: add their marketplaces again. The Localix apps
+  you have installed move to the Localix marketplace on their own within a minute of starting.
 - **Signing keys can change**: a marketplace's release can name the keys that sign its next one, so
   a publisher can move to a new key without anyone removing and adding the marketplace again.
 - **Mini app layout**: an app's manifest now lives in `.localix-mini-app/mini-app.json`. Apps made
