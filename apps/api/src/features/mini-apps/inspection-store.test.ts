@@ -9,7 +9,6 @@ import {
   durableInspectionFingerprint,
   type MiniAppToolInspection,
 } from './inspection-store'
-import { MARKER_FILE, MARKER_KIND } from './managed-copy'
 
 let home: string
 const cacheFile = () => join(home, '.localix', 'cache', 'mini-app-inspection-cache-v1.json')
@@ -102,15 +101,14 @@ describe('mini app inspection store', () => {
 describe('durable inspection fingerprint', () => {
   const appAt = (dir: string) => ({ dir }) as DiscoveredMiniApp
 
-  test('a managed copy is keyed by the content fingerprint it was installed with', async () => {
-    const dir = join(home, 'managed')
-    await mkdir(dir, { recursive: true })
-    const mark = (fingerprint: string) =>
-      writeFile(join(dir, MARKER_FILE), JSON.stringify({ kind: MARKER_KIND, fingerprint }))
-    await mark('tree-a')
+  test('an edit anywhere in the app’s tree changes the key, as a restart would see it', async () => {
+    const dir = join(home, 'installed')
+    await mkdir(join(dir, 'backend'), { recursive: true })
+    await writeFile(join(dir, 'backend', 'tools.ts'), 'export const a = 1')
     const a = await durableInspectionFingerprint(appAt(dir), 'memory')
     expect(await durableInspectionFingerprint(appAt(dir), 'memory')).toBe(a)
-    await mark('tree-b')
+    // A module the entry imports, not the entry: the in-memory key would miss it.
+    await writeFile(join(dir, 'backend', 'tools.ts'), 'export const a = 12')
     expect(await durableInspectionFingerprint(appAt(dir), 'memory')).not.toBe(a)
     // The in-memory inputs (manifest, config, cwd…) stay part of the key.
     expect(await durableInspectionFingerprint(appAt(dir), 'other-memory')).not.toBe(a)

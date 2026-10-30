@@ -18,8 +18,7 @@ import type { inspectMiniAppTools } from './native'
  *
  * What makes an entry valid is stated by {@link durableInspectionFingerprint}: the in-memory
  * fingerprint (manifest, config digest, entry mtime/size, user, cwd) PLUS evidence that neither
- * the mini app's code nor the host that inspects it changed — the fingerprint a managed copy was
- * installed with, or for a user install a stat of its tree. Lifecycle changes (enable, config,
+ * the mini app's code nor the host that inspects it changed: a stat of its tree. Lifecycle changes (enable, config,
  * install, remove, reload) drop entries explicitly, exactly as they drop the in-memory ones. A
  * failed inspection is never stored, and a file that does not parse is an empty cache.
  */
@@ -57,10 +56,10 @@ function hostBuildStamp(): Promise<string> {
 }
 
 /**
- * mtime/size of every file a user mini app's entry could import. A user install has no content
- * marker, and the entry's own stat (the in-memory key) misses an edit to a sibling module the
- * entry imports — which a restart, unlike an in-process re-import, WOULD pick up. `node_modules`
- * is represented by its own directory stat (an install or removal) rather than walked.
+ * mtime/size of every file a mini app's entry could import. The entry's own stat (the in-memory
+ * key) misses an edit to a sibling module the entry imports — which a restart, unlike an
+ * in-process re-import, WOULD pick up. `node_modules` is represented by its own directory stat
+ * (an install or removal) rather than walked.
  */
 async function userTreeStamp(root: string): Promise<string | null> {
   const found: string[] = []

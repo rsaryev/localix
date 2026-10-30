@@ -3,17 +3,17 @@
     "bytes": 514
   },
   "./app-manifest": {
-    "bytes": 3459
+    "bytes": 3381
   },
   "./backend": {
-    "bytes": 47446,
+    "bytes": 52223,
     "shake": {
       "export": "ASSISTANT_BINDINGS_MAX",
       "bytes": 31
     }
   },
   "./backend/testing": {
-    "bytes": 2206
+    "bytes": 2259
   },
   "./bounded-cache": {
     "bytes": 870
@@ -22,10 +22,10 @@
     "bytes": 2546
   },
   "./manifest": {
-    "bytes": 2836
+    "bytes": 2784
   },
   "./manifest-label": {
-    "bytes": 721
+    "bytes": 701
   },
   "./manifest-media": {
     "bytes": 4468
@@ -68,7 +68,7 @@
     "bytes": 905
   },
   "./ui": {
-    "bytes": 62553,
+    "bytes": 62494,
     "shake": {
       "export": "CSV_CONTENT_TYPE",
       "bytes": 40
@@ -84,7 +84,7 @@
     "bytes": 2636
   },
   "./ui/charts": {
-    "bytes": 8610
+    "bytes": 8735
   },
   "./ui/classes": {
     "bytes": 926
@@ -99,7 +99,7 @@
     "bytes": 1048
   },
   "./ui/file-resource-sync": {
-    "bytes": 6782
+    "bytes": 6849
   },
   "./ui/file-types": {
     "bytes": 2166,
@@ -109,14 +109,14 @@
     }
   },
   "./ui/focus": {
-    "bytes": 3094,
+    "bytes": 3068,
     "shake": {
       "export": "DEFAULT_KEY_POLICY",
       "bytes": 277
     }
   },
   "./ui/game-table": {
-    "bytes": 9935
+    "bytes": 9834
   },
   "./ui/interactions": {
     "bytes": 1758
@@ -149,7 +149,7 @@
     "bytes": 644
   },
   "./ui/route-snapshot": {
-    "bytes": 5511
+    "bytes": 5437
   },
   "./ui/runtime": {
     "bytes": 4164
@@ -158,7 +158,7 @@
     "bytes": 3492
   },
   "./ui/segmented-control": {
-    "bytes": 3585
+    "bytes": 3630
   },
   "./ui/session-activity": {
     "bytes": 1389
@@ -170,10 +170,10 @@
     "bytes": 435
   },
   "./ui/shared-resource": {
-    "bytes": 3655
+    "bytes": 3643
   },
   "./ui/stats-charts": {
-    "bytes": 4323
+    "bytes": 4458
   },
   "./ui/storage": {
     "bytes": 900
@@ -182,7 +182,7 @@
     "bytes": 3842
   },
   "./ui/store-snapshot": {
-    "bytes": 9299
+    "bytes": 9224
   },
   "./ui/table": {
     "bytes": 32
@@ -197,7 +197,7 @@
     "bytes": 1727
   },
   "./ui/utilities": {
-    "bytes": 3683
+    "bytes": 3815
   },
   "./ui/visibility": {
     "bytes": 2198
