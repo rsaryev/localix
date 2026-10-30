@@ -20,7 +20,7 @@ export interface DefaultSource {
   weight: number
   /** Whether its featured flags and collections may reach Discover. */
   editorial: boolean
-  /** What the Store calls it, where the provider's own name would not say (a catalog's URL). */
+  /** What the Store calls it, rather than its id or a catalog's URL. */
   label?: string
 }
 
@@ -97,6 +97,7 @@ export const DEFAULT_SOURCES: readonly DefaultSource[] = [
     trust: 'localix',
     weight: TRUST_WEIGHTS.localix,
     editorial: true,
+    label: 'Localix',
   },
   {
     id: LOCALIX_COMMUNITY.name,
@@ -106,6 +107,7 @@ export const DEFAULT_SOURCES: readonly DefaultSource[] = [
     trust: 'community',
     weight: TRUST_WEIGHTS.community,
     editorial: false,
+    label: 'Localix Community',
   },
   {
     id: 'claude-plugins-official',
@@ -114,6 +116,7 @@ export const DEFAULT_SOURCES: readonly DefaultSource[] = [
     trust: 'official',
     weight: TRUST_WEIGHTS.official,
     editorial: true,
+    label: 'Claude plugins',
   },
   {
     id: 'claude-community',
@@ -122,6 +125,7 @@ export const DEFAULT_SOURCES: readonly DefaultSource[] = [
     trust: 'community',
     weight: TRUST_WEIGHTS.community,
     editorial: false,
+    label: 'Claude community',
   },
 ]
 

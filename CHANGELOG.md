@@ -36,7 +36,6 @@ way the rest of Localix asks.
   owner, Localix's picks and each app's source: built beside it, or another catalog it links to.
   Catalogs in the earlier format still read. An app now updates only from the catalog it was
   installed from.
-
 - **Only signed mini apps update on their own**: apps from a signed catalog, the Localix one
   included, still update within six hours; an unsigned app updates when you choose **Update**. A
   catalog whose signature changed installs nothing until you remove it and add it again.
@@ -68,6 +67,9 @@ way the rest of Localix asks.
 - **A mini app you made links to its repository**: its Store page shows a **Website** from the
   `homepage` or `repository` in its `mini-app.json`, and publishing it with the authoring plugin now
   records the repository there.
+- **No update offered for an app that is not the catalog's**: a mini app you made, or one another
+  catalog installed, no longer shows an **Update** to a catalog's app of the same name, older or
+  not.
 - **A plugin you removed installs again**: **Get** on a plugin removed from the Store no longer
   fails with "A plugin already exists at this destination".
 - **A mini app whose screen fails to load says so**: its tabs stay open while the screen is tried

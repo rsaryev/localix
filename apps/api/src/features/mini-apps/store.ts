@@ -130,7 +130,12 @@ export function createMiniAppStore(deps: {
   }
 
   const toEntry = async (offer: Offer): Promise<MiniAppStoreEntry> =>
-    storeEntry(offer, await readManifest(join(installRoot, offer.name)), jobs.get(offer.name))
+    storeEntry(
+      offer,
+      await readManifest(join(installRoot, offer.name)),
+      await isUpdatable(offer, installRoot),
+      jobs.get(offer.name),
+    )
 
   const offerNamed = async (name: string): Promise<Offer> => {
     const offer = (await readOffers()).offers.get(name)

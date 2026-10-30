@@ -424,6 +424,34 @@ describe('plugins in the Store', () => {
     expect(calls).toEqual([`update source ${OFFICIAL}`, `auto-update ${OFFICIAL} true`])
   })
 
+  test('a default marketplace is called by its name in the Store, a person’s by its own', async () => {
+    const { provider, root } = fixture()
+    const known = JSON.parse(await Bun.file(join(root, 'known.json')).text())
+    for (const [name, repo] of [
+      ['localix-community', 'rsaryev/localix-community'],
+      ['acme', 'acme/plugins'],
+    ]) {
+      known[name] = { source: { source: 'github', repo }, installLocation: join(root, name) }
+      writeTree(root, {
+        [`${name}/.claude-plugin/marketplace.json`]: JSON.stringify({
+          name,
+          owner: { name: 'Someone' },
+          plugins: [],
+        }),
+      })
+    }
+    await Bun.write(join(root, 'known.json'), JSON.stringify(known))
+    const labels = Object.fromEntries(
+      (await provider.sources()).map((source) => [source.id, source.label]),
+    )
+    expect(labels).toEqual({
+      [OFFICIAL]: 'Claude plugins',
+      [COMMUNITY]: 'Claude community',
+      'localix-community': 'Localix Community',
+      acme: 'acme',
+    })
+  })
+
   test('a marketplace that cannot be read is still a source, saying why', async () => {
     const { provider, root } = fixture()
     const known = JSON.parse(await Bun.file(join(root, 'known.json')).text())

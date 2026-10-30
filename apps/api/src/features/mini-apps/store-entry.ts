@@ -44,17 +44,21 @@ export interface MiniAppStoreEntry {
   commands?: string[]
   /** What is on this machine, or null. */
   installed: { version?: string } | null
-  /** The catalog offers a version other than the installed one. */
+  /** The catalog offers another version of the installed copy, one it may update (`isUpdatable`). */
   update: boolean
   /** Built for a newer mini app contract than this Localix runs: it cannot be installed. */
   incompatible?: boolean
   job?: MiniAppJob
 }
 
-/** The store row for `offer`, given the manifest installed under its name and its job in flight. */
+/**
+ * The store row for `offer`, given the manifest installed under its name, whether the offer may
+ * update that copy, and its job in flight.
+ */
 export function storeEntry(
   offer: Offer,
   installed: Record<string, unknown> | null | undefined,
+  updatable: boolean,
   job: MiniAppJob | undefined,
 ): MiniAppStoreEntry {
   const installedVersion = typeof installed?.version === 'string' ? installed.version : undefined
@@ -78,7 +82,7 @@ export function storeEntry(
     ...(surfaces ? { surfaces } : {}),
     ...(commands?.length ? { commands } : {}),
     installed: installed ? (installedVersion ? { version: installedVersion } : {}) : null,
-    update: Boolean(installed && offer.version && installedVersion !== offer.version),
+    update: Boolean(installed && offer.version && updatable),
     ...(isIncompatible(offer) ? { incompatible: true } : {}),
     ...(job ? { job } : {}),
   }

@@ -168,6 +168,8 @@ describe('a mini app Localix Community links to', () => {
     expect((await store.list()).entries.find((entry) => entry.name === 'habits')).toMatchObject({
       version: '2.0.0',
       signature: 'signed',
+      // Not an update of the installed one, so the Store does not offer it as one.
+      update: false,
     })
     expect(await store.updateInstalled()).toEqual([])
   })

@@ -78,6 +78,28 @@ describe('the mini app store', () => {
     expect(atlas).toMatchObject({ installed: { version: '1.0.0' }, version: '1.1.0', update: true })
   })
 
+  test('an app the person made is theirs: a catalog with its name offers no update to it', async () => {
+    const { home, store } = setup()
+    const dir = join(home, '.localix', 'mini-apps', 'atlas')
+    await fs.mkdir(dir, { recursive: true })
+    await fs.writeFile(
+      join(dir, 'mini-app.json'),
+      JSON.stringify({ name: 'atlas', version: '2.0.0' }),
+    )
+    await fs.writeFile(
+      join(dir, '.localix-install.json'),
+      JSON.stringify({ kind: 'localix-local-install', source: '/src/atlas', version: '2.0.0' }),
+    )
+
+    const [atlas] = (await store.list()).entries
+    expect(atlas).toMatchObject({
+      installed: { version: '2.0.0' },
+      version: '1.0.0',
+      update: false,
+    })
+    expect(await store.updateInstalled()).toEqual([])
+  })
+
   test('an app no source offers is refused, saying which', async () => {
     const { store } = setup()
     await expect(store.install('ghost')).rejects.toThrow(/ghost/)

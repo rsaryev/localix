@@ -34,12 +34,6 @@ export interface MarketView {
   label: string
 }
 
-const LABELS: Record<string, string> = {
-  localix: 'Localix',
-  'claude-plugins-official': 'Claude plugins',
-  'claude-community': 'Claude community',
-}
-
 export function marketView(name: string, record: KnownMarketplace, market: Marketplace) {
   const known = defaultMarketplaceOf(name, record.source)
   const { trust, weight, editorial } = known?.entry ?? COMMUNITY_SOURCE
@@ -50,7 +44,7 @@ export function marketView(name: string, record: KnownMarketplace, market: Marke
     trust,
     weight,
     editorial,
-    label: LABELS[known?.id ?? ''] ?? name,
+    label: known?.entry.label ?? name,
   } satisfies MarketView
 }
 
