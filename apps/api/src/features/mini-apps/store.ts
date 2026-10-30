@@ -64,6 +64,11 @@ export function createMiniAppStore(deps: {
   cacheDir?: string
   /** Keep the key a catalog a person added was first read signed with (`catalogs.ts`). */
   pinKey?: (url: string, key: string) => Promise<void>
+  /** The keys kept for catalogs a list links to (`catalogs.ts`). */
+  linkedKeys?: {
+    get(url: string): Promise<string | undefined>
+    pin(url: string, key: string): Promise<void>
+  }
   /** The installed apps the person keeps from updating on their own (`auto-update.ts`). */
   autoUpdateOff?: () => Promise<ReadonlySet<string>>
 }) {
@@ -72,6 +77,7 @@ export function createMiniAppStore(deps: {
     sources: deps.sources,
     fetchImpl: deps.fetchImpl,
     ...(deps.pinKey ? { pinKey: deps.pinKey } : {}),
+    ...(deps.linkedKeys ? { linkedKeys: deps.linkedKeys } : {}),
   })
   const readMedia = createStoreMediaReader({
     cacheDir: deps.cacheDir ?? join(deps.homeDir, MINI_APP_STORE_CACHE_SUBDIR),

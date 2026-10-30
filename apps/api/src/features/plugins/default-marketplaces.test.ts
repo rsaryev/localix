@@ -33,7 +33,7 @@ const ensure = (add: ReturnType<typeof adder>['add'], env = {}) =>
   ensureDefaultMarketplaces({ root: root(), add, env })
 
 describe('the default marketplaces on start', () => {
-  test('are Localix’s, the official and the community ones, for browsing', () => {
+  test('are Localix’s, Localix Community, the official and the community ones, for browsing', () => {
     expect(DEFAULT_MARKETPLACES.map((found) => [found.id, found.source])).toEqual([
       [
         'localix',
@@ -42,6 +42,10 @@ describe('the default marketplaces on start', () => {
           repo: 'rsaryev/localix-marketplace',
           sparsePaths: ['.claude-plugin', 'plugins'],
         },
+      ],
+      [
+        'localix-community',
+        { source: 'github', repo: 'rsaryev/localix-community', sparsePaths: ['.claude-plugin'] },
       ],
       ['claude-plugins-official', { source: 'github', repo: 'anthropics/claude-plugins-official' }],
       ['claude-community', { source: 'github', repo: 'anthropics/claude-plugins-community' }],
@@ -52,12 +56,13 @@ describe('the default marketplaces on start', () => {
     const { add, calls } = adder()
     expect(await ensure(add)).toEqual({
       localix: { status: 'registered' },
+      'localix-community': { status: 'registered' },
       'claude-plugins-official': { status: 'registered' },
       'claude-community': { status: 'registered' },
     })
-    expect(calls).toHaveLength(3)
+    expect(calls).toHaveLength(4)
     expect((await ensure(add))['claude-community']).toEqual({ status: 'present' })
-    expect(calls).toHaveLength(3)
+    expect(calls).toHaveLength(4)
   })
 
   test('one registered already from the same repository, under any name, is reused', async () => {
@@ -78,7 +83,7 @@ describe('the default marketplaces on start', () => {
     const { add, calls } = adder()
     await rememberDefaultMarketplaceRemoval(root(), 'claude-community')
     expect((await ensure(add))['claude-community']).toEqual({ status: 'declined' })
-    expect(calls).toHaveLength(2)
+    expect(calls).toHaveLength(3)
     await forgetDefaultMarketplaceRemoval(root(), 'claude-community')
     expect((await ensure(add))['claude-community']).toEqual({ status: 'registered' })
   })
@@ -87,6 +92,7 @@ describe('the default marketplaces on start', () => {
     const offline = adder()
     const skipped = await ensure(offline.add, { CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1' })
     expect(Object.values(skipped).map((outcome) => outcome.status)).toEqual([
+      'skipped',
       'skipped',
       'skipped',
       'skipped',

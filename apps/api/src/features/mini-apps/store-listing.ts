@@ -20,8 +20,8 @@ import type { MiniAppStoreEntry } from './store-entry'
  */
 
 /** A catalog by where it lives: Localix's own, its host, or a folder on this computer. */
-export function catalogLabel(url: string, builtIn: boolean): string {
-  if (builtIn) return 'Localix'
+export function catalogLabel(url: string, builtIn: boolean, sourceId?: string): string {
+  if (builtIn) return builtInSource(sourceId)?.label ?? 'Localix'
   try {
     const parsed = new URL(url)
     return parsed.protocol === 'file:' ? 'A folder on this computer' : parsed.host
@@ -45,15 +45,17 @@ function contentsOf(entry: MiniAppStoreEntry): Partial<Record<ComponentKind, num
   return contents
 }
 
+/** The default source a built-in catalog is (`@localixai/store`): Localix's own unless named. */
+const builtInSource = (sourceId?: string) => defaultSource(sourceId ?? 'localix-mini-apps')
+
 /**
- * How far a catalog is trusted: Localix's own is the default source's entry (`localix`, editorial);
- * one the person added is community, and its picks do not reach Discover.
+ * How far a catalog is trusted: a built-in one is its default source's entry — Localix's own
+ * `localix` and editorial, Localix Community's `community` — and one the person added is
+ * community; neither community one's picks reach Discover.
  */
-export function catalogTrust(builtIn: boolean) {
-  const own = defaultSource('localix-mini-apps')
-  return builtIn && own
-    ? { trust: own.trust, weight: own.weight, editorial: own.editorial }
-    : COMMUNITY_SOURCE
+export function catalogTrust(builtIn: boolean, sourceId?: string) {
+  const own = builtIn ? builtInSource(sourceId) : undefined
+  return own ? { trust: own.trust, weight: own.weight, editorial: own.editorial } : COMMUNITY_SOURCE
 }
 
 export function miniAppListing(
@@ -62,12 +64,14 @@ export function miniAppListing(
     sourceLabel: string
     enabled: boolean
     builtIn: boolean
+    /** The default source a built-in catalog is (`MiniAppCatalogRecord.sourceId`). */
+    sourceId?: string
     configurable?: boolean
     /** The person keeps it from updating on its own (`auto-update.ts`). */
     autoUpdateOff?: boolean
   },
 ): Listing {
-  const { trust, weight, editorial } = catalogTrust(context.builtIn)
+  const { trust, weight, editorial } = catalogTrust(context.builtIn, context.sourceId)
   const displayName = entry.displayName ?? entry.name
   const updateTo = entry.update && !entry.incompatible ? entry.version : undefined
   return {

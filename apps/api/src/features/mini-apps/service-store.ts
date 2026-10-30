@@ -26,6 +26,7 @@ export function createMiniAppStoreParts(
     homeDir: deps.homeDir,
     sources: () => catalogList.sources(),
     pinKey: (url, key) => catalogList.pinKey(url, key),
+    linkedKeys: catalogList.linkedKeys,
     autoUpdateOff: () => autoUpdate.off(),
     onInstalled: async (name, { fresh, userId }) => {
       if (fresh && userId) await setEnabled(userId, { name, enabled: true })

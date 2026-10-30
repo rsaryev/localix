@@ -64,7 +64,11 @@ export const installLocalMiniAppResponseSchema = z.object({
 })
 
 /** One catalog the store reads (`catalogs.ts`). */
-export const miniAppCatalogSchema = z.object({ url: z.string(), builtIn: z.boolean() })
+export const miniAppCatalogSchema = z.object({
+  url: z.string(),
+  builtIn: z.boolean(),
+  sourceId: z.string().optional(),
+})
 export type MiniAppCatalogEntryRecord = z.infer<typeof miniAppCatalogSchema>
 
 export const miniAppCatalogsResponseSchema = z.object({ catalogs: z.array(miniAppCatalogSchema) })

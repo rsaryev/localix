@@ -1,119 +1,49 @@
-import { z } from 'zod'
-import {
-  MINI_APP_SCREENSHOTS_MAX,
-  MINI_APP_TAG_RE,
-  MINI_APP_TAGS_MAX,
-  MINI_APP_NAME_RE,
-} from '@localixai/mini-app-sdk/manifest-primitives'
-import { miniAppFileAssociationSchema } from '@localixai/mini-app-sdk/manifest'
-import { sourceSuitsSchema } from '@localixai/store'
+import { releaseMiniAppCatalog } from '@localixai/store'
 
 import { readCatalogSignature, type CatalogSignature } from './catalog-signature'
+import {
+  catalogAppSchema,
+  catalogV1Schema,
+  catalogV2AppSchema,
+  catalogV2Schema,
+  picksFor,
+  withoutEmpty,
+  type MiniAppCatalogApp,
+  type MiniAppCatalogEditorial,
+  type MiniAppCatalogV2App,
+} from './catalog-schema'
+
+export type {
+  MiniAppCatalogApp,
+  MiniAppCatalogEditorial,
+  MiniAppCatalogFile,
+} from './catalog-schema'
 
 /**
- * A catalog: one `catalog.json` that lists mini apps and where each one's archive is. It may be
- * served over HTTPS (the hosted Localix catalog, a publisher's GitHub release) or read from a
- * folder (`file://`); an archive URL is resolved against the catalog's own, so a catalog and its
- * archives move together. Format: `docs/extending/mini-app-publishing.md`.
+ * A catalog: one JSON file that lists mini apps (`catalog-schema.ts` has its two schemas). It may
+ * be served over HTTPS (the hosted Localix catalog, a publisher's GitHub release, a list such as
+ * Localix Community) or read from a folder (`file://`); an archive URL is resolved against the
+ * catalog's own, so a catalog and its archives move together. Format:
+ * `docs/extending/mini-app-publishing.md`.
  */
 
-export const MINI_APP_CATALOG_SCHEMA = 1
-
-const SHA256 = /^[a-f0-9]{64}$/
-/** The most kinds of file one app may say it opens. */
-const FILE_KINDS_MAX = 64
-
-/** A file a catalog publishes beside its archives, pinned like them by size and sha256. */
-const pinnedFileSchema = z.object({
-  url: z.string().min(1),
-  bytes: z.number().int().positive(),
-  sha256: z.string().regex(SHA256),
-})
-const pinnedImageSchema = pinnedFileSchema.extend({ type: z.string().min(1) })
+/** The newest catalog schema this Localix reads. */
+export const MINI_APP_CATALOG_SCHEMA = 2
 
 /**
- * The store fields of an entry (`docs/extending/mini-app-publishing.md`). All optional, and each
- * one that does not read is dropped alone: an older reader ignores them, and a bad icon must not
- * hide the app it belongs to.
+ * An app a catalog lists by where it lives — another catalog — rather than as an archive of its
+ * own. Its own catalog is the authority on it; what the list says (a description, a category)
+ * fills in only what that catalog leaves out, as Claude Code merges a marketplace entry with the
+ * plugin's own manifest.
  */
-const optional = <T extends z.ZodType>(schema: T) => schema.optional().catch(undefined)
-const storeFieldsSchema = {
-  icon: optional(pinnedImageSchema),
-  screenshots: optional(
-    z
-      .array(z.unknown())
-      .transform((shots) =>
-        shots.flatMap((shot) => {
-          const parsed = pinnedImageSchema
-            .extend({ caption: z.string().max(140).optional() })
-            .safeParse(shot)
-          return parsed.success ? [parsed.data] : []
-        }),
-      )
-      .transform((shots) => shots.slice(0, MINI_APP_SCREENSHOTS_MAX)),
-  ),
-  readme: optional(pinnedFileSchema),
-  tags: optional(
-    z
-      .array(z.unknown())
-      .transform((tags) =>
-        tags
-          .filter((tag): tag is string => typeof tag === 'string' && MINI_APP_TAG_RE.test(tag))
-          .slice(0, MINI_APP_TAGS_MAX),
-      ),
-  ),
-  homepage: optional(z.string().url().startsWith('https://')),
-  license: optional(z.string().max(64)),
-  author: optional(z.string().max(120)),
-  /** Shown in the store's Featured group, for the catalog Localix vouches for only. */
-  featured: optional(z.boolean()),
-  /**
-   * Installed on its own, once, on a new installation (`recommended.ts`) — for the catalog Localix
-   * vouches for only.
-   */
-  recommended: optional(z.boolean()),
-  /** What it is for (`Listing.suits`), for recommendations — the catalog Localix vouches for only. */
-  suits: sourceSuitsSchema,
-  surfaces: optional(z.array(z.string().max(32)).max(16)),
-  commands: optional(z.array(z.string().max(64)).max(64)),
-  /**
-   * The kinds of file it opens: its manifest's `fileAssociations`, as the packer copies them. Read
-   * as the kinds alone (`docx`, `request.json`), each declaration that does not parse dropped, and
-   * one ranked `None` left out: the app opens it but asks not to be offered for it (a reader that
-   * also shows Markdown, which the editor opens).
-   */
-  fileAssociations: optional(
-    z.array(z.unknown()).transform((entries) => [
-      ...new Set(
-        entries
-          .flatMap((entry) => {
-            const declared = miniAppFileAssociationSchema.safeParse(entry).data
-            return declared && declared.rank !== 'None' ? declared.ext : []
-          })
-          .slice(0, FILE_KINDS_MAX),
-      ),
-    ]),
-  ),
+export interface MiniAppCatalogLink {
+  name: string
+  /** The catalog that holds it, resolved. */
+  url: string
+  description?: string
+  category?: string
+  homepage?: string
 }
-
-const catalogAppSchema = z.object({
-  name: z.string().regex(MINI_APP_NAME_RE),
-  displayName: z.string().optional(),
-  description: z.string().default(''),
-  category: z.string().optional(),
-  version: z.string().min(1),
-  /** The mini app SDK contract it was built against; a newer one waits for a newer Localix. */
-  apiVersion: z.number().int().positive().optional(),
-  publisher: z.object({ name: z.string().min(1), verified: z.boolean().default(false) }),
-  archive: z.object({
-    url: z.string().min(1),
-    bytes: z.number().int().positive(),
-    sha256: z.string().regex(SHA256),
-  }),
-  ...storeFieldsSchema,
-})
-export type MiniAppCatalogApp = z.infer<typeof catalogAppSchema>
-export type MiniAppCatalogFile = z.infer<typeof pinnedFileSchema> & { type?: string }
 
 /**
  * A media URL against its catalog: HTTPS, or a file beside a catalog read from a folder. Anything
@@ -131,39 +61,96 @@ function resolveMedia<T extends { url: string }>(file: T | undefined, catalogUrl
   }
 }
 
-const withoutEmpty = <T extends Record<string, unknown>>(record: T): T =>
-  Object.fromEntries(Object.entries(record).filter(([, value]) => value !== undefined)) as T
+/** A built app with its files' addresses resolved against its catalog. */
+function resolvedApp(app: MiniAppCatalogApp, url: string): MiniAppCatalogApp {
+  const screenshots = app.screenshots?.flatMap((shot) => resolveMedia(shot, url) ?? [])
+  return withoutEmpty({
+    ...app,
+    icon: resolveMedia(app.icon, url),
+    screenshots: screenshots?.length ? screenshots : undefined,
+    readme: resolveMedia(app.readme, url),
+    tags: app.tags?.length ? app.tags : undefined,
+    archive: { ...app.archive, url: new URL(app.archive.url, url).href },
+  })
+}
+
+/** Where a linked catalog is: HTTPS, or a file beside a catalog read from a folder. */
+function linkedCatalogUrl(app: MiniAppCatalogV2App, catalogUrl: string): string | null {
+  if (app.source.source === 'archive') return null
+  if (app.source.source === 'github') return releaseMiniAppCatalog(app.source.repo)
+  try {
+    const url = new URL(app.source.url, catalogUrl)
+    const allowed =
+      url.protocol === 'https:' || (url.protocol === 'file:' && catalogUrl.startsWith('file:'))
+    return allowed ? url.href : null
+  } catch {
+    return null
+  }
+}
+
+type CatalogRead = {
+  apps: MiniAppCatalogApp[]
+  links: MiniAppCatalogLink[]
+  editorial?: MiniAppCatalogEditorial
+}
+
+function readV1(body: unknown, url: string): CatalogRead | null {
+  const parsed = catalogV1Schema.safeParse(body)
+  if (!parsed.success) return null
+  const apps = parsed.data.apps.flatMap((raw) => {
+    const app = catalogAppSchema.safeParse(raw)
+    return app.success ? [resolvedApp(app.data, url)] : []
+  })
+  const { editorial } = parsed.data
+  return {
+    apps,
+    links: [],
+    ...(editorial ? { editorial: { collections: editorial.collections } } : {}),
+  }
+}
 
 /**
- * Discover's picks a catalog may carry (`docs/internals/store.md`): collections whose
- * items are app names, or `<kind>:<id>` for another kind. Each that does not read is dropped alone.
+ * A schema 2 catalog: its built apps read as schema 1's (the owner publishes them, Localix's picks
+ * from `metadata.localix` set on each), and its links to other catalogs.
  */
-const collectionSchema = z.object({
-  id: z.string().min(1).max(64),
-  title: z.string().min(1).max(120),
-  subtitle: optional(z.string().max(240)),
-  style: z.enum(['row', 'grid']).catch('row'),
-  items: z
-    .array(z.unknown())
-    .transform((items) =>
-      items.filter((item): item is string => typeof item === 'string').slice(0, 48),
-    ),
-})
-const editorialSchema = z.object({
-  collections: optional(z.array(z.unknown())).transform((all) =>
-    (all ?? []).flatMap((raw) => {
-      const parsed = collectionSchema.safeParse(raw)
-      return parsed.success ? [withoutEmpty(parsed.data)] : []
-    }),
-  ),
-})
-export type MiniAppCatalogEditorial = z.infer<typeof editorialSchema>
-
-const catalogSchema = z.object({
-  schema: z.literal(MINI_APP_CATALOG_SCHEMA),
-  apps: z.array(z.unknown()),
-  editorial: optional(editorialSchema),
-})
+function readV2(body: unknown, url: string): CatalogRead | null {
+  const parsed = catalogV2Schema.safeParse(body)
+  if (!parsed.success) return null
+  const picks = parsed.data.metadata?.localix
+  const apps: MiniAppCatalogApp[] = []
+  const links: MiniAppCatalogLink[] = []
+  for (const raw of parsed.data.apps) {
+    const entry = catalogV2AppSchema.safeParse(raw)
+    if (!entry.success) continue
+    const { source, ...app } = entry.data
+    if (source.source === 'archive') {
+      const built = catalogAppSchema.safeParse({
+        ...app,
+        publisher: { name: parsed.data.owner.name, verified: true },
+        archive: { url: source.url, bytes: source.bytes, sha256: source.sha256 },
+        ...picksFor(app.name, picks),
+      })
+      if (built.success) apps.push(resolvedApp(built.data, url))
+      continue
+    }
+    const linked = linkedCatalogUrl(entry.data, url)
+    if (linked)
+      links.push(
+        withoutEmpty({
+          name: app.name,
+          url: linked,
+          description: app.description || undefined,
+          category: app.category,
+          homepage: app.homepage,
+        }),
+      )
+  }
+  return {
+    apps,
+    links,
+    ...(picks?.collections.length ? { editorial: { collections: picks.collections } } : {}),
+  }
+}
 
 /**
  * The apps a catalog lists. One entry that does not read is left out — a single bad row must
@@ -176,10 +163,6 @@ export async function readMiniAppCatalog(
   return (await readMiniAppCatalogFeed(url, options)).apps
 }
 
-/**
- * A catalog's apps, the picks it carries for Discover, and the signature beside it, checked
- * against the exact bytes the catalog was served as (`catalog-signature.ts`).
- */
 /** The most redirects a catalog's address may take. */
 const REDIRECTS_MAX = 10
 
@@ -210,14 +193,15 @@ async function fetchCatalog(
   }
 }
 
+/**
+ * A catalog's built apps, its links to other catalogs, the picks it carries for Discover, and the
+ * signature beside it, checked against the exact bytes the catalog was served as
+ * (`catalog-signature.ts`).
+ */
 export async function readMiniAppCatalogFeed(
   url: string,
   options: { fetchImpl?: typeof fetch; signal?: AbortSignal } = {},
-): Promise<{
-  apps: MiniAppCatalogApp[]
-  editorial?: MiniAppCatalogEditorial
-  signature: CatalogSignature
-}> {
+): Promise<CatalogRead & { signature: CatalogSignature }> {
   const where = url.startsWith('file:') ? url : new URL(url).host
   let response: Response
   let signedAt: string
@@ -236,31 +220,11 @@ export async function readMiniAppCatalogFeed(
   } catch {
     throw new Error(`The mini app catalog at ${where} is not JSON`)
   }
-  const parsed = catalogSchema.safeParse(body)
-  if (!parsed.success)
+  const read = readV2(body, url) ?? readV1(body, url)
+  if (!read)
     throw new Error(
-      `${where} is not a mini app catalog (schema ${MINI_APP_CATALOG_SCHEMA} with an apps list)`,
+      `${where} is not a mini app catalog (schema 1 or ${MINI_APP_CATALOG_SCHEMA} with an apps list)`,
     )
-  const { editorial } = parsed.data
-  const apps = parsed.data.apps.flatMap((raw) => {
-    const app = catalogAppSchema.safeParse(raw)
-    if (!app.success) return []
-    const screenshots = app.data.screenshots?.flatMap((shot) => resolveMedia(shot, url) ?? [])
-    return [
-      withoutEmpty({
-        ...app.data,
-        icon: resolveMedia(app.data.icon, url),
-        screenshots: screenshots?.length ? screenshots : undefined,
-        readme: resolveMedia(app.data.readme, url),
-        tags: app.data.tags?.length ? app.data.tags : undefined,
-        archive: { ...app.data.archive, url: new URL(app.data.archive.url, url).href },
-      }),
-    ]
-  })
   const signature = await readCatalogSignature(signedAt, bytes, options)
-  return {
-    apps,
-    ...(editorial ? { editorial: { collections: editorial.collections } } : {}),
-    signature,
-  }
+  return { ...read, signature }
 }

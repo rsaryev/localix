@@ -80,9 +80,9 @@ function personOnly(scope: Scope) {
 export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): InstallableProvider {
   const labels = async () =>
     new Map(
-      (await deps.catalogs.list()).map(({ url, builtIn }) => [
+      (await deps.catalogs.list()).map(({ url, builtIn, sourceId }) => [
         url,
-        { label: catalogLabel(url, builtIn), builtIn },
+        { label: catalogLabel(url, builtIn, sourceId), builtIn, sourceId },
       ]),
     )
 
@@ -98,6 +98,7 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
     const listing = miniAppListing(page.entry, {
       sourceLabel: catalog?.label ?? page.entry.source,
       builtIn: catalog?.builtIn ?? false,
+      sourceId: catalog?.sourceId,
       enabled: app?.enabled ?? true,
       configurable: (app?.config.length ?? 0) > 0,
       autoUpdateOff: off.has(name),
@@ -143,6 +144,7 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
           miniAppListing(entry, {
             sourceLabel: label.get(entry.source)?.label ?? entry.source,
             builtIn: label.get(entry.source)?.builtIn ?? false,
+            sourceId: label.get(entry.source)?.sourceId,
             enabled: installed.get(entry.name)?.enabled ?? true,
             configurable: (installed.get(entry.name)?.config.length ?? 0) > 0,
             autoUpdateOff: off.has(entry.name),
@@ -241,14 +243,14 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
         deps.catalogs.list(),
         deps.store.list(),
       ])
-      return catalogs.map(({ url, builtIn }) => ({
+      return catalogs.map(({ url, builtIn, sourceId }) => ({
         kind: 'mini-app' as const,
         id: url,
-        label: catalogLabel(url, builtIn),
+        label: catalogLabel(url, builtIn, sourceId),
         url,
         builtIn,
         count: entries.filter((entry) => entry.source === url).length,
-        trust: catalogTrust(builtIn).trust,
+        trust: catalogTrust(builtIn, sourceId).trust,
         // Localix's own catalog is the one a fresh profile starts with.
         ...(builtIn ? { defaultSource: true } : {}),
         ...(failed?.[url] ? { problem: failed[url] } : {}),
@@ -279,7 +281,8 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
     async editorial(): Promise<Editorial[]> {
       const [{ editorial }, label] = await Promise.all([deps.store.list(), labels()])
       const picks = editorial.filter(
-        ({ source }) => catalogTrust(label.get(source)?.builtIn ?? false).editorial,
+        ({ source }) =>
+          catalogTrust(label.get(source)?.builtIn ?? false, label.get(source)?.sourceId).editorial,
       )
       return picks.map(({ source, editorial: pick }) => ({
         source,

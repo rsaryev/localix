@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test'
 import { DEFAULT_SOURCES, TRUST_WEIGHTS, defaultSource } from './default-sources'
 
 describe('default sources', () => {
-  test('a fresh profile starts with Localix, the official and the community marketplaces', () => {
+  test('a fresh profile starts with Localix, Localix Community, the official and the community marketplaces', () => {
     expect(
       DEFAULT_SOURCES.map(({ id, kind, trust, weight, editorial }) => ({
         id,
@@ -14,7 +14,21 @@ describe('default sources', () => {
       })),
     ).toEqual([
       { id: 'localix-mini-apps', kind: 'mini-app', trust: 'localix', weight: 1, editorial: true },
+      {
+        id: 'localix-community-mini-apps',
+        kind: 'mini-app',
+        trust: 'community',
+        weight: 0.35,
+        editorial: false,
+      },
       { id: 'localix', kind: 'plugin', trust: 'localix', weight: 1, editorial: true },
+      {
+        id: 'localix-community',
+        kind: 'plugin',
+        trust: 'community',
+        weight: 0.35,
+        editorial: false,
+      },
       {
         id: 'claude-plugins-official',
         kind: 'plugin',

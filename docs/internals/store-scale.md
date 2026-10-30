@@ -64,11 +64,20 @@ One configuration file lists the sources a fresh profile starts with; adding one
 | `trust`     | `localix`, `official` or `community`.                                       |
 | `weight`    | Ranking factor: `localix` 1.0, `official` 0.7, `community` 0.35 by default. |
 | `editorial` | Whether its collections and featured flags may reach Discover.              |
+| `label`     | What the Store calls it, where a provider's own name would not say.         |
 
 Starting entries: the Localix marketplace's mini app catalog and its `localix` plugin marketplace
-(one repository, `rsaryev/localix-marketplace`; `localix`, editorial),
-`anthropics/claude-plugins-official` (`official`, editorial) and
+(one repository, `rsaryev/localix-marketplace`; `localix`, editorial), Localix Community's mini app
+list and its `localix-community` plugin marketplace (one repository, `rsaryev/localix-community`;
+`community`, not editorial), `anthropics/claude-plugins-official` (`official`, editorial) and
 `anthropics/claude-plugins-community` (`community`, not editorial).
+
+Localix Community holds no code. Its plugin entries name their authors' repositories, as Anthropic's
+community marketplace does; its mini app list (a schema 2 catalog,
+`docs/extending/mini-app-publishing.md`) links each app to its author's own catalog. Such an app is
+read from that catalog, signed by its author's key (kept from the first signed read, in
+`mini_app_linked_keys`), installed from it and updated only from it; it is listed under the
+community trust, and the Localix catalog, read first, keeps its names.
 
 A default source is registered without installing or enabling anything. One the person removes is
 remembered and not added back, as the `localix` marketplace already is. A source the person adds

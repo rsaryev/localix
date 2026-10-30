@@ -35,9 +35,10 @@ screens, backends or the mini app SDK is called "plugin". Rules X1–X5:
 This repository holds neither. Localix's own plugins and mini apps live in the
 [Localix marketplace](https://github.com/rsaryev/localix-marketplace) and install, update and are
 trusted through the same flow as anyone's. The core knows only that repository, as a trusted default
-source (`LOCALIX_MARKETPLACE` in `packages/store`), and names none of its plugins or mini apps: a
-feature that needs one asks for a capability (a tool role, a resource provider). What the core
-publishes for them is the mini app SDK and the mini app kit each release ships.
+source (`LOCALIX_MARKETPLACE` in `packages/store`), and the Localix Community list beside it as an
+untrusted one (`LOCALIX_COMMUNITY`), and names none of their plugins or mini apps: a feature that
+needs one asks for a capability (a tool role, a resource provider). What the core publishes for them
+is the mini app SDK and the mini app kit each release ships.
 
 ## Architecture
 

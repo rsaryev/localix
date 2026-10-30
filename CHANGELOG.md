@@ -6,12 +6,18 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## v0.1.0-beta.20 — 2026-10-30
 
-Mini apps are signed: the Store says whether an app's catalog is signed, and only signed apps update
-on their own. The Store also offers the app that opens a file, and asks before an install the way
-the rest of Localix asks.
+Mini apps are signed, and the Store opens to Localix Community: apps and plugins people publish in
+their own repositories. The Store says whether an app's catalog is signed, and only signed apps
+update on their own. The Store also offers the app that opens a file, and asks before an install the
+way the rest of Localix asks.
 
 ### Added
 
+- **Localix Community**: the Store now lists the mini apps and plugins people publish in their own
+  repositories, under **Localix Community**. Each one is its author's: installing asks first, an app
+  is signed (or not) with its author's key, and it updates only from its author's catalog. To list
+  yours, publish it and open a pull request to the
+  [Localix Community](https://github.com/rsaryev/localix-community) repository.
 - **Signed mini app catalogs**: a mini app's page in the Store says beside its publisher whether its
   catalog is **Signed**, **Not signed**, or its **Signature changed**, and the **⋯** menu beside
   **Open** has **Update automatically**, which you can untick for that app. Publishing a mini app
@@ -25,6 +31,11 @@ the rest of Localix asks.
   back.
 
 ### Changed
+
+- **One catalog format, in the shape of Claude Code's marketplaces**: a mini app catalog names its
+  owner, Localix's picks and each app's source: built beside it, or another catalog it links to.
+  Catalogs in the earlier format still read. An app now updates only from the catalog it was
+  installed from.
 
 - **Only signed mini apps update on their own**: apps from a signed catalog, the Localix one
   included, still update within six hours; an unsigned app updates when you choose **Update**. A

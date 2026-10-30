@@ -10,8 +10,10 @@ import type { MiniAppStoreSource } from './store-offers'
 /** One catalog the store reads, as Settings lists it. */
 export interface MiniAppCatalogRecord {
   url: string
-  /** Comes with Localix: the hosted catalog. */
+  /** Comes with Localix: the hosted catalog, or Localix Community's list. */
   builtIn: boolean
+  /** The default source a built-in one is (`@localixai/store`'s `DEFAULT_SOURCES`). */
+  sourceId?: string
 }
 
 const urlOf = (source: MiniAppStoreSource) => source.url
@@ -55,6 +57,7 @@ export function createMiniAppCatalogs(deps: {
       const builtIn = (await deps.builtIn()).map((source) => ({
         url: urlOf(source),
         builtIn: true,
+        ...(source.id ? { sourceId: source.id } : {}),
       }))
       const known = new Set(builtIn.map(({ url }) => url))
       return [
@@ -121,12 +124,43 @@ export function createMiniAppCatalogs(deps: {
       })
     },
 
+    /**
+     * The keys of the catalogs a list links to (Localix Community's authors'): each kept from its
+     * first signed read and never replaced here, so a catalog later signed with another key reads
+     * as changed and installs nothing (`catalog-signature.ts`).
+     */
+    linkedKeys: {
+      async get(url: string): Promise<string | undefined> {
+        const row = await deps.db
+          .selectFrom('mini_app_linked_keys')
+          .select('signing_key')
+          .where('url', '=', url)
+          .executeTakeFirst()
+        return row?.signing_key
+      },
+      async pin(url: string, key: string): Promise<void> {
+        await deps.db.transaction().execute(async (trx) => {
+          const { numInsertedOrUpdatedRows } = await trx
+            .insertInto('mini_app_linked_keys')
+            .values({ url, signing_key: key, kept_at: new Date().toISOString() })
+            .onConflict((conflict) => conflict.column('url').doNothing())
+            .executeTakeFirst()
+          if ((numInsertedOrUpdatedRows ?? 0n) > 0n)
+            await recordCoreChanges(trx, {
+              entity: 'mini-app.catalog',
+              op: 'upserted',
+              ref: { url },
+            })
+        })
+      },
+    },
+
     async remove(raw: string): Promise<void> {
       const url = normalizeCatalogUrl(raw) ?? raw
       if ((await deps.builtIn()).some((source) => urlOf(source) === url))
         throw new ConflictError(
           'mini_app_catalog_built_in',
-          'The Localix catalog comes with Localix and cannot be removed',
+          'This catalog comes with Localix and cannot be removed',
         )
       await deps.db.transaction().execute(async (trx) => {
         await trx.deleteFrom('mini_app_catalogs').where('url', '=', url).execute()

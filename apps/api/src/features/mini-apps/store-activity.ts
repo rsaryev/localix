@@ -3,7 +3,7 @@ import { MINI_APP_API_VERSION } from '@localixai/mini-app-sdk/manifest-primitive
 
 import { apiVersionTooNew } from '../ext/manifest-validate'
 
-import { installedBy } from './store-install'
+import { installedBy, readInstallRecord } from './store-install'
 import { storeMediaUrl } from './store-media'
 import { readManifest, type Offer } from './store-offers'
 import type { MiniAppJob } from './store'
@@ -42,11 +42,15 @@ export const iconOf = (offer: Offer) =>
 
 /**
  * Whether Update all would take this offer: an app a catalog (or an earlier Localix build) put
- * here, at another version, that this Localix can run. A folder the person made is theirs.
+ * here, at another version, that this Localix can run. A folder the person made is theirs, and an
+ * app updates only from the catalog that installed it: another catalog that lists the same name
+ * is another publisher's app. The catalog Localix vouches for may update any copy it offers.
  */
 export async function isUpdatable(offer: Offer, installRoot: string): Promise<boolean> {
   if (isIncompatible(offer)) return false
   const dir = join(installRoot, offer.name)
   if (!['catalog', 'staged'].includes((await installedBy(dir)) ?? '')) return false
+  const record = await readInstallRecord(dir)
+  if (record && record.catalog !== offer.catalog && !offer.publisher.verified) return false
   return (await readManifest(dir))?.version !== offer.version
 }

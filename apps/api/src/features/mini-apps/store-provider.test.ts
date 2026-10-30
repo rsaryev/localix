@@ -141,6 +141,26 @@ describe('the mini apps in the Store', () => {
     expect(added!.featured).toBe(false)
   })
 
+  // Localix Community comes with Localix, but Localix vouches for none of what it lists.
+  test('Localix Community comes with Localix and is named, but is community, not editorial', async () => {
+    const { offer, provider, catalogs } = setup()
+    offer('atlas', { featured: true })
+    Object.assign(catalogs[0]!, { builtIn: true, sourceId: 'localix-community-mini-apps' })
+    const [listed] = (await provider.listings(actor)).listings
+    expect(listed!.source).toMatchObject({
+      label: 'Localix Community',
+      trust: 'community',
+      weight: 0.35,
+    })
+    expect(listed!.featured).toBe(false)
+    const [source] = await provider.sources!()
+    expect(source).toMatchObject({
+      label: 'Localix Community',
+      trust: 'community',
+      defaultSource: true,
+    })
+  })
+
   test('what Localix’s catalog says an app is for reaches recommendations; an added one says nothing', async () => {
     const { offer, provider, catalogs } = setup()
     offer('atlas', {

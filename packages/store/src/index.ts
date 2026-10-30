@@ -147,6 +147,7 @@ export { catalogOrigin, gitOrigin, npmOrigin } from './identity'
 export {
   COMMUNITY_SOURCE,
   DEFAULT_SOURCES,
+  LOCALIX_COMMUNITY,
   LOCALIX_MARKETPLACE,
   TRUST_WEIGHTS,
   defaultSource,

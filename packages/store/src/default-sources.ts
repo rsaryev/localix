@@ -20,6 +20,8 @@ export interface DefaultSource {
   weight: number
   /** Whether its featured flags and collections may reach Discover. */
   editorial: boolean
+  /** What the Store calls it, where the provider's own name would not say (a catalog's URL). */
+  label?: string
 }
 
 /** A trust's default ranking weight. */
@@ -49,6 +51,21 @@ export const LOCALIX_MARKETPLACE = {
   catalogKey: 'bwCq5MPyZb+OxOHQnaBtzi9GmXBvu1U6WnGeyEPhdXg=' as string | undefined,
 } as const
 
+/**
+ * LOCALIX COMMUNITY: a list, in its own repository, of the plugins and mini apps people publish in
+ * their own repositories. It holds no code: each plugin entry names the repository it lives in (as
+ * Anthropic's community marketplace does), and each mini app entry the catalog its author's
+ * releases publish, signed (or not) with the author's own key. Localix lists it for browsing,
+ * at the community trust: its publishers are not verified, and installing asks first.
+ */
+export const LOCALIX_COMMUNITY = {
+  name: 'localix-community',
+  repo: 'rsaryev/localix-community',
+  /** The mini app list, read where the repository keeps it: one JSON file, no release. */
+  miniApps:
+    'https://raw.githubusercontent.com/rsaryev/localix-community/main/.mini-app/marketplace.json',
+} as const
+
 /** The mini app catalog a GitHub repository's latest release publishes. */
 export const releaseMiniAppCatalog = (repo: string): string =>
   `https://github.com/${repo}/releases/latest/download/mini-app-catalog.json`
@@ -61,6 +78,16 @@ export const DEFAULT_SOURCES: readonly DefaultSource[] = [
     trust: 'localix',
     weight: TRUST_WEIGHTS.localix,
     editorial: true,
+    label: 'Localix',
+  },
+  {
+    id: 'localix-community-mini-apps',
+    kind: 'mini-app',
+    input: LOCALIX_COMMUNITY.miniApps,
+    trust: 'community',
+    weight: TRUST_WEIGHTS.community,
+    editorial: false,
+    label: 'Localix Community',
   },
   {
     id: LOCALIX_MARKETPLACE.name,
@@ -70,6 +97,15 @@ export const DEFAULT_SOURCES: readonly DefaultSource[] = [
     trust: 'localix',
     weight: TRUST_WEIGHTS.localix,
     editorial: true,
+  },
+  {
+    id: LOCALIX_COMMUNITY.name,
+    kind: 'plugin',
+    input: LOCALIX_COMMUNITY.repo,
+    paths: ['.claude-plugin'],
+    trust: 'community',
+    weight: TRUST_WEIGHTS.community,
+    editorial: false,
   },
   {
     id: 'claude-plugins-official',

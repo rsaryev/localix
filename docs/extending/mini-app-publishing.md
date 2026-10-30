@@ -101,9 +101,16 @@ of the template keeps the Daily Log icon until you do, and `mini-app check` repo
 
 ### The catalog
 
+A catalog is one JSON file in the shape of a Claude Code `marketplace.json`: who owns it, Localix's
+picks under `metadata.localix`, and the apps, each with a `source` that says where it is. The pack
+command writes it, with the archives and media beside it, each named with the start of its hash;
+editing it by hand is not needed.
+
 ```json
 {
-  "schema": 1,
+  "schema": 2,
+  "name": "notes",
+  "owner": { "name": "Ada" },
   "apps": [
     {
       "name": "notes",
@@ -111,8 +118,13 @@ of the template keeps the Daily Log icon until you do, and `mini-app check` repo
       "description": "Notes beside every chat.",
       "category": "utilities",
       "version": "1.2.0",
-      "apiVersion": 1,
-      "publisher": { "name": "Ada", "verified": false },
+      "apiVersion": 2,
+      "source": {
+        "source": "archive",
+        "url": "notes-1.2.0-3fa1c2d4e5b6.tar.gz",
+        "bytes": 148167,
+        "sha256": "3fa1c2d4e5b6…"
+      },
       "icon": {
         "url": "notes-1.2.0-icon-9adc7cb124e4.svg",
         "bytes": 700,
@@ -130,50 +142,84 @@ of the template keeps the Daily Log icon until you do, and `mini-app check` repo
       ],
       "readme": { "url": "notes-1.2.0-readme-fb386f3624bc.md", "bytes": 4914, "sha256": "fb38…" },
       "tags": ["notes", "writing"],
-      "homepage": "https://example.com/notes",
+      "homepage": "https://github.com/ada/notes",
       "license": "MIT",
-      "author": "Ada",
+      "author": { "name": "Ada" },
       "surfaces": ["agent", "workbench"],
-      "commands": ["new"],
-      "archive": {
-        "url": "notes-1.2.0-3fa1c2d4e5b6.tar.gz",
-        "bytes": 148167,
-        "sha256": "3fa1c2d4e5b6…"
-      }
+      "commands": ["new"]
     }
   ]
 }
 ```
 
-The pack command writes the catalog and the media files, each named with the start of its hash.
-Editing it by hand is not needed. Every field after `publisher` but `archive` is optional and still
-schema 1: a reader that does not know one ignores it, and one that does not read is dropped alone,
-so a bad icon never hides its app.
+An app's `source` is one of:
 
-An app whose name, version or archive does not read is left out, and the rest of the catalog still
-loads. `featured: true` puts an app in Discover's featured carousel and its rows, and
-`recommended: true` has a new installation install it on its own, and `suits` says what the app is
-for — `{ "files": ["*.sql", "compose.yaml"], "dependencies": ["pg"] }`, file names where `*` stands
-for any characters and packages a project depends on — so the Store recommends it when one of them
-is open or in the project. All three are read only in the Localix marketplace's catalog, which its
-repository sets.
+| `source`  | Fields                   | Meaning                                                            |
+| --------- | ------------------------ | ------------------------------------------------------------------ |
+| `archive` | `url`, `bytes`, `sha256` | The built app beside the catalog. It needs a `version`.            |
+| `github`  | `repo`                   | The app in the catalog that repository's latest release publishes. |
+| `url`     | `url`                    | The app in the catalog at that HTTPS address.                      |
 
-The same file may name the Store's **Discover** picks, which the catalog carries as an optional
-top-level `editorial`, also read for the Localix marketplace's catalog only: `collections`, each
-with an `id`, a `title`, a `subtitle`, a `style` (`row` or `grid`) and its `items`. An item is an
-app's name, or `<kind>:<id>` for another kind of package, such as
-`plugin:neon@claude-plugins-official`.
+An `archive` app is published by the catalog's `owner`. A `github` or `url` app is a link: the app
+is read from its own catalog, which says what it is, signs it with its own key and is where it
+installs and updates from. What the linking catalog says about it (a `description`, a `category`, a
+`homepage`) fills in only what its own catalog leaves out, as Claude Code merges a marketplace entry
+with the plugin's own manifest. A link is followed once: links in the linked catalog are not. This
+is how [Localix Community](#localix-community) lists apps.
+
+Every field but `name`, `source` and an archive app's `version` is optional; one that does not read
+is dropped alone, so a bad icon never hides its app, and an app that does not read is left out while
+the rest of the catalog still loads. Localix still reads schema 1, the earlier flat list of built
+apps.
+
+`metadata.localix` holds the Localix marketplace's picks, read in its catalog only:
 
 ```json
 {
-  "collections": [
-    {
-      "id": "play-with-the-agent",
-      "title": "Play with the agent",
-      "style": "row",
-      "items": ["weather", "notes"]
+  "metadata": {
+    "localix": {
+      "featured": ["notes"],
+      "recommended": ["notes"],
+      "suits": { "notes": { "files": ["*.md"], "dependencies": [] } },
+      "collections": [
+        { "id": "write", "title": "Write with the agent", "style": "row", "items": ["notes"] }
+      ]
     }
-  ]
+  }
+}
+```
+
+`featured` puts an app in Discover's featured carousel and its rows, `recommended` has a new
+installation install it on its own, and `suits` says what an app is for (file names where `*` stands
+for any characters, and packages a project depends on), so the Store recommends it when one of them
+is open or in the project. `collections` are Discover's rows, each with an `id`, a `title`, a
+`subtitle`, a `style` (`row` or `grid`) and its `items`: an app's name, or `<kind>:<id>` for another
+kind of package, such as `plugin:neon@claude-plugins-official`.
+
+A marketplace of several apps keeps the same file in its repository as `.mini-app/marketplace.json`,
+with each app's `source` the path of its folder (`"./mini-apps/notes"`);
+`mini-app marketplace build` packs every one and writes the catalog with `archive` sources.
+
+### Localix Community
+
+[Localix Community](https://github.com/rsaryev/localix-community) lists plugins and mini apps that
+people publish in their own repositories. It holds no code: its `.mini-app/marketplace.json` links
+each mini app to its author's catalog, and its `.claude-plugin/marketplace.json` names each plugin's
+repository. Localix reads it from the start, under the name **Localix Community**. Localix does not
+vouch for what it lists: its publishers are unverified, installing asks first, its picks never reach
+Discover, and the Localix catalog keeps its own names. Each app is signed, or not, by its author,
+and updates as any app from that author's catalog would.
+
+To list an app, publish it (`/mini-app-authoring:publish`), then open a pull request that adds an
+entry to its `.mini-app/marketplace.json`:
+
+```json
+{
+  "name": "notes",
+  "description": "Notes beside every chat.",
+  "category": "utilities",
+  "source": { "source": "github", "repo": "ada/notes" },
+  "homepage": "https://github.com/ada/notes"
 }
 ```
 
@@ -197,9 +243,10 @@ with one rename. A failure at any step keeps the version that was installed.
 Apps from a signed catalog take its newer versions on their own, a minute after Localix starts and
 every six hours, unless you untick **Update automatically** in the **⋯** menu on the app's Store
 page. Apps from an unsigned catalog are never updated behind your back: the Store offers the newer
-version and installs it when you choose **Update**. A folder you made yourself under
-`~/.localix/mini-apps/` is never replaced by a catalog's app of the same name; installing one says
-the name is taken.
+version and installs it when you choose **Update**. An app updates only from the catalog it was
+installed from: another catalog that lists the same name lists someone else's app. A folder you made
+yourself under `~/.localix/mini-apps/` is never replaced by a catalog's app of the same name;
+installing one says the name is taken.
 
 ### Trust
 

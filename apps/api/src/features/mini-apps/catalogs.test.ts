@@ -116,4 +116,15 @@ describe('the catalogs the store reads', () => {
     expect((await catalogs.sources()).find((source) => source.url === THEIRS)?.key).toBe('K1')
     expect((await notices()).filter((entity) => entity === 'mini-app.catalog')).toHaveLength(2)
   })
+
+  // A list links to its authors' catalogs; each one's key is kept from its first signed read, and a
+  // later key never replaces it, so a catalog re-signed by someone else reads as changed.
+  test('the key of a catalog a list links to is kept once, and announced', async () => {
+    const { catalogs, notices } = await setup()
+    expect(await catalogs.linkedKeys.get(THEIRS)).toBeUndefined()
+    await catalogs.linkedKeys.pin(THEIRS, 'FIRST')
+    await catalogs.linkedKeys.pin(THEIRS, 'SECOND')
+    expect(await catalogs.linkedKeys.get(THEIRS)).toBe('FIRST')
+    expect((await notices()).filter((entity) => entity === 'mini-app.catalog')).toHaveLength(1)
+  })
 })

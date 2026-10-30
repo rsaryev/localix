@@ -14,7 +14,14 @@ export interface MiniAppPublisher {
  * `key` is the public key its signature must hold for (`catalog-signature.ts`): pinned in code for
  * the Localix catalog, kept from the first signed read for one a person added.
  */
-export type MiniAppStoreSource = { kind: 'catalog'; url: string; vouches: boolean; key?: string }
+export type MiniAppStoreSource = {
+  kind: 'catalog'
+  url: string
+  vouches: boolean
+  key?: string
+  /** The default source a built-in one is (`@localixai/store`'s `DEFAULT_SOURCES`). */
+  id?: string
+}
 
 /**
  * One file of an app's store page: a catalog's pinned file. It reaches a client only as a host

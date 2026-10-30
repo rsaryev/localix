@@ -479,6 +479,13 @@ export interface MiniAppCatalogsTable {
   signing_key: string | null
 }
 
+/** The key kept for a catalog a list links to, from its first signed read (`catalogs.ts`). */
+export interface MiniAppLinkedKeysTable {
+  url: string
+  signing_key: string
+  kept_at: string
+}
+
 export interface MiniAppAutoUpdateOffTable {
   name: string
   changed_at: string
@@ -515,6 +522,7 @@ export interface AppDatabase {
   mcp_channel_bindings: McpChannelBindingsTable
   mini_app_catalogs: MiniAppCatalogsTable
   mini_app_auto_update_off: MiniAppAutoUpdateOffTable
+  mini_app_linked_keys: MiniAppLinkedKeysTable
   user_view_state: UserViewStateTable
   store_recommendation_dismissals: StoreRecommendationDismissalsTable
   store_recommendation_events: StoreRecommendationEventsTable

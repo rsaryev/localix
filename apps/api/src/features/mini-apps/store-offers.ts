@@ -3,7 +3,11 @@ import { join } from 'node:path'
 import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 import { errorMessage } from '../../lib/errors'
-import { readMiniAppCatalogFeed, type MiniAppCatalogEditorial } from './catalog-feed'
+import {
+  readMiniAppCatalogFeed,
+  type MiniAppCatalogEditorial,
+  type MiniAppCatalogLink,
+} from './catalog-feed'
 import { catalogSignatureState } from './catalog-signature'
 import type { MiniAppStoreSource, Offer } from './store-offer-types'
 
@@ -41,30 +45,38 @@ export function createOfferReader(deps: {
    * catalog's key is pinned in code and never taken from what it serves.
    */
   pinKey?: (url: string, key: string) => Promise<void>
+  /**
+   * The keys kept for catalogs a list links to (Localix Community's authors'), each from its first
+   * signed read, as for a catalog the person added (`catalogs.ts`).
+   */
+  linkedKeys?: {
+    get(url: string): Promise<string | undefined>
+    pin(url: string, key: string): Promise<void>
+  }
 }) {
   const ttl = deps.ttlMs ?? 10 * 60_000
   const now = deps.now ?? Date.now
-  const cache = new Map<
-    string,
-    { at: number; offers: Offer[]; editorial?: MiniAppCatalogEditorial }
-  >()
+  type Read = { offers: Offer[]; links: MiniAppCatalogLink[]; editorial?: MiniAppCatalogEditorial }
+  const cache = new Map<string, Read & { at: number }>()
 
   async function catalogOffers(
     source: MiniAppStoreSource,
     fresh: boolean,
-  ): Promise<{ offers: Offer[]; editorial?: MiniAppCatalogEditorial }> {
+    pin = deps.pinKey,
+  ): Promise<Read> {
     const cached = cache.get(source.url)
     if (cached && !fresh && now() - cached.at < ttl) return cached
     const {
       apps,
+      links,
       editorial,
       signature: read,
     } = await readMiniAppCatalogFeed(source.url, {
       fetchImpl: deps.fetchImpl,
     })
     let kept = source.key
-    if (!kept && !source.vouches && read.state === 'signed' && deps.pinKey) {
-      await deps.pinKey(source.url, read.key)
+    if (!kept && !source.vouches && read.state === 'signed' && pin) {
+      await pin(source.url, read.key)
       kept = read.key
     }
     const signature = catalogSignatureState(read, kept)
@@ -112,13 +124,61 @@ export function createOfferReader(deps: {
       archive: app.archive,
     }))
     // Discover's picks are Localix's own word, like featured.
-    const held = { at: now(), offers, ...(editorial && source.vouches ? { editorial } : {}) }
+    const held = {
+      at: now(),
+      offers,
+      links,
+      ...(editorial && source.vouches ? { editorial } : {}),
+    }
     cache.set(source.url, held)
     return held
   }
 
   /**
+   * The app a list links to, read from its own catalog — which says what it is and signs it, with
+   * the key kept from that catalog's first signed read — and offered under the list: the list's
+   * trust and label, the list's words only where its catalog says nothing. A link is followed
+   * once: the linked catalog's own links are not.
+   */
+  async function linkedOffer(
+    list: MiniAppStoreSource,
+    link: MiniAppCatalogLink,
+    fresh: boolean,
+  ): Promise<Offer | { problem: string }> {
+    const key = await deps.linkedKeys?.get(link.url)
+    const source: MiniAppStoreSource = {
+      kind: 'catalog',
+      url: link.url,
+      vouches: false,
+      ...(key ? { key } : {}),
+    }
+    let read: Read
+    try {
+      read = await catalogOffers(source, fresh, deps.linkedKeys?.pin)
+    } catch (error) {
+      const held = cache.get(link.url)
+      if (!held) return { problem: `${link.name}: ${errorMessage(error)}` }
+      read = held
+    }
+    const offer = read.offers.find((found) => found.name === link.name)
+    if (!offer) return { problem: `${link.name} is not in its catalog (${link.url})` }
+    return {
+      ...offer,
+      source: list.url,
+      description: offer.description || link.description || '',
+      ...(offer.category || link.category ? { category: offer.category ?? link.category } : {}),
+      store: {
+        ...offer.store,
+        ...(offer.store.homepage || link.homepage
+          ? { homepage: offer.store.homepage ?? link.homepage }
+          : {}),
+      },
+    }
+  }
+
+  /**
    * Every offer by name — the first source to offer a name wins it — and what could not be read.
+   * A list's links come after its own apps, before the next source.
    */
   return async function read(opts: { fresh?: boolean } = {}): Promise<{
     offers: Map<string, Offer>
@@ -134,15 +194,24 @@ export function createOfferReader(deps: {
     const failed: Record<string, string> = {}
     for (const source of await deps.sources()) {
       const address = source.url
-      let found: { offers: Offer[]; editorial?: MiniAppCatalogEditorial }
+      let found: Read
       try {
         found = await catalogOffers(source, opts.fresh ?? false)
       } catch (error) {
         problems.push(errorMessage(error))
         failed[address] = errorMessage(error)
-        found = cache.get(source.url) ?? { offers: [] }
+        found = cache.get(source.url) ?? { offers: [], links: [] }
       }
       for (const offer of found.offers) if (!offers.has(offer.name)) offers.set(offer.name, offer)
+      const linked = await Promise.all(
+        found.links
+          .filter((link) => !offers.has(link.name))
+          .map((link) => linkedOffer(source, link, opts.fresh ?? false)),
+      )
+      for (const result of linked) {
+        if ('problem' in result) problems.push(result.problem)
+        else if (!offers.has(result.name)) offers.set(result.name, result)
+      }
       if (found.editorial) editorial.push({ source: address, editorial: found.editorial })
     }
     return { offers, problems, failed, editorial }
