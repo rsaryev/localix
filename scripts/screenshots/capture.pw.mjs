@@ -71,7 +71,7 @@ for (const [key, spec] of Object.entries(capturePlan)) {
     })
     if (!spec.preservePointer) await page.mouse.move(10, 10)
     await page.waitForTimeout(650)
-    // The composer's Store recommendations follow what the catalog offered that day; only the
+    // The composer's Store recommendations follow what the marketplaces offered that day; only the
     // Store and recommendation scenarios are about them, so any other capture hides the strip.
     if (!/^(store|for-your-work)/.test(spec.scenario)) {
       const hide = page.getByRole('button', { name: 'Hide until there are new recommendations' })

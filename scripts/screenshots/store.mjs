@@ -155,17 +155,26 @@ export async function composeStore(page, scenario) {
 const VERIFY = {
   async store(page) {
     await expect(heading(page)).toHaveText('Mini apps')
-    // The marketplaces’ mini apps, the three the seed installed among them.
+    // The marketplaces’ mini apps, the installed ones among them: one with a screen of its own
+    // opens it, one without (a file format's editors, say) says Installed. Never Get.
     const tiles = page.locator('[data-listing][data-kind="mini-app"]')
     await expect(tiles.first()).toBeVisible()
     await expect(tiles.getByRole('button', { name: /^Get / }).first()).toBeVisible()
-    for (const id of await installedMiniApps())
+    const installed = await installedMiniApps()
+    for (const id of installed) {
+      const tile = page.locator(`[data-listing="${id}"]`).first()
       await expect(
-        page
-          .locator(`[data-listing="${id}"]`)
-          .first()
-          .getByRole('button', { name: /^Open / }),
+        tile
+          .getByRole('button', { name: /^Open / })
+          .or(tile.getByText('Installed', { exact: true })),
       ).toBeVisible()
+      await expect(tile.getByRole('button', { name: /^Get / })).toHaveCount(0)
+    }
+    await expect(
+      page.locator(installed.map((id) => `[data-listing="${id}"]`).join(', ')).getByRole('button', {
+        name: /^Open /,
+      }),
+    ).not.toHaveCount(0)
   },
   async 'store-discover'(page) {
     // No carousel above the rows: Start here leads, with packages a person can get.
@@ -223,7 +232,8 @@ const VERIFY = {
   async 'store-consent'(page) {
     const sheet = page.getByRole('dialog')
     await expect(sheet.getByRole('heading', { name: /^Install / })).toBeVisible()
-    await expect(sheet).toContainText('Localix does not review')
+    // The community's publishers are not ones Localix verifies: the sheet says so before the yes.
+    await expect(sheet).toContainText('is not a publisher Localix verifies')
     await expect(sheet.getByRole('button', { name: 'Install', exact: true })).toBeVisible()
     await expect(sheet.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible()
   },
@@ -249,9 +259,10 @@ const VERIFY = {
   },
   async 'store-installed'(page) {
     await expect(heading(page)).toHaveText('Installed')
-    // The three mini apps the seed installed are there, beside the agents that come with Localix.
+    // The mini apps a fresh profile installed (Localix's recommended ones, or the seed's three) are
+    // there, beside the agents that come with Localix.
     const installed = await installedMiniApps()
-    expect(installed).toHaveLength(STORE_INSTALL_COUNT)
+    expect(installed.length).toBeGreaterThanOrEqual(STORE_INSTALL_COUNT)
     for (const id of installed)
       await expect(page.locator(`[data-install="${id}"]`)).toHaveCount(1, { timeout: 15_000 })
     await expect(page.getByRole('switch').first()).toBeVisible()

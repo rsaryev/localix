@@ -9,8 +9,8 @@ database to exercise the configured composer; it never reaches a provider.
 The suite covers the core only: chat, composer, workspace, settings, agents, providers and the
 Store. A mini app is installed from a marketplace like anyone's, so its own screens and their
 captures belong to the repository that publishes it; nothing here imports a mini app's code or opens
-its workbench. Where a Store scenario needs mini apps, it uses whichever ones the catalog lists and
-names none.
+its workbench. Where a Store scenario needs mini apps, it uses whichever ones the marketplaces list
+and names none.
 
 ## Start an isolated demo
 
@@ -29,9 +29,9 @@ bun run screenshots:seed
 Seeding is repeatable: it keeps one project and its conversation, plus the transcript fixtures the
 chat scenarios open. The runtime verifier compares the temporary database identity with both its
 descriptor and the running API, refuses another database, and refuses an API whose `HOME` is outside
-the capture root. The seed installs every mini app the Store's catalog lists into that home, as a
-person installs one, and switches on the demo agents a fresh database finds in the fixture project.
-Data stays outside the repository.
+the capture root. The seed installs every mini app the Store's marketplaces list into that home, as
+a person installs one, and switches on the demo agents a fresh database finds in the fixture
+project. Data stays outside the repository.
 
 A failed seed can leave partial fixtures. In particular, the disposable Git repository inherits
 commit signing and its initial commit can time out. Rerunning skips initialization when `.git`
@@ -81,14 +81,15 @@ HOME=$R/home LOCALIX_CAPTURE_ROOT=$R LOCALIX_DB_FILE=$R/localix.db LOCALIX_DEV_A
 LOCALIX_CAPTURE_ROOT=$R bun run test:screenshots --grep 'store/'
 ```
 
-Each Store scenario runs `store-seed.mjs` first: it writes the fixture the runner opens and, in a
-home with no mini app installed, installs the first three mini apps of the catalog (by id) through
-the Store. It never removes anything, so against a home that holds other mini apps the scenarios
-fail their count of three rather than uninstall a person's apps. `store/listing` opens the first
-mini app of the catalog that has pictures and a screen of its own. The browser has no macOS shell,
-so the desktop app (**Install as app**) is not offered in these captures; its DOM tests cover it.
+Each Store scenario runs `store-seed.mjs` first: it writes the fixture the runner opens. A fresh
+home installs the mini apps the Localix marketplace recommends on its own, as a person's does; only
+where none did (offline, say) does the seed install the first three on offer (by id) through the
+Store. It never removes anything, so use a home of its own: the scenarios show every mini app it
+holds. `store/listing` opens the first mini app on offer that has pictures and a screen of its own.
+The browser has no macOS shell, so the desktop app (**Install as app**) is not offered in these
+captures; its DOM tests cover it.
 
-The mini app catalog, the plugin shelves, Sources and the consent sheet come from the default
+The mini app marketplaces, the plugin shelves, Sources and the consent sheet come from the default
 sources, which the runtime reads over the network when it starts, so it needs the network, and the
 scenarios assert what any answer looks like rather than a named package. To look at the Store at
 another width or theme, set `LOCALIX_CAPTURE_VIEWPORT=2000x1100` (the pane is about 60% of it) and
@@ -115,9 +116,9 @@ menu. `agents/context-and-limits` needs the demo agents (`demo-agents.mjs`) and 
 out of the image.
 
 Not captured: the **Recommended** line above the composer (it shows only when meaning finds a match,
-and a catalog of Localix's own mini apps rarely clears the semantic gate for a fixed working set, so
-it cannot be made deterministic without a live marketplace); the language-server install status and
-Stop returning queued messages (they need a genuinely running install or run).
+and the Localix marketplace's own mini apps rarely clear the semantic gate for a fixed working set,
+so it cannot be made deterministic without a live marketplace); the language-server install status
+and Stop returning queued messages (they need a genuinely running install or run).
 
 ## Demo HTTP responses
 

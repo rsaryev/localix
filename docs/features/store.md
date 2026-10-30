@@ -46,7 +46,7 @@ only whole tiles, as many side by side as fit, and **See all** opens the rest. I
 have one column and a package page pins **Get** to the bottom. Nothing ever scrolls the page
 sideways.
 
-![Discover: Start here, rows by kind and the categories](../assets/screenshots/store/discover--2026-10-28.png)
+![Discover: Start here, rows by kind and the categories](../assets/screenshots/store/discover--2026-10-30.png)
 
 ### Discover
 
@@ -93,7 +93,7 @@ it; a package from a community source says **Community**.
 
 ![The Plugins shelf, a long list read a page at a time](../assets/screenshots/store/plugins--2026-10-28.png)
 
-![The Mini apps shelf: Open on the three installed, Get on the rest](../assets/screenshots/store/mini-apps--2026-10-28.png)
+![The Mini apps shelf: Open on the installed ones with a screen, Get on the rest](../assets/screenshots/store/mini-apps--2026-10-30.png)
 
 A capability shelf lists the components themselves. **Commands** shows each command with what it
 does and the package it comes from; choosing a row opens that package's page on **What's inside**
@@ -117,7 +117,7 @@ monitors, a backend). Each group is headed with its count (**Skills · 6**, or j
 one), and each row says what the part does: a skill's own description, or when a hook runs
 (`PostToolUse` is _After each tool the agent uses_).
 
-![A mini app's page: screenshots, description, what is inside](../assets/screenshots/store/listing--2026-10-28.png)
+![A mini app's page: screenshots, description, what is inside](../assets/screenshots/store/listing--2026-10-30.png)
 
 ### Get
 

@@ -13,9 +13,10 @@ import {
  * The Store's captures need a home of their own: a person's Store has a few mini apps installed
  * and the rest on offer, while the other scenarios need every one installed. Run this against a
  * capture API started with its own `HOME` (scripts/screenshots/README.md, "Store evidence"). It
- * writes the fixture the runner opens and installs three mini apps through the Store, once: the
- * first three on offer by id, so the fixture names none. It never removes anything, so a
- * home that already holds others fails the scenario's count instead.
+ * writes the fixture the runner opens. A fresh profile installs the mini apps the Localix
+ * marketplace recommends on its own; only where none did (offline, say) does the seed install the
+ * first three on offer by id through the Store, so the fixture names none. It never removes
+ * anything.
  */
 export const STORE_INSTALL_COUNT = 3
 
@@ -144,6 +145,9 @@ export async function seedStore() {
     fixture = { root, projectId: project.id, sessionId: session.id }
     await fs.writeFile(fixtureFile, `${JSON.stringify(fixture, null, 2)}\n`)
   }
+  // What a fresh profile installs on its own lands within a few seconds of the first read.
+  for (let attempt = 0; attempt < 40 && (await installedMiniApps()).length === 0; attempt++)
+    await wait(500)
   const before = await miniApps()
   if (!before.some((listing) => listing.installs.length > 0)) {
     const first = before.map((listing) => listing.ref.id).sort()
