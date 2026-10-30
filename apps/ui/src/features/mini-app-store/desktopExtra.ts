@@ -22,10 +22,10 @@ export function desktopExtra(
     makes: 'desktop app',
     available: (listing) =>
       isMiniApp(listing) &&
-      port.available(listing.ref.id, componentCount(listing, 'screen') > 0 ? ['workbench'] : []),
-    has: (listing) => isMiniApp(listing) && installed.includes(listing.ref.id),
-    make: (listing) => port.install(listing.ref.id, listing.displayName),
-    remove: (listing) => port.remove(listing.ref.id),
+      port.available(listing.name, componentCount(listing, 'screen') > 0 ? ['workbench'] : []),
+    has: (listing) => isMiniApp(listing) && installed.includes(listing.name),
+    make: (listing) => port.install(listing.name, listing.displayName),
+    remove: (listing) => port.remove(listing.name),
   }
 }
 

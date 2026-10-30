@@ -4,6 +4,12 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+### Fixed
+
+- **Open in the Store**: an installed mini app from a marketplace shows **Open** on its Store tile
+  and page again, where beta.21 said only **Installed**, and **Install as app** in its menu makes
+  its desktop app again.
+
 ## v0.1.0-beta.21 — 2026-10-30
 
 Mini app catalogs become marketplaces, in the shape of Claude Code's: an app is known by its name

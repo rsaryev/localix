@@ -26,3 +26,26 @@ test('a mini app with a screen of its own can become a desktop app, made with it
   await extra.remove(puzzle)
   expect(asked).toEqual(['make puzzle Puzzle', 'remove puzzle'])
 })
+
+test('an app a marketplace installed is its desktop app by its name, not its identity', async () => {
+  const asked: string[] = []
+  const port: MiniAppDesktopApps = {
+    available: (name) => name === 'puzzle',
+    installed: () => ['puzzle'],
+    subscribe: () => () => {},
+    refresh: () => {},
+    install: async (name, title) => void asked.push(`make ${name} ${title}`),
+    remove: async (name) => void asked.push(`remove ${name}`),
+  }
+  const extra = desktopExtra(port, ['puzzle'])
+  const puzzle = makeListing({
+    id: 'puzzle@localix',
+    name: 'puzzle',
+    displayName: 'Puzzle',
+    contents: { screen: 1 },
+  })
+  expect([extra.available(puzzle), extra.has(puzzle)]).toEqual([true, true])
+  await extra.make(puzzle)
+  await extra.remove(puzzle)
+  expect(asked).toEqual(['make puzzle Puzzle', 'remove puzzle'])
+})
