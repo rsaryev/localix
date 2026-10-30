@@ -53,6 +53,13 @@ const LISTINGS = [
     version: '1.0.0',
     signature: 'mismatch',
   }),
+  listing({
+    id: 'tuner',
+    displayName: 'Tuner',
+    version: '1.0.0',
+    revoked: 'It sends what you play to a server.',
+    installs: [{ scope: 'user', version: '1.0.0', enabled: true }],
+  }),
 ]
 
 async function open(id = 'puzzle', name = 'Puzzle') {
@@ -355,7 +362,7 @@ describe('a package’s page', () => {
     }
   })
 
-  test('the facts say whether its catalog is signed', async () => {
+  test('the facts say whether its marketplace is signed', async () => {
     for (const [id, name, said] of [
       ['clock', 'Clock', 'Signed'],
       ['notes', 'Notes', 'Not signed'],
@@ -370,9 +377,9 @@ describe('a package’s page', () => {
     }
   })
 
-  // Beside who publishes it: whether the catalog is signed decides whether it updates on its own,
+  // Beside who publishes it: whether the marketplace is signed decides whether it updates on its own,
   // and the person reads it before getting the app.
-  test('its header says whether its catalog is signed', async () => {
+  test('its header says whether its marketplace is signed', async () => {
     for (const [id, name, said] of [
       ['clock', 'Clock', 'Signed'],
       ['notes', 'Notes', 'Not signed'],
@@ -387,7 +394,7 @@ describe('a package’s page', () => {
     }
   })
 
-  test('an app from a signed catalog updates on its own until the person unticks it in its menu', async () => {
+  test('an app from a signed marketplace updates on its own until the person unticks it in its menu', async () => {
     const { view } = await open('clock', 'Clock')
     try {
       await view.openMenu(view.button('Clock options'))
@@ -401,13 +408,41 @@ describe('a package’s page', () => {
     }
   })
 
-  test('an app from an unsigned catalog cannot update on its own: it says it updates when asked', async () => {
+  test('an app from an unsigned marketplace cannot update on its own: it says it updates when asked', async () => {
     const { view, page, tab } = await open('notes', 'Notes')
     try {
       await view.openMenu(view.button('Notes options'))
       expect(view.menuItem('Update automatically')).toBeUndefined()
       await view.click(tab('Versions'))
       expect(page()!.textContent).toContain('when you choose Update')
+    } finally {
+      await view.done()
+    }
+  })
+
+  // Its marketplace took it back: it does not run, so it cannot be opened; the page says why, and
+  // the person can still remove it.
+  test('an app its marketplace took back says why, opens nothing, and can be removed', async () => {
+    const { view, page } = await open('tuner', 'Tuner')
+    try {
+      expect(page()!.textContent).toContain(
+        'Its marketplace took it back: It sends what you play to a server.',
+      )
+      expect(view.button('Open Tuner', page()!)).toBeUndefined()
+      await view.openMenu(view.button('Tuner options'))
+      await view.click(view.menuItem('Remove')!)
+      expect(view.calls).toContain('remove mini-app/tuner user')
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('on its tile, an app taken back says so instead of Open', async () => {
+    const view = await renderStore({ listings: LISTINGS, target: { shelf: 'package:mini-app' } })
+    try {
+      const tile = view.card('tuner')!
+      expect(tile.textContent).toContain('Taken back')
+      expect(view.button('Open Tuner', tile)).toBeUndefined()
     } finally {
       await view.done()
     }

@@ -67,7 +67,7 @@ export const COMPONENT_LABELS: Record<
 
 /** What a package kind's sources are called: a group heading and one of them. */
 export const SOURCE_LABELS: Record<PackageKind, { group: string; one: string }> = {
-  'mini-app': { group: 'Mini app catalogs', one: 'Mini app catalog' },
+  'mini-app': { group: 'Mini app marketplaces', one: 'Mini app marketplace' },
   plugin: { group: 'Claude Code marketplaces', one: 'Claude Code marketplace' },
   'mcp-server': { group: 'MCP registries', one: 'MCP registry' },
   skill: { group: 'Skill registries', one: 'Skill registry' },
@@ -105,7 +105,7 @@ export const TRUST_LABELS: Record<Trust, string> = {
   community: 'Community',
 }
 
-/** Whether the catalog a package comes from is signed with the key Localix keeps for it. */
+/** Whether the marketplace a package comes from is signed with a key Localix keeps for it. */
 export const SIGNATURE_LABELS: Record<NonNullable<Listing['signature']>, string> = {
   signed: 'Signed',
   unsigned: 'Not signed',

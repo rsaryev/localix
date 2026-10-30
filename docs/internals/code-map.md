@@ -49,15 +49,16 @@ actions and icons live in `features/standalone-mini-apps/`.
 
 An extension is a [plugin or a mini app](plugins-and-mini-apps.md), never both: a plugin is
 `.claude-plugin/plugin.json` in the Claude Code format, read by `packages/claude-plugin` (no Localix
-knowledge); a mini app is `mini-app.json` (`@localixai/mini-app-sdk/app-manifest`) with its
-`guide.md`, which the agent reads with `MiniAppGuide` (`agent-core/tools/mini-app-guide.ts`).
-`apps/api/src/features/plugins/layout/` reads a plugin folder's manifest (`read.ts`) and composes
-the one runtime manifest the loader uses (`compose.ts`, with `claude-code.ts` for the Claude Code
-mapping). It reads only `.claude-plugin/plugin.json`: a root `plugin.json` is a validation warning,
-not a manifest, and a folder holding `mini-app.json` is refused as a mini app. Mini apps are found
-and read by `apps/api/src/features/mini-apps/discovery.ts`. Making a mini app is not the core's: the
-authoring plugin of the [Localix marketplace](https://github.com/rsaryev/localix-marketplace)
-scaffolds, checks and builds one from the mini app kit, whose validation tools are
+knowledge); a mini app is `.localix-mini-app/mini-app.json` (`@localixai/mini-app-sdk/app-manifest`)
+with its `guide.md`, which the agent reads with `MiniAppGuide`
+(`agent-core/tools/mini-app-guide.ts`). `apps/api/src/features/plugins/layout/` reads a plugin
+folder's manifest (`read.ts`) and composes the one runtime manifest the loader uses (`compose.ts`,
+with `claude-code.ts` for the Claude Code mapping). It reads only `.claude-plugin/plugin.json`: a
+root `plugin.json` is a validation warning, not a manifest, and a folder holding
+`.localix-mini-app/mini-app.json` is refused as a plugin. Mini apps are found and read by
+`apps/api/src/features/mini-apps/discovery.ts`. Making a mini app is not the core's: the authoring
+plugin of the [Localix marketplace](https://github.com/rsaryev/localix-marketplace) scaffolds,
+checks and builds one from the mini app kit, whose validation tools are
 `features/mini-apps/kit-tools.ts`, and `features/mini-apps/local-install.ts` installs the package it
 builds.
 

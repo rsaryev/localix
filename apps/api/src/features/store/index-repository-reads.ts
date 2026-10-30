@@ -178,13 +178,19 @@ export function createIndexReads(db: Kysely<StoreIndexTables>) {
     },
 
     /**
-     * The listings whose source says what they are for (`Listing.suits`), none the person has
-     * installed, best score first: few, so read whole and matched in memory (`recommend-rules.ts`).
+     * The listings their marketplace suggests for something (`Listing.suggestFor`) or that open a
+     * kind of file (`Listing.opens`), none the person has installed, best score first: few, so read
+     * whole and matched in memory (`recommend-rules.ts`).
      */
     async suited(userId: string, limit = SUITED): Promise<Listing[]> {
       const rows = await narrowed(visibleListings(db, userId), { installed: false })
         .select(ROW)
-        .where(sql<unknown>`json_extract(l.card, '$.suits')`, 'is not', null)
+        .where((eb) =>
+          eb.or([
+            eb(sql<unknown>`json_extract(l.card, '$.suggestFor')`, 'is not', null),
+            eb(sql<unknown>`json_extract(l.card, '$.opens')`, 'is not', null),
+          ]),
+        )
         .orderBy('l.score', 'desc')
         .limit(limit)
         .execute()

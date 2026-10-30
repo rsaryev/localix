@@ -2,7 +2,7 @@
   "name": "@localixai/mini-app-sdk",
   "version": "0.1.0",
   "private": true,
-  "description": "Typed contracts for Localix mini apps: the mini-app.json manifest, backend tools, hooks, channels and screens.",
+  "description": "Typed contracts for Localix mini apps: the .localix-mini-app/mini-app.json manifest, backend tools, hooks, channels and screens.",
   "keywords": [
     "agent",
     "localix",
@@ -27,6 +27,16 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./agent-wait": {
+      "@localixai/source": "./src/agent-wait.ts",
+      "types": "./dist/agent-wait.d.ts",
+      "import": "./dist/agent-wait.js"
+    },
+    "./app-manifest": {
+      "@localixai/source": "./src/manifest/app.ts",
+      "types": "./dist/manifest/app.d.ts",
+      "import": "./dist/manifest/app.js"
+    },
     "./backend": {
       "@localixai/source": "./src/backend/index.ts",
       "types": "./dist/backend/index.d.ts",
@@ -37,15 +47,110 @@
       "types": "./dist/backend/testing.d.ts",
       "import": "./dist/backend/testing.js"
     },
+    "./bounded-cache": {
+      "@localixai/source": "./src/bounded-cache.ts",
+      "types": "./dist/bounded-cache.d.ts",
+      "import": "./dist/bounded-cache.js"
+    },
+    "./document-layout": {
+      "@localixai/source": "./src/document-layout.ts",
+      "types": "./dist/document-layout.d.ts",
+      "import": "./dist/document-layout.js"
+    },
+    "./manifest": {
+      "@localixai/source": "./src/manifest/index.ts",
+      "types": "./dist/manifest/index.d.ts",
+      "import": "./dist/manifest/index.js"
+    },
+    "./manifest-label": {
+      "@localixai/source": "./src/manifest/label.ts",
+      "types": "./dist/manifest/label.d.ts",
+      "import": "./dist/manifest/label.js"
+    },
+    "./manifest-media": {
+      "@localixai/source": "./src/manifest/media.ts",
+      "types": "./dist/manifest/media.d.ts",
+      "import": "./dist/manifest/media.js"
+    },
+    "./manifest-primitives": {
+      "@localixai/source": "./src/manifest/primitives.ts",
+      "types": "./dist/manifest/primitives.d.ts",
+      "import": "./dist/manifest/primitives.js"
+    },
+    "./marketplace": {
+      "@localixai/source": "./src/marketplace/index.ts",
+      "types": "./dist/marketplace/index.d.ts",
+      "import": "./dist/marketplace/index.js"
+    },
+    "./marketplace-signature": {
+      "@localixai/source": "./src/marketplace/signature.ts",
+      "types": "./dist/marketplace/signature.d.ts",
+      "import": "./dist/marketplace/signature.js"
+    },
+    "./navigation": {
+      "@localixai/source": "./src/navigation.ts",
+      "types": "./dist/navigation.d.ts",
+      "import": "./dist/navigation.js"
+    },
+    "./opponent": {
+      "@localixai/source": "./src/opponent.ts",
+      "types": "./dist/opponent.d.ts",
+      "import": "./dist/opponent.js"
+    },
+    "./prerequisite": {
+      "@localixai/source": "./src/prerequisite.ts",
+      "types": "./dist/prerequisite.d.ts",
+      "import": "./dist/prerequisite.js"
+    },
+    "./resource-refs": {
+      "@localixai/source": "./src/backend/resource-refs.ts",
+      "types": "./dist/backend/resource-refs.d.ts",
+      "import": "./dist/backend/resource-refs.js"
+    },
+    "./rich-text": {
+      "@localixai/source": "./src/rich-text.ts",
+      "types": "./dist/rich-text.d.ts",
+      "import": "./dist/rich-text.js"
+    },
+    "./sealed": {
+      "@localixai/source": "./src/sealed.ts",
+      "types": "./dist/sealed.d.ts",
+      "import": "./dist/sealed.js"
+    },
+    "./secret-shapes": {
+      "@localixai/source": "./src/secret-shapes.ts",
+      "types": "./dist/secret-shapes.d.ts",
+      "import": "./dist/secret-shapes.js"
+    },
+    "./session-resource": {
+      "@localixai/source": "./src/session-resource.ts",
+      "types": "./dist/session-resource.d.ts",
+      "import": "./dist/session-resource.js"
+    },
+    "./store-changes": {
+      "@localixai/source": "./src/store-changes.ts",
+      "types": "./dist/store-changes.d.ts",
+      "import": "./dist/store-changes.js"
+    },
+    "./typed-error": {
+      "@localixai/source": "./src/backend/typed-error.ts",
+      "types": "./dist/backend/typed-error.d.ts",
+      "import": "./dist/backend/typed-error.js"
+    },
     "./ui": {
       "@localixai/source": "./src/ui/index.ts",
       "types": "./dist/ui/index.d.ts",
       "import": "./dist/ui/index.js"
     },
-    "./ui/classes": {
-      "@localixai/source": "./src/ui/classes.ts",
-      "types": "./dist/ui/classes.d.ts",
-      "import": "./dist/ui/classes.js"
+    "./ui-artifact": {
+      "@localixai/source": "./src/ui-artifact.ts",
+      "types": "./dist/ui-artifact.d.ts",
+      "import": "./dist/ui-artifact.js"
+    },
+    "./ui/app": {
+      "@localixai/source": "./src/ui/app.tsx",
+      "types": "./dist/ui/app.d.ts",
+      "import": "./dist/ui/app.js"
     },
     "./ui/chart-export": {
       "@localixai/source": "./src/ui/chart-export.ts",
@@ -57,50 +162,30 @@
       "types": "./dist/ui/charts/ChartView.d.ts",
       "import": "./dist/ui/charts/ChartView.js"
     },
-    "./ui/testing": {
-      "@localixai/source": "./src/ui/testing.tsx",
-      "types": "./dist/ui/testing.d.ts",
-      "import": "./dist/ui/testing.js"
-    },
-    "./ui/use-problem-report": {
-      "@localixai/source": "./src/ui/use-problem-report.ts",
-      "types": "./dist/ui/use-problem-report.d.ts",
-      "import": "./dist/ui/use-problem-report.js"
-    },
-    "./ui/problems": {
-      "@localixai/source": "./src/ui/problems.ts",
-      "types": "./dist/ui/problems.d.ts",
-      "import": "./dist/ui/problems.js"
-    },
-    "./ui/components": {
-      "@localixai/source": "./src/ui/components.tsx",
-      "types": "./dist/ui/components.d.ts",
-      "import": "./dist/ui/components.js"
-    },
-    "./ui/comments": {
-      "@localixai/source": "./src/ui/comments.ts",
-      "types": "./dist/ui/comments.d.ts",
-      "import": "./dist/ui/comments.js"
+    "./ui/classes": {
+      "@localixai/source": "./src/ui/classes.ts",
+      "types": "./dist/ui/classes.d.ts",
+      "import": "./dist/ui/classes.js"
     },
     "./ui/commands": {
       "@localixai/source": "./src/ui/commands.ts",
       "types": "./dist/ui/commands.d.ts",
       "import": "./dist/ui/commands.js"
     },
-    "./ui/storage": {
-      "@localixai/source": "./src/ui/storage.ts",
-      "types": "./dist/ui/storage.d.ts",
-      "import": "./dist/ui/storage.js"
+    "./ui/comments": {
+      "@localixai/source": "./src/ui/comments.ts",
+      "types": "./dist/ui/comments.d.ts",
+      "import": "./dist/ui/comments.js"
     },
-    "./ui/path-tree": {
-      "@localixai/source": "./src/ui/path-tree.ts",
-      "types": "./dist/ui/path-tree.d.ts",
-      "import": "./dist/ui/path-tree.js"
+    "./ui/components": {
+      "@localixai/source": "./src/ui/components.tsx",
+      "types": "./dist/ui/components.d.ts",
+      "import": "./dist/ui/components.js"
     },
-    "./ui/interactions": {
-      "@localixai/source": "./src/ui/interactions.tsx",
-      "types": "./dist/ui/interactions.d.ts",
-      "import": "./dist/ui/interactions.js"
+    "./ui/file-resource-sync": {
+      "@localixai/source": "./src/ui/file-resource-sync.ts",
+      "types": "./dist/ui/file-resource-sync.d.ts",
+      "import": "./dist/ui/file-resource-sync.js"
     },
     "./ui/file-types": {
       "@localixai/source": "./src/ui/file-types.ts",
@@ -112,10 +197,65 @@
       "types": "./dist/ui/focus/index.d.ts",
       "import": "./dist/ui/focus/index.js"
     },
+    "./ui/game-table": {
+      "@localixai/source": "./src/ui/game-table.ts",
+      "types": "./dist/ui/game-table.d.ts",
+      "import": "./dist/ui/game-table.js"
+    },
+    "./ui/interactions": {
+      "@localixai/source": "./src/ui/interactions.tsx",
+      "types": "./dist/ui/interactions.d.ts",
+      "import": "./dist/ui/interactions.js"
+    },
     "./ui/message-binding-drag": {
       "@localixai/source": "./src/ui/message-binding-drag.ts",
       "types": "./dist/ui/message-binding-drag.d.ts",
       "import": "./dist/ui/message-binding-drag.js"
+    },
+    "./ui/now": {
+      "@localixai/source": "./src/ui/now.ts",
+      "types": "./dist/ui/now.d.ts",
+      "import": "./dist/ui/now.js"
+    },
+    "./ui/path-tree": {
+      "@localixai/source": "./src/ui/path-tree.ts",
+      "types": "./dist/ui/path-tree.d.ts",
+      "import": "./dist/ui/path-tree.js"
+    },
+    "./ui/prerequisite-recovery": {
+      "@localixai/source": "./src/ui/prerequisite-recovery.ts",
+      "types": "./dist/ui/prerequisite-recovery.d.ts",
+      "import": "./dist/ui/prerequisite-recovery.js"
+    },
+    "./ui/problems": {
+      "@localixai/source": "./src/ui/problems.ts",
+      "types": "./dist/ui/problems.d.ts",
+      "import": "./dist/ui/problems.js"
+    },
+    "./ui/realtime-feed": {
+      "@localixai/source": "./src/ui/realtime-feed.ts",
+      "types": "./dist/ui/realtime-feed.d.ts",
+      "import": "./dist/ui/realtime-feed.js"
+    },
+    "./ui/resource-sync": {
+      "@localixai/source": "./src/ui/resource-sync.ts",
+      "types": "./dist/ui/resource-sync.d.ts",
+      "import": "./dist/ui/resource-sync.js"
+    },
+    "./ui/resource-topics": {
+      "@localixai/source": "./src/ui/resource-topics.ts",
+      "types": "./dist/ui/resource-topics.d.ts",
+      "import": "./dist/ui/resource-topics.js"
+    },
+    "./ui/result-count-status": {
+      "@localixai/source": "./src/ui/result-count-status.tsx",
+      "types": "./dist/ui/result-count-status.d.ts",
+      "import": "./dist/ui/result-count-status.js"
+    },
+    "./ui/route-snapshot": {
+      "@localixai/source": "./src/ui/route-snapshot.ts",
+      "types": "./dist/ui/route-snapshot.d.ts",
+      "import": "./dist/ui/route-snapshot.js"
     },
     "./ui/runtime": {
       "@localixai/source": "./src/ui/runtime.ts",
@@ -127,55 +267,70 @@
       "types": "./dist/ui/runtime-hooks.d.ts",
       "import": "./dist/ui/runtime-hooks.js"
     },
-    "./ui/realtime-feed": {
-      "@localixai/source": "./src/ui/realtime-feed.ts",
-      "types": "./dist/ui/realtime-feed.d.ts",
-      "import": "./dist/ui/realtime-feed.js"
-    },
-    "./ui/result-count-status": {
-      "@localixai/source": "./src/ui/result-count-status.tsx",
-      "types": "./dist/ui/result-count-status.d.ts",
-      "import": "./dist/ui/result-count-status.js"
+    "./ui/segmented-control": {
+      "@localixai/source": "./src/ui/segmented-control.tsx",
+      "types": "./dist/ui/segmented-control.d.ts",
+      "import": "./dist/ui/segmented-control.js"
     },
     "./ui/session-activity": {
       "@localixai/source": "./src/ui/session-activity.ts",
       "types": "./dist/ui/session-activity.d.ts",
       "import": "./dist/ui/session-activity.js"
     },
+    "./ui/session-game": {
+      "@localixai/source": "./src/ui/session-game.tsx",
+      "types": "./dist/ui/session-game.d.ts",
+      "import": "./dist/ui/session-game.js"
+    },
     "./ui/session-tree": {
       "@localixai/source": "./src/ui/session-tree.ts",
       "types": "./dist/ui/session-tree.d.ts",
       "import": "./dist/ui/session-tree.js"
-    },
-    "./ui/segmented-control": {
-      "@localixai/source": "./src/ui/segmented-control.tsx",
-      "types": "./dist/ui/segmented-control.d.ts",
-      "import": "./dist/ui/segmented-control.js"
-    },
-    "./ui/stats-charts": {
-      "@localixai/source": "./src/ui/stats-charts.tsx",
-      "types": "./dist/ui/stats-charts.d.ts",
-      "import": "./dist/ui/stats-charts.js"
-    },
-    "./ui/table": {
-      "@localixai/source": "./src/ui/table.ts",
-      "types": "./dist/ui/table.d.ts",
-      "import": "./dist/ui/table.js"
-    },
-    "./ui/transport": {
-      "@localixai/source": "./src/ui/transport.ts",
-      "types": "./dist/ui/transport.d.ts",
-      "import": "./dist/ui/transport.js"
     },
     "./ui/shared-resource": {
       "@localixai/source": "./src/ui/shared-resource.ts",
       "types": "./dist/ui/shared-resource.d.ts",
       "import": "./dist/ui/shared-resource.js"
     },
-    "./ui/resource-topics": {
-      "@localixai/source": "./src/ui/resource-topics.ts",
-      "types": "./dist/ui/resource-topics.d.ts",
-      "import": "./dist/ui/resource-topics.js"
+    "./ui/stats-charts": {
+      "@localixai/source": "./src/ui/stats-charts.tsx",
+      "types": "./dist/ui/stats-charts.d.ts",
+      "import": "./dist/ui/stats-charts.js"
+    },
+    "./ui/storage": {
+      "@localixai/source": "./src/ui/storage.ts",
+      "types": "./dist/ui/storage.d.ts",
+      "import": "./dist/ui/storage.js"
+    },
+    "./ui/store-resource": {
+      "@localixai/source": "./src/ui/store-resource.ts",
+      "types": "./dist/ui/store-resource.d.ts",
+      "import": "./dist/ui/store-resource.js"
+    },
+    "./ui/store-snapshot": {
+      "@localixai/source": "./src/ui/store-snapshot.ts",
+      "types": "./dist/ui/store-snapshot.d.ts",
+      "import": "./dist/ui/store-snapshot.js"
+    },
+    "./ui/table": {
+      "@localixai/source": "./src/ui/table.ts",
+      "types": "./dist/ui/table.d.ts",
+      "import": "./dist/ui/table.js"
+    },
+    "./ui/testing": {
+      "@localixai/source": "./src/ui/testing.tsx",
+      "types": "./dist/ui/testing.d.ts",
+      "import": "./dist/ui/testing.js"
+    },
+    "./ui/transport": {
+      "@localixai/source": "./src/ui/transport.ts",
+      "types": "./dist/ui/transport.d.ts",
+      "import": "./dist/ui/transport.js"
+    },
+    "./ui/use-problem-report": {
+      "@localixai/source": "./src/ui/use-problem-report.ts",
+      "types": "./dist/ui/use-problem-report.d.ts",
+      "import": "./dist/ui/use-problem-report.js"
     },
     "./ui/utilities": {
       "@localixai/source": "./src/ui/utilities.ts",
@@ -187,155 +342,10 @@
       "types": "./dist/ui/visibility.d.ts",
       "import": "./dist/ui/visibility.js"
     },
-    "./ui/prerequisite-recovery": {
-      "@localixai/source": "./src/ui/prerequisite-recovery.ts",
-      "types": "./dist/ui/prerequisite-recovery.d.ts",
-      "import": "./dist/ui/prerequisite-recovery.js"
-    },
     "./ui/work-item-session": {
       "@localixai/source": "./src/ui/work-item-session.tsx",
       "types": "./dist/ui/work-item-session.d.ts",
       "import": "./dist/ui/work-item-session.js"
-    },
-    "./manifest": {
-      "@localixai/source": "./src/manifest/index.ts",
-      "types": "./dist/manifest/index.d.ts",
-      "import": "./dist/manifest/index.js"
-    },
-    "./app-manifest": {
-      "@localixai/source": "./src/manifest/app.ts",
-      "types": "./dist/manifest/app.d.ts",
-      "import": "./dist/manifest/app.js"
-    },
-    "./manifest-media": {
-      "@localixai/source": "./src/manifest/media.ts",
-      "types": "./dist/manifest/media.d.ts",
-      "import": "./dist/manifest/media.js"
-    },
-    "./resource-refs": {
-      "@localixai/source": "./src/backend/resource-refs.ts",
-      "types": "./dist/backend/resource-refs.d.ts",
-      "import": "./dist/backend/resource-refs.js"
-    },
-    "./typed-error": {
-      "@localixai/source": "./src/backend/typed-error.ts",
-      "types": "./dist/backend/typed-error.d.ts",
-      "import": "./dist/backend/typed-error.js"
-    },
-    "./navigation": {
-      "@localixai/source": "./src/navigation.ts",
-      "types": "./dist/navigation.d.ts",
-      "import": "./dist/navigation.js"
-    },
-    "./prerequisite": {
-      "@localixai/source": "./src/prerequisite.ts",
-      "types": "./dist/prerequisite.d.ts",
-      "import": "./dist/prerequisite.js"
-    },
-    "./session-resource": {
-      "@localixai/source": "./src/session-resource.ts",
-      "types": "./dist/session-resource.d.ts",
-      "import": "./dist/session-resource.js"
-    },
-    "./ui-artifact": {
-      "@localixai/source": "./src/ui-artifact.ts",
-      "types": "./dist/ui-artifact.d.ts",
-      "import": "./dist/ui-artifact.js"
-    },
-    "./rich-text": {
-      "@localixai/source": "./src/rich-text.ts",
-      "types": "./dist/rich-text.d.ts",
-      "import": "./dist/rich-text.js"
-    },
-    "./document-layout": {
-      "@localixai/source": "./src/document-layout.ts",
-      "types": "./dist/document-layout.d.ts",
-      "import": "./dist/document-layout.js"
-    },
-    "./ui/resource-sync": {
-      "@localixai/source": "./src/ui/resource-sync.ts",
-      "types": "./dist/ui/resource-sync.d.ts",
-      "import": "./dist/ui/resource-sync.js"
-    },
-    "./ui/file-resource-sync": {
-      "@localixai/source": "./src/ui/file-resource-sync.ts",
-      "types": "./dist/ui/file-resource-sync.d.ts",
-      "import": "./dist/ui/file-resource-sync.js"
-    },
-    "./sealed": {
-      "@localixai/source": "./src/sealed.ts",
-      "types": "./dist/sealed.d.ts",
-      "import": "./dist/sealed.js"
-    },
-    "./agent-wait": {
-      "@localixai/source": "./src/agent-wait.ts",
-      "types": "./dist/agent-wait.d.ts",
-      "import": "./dist/agent-wait.js"
-    },
-    "./opponent": {
-      "@localixai/source": "./src/opponent.ts",
-      "types": "./dist/opponent.d.ts",
-      "import": "./dist/opponent.js"
-    },
-    "./bounded-cache": {
-      "@localixai/source": "./src/bounded-cache.ts",
-      "types": "./dist/bounded-cache.d.ts",
-      "import": "./dist/bounded-cache.js"
-    },
-    "./secret-shapes": {
-      "@localixai/source": "./src/secret-shapes.ts",
-      "types": "./dist/secret-shapes.d.ts",
-      "import": "./dist/secret-shapes.js"
-    },
-    "./store-changes": {
-      "@localixai/source": "./src/store-changes.ts",
-      "types": "./dist/store-changes.d.ts",
-      "import": "./dist/store-changes.js"
-    },
-    "./ui/store-resource": {
-      "@localixai/source": "./src/ui/store-resource.ts",
-      "types": "./dist/ui/store-resource.d.ts",
-      "import": "./dist/ui/store-resource.js"
-    },
-    "./ui/route-snapshot": {
-      "@localixai/source": "./src/ui/route-snapshot.ts",
-      "types": "./dist/ui/route-snapshot.d.ts",
-      "import": "./dist/ui/route-snapshot.js"
-    },
-    "./ui/app": {
-      "@localixai/source": "./src/ui/app.tsx",
-      "types": "./dist/ui/app.d.ts",
-      "import": "./dist/ui/app.js"
-    },
-    "./ui/store-snapshot": {
-      "@localixai/source": "./src/ui/store-snapshot.ts",
-      "types": "./dist/ui/store-snapshot.d.ts",
-      "import": "./dist/ui/store-snapshot.js"
-    },
-    "./ui/session-game": {
-      "@localixai/source": "./src/ui/session-game.tsx",
-      "types": "./dist/ui/session-game.d.ts",
-      "import": "./dist/ui/session-game.js"
-    },
-    "./ui/game-table": {
-      "@localixai/source": "./src/ui/game-table.ts",
-      "types": "./dist/ui/game-table.d.ts",
-      "import": "./dist/ui/game-table.js"
-    },
-    "./ui/now": {
-      "@localixai/source": "./src/ui/now.ts",
-      "types": "./dist/ui/now.d.ts",
-      "import": "./dist/ui/now.js"
-    },
-    "./manifest-label": {
-      "@localixai/source": "./src/manifest/label.ts",
-      "types": "./dist/manifest/label.d.ts",
-      "import": "./dist/manifest/label.js"
-    },
-    "./manifest-primitives": {
-      "@localixai/source": "./src/manifest/primitives.ts",
-      "types": "./dist/manifest/primitives.d.ts",
-      "import": "./dist/manifest/primitives.js"
     }
   },
   "scripts": {
@@ -351,6 +361,7 @@
     "@localixai/dataview": "workspace:*",
     "@localixai/path-containment": "workspace:*",
     "@localixai/search": "workspace:*",
+    "@localixai/store": "workspace:*",
     "@localixai/uri": "workspace:*",
     "@localixai/visual-feedback": "workspace:*",
     "clsx": "^2.1.1",

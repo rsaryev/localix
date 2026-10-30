@@ -14,12 +14,17 @@ export {
   scopeSchema,
   sourcePreviewSchema,
   sourceViewSchema,
-  sourceSuitsSchema,
-  suitsSchema,
   TRUSTS,
   trustSchema,
 } from './contract'
-export { collectionSchema, collectionStyleSchema, editorialSchema } from './collections'
+export { readCuration, readSuggestFor, suggestForSchema } from './curation'
+export type { Curation, SuggestFor } from './curation'
+export {
+  collectionSchema,
+  collectionStyleSchema,
+  editorialSchema,
+  readCollections,
+} from './collections'
 export type { Collection, CollectionStyle, Editorial } from './collections'
 export type {
   ComponentKind,
@@ -28,7 +33,6 @@ export type {
   Listing,
   ListingDetail,
   ListingRef,
-  ListingSuits,
   PackageKind,
   Scope,
   SourcePreview,
@@ -143,7 +147,7 @@ export type { BrowsableComponentKind, ShelfId } from './shelves'
 export { opensFile } from './opens'
 export { STORE_CATEGORIES, storeCategory } from './categories'
 export type { StoreCategory } from './categories'
-export { catalogOrigin, gitOrigin, npmOrigin } from './identity'
+export { gitOrigin, miniAppOrigin, npmOrigin } from './identity'
 export {
   COMMUNITY_SOURCE,
   DEFAULT_SOURCES,
@@ -151,6 +155,5 @@ export {
   LOCALIX_MARKETPLACE,
   TRUST_WEIGHTS,
   defaultSource,
-  releaseMiniAppCatalog,
 } from './default-sources'
 export type { DefaultSource } from './default-sources'

@@ -1,106 +1,30 @@
-import { z } from 'zod'
-import {
-  packageKindSchema,
-  sourceSuitsSchema,
-  type Editorial,
-  type ListingRef,
-  type ListingSuits,
-} from '@localixai/store'
+import { readCollections, readCuration, type Curation, type Editorial } from '@localixai/store'
 
+import type { MarketplaceEntry } from './marketplace'
 import type { MarketView } from './store-listing'
 
 /**
- * A MARKETPLACE'S PICKS FOR THE STORE: Localix's own optional key `metadata.localix` in
- * `.claude-plugin/marketplace.json`, which Claude Code ignores (it validates the known metadata
- * keys only). It names the entries Discover recommends and features, collections whose items
- * are entry names, or `<kind>:<id>` for another kind, and what entries are for (`suits`: by entry
- * name, the files and dependencies recommendations show it for). Read for an editorial marketplace
- * only (`@localixai/store`'s default sources); a community one picks nothing.
+ * A MARKETPLACE'S CURATION FOR THE STORE (`docs/extending/mini-app-marketplace.md`, "Curation"):
+ * in `.claude-plugin/marketplace.json`, each plugin's `localix` key says whether it is featured,
+ * installed by default and what it is suggested for, and `metadata.localix.collections` holds
+ * Discover's rows. Both are fields Claude Code ignores at load time. Read for an editorial
+ * marketplace only (`@localixai/store`'s default sources); any other curates nothing.
  */
-const names = z
-  .array(z.unknown())
-  .transform((all) => all.filter((name): name is string => typeof name === 'string'))
-  .catch([])
-const optionalText = z.string().min(1).max(240).optional().catch(undefined)
-/** What each entry, by name, is for (`Listing.suits`); an entry that says nothing is left out. */
-const suitsSchema = z
-  .record(z.string(), z.unknown())
-  .transform((all) => {
-    const out = new Map<string, ListingSuits>()
-    for (const [name, raw] of Object.entries(all)) {
-      const suits = sourceSuitsSchema.parse(raw)
-      if (suits) out.set(name, suits)
-    }
-    return out
-  })
-  .optional()
-  .catch(undefined)
-const picksSchema = z.object({
-  featured: names.optional(),
-  recommended: names.optional(),
-  collections: z
-    .array(z.unknown())
-    .transform((all) =>
-      all.flatMap((raw) => {
-        const parsed = z
-          .object({
-            id: z.string().min(1).max(64),
-            title: z.string().min(1).max(120),
-            subtitle: optionalText,
-            style: z.enum(['row', 'grid']).catch('row'),
-            items: names,
-          })
-          .safeParse(raw)
-        return parsed.success ? [parsed.data] : []
-      }),
-    )
-    .optional()
-    .catch(undefined),
-  suits: suitsSchema,
-})
 
-const read = new WeakMap<MarketView, ReturnType<typeof readPicks>>()
-
-/** The picks of an editorial marketplace; empty for any other. Read once per view. */
-export function marketPicks(view: MarketView): ReturnType<typeof readPicks> {
-  const held = read.get(view)
-  if (held) return held
-  const picks = readPicks(view)
-  read.set(view, picks)
-  return picks
-}
-
-function readPicks(view: MarketView) {
-  const raw = view.editorial ? view.market.metadata?.localix : undefined
-  const parsed = picksSchema.safeParse(raw ?? {})
-  const picks = parsed.success ? parsed.data : {}
-  return {
-    featured: new Set(picks.featured ?? []),
-    recommended: new Set(picks.recommended ?? []),
-    collections: picks.collections ?? [],
-    suits: picks.suits ?? new Map<string, ListingSuits>(),
-  }
-}
-
-/** An item: one of this marketplace's entries by name, or `<kind>:<id>`. */
-function refOf(view: MarketView, item: string): ListingRef | null {
-  const at = item.indexOf(':')
-  if (at < 0) return { kind: 'plugin', id: `${item}@${view.name}` }
-  const kind = packageKindSchema.safeParse(item.slice(0, at))
-  return kind.success && at < item.length - 1 ? { kind: kind.data, id: item.slice(at + 1) } : null
+/** An entry's curation, or none when its marketplace is not editorial. */
+export function entryCuration(view: MarketView, entry: MarketplaceEntry): Curation {
+  return view.editorial ? readCuration((entry as Record<string, unknown>).localix) : {}
 }
 
 export function marketEditorial(view: MarketView): Editorial | null {
-  const picks = marketPicks(view)
-  if (picks.collections.length === 0) return null
-  return {
-    source: view.name,
-    collections: picks.collections.map((collection) => ({
-      id: collection.id,
-      title: collection.title,
-      ...(collection.subtitle ? { subtitle: collection.subtitle } : {}),
-      style: collection.style,
-      items: collection.items.flatMap((item) => refOf(view, item) ?? []),
-    })),
-  }
+  if (!view.editorial) return null
+  const localix = (view.market.metadata as Record<string, unknown> | undefined)?.localix
+  const collections = readCollections(
+    (localix as Record<string, unknown> | undefined)?.collections,
+    (name) => ({
+      kind: 'plugin',
+      id: `${name}@${view.name}`,
+    }),
+  )
+  return collections.length ? { source: view.name, collections } : null
 }

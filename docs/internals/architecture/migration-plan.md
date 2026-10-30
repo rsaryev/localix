@@ -70,7 +70,7 @@ scheduling, terminal lifecycle and the session event stream.
       two with distinct jobs (durable backend feed, ephemeral view invalidation), documented in
       `docs/extending/mini-app-sync.md`.
 - [x] The repository bundles no mini app and no plugin (X4, X5): Localix's own live in the Localix
-      marketplace and install from its catalog, so the core never staged, packed or named one.
+      marketplace and install from its marketplace, so the core never staged, packed or named one.
 
 ## Dead code and legacy
 

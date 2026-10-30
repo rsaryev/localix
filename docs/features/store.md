@@ -132,8 +132,8 @@ the macOS desktop an app with a screen of its own also offers **Install as app**
 A fresh profile starts with these sources. Only the Localix marketplace installs anything on its own
 (see below); from the others nothing is installed or switched on. The first two are one repository,
 the [Localix marketplace](https://github.com/rsaryev/localix-marketplace): its releases publish the
-mini app catalog, and its `plugins` folder is the plugin marketplace. The core names none of their
-packages.
+mini app marketplace, and its `plugins` folder is the plugin marketplace. The core names none of
+their packages.
 
 | Source                                | Trust     | Shown as                                                |
 | ------------------------------------- | --------- | ------------------------------------------------------- |

@@ -144,28 +144,31 @@ describe('loadMiniAppCommandArgOptions', () => {
   })
 })
 
-describe('/mini-app catalog remove', () => {
-  test('offers the catalogs the person added, never the built-in one', async () => {
-    const real = backendClient.listMiniAppCatalogs.bind(backendClient)
-    backendClient.listMiniAppCatalogs = async () => [
+describe('/mini-app marketplace remove', () => {
+  test('offers the marketplaces the person added by name, never a built-in one', async () => {
+    const real = backendClient.listMiniAppMarketplaces.bind(backendClient)
+    backendClient.listMiniAppMarketplaces = async () => [
       {
-        url: 'https://github.com/rsaryev/localix/releases/latest/download/mini-app-catalog.json',
+        name: 'Localix',
+        url: 'https://github.com/rsaryev/localix-marketplace/releases/latest/download/mini-app-marketplace.json',
         builtIn: true,
       },
-      { url: 'https://ada.test/mini-app-catalog.json', builtIn: false },
-      { url: 'file:///Users/ada/catalog/mini-app-catalog.json', builtIn: false },
+      { name: 'ada', url: 'https://ada.test/mini-app-marketplace.json', builtIn: false },
+      { name: 'bench', url: 'file:///Users/ada/bench/mini-app-marketplace.json', builtIn: false },
     ]
     try {
-      const options = await loadMiniAppCommandArgOptions('catalog', 'catalog', '')
-      expect(options.map((o) => [o.value, o.label])).toEqual([
-        ['https://ada.test/mini-app-catalog.json', 'ada.test'],
-        ['file:///Users/ada/catalog/mini-app-catalog.json', 'A folder on this computer'],
+      const options = await loadMiniAppCommandArgOptions('marketplace', 'marketplace', '')
+      expect(options.map((o) => [o.value, o.description])).toEqual([
+        ['ada', 'https://ada.test/mini-app-marketplace.json'],
+        ['bench', 'file:///Users/ada/bench/mini-app-marketplace.json'],
       ])
       expect(
-        (await loadMiniAppCommandArgOptions('catalog', 'catalog', 'ada.test')).map((o) => o.label),
-      ).toEqual(['ada.test'])
+        (await loadMiniAppCommandArgOptions('marketplace', 'marketplace', 'ben')).map(
+          (o) => o.value,
+        ),
+      ).toEqual(['bench'])
     } finally {
-      backendClient.listMiniAppCatalogs = real
+      backendClient.listMiniAppMarketplaces = real
     }
   })
 })

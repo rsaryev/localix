@@ -23,7 +23,7 @@ export interface MiniAppInstallOutcome {
   version?: string
   /** Set when it did not install: the version before keeps running. */
   error?: string
-  /** Who asked for it; a catalog update was asked for by nobody. */
+  /** Who asked for it; an update on its own was asked for by nobody. */
   userId?: string
 }
 
@@ -38,19 +38,25 @@ export const isIncompatible = (offer: Offer) =>
   apiVersionTooNew('Mini app', MINI_APP_API_VERSION, offer.apiVersion) !== null
 
 export const iconOf = (offer: Offer) =>
-  offer.store.icon ? storeMediaUrl(offer.name, 'icon', offer.store.icon) : undefined
+  offer.store.icon ? storeMediaUrl(offer.id, 'icon', offer.store.icon) : undefined
 
 /**
- * Whether Update all would take this offer: an app a catalog (or an earlier Localix build) put
- * here, at another version, that this Localix can run. A folder the person made is theirs, and an
- * app updates only from the catalog that installed it: another catalog that lists the same name
- * is another publisher's app. The catalog Localix vouches for may update any copy it offers.
+ * Whether the folder under the offer's name holds this very app: one its marketplace installed —
+ * the same name from another marketplace is another app — or a copy an earlier Localix build put
+ * there, which is Localix's own and moves to the marketplace Localix vouches for.
+ */
+export async function holdsOffer(offer: Offer, installRoot: string): Promise<boolean> {
+  const dir = join(installRoot, offer.name)
+  const by = await installedBy(dir)
+  if (by === 'staged') return offer.publisher.verified
+  return by === 'marketplace' && (await readInstallRecord(dir))?.marketplace === offer.marketplace
+}
+
+/**
+ * Whether Update all would take this offer: this very app installed (`holdsOffer`), at another
+ * version, that this Localix can run. A folder the person made is theirs.
  */
 export async function isUpdatable(offer: Offer, installRoot: string): Promise<boolean> {
-  if (isIncompatible(offer)) return false
-  const dir = join(installRoot, offer.name)
-  if (!['catalog', 'staged'].includes((await installedBy(dir)) ?? '')) return false
-  const record = await readInstallRecord(dir)
-  if (record && record.catalog !== offer.catalog && !offer.publisher.verified) return false
-  return (await readManifest(dir))?.version !== offer.version
+  if (isIncompatible(offer) || !(await holdsOffer(offer, installRoot))) return false
+  return (await readManifest(join(installRoot, offer.name)))?.version !== offer.version
 }

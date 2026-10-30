@@ -27,26 +27,26 @@ registry, so a kind added to it fails to compile until every consumer gives it a
 
 ## Kinds and consumers
 
-| Kind                  | Owner records it                                             | Consumers                                     |
-| --------------------- | ------------------------------------------------------------ | --------------------------------------------- |
-| `chat.session`        | Chat writers; deletion of a tree, one notice per id          | Semantic index, usage ledger, session residue |
-| `chat.message`        | Inserts; edits, a turn's usage moving, the final flush       | Semantic index, usage ledger                  |
-| `provider.connection` | Every connection or key change, deletion in its transaction  | Route repair, notifications cleanup, relay    |
-| `project`             | Created, moved, renamed, deleted, restored                   | Mini app hosts, relay                         |
-| `project.settings`    | A settings-only write, in its transaction                    | Relay                                         |
-| `user.profile`        | Interface settings written, in the profile's transaction     | Relay                                         |
-| `user.agent-settings` | Agent settings written, in the profile's transaction         | Relay                                         |
-| `user.view-state`     | An accepted view-state write, by kind and key                | Relay                                         |
-| `secret`              | A vault item created, rotated, edited or removed, by key     | Relay                                         |
-| `system.toggle`       | A host control switched                                      | Relay                                         |
-| `agent`               | Every write by name, with the stable `agentId`; `resync`     | Semantic index, agent names, relay            |
-| `plugin`, `mcp`       | Removal from `capability_source`, by name; `resync`          | Semantic index, capability cleanup            |
-| `mini-app`            | Installed, updated, removed or its settings changed, by name | Mini app hosts, capability cleanup, relay     |
-| `mini-app.catalog`    | A catalog added or removed, or its signing key kept, by URL  | Relay                                         |
-| `mini-app.updates`    | Whether an installed mini app updates on its own, by name    | Relay                                         |
-| `skill`               | `resync` after a capability bump                             | Semantic index, relay                         |
-| `capability.rule`     | Every rule-list write, by agent, in its transaction          | Relay                                         |
-| `local.model`         | Installed or removed by id; `resync` at boot                 | Route repair                                  |
+| Kind                   | Owner records it                                             | Consumers                                     |
+| ---------------------- | ------------------------------------------------------------ | --------------------------------------------- |
+| `chat.session`         | Chat writers; deletion of a tree, one notice per id          | Semantic index, usage ledger, session residue |
+| `chat.message`         | Inserts; edits, a turn's usage moving, the final flush       | Semantic index, usage ledger                  |
+| `provider.connection`  | Every connection or key change, deletion in its transaction  | Route repair, notifications cleanup, relay    |
+| `project`              | Created, moved, renamed, deleted, restored                   | Mini app hosts, relay                         |
+| `project.settings`     | A settings-only write, in its transaction                    | Relay                                         |
+| `user.profile`         | Interface settings written, in the profile's transaction     | Relay                                         |
+| `user.agent-settings`  | Agent settings written, in the profile's transaction         | Relay                                         |
+| `user.view-state`      | An accepted view-state write, by kind and key                | Relay                                         |
+| `secret`               | A vault item created, rotated, edited or removed, by key     | Relay                                         |
+| `system.toggle`        | A host control switched                                      | Relay                                         |
+| `agent`                | Every write by name, with the stable `agentId`; `resync`     | Semantic index, agent names, relay            |
+| `plugin`, `mcp`        | Removal from `capability_source`, by name; `resync`          | Semantic index, capability cleanup            |
+| `mini-app`             | Installed, updated, removed or its settings changed, by name | Mini app hosts, capability cleanup, relay     |
+| `mini-app.marketplace` | A marketplace added or removed, or its kept trust, by URL    | Relay                                         |
+| `mini-app.updates`     | Whether an installed mini app updates on its own, by name    | Relay                                         |
+| `skill`                | `resync` after a capability bump                             | Semantic index, relay                         |
+| `capability.rule`      | Every rule-list write, by agent, in its transaction          | Relay                                         |
+| `local.model`          | Installed or removed by id; `resync` at boot                 | Route repair                                  |
 
 The consumers besides the semantic index are wired in `apps/api/src/bootstrap/core-reactors.ts`:
 

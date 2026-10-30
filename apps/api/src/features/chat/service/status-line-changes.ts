@@ -22,7 +22,7 @@ export function createStatusLineChanges(line: StatusLine) {
     },
     plugin: 'ignore',
     'mini-app': 'ignore',
-    'mini-app.catalog': 'ignore',
+    'mini-app.marketplace': 'ignore',
     'mini-app.updates': 'ignore',
     skill: 'ignore',
     mcp: 'ignore',

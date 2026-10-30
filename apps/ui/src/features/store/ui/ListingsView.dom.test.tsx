@@ -270,8 +270,7 @@ describe('the Store’s shelves', () => {
   })
 
   test('a source that could not be read is one short line above the listings, which leads to Sources', async () => {
-    const message =
-      'The mini app catalog "acme" could not be read (No catalog.json found in /Users/someone/acme)'
+    const message = 'acme: No mini-app-marketplace.json found in /Users/someone/acme'
     const view = await renderStore({
       listings: LISTINGS,
       target: APPS,

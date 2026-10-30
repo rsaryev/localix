@@ -376,7 +376,7 @@ describe('recommendations from what the person works on', () => {
       kind: 'plugin',
       summary: 'Plans',
       tags: [],
-      suits: { files: ['*.tf'] },
+      suggestFor: { files: ['*.tf'] },
     })
     opened = makeStore([fakeProvider('plugin', [...docker, tf]).provider], {
       meaning: meaning(),
@@ -395,7 +395,7 @@ describe('recommendations from what the person works on', () => {
       kind: 'plugin',
       summary: 'Schemas',
       tags: [],
-      suits: { dependencies: ['prisma'] },
+      suggestFor: { dependencies: ['prisma'] },
     })
     opened = makeStore([fakeProvider('plugin', [...docker, orm]).provider], {
       meaning: meaning(),

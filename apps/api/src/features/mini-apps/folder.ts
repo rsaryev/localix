@@ -11,16 +11,18 @@ import { resolveWithin } from '@localixai/path-containment'
 
 import { pathExists } from '../ext/fs-discovery'
 import { miniAppHostFieldsSchema, type MiniAppCommand, type MiniAppHostFields } from './contracts'
+import { readRevocation } from './revocation-file'
 
 /**
- * One mini app folder read the way Localix runs it: `mini-app.json` by the SDK's schema, the fields
+ * One mini app folder read the way Localix runs it: `.localix-mini-app/mini-app.json` by the SDK's
+ * schema (its paths are the app folder's), the fields
  * the host validates itself, the backend entries and the guide, each confined to the folder. Kept
  * apart from discovery (which scans the roots) because the mini app
  * kit's tools judge a folder with exactly this before Localix ever sees it.
  */
 
-/** What a folder beside `mini-app.json` must not hold: a plugin, or a manifest from before. */
-const NOT_A_MINI_APP = ['.claude-plugin/plugin.json', '.localix-app/app.json', 'plugin.json']
+/** What a mini app's folder must not also hold: a plugin (rule X2). */
+const NOT_A_MINI_APP = ['.claude-plugin/plugin.json']
 
 export interface DiscoveredMiniApp {
   name: string
@@ -32,6 +34,8 @@ export interface DiscoveredMiniApp {
   manifest: MiniAppManifest | null
   /** Why it cannot run; set, it contributes nothing. */
   error?: string
+  /** Why its marketplace took it back (`revocation-file.ts`); set, it does not run. */
+  revoked?: string
   /** The backend entrypoints, absolute and inside the folder. */
   backendEntries: string[]
   /** Its guide, absolute and inside the folder. */
@@ -124,13 +128,15 @@ export async function loadMiniApp(
   // Only files that are there: a guide the prompt marks must be one the agent can read.
   const guidePath = resolveWithin(dir, manifest.guide)
   const pagesPath = resolveWithin(dir, 'guide')
-  const [guide, pages] = await Promise.all([
+  const [guide, pages, revocation] = await Promise.all([
     guidePath ? pathExists(guidePath).then((found) => (found ? guidePath : undefined)) : undefined,
     pagesPath ? pathExists(pagesPath).then((found) => (found ? pagesPath : undefined)) : undefined,
+    scope === 'global' ? readRevocation(dir) : null,
   ])
   return {
     ...named,
     backendEntries,
+    ...(revocation ? { revoked: revocation.reason } : {}),
     ...(backendEntries.length < declared.length
       ? { error: `A backend entry leaves the mini app's folder: ${declared.join(', ')}` }
       : {}),

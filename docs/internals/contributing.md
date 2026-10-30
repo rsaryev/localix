@@ -222,8 +222,8 @@ To cut a release:
 
 The release also attaches `mini-app-kit.tar.gz`, built by its `mini-app-kit` job: the kit the
 authoring plugin and the [Localix marketplace](https://github.com/rsaryev/localix-marketplace) build
-mini apps against. The core publishes no mini app catalog; the marketplace repository does that with
-its own releases.
+mini apps against. The core publishes no mini app marketplace; the marketplace repository does that
+with its own releases.
 
 Publication generates `latest.json`, `SHA256SUMS.txt` from the digests GitHub records for each
 asset, and the release notes. It refuses a version older than the current latest release and

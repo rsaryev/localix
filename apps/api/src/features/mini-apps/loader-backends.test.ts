@@ -11,6 +11,7 @@ import { createSubsystemRegistry } from '../ext/subsystem-contrib'
 import { createWsFrameRegistry, createWsFrameConnection } from '../ext/ws-frame-registry'
 import { createResourceProviderRegistry } from '../agent-core/resource-refs/provider'
 import { createSearchProviderRegistry } from '../agent-core/search/provider'
+import { MINI_APP_MANIFEST_DIR, MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -63,8 +64,9 @@ beforeAll(async () => {
   const miniApp = join(fixtureHome, '.localix', 'mini-apps', 'test-sub')
   await fs.mkdir(fixtureHome, { recursive: true })
   await fs.mkdir(join(miniApp, 'tools'), { recursive: true })
+  await fs.mkdir(join(miniApp, MINI_APP_MANIFEST_DIR), { recursive: true })
   await fs.writeFile(
-    join(miniApp, 'mini-app.json'),
+    join(miniApp, MINI_APP_MANIFEST_FILE),
     JSON.stringify({
       name: 'test-sub',
       version: '1.0.0',

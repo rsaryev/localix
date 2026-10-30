@@ -1,8 +1,7 @@
 import { assertOk, cleanQuery, client, unwrap } from './internal'
-import type { MiniAppCatalogEntryRecord } from '@localixai/api/client'
 
 /**
- * Mini apps (`/rpc/mini-apps`): what their screens and commands call, their icons, catalogs and
+ * Mini apps (`/rpc/mini-apps`): what their screens and commands call, their icons, marketplaces and
  * installs. Switching one on or off and removing it go through the Store; a write answers with no
  * body, and the `mini-apps` resource poke tells every surface to re-read. Spread into
  * `backendClient`.
@@ -91,8 +90,13 @@ export const miniAppsApi = {
     await assertOk(await client.rpc['mini-apps'].store.install.$post({ json: { name, ...opts } }))
   },
 
-  /** The catalogs the store reads, Localix's own first. */
-  async listMiniAppCatalogs(): Promise<MiniAppCatalogEntryRecord[]> {
-    return (await unwrap(await client.rpc['mini-apps'].catalogs.$get())).catalogs
+  /** The marketplaces the store reads, the built-in ones first, as the Store's sources name them. */
+  async listMiniAppMarketplaces(): Promise<{ name: string; url: string; builtIn: boolean }[]> {
+    const { sources } = await unwrap(await client.rpc.store.sources.$get())
+    return sources.flatMap((source) =>
+      source.kind === 'mini-app'
+        ? [{ name: source.label, url: source.url, builtIn: source.builtIn }]
+        : [],
+    )
   },
 }

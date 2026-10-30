@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { MINI_APP_GUIDE_FILE, MINI_APP_MANIFEST_FILE, miniAppManifestSchema } from './app'
+import { miniAppManifestSchema } from './app'
 
 const calories = {
   name: 'calories',
@@ -16,9 +16,10 @@ const problems = (value: unknown) => {
 }
 
 describe('mini-app.json', () => {
-  test('is one file at the root of the folder, with its guide beside it', () => {
-    expect(MINI_APP_MANIFEST_FILE).toBe('mini-app.json')
-    expect(MINI_APP_GUIDE_FILE).toBe('guide.md')
+  test('may name the JSON Schema an editor checks it with', () => {
+    expect(
+      problems({ ...calories, $schema: 'https://localix.ai/schemas/mini-app/v1.json' }),
+    ).toEqual([])
   })
 
   test('declares the app, its backend, settings and commands with their own prompts', () => {
@@ -44,7 +45,7 @@ describe('mini-app.json', () => {
     expect(parsed.guide).toBe('./guide.md')
   })
 
-  test('a catalog needs its version and description', () => {
+  test('an app a marketplace offers needs its version and description', () => {
     expect(problems({ ...calories, version: undefined }).length).toBeGreaterThan(0)
     expect(problems({ ...calories, description: undefined }).length).toBeGreaterThan(0)
   })

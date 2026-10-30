@@ -12,11 +12,11 @@ describe('the Store’s wiring', () => {
     )
     publish('u1', ['mini-apps', 'capabilities'])
     expect(invalidated).toBe(0)
-    publish('u1', ['mini-app-catalogs', 'store'])
+    publish('u1', ['mini-app-marketplaces', 'store'])
     expect(invalidated).toBe(1)
     expect(sent).toEqual([
       ['u1', ['mini-apps', 'capabilities']],
-      ['u1', ['mini-app-catalogs', 'store']],
+      ['u1', ['mini-app-marketplaces', 'store']],
     ])
   })
 })

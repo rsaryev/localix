@@ -11,7 +11,7 @@ import { refKey, refOf } from './index-rows'
 import { candidatesOf } from './recommend-candidates'
 import { interestsOf, recencyOf } from './recommend-interests'
 import { diversified, fused } from './recommend-rank'
-import { suitedInterests } from './recommend-rules'
+import { suggestedInterests } from './recommend-rules'
 import type { ProjectFacts } from './project-signals'
 import type { StoreContextPort, StoreItemMeaningPort, StoreSearchPort } from './service-types'
 
@@ -103,7 +103,7 @@ export async function recommendOf(
       actor.userId,
       chosen.listings.map((listing) => refKey(listing.ref)),
     )) ?? new Map<string, string>()
-  const ruled = suitedInterests(suited, {
+  const ruled = suggestedInterests(suited, {
     open: pieces.flatMap((piece) => piece.label ?? []),
     ...facts,
   })

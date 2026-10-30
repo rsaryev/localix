@@ -75,16 +75,17 @@ describe('the Store index', () => {
     )
   })
 
-  test('the listings that say what they are for, none the person has installed', async () => {
+  test('the listings suggested for something or opening a kind of file, none installed', async () => {
     const { repo, put } = index()
-    const suits = { files: ['compose.yaml'] }
+    const suggestFor = { files: ['compose.yaml'] }
     await put('s', [
-      plugin('compose', { suits }),
-      plugin('had', { suits, installs: [{ scope: 'user', version: '1', enabled: true }] }),
+      plugin('compose', { suggestFor }),
+      plugin('reader', { opens: ['epub'] }),
+      plugin('had', { suggestFor, installs: [{ scope: 'user', version: '1', enabled: true }] }),
       plugin('plain'),
     ])
 
-    expect(ids(await repo.suited('u1'))).toEqual(['compose'])
+    expect(ids(await repo.suited('u1')).sort()).toEqual(['compose', 'reader'])
   })
 
   test('two sources listing one origin show it once, under the higher weight, also in the other', async () => {

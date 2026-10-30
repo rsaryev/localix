@@ -3,29 +3,35 @@ import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
-import { hostedMiniAppCatalog } from '../../testing/mini-app-catalog'
+import {
+  hostedMiniAppMarketplace,
+  marketplaceSource,
+  memoryTrust,
+} from '../../testing/mini-app-marketplace'
 import { createRecommendedInstalls } from './recommended'
 import { createMiniAppStore } from './store'
 
 const root = tempDirPerTest('mini-app-recommended-')
 
-/** The Localix catalog: four apps, three of them recommended. */
+/** The Localix marketplace: four apps, three of them installed by default. */
 async function setup() {
   const home = join(root(), 'home')
-  const catalog = hostedMiniAppCatalog(
+  const marketplace = hostedMiniAppMarketplace(
     ['habits', 'diary', 'tasks', 'atlas'].map((name) => ({
       name,
-      recommended: name !== 'atlas',
+      installByDefault: name !== 'atlas',
     })),
+    { name: 'localix', owner: 'Localix' },
   )
   const net = { online: true }
   const store = createMiniAppStore({
     homeDir: home,
-    sources: () => [{ kind: 'catalog', url: catalog.url, vouches: true }],
+    sources: () => [marketplaceSource(marketplace, { vouches: true, builtIn: true })],
+    trust: memoryTrust(),
     onInstalled: async () => {},
     fetchImpl: ((input, init) => {
       if (!net.online) throw new Error('offline')
-      return catalog.fetchImpl(input, init)
+      return marketplace.fetchImpl(input, init)
     }) as typeof fetch,
   })
   const pass = () => createRecommendedInstalls({ store, homeDir: home, userId: 'u1' }).run()
@@ -34,7 +40,7 @@ async function setup() {
   return { home, net, store, pass, installed }
 }
 
-describe('recommended mini apps on a new installation', () => {
+describe('mini apps installed by default on a new installation', () => {
   test('are installed on the first start without asking, and only once', async () => {
     const { pass, installed } = await setup()
     expect(await pass()).toBe('done')
@@ -69,7 +75,7 @@ describe('recommended mini apps on a new installation', () => {
     expect(await installed()).toEqual(['atlas'])
   })
 
-  test('a folder of the person’s own by a recommended name is left as it is', async () => {
+  test('a folder of the person’s own by such a name is left as it is', async () => {
     const { home, pass } = await setup()
     const own = join(home, '.localix', 'mini-apps', 'tasks-own')
     await fs.mkdir(own, { recursive: true })

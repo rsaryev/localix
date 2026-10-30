@@ -14,7 +14,7 @@ import {
  * and the rest on offer, while the other scenarios need every one installed. Run this against a
  * capture API started with its own `HOME` (scripts/screenshots/README.md, "Store evidence"). It
  * writes the fixture the runner opens and installs three mini apps through the Store, once: the
- * first three of the catalog by id, so the fixture names none. It never removes anything, so a
+ * first three on offer by id, so the fixture names none. It never removes anything, so a
  * home that already holds others fails the scenario's count instead.
  */
 export const STORE_INSTALL_COUNT = 3
@@ -112,7 +112,7 @@ export async function installedMiniApps() {
 
 /**
  * The mini app whose page shows what the Store's page is for: pictures and a screen of its own.
- * The first of the catalog, by id, that has both.
+ * The first on offer, by id, that has both.
  */
 export async function showcaseMiniApp() {
   const ids = (await miniApps()).map((listing) => listing.ref.id).sort()
@@ -121,7 +121,7 @@ export async function showcaseMiniApp() {
     if (detail.media.length > 0 && detail.components.some((item) => item.kind === 'screen'))
       return id
   }
-  throw new Error('No mini app in the catalog has pictures and a screen to show.')
+  throw new Error('No mini app on offer has pictures and a screen to show.')
 }
 
 export async function seedStore() {

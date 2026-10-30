@@ -8,7 +8,7 @@ export default defineUiLocation({
   title: 'Mini app store',
   description: 'The Store on its Mini apps shelf: add, update and remove mini apps',
   agent: { description: 'Open the Store on its Mini apps shelf, where the person adds mini apps' },
-  keywords: ['mini apps', 'store', 'catalog', 'install', 'add', 'update'],
+  keywords: ['mini apps', 'store', 'marketplace', 'install', 'add', 'update'],
   group: 'Application',
   Icon: LayoutGrid,
   effect: 'read',

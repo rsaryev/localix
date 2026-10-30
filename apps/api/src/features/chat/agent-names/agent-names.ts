@@ -69,7 +69,7 @@ export function createAgentNames(ports: AgentNamesPorts) {
     skill: 'ignore',
     plugin: 'ignore',
     'mini-app': 'ignore',
-    'mini-app.catalog': 'ignore',
+    'mini-app.marketplace': 'ignore',
     'mini-app.updates': 'ignore',
     mcp: 'ignore',
     agent: (change) => (change.op === 'resync' ? reconcile() : changed(change.op, change.ref)),

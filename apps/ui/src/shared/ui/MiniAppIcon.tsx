@@ -7,7 +7,7 @@ export const storeMediaSrc = (path: string) => `${API_BASE_URL}${path}`
 
 /**
  * A mini app's own icon, as the host serves it. Shown through `<img>` only, never inlined, so an
- * SVG from a catalog is a picture and nothing more. A monogram stands in only when the app has no
+ * SVG from a marketplace is a picture and nothing more. A monogram stands in only when the app has no
  * icon or it does not load. Decorative: the app's name is always written beside it.
  */
 export function MiniAppIcon({

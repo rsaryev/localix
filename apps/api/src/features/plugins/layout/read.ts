@@ -5,8 +5,12 @@ import type { ManifestFile, ManifestFiles } from './compose'
 
 /** A root `plugin.json`: not Claude Code's manifest, which is `.claude-plugin/plugin.json`. */
 export const ROOT_MANIFEST_FILE = 'plugin.json'
-/** A mini app's manifest: a folder holding one is a mini app, never a plugin (rule X2). */
-export const MINI_APP_FILE = 'mini-app.json'
+/**
+ * A mini app's manifest, in its own folder as a plugin's is in `.claude-plugin/`: a folder holding
+ * one is a mini app, never a plugin (rule X2). Named here, not imported: neither format's code
+ * imports the other's.
+ */
+export const MINI_APP_FILE = '.localix-mini-app/mini-app.json'
 
 async function readManifest(dir: string, file: string): Promise<ManifestFile | undefined> {
   let text: string

@@ -1,7 +1,7 @@
 import { storeMediaUrl, type StoreMediaReader } from './store-media'
 import type { Offer } from './store-offers'
 
-/** What an app's store page says beside its row (`GET /rpc/mini-apps/store/:name`). */
+/** What an app's store page says beside its row (`GET /rpc/mini-apps/store/:id`). */
 export interface MiniAppStoreDetails {
   version?: string
   apiVersion?: number
@@ -42,7 +42,7 @@ export async function storePage<TEntry>(
     entry,
     readme,
     screenshots: store.screenshots.map((shot, index) => ({
-      url: storeMediaUrl(offer.name, 'screenshot', shot, index),
+      url: storeMediaUrl(offer.id, 'screenshot', shot, index),
       ...(shot.caption ? { caption: shot.caption } : {}),
     })),
     details: {

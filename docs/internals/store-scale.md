@@ -21,12 +21,12 @@ Status: steps 2a and 2b are built ([As built](#as-built)); 2c's screens follow. 
 
 ## Scale
 
-| Source                    | Listings today | Where packages live                       |
-| ------------------------- | -------------- | ----------------------------------------- |
-| Localix mini app catalog  | 20             | Archives in the catalog's release         |
-| `localix` marketplace     | 1–5            | The Localix marketplace repository        |
-| `claude-plugins-official` | 315            | Mostly in the marketplace repository      |
-| `claude-community`        | 2,283          | Mostly in their authors' own repositories |
+| Source                       | Listings today | Where packages live                       |
+| ---------------------------- | -------------- | ----------------------------------------- |
+| Localix mini app marketplace | 20             | Archives in the marketplace's release     |
+| `localix` marketplace        | 1–5            | The Localix marketplace repository        |
+| `claude-plugins-official`    | 315            | Mostly in the marketplace repository      |
+| `claude-community`           | 2,283          | Mostly in their authors' own repositories |
 
 About 2,600 listings today; the design is sized for 5,000 and holds well past 100,000 without a
 redesign, because the index is SQLite with FTS5 from the start.
@@ -56,28 +56,28 @@ desktop shell, and could not run in the plain API. FTS5 is already built into th
 
 One configuration file lists the sources a fresh profile starts with; adding one is one entry.
 
-| Field       | Meaning                                                                     |
-| ----------- | --------------------------------------------------------------------------- |
-| `id`        | Stable source id.                                                           |
-| `kind`      | Package kind it serves: `mini-app`, `plugin`, later `mcp-server`, `skill`.  |
-| `input`     | What the provider's add takes: a catalog URL, `owner/repo`, a registry URL. |
-| `trust`     | `localix`, `official` or `community`.                                       |
-| `weight`    | Ranking factor: `localix` 1.0, `official` 0.7, `community` 0.35 by default. |
-| `editorial` | Whether its collections and featured flags may reach Discover.              |
-| `label`     | What the Store calls it, where a provider's own name would not say.         |
+| Field       | Meaning                                                                         |
+| ----------- | ------------------------------------------------------------------------------- |
+| `id`        | Stable source id.                                                               |
+| `kind`      | Package kind it serves: `mini-app`, `plugin`, later `mcp-server`, `skill`.      |
+| `input`     | What the provider's add takes: a marketplace URL, `owner/repo`, a registry URL. |
+| `trust`     | `localix`, `official` or `community`.                                           |
+| `weight`    | Ranking factor: `localix` 1.0, `official` 0.7, `community` 0.35 by default.     |
+| `editorial` | Whether its collections and featured flags may reach Discover.                  |
+| `label`     | What the Store calls it, where a provider's own name would not say.             |
 
-Starting entries: the Localix marketplace's mini app catalog and its `localix` plugin marketplace
-(one repository, `rsaryev/localix-marketplace`; `localix`, editorial), Localix Community's mini app
-list and its `localix-community` plugin marketplace (one repository, `rsaryev/localix-community`;
+Starting entries: the Localix marketplace's mini apps and its `localix` plugin marketplace (one
+repository, `rsaryev/localix-marketplace`; `localix`, editorial), Localix Community's mini app list
+and its `localix-community` plugin marketplace (one repository, `rsaryev/localix-community`;
 `community`, not editorial), `anthropics/claude-plugins-official` (`official`, editorial) and
 `anthropics/claude-plugins-community` (`community`, not editorial).
 
 Localix Community holds no code. Its plugin entries name their authors' repositories, as Anthropic's
-community marketplace does; its mini app list (a schema 2 catalog,
-`docs/extending/mini-app-publishing.md`) links each app to its author's own catalog. Such an app is
-read from that catalog, signed by its author's key (kept from the first signed read, in
-`mini_app_linked_keys`), installed from it and updated only from it; it is listed under the
-community trust, and the Localix catalog, read first, keeps its names.
+community marketplace does; its mini app marketplace (`docs/extending/mini-app-marketplace.md`)
+links each app to its author's own marketplace. Such an app is read from that marketplace, signed by
+its author's key (kept from the first signed read, in `mini_app_marketplace_trust`), installed from
+it and updated only from it; it is listed under the community trust as `<app>@localix-community`,
+and the Localix marketplace, read first, keeps its names.
 
 A default source is registered without installing or enabling anything. One the person removes is
 remembered and not added back, as the `localix` marketplace already is. A source the person adds
@@ -100,9 +100,9 @@ components and writes them back to the index, so capability shelves fill in as p
 ## Identity and duplicates
 
 A listing's identity is its origin, normalized: a git URL without `.git` and with its path and
-revision, an npm name, or a catalog archive's name. When two sources list one identity, the Store
-shows one card under the highest-weight source and lists the others as "Also in" on its detail page.
-Installing uses the source the person picked, the highest-weight one by default.
+revision, an npm name, or a marketplace archive's name. When two sources list one identity, the
+Store shows one card under the highest-weight source and lists the others as "Also in" on its detail
+page. Installing uses the source the person picked, the highest-weight one by default.
 
 ## Categories
 
@@ -215,9 +215,9 @@ Where the build differs from the design above, or settles what it left open:
 
 - **Default sources** are `DEFAULT_SOURCES` in `packages/store/src/default-sources.ts`, a typed
   module rather than a JSON file, because the API, the UI and both providers import it. The
-  community marketplace's id is its catalog name, `claude-community`. A default marketplace already
-  registered from the same repository under any name is reused; Localix does not read Claude Code's
-  own `known_marketplaces.json` for it. Removals are remembered in `.defaults.json` in the
+  community marketplace's id is its marketplace name, `claude-community`. A default marketplace
+  already registered from the same repository under any name is reused; Localix does not read Claude
+  Code's own `known_marketplaces.json` for it. Removals are remembered in `.defaults.json` in the
   marketplaces root (an earlier `.official.json` still counts for `localix`).
 - **Sync** runs off the request path: a provider's or a relayed notice's word marks the index dirty
   and a background sync writes it, then pokes `store`; only a first read of an empty index waits. A
@@ -249,8 +249,7 @@ Where the build differs from the design above, or settles what it left open:
 ### Measured
 
 On a development machine against the real marketplaces (315 official and 2,283 community entries;
-the hosted mini app catalog answered 404 and the `localix` marketplace has no catalog on GitHub
-yet):
+the hosted mini app marketplace answered 404 and the `localix` marketplace has none on GitHub yet):
 
 | Measure                                             | Measured                                                 |
 | --------------------------------------------------- | -------------------------------------------------------- |

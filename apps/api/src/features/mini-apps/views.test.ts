@@ -11,6 +11,7 @@ import type {
 import { buildMiniAppCatalog } from './catalog'
 import { listViewsFromCatalog, readViewHtml } from './views'
 import { MINI_APP_VIEW_HTML_CAP_BYTES } from './contracts-contributions'
+import { MINI_APP_MANIFEST_DIR, MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 function fakeRepo(rows: CapabilitySourceRecord[]): CapabilitySourceRepository {
   const byKey = new Map(rows.map((r) => [`${r.projectId}:${r.name}`, r]))
@@ -65,8 +66,9 @@ beforeAll(async () => {
 
   const mon = join(dir, '.localix', 'mini-apps', 'mon')
   await fs.mkdir(join(mon, 'views'), { recursive: true })
+  await fs.mkdir(join(mon, MINI_APP_MANIFEST_DIR), { recursive: true })
   await fs.writeFile(
-    join(mon, 'mini-app.json'),
+    join(mon, MINI_APP_MANIFEST_FILE),
     JSON.stringify({
       name: 'mon',
       version: '1.0.0',
@@ -96,8 +98,9 @@ beforeAll(async () => {
   // A manifest whose view file escapes the mini app's folder (security).
   const evil = join(dir, '.localix', 'mini-apps', 'evil')
   await fs.mkdir(evil, { recursive: true })
+  await fs.mkdir(join(evil, MINI_APP_MANIFEST_DIR), { recursive: true })
   await fs.writeFile(
-    join(evil, 'mini-app.json'),
+    join(evil, MINI_APP_MANIFEST_FILE),
     JSON.stringify({
       name: 'evil',
       version: '1.0.0',
@@ -109,8 +112,9 @@ beforeAll(async () => {
   // A manifest with an invalid view id — schema rejects → the mini app gets an error.
   const bad = join(dir, '.localix', 'mini-apps', 'bad')
   await fs.mkdir(bad, { recursive: true })
+  await fs.mkdir(join(bad, MINI_APP_MANIFEST_DIR), { recursive: true })
   await fs.writeFile(
-    join(bad, 'mini-app.json'),
+    join(bad, MINI_APP_MANIFEST_FILE),
     JSON.stringify({
       name: 'bad',
       version: '1.0.0',

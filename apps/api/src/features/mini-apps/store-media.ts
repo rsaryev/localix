@@ -16,9 +16,9 @@ import type { Offer, OfferFile } from './store-offers'
 
 /**
  * The files of an app's store page — its icon, screenshots and README — as the host serves them.
- * A catalog's are fetched once, refused unless their size and sha256 match the catalog's pin, and
+ * They are fetched once, refused unless their size and sha256 match their marketplace's pin, and
  * kept under the Localix cache by hash. The bytes are checked to be the kind of file they claim
- * before they leave, so a catalog cannot serve a page as an "image".
+ * before they leave, so a marketplace cannot serve a page as an "image".
  */
 
 export type StoreMediaKind = 'icon' | 'screenshot' | 'readme'
@@ -40,14 +40,14 @@ const TYPES: Record<StoreMediaKind, Readonly<Record<string, string>>> = {
   readme: { md: 'text/markdown' },
 }
 
-/** Where the host serves one of an app's files. A catalog's carries its hash, so it may be cached. */
+/** Where the host serves one of an app's files, by its identity; its hash lets it be cached. */
 export function storeMediaUrl(
-  name: string,
+  id: string,
   kind: Exclude<StoreMediaKind, 'readme'>,
   file: OfferFile,
   index?: number,
 ): string {
-  const path = `/rpc/mini-apps/store/media/${encodeURIComponent(name)}/${kind}${index === undefined ? '' : `/${index}`}`
+  const path = `/rpc/mini-apps/store/media/${encodeURIComponent(id)}/${kind}${index === undefined ? '' : `/${index}`}`
   return `${path}?v=${file.sha256.slice(0, 12)}`
 }
 
@@ -75,8 +75,8 @@ export function createStoreMediaReader(deps: { cacheDir: string; fetchImpl?: typ
     return new Uint8Array(await readFile(dest))
   }
 
-  /** A catalog's pinned image read before any offer exists (a catalog's preview). */
-  async function catalogImage(file: OfferFile): Promise<StoreMediaFile | null> {
+  /** A marketplace's pinned image read before any offer exists (a marketplace's preview). */
+  async function marketplaceImage(file: OfferFile): Promise<StoreMediaFile | null> {
     const ext = extensionOf('icon', file)
     if (!ext || file.bytes > CAPS.icon) return null
     const bytes = await fetchPinned(file).catch(() => null)
@@ -110,7 +110,7 @@ export function createStoreMediaReader(deps: { cacheDir: string; fetchImpl?: typ
     return { bytes, type: info.type }
   }
 
-  return { read, catalogImage }
+  return { read, marketplaceImage }
 }
 
 export type StoreMediaReader = ReturnType<typeof createStoreMediaReader>

@@ -15,7 +15,7 @@ export function makeListing(
     summary: `${id} does things`,
     tags: [],
     publisher: { name: 'Localix', verified: true },
-    source: { id: 'https://hosted.test/catalog.json', label: 'Localix' },
+    source: { id: 'https://hosted.test/mini-app-marketplace.json', label: 'Localix' },
     contents: {},
     runsCode: false,
     featured: false,

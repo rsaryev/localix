@@ -1,81 +1,68 @@
 import { describe, expect, test } from 'bun:test'
 
-import {
-  builtInMiniAppSources,
-  COMMUNITY_MINI_APP_LIST_URL,
-  DEFAULT_MINI_APP_CATALOG_URL,
-} from './store-sources'
-import type { MiniAppStoreSource } from './store-offers'
+import { LOCALIX_COMMUNITY, LOCALIX_MARKETPLACE } from '@localixai/store'
 
-const LOCALIX = 'localix-mini-apps'
-const COMMUNITY: MiniAppStoreSource = {
-  kind: 'catalog',
-  url: COMMUNITY_MINI_APP_LIST_URL,
+import { builtInMiniAppSources } from './store-sources'
+
+const release = (repo: string) =>
+  `https://github.com/${repo}/releases/latest/download/mini-app-marketplace.json`
+
+const COMMUNITY = {
+  url: release('rsaryev/localix-community'),
+  name: 'localix-community',
   vouches: false,
+  builtIn: true,
+  pinned: LOCALIX_COMMUNITY.signingKeys,
   id: 'localix-community-mini-apps',
 }
 
-describe('the catalogs every installation reads', () => {
-  test('the Localix marketplace’s catalog, which Localix vouches for, then Localix Community', async () => {
-    expect(await builtInMiniAppSources({})).toEqual([
-      expect.objectContaining({
-        kind: 'catalog',
-        url: DEFAULT_MINI_APP_CATALOG_URL,
-        vouches: true,
-        id: LOCALIX,
-      }),
-      COMMUNITY,
-    ])
-    expect(COMMUNITY_MINI_APP_LIST_URL).toBe(
-      'https://raw.githubusercontent.com/rsaryev/localix-community/main/.mini-app/marketplace.json',
-    )
-  })
-
-  // Its apps update on their own only while its signature holds for a key Localix ships with.
-  test('the Localix catalog is checked against an Ed25519 key Localix ships with', async () => {
-    const [source] = await builtInMiniAppSources({})
-    expect(Buffer.from(source?.key ?? '', 'base64')).toHaveLength(32)
-  })
-
-  // A local build is unsigned, or signed with its builder's key: the release's key would only
-  // make it read as a signature changed, and nothing from it would install.
-  test('a marketplace build not yet released stands in for it when one is named', async () => {
-    const local = 'file:///work/localix-marketplace/dist/catalog/mini-app-catalog.json'
-    expect(await builtInMiniAppSources({ LOCALIX_MINI_APP_CATALOG_URL: local }, 'RELEASE')).toEqual(
-      [{ kind: 'catalog', url: local, vouches: true, id: LOCALIX }, COMMUNITY],
-    )
-  })
-
-  // A local marketplace build is signed with the builder's own key, not the release's.
-  test('the key it is checked against can be named beside it', async () => {
-    const local = 'file:///work/localix-marketplace/dist/catalog/mini-app-catalog.json'
-    expect(
-      await builtInMiniAppSources(
-        { LOCALIX_MINI_APP_CATALOG_URL: local, LOCALIX_MINI_APP_CATALOG_KEY: 'LOCAL' },
-        'RELEASE',
-      ),
-    ).toEqual([
-      { kind: 'catalog', url: local, vouches: true, key: 'LOCAL', id: LOCALIX },
-      COMMUNITY,
-    ])
-  })
-
-  test('the released catalog is checked against the key Localix pins for it', async () => {
-    expect(await builtInMiniAppSources({}, 'RELEASE')).toEqual([
+describe('the marketplaces every installation reads', () => {
+  test("the Localix marketplace's release, which Localix vouches for, then Localix Community's", () => {
+    expect(builtInMiniAppSources({})).toEqual([
       {
-        kind: 'catalog',
-        url: DEFAULT_MINI_APP_CATALOG_URL,
+        url: release('rsaryev/localix-marketplace'),
+        name: 'localix',
         vouches: true,
-        key: 'RELEASE',
-        id: LOCALIX,
+        builtIn: true,
+        pinned: LOCALIX_MARKETPLACE.signingKeys,
+        id: 'localix-mini-apps',
       },
       COMMUNITY,
     ])
   })
 
-  test('a community list not yet published stands in for it when one is named', async () => {
-    const local = 'file:///work/localix-community/.mini-app/marketplace.json'
-    const [, community] = await builtInMiniAppSources({ LOCALIX_COMMUNITY_CATALOG_URL: local })
-    expect(community).toEqual({ ...COMMUNITY, url: local })
+  // Their apps update on their own only while a signature holds for a key Localix ships with.
+  test('each is checked against Ed25519 keys Localix ships with', () => {
+    for (const source of builtInMiniAppSources({}))
+      for (const key of source.pinned ?? []) expect(Buffer.from(key, 'base64')).toHaveLength(32)
+  })
+
+  // A local build is unsigned, or signed with its builder's key: the release's keys would only
+  // make it read as a signature changed, and nothing from it would install.
+  test('a marketplace build not yet released stands in for it, with the key it was signed with', () => {
+    const local = 'file:///work/localix-marketplace/dist/marketplace/mini-app-marketplace.json'
+    expect(builtInMiniAppSources({ LOCALIX_MINI_APP_MARKETPLACE_URL: local })[0]).toEqual({
+      url: local,
+      name: 'localix',
+      vouches: true,
+      builtIn: true,
+      id: 'localix-mini-apps',
+    })
+    expect(
+      builtInMiniAppSources({
+        LOCALIX_MINI_APP_MARKETPLACE_URL: local,
+        LOCALIX_MINI_APP_MARKETPLACE_KEY: 'LOCAL',
+      })[0]?.pinned,
+    ).toEqual(['LOCAL'])
+  })
+
+  test('so does a community list not yet released', () => {
+    const local = 'file:///work/localix-community/dist/mini-app-marketplace.json'
+    expect(
+      builtInMiniAppSources({
+        LOCALIX_COMMUNITY_MARKETPLACE_URL: local,
+        LOCALIX_COMMUNITY_MARKETPLACE_KEY: 'LOCAL',
+      })[1],
+    ).toEqual({ ...COMMUNITY, url: local, pinned: ['LOCAL'] })
   })
 })

@@ -7,7 +7,10 @@ import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
 import { createCapabilitySourceRepository } from '../capabilities/source-repository'
+import { REVOCATION_FILE } from './revocation-file'
 import { createMiniAppService } from './service'
+import { INSTALL_RECORD_FILE } from './store-install'
+import { MINI_APP_MANIFEST_DIR, MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 let home: string
 
@@ -15,8 +18,9 @@ beforeAll(async () => {
   home = await fs.mkdtemp(join(tmpdir(), 'mini-app-service-'))
   const root = join(home, '.localix', 'mini-apps', 'notes')
   await fs.mkdir(join(root, 'scripts'), { recursive: true })
+  await fs.mkdir(join(root, MINI_APP_MANIFEST_DIR), { recursive: true })
   await fs.writeFile(
-    join(root, 'mini-app.json'),
+    join(root, MINI_APP_MANIFEST_FILE),
     JSON.stringify({
       name: 'notes',
       version: '1.0.0',
@@ -61,8 +65,9 @@ describe('the mini app service', () => {
     await migrateToLatest(db)
     const tiles = join(home, '.localix', 'mini-apps', 'tiles')
     await fs.mkdir(tiles, { recursive: true })
+    await fs.mkdir(join(tiles, MINI_APP_MANIFEST_DIR), { recursive: true })
     await fs.writeFile(
-      join(tiles, 'mini-app.json'),
+      join(tiles, MINI_APP_MANIFEST_FILE),
       JSON.stringify({ name: 'tiles', version: '1.0.0', description: 'Tiles' }),
     )
     const service = createMiniAppService({
@@ -82,15 +87,16 @@ describe('the mini app service', () => {
   })
 
   // A published app's folder names the repository it was published from; the Store's page of an
-  // app made on this computer links there, as a catalog's page links to its homepage.
+  // app made on this computer links there, as a marketplace's page links to its homepage.
   test('an app says where people read about it: its homepage, else the repository it names', async () => {
     const db = createDatabase()
     await migrateToLatest(db)
     const write = async (name: string, manifest: Record<string, unknown>) => {
       const dir = join(home, '.localix', 'mini-apps', name)
       await fs.mkdir(dir, { recursive: true })
+      await fs.mkdir(join(dir, MINI_APP_MANIFEST_DIR), { recursive: true })
       await fs.writeFile(
-        join(dir, 'mini-app.json'),
+        join(dir, MINI_APP_MANIFEST_FILE),
         JSON.stringify({ name, version: '1.0.0', description: name, ...manifest }),
       )
     }
@@ -115,5 +121,49 @@ describe('the mini app service', () => {
     expect(homepage('ledger')).toBe('https://github.com/you/ledger')
     expect(homepage('atlas')).toBe('https://atlas.example.test')
     expect(homepage('scratch')).toBeUndefined()
+  })
+
+  // Its marketplace took it back: the Store shows it as theirs and why it stopped, not as an app
+  // the person made, and nothing runs it.
+  test('an app a marketplace installed says which, and why it was taken back', async () => {
+    const db = createDatabase()
+    await migrateToLatest(db)
+    const dir = join(home, '.localix', 'mini-apps', 'radio')
+    await fs.mkdir(join(dir, MINI_APP_MANIFEST_DIR), { recursive: true })
+    await fs.writeFile(
+      join(dir, MINI_APP_MANIFEST_FILE),
+      JSON.stringify({ name: 'radio', version: '1.0.0', description: 'Radio' }),
+    )
+    await fs.writeFile(
+      join(dir, INSTALL_RECORD_FILE),
+      JSON.stringify({
+        kind: 'localix-marketplace-install',
+        marketplace: 'ada',
+        url: 'https://ada.example.test/mini-app-marketplace.json',
+        version: '1.0.0',
+        sha256: 'a'.repeat(64),
+        publisher: { name: 'Ada', verified: false },
+      }),
+    )
+    await fs.writeFile(
+      join(dir, REVOCATION_FILE),
+      JSON.stringify({ marketplace: 'ada', version: '1.0.0', reason: 'It phones home.' }),
+    )
+    const service = createMiniAppService({
+      db,
+      capabilityStores: {
+        sources: createCapabilitySourceRepository,
+        rules: createCapabilityRuleRepository,
+      },
+      homeDir: home,
+    })
+    await service.setEnabled('u1', { name: 'radio', enabled: true })
+    const radio = (await service.list('u1')).miniApps.find((app) => app.name === 'radio')
+    expect(radio?.installedFrom).toEqual({
+      marketplace: 'ada',
+      publisher: { name: 'Ada', verified: false },
+    })
+    expect(radio?.revoked).toBe('It phones home.')
+    expect(radio?.error).toBe('Its marketplace took it back: It phones home.')
   })
 })

@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { installCopy, pruneRetiredManagedCopies } from './managed-copy'
+import { MINI_APP_MANIFEST_DIR, MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 const roots: string[] = []
 
@@ -73,7 +74,8 @@ test('an install that stopped after retiring the old copy is undone on the next 
   const source = join(root, 'source')
   const installed = join(root, 'apps', 'notes')
   await fs.mkdir(source, { recursive: true })
-  await fs.writeFile(join(source, 'mini-app.json'), '{"name":"notes","version":"1.0.0"}')
+  await fs.mkdir(join(source, MINI_APP_MANIFEST_DIR), { recursive: true })
+  await fs.writeFile(join(source, MINI_APP_MANIFEST_FILE), '{"name":"notes","version":"1.0.0"}')
   await installCopy(source, installed, { file: '.marker.json', contents: { version: '1.0.0' } })
   await fs.rename(
     installed,
@@ -81,7 +83,7 @@ test('an install that stopped after retiring the old copy is undone on the next 
   )
 
   expect(await pruneRetiredManagedCopies(join(root, 'apps'))).toBe(0)
-  expect(await fs.readFile(join(installed, 'mini-app.json'), 'utf8')).toContain('"notes"')
+  expect(await fs.readFile(join(installed, MINI_APP_MANIFEST_FILE), 'utf8')).toContain('"notes"')
   expect(await fs.readdir(join(root, 'apps'))).toEqual(['notes'])
 })
 
@@ -91,7 +93,8 @@ test('a retired copy whose app was replaced is swept', async () => {
   const source = join(root, 'source')
   const installed = join(root, 'apps', 'notes')
   await fs.mkdir(source, { recursive: true })
-  await fs.writeFile(join(source, 'mini-app.json'), '{"name":"notes","version":"1.0.0"}')
+  await fs.mkdir(join(source, MINI_APP_MANIFEST_DIR), { recursive: true })
+  await fs.writeFile(join(source, MINI_APP_MANIFEST_FILE), '{"name":"notes","version":"1.0.0"}')
   await installCopy(source, installed, { file: '.marker.json', contents: { version: '1.0.0' } })
   await installCopy(source, installed, { file: '.marker.json', contents: { version: '1.0.1' } })
 

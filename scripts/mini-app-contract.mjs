@@ -9,7 +9,7 @@
 // fails when the two differ, so a change to what mini apps see is a reviewed diff, and refuses a
 // change that breaks a mini app built against the committed one without a new `apiVersion`.
 import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { readFileSync, realpathSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 
 import ts from '@localixai/mini-app-kit-compiler'
@@ -100,7 +100,9 @@ function vendorVersions(kitDir, kit) {
  * declaration printed without comments on its own.
  */
 export function readContract(kitAt) {
-  const kitDir = resolve(kitAt)
+  // Real, as the compiler reports the files it reads: a kit under a link (macOS's /tmp is
+  // /private/tmp) would otherwise have every declaration it reaches by package seem outside it.
+  const kitDir = realpathSync(resolve(kitAt))
   const kit = JSON.parse(readFileSync(join(kitDir, 'kit.json'), 'utf8'))
   const owned = Object.entries(kit.typePaths)
     .filter(([specifier]) => specifier.startsWith(OWNED))

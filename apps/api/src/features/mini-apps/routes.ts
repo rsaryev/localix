@@ -20,9 +20,6 @@ import {
   installLocalMiniAppRequestSchema,
   installLocalMiniAppResponseSchema,
   installMiniAppRequestSchema,
-  miniAppCatalogRequestSchema,
-  miniAppCatalogPreviewSchema,
-  miniAppCatalogsResponseSchema,
   miniAppStoreMediaParamsSchema,
   miniAppStorePageSchema,
   miniAppStoreResponseSchema,
@@ -30,7 +27,7 @@ import {
 
 /**
  * How a store file leaves the host: its checked type, never sniffed, and an SVG that can load and
- * run nothing even when opened on its own. A catalog's file is named by its hash, so it is cached.
+ * run nothing even when opened on its own. A marketplace's file is named by its hash, so it is cached.
  */
 function mediaResponse(file: { bytes: Uint8Array; type: string }, hashed: boolean): Response {
   return new Response(new Blob([file.bytes as Uint8Array<ArrayBuffer>]), {
@@ -57,7 +54,6 @@ export type MiniAppRoutesService = Pick<
   | 'getViewHtml'
   | 'invokeUiAction'
   | 'store'
-  | 'catalogs'
   | 'installLocal'
 >
 
@@ -83,25 +79,25 @@ export function createMiniAppRoutes(service: MiniAppRoutesService) {
       await service.remove(c.get('userId'), c.req.valid('json'))
       return c.body(null, 204)
     })
-    // The store: what the catalogs offer, and installs queued here whose progress reaches the
+    // The store: what the marketplaces offer, and installs queued here whose progress reaches the
     // Store's index, which pokes `store` so the client reads again.
     .get('/store', async (c) =>
       c.json(miniAppStoreResponseSchema.parse(await service.store.list()), 200),
     )
-    // A store file: the icon or one screenshot, read from the app's folder or a catalog's pinned
-    // copy (`store-media.ts`). The README reaches the client inside the store page.
+    // A store file: the icon or one screenshot, its marketplace's pinned copy (`store-media.ts`).
+    // The README reaches the client inside the store page.
     .get(
-      '/store/media/:name/:kind/:index?',
+      '/store/media/:id/:kind/:index?',
       zValidator('param', miniAppStoreMediaParamsSchema),
       async (c) => {
-        const { name, kind, index } = c.req.valid('param')
-        const file = await service.store.media(name, kind, index)
+        const { id, kind, index } = c.req.valid('param')
+        const file = await service.store.media(id, kind, index)
         return mediaResponse(file, Boolean(c.req.query('v')))
       },
     )
-    .get('/store/:name', zValidator('param', z.object({ name: z.string().min(1) })), async (c) =>
+    .get('/store/:id', zValidator('param', z.object({ id: z.string().min(1) })), async (c) =>
       c.json(
-        miniAppStorePageSchema.parse(await service.store.detail(c.req.valid('param').name)),
+        miniAppStorePageSchema.parse(await service.store.detail(c.req.valid('param').id)),
         200,
       ),
     )
@@ -120,26 +116,6 @@ export function createMiniAppRoutes(service: MiniAppRoutesService) {
         200,
       ),
     )
-    // The catalogs the store reads. Adding one reads it first; both writes announce
-    // `mini-app.catalog`, so the store and this list re-read.
-    .get('/catalogs', async (c) =>
-      c.json(miniAppCatalogsResponseSchema.parse({ catalogs: await service.catalogs.list() }), 200),
-    )
-    .post('/catalogs', zValidator('json', miniAppCatalogRequestSchema), async (c) => {
-      await service.catalogs.add(c.req.valid('json').url)
-      return c.body(null, 204)
-    })
-    // Read a catalog before it is added: who publishes it and what is in it. Writes nothing.
-    .post('/catalogs/preview', zValidator('json', miniAppCatalogRequestSchema), async (c) =>
-      c.json(
-        miniAppCatalogPreviewSchema.parse(await service.catalogs.preview(c.req.valid('json').url)),
-        200,
-      ),
-    )
-    .post('/catalogs/remove', zValidator('json', miniAppCatalogRequestSchema), async (c) => {
-      await service.catalogs.remove(c.req.valid('json').url)
-      return c.body(null, 204)
-    })
     .post(
       '/command-args/options',
       zValidator(

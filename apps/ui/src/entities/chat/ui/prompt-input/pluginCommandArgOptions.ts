@@ -112,36 +112,29 @@ async function resolveOptions(
   }
 }
 
-/** A catalog by where it lives, as the store's catalog menu names it. */
-function catalogLabel(url: string): string {
-  try {
-    const parsed = new URL(url)
-    return parsed.protocol === 'file:' ? 'A folder on this computer' : parsed.host
-  } catch {
-    return url
-  }
-}
-
-/** The catalogs the person added, for `/mini-app catalog remove`; the built-in one stays. */
-async function addedCatalogOptions(): Promise<SlashArgOption[]> {
-  const catalogs = await backendClient.listMiniAppCatalogs().catch(() => [])
-  return catalogs
-    .filter((catalog) => !catalog.builtIn)
-    .map((catalog) => ({
-      value: catalog.url,
-      label: catalogLabel(catalog.url),
-      description: catalog.url,
+/** The marketplaces the person added, by name, for `/mini-app marketplace remove`. */
+async function addedMarketplaceOptions(): Promise<SlashArgOption[]> {
+  const marketplaces = await backendClient.listMiniAppMarketplaces().catch(() => [])
+  return marketplaces
+    .filter((marketplace) => !marketplace.builtIn)
+    .map((marketplace) => ({
+      value: marketplace.name,
+      label: marketplace.name,
+      description: marketplace.url,
     }))
 }
 
-/** The installed mini apps, for `/mini-app enable|disable|remove`; added catalogs for `catalog remove`. */
+/**
+ * The installed mini apps, for `/mini-app enable|disable|remove`; added marketplaces for
+ * `marketplace remove`.
+ */
 export async function loadMiniAppCommandArgOptions(
   argName: string,
   action: string | undefined,
   query: string,
 ): Promise<SlashArgOption[]> {
-  if (argName === 'catalog')
-    return (await addedCatalogOptions()).filter((option) => matches(option, query))
+  if (argName === 'marketplace')
+    return (await addedMarketplaceOptions()).filter((option) => matches(option, query))
   if (argName !== 'app') return []
   const only = onlyFor(action)
   return miniAppContribSnapshot()

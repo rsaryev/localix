@@ -15,7 +15,7 @@ import type { Marketplace, MarketplaceEntry } from './marketplace'
 import type { KnownMarketplace } from './marketplace-catalog'
 import { resolveEntrySource } from './marketplace-entry-source'
 import type { PluginContents } from './store-contents'
-import { marketPicks } from './store-editorial'
+import { entryCuration } from './store-editorial'
 
 /**
  * HOW A PLUGIN LOOKS IN THE STORE: one marketplace entry projected into the Store's contract
@@ -91,11 +91,6 @@ const countsOf = (contents: PluginContents) => {
   return counts as Exclude<Listing['contents'], 'unknown'>
 }
 
-/** An editorial marketplace's word on an entry: its picks name it, or the entry sets the flag. */
-const flag = (view: MarketView, entry: MarketplaceEntry, key: 'featured' | 'recommended') =>
-  view.editorial &&
-  (marketPicks(view)[key].has(entry.name) || (entry as Record<string, unknown>)[key] === true)
-
 export function pluginListing(
   view: MarketView,
   entry: MarketplaceEntry,
@@ -115,7 +110,7 @@ export function pluginListing(
       : []),
   ]
   const origin = entryOrigin(view, entry)
-  const suits = view.editorial ? marketPicks(view).suits.get(entry.name) : undefined
+  const curation = entryCuration(view, entry)
   return {
     ref: { kind: 'plugin', id },
     name: entry.name,
@@ -131,12 +126,13 @@ export function pluginListing(
     ...(entry.version ? { version: entry.version } : {}),
     ...(entry.homepage ? { homepage: entry.homepage } : {}),
     ...(origin ? { origin } : {}),
-    ...(suits ? { suits } : {}),
+    ...(curation.suggestFor ? { suggestFor: curation.suggestFor } : {}),
     contents: state.contents ? countsOf(state.contents) : 'unknown',
     ...(state.contents ? { components: state.contents.components } : {}),
     runsCode: state.contents ? state.contents.runs.length > 0 : 'unknown',
-    featured: flag(view, entry, 'featured'),
-    recommended: flag(view, entry, 'recommended'),
+    featured: curation.featured === true,
+    // The Store's starters: what a new installation installs on its own (`installByDefault`).
+    recommended: curation.installByDefault === true,
     installs: state.installs,
     ...(state.job ? { job: state.job } : {}),
     ...(state.configurable ? { configurable: true } : {}),

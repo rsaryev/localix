@@ -21,7 +21,7 @@ function app() {
     sources: [
       {
         kind: 'mini-app',
-        id: 'https://hosted.test/catalog.json',
+        id: 'https://hosted.test/mini-app-marketplace.json',
         label: 'Localix',
         url: 'https://hosted.test/c.json',
         builtIn: true,
@@ -34,7 +34,7 @@ function app() {
         url: 'https://gone.test/c.json',
         builtIn: false,
         count: 0,
-        problem: 'The catalog answered 404',
+        problem: 'The marketplace answered 404',
       },
     ],
   })
@@ -324,7 +324,7 @@ describe('/rpc/store', () => {
     const [hosted, gone] = body.sources
     expect(hosted.syncedAt).toBe('2026-10-25T00:00:00.000Z')
     expect(hosted.problem).toBeUndefined()
-    expect(gone.problem).toBe('The catalog answered 404')
+    expect(gone.problem).toBe('The marketplace answered 404')
   })
 
   test('one source is read again, and its auto-update switched', async () => {

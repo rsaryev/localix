@@ -8,13 +8,20 @@ import { installCopy, isManagedCopy } from './managed-copy'
 import { MINI_APPS_SUBDIR } from './paths'
 import type { MiniAppPublisher, Offer } from './store-offers'
 
-/** Beside an app a catalog installed: where it came from, so an update knows it may replace it. */
+/**
+ * Beside an app a marketplace installed: which app it is — its identity is its name and the
+ * marketplace's (`docs/extending/mini-app-marketplace.md`, "Identity") — so only that marketplace
+ * updates or revokes it, and the archive it came from, which Localix may block.
+ */
 export const INSTALL_RECORD_FILE = '.localix-install.json'
-const INSTALL_RECORD_KIND = 'localix-catalog-install'
+const INSTALL_RECORD_KIND = 'localix-marketplace-install'
 
 export interface InstallRecord {
   kind: typeof INSTALL_RECORD_KIND
-  catalog: string
+  /** The marketplace it is offered by, by name: half of its identity. */
+  marketplace: string
+  /** The released marketplace its archive came from. */
+  url: string
   version: string
   sha256: string
   publisher: MiniAppPublisher
@@ -30,17 +37,19 @@ export async function readInstallRecord(dir: string): Promise<InstallRecord | nu
 }
 
 /**
- * Who put the folder at `dir`: a catalog, an earlier Localix build (before X5, when the app
+ * Who put the folder at `dir`: a marketplace, an earlier Localix build (before X5, when the app
  * carried copies of its own mini apps: `managed-copy.ts`), the person, or nobody.
  */
-export async function installedBy(dir: string): Promise<'catalog' | 'staged' | 'person' | null> {
-  if (await readInstallRecord(dir)) return 'catalog'
+export async function installedBy(
+  dir: string,
+): Promise<'marketplace' | 'staged' | 'person' | null> {
+  if (await readInstallRecord(dir)) return 'marketplace'
   if (await isManagedCopy(dir)) return 'staged'
   return (await fs.stat(dir).catch(() => null))?.isDirectory() ? 'person' : null
 }
 
 /**
- * Put one offer on this machine: the catalog's archive is downloaded (resumable, sha256-checked),
+ * Put one offer on this machine: its marketplace's archive is downloaded (resumable, sha256-checked),
  * unpacked aside and swapped in with one rename — so a download or archive that fails leaves the
  * version before running.
  */
@@ -70,7 +79,8 @@ export async function installOffer(
       file: INSTALL_RECORD_FILE,
       contents: {
         kind: INSTALL_RECORD_KIND,
-        catalog: offer.catalog,
+        marketplace: offer.marketplace,
+        url: offer.from,
         version,
         sha256: offer.archive.sha256,
         publisher: offer.publisher,

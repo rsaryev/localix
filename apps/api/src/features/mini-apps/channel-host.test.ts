@@ -19,6 +19,7 @@ import { loadEnabledMiniApps } from './loader'
 import { loadEnabledMiniAppChannels } from './loader-channels'
 import { createMiniAppChannelHost } from './channel-host'
 import type { ChannelWorkspaceApi } from '@localixai/mini-app-sdk/backend'
+import { MINI_APP_MANIFEST_DIR, MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 /** Inert workspace stub — these tests only exercise lifecycle + inbound. */
 const stubWorkspace: ChannelWorkspaceApi = {
@@ -75,8 +76,9 @@ beforeAll(async () => {
   dir = await fs.mkdtemp(join(tmpdir(), 'mini-app-channel-'))
   const chan = join(dir, '.localix', 'mini-apps', 'chan')
   await fs.mkdir(join(chan, 'tools'), { recursive: true })
+  await fs.mkdir(join(chan, MINI_APP_MANIFEST_DIR), { recursive: true })
   await fs.writeFile(
-    join(chan, 'mini-app.json'),
+    join(chan, MINI_APP_MANIFEST_FILE),
     JSON.stringify({
       name: 'chan',
       version: '1.0.0',

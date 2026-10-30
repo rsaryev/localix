@@ -28,8 +28,8 @@ export const CORE_REFS = {
   plugin: z.object({ id: z.string(), scope }),
   // A mini app installed, updated, removed or its settings changed (`id` is its name).
   'mini-app': z.object({ id: z.string(), scope }),
-  // A catalog added to or removed from the mini app store, or its signing key kept (`url` is its key).
-  'mini-app.catalog': z.object({ url: z.string() }),
+  // A mini app marketplace added or removed, or what is kept to judge its signatures (`url`).
+  'mini-app.marketplace': z.object({ url: z.string() }),
   // Whether an installed mini app updates on its own was switched (`id` is its name).
   'mini-app.updates': z.object({ id: z.string() }),
   // `id` is the server's name (its catalog key); `serverId` its record id, on a deletion.

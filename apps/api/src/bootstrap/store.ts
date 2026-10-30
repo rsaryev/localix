@@ -85,7 +85,7 @@ export function createStorePhase(deps: {
     providers: [
       createMiniAppStoreProvider({
         store: miniAppService.store,
-        catalogs: miniAppService.catalogs,
+        marketplaces: miniAppService.marketplaces,
         apps: miniAppService,
         autoUpdate: miniAppService.autoUpdate,
       }),

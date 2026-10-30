@@ -472,20 +472,26 @@ export interface ToolUsageTable {
 }
 
 /** A catalog a person added to the mini app store, by its URL (`features/mini-apps/catalogs.ts`). */
-export interface MiniAppCatalogsTable {
+/** A mini app marketplace the person added; its name is unique on this computer. */
+export interface MiniAppMarketplacesTable {
   url: string
+  name: string
   added_at: string
-  /** The key its signature must hold for, kept from its first signed read. */
-  signing_key: string | null
 }
 
-/** The key kept for a catalog a list links to, from its first signed read (`catalogs.ts`). */
-export interface MiniAppLinkedKeysTable {
+/** What Localix keeps to judge a marketplace's signatures (`marketplace-trust.ts`). */
+export interface MiniAppMarketplaceTrustTable {
   url: string
-  signing_key: string
-  kept_at: string
+  /** JSON array of base64 Ed25519 keys; empty, it is not signed. */
+  signing_keys: string
+  /** The newest release read (ISO 8601). */
+  published: string | null
+  /** JSON array: the keys Localix shipped these were kept from, for a built-in marketplace. */
+  root: string | null
+  updated_at: string
 }
 
+/** An installed mini app its marketplace revoked, by name; `version` null for every version. */
 export interface MiniAppAutoUpdateOffTable {
   name: string
   changed_at: string
@@ -520,9 +526,9 @@ export interface AppDatabase {
   agent_turn_starts: AgentTurnStartsTable
   wake_outbox: WakeOutboxTable
   mcp_channel_bindings: McpChannelBindingsTable
-  mini_app_catalogs: MiniAppCatalogsTable
+  mini_app_marketplaces: MiniAppMarketplacesTable
+  mini_app_marketplace_trust: MiniAppMarketplaceTrustTable
   mini_app_auto_update_off: MiniAppAutoUpdateOffTable
-  mini_app_linked_keys: MiniAppLinkedKeysTable
   user_view_state: UserViewStateTable
   store_recommendation_dismissals: StoreRecommendationDismissalsTable
   store_recommendation_events: StoreRecommendationEventsTable

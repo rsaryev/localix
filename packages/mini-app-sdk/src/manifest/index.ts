@@ -57,7 +57,7 @@ export type MiniAppConfigOption = z.output<typeof miniAppConfigOptionSchema>
  * a gate keeps byte-identical to what the manifests say. A dropped-in / marketplace
  * mini app's associations never reach the OS: the shell it would have to amend was
  * already signed and installed. They reach the Store instead: packing copies them into
- * the catalog, and a file tab offers the app for a file of one of them that Localix
+ * the marketplace, and a file tab offers the app for a file of one of them that Localix
  * cannot show (`opensFile` in `@localixai/store`).
  *
  * A declaration is an OPENING CLAIM, not a runtime guarantee: if the user disables

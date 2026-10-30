@@ -35,10 +35,9 @@ function fixture() {
       owner: { name: 'Anthropic' },
       metadata: {
         localix: {
-          recommended: ['review'],
-          featured: ['pg'],
-          suits: { pg: { files: ['*.sql'], dependencies: ['pg', 42] } },
-          collections: [{ id: 'data', title: 'Work with data', items: ['pg', 'mini-app:ledger'] }],
+          collections: [
+            { id: 'data', title: 'Work with data', items: ['pg', 'mini-app:ledger@localix'] },
+          ],
         },
       },
       plugins: [
@@ -52,8 +51,15 @@ function fixture() {
           tags: ['review', 'git'],
           version: '1.2.0',
           homepage: 'https://review.test',
+          localix: { installByDefault: true },
         },
-        { name: 'pg', source: pg, description: 'Postgres tools', category: 'database' },
+        {
+          name: 'pg',
+          source: pg,
+          description: 'Postgres tools',
+          category: 'database',
+          localix: { featured: true, suggestFor: { files: ['*.sql'], dependencies: ['pg', 42] } },
+        },
       ],
     }),
     [`${OFFICIAL}/plugins/review/.claude-plugin/plugin.json`]: JSON.stringify({ name: 'review' }),
@@ -63,14 +69,15 @@ function fixture() {
     [`${COMMUNITY}/.claude-plugin/marketplace.json`]: JSON.stringify({
       name: COMMUNITY,
       owner: { name: 'Anthropic' },
-      metadata: {
-        localix: {
-          recommended: ['pg'],
-          collections: [{ id: 'x', title: 'X', items: ['pg'] }],
-          suits: { pg: { files: ['*.sql'] } },
+      metadata: { localix: { collections: [{ id: 'x', title: 'X', items: ['pg'] }] } },
+      plugins: [
+        {
+          name: 'pg',
+          source: pg,
+          description: 'Postgres tools',
+          localix: { installByDefault: true, featured: true, suggestFor: { files: ['*.sql'] } },
         },
-      },
-      plugins: [{ name: 'pg', source: pg, description: 'Postgres tools' }],
+      ],
     }),
   })
   const calls: string[] = []
@@ -185,7 +192,7 @@ describe('plugins in the Store', () => {
       featured: false,
     })
     expect(byId(listings, `pg@${OFFICIAL}`)).toMatchObject({ featured: true })
-    expect(byId(listings, `pg@${COMMUNITY}`)).toMatchObject({ recommended: false })
+    expect(byId(listings, `pg@${COMMUNITY}`)).toMatchObject({ recommended: false, featured: false })
     expect(await provider.editorial!()).toEqual([
       {
         source: OFFICIAL,
@@ -196,7 +203,7 @@ describe('plugins in the Store', () => {
             style: 'row',
             items: [
               { kind: 'plugin', id: `pg@${OFFICIAL}` },
-              { kind: 'mini-app', id: 'ledger' },
+              { kind: 'mini-app', id: 'ledger@localix' },
             ],
           },
         ],
@@ -204,15 +211,15 @@ describe('plugins in the Store', () => {
     ])
   })
 
-  test('an editorial marketplace says what its entries are for; a community one says nothing', async () => {
+  test('an editorial marketplace says what its entries are suggested for; a community one says nothing', async () => {
     const { provider } = fixture()
     const { listings } = await provider.listings(actor)
-    expect(byId(listings, `pg@${OFFICIAL}`).suits).toEqual({
+    expect(byId(listings, `pg@${OFFICIAL}`).suggestFor).toEqual({
       files: ['*.sql'],
       dependencies: ['pg'],
     })
-    expect(byId(listings, `review@${OFFICIAL}`).suits).toBeUndefined()
-    expect(byId(listings, `pg@${COMMUNITY}`).suits).toBeUndefined()
+    expect(byId(listings, `review@${OFFICIAL}`).suggestFor).toBeUndefined()
+    expect(byId(listings, `pg@${COMMUNITY}`).suggestFor).toBeUndefined()
   })
 
   test('two marketplaces listing one repository name one origin', async () => {

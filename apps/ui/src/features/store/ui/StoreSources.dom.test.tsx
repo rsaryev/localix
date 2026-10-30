@@ -59,7 +59,7 @@ describe('the Store’s sources', () => {
   test('are grouped by kind, each saying who stands behind it, how many it offers and when it was read', async () => {
     const view = await open()
     try {
-      const apps = view.host.querySelector('section[aria-label="Mini app catalogs"]')!
+      const apps = view.host.querySelector('section[aria-label="Mini app marketplaces"]')!
       expect(apps.textContent).toContain('Localix')
       expect(apps.textContent).toContain('1 package')
       expect(apps.textContent).toContain('read 3 hours ago')
@@ -68,7 +68,7 @@ describe('the Store’s sources', () => {
       expect(plugins.textContent).toContain('120 packages')
       // Each group is headed, and the page is headed once above them.
       expect(view.host.querySelector('h2')?.textContent).toBe('Sources')
-      expect(apps.querySelector('h3')?.textContent).toBe('Mini app catalogs')
+      expect(apps.querySelector('h3')?.textContent).toBe('Mini app marketplaces')
     } finally {
       await view.done()
     }
@@ -78,7 +78,7 @@ describe('the Store’s sources', () => {
     jest.useFakeTimers({ now: Date.now() })
     const view = await open()
     try {
-      const apps = () => view.host.querySelector('section[aria-label="Mini app catalogs"]')!
+      const apps = () => view.host.querySelector('section[aria-label="Mini app marketplaces"]')!
       expect(apps().textContent).toContain('read 3 hours ago')
       await view.act(async () => void jest.advanceTimersByTime(3_600_000))
       expect(apps().textContent).toContain('read 4 hours ago')
@@ -128,7 +128,7 @@ describe('the Store’s sources', () => {
     }
   })
 
-  test('the switch sets a marketplace to update on its own; a catalog has none', async () => {
+  test('the switch sets a plugin marketplace to update on its own; a mini app marketplace has none', async () => {
     const view = await open()
     try {
       expect(view.host.querySelector('[data-source="' + HOSTED + '"] [role="switch"]')).toBeNull()
@@ -221,19 +221,21 @@ describe('the Store’s sources', () => {
     try {
       await view.click(view.button('Add source…'))
       expect(dialog()?.querySelector('h2')?.textContent).toBe('Add a source')
-      await view.type(field(), 'https://bob.test/mini-app-catalog.json')
+      await view.type(field(), 'https://bob.test/mini-app-marketplace.json')
       await view.click(view.button('Read', dialog()!))
       expect(view.calls).toEqual([
-        'preview mini-app https://bob.test/mini-app-catalog.json',
-        'preview plugin https://bob.test/mini-app-catalog.json',
+        'preview mini-app https://bob.test/mini-app-marketplace.json',
+        'preview plugin https://bob.test/mini-app-marketplace.json',
       ])
-      expect(dialog()?.textContent).toContain('Mini app catalog')
+      expect(dialog()?.textContent).toContain('Mini app marketplace')
       expect(dialog()?.textContent).toContain('Ada')
       expect(dialog()?.textContent).toContain('3 packages')
       expect(dialog()?.textContent).toContain('Community')
       expect(view.calls.some((call) => call.startsWith('add'))).toBe(false)
       await view.click(view.button('Add', dialog()!))
-      expect(view.calls.at(-1)).toBe('add source mini-app https://bob.test/mini-app-catalog.json')
+      expect(view.calls.at(-1)).toBe(
+        'add source mini-app https://bob.test/mini-app-marketplace.json',
+      )
       expect(dialog()).toBeNull()
     } finally {
       await view.done()
@@ -256,7 +258,7 @@ describe('the Store’s sources', () => {
   })
 
   test('an address that is not a source is refused inside the dialog, the text kept', async () => {
-    const view = await open({ previewFails: 'The catalog at broken.test answered 404' })
+    const view = await open({ previewFails: 'The marketplace at broken.test answered 404' })
     try {
       await view.click(view.button('Add source…'))
       await view.type(field(), 'https://broken.test/c.json')
@@ -272,11 +274,13 @@ describe('the Store’s sources', () => {
   test('a link that names a source opens the dialog with its address, read and waiting for a yes', async () => {
     const view = await renderStore({
       listings: LISTINGS,
-      target: { addSource: { kind: 'mini-app', input: 'https://bob.test/mini-app-catalog.json' } },
+      target: {
+        addSource: { kind: 'mini-app', input: 'https://bob.test/mini-app-marketplace.json' },
+      },
     })
     try {
-      expect(field()?.value).toBe('https://bob.test/mini-app-catalog.json')
-      expect(view.calls).toEqual(['preview mini-app https://bob.test/mini-app-catalog.json'])
+      expect(field()?.value).toBe('https://bob.test/mini-app-marketplace.json')
+      expect(view.calls).toEqual(['preview mini-app https://bob.test/mini-app-marketplace.json'])
     } finally {
       await view.done()
     }

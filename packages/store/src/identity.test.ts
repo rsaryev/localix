@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { catalogOrigin, gitOrigin, npmOrigin } from './identity'
+import { gitOrigin, miniAppOrigin, npmOrigin } from './identity'
 
 describe('a package identity is its origin, normalized', () => {
   test('one git repository however it is spelled', () => {
@@ -32,8 +32,20 @@ describe('a package identity is its origin, normalized', () => {
     expect(gitOrigin({ url: 'acme/tools', ref: 'master' })).toBe('git:github.com/acme/tools')
   })
 
-  test('an npm package by its name, a catalog archive by its own', () => {
+  test('an npm package by its name', () => {
     expect(npmOrigin('@Acme/Lint')).toBe('npm:@acme/lint')
-    expect(catalogOrigin('atlas')).toBe('catalog:atlas')
+  })
+
+  // A list that links an app and the author's own marketplace offer one app, not two; the same
+  // name in two marketplaces is two apps.
+  test('a mini app by the released marketplace it is built in, and its name', () => {
+    const release =
+      'https://github.com/Grace/Habits/releases/latest/download/mini-app-marketplace.json'
+    expect(miniAppOrigin(release, 'habits')).toBe(
+      miniAppOrigin(release.replace('Grace/Habits', 'grace/habits'), 'habits'),
+    )
+    expect(miniAppOrigin(release, 'habits')).not.toBe(
+      miniAppOrigin('https://ada.example/mini-app-marketplace.json', 'habits'),
+    )
   })
 })

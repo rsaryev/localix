@@ -6,12 +6,12 @@ import { loadManifest } from './discovery'
 import { MINI_APP_FILE } from './layout/read'
 
 /**
- * A mini app is never a plugin (rule X2): a folder holding a `mini-app.json` does not load as one,
+ * A mini app is never a plugin (rule X2): a folder holding a mini app's manifest does not load as one,
  * whatever Claude Code component folders sit beside it. It is added from the Store.
  */
 const dir = tempDirPerTest('mini-app-discovery-')
 
-describe('a mini-app.json folder among plugins', () => {
+describe('a mini app folder among plugins', () => {
   test('surfaces as an error that points at mini apps, not as a plugin', async () => {
     writeTree(dir(), {
       [MINI_APP_FILE]: JSON.stringify({ name: 'calories', version: '0.1.0' }),

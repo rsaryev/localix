@@ -15,7 +15,7 @@ export async function findManifestPath(dir: string): Promise<string | null> {
 
 /**
  * What makes a directory a plugin, as in Claude Code: its manifest or a default component location
- * (the manifest is optional). A `mini-app.json` is read too, only so that a mini app dropped among
+ * (the manifest is optional). A mini app's manifest is read too, only so that a mini app dropped among
  * the plugins says what it is instead of vanishing. Bare dirs (e.g. a `cache`) are skipped.
  */
 const PLUGIN_MARKERS = [...COMPONENT_MARKERS, MINI_APP_FILE]

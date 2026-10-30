@@ -1,54 +1,71 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, test } from 'bun:test'
 import { generateKeyPairSync } from 'node:crypto'
 import { join } from 'node:path'
+import { publicKeyOf } from '@localixai/mini-app-sdk/marketplace-signature'
 import { tempDirPerTest } from '@localixai/testing'
 
-import { hostedMiniAppCatalog, type CatalogEntry } from '../../testing/mini-app-catalog'
+import {
+  hostedMiniAppMarketplace,
+  memoryTrust,
+  type MarketplaceEntry,
+} from '../../testing/mini-app-marketplace'
+import type { MiniAppMarketplaceSource } from './marketplaces'
 import { createMiniAppStore } from './store'
 import type { MiniAppConfigField } from './contracts'
 import { createMiniAppStoreProvider } from './store-provider'
 
 const root = tempDirPerTest('mini-app-store-provider-')
 const actor = { userId: 'u1' }
-const ADA = 'https://ada.test/mini-app-catalog.json'
+const ADA = 'https://ada.test/mini-app-marketplace.json'
+/** Installed apps their marketplace took back, by name, as the mini apps feature reads them. */
+const revokedApps = new Map<string, string>()
+afterEach(() => revokedApps.clear())
 
-function setup(opts: { verified?: boolean; editorial?: unknown; signed?: boolean } = {}) {
-  const author = generateKeyPairSync('ed25519')
-  const key = Buffer.from(author.publicKey.export({ format: 'jwk' }).x!, 'base64url')
-  const catalog = hostedMiniAppCatalog([], {
-    editorial: opts.editorial,
-    ...(opts.signed ? { signWith: author.privateKey } : {}),
+function setup(opts: { verified?: boolean; collections?: unknown; signed?: boolean } = {}) {
+  const author = generateKeyPairSync('ed25519').privateKey
+  const vouched = opts.verified !== false
+  const marketplace = hostedMiniAppMarketplace([], {
+    name: 'localix',
+    owner: vouched ? 'Localix' : 'Ada',
+    collections: opts.collections,
+    ...(opts.signed ? { signWith: [author] } : {}),
   })
-  /** Offer an app in the catalog; what a catalog says is read when the store next asks. */
-  const offer = (name: string, extra: Partial<CatalogEntry> = {}) =>
-    void catalog.apps.push({ name, verified: opts.verified, ...extra })
+  /** Offer an app in the marketplace; what it says is read when the store next asks. */
+  const offer = (name: string, extra: Partial<MarketplaceEntry> = {}) =>
+    void marketplace.apps.push({ name, ...extra })
+  const marketplaces: MiniAppMarketplaceSource[] = [
+    {
+      url: marketplace.url,
+      name: 'localix',
+      builtIn: vouched,
+      vouches: vouched,
+      id: 'localix-mini-apps',
+      ...(opts.signed ? { pinned: [publicKeyOf(author)] } : {}),
+    },
+  ]
+  /** The marketplace is one the person added: Localix vouches for none of it. */
+  const addedByPerson = () => Object.assign(marketplaces[0]!, { builtIn: false, vouches: false })
   const store = createMiniAppStore({
     homeDir: join(root(), 'home'),
-    sources: () => [
-      {
-        kind: 'catalog',
-        url: catalog.url,
-        vouches: true,
-        ...(opts.signed ? { key: key.toString('base64') } : {}),
-      },
-    ],
+    sources: () => marketplaces.slice(0, 1),
+    trust: memoryTrust(),
     onInstalled: async () => {},
-    fetchImpl: catalog.fetchImpl,
+    fetchImpl: marketplace.fetchImpl,
   })
   const calls: string[] = []
   const autoUpdateOff = new Set<string>()
   const enabled = new Map<string, boolean>()
   const configs = new Map<string, MiniAppConfigField[]>()
   const own: Record<string, unknown>[] = []
-  const catalogs = [{ url: catalog.url, builtIn: true }]
   const provider = createMiniAppStoreProvider({
     store,
-    catalogs: {
-      list: async () => catalogs,
+    marketplaces: {
+      list: async () => marketplaces,
       add: async (url) => void calls.push(`add ${url}`),
       remove: async (url) => void calls.push(`remove ${url}`),
       preview: async (url) => ({
         url,
+        name: 'ada',
         publishers: ['Ada'],
         apps: 3,
         icons: [],
@@ -63,6 +80,7 @@ function setup(opts: { verified?: boolean; editorial?: unknown; signed?: boolean
             name,
             enabled: on,
             config: configs.get(name) ?? [],
+            ...(revokedApps.has(name) ? { revoked: revokedApps.get(name) } : {}),
           })),
           ...(own as never[]),
         ],
@@ -81,12 +99,23 @@ function setup(opts: { verified?: boolean; editorial?: unknown; signed?: boolean
       },
     },
   })
-  return { catalog, offer, store, provider, calls, enabled, catalogs, configs, own }
+  return {
+    marketplace,
+    offer,
+    store,
+    provider,
+    calls,
+    enabled,
+    marketplaces,
+    addedByPerson,
+    configs,
+    own,
+  }
 }
 
 describe('the mini apps in the Store', () => {
   test('an offer is a listing: what it is, where it comes from and what is inside', async () => {
-    const { catalog, offer, provider } = setup()
+    const { marketplace, offer, provider } = setup()
     offer('atlas', {
       displayName: 'Atlas',
       category: 'games',
@@ -101,14 +130,14 @@ describe('the mini apps in the Store', () => {
     expect(problems).toEqual([])
     const [atlas, clock] = listings
     expect(atlas).toMatchObject({
-      ref: { kind: 'mini-app', id: 'atlas' },
+      ref: { kind: 'mini-app', id: 'atlas@localix' },
       name: 'atlas',
       displayName: 'Atlas',
       summary: 'atlas app',
       category: 'games',
       tags: ['board-game'],
       publisher: { name: 'Localix', verified: true },
-      source: { id: catalog.url, label: 'Localix' },
+      source: { id: marketplace.url, label: 'Localix' },
       version: '1.0.0',
       contents: { screen: 1, 'agent-tool': 1, backend: 1, command: 2 },
       runsCode: true,
@@ -126,15 +155,18 @@ describe('the mini apps in the Store', () => {
     expect(clock).toMatchObject({ displayName: 'clock', contents: { screen: 1 }, runsCode: false })
   })
 
-  test('Localix’s own catalog is trusted and editorial; one the person added is community', async () => {
-    const { offer, provider, catalogs } = setup()
+  test('Localix’s own marketplace is trusted and editorial; one the person added is community', async () => {
+    const { offer, provider, addedByPerson } = setup()
     offer('atlas', { featured: true })
     const [own] = (await provider.listings(actor)).listings
     expect(own!.source).toMatchObject({ trust: 'localix', weight: 1 })
-    expect(own!.origin).toBe('catalog:atlas')
+    expect(own!.origin).toBe(
+      'mini-app:marketplace.example.test/mini-apps/mini-app-marketplace.json#atlas',
+    )
     expect(own!.featured).toBe(true)
 
-    catalogs[0]!.builtIn = false
+    addedByPerson()
+    await provider.refresh!()
     const [added] = (await provider.listings(actor)).listings
     expect(added!.source).toMatchObject({ trust: 'community', weight: 0.35 })
     // Its picks do not reach Discover: only an editorial source's do.
@@ -143,9 +175,13 @@ describe('the mini apps in the Store', () => {
 
   // Localix Community comes with Localix, but Localix vouches for none of what it lists.
   test('Localix Community comes with Localix and is named, but is community, not editorial', async () => {
-    const { offer, provider, catalogs } = setup()
+    const { offer, provider, marketplaces } = setup()
     offer('atlas', { featured: true })
-    Object.assign(catalogs[0]!, { builtIn: true, sourceId: 'localix-community-mini-apps' })
+    Object.assign(marketplaces[0]!, {
+      builtIn: true,
+      vouches: false,
+      id: 'localix-community-mini-apps',
+    })
     const [listed] = (await provider.listings(actor)).listings
     expect(listed!.source).toMatchObject({
       label: 'Localix Community',
@@ -161,64 +197,64 @@ describe('the mini apps in the Store', () => {
     })
   })
 
-  test('what Localix’s catalog says an app is for reaches recommendations; an added one says nothing', async () => {
-    const { offer, provider, catalogs } = setup()
+  test('what Localix’s marketplace suggests an app for reaches recommendations; an added one says nothing', async () => {
+    const { offer, provider, addedByPerson } = setup()
     offer('atlas', {
-      suits: { files: ['*.pgn', 42], dependencies: ['chess.js'] },
+      suggestFor: { files: ['*.pgn', 42], dependencies: ['chess.js'] },
     })
-    offer('clock', { suits: { files: 'clock.txt' } })
+    offer('clock', { suggestFor: { files: 'clock.txt' } })
 
     const [atlas, clock] = (await provider.listings(actor)).listings
-    expect(atlas!.suits).toEqual({ files: ['*.pgn'], dependencies: ['chess.js'] })
-    expect(clock!.suits).toBeUndefined()
+    expect(atlas!.suggestFor).toEqual({ files: ['*.pgn'], dependencies: ['chess.js'] })
+    expect(clock!.suggestFor).toBeUndefined()
 
-    catalogs[0]!.builtIn = false
+    addedByPerson()
+    await provider.refresh!()
     const [added] = (await provider.listings(actor)).listings
-    expect(added!.suits).toBeUndefined()
+    expect(added!.suggestFor).toBeUndefined()
   })
 
   test('Localix’s picks for Discover: and collections', async () => {
-    const { catalog, offer, provider, catalogs } = setup({
-      editorial: {
-        collections: [
-          {
-            id: 'play',
-            title: 'Play with the agent',
-            items: ['atlas', 'compass', 'plugin:games@localix'],
-          },
-        ],
-      },
+    const { marketplace, offer, provider, addedByPerson } = setup({
+      collections: [
+        {
+          id: 'play',
+          title: 'Play with the agent',
+          items: ['atlas', 'compass', 'plugin:games@localix'],
+        },
+      ],
     })
     offer('atlas')
     offer('compass')
     expect(await provider.editorial!()).toEqual([
       {
-        source: catalog.url,
+        source: marketplace.url,
         collections: [
           {
             id: 'play',
             title: 'Play with the agent',
             style: 'row',
             items: [
-              { kind: 'mini-app', id: 'atlas' },
-              { kind: 'mini-app', id: 'compass' },
+              { kind: 'mini-app', id: 'atlas@localix' },
+              { kind: 'mini-app', id: 'compass@localix' },
               { kind: 'plugin', id: 'games@localix' },
             ],
           },
         ],
       },
     ])
-    // A catalog the person added picks nothing for Discover.
-    catalogs[0]!.builtIn = false
+    // A marketplace the person added picks nothing for Discover.
+    addedByPerson()
+    await provider.refresh!()
     expect(await provider.editorial!()).toEqual([])
   })
 
   test('an install shows its version, its switch, an offered update and its settings', async () => {
-    const { catalog, offer, store, provider, enabled } = setup()
+    const { marketplace, offer, store, provider, enabled } = setup()
     offer('atlas')
     await store.install('atlas')
     await store.settled()
-    catalog.apps[0]!.version = '1.1.0'
+    marketplace.app('atlas').version = '1.1.0'
     await store.refresh()
     enabled.set('atlas', false)
 
@@ -317,7 +353,7 @@ describe('the mini apps in the Store', () => {
     const plan = await provider.plan('radio', 'user', actor)
     expect(plan.runs).toEqual([{ kind: 'backend', name: 'Radio' }])
     expect(plan.needsConsent).toBe(true)
-    expect(plan.warnings).toEqual(['Someone is not a publisher Localix verifies'])
+    expect(plan.warnings).toEqual(['Ada is not a publisher Localix verifies'])
 
     await expect(provider.install('radio', 'user', { plan: false }, actor)).rejects.toMatchObject({
       code: 'mini_app_unverified',
@@ -345,16 +381,16 @@ describe('the mini apps in the Store', () => {
     expect(calls).toEqual(['remove atlas', 'enable atlas false'])
   })
 
-  test('sources are the catalogs, labelled, with how many apps each offers', async () => {
-    const { catalog, offer, provider, catalogs, calls } = setup()
+  test('sources are the marketplaces, by name, with how many apps each offers', async () => {
+    const { marketplace, offer, provider, marketplaces, calls } = setup()
     offer('atlas')
-    catalogs.push({ url: ADA, builtIn: false })
+    marketplaces.push({ url: ADA, name: 'ada', builtIn: false, vouches: false })
     expect(await provider.sources()).toEqual([
       {
         kind: 'mini-app',
-        id: catalog.url,
+        id: marketplace.url,
         label: 'Localix',
-        url: catalog.url,
+        url: marketplace.url,
         builtIn: true,
         count: 1,
         trust: 'localix',
@@ -363,7 +399,7 @@ describe('the mini apps in the Store', () => {
       {
         kind: 'mini-app',
         id: ADA,
-        label: 'ada.test',
+        label: 'ada',
         url: ADA,
         builtIn: false,
         count: 0,
@@ -373,7 +409,7 @@ describe('the mini apps in the Store', () => {
     expect(await provider.previewSource!(ADA)).toEqual({
       kind: 'mini-app',
       id: ADA,
-      label: 'ada.test',
+      label: 'ada',
       publishers: ['Ada'],
       count: 3,
       icons: [],
@@ -385,18 +421,20 @@ describe('the mini apps in the Store', () => {
     expect(calls).toEqual([`add ${ADA}`, `remove ${ADA}`])
   })
 
-  test('a catalog that cannot be read is a source that says why, quietly', async () => {
+  test('a marketplace that cannot be read is a source that says why, quietly', async () => {
+    const added = { url: ADA, name: 'ada', builtIn: false, vouches: false }
     const store = createMiniAppStore({
       homeDir: join(root(), 'home'),
-      sources: () => [{ kind: 'catalog', url: ADA, vouches: false }],
+      sources: () => [added],
+      trust: memoryTrust(),
       fetchImpl: (async () => new Response('missing', { status: 404 })) as unknown as typeof fetch,
       onInstalled: async () => {},
     })
     const calls: string[] = []
     const provider = createMiniAppStoreProvider({
       store: { ...store, refresh: async () => void calls.push('refresh') },
-      catalogs: {
-        list: async () => [{ url: ADA, builtIn: false }],
+      marketplaces: {
+        list: async () => [added],
         add: async () => {},
         remove: async () => {},
         preview: async () => {
@@ -428,7 +466,7 @@ describe('the mini apps in the Store', () => {
     expect(heard).toBeGreaterThan(1)
   })
 
-  test('an install from a signed catalog says so and updates on its own until switched off', async () => {
+  test('an install from a signed marketplace says so and updates on its own until switched off', async () => {
     const { offer, store, provider, calls } = setup({ signed: true })
     offer('atlas')
     offer('notes')
@@ -447,7 +485,7 @@ describe('the mini apps in the Store', () => {
     expect((await listed())[0]!.autoUpdate).toBe(false)
   })
 
-  test('an install from an unsigned catalog says so, and has no switch: it updates when asked', async () => {
+  test('an install from an unsigned marketplace says so, and has no switch: it updates when asked', async () => {
     const { offer, store, provider } = setup()
     offer('atlas')
     await store.install('atlas')
@@ -458,7 +496,7 @@ describe('the mini apps in the Store', () => {
     expect(atlas!.autoUpdate).toBeUndefined()
   })
 
-  test('a mini app the person made, which no catalog offers, is in the Store as installed', async () => {
+  test('a mini app the person made, which no marketplace offers, is in the Store as installed', async () => {
     const { offer, provider, own } = setup()
     offer('atlas')
     own.push({
@@ -480,18 +518,70 @@ describe('the mini apps in the Store', () => {
       source: { label: 'Made on this computer' },
       authored: 'user',
     })
-    // No catalog: nothing to sign, nothing updates it but the person.
+    // No marketplace: nothing to sign, nothing updates it but the person.
     expect(mine!.signature).toBeUndefined()
     expect(mine!.autoUpdate).toBeUndefined()
-    expect(listings.filter((listing) => listing.ref.id === 'atlas')).toHaveLength(1)
+    expect(listings.filter((listing) => listing.name === 'atlas')).toHaveLength(1)
     const page = await provider.detail('bitcoin-price', actor)
     expect(page.components.map((component) => component.kind)).toEqual([
       'screen',
       'agent-tool',
       'backend',
     ])
-    // Nothing to install: it is already here, and no catalog has it.
+    // Nothing to install: it is already here, and no marketplace has it.
     await expect(provider.plan('bitcoin-price', 'user', actor)).rejects.toThrow()
+  })
+
+  // Its marketplace took it back: it is no longer offered, but it is still here, and it is still
+  // that marketplace's app, not one the person made.
+  test('an installed app its marketplace no longer offers is its marketplace’s, and says why it stopped', async () => {
+    const { provider, own } = setup()
+    own.push({
+      name: 'radio',
+      version: '1.0.0',
+      description: 'Plays the radio.',
+      installedFrom: { marketplace: 'ada', publisher: { name: 'Ada', verified: false } },
+      revoked: 'It sends what you play to a server.',
+      enabled: true,
+      config: [],
+    })
+    const [radio] = (await provider.listings(actor)).listings
+    expect(radio).toMatchObject({
+      ref: { kind: 'mini-app', id: 'radio' },
+      publisher: { name: 'Ada', verified: false },
+      source: { label: 'ada' },
+      revoked: 'It sends what you play to a server.',
+      installs: [{ scope: 'user', version: '1.0.0' }],
+    })
+    expect(radio!.authored).toBeUndefined()
+  })
+
+  // Taken back by a marketplace built into Localix: it reads as that marketplace does elsewhere.
+  test('an app a built-in marketplace no longer offers is labelled as that marketplace', async () => {
+    const { provider, own } = setup()
+    own.push({
+      name: 'radio',
+      version: '1.0.0',
+      description: 'Plays the radio.',
+      installedFrom: { marketplace: 'localix', publisher: { name: 'Localix', verified: true } },
+      revoked: 'It sends what you play to a server.',
+      enabled: true,
+      config: [],
+    })
+    const [radio] = (await provider.listings(actor)).listings
+    expect(radio!.source.label).toBe('Localix')
+  })
+
+  test('an installed app taken back at its version says so beside the version that fixes it', async () => {
+    const { offer, store, provider, enabled } = setup()
+    offer('atlas')
+    await store.install('atlas')
+    await store.settled()
+    enabled.set('atlas', true)
+    const listed = async () => (await provider.listings(actor)).listings[0]!
+    expect((await listed()).revoked).toBeUndefined()
+    revokedApps.set('atlas', 'Version 1.0.0 deletes your notes.')
+    expect((await listed()).revoked).toBe('Version 1.0.0 deletes your notes.')
   })
 
   test('a mini app the person published links its page to where it lives', async () => {
@@ -511,7 +601,7 @@ describe('the mini apps in the Store', () => {
     })
   })
 
-  test('a file finds the mini apps that open it, from what each catalog entry declares', async () => {
+  test('a file finds the mini apps that open it, from what each marketplace entry declares', async () => {
     const { offer, provider } = setup()
     offer('documents', {
       fileAssociations: [{ ext: ['docx', 'pdf'], name: 'Word Document', role: 'Viewer' }],
@@ -528,14 +618,14 @@ describe('the mini apps in the Store', () => {
     offer('clock')
     const { listings } = await provider.listings(actor)
     expect(Object.fromEntries(listings.map((l) => [l.ref.id, l.opens]))).toEqual({
-      documents: ['docx', 'pdf'],
-      reader: ['epub'],
-      clock: undefined,
+      'documents@localix': ['docx', 'pdf'],
+      'reader@localix': ['epub'],
+      'clock@localix': undefined,
     })
     const ids = async (path: string) =>
       (await provider.openers!(path, actor)).map((listing) => listing.ref.id)
-    expect(await ids('/work/Report.DOCX')).toEqual(['documents'])
-    expect(await ids('/work/scan.pdf')).toEqual(['documents'])
+    expect(await ids('/work/Report.DOCX')).toEqual(['documents@localix'])
+    expect(await ids('/work/scan.pdf')).toEqual(['documents@localix'])
     expect(await ids('/work/notes.txt')).toEqual([])
     expect(await ids('/work/README.md')).toEqual([])
   })

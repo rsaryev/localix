@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { suggestForSchema } from './curation'
+
 /**
  * THE STORE'S CONTRACT (`docs/internals/store.md`, "Contract"): what a provider hands the Store and
  * what the Store hands a client. It names no provider and parses no package format; a provider
@@ -75,44 +77,6 @@ export const componentSchema = z.object({
 })
 export type StoreComponent = z.infer<typeof componentSchema>
 
-const suitWords = z.array(z.string().min(1).max(100)).max(20)
-export const suitsSchema = z.object({
-  files: suitWords.optional(),
-  dependencies: suitWords.optional(),
-})
-export type ListingSuits = z.infer<typeof suitsSchema>
-
-/** The strings among `raw` that fit a suit word, as many as a listing holds. */
-const looseWords = z.unknown().transform((raw) =>
-  Array.isArray(raw)
-    ? raw
-        .filter((word): word is string => typeof word === 'string')
-        .filter((word) => word.length > 0 && word.length <= 100)
-        .slice(0, 20)
-    : [],
-)
-
-/**
- * What a source says a package is for, read leniently (a marketplace's `metadata.localix.suits`,
- * a mini app catalog's `suits`): what is not a string is dropped, and what says nothing is
- * undefined rather than a reason to refuse the rest.
- */
-export const sourceSuitsSchema = z
-  .unknown()
-  .transform((raw): ListingSuits | undefined => {
-    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return undefined
-    const { files: rawFiles, dependencies: rawDependencies } = raw as Record<string, unknown>
-    const files = looseWords.parse(rawFiles)
-    const dependencies = looseWords.parse(rawDependencies)
-    if (!files.length && !dependencies.length) return undefined
-    return {
-      ...(files.length ? { files } : {}),
-      ...(dependencies.length ? { dependencies } : {}),
-    }
-  })
-  // The field it is read from may be absent.
-  .optional()
-
 /** The Store's read-only projection of one package, for display and search. */
 export const listingSchema = z.object({
   ref: listingRefSchema,
@@ -163,9 +127,11 @@ export const listingSchema = z.object({
   job: jobSchema.optional(),
   /** Why it cannot be installed here. */
   incompatible: z.string().optional(),
+  /** Its source took it back, and why: installed, it does not run. */
+  revoked: z.string().optional(),
   /**
-   * Whether the source it comes from is signed with the key Localix keeps for it (a mini app
-   * catalog's `.sig`): `mismatch` when it is signed with another, or no longer signed. Absent for
+   * Whether the source it comes from is signed with a key Localix keeps for it (a mini app
+   * marketplace's `.sig`): `mismatch` when it is signed with another, or no longer signed. Absent for
    * what no signed source carries.
    */
   signature: z.enum(['signed', 'unsigned', 'mismatch']).optional(),
@@ -186,12 +152,8 @@ export const listingSchema = z.object({
   bundled: z.boolean().optional(),
   /** It is installed and has settings: its page then shows a Settings tab (`ListingConfig`). */
   configurable: z.boolean().optional(),
-  /**
-   * What it is for, as its source says: file names at a project's root or open in a tab
-   * (`compose.yaml`, `*.tf`; `*` stands for any characters) and packages a project depends on
-   * (`prisma`, `@sentry/node`). Recommendations show it where they are (`recommend-rules.ts`).
-   */
-  suits: suitsSchema.optional(),
+  /** What its marketplace suggests it for (`curation.ts`), from a source Localix trusts. */
+  suggestFor: suggestForSchema.optional(),
   /**
    * The kinds of file it opens, as its source declares them (a mini app's `fileAssociations`):
    * `docx`, `request.json`, `dockerfile`. A file tab offers it for a file it opens (`opensFile`).

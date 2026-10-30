@@ -53,8 +53,8 @@ own folder, settings and command; see [Build a mini app](mini-apps.md).
 Discovery reads the manifest and component folders with Claude Code's rules. A folder without a
 manifest is a plugin named after the folder when it has a component folder such as `skills/` or
 `commands/`. the Store (Plugins) lists it and skips authoring reminders such as a missing license. A
-root `plugin.json` is not read, as in Claude Code, and a folder holding a `mini-app.json` is a mini
-app: it loads nothing as a plugin.
+root `plugin.json` is not read, as in Claude Code, and a folder holding a
+`.localix-mini-app/mini-app.json` is a mini app: it loads nothing as a plugin.
 
 | Claude Code rule                                     | In Localix                                                                                                                                        |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -192,7 +192,7 @@ no command deletes or changes the folder.
 | Claude Code format, user scope                           | Loads in place from its folder                                     |
 | Installed with `--project`                               | A copy in the project                                              |
 | An entry at the marketplace root that lists its `skills` | A copy with the listed skills                                      |
-| A folder holding `mini-app.json`                         | Not a plugin: it loads nothing and points to the Store (Mini apps) |
+| A folder holding `.localix-mini-app/mini-app.json`       | Not a plugin: it loads nothing and points to the Store (Mini apps) |
 
 A plugin installed as a copy by an earlier version keeps working as one; `/plugin update` turns it
 into an in-place plugin and removes the copy.

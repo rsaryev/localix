@@ -7,6 +7,7 @@ import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { ConflictError, UnprocessableError } from '../../lib/domain-errors'
 import { installLocalPackage } from './local-install'
 import { INSTALL_RECORD_FILE, installedBy } from './store-install'
+import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 const tempDir = tempDirPerTest('mini-app-local-install-')
 
@@ -23,7 +24,7 @@ function builtPackage(manifest: Record<string, unknown> = MANIFEST) {
   const source = tempDir()
   const dir = join(source, 'dist', 'package')
   writeTree(dir, {
-    'mini-app.json': JSON.stringify(manifest),
+    [MINI_APP_MANIFEST_FILE]: JSON.stringify(manifest),
     'guide.md': '# Tally',
     'dist/backend/index-abc.mjs': 'export function register() { return {} }',
   })
@@ -76,7 +77,7 @@ describe('installing a package the person built', () => {
     const { dir, source } = builtPackage({ ...MANIFEST, skills: './skills' })
     const error = await installLocalPackage({ dir, source }, host().deps).catch((e) => e)
     expect(error).toBeInstanceOf(UnprocessableError)
-    expect(error.message).toContain('Invalid mini-app.json')
+    expect(error.message).toContain(`Invalid ${MINI_APP_MANIFEST_FILE}`)
   })
 
   test('refuses a source folder: Localix installs built code', async () => {
@@ -87,16 +88,19 @@ describe('installing a package the person built', () => {
     expect(error.message).toContain('mini-app build')
   })
 
-  test('never replaces a folder it did not install, a catalog’s app, or the source itself', async () => {
+  test('never replaces a folder it did not install, a marketplace’s app, or the source itself', async () => {
     const localix = host()
-    writeTree(join(localix.installRoot, 'tally'), { 'mini-app.json': '{}' })
+    writeTree(join(localix.installRoot, 'tally'), { [MINI_APP_MANIFEST_FILE]: '{}' })
     const handMade = await installLocalPackage(builtPackage(), localix.deps).catch((e) => e)
     expect(handMade).toBeInstanceOf(ConflictError)
     expect(handMade.message).toContain(join(localix.installRoot, 'tally'))
 
     const other = host()
     writeTree(join(other.installRoot, 'tally'), {
-      [INSTALL_RECORD_FILE]: JSON.stringify({ kind: 'localix-catalog-install', catalog: 'x' }),
+      [INSTALL_RECORD_FILE]: JSON.stringify({
+        kind: 'localix-marketplace-install',
+        marketplace: 'x',
+      }),
     })
     expect(await installLocalPackage(builtPackage(), other.deps).catch((e) => e)).toBeInstanceOf(
       ConflictError,
@@ -107,11 +111,11 @@ describe('installing a package the person built', () => {
     const source = join(third.installRoot, 'tally')
     const dir = join(source, 'dist', 'package')
     writeTree(dir, {
-      'mini-app.json': JSON.stringify(MANIFEST),
+      [MINI_APP_MANIFEST_FILE]: JSON.stringify(MANIFEST),
       'dist/backend/index-abc.mjs': 'export {}',
     })
     const inside = await installLocalPackage({ dir, source }, third.deps).catch((e) => e)
     expect(inside).toBeInstanceOf(ConflictError)
-    expect(existsSync(join(source, 'dist/package/mini-app.json'))).toBe(true)
+    expect(existsSync(join(source, 'dist/package', MINI_APP_MANIFEST_FILE))).toBe(true)
   })
 })

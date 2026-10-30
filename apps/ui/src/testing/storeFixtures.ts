@@ -25,8 +25,8 @@ import type { StorePageQuery } from '@/shared/api/store-client'
 import { MonitorDown } from 'lucide-react'
 import type { StoreInstallExtra } from '@/shared/lib/storeInstallExtra'
 
-export const HOSTED = 'https://hosted.test/mini-app-catalog.json'
-export const ADA = 'https://ada.test/mini-app-catalog.json'
+export const HOSTED = 'https://hosted.test/mini-app-marketplace.json'
+export const ADA = 'https://ada.test/mini-app-marketplace.json'
 
 export const listing = (over: Partial<Listing> & { id: string }): Listing =>
   makeListing({ source: { id: HOSTED, label: 'Localix', trust: 'localix' }, ...over })

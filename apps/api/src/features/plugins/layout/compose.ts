@@ -8,7 +8,7 @@ import { fromClaudePlugin } from './claude-code'
 /**
  * A plugin folder read exactly as Claude Code reads it: `.claude-plugin/plugin.json`, or no
  * manifest at all (a plugin named after its folder). A root `plugin.json` is not Claude Code's
- * manifest and is not read; a folder holding a `mini-app.json` is a mini app, never a plugin
+ * manifest and is not read; a folder holding a `.localix-mini-app/mini-app.json` is a mini app, never a plugin
  * (rule X2, `docs/internals/plugins-and-mini-apps.md`).
  */
 
@@ -20,7 +20,7 @@ export interface ManifestFiles {
   plugin?: ManifestFile
   /** A root `plugin.json` (an earlier Localix wrote one; Claude Code ignores it). */
   root?: ManifestFile
-  /** The folder holds a `mini-app.json`. */
+  /** The folder holds a `.localix-mini-app/mini-app.json`. */
   miniApp?: true
 }
 
@@ -38,7 +38,8 @@ export function composeManifest(files: ManifestFiles, folderName: string): Compo
     return {
       raw: null,
       issues: [],
-      error: 'This folder is a mini app (mini-app.json), not a plugin: add it from the Store',
+      error:
+        'This folder is a mini app (.localix-mini-app/mini-app.json), not a plugin: add it from the Store',
     }
   const issues: PluginIssue[] = []
   if (files.root && !isImportArtifact(files.root))

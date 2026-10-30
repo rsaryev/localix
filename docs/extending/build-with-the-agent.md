@@ -23,7 +23,7 @@ creating the mini app.
 | Get a native interface   | The agent writes `ui/register.tsx` against the host's own kit.                             | A style check rejects hand-rolled controls and palette colours.                                   |
 | Give the agent new tools | The mini app's tools register with the agent with no glue code.                            | A tool must declare its effect, or a read-only session refuses even its reads.                    |
 | Let the app start a turn | A UI action calls `ctx.host.wake`, as the Localix marketplace's games do.                  | A wake is one short message and only the app's own tools; see the wakes guide.                    |
-| Share it                 | The plugin's `publish` command packs it into a catalog other people add in Store.          | Hosting the catalog's files is up to you; see [publishing](mini-app-publishing.md).               |
+| Share it                 | The plugin's `publish` command packs it into a marketplace other people add in Store.      | Hosting the marketplace's files is up to you; see [publishing](mini-app-publishing.md).           |
 
 ## How it works
 
@@ -49,13 +49,13 @@ Localix is not running), so the agent reads the SDK's declarations inside the ap
 
 1. `mini-app create <name>` forks the plugin's Daily Log template into a new folder and checks the
    fresh copy. Template-domain residue is expected at this point; every other check passes.
-2. The copy is a mini app: `mini-app.json` holds its name, description, category, settings and
-   commands, and `guide.md` tells the agent which tool does what, read with `MiniAppGuide` before it
-   first uses the app. The agent replaces the template's domain with yours and writes the tools, the
-   tests, a guide for the new domain and an icon of its own (`mini-app icon`). The routes, storage,
-   live updates and search between the tools and the screen are the SDK's, so the agent writes the
-   data model, the tools and the screen. After every edit, the plugin's hook reports what in that
-   file breaks Localix's rules.
+2. The copy is a mini app: `.localix-mini-app/mini-app.json` holds its name, description, category,
+   settings and commands, and `guide.md` tells the agent which tool does what, read with
+   `MiniAppGuide` before it first uses the app. The agent replaces the template's domain with yours
+   and writes the tools, the tests, a guide for the new domain and an icon of its own
+   (`mini-app icon`). The routes, storage, live updates and search between the tools and the screen
+   are the SDK's, so the agent writes the data model, the tools and the screen. After every edit,
+   the plugin's hook reports what in that file breaks Localix's rules.
 3. `mini-app check` runs template residue (including an icon that is still the template's),
    manifest, style, routes, store media, message context, private keys, the backend and UI builds,
    types and tests, and reports each.
@@ -94,8 +94,8 @@ board.
   handlers are fixed when the app bundle is built.
 - The tests step runs existing `*.test.ts`/`*.test.tsx` files. With no matching files it passes
   without a test run; passing does not establish coverage of the requested feature.
-- Localix refuses to install over a mini app from the catalog, or over a folder of yours it did not
-  install itself.
+- Localix refuses to install over a mini app from a marketplace, or over a folder of yours it did
+  not install itself.
 - The checks cover structure, style, builds and tests. They do not review what the mini app's code
   does or prove its behavior, visual quality, or external service compatibility.
 

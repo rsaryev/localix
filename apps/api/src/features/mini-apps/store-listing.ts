@@ -1,35 +1,31 @@
 import {
-  catalogOrigin,
   COMMUNITY_SOURCE,
   defaultSource,
-  packageKindSchema,
+  miniAppOrigin,
   type ComponentKind,
   type Listing,
   type ListingDetail,
-  type ListingRef,
   type StoreComponent,
 } from '@localixai/store'
 
 import { normalizeMiniAppSurfaces } from './contracts-base'
+import type { MiniAppMarketplaceSource } from './marketplaces'
 import type { MiniAppStorePage } from './store-detail'
 import type { MiniAppStoreEntry } from './store-entry'
 
 /**
- * HOW A MINI APP LOOKS IN THE STORE: its catalog entry projected into the Store's contract
- * (`docs/internals/store.md`). What it contains is read from what the catalog already says — its
- * surfaces and commands — so nothing is downloaded to list it: a `workbench` surface is a screen,
- * the `agent` surface is tools its backend gives the agent, and that backend is code that runs.
+ * HOW A MINI APP LOOKS IN THE STORE: its marketplace's entry projected into the Store's contract
+ * (`docs/internals/store.md`). What it contains is read from what the marketplace already says —
+ * its surfaces and commands — so nothing is downloaded to list it: a `workbench` surface is a
+ * screen, the `agent` surface is tools its backend gives the agent, and that backend is code that
+ * runs.
  */
 
-/** A catalog by where it lives: Localix's own, its host, or a folder on this computer. */
-export function catalogLabel(url: string, builtIn: boolean, sourceId?: string): string {
-  if (builtIn) return builtInSource(sourceId)?.label ?? 'Localix'
-  try {
-    const parsed = new URL(url)
-    return parsed.protocol === 'file:' ? 'A folder on this computer' : parsed.host
-  } catch {
-    return url
-  }
+/** What the Store calls a marketplace: a built-in one's label, or the name it calls itself. */
+export function marketplaceLabel(
+  source: Pick<MiniAppMarketplaceSource, 'name' | 'builtIn' | 'id'>,
+): string {
+  return source.builtIn ? (builtInSource(source.id)?.label ?? source.name) : source.name
 }
 
 const hasBackend = (entry: MiniAppStoreEntry) =>
@@ -47,37 +43,39 @@ function contentsOf(entry: MiniAppStoreEntry): Partial<Record<ComponentKind, num
   return contents
 }
 
-/** The default source a built-in catalog is (`@localixai/store`): Localix's own unless named. */
+/** The default source a built-in marketplace is (`@localixai/store`): Localix's own unless named. */
 const builtInSource = (sourceId?: string) => defaultSource(sourceId ?? 'localix-mini-apps')
 
 /**
- * How far a catalog is trusted: a built-in one is its default source's entry — Localix's own
+ * How far a marketplace is trusted: a built-in one is its default source's entry — Localix's own
  * `localix` and editorial, Localix Community's `community` — and one the person added is
- * community; neither community one's picks reach Discover.
+ * community; neither community one's curation reaches the Store.
  */
-export function catalogTrust(builtIn: boolean, sourceId?: string) {
-  const own = builtIn ? builtInSource(sourceId) : undefined
+export function marketplaceTrust(source: Pick<MiniAppMarketplaceSource, 'builtIn' | 'id'>) {
+  const own = source.builtIn ? builtInSource(source.id) : undefined
   return own ? { trust: own.trust, weight: own.weight, editorial: own.editorial } : COMMUNITY_SOURCE
 }
 
 export function miniAppListing(
   entry: MiniAppStoreEntry,
   context: {
-    sourceLabel: string
+    /** The marketplace that offers it; absent for an app the person made. */
+    marketplace?: Pick<MiniAppMarketplaceSource, 'name' | 'builtIn' | 'id'>
     enabled: boolean
-    builtIn: boolean
-    /** The default source a built-in catalog is (`MiniAppCatalogRecord.sourceId`). */
-    sourceId?: string
     configurable?: boolean
     /** The person keeps it from updating on its own (`auto-update.ts`). */
     autoUpdateOff?: boolean
   },
 ): Listing {
-  const { trust, weight, editorial } = catalogTrust(context.builtIn, context.sourceId)
+  const { marketplace } = context
+  const { trust, weight, editorial } = marketplace
+    ? marketplaceTrust(marketplace)
+    : { ...COMMUNITY_SOURCE, editorial: false }
+  const sourceLabel = marketplace ? marketplaceLabel(marketplace) : OWN_SOURCE.label
   const displayName = entry.displayName ?? entry.name
   const updateTo = entry.update && !entry.incompatible ? entry.version : undefined
   return {
-    ref: { kind: 'mini-app', id: entry.name },
+    ref: { kind: 'mini-app', id: entry.id },
     name: entry.name,
     displayName,
     summary: entry.description,
@@ -85,15 +83,15 @@ export function miniAppListing(
     ...(entry.category ? { category: entry.category } : {}),
     tags: entry.tags ?? [],
     publisher: entry.publisher,
-    source: { id: entry.source, label: context.sourceLabel, trust, weight },
-    origin: catalogOrigin(entry.name),
+    source: { id: entry.source, label: sourceLabel, trust, weight },
+    ...(entry.from ? { origin: miniAppOrigin(entry.from, entry.name) } : {}),
     ...(entry.version ? { version: entry.version } : {}),
     contents: contentsOf(entry),
     components: miniAppComponents(entry),
     runsCode: hasBackend(entry),
     featured: editorial && (entry.featured ?? false),
-    recommended: editorial && (entry.recommended ?? false),
-    ...(editorial && entry.suits ? { suits: entry.suits } : {}),
+    recommended: editorial && (entry.installByDefault ?? false),
+    ...(editorial && entry.suggestFor ? { suggestFor: entry.suggestFor } : {}),
     ...(entry.opens ? { opens: entry.opens } : {}),
     installs: entry.installed
       ? [
@@ -107,21 +105,26 @@ export function miniAppListing(
       : [],
     ...(entry.job ? { job: { action: entry.installed ? 'update' : 'install', ...entry.job } } : {}),
     ...(entry.incompatible ? { incompatible: 'Needs a newer Localix' } : {}),
+    ...(entry.revoked ? { revoked: entry.revoked } : {}),
     ...(entry.installed && context.configurable ? { configurable: true } : {}),
     ...(entry.signature ? { signature: entry.signature } : {}),
-    // Only an app from a signed catalog updates on its own (`store.ts`, `updateInstalled`).
+    // Only an app from a signed marketplace updates on its own (`store.ts`, `updateInstalled`).
     ...(entry.installed && entry.signature === 'signed'
       ? { autoUpdate: !context.autoUpdateOff }
       : {}),
   }
 }
 
-/** Where a mini app the person made comes from: no catalog, this computer. */
+/** Where a mini app the person made comes from: no marketplace, this computer. */
 export const OWN_SOURCE = { id: 'own', label: 'Made on this computer' }
 
-/** What the Store reads of an installed app that no catalog offers. */
+/** What the Store reads of an installed app that no marketplace offers as itself. */
 export interface OwnMiniApp {
   name: string
+  /** A marketplace installed it (its install record); absent, the person made it. */
+  installedFrom?: { marketplace: string; publisher: { name: string; verified: boolean } }
+  /** Why its marketplace took it back. */
+  revoked?: string
   displayName?: string
   version?: string
   description?: string
@@ -133,18 +136,24 @@ export interface OwnMiniApp {
 }
 
 /**
- * The row of an app the person made (installed from their own folder by the authoring
- * plugin, or copied into `~/.localix/mini-apps`): installed, with nothing to install.
+ * The row of an installed app no marketplace offers as itself: one the person made (installed
+ * from their own folder by the authoring plugin, or copied into `~/.localix/mini-apps`), or one a
+ * marketplace installed and no longer offers — taken back, or the marketplace removed — which is
+ * still that marketplace's. Installed, with nothing to install.
  */
 export function ownMiniAppEntry(app: OwnMiniApp): MiniAppStoreEntry {
+  const from = app.installedFrom
   return {
+    id: app.name,
     name: app.name,
+    ...(from ? { marketplace: from.marketplace } : {}),
     ...(app.displayName ? { displayName: app.displayName } : {}),
     description: app.description ?? '',
     ...(app.version ? { version: app.version } : {}),
     ...(app.icon ? { icon: app.icon } : {}),
-    publisher: { name: 'You', verified: false },
-    source: OWN_SOURCE.id,
+    publisher: from?.publisher ?? { name: 'You', verified: false },
+    source: from ? from.marketplace : OWN_SOURCE.id,
+    ...(app.revoked ? { revoked: app.revoked } : {}),
     surfaces: app.surfaces ?? [],
     commands: app.commands ?? [],
     installed: app.version ? { version: app.version } : {},
@@ -198,12 +207,4 @@ export function miniAppDetail(
     facts: facts.flatMap(([label, value]) => (value ? [{ label, value }] : [])),
     components: miniAppComponents(page.entry),
   }
-}
-
-/** A pick's item: an app's name, or `<kind>:<id>` for another kind. */
-export function refOfPick(item: string): ListingRef | null {
-  const at = item.indexOf(':')
-  if (at < 0) return { kind: 'mini-app', id: item }
-  const kind = packageKindSchema.safeParse(item.slice(0, at))
-  return kind.success && at < item.length - 1 ? { kind: kind.data, id: item.slice(at + 1) } : null
 }

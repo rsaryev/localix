@@ -36,7 +36,7 @@ installed, then a project's own plugins under a name nothing else holds.
 
 On first start Localix registers the [Store](../features/store.md)'s default marketplaces, the way
 Claude Code adds `claude-plugins-official`: its official `localix` from the GitHub repository
-`rsaryev/localix-marketplace` (only the catalog and `plugins/` are checked out), Anthropic's
+`rsaryev/localix-marketplace` (only `.claude-plugin/` and `plugins/` are checked out), Anthropic's
 `claude-plugins-official` and its community `claude-community`. Nothing from them is installed. One
 already registered from the same repository, under any name, is reused. They need the network once;
 offline (or with `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` set) they are skipped and tried again at

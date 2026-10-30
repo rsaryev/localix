@@ -7,14 +7,16 @@ import { NotFoundError } from '../../lib/domain-errors'
 import type { MiniAppStoreEntry } from './store'
 
 const entry: MiniAppStoreEntry = {
+  id: 'atlas@localix',
   name: 'atlas',
+  marketplace: 'localix',
   displayName: 'Atlas',
   description: 'Play atlas',
   category: 'games',
   version: '1.0.0',
   publisher: { name: 'Localix', verified: true },
-  source: 'https://hosted.test/mini-app-catalog.json',
-  icon: '/rpc/mini-apps/store/media/atlas/icon?v=abc',
+  source: 'https://hosted.test/mini-app-marketplace.json',
+  icon: '/rpc/mini-apps/store/media/atlas%40localix/icon?v=abc',
   tags: ['game'],
   installed: null,
   update: false,
@@ -22,41 +24,28 @@ const entry: MiniAppStoreEntry = {
 const SVG = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>')
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47])
 
-function app(installed: string[], catalogs: string[] = []) {
+function app(installed: string[]) {
   const service = {
     appIcon: async (_userId: string, { app }: { app: string }) => {
       if (app !== 'atlas')
         throw new NotFoundError('mini_app_icon_not_found', `"${app}" has no icon`)
       return { bytes: SVG, type: 'image/svg+xml' }
     },
-    catalogs: {
-      list: async () => [
-        { url: 'https://hosted.test/mini-app-catalog.json', builtIn: true },
-        ...catalogs.map((url) => ({ url, builtIn: false })),
-      ],
-      add: async (url: string) => void catalogs.push(url),
-      remove: async (url: string) => void catalogs.splice(catalogs.indexOf(url), 1),
-      preview: async (url: string) => ({
-        url,
-        publishers: ['Ada'],
-        apps: 2,
-        icons: [],
-        verified: false,
-        added: false,
-      }),
-    },
     store: {
       list: async () => ({ entries: [entry], problems: [] }),
-      detail: async (name: string) => ({
-        entry: { ...entry, name },
+      detail: async (id: string) => ({
+        entry: { ...entry, id },
         readme: '# Atlas',
-        screenshots: [{ url: '/rpc/mini-apps/store/media/atlas/screenshot/0?v=abc' }],
+        screenshots: [{ url: '/rpc/mini-apps/store/media/atlas%40localix/screenshot/0?v=abc' }],
         details: { version: '1.0.0', size: 120, license: 'MIT' },
       }),
-      media: async (_name: string, kind: string, index?: number) =>
-        kind === 'icon'
+      // Its identity arrives decoded: `atlas@localix`, not `atlas%40localix`.
+      media: async (id: string, kind: string, index?: number) => {
+        if (id !== 'atlas@localix') throw new NotFoundError('mini_app_not_offered', id)
+        return kind === 'icon'
           ? { bytes: SVG, type: 'image/svg+xml' }
-          : { bytes: PNG, type: 'image/png', index },
+          : { bytes: PNG, type: 'image/png', index }
+      },
       install: async (name: string, opts: { acceptUnverified?: boolean }) =>
         void installed.push(opts.acceptUnverified ? `${name}!` : name),
     },
@@ -71,7 +60,7 @@ function app(installed: string[], catalogs: string[] = []) {
 }
 
 describe('/rpc/mini-apps/store', () => {
-  test('lists what the catalogs offer', async () => {
+  test('lists what the marketplaces offer', async () => {
     const response = await app([]).request('/rpc/mini-apps/store')
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({ entries: [entry], problems: [] })
@@ -82,66 +71,39 @@ describe('/rpc/mini-apps/store', () => {
     const response = await app(installed).request('/rpc/mini-apps/store/install', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name: 'atlas', acceptUnverified: true }),
+      body: JSON.stringify({ name: 'atlas@localix', acceptUnverified: true }),
     })
     expect(response.status).toBe(202)
-    expect(installed).toEqual(['atlas!'])
-  })
-
-  test('the catalogs are listed, added and removed; a write answers 204 and is announced', async () => {
-    const kept: string[] = []
-    const root = app([], kept)
-    const send = (path: string, url: string) =>
-      root.request(`/rpc/mini-apps/catalogs${path}`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ url }),
-      })
-    expect((await send('', 'https://ada.test/c.json')).status).toBe(204)
-    const listed = await (await root.request('/rpc/mini-apps/catalogs')).json()
-    expect(listed).toEqual({
-      catalogs: [
-        { url: 'https://hosted.test/mini-app-catalog.json', builtIn: true },
-        { url: 'https://ada.test/c.json', builtIn: false },
-      ],
-    })
-    expect((await send('/remove', 'https://ada.test/c.json')).status).toBe(204)
-    expect(kept).toEqual([])
+    expect(installed).toEqual(['atlas@localix!'])
   })
 
   test('one app’s store page: its row, README, screenshots and details', async () => {
-    const response = await app([]).request('/rpc/mini-apps/store/atlas')
+    const response = await app([]).request('/rpc/mini-apps/store/atlas%40localix')
     expect(response.status).toBe(200)
     expect(await response.json()).toMatchObject({
-      entry: { name: 'atlas' },
+      entry: { id: 'atlas@localix' },
       readme: '# Atlas',
       details: { size: 120 },
     })
   })
 
   test('media are served with their type, never sniffed, and an SVG cannot run anything', async () => {
-    const icon = await app([]).request('/rpc/mini-apps/store/media/atlas/icon')
+    const icon = await app([]).request('/rpc/mini-apps/store/media/atlas%40localix/icon')
     expect(icon.status).toBe(200)
     expect(icon.headers.get('content-type')).toBe('image/svg+xml')
     expect(icon.headers.get('x-content-type-options')).toBe('nosniff')
     expect(icon.headers.get('content-security-policy')).toBe(
       "default-src 'none'; style-src 'unsafe-inline'",
     )
-    const shot = await app([]).request('/rpc/mini-apps/store/media/atlas/screenshot/0?v=abc')
+    const shot = await app([]).request(
+      '/rpc/mini-apps/store/media/atlas%40localix/screenshot/0?v=abc',
+    )
     expect(shot.headers.get('content-type')).toBe('image/png')
     expect(shot.headers.get('cache-control')).toContain('immutable')
     expect(new Uint8Array(await shot.arrayBuffer())).toEqual(PNG)
-    expect((await app([]).request('/rpc/mini-apps/store/media/atlas/readme')).status).toBe(400)
-  })
-
-  test('a catalog is previewed before it is added', async () => {
-    const response = await app([]).request('/rpc/mini-apps/catalogs/preview', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ url: 'https://ada.test/c.json' }),
-    })
-    expect(response.status).toBe(200)
-    expect(await response.json()).toMatchObject({ publishers: ['Ada'], apps: 2, verified: false })
+    expect(
+      (await app([]).request('/rpc/mini-apps/store/media/atlas%40localix/readme')).status,
+    ).toBe(400)
   })
 
   test('an installed app’s own icon is served the same way, and one with none is a 404', async () => {

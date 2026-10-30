@@ -20,7 +20,7 @@ export const STORE_CATEGORIES = [
 ] as const
 export type StoreCategory = (typeof STORE_CATEGORIES)[number]
 
-/** A source's category, lowercased, to the Store's: mini app catalogs and marketplaces alike. */
+/** A source's category, lowercased, to the Store's: mini app and plugin marketplaces alike. */
 const CATEGORY_MAP: Record<string, StoreCategory> = {
   development: 'Development',
   'developer tools': 'Development',

@@ -9,8 +9,7 @@ const deepLinkToHash = (rawUrl: string): string | null => {
 
 describe('parseDeepLink — a tab the app opens', () => {
   it('passes a work-item link to the UI navigation as it came, query and all', () => {
-    const url =
-      'localix://ui/work-item/mini-app-store/add-catalog?url=https%3A%2F%2Fada.test%2Fc.json'
+    const url = 'localix://ui/work-item/mini-app-store/add-marketplace?url=ada%2Fapps'
     expect(parseDeepLink(url)).toEqual({ kind: 'ui', uri: url })
   })
 

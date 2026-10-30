@@ -7,6 +7,7 @@ import type { MiniAppCatalog } from './catalog'
 import type { DiscoveredMiniApp } from './folder'
 import { createMiniAppRoutes, type MiniAppRoutesService } from './routes'
 import { readMiniAppUiDescriptor, resolveMiniAppUiFile } from './ui-artifact'
+import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 const root = mkdtempSync(join(tmpdir(), 'mini-app-ui-artifact-api-'))
 afterAll(() => rmSync(root, { recursive: true, force: true }))
@@ -19,7 +20,7 @@ function write(path: string, content: string) {
 /** An installed copy of `name` whose artifact manifest is `manifest` (or none). */
 function installed(name: string, { manifest }: { manifest?: unknown }) {
   const dir = join(root, name)
-  write(join(dir, 'mini-app.json'), JSON.stringify({ name }))
+  write(join(dir, MINI_APP_MANIFEST_FILE), JSON.stringify({ name }))
   if (manifest !== undefined)
     write(join(dir, 'dist', 'ui', 'manifest.json'), JSON.stringify(manifest))
   write(join(dir, 'dist', 'ui', 'entry.js'), 'export function registerUi() {}\n')

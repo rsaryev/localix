@@ -39,7 +39,7 @@ export function coreDeletionHandlers(
     skill: 'ignore',
     plugin: 'ignore',
     'mini-app': 'ignore',
-    'mini-app.catalog': 'ignore',
+    'mini-app.marketplace': 'ignore',
     'mini-app.updates': 'ignore',
     mcp: 'ignore',
     'capability.rule': 'ignore',

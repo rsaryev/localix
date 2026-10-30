@@ -15,25 +15,25 @@ add yourself waits for your yes before its code runs; one the agent builds for y
 
 ## What you can do
 
-| Outcome                         | How                                                                               | Boundary                                                                                                                                                      |
-| ------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| See your mini apps              | `/mini-app list`, or the Store (Mini apps)                                        | The list shows the scope of the current chat's project.                                                                                                       |
-| Add one from the Store          | The **+** button in the rail (**Open the Store**), or setup                       | Only the recommended apps install without your choice.                                                                                                        |
-| Get the recommended apps        | Nothing: a new installation installs them in the background                       | Once per app; one you remove is not added again.                                                                                                              |
-| Update all at once              | **Update all** in the line above the message box, or in the Event Center          | Only apps a catalog installed; your own folders are left alone.                                                                                               |
-| Update one                      | **Update** on its card in the Store, or wait for the automatic update             | Shown when the catalog offers another version than yours. Only an app from a signed catalog updates on its own.                                               |
-| Stop an app updating on its own | Its Store page → the **⋯** menu beside **Open** → untick **Update automatically** | Offered for an app from a signed catalog; its page says **Signed**, **Not signed** or **Signature changed** beside the publisher.                             |
-| See what an app is              | Choose its card in the Store                                                      | Its page shows screenshots, its README, contents and plan.                                                                                                    |
-| Install with its desktop app    | **Install as app** in the menu beside **Get** in the Store                        | macOS desktop only, for an app with a screen of its own.                                                                                                      |
-| Add a publisher's catalog       | Store → **Sources** → **Add source…**, or `/mini-app catalog add <url>`           | Localix reads it first; nothing is added until you choose **Add**.                                                                                            |
-| See or remove catalogs          | Store → **Sources**, a shelf's sources menu, or `/mini-app catalog list`          | The Localix marketplace's catalog is built in and stays.                                                                                                      |
-| Turn one on or off              | `/mini-app enable <name>`, `/mini-app disable <name>`, or the row's switch        | A per-agent switch is on the agent's **Access** tab.                                                                                                          |
-| Change a mini app's settings    | **Settings** on its row in the Store (Mini apps)                                  | Secret settings are kept in the [vault](secrets.md).                                                                                                          |
-| Remove one                      | `/mini-app remove <name>`, or **Remove** on its card or in Store → **Installed**  | Its data folder stays, so a reinstall finds it.                                                                                                               |
-| Have the agent build one        | Describe what it should do, with the authoring plugin installed                   | The plugin is in the [Localix marketplace](https://github.com/rsaryev/localix-marketplace); see [Build with the agent](../extending/build-with-the-agent.md). |
-| Pick up edits to its files      | `/mini-app reload`                                                                | Reloads every mini app and its tools, screens and commands.                                                                                                   |
-| Open the list from the rail     | **Manage mini apps…** in the rail's tools menu                                    | Opens the Store (Mini apps).                                                                                                                                  |
-| Run one as its own Mac app      | **Install _Name_ as App** on its tab; see [Mac apps](mini-app-mac-apps.md)        | macOS only, for a mini app with a screen of its own.                                                                                                          |
+| Outcome                         | How                                                                                       | Boundary                                                                                                                                                      |
+| ------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| See your mini apps              | `/mini-app list`, or the Store (Mini apps)                                                | The list shows the scope of the current chat's project.                                                                                                       |
+| Add one from the Store          | The **+** button in the rail (**Open the Store**), or setup                               | Only the recommended apps install without your choice.                                                                                                        |
+| Get the recommended apps        | Nothing: a new installation installs them in the background                               | Once per app; one you remove is not added again.                                                                                                              |
+| Update all at once              | **Update all** in the line above the message box, or in the Event Center                  | Only apps a marketplace installed; your own folders are left alone.                                                                                           |
+| Update one                      | **Update** on its card in the Store, or wait for the automatic update                     | Shown when the marketplace offers another version than yours. Only an app from a signed marketplace updates on its own.                                       |
+| Stop an app updating on its own | Its Store page → the **⋯** menu beside **Open** → untick **Update automatically**         | Offered for an app from a signed marketplace; its page says **Signed**, **Not signed** or **Signature changed** beside the publisher.                         |
+| See what an app is              | Choose its card in the Store                                                              | Its page shows screenshots, its README, contents and plan.                                                                                                    |
+| Install with its desktop app    | **Install as app** in the menu beside **Get** in the Store                                | macOS desktop only, for an app with a screen of its own.                                                                                                      |
+| Add a publisher's marketplace   | Store → **Sources** → **Add source…**, or `/mini-app marketplace add <owner/repo or url>` | Localix reads it first; nothing is added until you choose **Add**.                                                                                            |
+| See or remove marketplaces      | Store → **Sources**, a shelf's sources menu, or `/mini-app marketplace list`              | The Localix marketplace and Localix Community are built in and stay.                                                                                          |
+| Turn one on or off              | `/mini-app enable <name>`, `/mini-app disable <name>`, or the row's switch                | A per-agent switch is on the agent's **Access** tab.                                                                                                          |
+| Change a mini app's settings    | **Settings** on its row in the Store (Mini apps)                                          | Secret settings are kept in the [vault](secrets.md).                                                                                                          |
+| Remove one                      | `/mini-app remove <name>`, or **Remove** on its card or in Store → **Installed**          | Its data folder stays, so a reinstall finds it.                                                                                                               |
+| Have the agent build one        | Describe what it should do, with the authoring plugin installed                           | The plugin is in the [Localix marketplace](https://github.com/rsaryev/localix-marketplace); see [Build with the agent](../extending/build-with-the-agent.md). |
+| Pick up edits to its files      | `/mini-app reload`                                                                        | Reloads every mini app and its tools, screens and commands.                                                                                                   |
+| Open the list from the rail     | **Manage mini apps…** in the rail's tools menu                                            | Opens the Store (Mini apps).                                                                                                                                  |
+| Run one as its own Mac app      | **Install _Name_ as App** on its tab; see [Mac apps](mini-app-mac-apps.md)                | macOS only, for a mini app with a screen of its own.                                                                                                          |
 
 Changes made with `/mini-app` take effect on the next turn.
 
@@ -54,24 +54,28 @@ an app with its own window, Dock icon and place in Spotlight once the install ha
 desktop app cannot be made, the install stays and the card says why. An installed app's page has
 **Add desktop app** or **Remove desktop app**. See [Mac apps](mini-app-mac-apps.md).
 
-The Store reads the Localix marketplace's catalog and any catalog you added. **Sources** lists them
-under **Mini app catalogs**, each with how many apps it offers; **Add source…** reads an address and
-adds it only when you choose **Add**. Choosing a source opens the Store filtered by it. A catalog is
-an HTTPS address or a `file://` path to its `mini-app-catalog.json`. A publisher can link to theirs
-with `localix://ui/work-item/mini-app-store/add-catalog?url=<address>`, which opens the Store with
-that dialog filled in.
+The Store reads the Localix marketplace, Localix Community and any marketplace you added.
+**Sources** lists them under **Mini app marketplaces**, each with how many apps it offers; **Add
+source…** reads an address and adds it only when you choose **Add**. Choosing a source opens the
+Store filtered by it. A marketplace is an HTTPS address or a `file://` path to its
+`mini-app-marketplace.json`, or a GitHub `owner/repo` whose latest release carries that file. A
+publisher can link to theirs with
+`localix://ui/work-item/mini-app-store/add-marketplace?url=<address>`, which opens the Store with
+that dialog filled in. An app is `<app>@<marketplace>`, such as `notes@ada`; a marketplace's name is
+unique on your computer, and you run one app of a name. See
+[Mini app marketplaces](../extending/mini-app-marketplace.md) for the format.
 
-`/mini-app catalog list` shows the catalogs and how many apps each offers,
-`/mini-app catalog add <url>` reads one and adds it, replying with its publisher and app count or
-why it was refused, and `/mini-app catalog remove <url>` removes one you added; the composer offers
-your catalogs for it.
+`/mini-app marketplace list` shows the marketplaces and how many apps each offers,
+`/mini-app marketplace add <owner/repo or url>` reads one and adds it, replying with its publisher
+and app count or why it was refused, and `/mini-app marketplace remove <name or url>` removes one
+you added; the composer offers your marketplaces for it.
 
 ### Recommended apps
 
-On a new installation, Localix installs the apps the Localix marketplace's catalog recommends in the
-background, without asking; the marketplace repository decides which. They come from that catalog
-like any other app, and the Event Center's **In progress** shows each download; when they are in,
-one entry says so ("Installed 3 mini apps").
+On a new installation, Localix installs the apps the Localix marketplace marks to install by default
+in the background, without asking; the marketplace repository decides which. They come from that
+marketplace like any other app, and the Event Center's **In progress** shows each download; when
+they are in, one entry says so ("Installed 3 mini apps").
 
 Offline, nothing is installed and Localix tries again later. Each recommended app is installed once:
 remove one (`/mini-app remove <name>` or **Remove** in the Store) and it is not added again, and a
@@ -81,8 +85,7 @@ when this arrived gets nothing new.
 Setup's **Add mini apps** slide shows the recommended apps with where each stands, a few more of
 Localix's own to install in place, and **Open the Store** last; setup stays open.
 
-Only the Localix marketplace's catalog can recommend an app: a catalog you added cannot, whatever it
-says.
+Only the Localix marketplace can recommend an app: a marketplace you added cannot, whatever it says.
 
 ### Installing and updating in the background
 
@@ -94,23 +97,23 @@ The line can be hidden with × until what it offers changes. When an install or 
 Event Center keeps one line: "Installed _Name_", "Updated 3 mini apps", or "Could not install
 _Name_" with the reason and **Try again**.
 
-A catalog's app arrives as an archive whose checksum the catalog pins. An archive that does not
-match is discarded, and the version you had keeps running. Apps installed from a catalog take its
-newer versions by themselves, a minute after start and then every six hours.
+A marketplace's app arrives as an archive whose checksum the marketplace pins. An archive that does
+not match is discarded, and the version you had keeps running. Apps installed from a signed
+marketplace take its newer versions by themselves, a minute after start and then every six hours.
 
 Each row in the Store (Mini apps) shows the app's version, project scope, category and what it
 brings: tools, screens, commands, a guide. A row marked **awaiting your yes** came from outside
 Localix and has not run yet; **runs code** means its backend runs while it is on.
 
-| Where it lives                         | What is there                                             |
-| -------------------------------------- | --------------------------------------------------------- |
-| `~/.localix/mini-apps/<name>/`         | Your mini apps, in every project, and the catalog's ones  |
-| `<project>/.localix/mini-apps/<name>/` | A project's own mini apps                                 |
-| `~/.localix/mini-apps-data/<name>/`    | What a mini app keeps; it outlives updates and reinstalls |
+| Where it lives                         | What is there                                                |
+| -------------------------------------- | ------------------------------------------------------------ |
+| `~/.localix/mini-apps/<name>/`         | Your mini apps, in every project, and the marketplaces' ones |
+| `<project>/.localix/mini-apps/<name>/` | A project's own mini apps                                    |
+| `~/.localix/mini-apps-data/<name>/`    | What a mini app keeps; it outlives updates and reinstalls    |
 
 When a project's mini app has the same name as one of yours, yours wins and the project's copy is
-hidden. To add a mini app by hand, copy its folder (with its `mini-app.json`) into one of these
-places and run `/mini-app reload`.
+hidden. To add a mini app by hand, copy its folder (with its `.localix-mini-app/mini-app.json`) into
+one of these places and run `/mini-app reload`.
 
 A mini app's commands appear in the slash menu as `/<app>:<command>`, with chips and pickers for
 their arguments. The agent sees one line per enabled mini app and reads the app's guide before it
@@ -124,11 +127,13 @@ that opens the app's row in the Store (Mini apps). The entry clears once the app
 - A mini app's backend is not sandboxed. Turning one on is consent, not isolation.
 - `/mini-app enable` and `/mini-app disable` change whether the app runs; they do not delete it or
   its data.
-- The core hosts no catalog. The Localix marketplace publishes its own with each of its releases;
-  the Store reads the latest one, and its featured and recommended apps come from that catalog.
+- The core hosts no marketplace. The Localix marketplace publishes its own with each of its
+  releases; the Store reads the latest one, and its featured and recommended apps come from it.
 - Which apps were already offered is remembered in `~/.localix/mini-app-recommended.json`. Deleting
   that file does not reinstall anything while you have other mini apps.
-- Apps from a catalog you added are always shown as unverified.
+- Apps from a marketplace you added are always shown as unverified.
+- A marketplace can take an app back. A taken-back copy stops loading, its Store tile says **Taken
+  back**, and its page gives the marketplace's reason, with **Remove** in its menu. Its data stays.
 
 ## Related guides
 

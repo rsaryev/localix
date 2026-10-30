@@ -1,4 +1,3 @@
-import type { MiniAppCatalogEditorial } from './catalog-feed'
 import { join } from 'node:path'
 
 import { ConflictError, NotFoundError } from '../../lib/domain-errors'
@@ -6,52 +5,57 @@ import { errorMessage } from '../../lib/errors'
 import { MINI_APPS_SUBDIR } from './paths'
 import {
   ACTIVE_PHASES,
+  holdsOffer,
   isIncompatible as incompatible,
   isUpdatable,
   type MiniAppInstallOutcome,
 } from './store-activity'
 import { storePage, type MiniAppStorePage } from './store-detail'
 import { storeEntry, type MiniAppJob, type MiniAppStoreEntry } from './store-entry'
-import { installedBy, installOffer } from './store-install'
+import { installedBy, installOffer, readInstallRecord } from './store-install'
 import { createStoreMediaReader, type StoreMediaKind } from './store-media'
 import {
   createOfferReader,
   readManifest,
-  type MiniAppStoreSource,
+  type MiniAppMarketplaceSource,
   type Offer,
+  type OfferRead,
+  type OfferTrust,
 } from './store-offers'
 
-export type { MiniAppPublisher, MiniAppStoreSource } from './store-offers'
+export type { MiniAppPublisher, MiniAppMarketplaceSource, OfferTrust } from './store-offers'
 export type { MiniAppInstallOutcome } from './store-activity'
 
 /**
- * The mini app store: what the catalogs offer, what is installed, and the installs in flight
- * (`docs/internals/plugins-and-mini-apps.md`, "Catalogs and sources"). Nothing is installed until
- * the person chooses it (rule X5), but the apps Localix recommends (`recommended.ts`). An install is in-memory status — every move of a job tells the
- * subscribers, the Store among them, whose `store` poke tells the client to read again — and a finished one
- * is announced through `onInstalled`. When the queue drains, how each install went is handed to
- * `onJobsSettled`, which records it in the person's journal (the owner announces).
+ * The mini app store: what the marketplaces offer, what is installed, and the installs in flight
+ * (`docs/extending/mini-app-marketplace.md`). An app is its identity, `<name>@<marketplace>`; its
+ * folder is its name, so one app by a name is installed at a time, and only its own marketplace
+ * updates it. Nothing is installed until the person chooses it (rule X5), but the apps a
+ * marketplace Localix vouches for installs by default (`recommended.ts`). An install is in-memory
+ * status — every move of a job tells the subscribers, the Store among them, whose `store` poke
+ * tells the client to read again — and a finished one is announced through `onInstalled`. When
+ * the queue drains, how each install went is handed to `onJobsSettled`, which records it in the
+ * person's journal (the owner announces).
  */
 
 export type { MiniAppJob, MiniAppJobPhase, MiniAppStoreEntry } from './store-entry'
 
-export interface MiniAppStoreListing {
+export interface MiniAppStoreListing extends Omit<OfferRead, 'offers'> {
   entries: MiniAppStoreEntry[]
-  /** Sources that could not be read this time, each said in a sentence. */
-  problems: string[]
-  /** Why a source could not be read this time, by its address. */
-  failed: Record<string, string>
-  /** What the catalogs Localix vouches for pick for the Store's Discover, by catalog. */
-  editorial: Array<{ source: string; editorial: MiniAppCatalogEditorial }>
 }
 
-/** A catalog's store media, kept by hash once fetched. */
+/** A marketplace's store media, kept by hash once fetched. */
 export const MINI_APP_STORE_CACHE_SUBDIR = '.localix/cache/mini-app-store'
+
+/** An app's folder name: its identity's first half. */
+export const appNameOf = (ref: string) => ref.split('@')[0] ?? ref
 
 export function createMiniAppStore(deps: {
   homeDir: string
-  /** Read per call: the person adds and removes catalogs while the API runs. */
-  sources: () => MiniAppStoreSource[] | Promise<MiniAppStoreSource[]>
+  /** Read per call: the person adds and removes marketplaces while the API runs. */
+  sources: () => MiniAppMarketplaceSource[] | Promise<MiniAppMarketplaceSource[]>
+  /** What Localix keeps to judge each marketplace's signatures (`marketplaces.ts`). */
+  trust: OfferTrust
   /**
    * An install finished: announce the app (the owner announces, C1) and, for a `fresh` one the
    * person chose, record their yes to run it.
@@ -59,36 +63,38 @@ export function createMiniAppStore(deps: {
   onInstalled: (name: string, info: { fresh: boolean; userId?: string }) => Promise<void>
   /** The queue drained: how every install since the last drain went, in the order they ran. */
   onJobsSettled?: (outcomes: MiniAppInstallOutcome[]) => void
+  /** Every fresh read of the marketplaces, for what they took back (`revocations.ts`). */
+  onRead?: (read: OfferRead) => Promise<void>
   fetchImpl?: typeof fetch
-  /** Where a catalog's media are kept once fetched; under the Localix cache by default. */
+  /** Where marketplaces' media are kept once fetched; under the Localix cache by default. */
   cacheDir?: string
-  /** Keep the key a catalog a person added was first read signed with (`catalogs.ts`). */
-  pinKey?: (url: string, key: string) => Promise<void>
-  /** The keys kept for catalogs a list links to (`catalogs.ts`). */
-  linkedKeys?: {
-    get(url: string): Promise<string | undefined>
-    pin(url: string, key: string): Promise<void>
-  }
   /** The installed apps the person keeps from updating on their own (`auto-update.ts`). */
   autoUpdateOff?: () => Promise<ReadonlySet<string>>
 }) {
   const installRoot = join(deps.homeDir, MINI_APPS_SUBDIR)
   const readOffers = createOfferReader({
     sources: deps.sources,
+    trust: deps.trust,
     fetchImpl: deps.fetchImpl,
-    ...(deps.pinKey ? { pinKey: deps.pinKey } : {}),
-    ...(deps.linkedKeys ? { linkedKeys: deps.linkedKeys } : {}),
   })
+  const readFresh = async () => {
+    const read = await readOffers({ fresh: true })
+    await deps.onRead?.(read)
+    return read
+  }
   const readMedia = createStoreMediaReader({
     cacheDir: deps.cacheDir ?? join(deps.homeDir, MINI_APP_STORE_CACHE_SUBDIR),
     fetchImpl: deps.fetchImpl,
   })
+  // By folder name, since one app by a name is on this machine at a time, and which app it is.
   const jobs = new Map<string, MiniAppJob>()
+  const jobFor = new Map<string, string>()
   let outcomes: MiniAppInstallOutcome[] = []
   const listeners = new Set<() => void>()
   let queue: Promise<void> = Promise.resolve()
-  const setJob = (name: string, job: MiniAppJob) => {
-    jobs.set(name, job)
+  const setJob = (offer: Offer, job: MiniAppJob) => {
+    jobs.set(offer.name, job)
+    jobFor.set(offer.name, offer.id)
     for (const listener of listeners) listener()
   }
   const busy = (name: string) => ACTIVE_PHASES.has(jobs.get(name)?.phase ?? 'done')
@@ -104,19 +110,19 @@ export function createMiniAppStore(deps: {
       ...(offer.version ? { version: offer.version } : {}),
       ...(userId ? { userId } : {}),
     } as const
-    setJob(offer.name, { phase: 'downloading', received: 0, total: offer.archive.bytes })
+    setJob(offer, { phase: 'downloading', received: 0, total: offer.archive.bytes })
     try {
       await installOffer(offer, deps.homeDir, {
         fetchImpl: deps.fetchImpl,
         onProgress: ({ received, total }) =>
-          setJob(offer.name, { phase: 'downloading', received, total }),
+          setJob(offer, { phase: 'downloading', received, total }),
       })
-      setJob(offer.name, { phase: 'installing' })
+      setJob(offer, { phase: 'installing' })
       await deps.onInstalled(offer.name, { fresh, ...(userId ? { userId } : {}) })
-      setJob(offer.name, { phase: 'done' })
+      setJob(offer, { phase: 'done' })
       outcomes.push(outcome)
     } catch (error) {
-      setJob(offer.name, { phase: 'failed', error: errorMessage(error) })
+      setJob(offer, { phase: 'failed', error: errorMessage(error) })
       outcomes.push({ ...outcome, error: errorMessage(error) })
     }
   }
@@ -129,76 +135,105 @@ export function createMiniAppStore(deps: {
     deps.onJobsSettled?.(settled)
   }
 
-  const toEntry = async (offer: Offer): Promise<MiniAppStoreEntry> =>
-    storeEntry(
+  const toEntry = async (offer: Offer): Promise<MiniAppStoreEntry> => {
+    const holds = await holdsOffer(offer, installRoot)
+    return storeEntry(
       offer,
-      await readManifest(join(installRoot, offer.name)),
+      holds ? await readManifest(join(installRoot, offer.name)) : null,
       await isUpdatable(offer, installRoot),
-      jobs.get(offer.name),
+      jobFor.get(offer.name) === offer.id ? jobs.get(offer.name) : undefined,
     )
+  }
 
-  const offerNamed = async (name: string): Promise<Offer> => {
-    const offer = (await readOffers()).offers.get(name)
+  /**
+   * The offer `ref` names: an identity, or a name alone — the app installed by that name, else the
+   * first marketplace's (Localix's own come first).
+   */
+  const offerFor = async (ref: string): Promise<Offer> => {
+    const { offers } = await readOffers()
+    let offer = offers.get(ref)
+    if (!offer && !ref.includes('@')) {
+      const record = await readInstallRecord(join(installRoot, ref))
+      offer = record
+        ? offers.get(`${ref}@${record.marketplace}`)
+        : [...offers.values()].find((found) => found.name === ref)
+    }
     if (!offer)
-      throw new NotFoundError(
-        'mini_app_not_offered',
-        `No catalog offers a mini app named "${name}"`,
-      )
+      throw new NotFoundError('mini_app_not_offered', `No marketplace offers the mini app "${ref}"`)
     return offer
   }
 
+  /** Why `offer` may not replace what its name holds now, or null. */
+  async function nameConflict(offer: Offer): Promise<string | null> {
+    const dir = join(installRoot, offer.name)
+    const by = await installedBy(dir)
+    if (by === 'person')
+      return `A mini app of yours is already called "${offer.name}"; rename or remove it first`
+    if (!by || (await holdsOffer(offer, installRoot))) return null
+    const record = await readInstallRecord(dir)
+    const holder = record ? `"${offer.name}" from ${record.marketplace}` : `"${offer.name}"`
+    return `${holder} is installed; remove it to install the one from ${offer.marketplace}`
+  }
+
   const enqueue = (offer: Offer, userId?: string) => {
-    setJob(offer.name, { phase: 'queued' })
+    setJob(offer, { phase: 'queued' })
     queue = queue.then(() => run(offer, userId)).then(reportIfDrained)
   }
 
   return {
     async list(): Promise<MiniAppStoreListing> {
-      const { offers, problems, failed, editorial } = await readOffers()
+      const { offers, ...read } = await readOffers()
       const entries = await Promise.all([...offers.values()].map(toEntry))
-      const sorted = entries.sort((a, b) => a.name.localeCompare(b.name))
-      return { entries: sorted, problems, failed, editorial }
+      const sorted = entries.sort(
+        (a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
+      )
+      return { entries: sorted, ...read }
     },
 
     /** One app's store page: its row, README, screenshots and what it brings. */
-    async detail(name: string): Promise<MiniAppStorePage<MiniAppStoreEntry>> {
-      const offer = await offerNamed(name)
+    async detail(ref: string): Promise<MiniAppStorePage<MiniAppStoreEntry>> {
+      const offer = await offerFor(ref)
       return storePage(offer, await toEntry(offer), readMedia)
     },
 
     /** One of an app's store files, checked to be what it claims (`store-media.ts`). */
-    async media(name: string, kind: StoreMediaKind, index?: number) {
-      return readMedia.read(await offerNamed(name), kind, index)
+    async media(ref: string, kind: StoreMediaKind, index?: number) {
+      return readMedia.read(await offerFor(ref), kind, index)
     },
 
     /**
      * Queue an install; it runs after the ones before it and resolves once queued. Refused at
-     * once — before anything is downloaded — for an app no catalog offers, one built for a newer
-     * Localix, a folder of the person's own by that name, or an unverified publisher the person
-     * has not said yes to.
+     * once — before anything is downloaded — for an app no marketplace offers, one built for a
+     * newer Localix, a name another app already holds here, a marketplace whose signature changed,
+     * an archive Localix blocks, or an unverified publisher the person has not said yes to.
      */
     async install(
-      name: string,
+      ref: string,
       opts: { userId?: string; acceptUnverified?: boolean } = {},
     ): Promise<void> {
+      const offer = await offerFor(ref)
+      const { name } = offer
       if (busy(name)) return
-      const offer = await offerNamed(name)
       if (incompatible(offer))
         throw new ConflictError(
           'mini_app_incompatible',
           `"${name}" needs a newer Localix (mini app API ${offer.apiVersion}); update Localix first`,
         )
-      const by = await installedBy(join(installRoot, name))
-      if (by === 'person')
-        throw new ConflictError(
-          'mini_app_name_taken',
-          `A mini app of yours is already called "${name}"; rename or remove it first`,
-        )
-      // The catalog is no longer signed by the key kept for it: someone else may have written it.
+      const conflict = await nameConflict(offer)
+      if (conflict) throw new ConflictError('mini_app_name_taken', conflict)
+      // The marketplace is no longer signed by a key kept for it: someone else may have written it.
       if (offer.signature === 'mismatch')
         throw new ConflictError(
           'mini_app_signature_changed',
-          `"${name}" comes from a catalog whose signature changed (${offer.source}); nothing is installed from it until it is removed and added again`,
+          `"${name}" comes from a marketplace whose signature changed (${offer.from}); nothing installs from it until it is removed and added again`,
+        )
+      const blocked = (await readOffers()).blocked.find(
+        (found) => found.sha256 === offer.archive.sha256,
+      )
+      if (blocked)
+        throw new ConflictError(
+          'mini_app_blocked',
+          `Localix blocks this build of "${name}": ${blocked.reason}`,
         )
       if (!offer.publisher.verified && !opts.acceptUnverified)
         throw new ConflictError(
@@ -212,20 +247,20 @@ export function createMiniAppStore(deps: {
     },
 
     /**
-     * Install the newer version of every app a catalog put here, re-reading the catalogs first.
-     * Only from a catalog signed with the key kept for it, and not for an app the person keeps
-     * from updating on its own: the rest wait for the person's Update. A folder the person made,
-     * an incompatible version and a running job are left alone; a failed update keeps the version
-     * before. Returns the names queued.
+     * Install the newer version of every app a marketplace put here, re-reading the marketplaces
+     * first. Only from the marketplace that installed it, signed with a key kept for it, and not
+     * for an app the person keeps from updating on its own: the rest wait for the person's Update.
+     * A folder the person made, an incompatible version, a blocked archive and a running job are
+     * left alone; a failed update keeps the version before. Returns the names queued.
      */
     async updateInstalled(): Promise<string[]> {
-      const { offers } = await readOffers({ fresh: true })
+      const { offers, blocked } = await readFresh()
       const off = (await deps.autoUpdateOff?.()) ?? new Set<string>()
+      const refused = new Set(blocked.map((found) => found.sha256))
       const queued: string[] = []
       for (const offer of offers.values()) {
         if (offer.signature !== 'signed' || off.has(offer.name)) continue
-        // A copy an earlier Localix build installed moves to the catalog's on its next version; a
-        // folder the person made is theirs (`isUpdatable`).
+        if (refused.has(offer.archive.sha256)) continue
         if (busy(offer.name) || !(await isUpdatable(offer, installRoot))) continue
         enqueue(offer)
         queued.push(offer.name)
@@ -233,14 +268,14 @@ export function createMiniAppStore(deps: {
       return queued
     },
 
-    /** Read every catalog again, so the next list is fresh; tells the subscribers. */
+    /** Read every marketplace again, so the next list is fresh; tells the subscribers. */
     async refresh(): Promise<void> {
-      await readOffers({ fresh: true })
+      await readFresh()
       for (const listener of listeners) listener()
     },
 
-    /** A catalog's icon, checked against its pin, for a catalog not added yet. */
-    catalogImage: readMedia.catalogImage,
+    /** A marketplace's icon, checked against its pin, for a marketplace not added yet. */
+    marketplaceImage: readMedia.marketplaceImage,
 
     /** Resolves when every queued install has finished (tests, shutdown). */
     settled: () => queue,

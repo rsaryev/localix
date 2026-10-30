@@ -12,7 +12,7 @@ import { openDerivedDatabase } from '../../db/connection'
  */
 
 /** Bump on any change below: the old file is deleted and rebuilt from the providers. */
-export const STORE_INDEX_VERSION = 5
+export const STORE_INDEX_VERSION = 6
 
 export interface StoreIndexTables {
   meta: { key: string; value: string }

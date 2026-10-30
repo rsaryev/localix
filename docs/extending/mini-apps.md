@@ -13,14 +13,14 @@ for you starts enabled. A mini app's native backend runs as trusted code in the 
 
 ## Terminology
 
-| Term             | Meaning                                                                                | Boundary                                                           |
-| ---------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Mini app         | A folder with one `mini-app.json`: backend, screens, views, settings, commands.        | Localix only. It holds no `.claude-plugin/`, skills or hooks.      |
-| Guide            | A mini app's `guide.md`, read by the agent with `MiniAppGuide` before it uses the app. | Read on demand; the prompt lists only that the app has one.        |
-| Native backend   | A JavaScript or TypeScript module whose `register(ctx)` the API process loads.         | Declared by a mini app's `backend`; not sandboxed.                 |
-| Workbench        | A mini app's screen in the workspace, built from `ui/register.tsx`.                    | Opens as a tab; a rail screen can also become a Mac app.           |
-| Catalog mini app | A mini app installed from a catalog, the Localix marketplace's included.               | Its installed copy lives in `~/.localix/mini-apps/` with yours.    |
-| Plugin           | A Claude Code plugin, `.claude-plugin/plugin.json` and its components.                 | Not a mini app; see [Claude Code plugins](claude-code-plugins.md). |
+| Term                 | Meaning                                                                                           | Boundary                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Mini app             | A folder with one `.localix-mini-app/mini-app.json`: backend, screens, views, settings, commands. | Localix only. It holds no `.claude-plugin/`, skills or hooks.      |
+| Guide                | A mini app's `guide.md`, read by the agent with `MiniAppGuide` before it uses the app.            | Read on demand; the prompt lists only that the app has one.        |
+| Native backend       | A JavaScript or TypeScript module whose `register(ctx)` the API process loads.                    | Declared by a mini app's `backend`; not sandboxed.                 |
+| Workbench            | A mini app's screen in the workspace, built from `ui/register.tsx`.                               | Opens as a tab; a rail screen can also become a Mac app.           |
+| Marketplace mini app | A mini app installed from a marketplace, the Localix marketplace's included.                      | Its installed copy lives in `~/.localix/mini-apps/` with yours.    |
+| Plugin               | A Claude Code plugin, `.claude-plugin/plugin.json` and its components.                            | Not a mini app; see [Claude Code plugins](claude-code-plugins.md). |
 
 ## What you can do
 
@@ -31,7 +31,7 @@ for you starts enabled. A mini app's native backend runs as trusted code in the 
 | Teach the agent your app    | Write the mini app's `guide.md`; long material goes in pages under `guide/`.                                | The agent reads it with `MiniAppGuide`; nothing of it sits in every prompt.                                                                                             |
 | Offer a mini app command    | Declare it under `commands` in `mini-app.json`, with its `prompt` and argument pickers.                     | It runs as `/<app>:<command>`.                                                                                                                                          |
 | Shape runtime behavior      | Return lifecycle hooks, a channel, or one memory provider from `register`.                                  | Hook timeouts and optional host services limit these contributions.                                                                                                     |
-| Add a native workbench      | Ship `ui/register.tsx`; the app builds the artifact and swaps it in place.                                  | Installed from a catalog, or your own under `~/.localix/mini-apps` once on.                                                                                             |
+| Add a native workbench      | Ship `ui/register.tsx`; the app builds the artifact and swaps it in place.                                  | Installed from a marketplace, or your own under `~/.localix/mini-apps` once on.                                                                                         |
 | Add portable UI             | Declare sandboxed HTML `views`; each opens as a work-item tab.                                              | A sandboxed view cannot use the host kit or native React registrations.                                                                                                 |
 | Run as its own Mac app      | The person installs the mini app as an app; see [Mini apps as Mac apps](../features/mini-app-mac-apps.md).  | macOS only; the mini app needs a rail viewlet, its main screen.                                                                                                         |
 
@@ -71,10 +71,10 @@ serves one; semantic search answers once its model is on this computer.
 ### Mini app or plugin
 
 A mini app is what the person uses, in Localix's format; a plugin is what the agent uses, in Claude
-Code's. A folder is one or the other: a folder with both `mini-app.json` and
-`.claude-plugin/plugin.json` loads nothing and says why. A mini app tells the agent how to use it in
-its `guide.md`, not in skills; the prompt lists each enabled mini app in one line, marked when it
-has a guide, and the agent reads the guide with `MiniAppGuide` before it first uses the app. The
+Code's. A folder is one or the other: a folder with both `.localix-mini-app/` and `.claude-plugin/`
+loads nothing and says why. A mini app tells the agent how to use it in its `guide.md`, not in
+skills; the prompt lists each enabled mini app in one line, marked when it has a guide, and the
+agent reads the guide with `MiniAppGuide` before it first uses the app. The
 [contract](https://github.com/rsaryev/localix/blob/main/docs/internals/plugins-and-mini-apps.md)
 records the rules.
 
@@ -85,7 +85,8 @@ passes its checks; see [workbench UI](mini-app-ui.md).
 
 ### A minimal mini app
 
-A mini app is its own folder, with no plugin in it: `mini-app.json`, `guide.md`, `backend/index.ts`.
+A mini app is its own folder, with no plugin in it: `.localix-mini-app/mini-app.json`, `guide.md`,
+`backend/index.ts`.
 
 ```json
 {
@@ -174,10 +175,10 @@ do: `testMiniAppContext`, `callTool`, `requestRoute` and `fakeSemantic`. The scr
 
 ### Scope and enablement
 
-| Session scope | Mini app folder                        | Also visible                                    |
-| ------------- | -------------------------------------- | ----------------------------------------------- |
-| Project       | `<project>/.localix/mini-apps/<name>/` | Your own and the ones installed from a catalog  |
-| No project    | `~/.localix/mini-apps/<name>/`         | The ones installed from a catalog are kept here |
+| Session scope | Mini app folder                        | Also visible                                        |
+| ------------- | -------------------------------------- | --------------------------------------------------- |
+| Project       | `<project>/.localix/mini-apps/<name>/` | Your own and the ones installed from a marketplace  |
+| No project    | `~/.localix/mini-apps/<name>/`         | The ones installed from a marketplace are kept here |
 
 A project session sees your personal mini apps as well as its own. On a name collision yours wins
 and the project's copy is hidden, so a repository cannot run its code under a permission you gave
@@ -270,8 +271,9 @@ All paths are relative to the mini app's folder and confined to it.
 
 ### Mini app manifest
 
-`mini-app.json` at the folder root (`miniAppManifestSchema`, `@localixai/mini-app-sdk/app-manifest`)
-refuses unknown keys, a plugin's `skills` or `hooks` among them:
+`.localix-mini-app/mini-app.json` in the folder (`miniAppManifestSchema`,
+`@localixai/mini-app-sdk/app-manifest`) refuses unknown keys, a plugin's `skills` or `hooks` among
+them:
 
 | Field                    | Shape                                                     | Effect and boundary                                                                                                                                                        |
 | ------------------------ | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -299,9 +301,9 @@ The native UI is found by convention at `ui/register.tsx`. A `views[]` entry is
 `None` and `rank` `Owner`, `Default`, `Alternate` or `None`. An `ext` is an extension (`docx`), one
 of several parts (`request.json`, which `package.json` is not) or a whole file name (`dockerfile`).
 Declare every kind your UI opens with `host.fileEditors` or `host.fileFormats`: packing copies the
-list into the catalog, and when someone opens a file of that kind that nothing they have opens, the
-file tab offers your app with **Install**. Rank a kind `None` to open it without being offered for
-it ([the Store](../features/store.md#an-app-for-a-file)).
+list into the marketplace, and when someone opens a file of that kind that nothing they have opens,
+the file tab offers your app with **Install**. Rank a kind `None` to open it without being offered
+for it ([the Store](../features/store.md#an-app-for-a-file)).
 
 ### Config options
 
@@ -326,24 +328,25 @@ it runs.
 
 ### Earlier layouts
 
-A `.localix-app/app.json` or a root `plugin.json` is not read. A folder without `mini-app.json` is
-not a mini app, and one with both `mini-app.json` and `.claude-plugin/plugin.json` loads nothing.
+A `.localix-app/app.json`, a root `mini-app.json` or a root `plugin.json` is not read. A folder
+without `.localix-mini-app/mini-app.json` is not a mini app, and one with both `.localix-mini-app/`
+and `.claude-plugin/` loads nothing.
 
 ### Test and package
 
 A mini app brings its own tests; run them with `bun test` in its folder, or let the authoring
 plugin's `check` command run every gate. Bundle any package dependencies into the backend and point
-`backend` at that file. To offer it to others, pack it into a catalog: see
+`backend` at that file. To offer it to others, pack it into a marketplace: see
 [Publish a mini app](mini-app-publishing.md).
 
 ## Localix's own mini apps
 
 Localix ships no mini app. Localix's own mini apps and plugins live in the
 [Localix marketplace](https://github.com/rsaryev/localix-marketplace), a repository whose releases
-publish a mini app catalog. The Store reads that catalog by default, and its apps install, update
-and are verified like any other catalog's. They are written against the same SDK and kit as yours,
-so their source is a reference for the contract on this page; their own guides live in that
-repository.
+publish a mini app marketplace. The Store reads that marketplace by default, and its apps install,
+update and are verified like any other marketplace's. They are written against the same SDK and kit
+as yours, so their source is a reference for the contract on this page; their own guides live in
+that repository.
 
 ## Limits
 

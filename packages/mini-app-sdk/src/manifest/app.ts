@@ -11,8 +11,9 @@ import {
 
 /**
  * ── MINI APP MANIFEST ─────────────────────────────────────────────────────────
- * `mini-app.json` at the root of a mini app's folder: the app, its backend, screens, settings and
- * commands. A mini app is Localix's own format and contains no Claude Code plugin, so a plugin's
+ * `.localix-mini-app/mini-app.json` in a mini app's folder, as a Claude Code plugin keeps its
+ * `.claude-plugin/plugin.json`: the app, its backend, screens, settings and commands. Paths in it
+ * are relative to the app's folder, the one that holds `.localix-mini-app/`. A mini app is Localix's own format and contains no Claude Code plugin, so a plugin's
  * keys (`skills`, `hooks`, `mcpServers`, …) are refused by name rather than ignored. What the agent
  * needs to know to use the app is its guide (`guide.md`), read on demand. See
  * `docs/internals/plugins-and-mini-apps.md`.
@@ -20,7 +21,8 @@ import {
  * The host validates the contribution arrays (`views`, `promptSections`) and a
  * command's `args` with the schemas of the subsystems that run them.
  */
-export const MINI_APP_MANIFEST_FILE = 'mini-app.json'
+export const MINI_APP_MANIFEST_DIR = '.localix-mini-app'
+export const MINI_APP_MANIFEST_FILE = `${MINI_APP_MANIFEST_DIR}/mini-app.json`
 export const MINI_APP_GUIDE_FILE = 'guide.md'
 
 /** Author/owner: a bare string or the object form. */
@@ -64,6 +66,8 @@ export const miniAppScreenshotSchema = z
 
 export const miniAppManifestSchema = miniAppManifestCoreSchema
   .extend({
+    /** The JSON Schema an editor completes the file with; Localix does not read it. */
+    $schema: z.string().optional(),
     name: z
       .string()
       .regex(MINI_APP_NAME_RE, 'A mini app name must be letters, numbers, dashes or underscores.'),

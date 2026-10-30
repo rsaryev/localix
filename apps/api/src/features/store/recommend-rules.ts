@@ -1,17 +1,18 @@
-import type { Listing, ListingSuits, RecommendReason } from '@localixai/store'
+import { opensFile, type Listing, type RecommendReason } from '@localixai/store'
 
 import { refKey } from './index-rows'
 import { INTEREST_WEIGHTS, type Interest } from './recommend-interests'
 
 /**
- * WHAT A PACKAGE SAYS IT IS FOR (`docs/internals/store.md`, "Recommendations"): the file names
- * and dependencies its source lists (`Listing.suits`), held against what the person has — the
- * files open in tabs, then the names at the project's root and the packages it depends on. A
- * match is the strongest evidence a recommendation has, as an editor's word that this package is
- * for that file; the core names no package, the sources do. Pure functions.
+ * WHAT A PACKAGE IS SUGGESTED FOR (`docs/internals/store.md`, "Recommendations"): the file names
+ * and dependencies its trusted marketplace suggests it for (`Listing.suggestFor`) and the kinds of
+ * file it opens (`Listing.opens`), held against what the person has — the files open in tabs, then
+ * the names at the project's root and the packages it depends on. A match is the strongest
+ * evidence a recommendation has, as an editor's word that this package is for that file; the core
+ * names no package, the sources do. Pure functions.
  */
 
-export interface SuitEvidence {
+export interface SuggestEvidence {
   /** Files open in tabs, as their labels (a path or a name). */
   open: readonly string[]
   /** Names at the open project's root. */
@@ -28,20 +29,25 @@ function patternOf(glob: string): RegExp {
   return new RegExp(`^${escaped}$`, 'i')
 }
 
-/** Why a listing suits what the person has: an open file, then the project; null for nothing. */
-export function suitedBy(
-  suits: ListingSuits | undefined,
-  evidence: SuitEvidence,
+/**
+ * Why a listing is suggested for what the person has: an open file, then the project; null for
+ * nothing.
+ */
+export function suggestedBy(
+  listing: Pick<Listing, 'suggestFor' | 'opens'>,
+  evidence: SuggestEvidence,
 ): RecommendReason | null {
-  if (!suits) return null
-  const patterns = (suits.files ?? []).map(patternOf)
+  const { suggestFor, opens = [] } = listing
+  const patterns = (suggestFor?.files ?? []).map(patternOf)
   const named = (names: readonly string[]) =>
-    names.map(baseName).find((name) => patterns.some((pattern) => pattern.test(name)))
+    names
+      .map(baseName)
+      .find((name) => patterns.some((pattern) => pattern.test(name)) || opensFile(opens, name))
   const open = named(evidence.open)
   if (open) return { source: 'open', label: open }
   const file = named(evidence.files)
   if (file) return { source: 'project', label: file }
-  const wanted = new Set(suits.dependencies ?? [])
+  const wanted = new Set(suggestFor?.dependencies ?? [])
   const dependency = evidence.dependencies.find((name) => wanted.has(name))
   return dependency ? { source: 'project', label: dependency } : null
 }
@@ -53,16 +59,16 @@ export function suitedBy(
 const SUITED = 0.9
 
 /**
- * The listings that suit what the person has, as interests of their own — one per file or
- * dependency they suit, so the reason names it — each with its answer, `[key, score]`.
+ * The listings suggested for what the person has, as interests of their own — one per file or
+ * dependency, so the reason names it — each with its answer, `[key, score]`.
  */
-export function suitedInterests(
+export function suggestedInterests(
   listings: readonly Listing[],
-  evidence: SuitEvidence,
+  evidence: SuggestEvidence,
 ): Array<{ interest: Interest; hits: Array<readonly [string, number]> }> {
   const byReason = new Map<string, { interest: Interest; hits: Array<readonly [string, number]> }>()
   for (const listing of listings) {
-    const reason = suitedBy(listing.suits, evidence)
+    const reason = suggestedBy(listing, evidence)
     if (!reason || reason.source === 'trusted') continue
     const id = `${reason.source}:${reason.label}`
     const held = byReason.get(id) ?? {

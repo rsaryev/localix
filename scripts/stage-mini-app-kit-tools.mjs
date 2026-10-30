@@ -11,7 +11,7 @@ export const KIT_TOOLS_ENTRY = 'apps/api/src/features/mini-apps/kit-tools.ts'
 /** Where it lands in the kit; `.mjs` so any ES module loader reads it as one. */
 export const KIT_TOOLS_FILE = 'tools/authoring.mjs'
 /** The `authoring` block's contract version; the plugin refuses one it does not read. */
-export const KIT_AUTHORING_VERSION = 1
+export const KIT_AUTHORING_VERSION = 2
 /**
  * What the facade is built from, for the kit's input digest. A test bundles the facade and fails
  * on a file it absorbs that no kit input names, so this list cannot drift from the imports.
@@ -20,6 +20,7 @@ export const KIT_TOOLS_INPUTS = [
   'scripts/stage-mini-app-kit-tools.mjs',
   KIT_TOOLS_ENTRY,
   'apps/api/src/features/mini-apps/folder.ts',
+  'apps/api/src/features/mini-apps/revocation-file.ts',
   'apps/api/src/features/mini-apps/validate.ts',
   'apps/api/src/features/mini-apps/contracts.ts',
   'apps/api/src/features/mini-apps/contracts-base.ts',

@@ -3,7 +3,7 @@ import type { MiniAppRecord } from '../../mini-apps/contracts'
 import type { MessageMutationResponse } from '../contracts'
 import type { SessionRecord } from '../repository'
 import type { CommandHandlerContext, DirectReply } from './command-handlers'
-import { handleMiniAppCatalogCommand } from './command-handlers-mini-apps-catalog'
+import { handleMiniAppMarketplaceCommand } from './command-handlers-mini-apps-marketplace'
 
 /** The slice of {@link CommandHandlerContext} the `/mini-app` sub-commands need. */
 type MiniAppsCommandContext = Pick<CommandHandlerContext, 'miniAppService'>
@@ -15,9 +15,9 @@ const MINI_APP_SUBCOMMAND_USAGE = [
   '/mini-app disable <name>',
   '/mini-app remove <name>',
   '/mini-app reload',
-  '/mini-app catalog list',
-  '/mini-app catalog add <url>',
-  '/mini-app catalog remove <url>',
+  '/mini-app marketplace list',
+  '/mini-app marketplace add <owner/repo or url>',
+  '/mini-app marketplace remove <name>',
 ] as const
 
 /** One row of the listing: its state first, so what holds an app back is what the eye meets. */
@@ -54,9 +54,9 @@ export async function handleMiniAppsControlCommand(
   const name = tokens.slice(2).join(' ').trim()
   const projectId = session.projectId ?? null
 
-  if (sub === 'catalog') {
+  if (sub === 'marketplace') {
     let response: MessageMutationResponse | undefined
-    await handleMiniAppCatalogCommand(
+    await handleMiniAppMarketplaceCommand(
       miniAppService,
       tokens[2]?.toLowerCase(),
       tokens.slice(3).join(' ').trim(),
@@ -108,7 +108,7 @@ export async function handleMiniAppsControlCommand(
   const { miniApps } = await miniAppService.list(userId, { projectId })
   return directReply(
     miniApps.length === 0
-      ? 'No mini apps yet. Add one from the catalog in the Store.'
+      ? 'No mini apps yet. Add one from a marketplace in the Store.'
       : ['**Mini apps** — manage them in the Store:', '', ...miniApps.map(listLine)].join('\n'),
   )
 }

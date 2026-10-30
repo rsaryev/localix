@@ -197,7 +197,7 @@ describe('/mini-app actions', () => {
       'disable',
       'remove',
       'reload',
-      'catalog',
+      'marketplace',
     ])
     // `create` is not an action: the composer keeps offering the menu, not a description field.
     expect(parseCommandArgs('create ', miniApp.args!).activeSpec?.name).toBe('action')

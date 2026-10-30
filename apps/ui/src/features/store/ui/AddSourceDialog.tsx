@@ -47,7 +47,7 @@ function PreviewBody({ preview }: { preview: SourcePreview }) {
 
 /**
  * "Add source…": paste anything — `owner/repo`, a git address, a marketplace.json or
- * mini-app-catalog.json address, a local folder. Every kind that can add a source reads it, and
+ * mini-app-marketplace.json address, a local folder. Every kind that can add a source reads it, and
  * the dialog shows what the ones that understood it found; when both formats match, the person
  * picks. Nothing is added without "Add".
  */
@@ -129,7 +129,7 @@ export function AddSourceDialog({
           <DialogTitle>Add a source</DialogTitle>
           <DialogDescription>
             Paste what a publisher gave you: owner/repo, a git or HTTPS address, a marketplace.json
-            or mini-app-catalog.json, or a folder on this computer.
+            or mini-app-marketplace.json, or a folder on this computer.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit}>

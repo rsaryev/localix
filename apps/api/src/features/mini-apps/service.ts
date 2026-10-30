@@ -20,7 +20,7 @@ import { installLocalPackage } from './local-install'
 import { toMiniAppRecord } from './records'
 import { resolveMiniAppUiFile } from './ui-artifact'
 import { createMiniAppWrites } from './service-writes'
-import type { MiniAppInstallOutcome, MiniAppStoreSource } from './store'
+import type { MiniAppInstallOutcome, MiniAppMarketplaceSource } from './store'
 import { createMiniAppStoreParts } from './service-store'
 import {
   invokeMiniAppUiAction,
@@ -47,8 +47,8 @@ export interface MiniAppServiceDeps {
     context: MiniAppUiActionContext
   }) => Promise<unknown>
   logger?: { warn: (msg: string, meta?: unknown) => void }
-  /** The catalogs every installation reads; defaults to `builtInMiniAppSources`. */
-  storeSources?: () => Promise<MiniAppStoreSource[]>
+  /** The marketplaces every installation reads; defaults to `builtInMiniAppSources`. */
+  storeSources?: () => Promise<MiniAppMarketplaceSource[]>
   /**
    * The store's queue drained: how each install and update went. The composition root records
    * them in the journal (`notifications/producers/mini-app-installs.ts`).
@@ -157,17 +157,17 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
     await recordCoreChanges(deps.db, { entity: 'mini-app', op: 'resync' })
   }
 
-  const { catalogs, store, autoUpdate, installRecommended } = createMiniAppStoreParts(
+  const { marketplaces, store, autoUpdate, installRecommended } = createMiniAppStoreParts(
     deps,
     setEnabled,
   )
 
   return {
-    catalogs,
+    marketplaces,
     store,
     /** Which installed apps update on their own (`auto-update.ts`). */
     autoUpdate,
-    /** The one-time install of the apps the Localix catalog recommends (`recommended.ts`). */
+    /** The one-time install of the apps the Localix marketplace installs by default (`recommended.ts`). */
     installRecommended,
     /** Folders changed under the host (a re-staged bundle, `/mini-app reload`): re-read every one. */
     resync,

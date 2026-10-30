@@ -193,7 +193,7 @@ const ENTRIES: Entry[] = [
 ]
 
 /** What a package says it is for, as an editorial marketplace would (`recommend-rules.ts`). */
-const SUITS: Record<string, Listing['suits']> = {
+const SUGGEST_FOR: Record<string, Listing['suggestFor']> = {
   terraform: { files: ['*.tf', '*.tfvars'] },
   prisma: { files: ['schema.prisma'], dependencies: ['prisma', '@prisma/client'] },
   sentry: { dependencies: ['@sentry/node', '@sentry/react'] },
@@ -209,6 +209,6 @@ export const CATALOG: Listing[] = ENTRIES.map(([id, category, publisher, summary
     tags,
     publisher: { name: publisher, verified: true },
     source: { id: 'golden', label: 'Golden', trust: 'official' },
-    ...(SUITS[id] ? { suits: SUITS[id] } : {}),
+    ...(SUGGEST_FOR[id] ? { suggestFor: SUGGEST_FOR[id] } : {}),
   }),
 )

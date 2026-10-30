@@ -6925,10 +6925,16 @@ export declare function elapsed(ms: number): string;
 export declare const MINI_APP_GUIDE_FILE = "guide.md";
 ```
 
+### MINI_APP_MANIFEST_DIR
+
+```ts
+export declare const MINI_APP_MANIFEST_DIR = ".localix-mini-app";
+```
+
 ### MINI_APP_MANIFEST_FILE
 
 ```ts
-export declare const MINI_APP_MANIFEST_FILE = "mini-app.json";
+export declare const MINI_APP_MANIFEST_FILE = ".localix-mini-app/mini-app.json";
 ```
 
 ### MiniAppCommand
@@ -6979,6 +6985,7 @@ export declare const miniAppCommandSchema: z.ZodObject<{
 
 ```ts
 export declare const miniAppManifestSchema: z.ZodObject<{
+    $schema: z.ZodOptional<z.ZodString>;
     apiVersion: z.ZodOptional<z.ZodNumber>;
     author: z.ZodOptional<z.ZodUnion<readonly [
         z.ZodString,
@@ -11603,6 +11610,249 @@ export declare function isWorkbenchMiniApp(surfaces?: null | readonly string[]):
 
 ```ts
 export declare function normalizeMiniAppSurfaces(declared?: null | readonly string[]): string[];
+```
+
+## module @localixai/mini-app-sdk/marketplace
+
+### BlockedArchive
+
+```ts
+export interface BlockedArchive {
+    sha256: string;
+    reason: string;
+}
+```
+
+### ED25519_KEY_RE
+
+```ts
+export declare const ED25519_KEY_RE: RegExp;
+```
+
+### GITHUB_REPO_RE
+
+```ts
+export declare const GITHUB_REPO_RE: RegExp;
+```
+
+### MARKETPLACE_FILE
+
+```ts
+export declare const MARKETPLACE_FILE = ".localix-mini-app/marketplace.json";
+```
+
+### MARKETPLACE_NAME_RE
+
+```ts
+export declare const MARKETPLACE_NAME_RE: RegExp;
+```
+
+### MARKETPLACE_RELEASE_FILE
+
+```ts
+export declare const MARKETPLACE_RELEASE_FILE = "mini-app-marketplace.json";
+```
+
+### MARKETPLACE_SCHEMA
+
+```ts
+export declare const MARKETPLACE_SCHEMA = 3;
+```
+
+### MARKETPLACE_SIGNATURE_SUFFIX
+
+```ts
+export declare const MARKETPLACE_SIGNATURE_SUFFIX = ".sig";
+```
+
+### Marketplace
+
+```ts
+export interface Marketplace {
+    schema: typeof MARKETPLACE_SCHEMA;
+    name: string;
+    owner: {
+        email?: string;
+        name: string;
+        url?: string;
+    };
+    description?: string;
+    published?: string;
+    signingKeys?: string[];
+    apps: MarketplaceApp[];
+    collections: Editorial['collections'];
+    blockedArchives: BlockedArchive[];
+}
+```
+
+### MarketplaceApp
+
+```ts
+export interface MarketplaceApp {
+    name: string;
+    source?: MarketplaceAppSource;
+    displayName?: string;
+    description?: string;
+    category?: string;
+    version?: string;
+    apiVersion?: number;
+    tags?: string[];
+    author?: string;
+    license?: string;
+    homepage?: string;
+    surfaces?: string[];
+    commands?: string[];
+    opens?: string[];
+    icon?: PinnedImage;
+    screenshots?: (PinnedImage & {
+        caption?: string;
+    })[];
+    readme?: PinnedFile;
+    curation: Curation;
+    revoked?: MarketplaceRevocation;
+}
+```
+
+### MarketplaceAppSource
+
+```ts
+export type MarketplaceAppSource = ({
+    source: 'archive';
+} & PinnedFile) | {
+    repo: string;
+    source: 'github';
+} | {
+    source: 'url';
+    url: string;
+};
+```
+
+### MarketplaceCheck
+
+```ts
+export interface MarketplaceCheck {
+    curation: boolean;
+}
+```
+
+### MarketplaceRead
+
+```ts
+export type MarketplaceRead = {
+    kind: 'invalid';
+    problem: string;
+} | {
+    kind: 'marketplace';
+    marketplace: Marketplace;
+} | {
+    kind: 'newer';
+    schema: number;
+};
+```
+
+### MarketplaceRevocation
+
+```ts
+export interface MarketplaceRevocation {
+    reason: string;
+    versions?: string[];
+}
+```
+
+### PinnedFile
+
+```ts
+export interface PinnedFile {
+    url: string;
+    bytes: number;
+    sha256: string;
+}
+```
+
+### PinnedImage
+
+```ts
+export type PinnedImage = PinnedFile & {
+    type: string;
+};
+```
+
+### SHA256_RE
+
+```ts
+export declare const SHA256_RE: RegExp;
+```
+
+### githubMarketplaceUrl
+
+```ts
+export declare const githubMarketplaceUrl: (repo: string) => string;
+```
+
+### marketplaceAppId
+
+```ts
+export declare const marketplaceAppId: (app: string, marketplace: string) => string;
+```
+
+### marketplaceProblems
+
+```ts
+export declare function marketplaceProblems(raw: unknown, check: MarketplaceCheck): string[];
+```
+
+### readMarketplace
+
+```ts
+export declare function readMarketplace(raw: unknown): MarketplaceRead;
+```
+
+## module @localixai/mini-app-sdk/marketplace-signature
+
+### MARKETPLACE_SIGNATURE_SCHEMA
+
+```ts
+export declare const MARKETPLACE_SIGNATURE_SCHEMA = 2;
+```
+
+### MarketplaceSignatureState
+
+```ts
+export type MarketplaceSignatureState = 'mismatch' | 'signed' | 'unsigned';
+```
+
+### MarketplaceSignatures
+
+```ts
+export type MarketplaceSignatures = {
+    keys: string[];
+} | {
+    problem: string;
+};
+```
+
+### marketplaceSignatureState
+
+```ts
+export declare function marketplaceSignatureState(read: MarketplaceSignatures, kept: readonly string[]): MarketplaceSignatureState;
+```
+
+### publicKeyOf
+
+```ts
+export declare function publicKeyOf(privateKey: KeyObject | string): string;
+```
+
+### signMarketplace
+
+```ts
+export declare function signMarketplace(bytes: Uint8Array, privateKeys: readonly (KeyObject | string)[]): string;
+```
+
+### verifyMarketplaceSignature
+
+```ts
+export declare function verifyMarketplaceSignature(bytes: Uint8Array, text: string): MarketplaceSignatures;
 ```
 
 ## module @localixai/mini-app-sdk/navigation
@@ -20221,6 +20471,64 @@ T;
 
 ```ts
 T;
+```
+
+### @localixai/store/dist/collections.d.ts#Editorial
+
+```ts
+export type Editorial = z.infer<typeof editorialSchema>;
+```
+
+### @localixai/store/dist/collections.d.ts#editorialSchema
+
+```ts
+export declare const editorialSchema: z.ZodObject<{
+    collections: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        items: z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            kind: z.ZodEnum<{
+                "mcp-server": "mcp-server";
+                "mini-app": "mini-app";
+                agent: "agent";
+                plugin: "plugin";
+                skill: "skill";
+            }>;
+        }, z.core.$strip>>;
+        style: z.ZodEnum<{
+            grid: "grid";
+            row: "row";
+        }>;
+        subtitle: z.ZodOptional<z.ZodString>;
+        title: z.ZodString;
+    }, z.core.$strip>>;
+    source: z.ZodString;
+}, z.core.$strip>;
+```
+
+### @localixai/store/dist/curation.d.ts#Curation
+
+```ts
+export interface Curation {
+    featured?: true;
+    installByDefault?: true;
+    suggestFor?: SuggestFor;
+}
+```
+
+### @localixai/store/dist/curation.d.ts#SuggestFor
+
+```ts
+export type SuggestFor = z.infer<typeof suggestForSchema>;
+```
+
+### @localixai/store/dist/curation.d.ts#suggestForSchema
+
+```ts
+export declare const suggestForSchema: z.ZodObject<{
+    dependencies: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    files: z.ZodOptional<z.ZodArray<z.ZodString>>;
+}, z.core.$strip>;
 ```
 
 ### kit/activity-orb.d.ts#ActivityOrbState

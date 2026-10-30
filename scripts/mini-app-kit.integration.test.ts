@@ -52,13 +52,13 @@ describe('the staged kit', () => {
   test('its tools judge a folder the way Localix does', async () => {
     const { tools } = await import(pathToFileURL(join(kitDir, manifest.authoring.tools)).href)
     const dir = join(root, 'tally')
-    mkdirSync(dir)
+    mkdirSync(join(dir, '.localix-mini-app'), { recursive: true })
     writeFileSync(
-      join(dir, 'mini-app.json'),
+      join(dir, tools.manifest.file),
       JSON.stringify({ name: 'tally', version: '0.1.0', description: 'x', skills: './skills' }),
     )
     const verdict = await tools.manifest.validate(dir)
-    expect(verdict.errors.join('\n')).toContain('Invalid mini-app.json')
+    expect(verdict.errors.join('\n')).toContain(`Invalid ${tools.manifest.file}`)
   })
 
   // `skipLibCheck` hides an error INSIDE a declaration file: a generated kit type that named

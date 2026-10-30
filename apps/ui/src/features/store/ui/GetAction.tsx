@@ -22,8 +22,9 @@ export const GetAction = memo(function GetAction({
 }) {
   const store = useStoreScope()
   const opens = Boolean(useStoreOpenAddress(listing))
-  if (listing.incompatible)
-    return <span className="text-2xs text-text-faint">{listing.incompatible}</span>
+  // It does not run here: no button, a word on why (its page says the whole of it).
+  const stopped = listing.incompatible ?? (listing.revoked ? 'Taken back' : undefined)
+  if (stopped) return <span className="text-2xs text-text-faint">{stopped}</span>
   return (
     <GetButton
       name={listing.displayName}
@@ -38,7 +39,7 @@ export const GetAction = memo(function GetAction({
  * The package page's action: the solid Get button, and beside it a quiet menu. Before it is got, a
  * chevron: where to get it (for you, or for the open project alone, where its kind
  * allows that) and the install extras, each said in its own words. Once installed, its options:
- * whether it updates on its own (from a signed catalog), get it in another scope, configure it,
+ * whether it updates on its own (from a signed marketplace), get it in another scope, configure it,
  * add or remove an extra, turn it off (the button then says Enable), remove it.
  */
 export function PageGetAction({ listing, className }: { listing: Listing; className?: string }) {
@@ -51,6 +52,10 @@ export function PageGetAction({ listing, className }: { listing: Listing; classN
   const where = (scope: 'user' | 'project') =>
     scope === 'user' ? 'For you, in every project' : `Only in ${project?.name ?? 'this project'}`
   const getting = state.kind === 'get' || state.kind === 'retry'
+  // What does not run here keeps only its options (remove it, above all) and says why.
+  const stopped =
+    listing.incompatible ??
+    (listing.revoked ? `Its marketplace took it back: ${listing.revoked}` : undefined)
   const choose: MenuEntry[] = !getting
     ? []
     : [
@@ -85,7 +90,7 @@ export function PageGetAction({ listing, className }: { listing: Listing; classN
                 {
                   id: 'auto-update',
                   label: 'Update automatically',
-                  description: 'Its catalog is signed: newer versions install on their own.',
+                  description: 'Its marketplace is signed: newer versions install on their own.',
                   icon: RefreshCw,
                   checked: autoUpdate,
                   onSelect: () => store.run(store.client.setAutoUpdate(listing.ref, !autoUpdate)),
@@ -155,7 +160,7 @@ export function PageGetAction({ listing, className }: { listing: Listing; classN
     entries.length ? { label, entries, choose: choose.length > 0 } : undefined
   return (
     <div className={cn('flex flex-wrap items-center gap-1.5', className)}>
-      {listing.incompatible ? (
+      {stopped ? (
         <>
           {manage.length > 0 && (
             <GetButton
@@ -165,7 +170,7 @@ export function PageGetAction({ listing, className }: { listing: Listing; classN
               menu={menu(manage)}
             />
           )}
-          <span className="text-xs text-text-soft">{listing.incompatible}</span>
+          <span className="text-xs text-text-soft">{stopped}</span>
         </>
       ) : (
         <GetButton

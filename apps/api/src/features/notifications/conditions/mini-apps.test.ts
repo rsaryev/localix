@@ -8,6 +8,7 @@ import type { CapabilitySourceRepository } from '../../capabilities/source-repos
 import { loadEnabledMiniApps } from '../../mini-apps/loader'
 import { makeContext } from '../../mini-apps/native-context'
 import { miniAppProblemReporter } from '../../mini-apps/problem-reporter'
+import { MINI_APP_MANIFEST_DIR, MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 import {
   createMiniAppConditions,
   observeMiniAppConditions,
@@ -150,8 +151,9 @@ describe('the loader answers for each mini app it loads', () => {
     dir = await fs.mkdtemp(join(tmpdir(), 'mini-app-conditions-'))
     const root = join(dir, '.localix', 'mini-apps', 'broken')
     await fs.mkdir(join(root, 'backend'), { recursive: true })
+    await fs.mkdir(join(root, MINI_APP_MANIFEST_DIR), { recursive: true })
     await fs.writeFile(
-      join(root, 'mini-app.json'),
+      join(root, MINI_APP_MANIFEST_FILE),
       JSON.stringify({
         name: 'broken',
         version: '1.0.0',

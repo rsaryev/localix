@@ -36,9 +36,9 @@ describe('release workflow contract', () => {
   })
 
   // Localix ships and hosts no mini app (rule X5): the Localix marketplace's own releases publish
-  // its catalog, and the core only names that marketplace as a trusted source.
-  test('publishes no mini app catalog of its own', () => {
-    expect(release).not.toContain('mini-app-catalog')
+  // its marketplace, and the core only names that marketplace as a trusted source.
+  test('publishes no mini app marketplace of its own', () => {
+    expect(release).not.toContain('mini-app-marketplace')
   })
 
   // The authoring plugin builds against the latest release's kit when no Localix is

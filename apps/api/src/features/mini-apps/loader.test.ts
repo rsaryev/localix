@@ -13,6 +13,7 @@ import type {
 import { trustFallback } from '../ext/trust'
 import { loadEnabledMiniApps } from './loader'
 import { MINI_APP_TOOL_DESCRIPTION_MAX_CHARS } from './tool-policy'
+import { MINI_APP_MANIFEST_DIR, MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -71,8 +72,9 @@ const load = (
 async function app(name: string, manifest: Record<string, unknown>, backend?: string) {
   const root = join(dir, '.localix', 'mini-apps', name)
   await fs.mkdir(join(root, 'backend'), { recursive: true })
+  await fs.mkdir(join(root, MINI_APP_MANIFEST_DIR), { recursive: true })
   await fs.writeFile(
-    join(root, 'mini-app.json'),
+    join(root, MINI_APP_MANIFEST_FILE),
     JSON.stringify({
       name,
       version: '1.0.0',

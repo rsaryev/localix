@@ -50,7 +50,7 @@ function Tags({ tags }: { tags: readonly string[] }) {
 /**
  * A package page's header: back to where it was opened from; its icon in the same tile as every
  * other; its name, one line of what it does, who publishes it and how far that is trusted,
- * whether its catalog is signed; its tags; and the Get button with where to get it. Beside the icon only what identifies it — the
+ * whether its marketplace is signed; its tags; and the Get button with where to get it. Beside the icon only what identifies it — the
  * name, who publishes it, the Get button — so that block is as tall as the icon at every width;
  * what it does and its tags run the full width under them.
  */

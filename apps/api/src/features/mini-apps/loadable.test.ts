@@ -9,7 +9,7 @@ import type { DiscoveredMiniApp } from './folder'
  * imported anyway, its `register()` ran and its tools and prompt sections were contributed, then
  * it failed in whatever way its missing contract happened to fail. This is the gate that refuses it.
  */
-const app = (over: { apiVersion?: number; error?: string }): DiscoveredMiniApp =>
+const app = (over: { apiVersion?: number; error?: string; revoked?: string }): DiscoveredMiniApp =>
   ({
     name: 'x',
     dir: '/mini-apps/x',
@@ -22,6 +22,7 @@ const app = (over: { apiVersion?: number; error?: string }): DiscoveredMiniApp =
     contributions: [],
     commands: [],
     error: over.error,
+    revoked: over.revoked,
   }) as unknown as DiscoveredMiniApp
 
 describe('miniAppLoadBlockReason', () => {
@@ -46,6 +47,13 @@ describe('miniAppLoadBlockReason', () => {
   test('still refuses a manifest error, and reports that error verbatim', () => {
     expect(miniAppLoadBlockReason(app({ error: 'mini-app.json is not valid JSON' }))).toBe(
       'mini-app.json is not valid JSON',
+    )
+  })
+
+  // Every host asks this gate before importing an app's code: the loader, its channels, its page.
+  test('refuses an app its marketplace took back, saying why', () => {
+    expect(miniAppLoadBlockReason(app({ revoked: 'It sends notes away.' }))).toBe(
+      'Its marketplace took it back: It sends notes away.',
     )
   })
 

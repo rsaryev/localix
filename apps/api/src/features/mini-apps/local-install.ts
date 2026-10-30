@@ -75,10 +75,10 @@ export async function installLocalPackage(
     )
   }
   const by = await installedBy(target)
-  if (by === 'catalog' || by === 'staged') {
+  if (by === 'marketplace' || by === 'staged') {
     throw new ConflictError(
       'mini_app_name_taken',
-      `"${name}" is installed from ${by === 'catalog' ? 'a catalog' : 'Localix'}; remove it first, or give yours another name`,
+      `"${name}" is installed from ${by === 'marketplace' ? 'a marketplace' : 'Localix'}; remove it first, or give yours another name`,
     )
   }
   if (by === 'person' && !(await installedLocally(target))) {

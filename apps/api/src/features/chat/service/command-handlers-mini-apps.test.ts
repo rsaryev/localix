@@ -123,76 +123,91 @@ describe('/mini-app', () => {
     expect(text).not.toMatch(/plugin/iu)
   })
 
-  describe('catalog', () => {
-    const HOSTED =
-      'https://github.com/rsaryev/localix-marketplace/releases/latest/download/mini-app-catalog.json'
-    const ADA = 'https://ada.test/mini-app-catalog.json'
+  describe('marketplace', () => {
+    const LOCALIX =
+      'https://github.com/rsaryev/localix-marketplace/releases/latest/download/mini-app-marketplace.json'
+    const ADA = 'https://ada.test/mini-app-marketplace.json'
     const entry = (name: string, source: string) => ({ name, source })
     const service = (calls: string[] = []) => ({
-      catalogs: {
+      marketplaces: {
         list: async () => [
-          { url: HOSTED, builtIn: true },
-          { url: ADA, builtIn: false },
+          { url: LOCALIX, name: 'localix', builtIn: true, vouches: true, id: 'localix-mini-apps' },
+          { url: ADA, name: 'ada', builtIn: false, vouches: false },
         ],
         preview: async (url: string) => {
           calls.push(`preview ${url}`)
           if (url.includes('broken'))
-            throw new Error('The mini app catalog at broken.test answered 404')
-          return { url, publishers: ['Ada'], apps: 2, icons: [], verified: false, added: false }
+            throw new Error('The mini app marketplace at broken.test answered 404')
+          return {
+            url,
+            name: 'bob',
+            publishers: ['Bob'],
+            apps: 2,
+            icons: [],
+            verified: false,
+            added: false,
+          }
         },
         add: async (url: string) => void calls.push(`add ${url}`),
         remove: async (url: string) => {
           calls.push(`remove ${url}`)
-          if (url === HOSTED)
-            throw new Error('The Localix catalog comes with Localix and cannot be removed')
+          if (url === LOCALIX)
+            throw new Error('This marketplace comes with Localix and cannot be removed')
         },
       },
       store: {
         list: async () => ({
-          entries: [entry('atlas', HOSTED), entry('tasks', HOSTED), entry('notes', ADA)],
+          entries: [entry('atlas', LOCALIX), entry('tasks', LOCALIX), entry('notes', ADA)],
           problems: [],
         }),
       },
     })
 
-    test('list shows each catalog with its app count, the built-in one marked', async () => {
-      const text = await run(service(), '/mini-app catalog list')
-      expect(text).toContain(`Localix _(built in)_ — 2 apps · ${HOSTED}`)
-      expect(text).toContain(`ada.test — 1 app · ${ADA}`)
-      expect(await run(service(), '/mini-app catalog')).toBe(text)
+    test('list shows each marketplace by name with its app count, the built-in ones marked', async () => {
+      const text = await run(service(), '/mini-app marketplace list')
+      expect(text).toContain(`\`localix\` _(built in)_ — 2 apps · ${LOCALIX}`)
+      expect(text).toContain(`\`ada\` — 1 app · ${ADA}`)
+      expect(await run(service(), '/mini-app marketplace')).toBe(text)
     })
 
-    test('add reads the catalog first and says who publishes it, or why it was refused', async () => {
+    test('add reads the marketplace first and says what it is called, or why it was refused', async () => {
       const calls: string[] = []
-      expect(await run(service(calls), '/mini-app catalog add https://bob.test/c.json')).toBe(
-        'Added the catalog at `https://bob.test/c.json`: 2 apps from Ada, shown as unverified. They are in the store now.',
+      expect(await run(service(calls), '/mini-app marketplace add bob/apps')).toBe(
+        'Added the marketplace `bob` (`bob/apps`): 2 apps kept by Bob, shown as unverified. They are in the store now, as `<app>@bob`.',
       )
-      expect(calls).toEqual(['preview https://bob.test/c.json', 'add https://bob.test/c.json'])
+      expect(calls).toEqual(['preview bob/apps', 'add bob/apps'])
       const refused: string[] = []
-      expect(await run(service(refused), '/mini-app catalog add https://broken.test/c.json')).toBe(
-        'The catalog was not added: The mini app catalog at broken.test answered 404',
-      )
-      expect(refused).toEqual(['preview https://broken.test/c.json'])
-      expect(await run(service(), '/mini-app catalog add')).toBe(
-        'Usage: `/mini-app catalog add <url>`',
+      expect(
+        await run(service(refused), '/mini-app marketplace add https://broken.test/m.json'),
+      ).toBe('The marketplace was not added: The mini app marketplace at broken.test answered 404')
+      expect(refused).toEqual(['preview https://broken.test/m.json'])
+      expect(await run(service(), '/mini-app marketplace add')).toBe(
+        'Usage: `/mini-app marketplace add <owner/repo or url>`',
       )
     })
 
-    test('remove takes an added catalog away; the built-in one stays', async () => {
+    test('remove takes an added marketplace away by its name or address; the built-in ones stay', async () => {
       const calls: string[] = []
-      expect(await run(service(calls), `/mini-app catalog remove ${ADA}`)).toBe(
-        `Removed the catalog at \`${ADA}\`. Apps you installed from it stay installed.`,
+      expect(await run(service(calls), '/mini-app marketplace remove ada')).toBe(
+        'Removed the marketplace `ada`. Apps you installed from it stay installed.',
       )
-      expect(await run(service(calls), `/mini-app catalog remove ${HOSTED}`)).toBe(
-        'Remove failed: The Localix catalog comes with Localix and cannot be removed',
+      expect(await run(service(calls), `/mini-app marketplace remove ${ADA}`)).toBe(
+        'Removed the marketplace `ada`. Apps you installed from it stay installed.',
+      )
+      expect(await run(service(calls), '/mini-app marketplace remove localix')).toBe(
+        'Remove failed: This marketplace comes with Localix and cannot be removed',
+      )
+      expect(calls).toEqual([`remove ${ADA}`, `remove ${ADA}`, `remove ${LOCALIX}`])
+      expect(await run(service(), '/mini-app marketplace remove nobody')).toBe(
+        'No marketplace here is called `nobody`; `/mini-app marketplace list` shows them',
       )
     })
 
-    test('the usage lists the catalog actions', async () => {
+    test('the usage lists the marketplace actions', async () => {
       const text = await run({}, '/mini-app nope')
-      expect(text).toContain('/mini-app catalog list')
-      expect(text).toContain('/mini-app catalog add <url>')
-      expect(text).toContain('/mini-app catalog remove <url>')
+      expect(text).toContain('/mini-app marketplace list')
+      expect(text).toContain('/mini-app marketplace add <owner/repo or url>')
+      expect(text).toContain('/mini-app marketplace remove <name>')
     })
   })
 })

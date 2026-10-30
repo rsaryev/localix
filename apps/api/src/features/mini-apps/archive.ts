@@ -3,9 +3,9 @@ import { dirname, join } from 'node:path'
 import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 /**
- * A mini app as a catalog ships it: one gzip tarball whose root is the app's folder —
- * `mini-app.json` at the top, the built backend and screens beside it. A marketplace
- * release packs them; the store unpacks one only after its sha256 matched.
+ * A mini app as a marketplace ships it: one gzip tarball whose root is the app's folder — its
+ * manifest at `.localix-mini-app/mini-app.json`, the built backend and screens beside the folder.
+ * A marketplace release packs them; the store unpacks one only after its sha256 matched.
  */
 
 export interface UnpackLimits {

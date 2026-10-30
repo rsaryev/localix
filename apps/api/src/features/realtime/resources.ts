@@ -14,7 +14,7 @@ export const REALTIME_RESOURCES = [
   // In-memory status a service signals as it moves (a download, an index build), not a table.
   'local-models',
   // The catalogs the mini app store reads.
-  'mini-app-catalogs',
+  'mini-app-marketplaces',
   // The Store's listings across package kinds (`/rpc/store`): a job moved, an install or a
   // source changed.
   'store',

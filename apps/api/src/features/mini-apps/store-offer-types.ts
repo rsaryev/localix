@@ -1,34 +1,20 @@
-import type { ListingSuits } from '@localixai/store'
+import type { BlockedArchive } from '@localixai/mini-app-sdk/marketplace'
+import type { MarketplaceSignatureState } from '@localixai/mini-app-sdk/marketplace-signature'
+import type { Editorial, SuggestFor } from '@localixai/store'
 
-import type { CatalogSignatureState } from './catalog-signature'
+export type { MiniAppMarketplaceSource } from './marketplaces'
 
-/** Who publishes an app, and whether Localix vouches for them. */
+/** Who publishes an app — its marketplace's owner — and whether Localix vouches for them. */
 export interface MiniAppPublisher {
   name: string
   verified: boolean
 }
 
 /**
- * Where offers come from: a `catalog.json` over HTTPS or `file://`. Its publishers are verified
- * only when the source `vouches` — the hosted Localix catalog does; one a person added does not.
- * `key` is the public key its signature must hold for (`catalog-signature.ts`): pinned in code for
- * the Localix catalog, kept from the first signed read for one a person added.
- */
-export type MiniAppStoreSource = {
-  kind: 'catalog'
-  url: string
-  vouches: boolean
-  key?: string
-  /** The default source a built-in one is (`@localixai/store`'s `DEFAULT_SOURCES`). */
-  id?: string
-}
-
-/**
- * One file of an app's store page: a catalog's pinned file. It reaches a client only as a host
- * address (`store-media.ts`), never as where it lives.
+ * One file of an app's store page: a marketplace's pinned file. It reaches a client only as a
+ * host address (`store-media.ts`), never as where it lives.
  */
 export type OfferFile = {
-  from: 'catalog'
   url: string
   bytes: number
   sha256: string
@@ -44,12 +30,12 @@ export interface OfferStore {
   homepage?: string
   license?: string
   author?: string
-  /** In the Featured group; set only by a catalog Localix vouches for. */
+  /** In the Featured group; set only by a marketplace Localix vouches for. */
   featured?: boolean
-  /** Installed on its own on a new installation; set only by a catalog Localix vouches for. */
-  recommended?: boolean
-  /** What it is for, for recommendations; set only by a catalog Localix vouches for. */
-  suits?: ListingSuits
+  /** Installed on its own on a new installation; set only by a marketplace Localix vouches for. */
+  installByDefault?: boolean
+  /** What it is suggested for; set only by a marketplace Localix vouches for. */
+  suggestFor?: SuggestFor
   /** The kinds of file it opens (`docx`, `request.json`), from its `fileAssociations`. */
   opens?: string[]
   surfaces?: string[]
@@ -58,23 +44,53 @@ export interface OfferStore {
 
 /** What an app is, as an offer shows it. */
 export interface OfferMeta {
+  /** Its identity, `<name>@<marketplace>`. */
+  id: string
   name: string
+  /** The marketplace that lists it, by name. */
+  marketplace: string
   displayName?: string
   description: string
   category?: string
   version?: string
   apiVersion?: number
   publisher: MiniAppPublisher
-  /** The catalog it comes from, as the catalog list names it (`catalogs.ts`). */
+  /** The marketplace that lists it, by address, as the source list names it. */
   source: string
-  /** Whether its catalog is signed with the key kept for it: only `signed` updates on its own. */
-  signature: CatalogSignatureState
+  /** Whether the marketplace it installs from is signed with a key kept for it. */
+  signature: MarketplaceSignatureState
   store: OfferStore
 }
 
-/** One app a source offers, and how to get it. */
+/** One app a marketplace offers, and how to get it. */
 export type Offer = OfferMeta & {
-  from: 'catalog'
-  catalog: string
+  /** The released marketplace its archive comes from: its own, or its author's when linked. */
+  from: string
   archive: { url: string; bytes: number; sha256: string }
+}
+
+/** An app a marketplace took back, by the identity it is installed under. */
+export interface Revocation {
+  id: string
+  name: string
+  marketplace: string
+  reason: string
+  /** The versions taken back; absent, every version. */
+  versions?: string[]
+}
+
+export type { BlockedArchive }
+
+/** Everything the marketplaces say, read together. */
+export interface OfferRead {
+  /** Every app on offer, by identity. */
+  offers: Map<string, Offer>
+  problems: string[]
+  /** Why a marketplace could not be read this time, by its address. */
+  failed: Record<string, string>
+  /** What the marketplaces Localix vouches for pick for Discover, by address. */
+  editorial: Array<{ source: string; collections: Editorial['collections'] }>
+  revocations: Revocation[]
+  /** Archives Localix blocks whatever marketplace they came from. */
+  blocked: BlockedArchive[]
 }

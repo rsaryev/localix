@@ -4,6 +4,23 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+### Added
+
+- **Apps taken back by their marketplace**: a marketplace can revoke an app, or one version of it.
+  An installed copy then stops running, its Store tile says **Taken back**, and its page gives the
+  reason, with **Remove** in its menu. Updating to a version that was not taken back runs it again.
+
+### Changed
+
+- **Mini app marketplaces**: mini app catalogs are now marketplaces, in the shape of Claude Code's.
+  Store → Sources lists them under **Mini app marketplaces**; add one by its GitHub repository
+  (`owner/repo`) or address, or with `/mini-app marketplace add`. An app is known by its name and
+  its marketplace (`notes@ada`), so the same name from two marketplaces is two different apps.
+- **Signing keys can change**: a marketplace's release can name the keys that sign its next one, so
+  a publisher can move to a new key without anyone removing and adding the marketplace again.
+- **Mini app layout**: an app's manifest now lives in `.localix-mini-app/mini-app.json`. Apps made
+  for earlier releases need the authoring plugin 0.7 to be packed again.
+
 ## v0.1.0-beta.20 — 2026-10-30
 
 Mini apps are signed, and the Store opens to Localix Community: apps and plugins people publish in

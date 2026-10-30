@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
 import { packMiniAppFiles, unpackMiniAppArchive } from './archive'
+import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 const root = tempDirPerTest('mini-app-archive-')
 
@@ -13,7 +14,7 @@ const manifest = (over: Record<string, unknown> = {}) =>
 describe('a mini app archive', () => {
   test('unpacks into the folder it is given, every file where the archive put it', async () => {
     const bytes = await packMiniAppFiles({
-      'mini-app.json': manifest(),
+      [MINI_APP_MANIFEST_FILE]: manifest(),
       'backend/index.mjs': 'export const register = () => {}',
     })
     const dest = join(root(), 'out')
@@ -22,7 +23,10 @@ describe('a mini app archive', () => {
   })
 
   test('a path that climbs out of the folder is refused and nothing is written', async () => {
-    const bytes = await packMiniAppFiles({ 'mini-app.json': manifest(), '../escape.txt': 'x' })
+    const bytes = await packMiniAppFiles({
+      [MINI_APP_MANIFEST_FILE]: manifest(),
+      '../escape.txt': 'x',
+    })
     const dest = join(root(), 'out')
     await expect(
       unpackMiniAppArchive(bytes, dest, { name: 'atlas', version: '1.0.0' }),
@@ -31,18 +35,21 @@ describe('a mini app archive', () => {
   })
 
   test('the manifest must name the app and version the catalog promised', async () => {
-    const bytes = await packMiniAppFiles({ 'mini-app.json': manifest({ name: 'other' }) })
+    const bytes = await packMiniAppFiles({ [MINI_APP_MANIFEST_FILE]: manifest({ name: 'other' }) })
     await expect(
       unpackMiniAppArchive(bytes, join(root(), 'a'), { name: 'atlas', version: '1.0.0' }),
     ).rejects.toThrow(/"other"/)
-    const old = await packMiniAppFiles({ 'mini-app.json': manifest({ version: '0.9.0' }) })
+    const old = await packMiniAppFiles({ [MINI_APP_MANIFEST_FILE]: manifest({ version: '0.9.0' }) })
     await expect(
       unpackMiniAppArchive(old, join(root(), 'b'), { name: 'atlas', version: '1.0.0' }),
     ).rejects.toThrow(/0\.9\.0/)
   })
 
   test('one larger than the limit is refused', async () => {
-    const bytes = await packMiniAppFiles({ 'mini-app.json': manifest(), 'big.bin': 'x'.repeat(64) })
+    const bytes = await packMiniAppFiles({
+      [MINI_APP_MANIFEST_FILE]: manifest(),
+      'big.bin': 'x'.repeat(64),
+    })
     await expect(
       unpackMiniAppArchive(
         bytes,

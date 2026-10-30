@@ -1,33 +1,42 @@
+import { join } from 'node:path'
+
 import { recordCoreChanges } from '../changes/core-entities'
 import { createMiniAppAutoUpdate } from './auto-update'
-import { withCatalogPreview } from './catalog-preview'
-import { createMiniAppCatalogs } from './catalogs'
+import { withMarketplacePreview } from './marketplace-preview'
+import { createMiniAppMarketplaces } from './marketplaces'
+import { MINI_APPS_SUBDIR } from './paths'
 import { createRecommendedInstalls } from './recommended'
+import { createMiniAppRevocations } from './revocations'
 import type { MiniAppServiceDeps } from './service'
 import { createMiniAppStore } from './store'
 import { builtInMiniAppSources } from './store-sources'
 
 /**
- * The mini app service's store half: the catalogs (built in, then the person's), the store that
- * installs and updates from them, and the one-time install of the apps the Localix catalog
- * recommends. An install is announced (`mini-app` notice); a fresh one is enabled, since choosing
- * it in the store is the person's yes to run it, and an update keeps their decision.
+ * The mini app service's store half: the marketplaces (built in, then the person's), the store
+ * that installs and updates from them, what they took back, and the one-time install of the apps
+ * the Localix marketplace installs by default. An install is announced (`mini-app` notice); a
+ * fresh one is enabled, since choosing it in the store is the person's yes to run it, and an
+ * update keeps their decision.
  */
 export function createMiniAppStoreParts(
   deps: MiniAppServiceDeps,
   setEnabled: (userId: string, input: { name: string; enabled: boolean }) => Promise<void>,
 ) {
-  const catalogList = createMiniAppCatalogs({
+  const marketplaceList = createMiniAppMarketplaces({
     db: deps.db,
-    builtIn: deps.storeSources ?? builtInMiniAppSources,
+    builtIn: deps.storeSources ?? (async () => builtInMiniAppSources()),
+  })
+  const revocations = createMiniAppRevocations({
+    db: deps.db,
+    installRoot: join(deps.homeDir, MINI_APPS_SUBDIR),
   })
   const autoUpdate = createMiniAppAutoUpdate({ db: deps.db })
   const store = createMiniAppStore({
     homeDir: deps.homeDir,
-    sources: () => catalogList.sources(),
-    pinKey: (url, key) => catalogList.pinKey(url, key),
-    linkedKeys: catalogList.linkedKeys,
+    sources: () => marketplaceList.list(),
+    trust: marketplaceList.trust,
     autoUpdateOff: () => autoUpdate.off(),
+    onRead: (read) => revocations.reconcile(read),
     onInstalled: async (name, { fresh, userId }) => {
       if (fresh && userId) await setEnabled(userId, { name, enabled: true })
       await recordCoreChanges(deps.db, {
@@ -39,7 +48,7 @@ export function createMiniAppStoreParts(
     ...(deps.installOutcomes ? { onJobsSettled: deps.installOutcomes } : {}),
   })
   return {
-    catalogs: withCatalogPreview(catalogList, store),
+    marketplaces: withMarketplacePreview(marketplaceList, store),
     store,
     autoUpdate,
     installRecommended: (userId: string) =>

@@ -16,7 +16,7 @@ built, part by part.
 | --------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Package   | What is downloaded, versioned, installed and removed as one unit.                | Kinds: mini app, plugin, MCP server, skill, agent.                    |
 | Component | Something a package adds: a skill, agent, command, hook, mod, MCP or LSP server. | Never installed alone; it is a fact about a package.                  |
-| Source    | Where a provider reads packages from: a catalog, a marketplace, a registry.      | Owned by its provider; the Store only shows sources side by side.     |
+| Source    | Where a provider reads packages from: a marketplace, a registry.                 | Owned by its provider; the Store only shows sources side by side.     |
 | Provider  | The feature that owns one package kind and serves it through the Store port.     | Keeps its own records, routes, storage and slash command (X3).        |
 | Listing   | The Store's read-only projection of one package for display and search.          | A view, rebuilt from providers; never a record anything else trusts.  |
 | Shelf     | A Store section: a package kind, a component kind, or a library view.            | Derived from listings; an empty shelf is hidden; no name is on two.   |
@@ -29,7 +29,8 @@ built, part by part.
    and every plugin that contains one, labelled with what else comes with it. Installing always
    installs the whole package, because that is what Claude Code installs too.
 2. **The shell knows the contract, never a format.** The Store renders listings, plans and jobs. It
-   never parses `mini-app.json`, `plugin.json` or `server.json`; that stays with the provider.
+   never parses a mini app's `.localix-mini-app/mini-app.json`, `plugin.json` or `server.json`; that
+   stays with the provider.
 3. **Providers own everything they store.** Records, sources, install folders, routes and slash
    commands stay in `features/mini-apps` and `features/plugins` (X1, X3). The Store calls them
    through a port wired in `bootstrap/` (A4) and imports neither.
@@ -37,8 +38,8 @@ built, part by part.
    providers at start and refreshed on their change notices (C rules).
 5. **Show what runs.** Text-only packages install in one click. A package with hooks, mods, a
    backend, a stdio MCP or LSP server, or a `bin` shows its plan first.
-6. **Nothing installs without a click**, except the documented one-time recommended mini apps
-   (`recommended.ts`). There are no built-in plugins.
+6. **Nothing installs without a click**, except the documented one-time mini apps a marketplace
+   Localix vouches for installs by default (`recommended.ts`). There are no built-in plugins.
 7. **Growth is additive.** A new package kind is one provider plus a label and a glyph. A new
    component kind is one enum value; its shelf appears when a listing reports it.
 
@@ -48,7 +49,7 @@ built, part by part.
 Store
 ├── Discover                featured and recommended, across kinds
 ├── Packages                one shelf per kind that is only ever a package
-│   ├── Mini apps           provider: features/mini-apps   sources: mini app catalogs
+│   ├── Mini apps           provider: features/mini-apps   sources: mini app marketplaces
 │   └── Plugins             provider: features/plugins     sources: Claude Code marketplaces
 ├── What packages give      one shelf per component kind, filled from listings' contents
 │   └── Skills · Agents · Commands · Mods · Hooks · MCP servers · LSP · Output styles
@@ -213,7 +214,7 @@ nothing running.
 | ------------- | ---------------------- | -------------------------------------------------------------------------------------------------- |
 | Store feature | `features/store` (new) | Holds the provider list, the index, `/rpc/store` routes and the `store` and `store-sources` pokes. |
 | Index         | Store feature          | A SQLite FTS5 file in the cache folder: listings, components, state, facets (`store-scale.md`).    |
-| Mini apps     | `features/mini-apps`   | Adapts `store.ts`, `store-detail.ts`, `catalogs.ts`; its routes stay for its own pages.            |
+| Mini apps     | `features/mini-apps`   | Adapts `store.ts`, `store-detail.ts`, `marketplaces.ts`; its routes stay for its own pages.        |
 | Plugins       | `features/plugins`     | Lists marketplace entries with full fields, counts components, installs by `name@marketplace`.     |
 | Wiring        | `bootstrap/`           | Builds each provider and hands the list to the Store (A4).                                         |
 | Activity      | Store feature          | One jobs-and-updates feed for the Event Center and the update strip.                               |
@@ -266,8 +267,8 @@ display name; marketplace entries may add an `icon` path later, read only from t
   source". Permissions is the plan.
 - **Installed** is a dense list: tile, name, kind, scope, version, enabled switch, menu (Update,
   Configure, Remove). Configure opens the item's page on its Settings tab.
-- **Sources** groups by provider: mini app catalogs, Claude Code marketplaces, later registries.
-  Adding one previews it first, as the mini app catalog dialog does today.
+- **Sources** groups by provider: mini app marketplaces, Claude Code marketplaces, later registries.
+  Adding one previews it first, as the mini app marketplace dialog does today.
 
 The Store is one work item kind, `store`, with payload `{ shelf?, ref?, addSource? }`. A restored
 `mini-app-store` tab opens the Store on the Mini apps shelf. Generic pieces (card, card grid,
@@ -331,9 +332,9 @@ contract and knows no provider.
   about and needs consent for an unverified publisher (the store's `acceptUnverified`); its only
   scope is `user`.
 - **The index** is rebuilt on the next read after a provider's `subscribe` fires or the relay sends
-  a `store` poke for a `mini-app` or `mini-app.catalog` notice (`bootstrap/store.ts`). The mini apps
-  provider lists from its catalogs as the old store page did, so a catalog older than ten minutes is
-  read again on that rebuild.
+  a `store` poke for a `mini-app` or `mini-app.marketplace` notice (`bootstrap/store.ts`). The mini
+  apps provider lists from its marketplaces as the old store page did, so a marketplace older than
+  ten minutes is read again on that rebuild.
 - **Activity.** `/rpc/store/activity` and `/updates/apply` carry every kind's jobs and updates; see
   [Plugins, activity and trust](#plugins-activity-and-trust).
 - **Sources** offers "Add …" for every kind with a source; the contract does not yet say whether a
@@ -362,11 +363,11 @@ are under [UI](#ui).
   updates client are gone.
 - **Trust.** `listing.source` carries `trust` and `weight`, a `SourceView` its `trust`. A listing
   also says its `origin`, `alsoIn`, `homepage` and `updatedAt`. `trust` belongs to a source and is
-  said by the provider that owns it: a catalog or marketplace sets `localix`, `official` or
-  `community`; what has no source to rate (a skill, agent or MCP server the person made, a built-in
-  agent, a server from `.mcp.json`) leaves it out. The UI labels only what carries it (a verified
-  mark, or a quiet "Community") and never infers a label for the rest; the index keeps `null` for
-  it, so it is neither a `community` nor a trusted result, and ranks it with community's weight.
+  said by the provider that owns it: a marketplace sets `localix`, `official` or `community`; what
+  has no source to rate (a skill, agent or MCP server the person made, a built-in agent, a server
+  from `.mcp.json`) leaves it out. The UI labels only what carries it (a verified mark, or a quiet
+  "Community") and never infers a label for the rest; the index keeps `null` for it, so it is
+  neither a `community` nor a trusted result, and ranks it with community's weight.
 - **Paging and filters.** `/listings` takes `cursor`, `limit` (40, at most 500), `category`,
   `source`, `trust` and `projectId`, and answers `nextCursor` and, for a search, `strategy`. The UI
   client reads one page per call (`storeApi.page`).
@@ -391,17 +392,18 @@ every listing an item names is in `listings`.
 | New & updated    | Versions published in the last 90 days, newest first; left out when no source dates its versions. |
 | One row per kind | "Mini apps", "Plugins", by score.                                                                 |
 
-A provider hands its picks over through the port's optional `editorial()`. The mini app catalog
-carries them as `editorial` (`collections`), set by its publisher's repository; the `localix`
-marketplace under `metadata.localix` (`recommended`, `featured`, `collections`, and `suits`: by
-entry name, `{ files, dependencies }`, what recommendations show it for), which
-`claude plugin validate` accepts with an unknown-field warning and Claude Code ignores. An item is a
-name of the source's own kind, or `<kind>:<id>`. Only an editorial source's picks are read, and a
-community listing never reaches Start here or a collection. A listing's page adds `related` (more
-from its publisher) and `similar` (its category, sharing a tag), and `linked`, the listings both
-name, so the page draws those rows in one read. When no editorial source can be read (offline, or a
-catalog not published yet), Start here is the `localix` and `official` listing by score, so Discover
-is never empty while official listings exist.
+A provider hands its picks over through the port's optional `editorial()`. A mini app marketplace
+states its curation (`docs/extending/mini-app-marketplace.md`, "Curation") on each app entry
+(`featured`, `installByDefault`, and `suggestFor`: `{ files, dependencies }`, what recommendations
+show it for) and its `collections` at the top; the `localix` plugin marketplace states the same on
+`plugins[].localix` and under `metadata.localix.collections`, which `claude plugin validate` accepts
+with an unknown-field warning and Claude Code ignores. An item is a name of the source's own kind,
+or `<kind>:<id>`. Only an editorial source's picks are read, and a community listing never reaches
+Start here or a collection. A listing's page adds `related` (more from its publisher) and `similar`
+(its category, sharing a tag), and `linked`, the listings both name, so the page draws those rows in
+one read. When no editorial source can be read (offline, or a marketplace not published yet), Start
+here is the `localix` and `official` listing by score, so Discover is never empty while official
+listings exist.
 
 ### Recommendations
 
@@ -435,14 +437,13 @@ stages, as recommenders are (candidates, fusion, filters, diversity, fill):
    (`SemanticReader.similarToItems`, nothing embedded), and a package near it counts from one
    deviation under a search's standout gate, since a mean is not a question with an answer that
    stands out. While none of them has a vector, the group asks with its names and summaries.
-3. **What a package says it is for** (`recommend-rules.ts`). A listing may carry `suits`: file names
-   (`compose.yaml`, `*.tf`) and dependencies (`prisma`). An editorial marketplace sets them under
-   `metadata.localix.suits`, by entry name (below); the Localix mini app catalog, as each app's
-   `suits`. Both are read leniently (`sourceSuitsSchema`), and from no other source. Each is held
-   against the open tabs' names, then the project's root names and its dependencies as written
-   (`project-signals.ts`, `facts`); a match is an interest of its own, scored 0.9 — above anything
-   meaning finds — with the reason `open` or `project` naming the file or the dependency. The core
-   names no package; the sources do.
+3. **What a package says it is for** (`recommend-rules.ts`). A listing may carry `suggestFor`: file
+   names (`compose.yaml`, `*.tf`) and dependencies (`prisma`). An editorial marketplace sets them on
+   each entry (a plugin's `localix.suggestFor`, a mini app's `suggestFor`). Both are read leniently
+   (`readSuggestFor`), and from no other source. Each is held against the open tabs' names, then the
+   project's root names and its dependencies as written (`project-signals.ts`, `facts`); a match is
+   an interest of its own, scored 0.9 — above anything meaning finds — with the reason `open` or
+   `project` naming the file or the dependency. The core names no package; the sources do.
 4. **Fusion and filters** (`recommend-rank.ts`). The hits' scores share one scale (the meaning z,
    standardized against the whole collection), so they are combined, not their ranks:
    `max(wᵢ·sᵢ) + 0.25·(Σ wᵢ·sᵢ − max)`. The interest with the largest share is the reason. What the
@@ -514,8 +515,8 @@ bun test apps/api/src/features/store/recommend-eval.integration.test.ts
 ```
 
 A change to the ranking states what it does to that table. Recall is low on purpose: only what
-stands out by meaning, or a package's own `suits`, counts as matched, and trusted packages fill the
-rest of the row.
+stands out by meaning, or a package's own `suggestFor`, counts as matched, and trusted packages fill
+the rest of the row.
 
 ### Sources and project installs
 
@@ -525,12 +526,12 @@ rest of the row.
   where a provider has no such switch; marketplaces have it) and `defaultSource` (on the default
   list, so not added back once removed). `GET /sources` answers `{ sources, addable }`, `addable`
   being the kinds whose provider can preview and add one. `POST /sources/refresh` reads one source
-  again (a mini app catalog refresh reads every catalog) and `POST /sources/auto-update` switches
-  it, through the port's optional `refreshSource` and `setSourceAutoUpdate`.
+  again (a mini app marketplace refresh reads every marketplace) and `POST /sources/auto-update`
+  switches it, through the port's optional `refreshSource` and `setSourceAutoUpdate`.
 - **An unread source is said where it matters.** A provider's `problems` are tagged with its kind
   when it is synced (`StoreProblem`: `kind`, `message`), and a listing page carries only those of
   the kinds its shelf lists (`shelfKinds`, `page-problems.ts`): a plugin marketplace on Plugins and
-  on the shelves of what plugins give, a mini app catalog on Mini apps and Commands, nothing on
+  on the shelves of what plugins give, a mini app marketplace on Mini apps and Commands, nothing on
   Discover, a search or the library. The list says it in one line that leads to Sources, which says
   which source and why.
 - **The open project's installs.** `GET /:kind/:id?projectId=` shows that project's install on the

@@ -8,8 +8,8 @@ import {
 
 /**
  * The Store (`docs/internals/store.md`): its Discover page, shelves, a package's page and consent
- * sheet, Sources with the add dialog, search and the Library. The mini app catalog and the plugin
- * shelves come from the default sources, read over the network when the runtime starts, and three
+ * sheet, Sources with the add dialog, search and the Library. The mini app marketplaces and the
+ * plugin shelves come from the default sources, read over the network when the runtime starts, and three
  * mini apps are installed through the Store by `store-seed.mjs` in a home of their own. The
  * assertions never name a package: they use the ones the seed picked and check what any answer
  * looks like.
@@ -155,7 +155,7 @@ export async function composeStore(page, scenario) {
 const VERIFY = {
   async store(page) {
     await expect(heading(page)).toHaveText('Mini apps')
-    // The catalog's mini apps, the three the seed installed among them.
+    // The marketplaces’ mini apps, the three the seed installed among them.
     const tiles = page.locator('[data-listing][data-kind="mini-app"]')
     await expect(tiles.first()).toBeVisible()
     await expect(tiles.getByRole('button', { name: /^Get / }).first()).toBeVisible()
@@ -215,7 +215,7 @@ const VERIFY = {
       detail.locator('header').getByRole('button', { name: /^(?:Get|Open) / }),
     ).toBeVisible()
     await expect(detail.getByRole('tabpanel')).toContainText('A screen of its own')
-    // Whether its catalog is signed, beside its publisher and among the facts: what decides if it
+    // Whether its marketplace is signed, beside its publisher and among the facts: what decides if it
     // updates on its own.
     await expect(detail.locator('header').first()).toContainText(/Signed|Not signed/)
     await expect(detail.getByLabel('Information').first()).toContainText('Signature')
@@ -231,6 +231,7 @@ const VERIFY = {
     await expect(heading(page)).toHaveText('Sources')
     await expect(page.locator('li[data-source]').first()).toBeVisible()
     await expect(page.locator('li[data-source]', { hasText: /Localix/ }).first()).toBeVisible()
+    await expect(page.locator('section[aria-label="Mini app marketplaces"]')).toBeVisible()
     const dialog = page.getByRole('dialog')
     await expect(dialog.getByRole('textbox', { name: 'Source address' })).toHaveValue(
       'anthropics/skills',

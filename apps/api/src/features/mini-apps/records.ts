@@ -8,6 +8,7 @@ import type { MiniAppConfigField, MiniAppRecord } from './contracts'
 import type { DiscoveredMiniApp } from './folder'
 import type { MiniAppInspections } from './inspection-snapshots'
 import { miniAppLoadBlockReason } from './loadable'
+import { readInstallRecord } from './store-install'
 import { readMiniAppUiDescriptor } from './ui-artifact'
 
 /** Its declared settings with their values; a secret says only whether it is set. */
@@ -70,11 +71,12 @@ export async function toMiniAppRecord(input: {
   const { app, state, enabled } = input
   const blocked = miniAppLoadBlockReason(app)
   const config = resolveMiniAppConfig(app.manifest?.config, scalarConfig(state?.config))
-  const [inspected, ui] = await Promise.all([
+  const [inspected, ui, record] = await Promise.all([
     enabled && !blocked && app.backendEntries.length > 0
       ? input.inspections.inspect(app, config, input.userId, input.runtimeCwd)
       : Promise.resolve(null),
     readMiniAppUiDescriptor(app),
+    app.scope === 'global' ? readInstallRecord(app.dir) : null,
   ])
   const error = [blocked, inspected?.error].filter(Boolean).join('; ') || undefined
   const homepage = miniAppWebsite(app.manifest)
@@ -92,6 +94,10 @@ export async function toMiniAppRecord(input: {
     enabled,
     ...(input.awaitingConsent ? { awaitingConsent: true } : {}),
     ...(error ? { error } : {}),
+    ...(record
+      ? { installedFrom: { marketplace: record.marketplace, publisher: record.publisher } }
+      : {}),
+    ...(app.revoked ? { revoked: app.revoked } : {}),
     hasBackend: app.backendEntries.length > 0,
     tools: inspected?.tools ?? [],
     backendSubsystems: inspected?.backendSubsystems ?? [],

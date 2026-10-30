@@ -101,7 +101,7 @@ export const miniAppConfigFieldSchema = z.object({
 })
 export type MiniAppConfigField = z.infer<typeof miniAppConfigFieldSchema>
 
-/** One installed mini app, as the Store, the rail and the catalog show it. */
+/** One installed mini app, as the Store, the rail and the mini app settings show it. */
 export const miniAppRecordSchema = z.object({
   name: z.string(),
   displayName: z.string().optional(),
@@ -118,6 +118,15 @@ export const miniAppRecordSchema = z.object({
   /** Installed and waiting for the person's yes; its code is not loaded. */
   awaitingConsent: z.boolean().optional(),
   error: z.string().optional(),
+  /** The marketplace that installed it, and who publishes it there (its install record). */
+  installedFrom: z
+    .object({
+      marketplace: z.string(),
+      publisher: z.object({ name: z.string(), verified: z.boolean() }),
+    })
+    .optional(),
+  /** Why its marketplace took it back; set, it does not run (`revocations.ts`). */
+  revoked: z.string().optional(),
   hasBackend: z.boolean(),
   /** What its backend gives the agent, read from the live definitions while it is enabled. */
   tools: z.array(miniAppToolDescriptorSchema),

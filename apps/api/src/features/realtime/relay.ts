@@ -62,7 +62,7 @@ export const RELAY_TOPICS = {
   // offers (its tools join or leave runs) and the Store's listings.
   'mini-app': { resources: ['mini-apps', 'capabilities', 'store'], bumpsCapabilities: true },
   // The store's catalogs: their list and what the Store offers.
-  'mini-app.catalog': { resources: ['mini-app-catalogs', 'store'] },
+  'mini-app.marketplace': { resources: ['mini-app-marketplaces', 'store'] },
   'mini-app.updates': { resources: ['store'] },
   mcp: { resources: ['store'] },
   // What the `local` provider lists reaches clients through the catalog's own refresh; the

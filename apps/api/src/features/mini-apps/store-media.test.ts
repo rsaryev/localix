@@ -2,11 +2,14 @@ import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
+import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
+
+import { memoryTrust } from '../../testing/mini-app-marketplace'
 import { packMiniAppFiles } from './archive'
-import { createMiniAppStore, type MiniAppStoreSource } from './store'
+import { createMiniAppStore } from './store'
 
 const root = tempDirPerTest('mini-app-store-media-')
-const CATALOG = 'https://catalog.example.test/apps/mini-app-catalog.json'
+const MARKETPLACE = 'https://marketplace.example.test/apps/mini-app-marketplace.json'
 const ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><rect/></svg>'
 const encoder = new TextEncoder()
 
@@ -25,13 +28,13 @@ const pin = (url: string, bytes: Uint8Array, type?: string) => ({
   ...(type ? { type } : {}),
 })
 
-/** A hosted catalog with one app and its media, counting what is fetched. */
+/** A released marketplace with one app and its media, counting what is fetched. */
 async function hosted(opts: { badShot?: boolean; featured?: boolean } = {}) {
   const shot = png(4800, 3000)
   const icon = encoder.encode(ICON)
   const readme = encoder.encode('# Atlas\n\nPlay a game. <script>x</script>')
   const archive = await packMiniAppFiles({
-    'mini-app.json': JSON.stringify({ name: 'atlas', version: '1.0.0' }),
+    [MINI_APP_MANIFEST_FILE]: JSON.stringify({ name: 'atlas', version: '1.0.0' }),
   })
   const files: Record<string, Uint8Array> = {
     'atlas-icon.svg': icon,
@@ -47,7 +50,6 @@ async function hosted(opts: { badShot?: boolean; featured?: boolean } = {}) {
     category: 'games',
     version: '1.0.0',
     apiVersion: 1,
-    publisher: { name: 'Localix', verified: true },
     icon: pin('atlas-icon.svg', icon, 'image/svg+xml'),
     screenshots: [
       {
@@ -63,12 +65,13 @@ async function hosted(opts: { badShot?: boolean; featured?: boolean } = {}) {
     surfaces: ['agent', 'workbench'],
     commands: ['new', 'resign'],
     featured: opts.featured ?? true,
-    archive: pin('atlas.tar.gz', archive),
+    source: { source: 'archive', ...pin('atlas.tar.gz', archive) },
   }
   const fetchImpl = (async (input: string | URL | Request) => {
     const url = String(input instanceof Request ? input.url : input)
     fetched.push(url)
-    if (url === CATALOG) return Response.json({ schema: 1, apps: [app] })
+    if (url === MARKETPLACE)
+      return Response.json({ schema: 3, name: 'localix', owner: { name: 'Localix' }, apps: [app] })
     const body = files[url.split('/').pop() ?? '']
     return body
       ? new Response(new Blob([body as Uint8Array<ArrayBuffer>]))
@@ -77,40 +80,43 @@ async function hosted(opts: { badShot?: boolean; featured?: boolean } = {}) {
   return { fetchImpl, fetched, shot }
 }
 
-function storeOver(sources: MiniAppStoreSource[], fetchImpl?: typeof fetch) {
+function storeOver(vouches: boolean, fetchImpl?: typeof fetch) {
   return createMiniAppStore({
     homeDir: join(root(), 'home'),
-    sources: () => sources,
+    sources: () => [{ url: MARKETPLACE, name: 'localix', vouches, builtIn: vouches }],
+    trust: memoryTrust(),
     onInstalled: async () => {},
     fetchImpl,
   })
 }
 
 describe('the store lists each app with its icon and tags as host addresses', () => {
-  test('a catalog app: its media through the host, never the catalog address', async () => {
+  test('an app: its media through the host, by its identity, never the marketplace’s address', async () => {
     const { fetchImpl } = await hosted()
-    const store = storeOver([{ kind: 'catalog', url: CATALOG, vouches: true }], fetchImpl)
+    const store = storeOver(true, fetchImpl)
     const [atlas] = (await store.list()).entries
     expect(atlas).toMatchObject({
       tags: ['game', 'board-game'],
       featured: true,
-      source: CATALOG,
-      icon: expect.stringMatching(/^\/rpc\/mini-apps\/store\/media\/atlas\/icon\?v=[a-f0-9]{12}$/),
+      source: MARKETPLACE,
+      icon: expect.stringMatching(
+        /^\/rpc\/mini-apps\/store\/media\/atlas%40localix\/icon\?v=[a-f0-9]{12}$/,
+      ),
     })
-    expect(JSON.stringify(atlas)).not.toContain('catalog.example.test/apps/atlas')
+    expect(JSON.stringify(atlas)).not.toContain('marketplace.example.test/apps/atlas')
   })
 
-  test('featured counts only in a catalog Localix vouches for', async () => {
+  test('featured counts only in a marketplace Localix vouches for', async () => {
     const { fetchImpl } = await hosted()
-    const store = storeOver([{ kind: 'catalog', url: CATALOG, vouches: false }], fetchImpl)
+    const store = storeOver(false, fetchImpl)
     expect((await store.list()).entries[0]?.featured).toBeUndefined()
   })
 })
 
 describe('store media', () => {
-  test('a catalog file is fetched once, checked against its pin, cached and served by type', async () => {
+  test('a pinned file is fetched once, checked against its pin, cached and served by type', async () => {
     const { fetchImpl, fetched, shot } = await hosted()
-    const store = storeOver([{ kind: 'catalog', url: CATALOG, vouches: true }], fetchImpl)
+    const store = storeOver(true, fetchImpl)
     const first = await store.media('atlas', 'screenshot', 0)
     expect(first.type).toBe('image/png')
     expect(first.bytes).toEqual(shot)
@@ -119,9 +125,9 @@ describe('store media', () => {
     expect((await store.media('atlas', 'icon')).type).toBe('image/svg+xml')
   })
 
-  test('a catalog file whose bytes differ from its pin is refused', async () => {
+  test('a pinned file whose bytes differ from its pin is refused', async () => {
     const { fetchImpl } = await hosted({ badShot: true })
-    const store = storeOver([{ kind: 'catalog', url: CATALOG, vouches: true }], fetchImpl)
+    const store = storeOver(true, fetchImpl)
     await expect(store.media('atlas', 'screenshot', 0)).rejects.toThrow()
     await expect(store.media('atlas', 'screenshot', 4)).rejects.toThrow(/no screenshot/i)
   })
@@ -130,13 +136,15 @@ describe('store media', () => {
 describe('the detail of one app', () => {
   test('says what it is and brings, with its README and screenshots as host addresses', async () => {
     const { fetchImpl } = await hosted()
-    const store = storeOver([{ kind: 'catalog', url: CATALOG, vouches: true }], fetchImpl)
+    const store = storeOver(true, fetchImpl)
     const detail = await store.detail('atlas')
     expect(detail.entry.name).toBe('atlas')
     expect(detail.readme).toContain('# Atlas')
     expect(detail.screenshots).toEqual([
       {
-        url: expect.stringMatching(/^\/rpc\/mini-apps\/store\/media\/atlas\/screenshot\/0\?v=/),
+        url: expect.stringMatching(
+          /^\/rpc\/mini-apps\/store\/media\/atlas%40localix\/screenshot\/0\?v=/,
+        ),
         caption: 'A position',
       },
     ])

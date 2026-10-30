@@ -1,10 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
+import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
 import { discoverMiniApps } from './discovery'
 import { MINI_APPS_SUBDIR } from './paths'
+import { REVOCATION_FILE } from './revocation-file'
 
 const home = tempDirPerTest('mini-apps-home-')
 const project = tempDirPerTest('mini-apps-project-')
@@ -19,7 +21,7 @@ const manifest = (name: string, extra: Record<string, unknown> = {}) =>
   })
 
 const app = (name: string, extra: Record<string, unknown> = {}) => ({
-  [`${name}/mini-app.json`]: manifest(name, extra),
+  [`${name}/${MINI_APP_MANIFEST_FILE}`]: manifest(name, extra),
   [`${name}/backend/index.ts`]: 'export const tools = []\n',
   [`${name}/guide.md`]: 'How to use it.\n',
 })
@@ -31,7 +33,7 @@ const under = (root: string, tree: Record<string, string>) =>
   )
 
 describe('discoverMiniApps', () => {
-  test('reads each mini-app.json folder under the home mini apps root', async () => {
+  test('reads each folder with a mini app manifest under the home mini apps root', async () => {
     under(home(), app('notes'))
     const [notes, ...rest] = await discoverMiniApps({ homeDir: home() })
     expect(rest).toEqual([])
@@ -60,8 +62,23 @@ describe('discoverMiniApps', () => {
     expect(mixed!.backendEntries).toEqual([])
   })
 
+  test('an app its marketplace took back does not run, and says why', async () => {
+    under(home(), {
+      ...app('notes'),
+      [`notes/${REVOCATION_FILE}`]: JSON.stringify({
+        marketplace: 'ada',
+        version: '1.0.0',
+        reason: 'It sends notes away.',
+      }),
+    })
+    const [notes] = await discoverMiniApps({ homeDir: home() })
+    expect(notes!.revoked).toBe('It sends notes away.')
+  })
+
   test('an invalid manifest is an error named after the folder', async () => {
-    under(home(), { 'broken/mini-app.json': manifest('broken', { skills: './skills' }) })
+    under(home(), {
+      [`broken/${MINI_APP_MANIFEST_FILE}`]: manifest('broken', { skills: './skills' }),
+    })
     const [broken] = await discoverMiniApps({ homeDir: home() })
     expect(broken).toMatchObject({ name: 'broken', manifest: null })
     expect(broken!.error).toContain('skills')
@@ -74,9 +91,11 @@ describe('discoverMiniApps', () => {
     expect(escape!.error).toContain('backend')
   })
 
-  test('a folder without mini-app.json is not a mini app', async () => {
+  test('a folder without a mini app manifest is not a mini app', async () => {
     under(home(), {
       'plugin/.claude-plugin/plugin.json': JSON.stringify({ name: 'plugin' }),
+      // The manifest's place before: no longer read.
+      'old/mini-app.json': manifest('old'),
       'cache/x.json': '{}',
     })
     expect(await discoverMiniApps({ homeDir: home() })).toEqual([])
@@ -110,7 +129,7 @@ describe('discoverMiniApps', () => {
   test('the copies an update retired earlier are swept on the first discovery of a process', async () => {
     under(home(), {
       ...app('notes'),
-      '.sync-retired-notes-1-abc/mini-app.json': manifest('notes'),
+      [`.sync-retired-notes-1-abc/${MINI_APP_MANIFEST_FILE}`]: manifest('notes'),
     })
     const root = join(home(), MINI_APPS_SUBDIR)
 
