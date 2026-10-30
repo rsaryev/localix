@@ -11,6 +11,9 @@ const NOT_SHARED = new Set([
   './app-manifest',
   // The store media rules the host checks when it packs, serves or authors an app's icon.
   './manifest-media',
+  // Reading and signing a released marketplace: the store's and the authoring tools', not a screen's.
+  './marketplace',
+  './marketplace-signature',
   './ui/testing',
   './ui-artifact',
 ])
