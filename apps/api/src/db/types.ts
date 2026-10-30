@@ -471,7 +471,6 @@ export interface ToolUsageTable {
   updated_at: ColumnType<string, string | undefined, string | undefined>
 }
 
-/** A catalog a person added to the mini app store, by its URL (`features/mini-apps/catalogs.ts`). */
 /** A mini app marketplace the person added; its name is unique on this computer. */
 export interface MiniAppMarketplacesTable {
   url: string

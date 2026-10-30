@@ -179,7 +179,7 @@ export function createOpsTimersPhase({
       }
     }
 
-    // Mini app catalog updates and recommended installs.
+    // Mini app marketplace updates and recommended installs.
     const miniAppTimers = armMiniAppTimers({
       miniAppService,
       userId: env.LOCALIX_DEFAULT_USER_ID,

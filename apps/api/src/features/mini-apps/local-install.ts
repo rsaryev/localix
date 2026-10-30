@@ -11,8 +11,8 @@ import { validateMiniApp } from './validate'
 /**
  * Installing a mini app the person built (`mini-app install`, from the authoring plugin).
  * Localix does not build mini apps; it takes a built PACKAGE — the folder `mini-app build` writes —
- * judges it the way discovery will, and installs a copy beside the catalog's apps with the same
- * atomic swap. The copy is the person's own: no catalog updates or removes it, and installing it
+ * judges it the way discovery will, and installs a copy beside the marketplaces' apps with the same
+ * atomic swap. The copy is the person's own: no marketplace updates or removes it, and installing it
  * means wanting it to run, so it is switched on.
  *
  * The source stays where the person keeps it; only the record names it.

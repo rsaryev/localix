@@ -34,7 +34,7 @@ describe('a mini app archive', () => {
     expect(await fs.readdir(root())).not.toContain('escape.txt')
   })
 
-  test('the manifest must name the app and version the catalog promised', async () => {
+  test('the manifest must name the app and version the marketplace promised', async () => {
     const bytes = await packMiniAppFiles({ [MINI_APP_MANIFEST_FILE]: manifest({ name: 'other' }) })
     await expect(
       unpackMiniAppArchive(bytes, join(root(), 'a'), { name: 'atlas', version: '1.0.0' }),

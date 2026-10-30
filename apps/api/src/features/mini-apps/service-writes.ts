@@ -64,7 +64,7 @@ export function createMiniAppWrites({
     },
 
     /**
-     * Remove a mini app the person installed or made. One installed from a catalog stays removed:
+     * Remove a mini app the person installed or made. One installed from a marketplace stays removed:
      * a sync only refreshes what is installed. The folder is set aside, not deleted — its backend
      * may be the module this process still runs — and pruned on the next start. Its data folder
      * stays: a reinstall finds it.

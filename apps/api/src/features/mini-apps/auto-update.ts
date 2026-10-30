@@ -4,7 +4,7 @@ import type { AppDatabase } from '../../db/types'
 import { recordCoreChanges } from '../changes/core-entities'
 
 /**
- * Whether an installed mini app updates on its own. An app from a catalog signed with the key kept
+ * Whether an installed mini app updates on its own. An app from a marketplace signed with a key kept
  * for it does, unless the person switched it off (`docs/internals/plugins-and-mini-apps.md`,
  * "Releasing, installing, updating"); only the switched-off names are kept. Each switch is
  * announced as a `mini-app.updates` notice in its write (C1), and the Store reads again.

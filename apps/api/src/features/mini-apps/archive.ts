@@ -37,7 +37,7 @@ function safeRelative(path: string): string | null {
 /**
  * Unpack an archive into `dest` (created; it must not hold an app yet), refusing it whole when a
  * path escapes, it is larger than the limits, or its manifest is not the app and version the
- * catalog promised — so a half-checked archive never reaches the install root.
+ * marketplace promised — so a half-checked archive never reaches the install root.
  */
 export async function unpackMiniAppArchive(
   bytes: Uint8Array,

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { generateKeyPairSync } from 'node:crypto'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
@@ -47,6 +48,44 @@ describe('the mini app store’s background updates and installs', () => {
     await store.settled()
     expect(settled.at(-1)).toEqual([
       expect.objectContaining({ name: 'atlas', label: 'Atlas', kind: 'update', version: '1.1.0' }),
+    ])
+  })
+
+  test('an app a catalog of an earlier release installed is Localix’s own: its marketplace moves it to the new layout', async () => {
+    const key = generateKeyPairSync('ed25519').privateKey
+    const localix = hostedMiniAppMarketplace([{ name: 'atlas', version: '1.1.0' }], {
+      name: 'localix',
+      signWith: [key],
+    })
+    const other = hostedMiniAppMarketplace([{ name: 'atlas', version: '2.0.0' }], {
+      name: 'ada',
+      url: 'https://ada.test/mini-app-marketplace.json',
+    })
+    const { store } = storeOver(
+      [
+        marketplaceSource(localix, { vouches: true, pinned: [publicKeyOf(key)] }),
+        marketplaceSource(other),
+      ],
+      (async (input: string | URL | Request, init?: RequestInit) =>
+        String(input).startsWith('https://ada.test/')
+          ? other.fetchImpl(input, init)
+          : localix.fetchImpl(input, init)) as typeof fetch,
+    )
+    // What beta.20 left: the app in its layout then, beside its catalog's record.
+    const dir = join(root(), 'home', '.localix', 'mini-apps', 'atlas')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'mini-app.json'), JSON.stringify({ name: 'atlas', version: '1.0.0' }))
+    writeFileSync(
+      join(dir, '.localix-install.json'),
+      JSON.stringify({ kind: 'localix-catalog-install', catalog: 'https://old.test/catalog.json' }),
+    )
+
+    expect(await store.updateInstalled()).toEqual(['atlas'])
+    await store.settled()
+    const { entries } = await store.list()
+    expect(entries.map(({ id, installed, update }) => ({ id, installed, update }))).toEqual([
+      { id: 'atlas@ada', installed: null, update: false },
+      { id: 'atlas@localix', installed: { version: '1.1.0' }, update: false },
     ])
   })
 

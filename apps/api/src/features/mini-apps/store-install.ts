@@ -36,15 +36,29 @@ export async function readInstallRecord(dir: string): Promise<InstallRecord | nu
   }
 }
 
+/** What a catalog of a release before marketplaces wrote beside the app it installed. */
+const CATALOG_INSTALL_KIND = 'localix-catalog-install'
+
+async function installedByCatalog(dir: string): Promise<boolean> {
+  try {
+    const parsed = JSON.parse(await fs.readFile(join(dir, INSTALL_RECORD_FILE), 'utf8'))
+    return parsed?.kind === CATALOG_INSTALL_KIND
+  } catch {
+    return false
+  }
+}
+
 /**
  * Who put the folder at `dir`: a marketplace, an earlier Localix build (before X5, when the app
- * carried copies of its own mini apps: `managed-copy.ts`), the person, or nobody.
+ * carried copies of its own mini apps: `managed-copy.ts`, or a catalog of a release before
+ * marketplaces, whose record names no marketplace), the person, or nobody. What an earlier build
+ * put there is Localix's own: the marketplace Localix vouches for takes it over (`holdsOffer`).
  */
 export async function installedBy(
   dir: string,
 ): Promise<'marketplace' | 'staged' | 'person' | null> {
   if (await readInstallRecord(dir)) return 'marketplace'
-  if (await isManagedCopy(dir)) return 'staged'
+  if ((await isManagedCopy(dir)) || (await installedByCatalog(dir))) return 'staged'
   return (await fs.stat(dir).catch(() => null))?.isDirectory() ? 'person' : null
 }
 

@@ -16,7 +16,7 @@ import { retainPreviousHashedFiles } from './ui-retained-files'
 /**
  * Marks a copy an earlier Localix build installed, from before X5, when the app carried its own
  * mini apps. Nothing writes it any more; it is still read so such a copy is recognized as a
- * catalog's to update, not mistaken for a folder of the person's own.
+ * marketplace's to update, not mistaken for a folder of the person's own.
  */
 export const MARKER_FILE = '.localix-managed.json'
 export const MARKER_KIND = 'localix-bundled-mini-app'
@@ -42,7 +42,7 @@ export async function isManagedCopy(dir: string): Promise<boolean> {
  * whole API the moment a file it imported is unlinked (measured: rename-aside leaves it alone;
  * `rm` of the renamed tree reloads). Retired trees are swept by {@link pruneRetiredManagedCopies}
  * on the first discovery of the next process, before anything is imported. `marker` is written
- * beside the copy: the record of where it came from (a catalog's archive, a local folder).
+ * beside the copy: the record of where it came from (a marketplace's archive, a local folder).
  */
 export async function installCopy(
   sourceDir: string,

@@ -6,7 +6,7 @@ import type { DomainServicesPhase } from './domain-services'
 /**
  * The mini apps feature's start-up and background work, armed with the other ops timers:
  *
- * - catalog updates of the installed apps, a minute after start and then every six hours
+ * - marketplace updates of the installed apps, a minute after start and then every six hours
  *   (`features/mini-apps/store.ts`);
  * - the idle task that installs the recommended apps once.
  */
@@ -31,7 +31,7 @@ export function armMiniAppTimers(deps: {
   setTimeout(() => void updateMiniApps(), 60_000).unref?.()
   setInterval(() => void updateMiniApps(), 6 * 60 * 60 * 1000).unref?.()
 
-  // The apps the Localix catalog recommends, installed once on a new installation
+  // The apps the Localix marketplace recommends, installed once on a new installation
   // (`features/mini-apps/recommended.ts`). Offline or failed, it tries again: after five
   // minutes, then twice as long each time, at most every six hours.
   const recommendedRetry = { baseMs: 5 * 60_000, maxMs: 6 * 60 * 60 * 1000 }
