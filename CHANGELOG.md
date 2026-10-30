@@ -19,9 +19,11 @@ way the rest of Localix asks.
   yours, publish it and open a pull request to the
   [Localix Community](https://github.com/rsaryev/localix-community) repository.
 - **Signed mini app catalogs**: a mini app's page in the Store says beside its publisher whether its
-  catalog is **Signed**, **Not signed**, or its **Signature changed**, and the **⋯** menu beside
-  **Open** has **Update automatically**, which you can untick for that app. Publishing a mini app
-  with the authoring plugin now signs its catalog with your own key.
+  catalog is **Signed**, **Not signed**, or its **Signature changed**. Signed apps, the Localix ones
+  included, still update within six hours, and the **⋯** menu beside **Open** has **Update
+  automatically** to turn that off for one app; an unsigned app updates when you choose **Update**,
+  and a catalog whose signature changed installs nothing until you remove it and add it again.
+  Publishing a mini app with the authoring plugin now signs its catalog with your own key.
 - **An app for a file**: opening a CSV, a Word document, an e-book or a SQLite database that no
   installed app opens now shows one line above the file, **Documents opens this file**, with
   **Install** or **Keep in editor**. It comes from what each mini app declares it opens, and an open
@@ -34,19 +36,14 @@ way the rest of Localix asks.
 
 - **One catalog format, in the shape of Claude Code's marketplaces**: a mini app catalog names its
   owner, Localix's picks and each app's source: built beside it, or another catalog it links to.
-  Catalogs in the earlier format still read. An app now updates only from the catalog it was
-  installed from.
-- **Only signed mini apps update on their own**: apps from a signed catalog, the Localix one
-  included, still update within six hours; an unsigned app updates when you choose **Update**. A
-  catalog whose signature changed installs nothing until you remove it and add it again.
-- **A calmer install question**: before a package that runs programs on this computer or comes from
-  a community marketplace is installed, the Store asks in the app's usual dialog: where it comes
-  from, in a sentence what it runs, the hosts it reaches and what it adds, and whether it is for you
-  or only for the open project.
-- **Get and Open look like the app's other buttons**: where to get a package (such as **Install as
-  app**) and its options are in a small menu beside the button.
-- **What's inside, by kind**: a package's page groups its parts (**Skills · 6**, **Hook**) in the
-  order you use them, and each row says what it does: a skill's description, or when a hook runs.
+  Catalogs in the earlier format still read. An app updates only from the catalog it was installed
+  from, and is never offered another catalog's app of the same name, or one you made, as an update.
+- **A calmer install question and a clearer package page**: before a package that runs programs on
+  this computer or comes from a community marketplace is installed, the Store asks in the app's
+  usual dialog what it runs, the hosts it reaches and what it adds, and whether it is for you or
+  only for the open project. **Get** and **Open** look like the app's other buttons, with where to
+  get a package in a small menu beside them, and the page groups a package's parts by kind (**Skills
+  · 6**, **Hook**), each saying what it does.
 
 ### Fixed
 
@@ -56,26 +53,18 @@ way the rest of Localix asks.
   no longer wait for the page to be opened again.
 - **A package you turned off says so**: its page shows **Enable** instead of **Installed**, and the
   **⋯** menu beside it has **Disable**, which turns it off without removing it.
-- **A mini app's decision model works from the chat**: a mini app that lets a decision model pick
-  for it (a habit's category, a card's column) now gets an answer when the agent uses its tools, not
-  only from its own screen; before, it always fell back to its default.
-- **A mini app keeps what its update adds**: after a mini app updated in place, a field its new
-  version stores (a habit's category) is no longer dropped until Localix restarts.
-- **A mini app screen that moved into each chat opens there**: when an update makes a mini app's
-  screen belong to each chat, its old app-wide tab closes and the rail opens the screen in the open
-  chat; before, the old tab stayed and the screen worked without the chat.
+- **Mini apps from the chat**: a mini app that lets a decision model pick for it (a habit's
+  category) now gets an answer when the agent uses its tools, not only from its own screen, and its
+  tools are set up once rather than with every message.
+- **Mini apps after an update**: a field the new version stores (a habit's category) is no longer
+  dropped until Localix restarts, and a screen that moved into each chat opens in the open chat
+  instead of the old app-wide tab. A screen that fails to load keeps its tabs while it is tried
+  again, and the Event Center says so if it keeps failing.
 - **A mini app you made links to its repository**: its Store page shows a **Website** from the
   `homepage` or `repository` in its `mini-app.json`, and publishing it with the authoring plugin now
   records the repository there.
-- **No update offered for an app that is not the catalog's**: a mini app you made, or one another
-  catalog installed, no longer shows an **Update** to a catalog's app of the same name, older or
-  not.
 - **A plugin you removed installs again**: **Get** on a plugin removed from the Store no longer
   fails with "A plugin already exists at this destination".
-- **A mini app whose screen fails to load says so**: its tabs stay open while the screen is tried
-  again, and if it keeps failing the Event Center says so under that mini app.
-- **A mini app's tools are set up once**: a mini app no longer sets itself up again with every
-  message, so one that watches files no longer starts another watcher each time.
 - **The disk image from a release** shows the same styled install window as one built locally.
 
 ## v0.1.0-beta.19 — 2026-10-29
