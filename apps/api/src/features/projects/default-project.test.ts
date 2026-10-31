@@ -5,7 +5,12 @@ import { join } from 'node:path'
 
 import { createDatabase, destroyDatabase, migrateToLatest } from '../../db'
 import { createProjectsRepository } from './repository'
-import { DEFAULT_PROJECT_NAME, defaultProjectDir, resolveDefaultProject } from './default-project'
+import {
+  DEFAULT_PROJECT_NAME,
+  defaultProjectDir,
+  normalizeProjectDir,
+  resolveDefaultProject,
+} from './default-project'
 
 /**
  * The default project exists so "no project" stops meaning the `global` capability scope.
@@ -137,5 +142,13 @@ describe('project soft delete', () => {
     expect(again.id).toBe(first.id)
     expect(again.deletedAt).toBeNull()
     expect((await repo.listAllProjects('u-default')).length).toBe(1)
+  })
+})
+
+describe('normalizeProjectDir', () => {
+  test('one spelling per folder: dots and extra separators collapse, the root stays', () => {
+    expect(normalizeProjectDir(' /a/./b/../c//d/ ')).toBe('/a/c/d')
+    expect(normalizeProjectDir('/a/b')).toBe(normalizeProjectDir('/a/b/'))
+    expect(normalizeProjectDir('/')).toBe('/')
   })
 })

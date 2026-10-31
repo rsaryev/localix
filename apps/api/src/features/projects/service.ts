@@ -17,8 +17,12 @@ import { createProjectsRepository, type ProjectRecord } from './repository'
 import { openDirectory, pickDirectory, pickFiles } from './native-dialogs'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import { toDto, applyProjectSettingsPatch } from './project-record'
-import { assertProjectDeletable, resolveDefaultProject } from './default-project'
-import { assertAbsolutePath, inspectPath, normalizeDir } from './inspect-path'
+import {
+  assertProjectDeletable,
+  normalizeProjectDir,
+  resolveDefaultProject,
+} from './default-project'
+import { assertAbsolutePath, inspectPath } from './inspect-path'
 
 export interface ProjectsServiceDeps {
   db: Kysely<AppDatabase>
@@ -132,8 +136,9 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
       inputPath: string,
     ): Promise<{ project: Project; created: boolean; filePath: string | null }> {
       // A project's workingDir is the scope every tool resolves against, so a RELATIVE one is
-      // incoherent for every caller — `localix .` included — not merely unsafe. `normalizeDir`
-      // uses `path.normalize`, which collapses `..` without making the result absolute, so
+      // incoherent for every caller — `localix .` included — not merely unsafe.
+      // `normalizeProjectDir` uses `path.normalize`, which collapses `..` without making the
+      // result absolute, so
       // without this a `localix://open?path=../../etc` deep link minted a project rooted at a
       // path that means something different in every process that reads it. The grammar in
       // `deepLink.ts` rejects it too; this is the layer that has to hold, because the same
@@ -142,12 +147,12 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
       // A FILE input resolves the project from its parent dir and is returned as
       // filePath so the UI opens a lightweight editor tab; a DIRECTORY (or a path
       // that doesn't exist / can't be stat'd) resolves the project directly.
-      const normalizedInput = normalizeDir(inputPath)
+      const normalizedInput = normalizeProjectDir(inputPath)
       let workingDir = normalizedInput
       let filePath: string | null = null
       try {
         if ((await stat(normalizedInput)).isFile()) {
-          workingDir = normalizeDir(path.dirname(normalizedInput))
+          workingDir = normalizeProjectDir(path.dirname(normalizedInput))
           filePath = normalizedInput
         }
       } catch {
@@ -167,7 +172,7 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
         // filed under its scope, so a fresh row would strand both behind a project the user can
         // no longer see. `created` stays false — the user is coming back to something.
         const rows = await repo.listAllProjects(userId)
-        const existing = rows.find((r) => normalizeDir(r.workingDir) === workingDir)
+        const existing = rows.find((r) => normalizeProjectDir(r.workingDir) === workingDir)
         if (existing) {
           if (existing.deletedAt) await repo.restoreProject(userId, existing.id)
           return { project: toDto({ ...existing, deletedAt: null }), created: false }

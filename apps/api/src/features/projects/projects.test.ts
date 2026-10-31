@@ -192,7 +192,7 @@ describe('projects feature', () => {
 
   // This endpoint serves the trusted CLI (`localix .`) AND the untrusted `localix://open`
   // URL handler, and cannot tell them apart — so the invariant has to hold here. A project's
-  // workingDir is the scope every tool resolves against; `normalizeDir` collapses `..` via
+  // workingDir is the scope every tool resolves against; `normalizeProjectDir` collapses `..` via
   // `path.normalize` without making the result absolute, so a relative input used to mint a
   // project rooted at a path that means a different directory in every process reading it.
   test('resolveProjectByPath refuses a path that is not absolute', async () => {
