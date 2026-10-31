@@ -28,13 +28,13 @@ afterEach(() => {
 })
 
 /** An installer that answers `outcome` when released, recording each request. */
-function installerStub(outcome: LspInstallOutcome) {
+function installerStub(outcome: LspInstallOutcome, dir = installedDir) {
   let release!: () => void
   let gate = new Promise<void>((resolve) => (release = resolve))
   let done = false
   const requests: string[] = []
   const installer: LspInstaller = {
-    installedDir: () => (done && outcome.ok ? installedDir : undefined),
+    installedDir: () => (done && outcome.ok ? dir : undefined),
     async install(id, onProgress) {
       requests.push(id)
       onProgress?.(0.5)
@@ -194,6 +194,77 @@ test('a status listener that throws while an install settles is contained, and t
     expect(statusOf(manager.getServerStates(root))[0]?.status).toBe('unavailable')
   } finally {
     process.off('unhandledRejection', onEscape)
+    manager.dispose()
+  }
+})
+
+const rustRoot = '/fixture-rs'
+const rustFile = `${rustRoot}/src/main.rs`
+// rustup puts this proxy on PATH even when no toolchain has the rust-analyzer component.
+const rustupShim = '/home/.cargo/bin/rust-analyzer'
+
+test('opening a .rs file whose PATH rust-analyzer cannot run installs the managed one and starts it', async () => {
+  spies.push(
+    spyOn(binaries, 'which').mockImplementation((cmd) =>
+      cmd === 'rust-analyzer' ? rustupShim : undefined,
+    ),
+  )
+  // It exits at once with "Unknown binary 'rust-analyzer' in official toolchain".
+  spies.push(spyOn(binaries, 'answersVersion').mockImplementation(async () => false))
+  const dir = '/managed/rust-analyzer/2026-10-19'
+  const stub = installerStub({ ok: true, dir }, dir)
+  const { client } = clientStub()
+  const manager = createLspManager({
+    idleTimeoutMs: 0,
+    installer: stub.installer,
+    createClient: async (input) => {
+      input.onReady?.()
+      return client
+    },
+  })
+  try {
+    await manager.openDocument(rustRoot, rustFile, 'fn main() {}')
+    expect(stub.requests).toEqual(['rust-analyzer'])
+    stub.release()
+    await settle()
+    expect(spawned).toEqual([`${dir}/rust-analyzer`])
+    expect(statusOf(manager.getServerStates(rustRoot))).toEqual([
+      { serverId: 'rust', status: 'ready' },
+    ])
+  } finally {
+    manager.dispose()
+  }
+})
+
+test('a rust-analyzer on PATH that runs is the one started, with nothing installed', async () => {
+  const probed: [string, string][] = []
+  spies.push(
+    spyOn(binaries, 'which').mockImplementation((cmd) =>
+      cmd === 'rust-analyzer' ? rustupShim : undefined,
+    ),
+    spyOn(binaries, 'answersVersion').mockImplementation(async (bin, cwd) => {
+      probed.push([bin, cwd])
+      return true
+    }),
+  )
+  const stub = installerStub({ ok: true, dir: '/unused' })
+  const { client } = clientStub()
+  const manager = createLspManager({
+    idleTimeoutMs: 0,
+    installer: stub.installer,
+    createClient: async (input) => {
+      input.onReady?.()
+      return client
+    },
+  })
+  try {
+    await manager.openDocument(rustRoot, rustFile, 'fn main() {}')
+    await settle()
+    // Asked from the crate's root, where a rust-toolchain.toml picks the toolchain.
+    expect(probed).toEqual([[rustupShim, rustRoot]])
+    expect(spawned).toEqual([rustupShim])
+    expect(stub.requests).toEqual([])
+  } finally {
     manager.dispose()
   }
 })

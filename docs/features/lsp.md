@@ -121,19 +121,19 @@ does not install or select a language server.
 provides the executable, Localix installs it the first time a matching file opens, at the version
 that Localix release names.
 
-| Definition | Matching files                                                      | Executable source                                                      |
-| ---------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Deno       | TypeScript and JavaScript inside a `deno.json` or `deno.jsonc` root | `deno` on `PATH`                                                       |
-| TypeScript | TypeScript and JavaScript outside a Deno root                       | Installed `vtsls`; project TypeScript is preferred                     |
-| Vue        | `.vue`                                                              | Project `vue-language-server`                                          |
-| Python     | `.py`                                                               | `pylsp`, then `pyright-langserver`, on `PATH`; else installed Pyright  |
-| Go         | `.go`                                                               | `gopls` on `PATH`; else `gopls` built with your Go toolchain           |
-| Rust       | `.rs`                                                               | `rust-analyzer` on `PATH`; else the installed release                  |
-| HTML       | `.html`, `.htm`                                                     | Installed `vscode-html-language-server` (vscode-langservers-extracted) |
-| JSON       | `.json`, `.jsonc`                                                   | Installed `vscode-json-language-server` (same package)                 |
-| CSS        | `.css`, `.scss`, `.less`                                            | Installed `vscode-css-language-server` (same package)                  |
-| Dockerfile | Dockerfile names and `.dockerfile`                                  | Installed `docker-langserver`                                          |
-| YAML       | `.yaml`, `.yml`                                                     | Installed `yaml-language-server`                                       |
+| Definition | Matching files                                                      | Executable source                                                             |
+| ---------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Deno       | TypeScript and JavaScript inside a `deno.json` or `deno.jsonc` root | `deno` on `PATH`                                                              |
+| TypeScript | TypeScript and JavaScript outside a Deno root                       | Installed `vtsls`; project TypeScript is preferred                            |
+| Vue        | `.vue`                                                              | Project `vue-language-server`                                                 |
+| Python     | `.py`                                                               | `pylsp`, then `pyright-langserver`, on `PATH`; else installed Pyright         |
+| Go         | `.go`                                                               | `gopls` on `PATH`; else `gopls` built with your Go toolchain                  |
+| Rust       | `.rs`                                                               | `rust-analyzer` on `PATH` if it runs in the crate; else the installed release |
+| HTML       | `.html`, `.htm`                                                     | Installed `vscode-html-language-server` (vscode-langservers-extracted)        |
+| JSON       | `.json`, `.jsonc`                                                   | Installed `vscode-json-language-server` (same package)                        |
+| CSS        | `.css`, `.scss`, `.less`                                            | Installed `vscode-css-language-server` (same package)                         |
+| Dockerfile | Dockerfile names and `.dockerfile`                                  | Installed `docker-langserver`                                                 |
+| YAML       | `.yaml`, `.yml`                                                     | Installed `yaml-language-server`                                              |
 
 ### Installing on first use
 

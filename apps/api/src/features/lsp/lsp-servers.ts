@@ -2,6 +2,7 @@ import path from 'node:path'
 import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 
 import {
+  answersVersion,
   fileExists,
   findUpward,
   managedNpmBin,
@@ -196,9 +197,15 @@ export const RustServer: LspServerDef = {
   },
   install: 'rust-analyzer',
   async spawn(rootDir, _projectRoot, installed) {
+    // A rust-analyzer on PATH that cannot run here (rustup's proxy without the component) is
+    // passed over for the managed one, or reported missing so that one is installed.
+    const onPath = which('rust-analyzer')
     const bin =
-      which('rust-analyzer') ??
-      (installed ? installedExecutable('github', 'rust-analyzer', installed) : undefined)
+      onPath && (await answersVersion(onPath, rootDir))
+        ? onPath
+        : installed
+          ? installedExecutable('github', 'rust-analyzer', installed)
+          : undefined
     if (!bin) return undefined
     const proc = spawnServer(bin, [], rootDir)
     if (!proc) return undefined

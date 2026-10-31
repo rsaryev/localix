@@ -37,6 +37,8 @@ export interface CommandResult {
 export interface RunCommandOptions {
   /** Test seam: schedule `fn` after `ms`; returns the cancel. */
   setTimer?: (fn: () => void, ms: number) => () => void
+  /** How long the command may run before its process tree is killed; an install's by default. */
+  timeoutMs?: number
 }
 
 const realTimer = (fn: () => void, ms: number) => {
@@ -46,7 +48,7 @@ const realTimer = (fn: () => void, ms: number) => {
 
 export function runCommand(
   call: InstallCommand,
-  { setTimer = realTimer }: RunCommandOptions = {},
+  { setTimer = realTimer, timeoutMs = INSTALL_TIMEOUT_MS }: RunCommandOptions = {},
 ): Promise<CommandResult> {
   return new Promise((resolve) => {
     let output = ''
@@ -69,7 +71,7 @@ export function runCommand(
       killProcessTree(proc.pid, undefined, stillRunning(proc))
       // A descendant that left the group may hold the pipes open: the leader's exit is enough.
       proc.once('exit', () => resolve({ code: -1, output, timedOut: true }))
-    }, INSTALL_TIMEOUT_MS)
+    }, timeoutMs)
     proc.once('error', (err) => {
       cancel()
       resolve({ code: -1, output: err.message })

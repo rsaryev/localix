@@ -4,6 +4,13 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+### Fixed
+
+- **Rust code intelligence**: opening a `.rs` file starts rust-analyzer again when rustup is
+  installed without its rust-analyzer component. Localix used to start rustup's stand-in, which
+  exits at once, and showed no hover, diagnostics or go-to-definition; it now downloads and runs its
+  own rust-analyzer instead.
+
 ## v0.1.0-beta.22 — 2026-10-30
 
 A fix for the Store after the move to mini app marketplaces.

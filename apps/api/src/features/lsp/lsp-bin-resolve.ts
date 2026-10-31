@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import { childEnv } from '../../lib/login-shell-env'
 import { isPathWithin } from '../../lib/path-containment'
 import { whichBinary } from '../agent-core/tools/environments/shell'
+import { runCommand } from './lsp-install-command'
 import { resolveJsEntry } from './lsp-js-entry'
 
 /**
@@ -118,6 +119,25 @@ export function createMemoizedLookup(
 }
 
 const whichCache = createMemoizedLookup((cmd) => whichBinary(cmd))
+
+/**
+ * How long a binary on PATH gets to answer `--version`. A rustup proxy may start installing the
+ * toolchain a `rust-toolchain.toml` names, which takes minutes: that binary does not serve now.
+ */
+const VERSION_PROBE_TIMEOUT_MS = 10_000
+
+/**
+ * Whether `bin --version` succeeds run from `cwd` with the environment a server gets. A rustup
+ * proxy (`~/.cargo/bin/rust-analyzer`) is on PATH even when the toolchain picked for `cwd` lacks
+ * the component, and then exits at once with "Unknown binary": found, but no server.
+ */
+export async function answersVersion(bin: string, cwd: string): Promise<boolean> {
+  const { code } = await runCommand(
+    { command: bin, args: ['--version'], cwd },
+    { timeoutMs: VERSION_PROBE_TIMEOUT_MS },
+  )
+  return code === 0
+}
 
 export function fileExists(p: string): boolean {
   try {
