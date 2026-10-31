@@ -4,7 +4,9 @@
 use objc2::rc::Retained;
 use objc2_app_kit::NSView;
 use objc2_foundation::NSProcessInfo;
-use objc2_quartz_core::CALayer;
+
+const SEARCH_DEPTH: usize = 8;
+const BACKGROUND_VIEW: &str = "NSTitlebarBackgroundView";
 
 fn find(view: &NSView, name: &str, depth: usize) -> Option<Retained<NSView>> {
     if depth == 0 {
@@ -25,7 +27,7 @@ fn find(view: &NSView, name: &str, depth: usize) -> Option<Retained<NSView>> {
 }
 
 fn container(frame: &NSView) -> Option<Retained<NSView>> {
-    find(frame, "NSTitlebarContainerView", 8)
+    find(frame, "NSTitlebarContainerView", SEARCH_DEPTH)
 }
 
 pub(crate) fn synchronize(frame: &NSView) -> bool {
@@ -40,27 +42,23 @@ pub(crate) fn synchronize(frame: &NSView) -> bool {
     let Some(container) = container(frame) else {
         return false;
     };
-    let Some(background) = find(&container, "NSTitlebarBackgroundView", 8) else {
+    let Some(background) = find(&container, BACKGROUND_VIEW, SEARCH_DEPTH) else {
         return false;
     };
     // This view holds the system fills, not the titlebar's controls or native tabs.
     background.setHidden(true);
-    if let Some(titlebar) = find(&container, "NSTitlebarView", 8) {
+    if let Some(titlebar) = find(&container, "NSTitlebarView", SEARCH_DEPTH) {
         titlebar.setWantsLayer(true);
         if let Some(layer) = titlebar.layer() {
-            clear_background(&layer);
+            layer.setBackgroundColor(None);
         }
     }
     true
 }
 
-fn clear_background(layer: &CALayer) {
-    layer.setBackgroundColor(None);
-}
-
 #[cfg(debug_assertions)]
 pub(crate) fn status(frame: &NSView) -> (bool, bool) {
-    let background = container(frame).and_then(|view| find(&view, "NSTitlebarBackgroundView", 8));
+    let background = container(frame).and_then(|view| find(&view, BACKGROUND_VIEW, SEARCH_DEPTH));
     (
         background.is_some(),
         background.is_some_and(|view| view.isHidden()),
