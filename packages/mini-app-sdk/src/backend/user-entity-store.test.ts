@@ -171,6 +171,23 @@ describe('createUserEntityStore — the read discipline (property 2 + 3)', () =>
     expect(await s.list('u1')).toEqual([{ id: 'a', name: 'v2' }])
   })
 
+  test('a read keeps a user cached: the least recently READ user is the one evicted', async () => {
+    const dir = await freshDir()
+    await mkdir(dir, { recursive: true })
+    for (const user of ['u1', 'u2', 'u3'])
+      await writeFile(path.join(dir, `${user}.json`), JSON.stringify([{ id: user, name: 'v1' }]))
+    const s = createUserEntityStore<Conn>({ dir, fileKey: safeKey, maxCachedUsers: 2 })
+
+    await s.list('u1')
+    await s.list('u2')
+    await s.list('u1') // u1 is now the most recently used
+    await s.list('u3') // evicts u2, not u1
+    for (const user of ['u1', 'u2'])
+      await writeFile(path.join(dir, `${user}.json`), JSON.stringify([{ id: user, name: 'v2' }]))
+    expect(await s.list('u1')).toEqual([{ id: 'u1', name: 'v1' }])
+    expect(await s.list('u2')).toEqual([{ id: 'u2', name: 'v2' }])
+  })
+
   test('rejects an invalid cache ceiling at construction', async () => {
     const dir = await freshDir()
     expect(() => createUserEntityStore<Conn>({ dir, fileKey: safeKey, maxCachedUsers: 0 })).toThrow(

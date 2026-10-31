@@ -38,6 +38,7 @@ import { chmod, readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 
 import { atomicWriteFile } from './file-io'
+import { createBoundedCache } from '../bounded-cache'
 
 /**
  * A PATCH to a stored entity: every field EXCEPT `id`, all optional, and `id` forbidden.
@@ -128,32 +129,15 @@ export function createUserEntityStore<T extends { id: string }>(
     throw new RangeError('maxCachedUsers must be a positive safe integer')
   }
 
-  const cache = new Map<string, T[]>()
+  // Reads are activity too: a hot user's snapshot is not evicted by a stream of one-off users.
+  const cache = createBoundedCache<string, T[]>({ maxEntries: maxCachedUsers })
   let cacheEpoch = 0
   const writeTail = new Map<string, Promise<unknown>>()
   const cloneEntity = (entity: T): T => structuredClone(entity)
   const cloneList = (list: T[]): T[] => list.map(cloneEntity)
-  const cacheGet = (userId: string): T[] | undefined => {
-    const value = cache.get(userId)
-    if (value === undefined) return undefined
-    // Map insertion order is our LRU queue. Reads are activity too: a hot user's
-    // snapshot should not be evicted by a stream of one-off users.
-    cache.delete(userId)
-    cache.set(userId, value)
-    return value
-  }
-  const cacheSet = (userId: string, value: T[]): void => {
-    cache.delete(userId)
-    cache.set(userId, value)
-    while (cache.size > maxCachedUsers) {
-      const oldest = cache.keys().next().value
-      if (oldest === undefined) break
-      cache.delete(oldest)
-    }
-  }
 
   async function load(userId: string): Promise<T[]> {
-    const cached = cacheGet(userId)
+    const cached = cache.get(userId)
     if (cached !== undefined) return cached
     const epoch = cacheEpoch
     let list: T[]
@@ -171,7 +155,7 @@ export function createUserEntityStore<T extends { id: string }>(
       else throw err
     }
     if (epoch !== cacheEpoch) return load(userId)
-    cacheSet(userId, list)
+    cache.set(userId, list)
     return list
   }
 
@@ -201,7 +185,7 @@ export function createUserEntityStore<T extends { id: string }>(
     // `rename` carries the TEMP file's mode onto the target, so passing it here also repairs a
     // snapshot that an earlier version left world-readable — no separate chmod window.
     await atomicWriteFile(target, JSON.stringify(snapshot, null, 2), { mode: opts.mode ?? 0o600 })
-    cacheSet(userId, snapshot)
+    cache.set(userId, snapshot)
   }
 
   /** Serialize mutations per user so two concurrent upserts can't clobber each other's edit. */
