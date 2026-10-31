@@ -120,7 +120,7 @@ export function FileReadonlyView({ path, content, truncated, line }: FileReadonl
             <CodeBlock code={codeContent} language={languageFromPath(path)} bare wrap={wrapLines} />
             {highlight && (
               <div
-                className="pointer-events-none absolute inset-x-0 border-l-2 border-foreground/45 bg-foreground/8 transition-opacity duration-(--dur-slow)"
+                className="pointer-events-none absolute inset-x-0 border-l-2 border-foreground/45 bg-foreground/8"
                 style={{ top: highlight.top, height: highlight.height }}
               />
             )}
