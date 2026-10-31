@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-
 import { stillRunning } from './process-tree'
 
 /**

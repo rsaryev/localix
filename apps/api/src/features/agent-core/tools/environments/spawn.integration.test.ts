@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { killProcessTree } from '../bash/process-tree'
-import { isAlive } from '../../../../lib/process-tree'
+import { isAlive, killProcessTree } from '../../../../lib/process-tree'
 import { spawnToResult } from './spawn'
 
 const waitUntilGone = async (pid: number): Promise<boolean> => {

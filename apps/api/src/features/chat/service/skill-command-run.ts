@@ -2,9 +2,9 @@ import { spawn } from 'node:child_process'
 import { errorMessage } from '../../../lib/errors'
 import { childEnv } from '../../../lib/login-shell-env'
 import { awaitChildGone, releaseChildPipes } from '../../../lib/child-exit'
-import { killProcessTree, stillRunning } from '../../agent-core/tools/bash/process-tree'
 import { resolveShellConfig } from '../../agent-core/tools/environments/shell'
 import { exitOneIsResult } from './skill-command-args'
+import { killProcessTree, stillRunning } from '../../../lib/process-tree'
 
 /**
  * Max time a skill preprocessing command may run: the Bash tool's default of 2 minutes, as Claude

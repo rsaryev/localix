@@ -28,7 +28,7 @@ import {
   type LspDiagnostic,
   type ServerCapabilities,
 } from './lsp-protocol'
-import { killProcessTree, stillRunning } from '../agent-core/tools/bash/process-tree'
+import { killProcessTree, stillRunning } from '../../lib/process-tree'
 
 // Re-export the LSP protocol types so the historical `./lsp-client` import surface stays
 // stable for every existing importer.

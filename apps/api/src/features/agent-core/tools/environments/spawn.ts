@@ -1,8 +1,8 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 
 import { awaitChildGone, releaseChildPipes } from '../../../../lib/child-exit'
-import { killProcessTree, stillRunning } from '../bash/process-tree'
 import { createStreamTextDecoder } from '../../../../lib/stream-text'
+import { killProcessTree, stillRunning } from '../../../../lib/process-tree'
 
 export interface SpawnResult {
   stdout: string

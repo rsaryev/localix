@@ -10,10 +10,10 @@ import { createDiagnosticsWait, SILENT_COOLDOWN_MS } from './lsp-diagnostics-wai
 import { matchingLspServers } from './lsp-server-match'
 import { buildInlineDiagnostics } from './diagnostics-report'
 import { notifyWatchedFiles } from './lsp-watched-files'
-import { killProcessTree, stillRunning } from '../agent-core/tools/bash/process-tree'
 import type { LspManager, LspServerState } from './lsp-manager-types'
 import type { LspHealthObserver } from '../notifications/conditions/lsp'
 import type { LspInstaller } from './lsp-installer'
+import { killProcessTree, stillRunning } from '../../lib/process-tree'
 
 // Manager interface + server-state types live in ./lsp-manager-types; re-exported
 // here so the historical `./lsp-manager` import surface stays unchanged.

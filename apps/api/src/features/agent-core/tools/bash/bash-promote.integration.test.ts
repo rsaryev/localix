@@ -1,8 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import { createBashTool } from './bash'
-import { killProcessTree } from './process-tree'
-import { isAlive } from '../../../../lib/process-tree'
+import { isAlive, killProcessTree } from '../../../../lib/process-tree'
 
 /**
  * A foreground command that outruns its timeout is PROMOTED to a background job,

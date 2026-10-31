@@ -5,7 +5,7 @@ import type { LspServerUnavailable } from './lsp-manager-types'
 import { INSTALL_RETRY_AFTER_MS, SERVER_DISPLAY_NAMES } from './lsp-startup-policy'
 import type { LspServerDef } from './lsp-servers'
 import type { LspHealthObserver } from '../notifications/conditions/lsp'
-import { killProcessTree, stillRunning } from '../agent-core/tools/bash/process-tree'
+import { killProcessTree, stillRunning } from '../../lib/process-tree'
 
 export { INSTALL_RETRY_AFTER_MS } from './lsp-startup-policy'
 

@@ -5,10 +5,10 @@ import { homedir } from 'node:os'
 import { resolveShellConfig } from '../environments/shell'
 import { awaitChildGone, releaseChildPipes } from '../../../../lib/child-exit'
 import { childEnvNonInteractive } from '../../../../lib/login-shell-env'
-import { killProcessTree, stillRunning } from './process-tree'
 import { trackSpawnedProcess } from '../../../../lib/orphan-guard'
 import type { SpawnTerminalJob, TerminalJobHandle } from '../terminal/terminal-job'
 import { createStreamTextDecoder } from '../../../../lib/stream-text'
+import { killProcessTree, stillRunning } from '../../../../lib/process-tree'
 
 export interface BackgroundInputPayload {
   text?: string
