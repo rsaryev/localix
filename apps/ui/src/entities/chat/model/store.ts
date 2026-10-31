@@ -139,7 +139,6 @@ export interface ChatStore extends OptimisticSendActions, StopGenerationActions 
    * failover so the notice appears above the streaming assistant reply).
    */
   _addSystemNotice: (sessionId: string, message: Message, anchor?: 'last' | 'lastUser') => void
-  /** Patch a single connection in place (avoids a full workspace refetch). */
 }
 
 export const useChatStore = create<ChatStore>()((set, get, api) => {
