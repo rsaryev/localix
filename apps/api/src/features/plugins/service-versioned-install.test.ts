@@ -127,4 +127,17 @@ describe('versioned marketplace installs', () => {
     expect(existsSync(join(dir, '.orphaned_at'))).toBe(false)
     expect((await readInstallRecords(home))['tool@shop']?.version).toBe('2.0.0')
   })
+
+  // The Store's Update all updates through `update`: the offer it answered must not stay behind,
+  // or the strip above the composer keeps offering an update that is already installed.
+  test('an update clears the offer it answered', async () => {
+    setVersion('2.1.0')
+    // A refresh copies the marketplace again and computes what it offers.
+    await service.refreshMarketplaces('u1')
+    const offered = () => service.updates.snapshot().available.map((entry) => entry.id)
+    expect(offered()).toContain('tool@shop')
+    await service.update('u1', { name: 'tool' })
+    expect((await readInstallRecords(home))['tool@shop']?.version).toBe('2.1.0')
+    expect(offered()).not.toContain('tool@shop')
+  })
 })

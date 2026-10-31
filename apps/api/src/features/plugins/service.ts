@@ -535,7 +535,13 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       return record
     },
 
-    update: (userId, input) => updatePlugin(userId, input, { refreshMarketplace: true }),
+    // What is offered is computed by the update check, so an update made here (the Store's Update
+    // all, `/plugin update`) checks again: the offer it answered must not stay behind.
+    async update(userId, input) {
+      const updated = await updatePlugin(userId, input, { refreshMarketplace: true })
+      await service.updates.recheck(userId).catch(() => {})
+      return updated
+    },
 
     remove: (userId, input) =>
       removePlugin(
