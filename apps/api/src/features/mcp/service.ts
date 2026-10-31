@@ -8,7 +8,7 @@ import type { AppDatabase } from '../../db'
 import { errorMessage } from '../../lib/errors'
 import { localixWorkspaceDir } from '../../lib/env'
 import { createMcpRepository, type McpRepository, type McpServerRecord } from './repository'
-import { probeMcpServer } from './client-manager'
+import { mcpClientManager } from './client-manager'
 import { oauthStatusFor, toApi } from './server-view'
 import { createAvailabilityWriter, readAvailability } from '../capabilities/availability'
 import { mcpOAuthStore } from './oauth/runtime'
@@ -187,7 +187,8 @@ export function createMcpService(deps: McpServiceDeps): McpService {
       if (!stored) throw new NotFoundError('mcp_not_found', 'MCP server not found')
       const [record = stored] = await hydrateMcpRecords(userId, [stored])
       const cwd = await cwdFor(userId, record.projectId)
-      return probeMcpServer(record, cwd)
+      // The shared manager: the settings "Test" button reuses the runtime's cached connection.
+      return mcpClientManager.probe(record, cwd)
     },
 
     async listForRuntime(userId, projectId) {

@@ -279,11 +279,3 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
 
 /** Shared process-lifetime manager used by the agent runner. */
 export const mcpClientManager = createMcpClientManager()
-
-/** Shared-cache connection probe used by the "Test" button in settings. */
-export async function probeMcpServer(
-  server: McpServerRecord,
-  cwd: string,
-): Promise<McpProbeResult> {
-  return mcpClientManager.probe(server, cwd)
-}
