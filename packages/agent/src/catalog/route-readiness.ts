@@ -103,10 +103,3 @@ export function routeReadiness(
     rebound: account.id !== route.providerConnectionId,
   }
 }
-
-/** Whether the route can run now: the gate a composer and a run share. */
-export const routeCanRun = (
-  route: StoredRoute,
-  connections: readonly RouteConnection[],
-  catalog: readonly Pick<CatalogModel, 'id' | 'providerId'>[],
-): boolean => routeReadiness(route, connections, catalog).status === 'ready'

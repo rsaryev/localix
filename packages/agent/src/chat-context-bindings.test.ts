@@ -4,7 +4,6 @@ import type { MessageContextBinding } from './chat'
 import {
   selectedSystemContextTokens,
   systemContextSelectionBinding,
-  latestContextBindingsByTarget,
   latestSystemContextBindings,
 } from './chat'
 
@@ -20,12 +19,19 @@ function binding(id: string, token: string): MessageContextBinding {
 
 test('latest context binding wins per semantic target and surviving order stays chronological', () => {
   expect(
-    latestContextBindingsByTarget([
-      binding('model-a', 'model'),
-      binding('run-failed', 'run'),
-      binding('model-b', 'model'),
-      binding('run-interrupted', 'run'),
-      binding('model-a-again', 'model'),
+    latestSystemContextBindings([
+      {
+        role: 'user',
+        bindings: [
+          binding('model-a', 'model'),
+          binding('run-failed', 'run'),
+          binding('model-b', 'model'),
+        ],
+      },
+      {
+        role: 'user',
+        bindings: [binding('run-interrupted', 'run'), binding('model-a-again', 'model')],
+      },
     ]).map((item) => item.id),
   ).toEqual(['run-interrupted', 'model-a-again'])
 })

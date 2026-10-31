@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { routeCanRun, routeReadiness, type RouteConnection } from './route-readiness'
+import { routeReadiness, type RouteConnection } from './route-readiness'
 
 const catalog = [
   { providerId: 'openrouter', id: 'deepseek/deepseek-v4.1-flash' },
@@ -146,14 +146,5 @@ describe('routeReadiness', () => {
         catalog,
       ),
     ).toEqual({ status: 'no-connection', providerId: null })
-  })
-
-  test('routeCanRun is exactly the ready status', () => {
-    const connections = [conn('or', 'openrouter')]
-    expect(
-      routeCanRun({ modelId: DEEPSEEK, providerConnectionId: null }, connections, catalog),
-    ).toBe(true)
-    expect(routeCanRun({ modelId: DEEPSEEK }, [], catalog)).toBe(false)
-    expect(routeCanRun({ modelId: '' }, connections, catalog)).toBe(false)
   })
 })

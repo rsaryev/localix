@@ -1,17 +1,5 @@
 import type { MessageBinding, MessageContextBinding } from './chat'
 
-/** Keep only the newest binding for each stable semantic target. */
-export function latestContextBindingsByTarget(
-  bindings: readonly MessageContextBinding[],
-): MessageContextBinding[] {
-  const latest = new Map<string, MessageContextBinding>()
-  for (const binding of bindings) {
-    latest.delete(binding.target.token)
-    latest.set(binding.target.token, binding)
-  }
-  return [...latest.values()]
-}
-
 /** Minimal message shape needed to reduce durable system bindings into current context. */
 export interface SystemContextBindingMessage {
   role: string

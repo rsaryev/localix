@@ -22,7 +22,6 @@ export type {
   ToolSchemaCompactionDiagnostic,
   ToolSchemaCompactionStage,
 } from './utils/model-tool-schema'
-export { sanitizeSurrogates } from './utils/sanitize-unicode'
 export { makeAbortError } from './utils/abort-error'
 export {
   PROVIDER_HTTP_ERROR_NAME,
