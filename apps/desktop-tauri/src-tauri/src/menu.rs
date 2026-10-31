@@ -43,17 +43,12 @@ pub(crate) struct MenuData {
 }
 
 /// Managed state wrapping the last {@link MenuData} the UI pushed.
-pub(crate) struct MenuState(
-    Mutex<MenuData>,
-    Mutex<std::collections::HashMap<String, MenuData>>,
-);
-impl Default for MenuState {
-    fn default() -> Self {
-        Self(
-            Mutex::new(MenuData::default()),
-            Mutex::new(std::collections::HashMap::new()),
-        )
-    }
+#[derive(Default)]
+pub(crate) struct MenuState {
+    /// The active window's data, which `rebuild_menus` reads.
+    active: Mutex<MenuData>,
+    /// Each workspace window's data, keyed by window label.
+    by_window: Mutex<std::collections::HashMap<String, MenuData>>,
 }
 
 /// Longest title in the app menu (Open Recent, Project items) before it is cut with an ellipsis.
@@ -638,7 +633,7 @@ pub(crate) fn set_recent_sessions(app: AppHandle, caller: tauri::Webview, items:
         return;
     }
     app.state::<MenuState>()
-        .1
+        .by_window
         .lock()
         .unwrap()
         .entry(caller.label().into())
@@ -668,7 +663,7 @@ pub(crate) fn set_projects(
     }
     {
         let state = app.state::<MenuState>();
-        let mut windows = state.1.lock().unwrap();
+        let mut windows = state.by_window.lock().unwrap();
         let data = windows.entry(caller.label().into()).or_default();
         data.projects = items;
         data.active_project = active;
@@ -683,18 +678,22 @@ pub(crate) fn set_projects(
 pub(crate) fn activate_workspace(app: &AppHandle, label: &str) {
     let state = app.state::<MenuState>();
     let data = state
-        .1
+        .by_window
         .lock()
         .unwrap()
         .get(label)
         .cloned()
         .unwrap_or_default();
-    *state.0.lock().unwrap() = data;
+    *state.active.lock().unwrap() = data;
     rebuild_menus(app);
 }
 
 pub(crate) fn remove_workspace(app: &AppHandle, label: &str) {
-    app.state::<MenuState>().1.lock().unwrap().remove(label);
+    app.state::<MenuState>()
+        .by_window
+        .lock()
+        .unwrap()
+        .remove(label);
 }
 
 /// Rebuild the native app menu (and the tray's recents) from the current
@@ -704,7 +703,7 @@ pub(crate) fn rebuild_menus(app: &AppHandle) {
     let app2 = app.clone();
     let _ = app.run_on_main_thread(move || {
         let state = app2.state::<MenuState>();
-        let data = state.0.lock().unwrap();
+        let data = state.active.lock().unwrap();
         if let Ok(menu) = build_app_menu(&app2, &data) {
             let _ = app2.set_menu(menu);
         }
