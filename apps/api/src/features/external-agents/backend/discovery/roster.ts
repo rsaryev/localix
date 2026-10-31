@@ -15,7 +15,7 @@
 
 import type { Bounded, RosterRow, RosterQuery, SessionSummary } from '../../shared/contracts'
 import { MAX_ROSTER_LIMIT, sessionHasParent, sessionUsedModel } from '../../shared/contracts'
-import type { LiveStore } from '../live/store'
+import { pendingNativeId, type LiveStore } from '../live/store'
 import { waitedKeys } from '../live/waiters'
 
 export const DEFAULT_ROSTER_LIMIT = 200
@@ -79,7 +79,7 @@ export function buildRoster(input: RosterInput): Bounded<RosterRow> {
     const base: RosterRow = existing ?? {
       key,
       provider: entry.provider,
-      nativeSessionId: entry.nativeSessionId ?? `pending-terminal-${entry.terminalId}`,
+      nativeSessionId: entry.nativeSessionId ?? pendingNativeId(entry.terminalId),
       title: delegationTitle(entry),
       updatedAt: entry.lastScreenAt,
       sourcePath: `terminal:${entry.terminalId}`,

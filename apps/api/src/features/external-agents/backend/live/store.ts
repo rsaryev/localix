@@ -60,11 +60,18 @@ export interface LiveEntry {
  * being produced.
  */
 export function pendingKeyFor(provider: string, terminalId: string): string {
-  return linkKeyOf({ provider, nativeSessionId: `pending-terminal-${terminalId}` })
+  return linkKeyOf({ provider, nativeSessionId: pendingNativeId(terminalId) })
+}
+
+/** The native session id stood in for until correlation finds the real one. Persisted in keys. */
+const PENDING_PREFIX = 'pending-terminal-'
+
+export function pendingNativeId(terminalId: string): string {
+  return `${PENDING_PREFIX}${terminalId}`
 }
 
 export function isPendingKey(key: string): boolean {
-  return key.includes('pending-terminal-')
+  return key.includes(PENDING_PREFIX)
 }
 
 type Listener = (entry: LiveEntry) => void
