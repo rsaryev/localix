@@ -296,20 +296,6 @@ describe('research readable-page loader — validation + guards', () => {
     expect(r.content).not.toContain('Copyright 2026')
   })
 
-  it('format:"html" returns the untouched raw HTML (no extraction)', async () => {
-    const fetchImpl = (async () =>
-      fakeResponse({
-        headers: { 'content-type': 'text/html' },
-        body: ARTICLE_PAGE,
-      })) as unknown as typeof fetch
-    const r = await fetchReadablePage(
-      { url: 'http://example.com/docs', format: 'html' },
-      { fetchImpl, resolveHost: async () => ['93.184.216.34'] },
-    )
-    expect(r.content).toContain('<article>')
-    expect(r.content).toContain('cookie-banner')
-  })
-
   it('follows redirects and re-checks safety on each hop', async () => {
     const hops: string[] = []
     const fetchImpl = (async (url: URL) => {

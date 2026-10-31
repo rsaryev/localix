@@ -24,9 +24,6 @@ import { extractReadable } from './readable-extract'
 
 export interface ReadablePageInput {
   url: string
-  /** Article rendering mode; research uses Markdown. */
-  format?: 'markdown' | 'text' | 'html'
-  /** Back-compat internal alias for `format: "html"`. */
 }
 
 export interface ReadablePageDetails {
@@ -98,11 +95,9 @@ export async function fetchReadablePage(
   // Our own timeout, combined with the agent's abort signal.
   const timeoutController = new AbortController()
   const timer = setTimeout(() => timeoutController.abort(), cfg.timeoutMs)
-  const signals = [deps.signal, timeoutController.signal].filter(Boolean) as AbortSignal[]
-  const signal =
-    signals.length > 1 && typeof AbortSignal.any === 'function'
-      ? AbortSignal.any(signals)
-      : signals[0]
+  const signal = deps.signal
+    ? AbortSignal.any([deps.signal, timeoutController.signal])
+    : timeoutController.signal
 
   try {
     // Follow redirects manually so EVERY hop passes the SSRF check — a public URL
@@ -148,21 +143,12 @@ export async function fetchReadablePage(
     if (rawBody.startsWith('%PDF-')) return err(pdfError)
 
     const isHtml = contentType.includes('html') || /^\s*<(!doctype|html)/i.test(rawBody)
-    // HTML defaults to the
-    // Readability→Markdown pipeline so the article body (not chrome) survives the
-    // maxChars cap; non-HTML (JSON/plain) is passed through untouched.
-    const format = input.format ?? 'markdown'
+    // HTML goes through the Readability→Markdown pipeline so the article body (not chrome)
+    // survives the maxChars cap; non-HTML (JSON/plain) is passed through untouched.
     let title: string | undefined
-    let rendered: string
-    if (!isHtml || format === 'html') {
-      rendered = rawBody
-      title = isHtml ? extractTitle(rawBody) : undefined
-    } else {
-      const extracted = await extractReadable(
-        rawBody,
-        current.href,
-        format === 'text' ? 'text' : 'markdown',
-      )
+    let rendered = rawBody
+    if (isHtml) {
+      const extracted = await extractReadable(rawBody, current.href, 'markdown')
       rendered = extracted.text
       title = extracted.title ?? extractTitle(rawBody)
     }

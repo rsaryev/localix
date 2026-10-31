@@ -218,7 +218,7 @@ async function readCandidate(
   signal?: AbortSignal,
 ): Promise<ReadEvidence> {
   const result = await fetchReadablePage(
-    { url: candidate.readUrl ?? candidate.url, format: 'markdown' },
+    { url: candidate.readUrl ?? candidate.url },
     {
       fetchImpl: deps.fetchImpl,
       resolveHost: deps.resolveHost,
@@ -517,8 +517,6 @@ export async function runResearch(
     sources,
   }
 }
-
-export { researchPermissionResources }
 
 export function createResearchTool(deps: ResearchDeps = {}) {
   return defineAgentTool<ResearchInput, ResearchDetails>({
