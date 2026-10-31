@@ -11,7 +11,7 @@ import {
   parseNpmEntrySource,
   pickNpmVersion,
 } from './marketplace-source-npm'
-import { downloadNpmTarball, verifyNpmIntegrity } from './marketplace-npm-integrity'
+import { downloadNpmTarball } from './marketplace-npm-integrity'
 import { DEFAULT_NPM_REGISTRY } from './marketplace-npm-registry'
 
 /**
@@ -128,17 +128,23 @@ describe('pickNpmVersion', () => {
   })
 })
 
-describe('verifyNpmIntegrity', () => {
-  const data = new Uint8Array([1, 2, 3])
-  it('passes a matching sha512 SRI and a matching legacy shasum', () => {
-    const sri = `sha512-${createHash('sha512').update(data).digest('base64')}`
-    expect(() => verifyNpmIntegrity('p', data, { integrity: sri })).not.toThrow()
-    const shasum = createHash('sha1').update(data).digest('hex')
-    expect(() => verifyNpmIntegrity('p', data, { shasum })).not.toThrow()
+describe('downloadNpmTarball digest check', () => {
+  const download = (name: string, dist: { integrity?: string; shasum?: string }) =>
+    downloadNpmTarball(
+      'demo@1.0.0',
+      new Response(tarball.slice().buffer as ArrayBuffer),
+      join(work, name),
+      dist,
+    )
+  it('passes a matching sha512 SRI and a matching legacy shasum', async () => {
+    const integrity = `sha512-${createHash('sha512').update(tarball).digest('base64')}`
+    expect(await download('sri.tgz', { integrity })).toBe(tarball.byteLength)
+    const shasum = createHash('sha1').update(tarball).digest('hex')
+    expect(await download('shasum.tgz', { shasum })).toBe(tarball.byteLength)
   })
-  it('throws on a mismatch; silently passes when no digest is published', () => {
-    expect(() => verifyNpmIntegrity('p', data, { integrity: 'sha512-AAAA' })).toThrow(/integrity/)
-    expect(() => verifyNpmIntegrity('p', data, {})).not.toThrow()
+  it('throws on a mismatch; passes when no digest is published', async () => {
+    await expect(download('bad.tgz', { integrity: 'sha512-AAAA' })).rejects.toThrow(/integrity/)
+    expect(await download('none.tgz', {})).toBe(tarball.byteLength)
   })
 })
 
