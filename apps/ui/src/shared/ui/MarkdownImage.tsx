@@ -9,19 +9,9 @@ type MarkdownImgProps = ComponentPropsWithoutRef<'img'> & { node?: unknown }
  * Markdown image with two affordances: click to open full-size, and a graceful
  * fallback — when the source can't load (e.g. a README's relative `assets/…`
  * path that doesn't resolve in-app) it renders the alt text instead of a broken-
- * image glyph. Honors explicit HTML sizing (logos, badges).
+ * image glyph. Honors explicit HTML sizing (logos, badges). Offscreen images load lazily.
  */
-function MarkdownImage({
-  src,
-  alt,
-  width,
-  height,
-}: {
-  src?: string
-  alt?: string
-  width?: string | number
-  height?: string | number
-}) {
+export function MarkdownImg({ src, alt, width, height }: MarkdownImgProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null)
   const safeSrc = typeof src === 'string' ? src : undefined
   const label = typeof alt === 'string' ? alt : ''
@@ -58,18 +48,5 @@ function MarkdownImage({
         <ContributedActions target={{ kind: 'image', src: safeSrc, alt: label }} />
       </span>
     </span>
-  )
-}
-
-// Lazy-load offscreen images; click opens full-size; broken/relative srcs
-// fall back to alt text (see MarkdownImage).
-export function MarkdownImg({ src, alt, width, height }: MarkdownImgProps) {
-  return (
-    <MarkdownImage
-      src={typeof src === 'string' ? src : undefined}
-      alt={typeof alt === 'string' ? alt : ''}
-      width={width}
-      height={height}
-    />
   )
 }
