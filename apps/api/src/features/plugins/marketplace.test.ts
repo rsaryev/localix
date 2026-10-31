@@ -7,7 +7,6 @@ import {
   resolveEntryName,
   validateMarketplace,
 } from './marketplace'
-import { buildMarketplaceManifest } from './marketplace-build'
 
 describe('validateMarketplace', () => {
   it('accepts a well-formed catalog', () => {
@@ -209,32 +208,5 @@ describe('marketplace entry relevance (typed)', () => {
       relevance: { filePatterns: 'not-an-array' },
     })
     expect(res.success).toBe(false)
-  })
-})
-
-describe('buildMarketplaceManifest', () => {
-  it('emits ./<name> sources and validates clean', () => {
-    const market = buildMarketplaceManifest({
-      name: 'localix',
-      description: 'Bundled plugins',
-      owner: { name: 'Localix' },
-      renames: { 'old-ops': 'new-ops' },
-      plugins: [
-        { name: 'new-ops', description: 'operations' },
-        { name: 'browser', description: 'browser', version: '1.0.0', author: 'localix' },
-        { name: 'git-checkpoint', description: 'checkpoints' },
-      ],
-    })
-    expect(market.$schema).toBe('https://json.schemastore.org/claude-code-marketplace.json')
-    expect(market.renames).toEqual({ 'old-ops': 'new-ops' })
-    expect(market.plugins[1]).toMatchObject({
-      name: 'browser',
-      source: './browser',
-      version: '1.0.0',
-    })
-    expect(market.plugins[2].source).toBe('./git-checkpoint')
-    const { errors, warnings } = validateMarketplace(market)
-    expect(errors).toHaveLength(0)
-    expect(warnings).toHaveLength(0)
   })
 })

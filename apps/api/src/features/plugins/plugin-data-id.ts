@@ -21,9 +21,6 @@ export function pluginIdOf(
   )
 }
 
-/** `${CLAUDE_PLUGIN_DATA}` for a plugin identifier (`ext/user-config-substitute.ts`). */
-export const pluginDataDirOf = pluginDataDir
-
 /** `${CLAUDE_PLUGIN_DATA}` of a discovered plugin. */
 export const dataDirOfPlugin = (plugin: Parameters<typeof pluginIdOf>[0], home: string): string =>
   pluginDataDir(pluginIdOf(plugin), home)

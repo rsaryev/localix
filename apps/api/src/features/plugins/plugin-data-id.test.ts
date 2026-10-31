@@ -11,7 +11,8 @@ import { tempDirPerTest } from '@localixai/testing'
 import type { DiscoveredPlugin } from './discovery'
 import type { LoadedPlugins } from './loader-contract'
 import { appendPluginRuntimeDeclarations } from './loader-runtime-declarations'
-import { pluginDataDirOf, pluginIdOf } from './plugin-data-id'
+import { pluginDataDir } from '../ext/user-config-substitute'
+import { pluginIdOf } from './plugin-data-id'
 
 const home = tempDirPerTest('plugin-data-id-')
 
@@ -28,7 +29,7 @@ describe("a plugin's data directory", () => {
   test('is keyed by name@marketplace for a marketplace install', () => {
     const cached = plugin({ cachedInstall: { id: 'tool@shop', version: '1.0.0' } })
     expect(pluginIdOf(cached)).toBe('tool@shop')
-    expect(pluginDataDirOf(pluginIdOf(cached), home())).toBe(
+    expect(pluginDataDir(pluginIdOf(cached), home())).toBe(
       join(home(), '.localix', 'plugin-data', 'tool-shop'),
     )
   })

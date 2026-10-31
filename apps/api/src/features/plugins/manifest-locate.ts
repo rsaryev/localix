@@ -17,7 +17,6 @@ export const PLUGIN_MANIFEST_CANDIDATES: readonly string[] = [MANIFEST_FILE]
 /** The branded marketplace catalog directory and its files. */
 export const MARKETPLACE_DIR = '.localix-plugin'
 export const MARKETPLACE_CATALOG_FILE = `${MARKETPLACE_DIR}/marketplace.json`
-export const MARKETPLACE_METADATA_FILE = `${MARKETPLACE_DIR}/marketplace.metadata.json`
 
 /**
  * Marketplace catalog locations: the branded `.localix-plugin/marketplace.json`, else Claude Code's
