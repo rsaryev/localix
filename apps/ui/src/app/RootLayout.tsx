@@ -9,7 +9,7 @@ import { Outlet, useLocation } from 'react-router'
 import { ActionConfirm } from '@/shared/ui/ActionConfirm'
 import { useFontFamily } from '@/features/settings/model/useFontFamily'
 import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
-import { startSettingsBootstrap } from '@/features/settings/model/settingsBootstrap'
+import { startStartupRetry } from '@/shared/lib/startupRetry'
 import { useSyncKeybindings } from '@/features/settings/model/useKeybindings'
 import { setActiveEventRoute } from '@/shared/lib/notifications/context'
 import { installWhenIdle } from '@/shared/lib/runWhenIdle'
@@ -54,7 +54,9 @@ export function RootLayout() {
   }, [pathname])
 
   useEffect(() => {
-    return startSettingsBootstrap(loadFromBackend)
+    // A fresh desktop sidecar listens only after the webview renders: keep retrying the profile
+    // read until it answers.
+    return startStartupRetry(loadFromBackend)
   }, [loadFromBackend])
 
   useEffect(() => startWorkspaceResourceSync(), [])

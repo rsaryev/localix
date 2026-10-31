@@ -1,9 +1,9 @@
 import { describe, expect, mock, test } from 'bun:test'
-import { settingsSyncRetryDelay, startSettingsBootstrap } from './settingsBootstrap'
+import { startStartupRetry, startupRetryDelay } from './startupRetry'
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
 
-describe('settings startup synchronization', () => {
+describe('a startup retry loop (the settings sync on a fresh sidecar)', () => {
   test('retries a sidecar startup race until the profile read succeeds', async () => {
     const results = [false, false, true]
     const load = mock(async () => results.shift() ?? true)
@@ -13,7 +13,7 @@ describe('settings startup synchronization', () => {
       return queued.length as never
     }
 
-    const stop = startSettingsBootstrap(load, schedule)
+    const stop = startStartupRetry(load, schedule)
     await flush()
     expect(load).toHaveBeenCalledTimes(1)
     expect(queued[0]?.delay).toBe(100)
@@ -31,7 +31,7 @@ describe('settings startup synchronization', () => {
   })
 
   test('backs off to a bounded polling cadence instead of stopping forever', () => {
-    expect([0, 1, 2, 3, 4, 5, 6, 7, 20].map(settingsSyncRetryDelay)).toStrictEqual([
+    expect([0, 1, 2, 3, 4, 5, 6, 7, 20].map(startupRetryDelay)).toStrictEqual([
       100, 200, 400, 800, 1_000, 2_000, 5_000, 10_000, 10_000,
     ])
   })
@@ -48,7 +48,7 @@ describe('settings startup synchronization', () => {
       return failures as never
     }
 
-    const stop = startSettingsBootstrap(load, schedule)
+    const stop = startStartupRetry(load, schedule)
     await flush()
 
     const observedDelays: number[] = []
@@ -73,7 +73,7 @@ describe('settings startup synchronization', () => {
     let queued: (() => void) | null = null
     let timer = 0
     const cancelled: number[] = []
-    const stop = startSettingsBootstrap(
+    const stop = startStartupRetry(
       async () => false,
       (run) => {
         queued = run
@@ -95,7 +95,7 @@ describe('settings startup synchronization', () => {
       if (attempt === 1) throw new Error('connection refused')
       return true
     })
-    const stop = startSettingsBootstrap(load, (run) => {
+    const stop = startStartupRetry(load, (run) => {
       queued.push(run)
       return queued.length as never
     })
