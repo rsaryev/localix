@@ -107,6 +107,8 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
       PINNED_MODELS.some((p) => p.id === spec.id) ? spec : { ...spec, label: labelOf(spec.repo) },
     )
 
+  const isInstalled = (modelId: string) => installed.some((s) => s.id === modelId)
+
   async function refresh() {
     installed = (await listInstalledModels(paths)).map(named)
     partial = (await listPartialModels(paths)).map((p) => ({ ...p, spec: named(p.spec) }))
@@ -132,7 +134,7 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
     log: deps.log,
   })
   const background: BackgroundDownloads = createBackgroundDownloads({
-    isInstalled: (modelId) => installed.some((s) => s.id === modelId),
+    isInstalled,
     jobs: () => downloads.list(),
     start: (spec, options) => downloads.start(spec, options),
     pause: async (modelId) => void (await downloads.stop(modelId, 'pause')),
@@ -171,7 +173,7 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
 
     installed: (kind?: LocalModelKind) =>
       kind ? installed.filter((s) => s.kind === kind) : installed,
-    isInstalled: (modelId: string) => installed.some((s) => s.id === modelId),
+    isInstalled,
     /** How an installed model runs here — the context its server is started with. */
     planOf: (modelId: string): ModelPlan | null => machine.planOf(modelId),
 
@@ -188,7 +190,7 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
         const asked = typeof modelOrSpec === 'string' ? modelOrSpec : modelOrSpec.id
         throw new Error(`Unknown local model "${asked}"`)
       }
-      if (installed.some((s) => s.id === spec.id) && (await pendingModelBytes(paths, spec)) === 0) {
+      if (isInstalled(spec.id) && (await pendingModelBytes(paths, spec)) === 0) {
         return {
           modelId: spec.id,
           label: spec.label,
@@ -206,9 +208,9 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
 
     /** Wait for a model to be installed (starting its download if needed). */
     async ensureInstalled(spec: LocalModelSpec): Promise<boolean> {
-      if (installed.some((s) => s.id === spec.id)) return true
+      if (isInstalled(spec.id)) return true
       await downloads.start(spec)
-      return installed.some((s) => s.id === spec.id)
+      return isInstalled(spec.id)
     },
 
     job: (modelId: string): InstallJob | null => downloads.job(modelId),
@@ -220,10 +222,10 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
     whenReady(modelId: string, label: string, signal?: AbortSignal): Promise<void> {
       return whenInstalled(
         {
-          isInstalled: (id) => installed.some((s) => s.id === id),
+          isInstalled,
           job: (id) => downloads.job(id),
           paused: (id) => partial.find((p) => p.spec.id === id),
-          subscribe: (listener) => this.subscribe(listener),
+          subscribe: progress.on,
         },
         modelId,
         label,
