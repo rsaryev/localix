@@ -14,6 +14,7 @@ import {
 import { groupRailTools } from '../model/railToolGroups'
 import type { RailEntry } from './shellTypes'
 import { useRailToolMenuGroup } from './RailToolMenuGroup'
+import { RAIL_HOVER_CLOSE_MS, RAIL_HOVER_OPEN_MS } from '../model/railMenuState'
 
 interface RailToolMenuProps {
   entries: readonly RailEntry[]
@@ -68,7 +69,7 @@ export function RailToolMenu({
         if (next) focusOnOpen.current = false
         send({ type: next ? 'hover' : 'leave', id })
       },
-      next ? 120 : 220,
+      next ? RAIL_HOVER_OPEN_MS : RAIL_HOVER_CLOSE_MS,
     )
   }
   const changeOpen = (next: boolean) => {

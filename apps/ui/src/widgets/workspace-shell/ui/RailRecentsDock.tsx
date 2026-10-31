@@ -7,14 +7,10 @@ import { railBtn, railBtnActive } from '@localixai/kit/rail-button'
 import { useRailRecentsMode } from '@/shared/lib/railRecentsPref'
 import { splitRecents } from '../model/recentsDisclosure'
 import type { RailEntry } from './shellTypes'
+import { RAIL_HOVER_CLOSE_MS, RAIL_HOVER_OPEN_MS } from '../model/railMenuState'
 
 /** Icons per column in the flyout before it grows a second one, Dock-folder style. */
 const FLYOUT_COLUMN_ROWS = 5
-
-/** Hover intent: long enough that crossing the trigger does not open the dock… */
-const OPEN_DELAY_MS = 120
-/** …and a leave grace that covers the gap between the trigger and the flyout. */
-const CLOSE_DELAY_MS = 220
 
 /** What the dock hands each slot it asks the rail to render. */
 export interface RailRecentsSlotApi {
@@ -72,7 +68,7 @@ export function RailRecentsDock({ entries, renderEntry, dragging }: RailRecentsD
         setIntent(null)
         setHovered(intent)
       },
-      intent ? OPEN_DELAY_MS : CLOSE_DELAY_MS,
+      intent ? RAIL_HOVER_OPEN_MS : RAIL_HOVER_CLOSE_MS,
     )
     return () => window.clearTimeout(timer)
   }, [intent])

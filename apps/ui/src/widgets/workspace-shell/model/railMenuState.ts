@@ -1,3 +1,7 @@
+/** Hover intent: long enough that crossing a rail trigger does not open its menu… */
+export const RAIL_HOVER_OPEN_MS = 120
+/** …and a leave grace that covers the gap between the trigger and the flyout. */
+export const RAIL_HOVER_CLOSE_MS = 220
 export type RailMenuState = { id: string; mode: 'hover' | 'press'; pressed: boolean } | null
 
 export type RailMenuAction =
