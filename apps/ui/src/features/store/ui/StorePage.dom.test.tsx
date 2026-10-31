@@ -32,7 +32,7 @@ const puzzle = listing({
 })
 const notes = listing({ id: 'notes', displayName: 'Notes' })
 
-async function mountPage(target?: { shelf?: string }) {
+async function mountPage(target?: { shelf?: string }, onCommit: () => void = () => {}) {
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { SWRConfig } = await import('swr')
@@ -62,7 +62,9 @@ async function mountPage(target?: { shelf?: string }) {
     root.render(
       <MemoryRouter>
         <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
-          <StorePage target={target} />
+          <React.Profiler id="store" onRender={onCommit}>
+            <StorePage target={target} />
+          </React.Profiler>
         </SWRConfig>
       </MemoryRouter>,
     ),
@@ -97,6 +99,30 @@ describe('the Store tab', () => {
     expect(page.button('Get Notes', page.card('notes')!)).toBeDefined()
     expect(page.button('Install as app: Notes')).toBeUndefined()
     await page.unmount()
+  })
+
+  test('renaming another project leaves the Store as it is; renaming this one redraws it', async () => {
+    const React = await import('react')
+    const { useChatStore } = await import('@/entities/chat/model/store')
+    const project = (id: string, name: string) => ({ id, name }) as never
+    const before = useChatStore.getState()
+    useChatStore.setState({
+      activeProjectId: 'p1',
+      projects: [project('p1', 'Alpha'), project('p2', 'Beta')],
+    })
+    let commits = 0
+    const page = await mountPage({ shelf: 'package:mini-app' }, () => commits++)
+    const settled = commits
+    await React.act(async () =>
+      useChatStore.setState({ projects: [project('p1', 'Alpha'), project('p2', 'Gamma')] }),
+    )
+    expect(commits).toBe(settled)
+    await React.act(async () =>
+      useChatStore.setState({ projects: [project('p1', 'Omega'), project('p2', 'Gamma')] }),
+    )
+    expect(commits).toBeGreaterThan(settled)
+    await page.unmount()
+    useChatStore.setState({ activeProjectId: before.activeProjectId, projects: before.projects })
   })
 
   test('with an install extra provided, an installed listing’s page adds one', async () => {

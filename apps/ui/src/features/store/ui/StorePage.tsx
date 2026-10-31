@@ -19,11 +19,14 @@ export function StorePage({ target }: { target?: StoreTarget }) {
   const sessionId = useChatStore((s) => s.activeSessionId)
   const navigation = useUiNavigation({ sessionId })
   const projectId = useChatStore((s) => s.activeProjectId ?? null)
-  const projects = useChatStore((s) => s.projects)
-  const project = useMemo(() => {
-    const found = projects.find((candidate) => candidate.id === projectId)
-    return found ? { id: found.id, name: found.name } : null
-  }, [projects, projectId])
+  const projectName = useChatStore(
+    (s) => s.projects.find((candidate) => candidate.id === projectId)?.name,
+  )
+  const project = useMemo(
+    () =>
+      projectId !== null && projectName !== undefined ? { id: projectId, name: projectName } : null,
+    [projectId, projectName],
+  )
   return (
     <div className="@container h-full min-h-0">
       <StoreView
