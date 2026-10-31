@@ -92,6 +92,31 @@ describe('the goal action', () => {
     expect(String(result.content)).toContain('stopped: the model judged the goal done')
   })
 
+  test('looking again after a stale target does not count as the page coming back', async () => {
+    const still = page()
+    let stale = true
+    const send = async (command: PreviewCommand): Promise<PreviewSendOutcome> => {
+      if (command.action === 'steps') {
+        if (stale) {
+          stale = false
+          return { ok: false, error: 'ref "e4" not found', errorCode: 'not_found' }
+        }
+        // An action that leaves the page as it was.
+        return { ok: true, result: { action: 'steps' } }
+      }
+      return still.send(command)
+    }
+    const model = scripted([
+      { operation: 'CLICK', click_target: 'e2' },
+      { operation: 'CLICK', click_target: 'e1' },
+      { operation: 'DONE' },
+    ])
+    const result = await runGoal({ send, decide: model.decide, sleep: async () => {} }, input)
+    // Three reads of the page, but only two visits to it: the re-read after the stale target
+    // is the same visit.
+    expect(String(result.content)).toContain('stopped: the model judged the goal done')
+  })
+
   test('each action brings back its page: one browser call per step', async () => {
     const tab = page({ snapshotAfter: true })
     const model = scripted([

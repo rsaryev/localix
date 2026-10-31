@@ -95,6 +95,8 @@ export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result>
   // round trip, so a step costs one browser call and one decision, not two calls.
   let latest: PreviewSnapshot | undefined
   let retriedStale = false
+  // The next read is the same visit as the last one (a stale target was looked at again).
+  let rereading = false
   const seen = new Map<string, number>()
 
   for (let decisions = 0; decisions < GOAL_MAX_DECISIONS; decisions++) {
@@ -112,7 +114,7 @@ export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result>
     if (!snapshot?.elements) return { content: NO_ELEMENTS, isError: true }
     latest = snapshot
     // A WAIT looks at the same page on purpose; any other way back to a state is a loop.
-    if (history.at(-1)?.operation !== 'WAIT') {
+    if (history.at(-1)?.operation !== 'WAIT' && !rereading) {
       const state = fingerprint(snapshot)
       const count = (seen.get(state) ?? 0) + 1
       seen.set(state, count)
@@ -121,6 +123,7 @@ export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result>
         break
       }
     }
+    rereading = false
     const ask = goalAsk({
       goal: input.goal,
       page: { url: snapshot.url, title: snapshot.title, text: pageText(snapshot.tree) },
@@ -177,6 +180,7 @@ export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result>
       // failed action: look again and decide again, once per step.
       if (acted.errorCode === 'not_found' && !retriedStale) {
         retriedStale = true
+        rereading = true
         continue
       }
       history.push({ ...step, changed: false, failed: true })
