@@ -340,7 +340,8 @@ function isLazyAlias(initializer) {
   if (initializer?.type !== 'CallExpression') return false
   const callee = initializer.callee
   return (
-    (callee?.type === 'Identifier' && callee.name === 'lazy') ||
+    // `lazyNamed` (apps/ui/src/shared/lib/lazyNamed.ts) is `lazy` for a named export.
+    (callee?.type === 'Identifier' && (callee.name === 'lazy' || callee.name === 'lazyNamed')) ||
     (callee?.type === 'MemberExpression' &&
       callee.computed === false &&
       callee.object?.type === 'Identifier' &&
@@ -508,6 +509,7 @@ export const InlinePicker = () => <div />
 const WrappedSidebar = memo(function WrappedSidebar() { return <aside /> })
 const DeferredPage = lazy(() => import('./page'))
 const ReactDeferredTab = React.lazy(() => import('./tab'))
+const NamedDeferredPanel = lazyNamed(() => import('./panel'), 'NamedDeferredPanel')
 const closePanel = () => {}
 `,
 )
