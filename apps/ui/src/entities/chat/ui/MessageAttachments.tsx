@@ -68,7 +68,8 @@ export function MessageAttachments({
   bindings: MessageBinding[]
   align?: 'start' | 'end'
 }) {
-  const attachments = assetBindings(bindings)
+  // Memoised on the bindings, so `images` below keeps its identity between renders.
+  const attachments = useMemo(() => assetBindings(bindings), [bindings])
   const attachmentKeys = messageAttachmentKeys(attachments)
   // Flat ordered list of viewable images (plain + generated, in message order),
   // so the lightbox can page ←/→ through every image the message carries.
