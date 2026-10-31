@@ -15,6 +15,7 @@
 import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { isAlive } from './process-tree'
 
 export const PIDFILE_SUFFIX = '.pids'
 
@@ -91,14 +92,7 @@ export interface ReapOs {
 
 export const REAL_REAP_OS: ReapOs = {
   platform: process.platform,
-  isAlive: (pid) => {
-    try {
-      process.kill(pid, 0)
-      return true
-    } catch {
-      return false
-    }
-  },
+  isAlive,
   startToken: readStartToken,
   killGroup: (pgid) => {
     try {

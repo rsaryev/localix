@@ -40,6 +40,7 @@ import { createRuntimeLogDestination, runtimeLogFile } from './lib/runtime-log-d
 import { installServerSignalHandlers } from './lib/process-signals'
 import { armShutdownDeadline } from './lib/shutdown-deadline'
 import { installOrphanGuard } from './lib/orphan-guard'
+import { isAlive } from './lib/process-tree'
 import { startupDiag } from './lib/startup-diagnostics'
 import { createShutdownSteps } from './lib/shutdown-steps'
 import { isSameBuild, runtimeBuildId } from './lib/runtime-build'
@@ -625,12 +626,9 @@ async function runDesktopRuntime(): Promise<void> {
   }
   if (validParent) {
     const parentWatch = setInterval(() => {
-      try {
-        process.kill(parentPid, 0)
-      } catch {
-        clearInterval(parentWatch)
-        void stop()
-      }
+      if (isAlive(parentPid)) return
+      clearInterval(parentWatch)
+      void stop()
     }, 1_000)
     parentWatch.unref()
   }
