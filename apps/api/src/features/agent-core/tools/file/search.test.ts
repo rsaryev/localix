@@ -11,13 +11,9 @@ import {
 } from './search'
 import { localEnvironment } from '../environments/local'
 import type { ExecutionEnvironment } from '../environment'
-import {
-  MODEL_SEARCH_MAX_BYTES,
-  escapeRegex,
-  modelFacingMatches,
-  searchRetries,
-} from './search-output'
+import { MODEL_SEARCH_MAX_BYTES, modelFacingMatches, searchRetries } from './search-output'
 import { MAX_AGENT_SOURCES } from '@localixai/agent/agents'
+import { escapeRegExp } from '../../../../lib/regexp'
 
 describe('modelFacingMatches truncation wording', () => {
   // Over the 2000-line default cap so tail-truncation kicks in.
@@ -219,11 +215,11 @@ describe('createSearchTool — cwd pointed at a file recovers instead of ENOTDIR
   })
 })
 
-describe('escapeRegex / searchRetries', () => {
-  test('escapeRegex turns a literal-looking query into a literal regex', () => {
-    expect(escapeRegex('array.map(')).toBe('array\\.map\\(')
-    expect(escapeRegex('config.value')).toBe('config\\.value')
-    expect(escapeRegex('plain_text')).toBe('plain_text')
+describe('escapeRegExp / searchRetries', () => {
+  test('escapeRegExp turns a literal-looking query into a literal regex', () => {
+    expect(escapeRegExp('array.map(')).toBe('array\\.map\\(')
+    expect(escapeRegExp('config.value')).toBe('config\\.value')
+    expect(escapeRegExp('plain_text')).toBe('plain_text')
   })
 
   test('a globbed search retries without the glob first', () => {

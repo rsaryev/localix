@@ -1,6 +1,7 @@
 import { truncateHead, truncateTail } from '@localixai/agent'
 import { truncationMarker } from '../tool-output'
 import { alignToCharBoundary } from './file-utils'
+import { escapeRegExp } from '../../../../lib/regexp'
 
 /** Byte cap on the rich `details.output` shown in the UI. */
 export const MAX_OUTPUT_BYTES = 64_000
@@ -168,16 +169,6 @@ export function modelFacingMatches(output: string, unit: 'match' | 'file' = 'mat
   return `${marker}\n${r.content}`
 }
 
-/**
- * Escape every ripgrep-regex metacharacter, turning a query into a literal-string
- * search. 72 of the 98 empty searches in the recorded corpus carried an UNescaped
- * metacharacter (`array.map(`, `config.value`), so the "no matches" was a false
- * negative on a query the model meant literally.
- */
-export function escapeRegex(query: string): string {
-  return query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
 /** One widened retry of a search that found nothing. */
 export interface SearchRetry {
   /** Model-facing description of what was changed, e.g. "without the glob". */
@@ -196,8 +187,10 @@ export interface SearchRetry {
 export function searchRetries(query: string, glob?: string): SearchRetry[] {
   const retries: SearchRetry[] = []
   if (glob) retries.push({ label: 'without the glob', query })
+  // 72 of the 98 empty searches in the recorded corpus carried an UNescaped metacharacter
+  // (`array.map(`, `config.value`): a false negative on a query the model meant literally.
   if (hasUnescapedRegexMeta(query)) {
-    const literal = escapeRegex(query)
+    const literal = escapeRegExp(query)
     if (glob) retries.push({ label: 'as a literal string, keeping the glob', query: literal, glob })
     retries.push({
       label: glob ? 'as a literal string, without the glob' : 'as a literal string',

@@ -1,3 +1,4 @@
+import { escapeRegExp } from '../../../lib/regexp'
 /**
  * Text a skill's rendering INSERTS — a command's output, an inlined `@file` — sealed away while
  * the arguments are substituted into the skill's own text, then put back.
@@ -16,7 +17,7 @@ export function createInsertedTextVault(template: string): InsertedTextVault {
   let prefix = '\u0001LOCALIX_INSERTED_'
   while (template.includes(prefix)) prefix += '_'
   const pieces: string[] = []
-  const tokenRe = new RegExp(`${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d+)\\u0001`, 'g')
+  const tokenRe = new RegExp(`${escapeRegExp(prefix)}(\\d+)\\u0001`, 'g')
   return {
     seal(text) {
       pieces.push(text)

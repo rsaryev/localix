@@ -1,3 +1,4 @@
+import { escapeRegExp } from '../../../lib/regexp'
 // Pure search-and-replace helpers — the text transform behind the Search view's
 // "Replace all". Kept free of fs/env so the substitution semantics are unit-
 // testable in isolation. Mirrors the searchContent matching options (literal vs
@@ -10,11 +11,6 @@ export interface ReplaceMatcherOptions {
   caseSensitive?: boolean
   /** Match whole words only. */
   wholeWord?: boolean
-}
-
-/** Escape regex metacharacters so a literal query matches verbatim. */
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 /**

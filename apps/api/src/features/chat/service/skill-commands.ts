@@ -2,6 +2,7 @@ import { alignToCharBoundary } from '../../agent-core/tools/file/file-utils'
 import type { InsertedTextVault } from './inserted-text-vault'
 import { bindShellArgs, type SkillShellArgs } from './skill-command-args'
 import { runCommand, type CommandResult } from './skill-command-run'
+import { escapeRegExp } from '../../../lib/regexp'
 
 /** Max dynamic shell commands authored into one skill body. */
 export const SKILL_CMD_MAX_COUNT = 16
@@ -192,8 +193,4 @@ export async function expandSkillContent(
     const text = command ? results[command.index] : ''
     return vault ? vault.seal(text) : text
   })
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }

@@ -29,6 +29,7 @@ import type { SkillOverrides } from '../../../agent-core/skill-overrides'
 import type { RunnerDeps } from '../agent-runner-types'
 import type { CcHookSessions } from '../cc-hook-sessions'
 import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
+import { escapeRegExp } from '../../../../lib/regexp'
 
 export interface DirectToolInstanceDeps {
   agentProfile: RunProfile
@@ -135,6 +136,6 @@ export function buildDirectToolInstances(
 /** `go ahead and /deploy to staging`: the name as its own word, no punctuation attached. */
 export function namesSkill(text: string | undefined, name: string): boolean {
   if (!text) return false
-  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const escaped = escapeRegExp(name)
   return new RegExp(`(^|\\s)/${escaped}(?=\\s|$)`, 'i').test(text)
 }

@@ -11,7 +11,6 @@ import { type ExecutionEnvironment, shellQuote, resolveToolCwd } from '../enviro
 import { localEnvironment } from '../environments/local'
 import { LOCALIX_EXCLUDE_GLOB } from '../environments/ripgrep'
 import {
-  escapeRegex,
   hasUnescapedRegexMeta,
   modelFacingMatches,
   searchRetries,
@@ -39,6 +38,7 @@ export { searchToolInputSchema, prepareSearchArguments } from './search-input'
 import type { SearchToolDetails } from './search-contracts'
 export type { SearchToolDetails } from './search-contracts'
 import { presentEmptySearch, presentSearchMatches } from './search-results'
+import { escapeRegExp } from '../../../../lib/regexp'
 
 /** What a search passes to ripgrep beyond its pattern and glob. Lines of context only go with lines. */
 function searchFlags(input: SearchInput) {
@@ -148,7 +148,7 @@ export function createSearchTool(
       // parse ("patch.matchAll(" → unclosed group). Escaping it is the only thing the
       // model could do on the next turn, so do it now rather than spend that turn.
       if (/regex parse error/i.test(message) && hasUnescapedRegexMeta(query)) {
-        const literal = escapeRegex(query)
+        const literal = escapeRegExp(query)
         try {
           const out = await env.searchFiles(literal, cwd, {
             glob: input.glob,

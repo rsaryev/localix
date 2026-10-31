@@ -1,4 +1,5 @@
 import type { DiscoveredSkill } from '../../agent-core/skill-discovery'
+import { escapeRegExp } from '../../../lib/regexp'
 
 /**
  * Keyword-triggered skills: procedures the deployment refuses to leave to the model's
@@ -30,7 +31,7 @@ export interface TriggeredSkill {
 
 /** Word-boundary, whitespace-tolerant, case-insensitive test for one keyword. */
 function mentions(text: string, keyword: string): boolean {
-  const escaped = keyword.trim().replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
+  const escaped = escapeRegExp(keyword.trim())
   if (!escaped) return false
   const pattern = escaped.replace(/\s+/gu, '\\s+')
   // \b would not fire for a keyword ending in punctuation, and a keyword is author-supplied
