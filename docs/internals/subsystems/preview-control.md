@@ -138,19 +138,19 @@ remain visible, but Visual Feedback and agent control cannot connect.
 
 ### Action contract
 
-| Action                      | Required input         | Optional input or default            | Boundary                                                                                 |
-| --------------------------- | ---------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `open`                      | `file_path` or `url`   | `background`, `viewport`             | Returns `preview_id` and separate probe readiness                                        |
-| `close`                     | `preview_id(s)`        | None                                 | Closes only the named tabs                                                               |
-| `viewport`                  | `viewport`             | `preview_id`                         | Integer CSS width/height 240–3840, or null for fill; actual size verified                |
-| `snapshot`                  | None                   | None                                 | Assigns the current `eN` refs                                                            |
-| `take_screenshot`           | None                   | `ref`; otherwise page body           | Model output drops images above 7 MiB of base64 text                                     |
-| `console`                   | None                   | None                                 | Returns the captured ring-buffer contents                                                |
-| `read`                      | None                   | `offset` (characters, default 0)     | Observing: 8,000 characters of collapsed visible text; a newer read supersedes the older |
-| `back`, `forward`, `reload` | None                   | None                                 | Drive: the probe only asks the page to go; native hosts follow the new document          |
-| `evaluate`                  | Non-empty `expression` | `snapshot_after` defaults to `false` | Runs in the page realm and can mutate page state                                         |
-| `steps`                     | Non-empty `steps`      | `snapshot_after` defaults to `false` | Interactions plus snapshot, evaluate, and console                                        |
-| `goal`                      | Non-empty `goal`       | `values`: the only strings it types  | A decision model drives up to 20 actions; returns a trace and the page                   |
+| Action                      | Required input         | Optional input or default            | Boundary                                                                                                                           |
+| --------------------------- | ---------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `open`                      | `file_path` or `url`   | `background`, `viewport`             | Returns `preview_id` and separate probe readiness                                                                                  |
+| `close`                     | `preview_id(s)`        | None                                 | Closes only the named tabs                                                                                                         |
+| `viewport`                  | `viewport`             | `preview_id`                         | Integer CSS width/height 240–3840, or null for fill; actual size verified                                                          |
+| `snapshot`                  | None                   | None                                 | Assigns the current `eN` refs                                                                                                      |
+| `take_screenshot`           | None                   | `ref`; otherwise page body           | Model output drops images above 7 MiB of base64 text                                                                               |
+| `console`                   | None                   | None                                 | Returns the captured ring-buffer contents                                                                                          |
+| `read`                      | None                   | `offset` (characters, default 0)     | Observing: 8,000 characters of collapsed visible text of the top document; a re-read of a window supersedes it, other windows stay |
+| `back`, `forward`, `reload` | None                   | None                                 | Drive: the probe only asks the page to go and never judges the history; native hosts follow                                        |
+| `evaluate`                  | Non-empty `expression` | `snapshot_after` defaults to `false` | Runs in the page realm and can mutate page state                                                                                   |
+| `steps`                     | Non-empty `steps`      | `snapshot_after` defaults to `false` | Interactions plus snapshot, evaluate, and console                                                                                  |
+| `goal`                      | Non-empty `goal`       | `values`: the only strings it types  | A decision model drives up to 20 actions; returns a trace and the page                                                             |
 
 Interactions are step shapes inside `steps`, not top-level actions:
 

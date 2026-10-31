@@ -57,9 +57,9 @@ form submit that will replace the page is noticed before the new page commits.
 
 After an action the page is resampled once its DOM has been quiet for 100 ms (never longer than 700
 ms), so a result that arrives from the network a moment later is in the diff. If the page still says
-it is working then (its own fetch or XHR requests in flight, a shown `aria-busy` region or progress
-bar, a document still parsing), the reply says the page is still loading: read again before acting
-again.
+it is working then (its own fetch or XHR requests in flight, a shown `aria-busy` main region or
+indeterminate progress bar, a document still parsing), the reply says the page is still loading:
+read again before acting again.
 
 The diff is ordered: each changed line (`-` gone, `+` new) comes after the unchanged line above it,
 with `…` between changes that are apart, so one of several equal lines (a score, a repeated row) is

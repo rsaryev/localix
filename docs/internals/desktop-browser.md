@@ -80,17 +80,20 @@ strip over the page.
 The bridge adds passive safety nets, all in `packages/visual-feedback`. Dialogs are cancelled only
 while a command is in flight (the page's own dialog otherwise). Failed subresources ride the reply.
 A passive wrapper around `fetch` and XHR (the page's call and result are untouched) tracks
-own-origin requests, which expire after five seconds; with a shown `aria-busy` region or progress
-bar they set `busy` on the reply. `leaving()` also reads the Navigation API, unhandled link clicks
-and form submits. There is no push channel from the page to the shell, so `navigatedAfter` still
-polls the shell and the bridge.
+own-origin requests, which expire after five seconds; with a shown `aria-busy` main region or an
+indeterminate progress bar they set `busy` on the reply (a measured bar or a busy widget is page
+content). `leaving()` also reads the Navigation API, unhandled link clicks and form submits. There
+is no push channel from the page to the shell, so `navigatedAfter` still polls the shell and the
+bridge.
 
 Frames count as part of the page. The snapshot walks a visible same-origin iframe (in view or just
 below, at least 3% of the viewport) under a `frame` line, with refs that resolve inside it; clicks,
 typing and the occlusion check translate the point through each frame's origin. A fixed frame on top
 that covers at least 10% of the viewport marks its controls as a dialog. A visible frame of another
 origin is listed as "cross-origin frame, not reachable". Only the top document's probe walks frames,
-so the same code serves framed local pages and native tabs.
+so the same code serves framed local pages and native tabs. `read` and `wait` look at the top
+document only; a probe running inside a same-origin embedder owns its own window and adds no
+embedder offset.
 
 ## Limits
 
