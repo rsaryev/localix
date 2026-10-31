@@ -43,11 +43,12 @@ export function BandScroller({
   useEffect(() => {
     const node = ref.current
     if (!node) return
-    const measure = () =>
-      setEdges({
-        start: node.scrollLeft > 1,
-        end: node.scrollLeft + node.clientWidth < node.scrollWidth - 1,
-      })
+    const measure = () => {
+      const start = node.scrollLeft > 1
+      const end = node.scrollLeft + node.clientWidth < node.scrollWidth - 1
+      // The same object while neither edge changed, so a scroll inside the row renders nothing.
+      setEdges((now) => (now.start === start && now.end === end ? now : { start, end }))
+    }
     // A vertical wheel moves the row sideways — only while the row has somewhere to go, so the
     // band's own vertical scroll still works over it.
     const onWheel = (event: WheelEvent) => {
