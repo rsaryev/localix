@@ -36,10 +36,6 @@ const BASELINE: Rule[] = [
 ]
 
 export function builtinAgentPreset(name: string): Rule[] {
-  return agentPreset(name)
-}
-
-function agentPreset(name: string): Rule[] {
   if (name !== DEFAULT_AGENT_NAME) return []
   const id = builtinAgentId(name)
   return [
