@@ -99,11 +99,6 @@ export function createExactSpecs(deps: {
     /** Raw repository metadata: what drafters are resolved from. */
     info: (repo: string): Promise<HfRepoInfo | null> => deps.hf.repo(repo).catch(() => null),
 
-    /** Test seam: store one repository's exact specs. */
-    seed(info: HfRepoInfo) {
-      repos.set(info.id, { revision: info.sha, specs: specsFromRepo(info) })
-    },
-
     flush: () => file.flush(),
   }
 }

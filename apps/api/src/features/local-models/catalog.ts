@@ -240,8 +240,5 @@ export function createLocalCatalog(deps: {
 
     /** Write pending caches (shutdown). */
     flush: () => Promise.all([listings.flush(), exact.flush()]),
-
-    /** Test seam: store one repository's exact specs. */
-    seed: (...args: Parameters<typeof exact.seed>) => exact.seed(...args),
   }
 }
