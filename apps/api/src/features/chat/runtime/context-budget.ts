@@ -1,8 +1,7 @@
 import { scaledReserveTokens, type ContextLimit } from '@localixai/agent'
 
 import { resolveContextWindow, resolveEffectiveContextWindow } from './agent-runner-constants'
-
-export { scaledReserveTokens }
+import { normalizeTokenCount } from './context-usage-anchor'
 
 /**
  * One host-owned description of the context limits for a model request.
@@ -38,22 +37,6 @@ export interface ResolveContextBudgetOptions {
   contextLimit?: ContextLimit
 }
 
-const normalizedTokens = (tokens: number | undefined): number =>
-  typeof tokens === 'number' && Number.isFinite(tokens) && tokens > 0 ? Math.floor(tokens) : 0
-
-/**
- * History allowance for an already-resolved effective window.
- *
- * Kept as a small public helper for the value-budgeted compressor, but the
- * arithmetic itself has one owner: this module.
- */
-export function historyBudgetTokens(effectiveWindow: number, fixedOverheadTokens = 0): number {
-  const window = normalizedTokens(effectiveWindow)
-  if (window === 0) return 0
-  const trigger = Math.max(0, window - scaledReserveTokens(window))
-  return Math.max(0, trigger - normalizedTokens(fixedOverheadTokens))
-}
-
 /** Resolve the canonical context budget used by all host-side context controls. */
 export function resolveContextBudgetFrame(
   options: ResolveContextBudgetOptions = {},
@@ -62,7 +45,7 @@ export function resolveContextBudgetFrame(
   const rawWindow = resolveContextWindow(model)
   const effectiveWindow = resolveEffectiveContextWindow(model, options.depth, options.contextLimit)
   const reserve = scaledReserveTokens(effectiveWindow)
-  const fixedOverhead = normalizedTokens(options.fixedOverheadTokens)
+  const fixedOverhead = normalizeTokenCount(options.fixedOverheadTokens)
   const trigger = Math.max(0, effectiveWindow - reserve)
   const historyBudget = Math.max(0, trigger - fixedOverhead)
 

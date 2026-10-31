@@ -24,7 +24,8 @@ export interface ContextTokenEstimate {
   anchorMessageId?: string
 }
 
-const normalizeTokenCount = (tokens: number | undefined): number =>
+/** A token count as a whole, non-negative number; anything unusable counts as none. */
+export const normalizeTokenCount = (tokens: number | undefined): number =>
   typeof tokens === 'number' && Number.isFinite(tokens) && tokens > 0 ? Math.floor(tokens) : 0
 
 /**

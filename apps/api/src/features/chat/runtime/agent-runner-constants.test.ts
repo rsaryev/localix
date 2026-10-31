@@ -1,10 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  historyBudgetTokens,
-  resolveContextBudgetFrame,
-  scaledReserveTokens,
-} from './context-budget'
-import { windowForCeiling } from '@localixai/agent'
+import { resolveContextBudgetFrame } from './context-budget'
+import { scaledReserveTokens, windowForCeiling } from '@localixai/agent'
 import {
   DEFAULT_CONTEXT_WINDOW,
   resolveContextWindow,
@@ -14,6 +10,10 @@ import {
   MODEL_TRIM_KEEP_RECENT_CAP,
 } from './agent-runner-constants'
 import { CHECKPOINT_HIGH_WATER } from './model-view/checkpoint-policy'
+
+/** The history a model with this catalog window may hold under a prompt+tools floor. */
+const historyBudgetOf = (contextWindow: number, fixedOverheadTokens: number) =>
+  resolveContextBudgetFrame({ contextWindow, fixedOverheadTokens }).historyBudget
 
 /** The whole-request ceiling the checkpoint policy and the in-run prune measure against. */
 const ceilingOf = (effectiveWindow: number) =>
@@ -127,7 +127,7 @@ describe('the history budget and the request ceiling', () => {
       const w = resolveEffectiveContextWindow({ contextLength: real })
       expect(w).toBeLessThanOrEqual(real)
       for (const overhead of [0, 7_100, 10_000]) {
-        const budget = historyBudgetTokens(w, overhead)
+        const budget = historyBudgetOf(real, overhead)
         expect(budget).toBeLessThanOrEqual(ceilingOf(w))
         expect(budget).toBeGreaterThanOrEqual(0)
       }
@@ -139,16 +139,15 @@ describe('the history budget and the request ceiling', () => {
     // provider rejects the request.
     for (const real of WINDOWS) {
       const w = resolveEffectiveContextWindow({ contextLength: real })
-      expect(historyBudgetTokens(w, 0)).toBeLessThan(w)
-      expect(w - historyBudgetTokens(w, 0)).toBeGreaterThanOrEqual(scaledReserveTokens(w))
+      expect(historyBudgetOf(real, 0)).toBeLessThan(w)
+      expect(w - historyBudgetOf(real, 0)).toBeGreaterThanOrEqual(scaledReserveTokens(w))
     }
   })
 
   test('the fixed prompt+tools floor comes out of the budget, not out of thin air', () => {
-    const w = resolveEffectiveContextWindow({ contextLength: 32_000 })
-    expect(historyBudgetTokens(w, 10_000)).toBe(historyBudgetTokens(w, 0) - 10_000)
+    expect(historyBudgetOf(32_000, 10_000)).toBe(historyBudgetOf(32_000, 0) - 10_000)
     // Never negative: a floor larger than the ceiling yields no history, not a negative budget.
-    expect(historyBudgetTokens(w, 10_000_000)).toBe(0)
+    expect(historyBudgetOf(32_000, 10_000_000)).toBe(0)
   })
 
   test('the protected tail scales with the budget the model actually lives in', () => {

@@ -5,12 +5,14 @@ import {
   FixedOverheadTooLargeError,
   LOCAL_CONTEXT_BUDGET_ERROR_CODE,
   LocalContextBudgetExceededError,
-  historyBudgetTokens,
   assertFixedOverheadFits,
   resolveContextBudgetFrame,
-  scaledReserveTokens,
 } from './context-budget'
-import { CONTEXT_LIMIT_AUTO_TOKENS, CONTEXT_LIMIT_STEPS } from '@localixai/agent'
+import {
+  CONTEXT_LIMIT_AUTO_TOKENS,
+  CONTEXT_LIMIT_STEPS,
+  scaledReserveTokens,
+} from '@localixai/agent'
 
 describe('resolveContextBudgetFrame', () => {
   test('derives every limit from one effective window', () => {
@@ -27,9 +29,6 @@ describe('resolveContextBudgetFrame', () => {
       trigger: 272_000,
       historyBudget: 262_000,
     })
-    expect(historyBudgetTokens(frame.effectiveWindow, frame.fixedOverhead)).toBe(
-      frame.historyBudget,
-    )
   })
 
   test('Auto is a 272k ceiling on a large window; Full keeps the physical one', () => {
