@@ -11,7 +11,7 @@ import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import type { EffectiveConfigReport } from '@localixai/api/client'
 import { useSettingsProjects } from '../model/useSettingsProjects'
 import { DiagnosticsReport } from './DiagnosticsReport'
-import { SettingProblems } from './settingRegistry'
+import { SettingProblems } from './SettingProblems'
 import { SettingsActionActivity } from './SettingsActionActivity'
 
 /**
