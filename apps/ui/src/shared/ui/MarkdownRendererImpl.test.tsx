@@ -11,11 +11,10 @@ import {
   shouldSmoothStreaming,
   shouldActivateHtml,
   shouldActivateMath,
-  hasMathSyntax,
-  hasHtmlSyntax,
   tableRequiresKeyboardScroll,
   STREAMING_PLAIN_TEXT_THRESHOLD,
 } from './MarkdownRendererImpl'
+import { hasHtmlSyntax, hasMathSyntax } from '@localixai/markdown/syntax'
 import { rehypePluginsFor, remarkPluginsFor } from '@localixai/markdown/markdownPlugins'
 import { classifyMarkdownLink, markdownUrlTransform } from './markdownLink'
 

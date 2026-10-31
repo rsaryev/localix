@@ -21,7 +21,6 @@ import {
 import { CodeBlock } from './code-block'
 import { closePartialMarkdown, openFenceBody } from '@localixai/markdown/markdown-stream'
 import { hasMathSyntax, hasHtmlSyntax } from '@localixai/markdown/syntax'
-export { hasMathSyntax, hasHtmlSyntax } from '@localixai/markdown/syntax'
 import { escapeLiteralDollars } from '@localixai/markdown/markdown-dollars'
 import { useSmoothedText } from '@/shared/hooks/useSmoothedText'
 import { useStreamingThrottle, STREAM_MARKDOWN_REPARSE_MS } from './useStreamingThrottle'
@@ -62,8 +61,6 @@ export interface MarkdownRendererProps {
    */
   rawHtml?: boolean
 }
-
-/** A relative href that points at a file (optionally with a #Lxx anchor) → its path, else null. */
 
 type CodeProps = ComponentPropsWithoutRef<'code'> & { node?: unknown }
 type MarkdownPreProps = ComponentPropsWithoutRef<'pre'> & { node?: unknown }
