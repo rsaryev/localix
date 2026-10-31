@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { backendClient } from '@/shared/api/client'
 import { useDebouncedQuery } from '@/shared/hooks/useDebouncedQuery'
 import { fileIcon } from '@/shared/ui/file-icon/fileIcon'
@@ -18,8 +18,8 @@ import { baseName, dirName } from '@localixai/mini-app-sdk/ui/utilities'
 import type { FileSearchEntry } from '@/shared/api/contracts'
 import { openFileInGrid, useRecentFiles } from '@/shared/lib/recentFiles'
 import { loadFileEditor } from '../model/fileEditorLoader'
-import { subscribeUiOverlay } from '@/shared/lib/uiOverlayBus'
 import { QUICK_OPEN_OVERLAY_ID } from './QuickOpen.surface'
+import { useOverlayPaletteQuery } from './useOverlayPaletteQuery'
 
 interface QuickOpenProps {
   sessionId: string | null
@@ -34,7 +34,7 @@ interface QuickOpenProps {
  * off. Resets its query each time it opens.
  */
 export function QuickOpen({ sessionId, open, onOpenChange }: QuickOpenProps) {
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useOverlayPaletteQuery(QUICK_OPEN_OVERLAY_ID, open, onOpenChange)
   const [files, setFiles] = useState<FileSearchEntry[]>([])
   const [root, setRoot] = useState('')
   /** How many project files the server left out of its index (huge tree). */
@@ -51,7 +51,6 @@ export function QuickOpen({ sessionId, open, onOpenChange }: QuickOpenProps) {
   const searchPart = colon ? colon[1] : trimmed
   const gotoLine = colon ? Number(colon[2]) : undefined
   const searchKey = JSON.stringify([sessionId, searchPart])
-  const requestedQuery = useRef<string | null>(null)
 
   // ⌘P is explicit file-open intent. Start the same lazy promise React.lazy consumes
   // while the user searches, so FileTab and Monaco do not begin only after selection.
@@ -59,28 +58,10 @@ export function QuickOpen({ sessionId, open, onOpenChange }: QuickOpenProps) {
     if (open && sessionId) void loadFileEditor()
   }, [open, sessionId])
 
-  useEffect(
-    () =>
-      subscribeUiOverlay(QUICK_OPEN_OVERLAY_ID, (params) => {
-        const query = typeof params.query === 'string' ? params.query : ''
-        requestedQuery.current = query
-        if (open) {
-          setQuery(query)
-          requestedQuery.current = null
-        }
-        onOpenChange(true)
-      }),
-    [onOpenChange, open],
-  )
-
-  // Reset on open so a stale prior query/result never flashes.
+  // Reset on open so a stale prior result never flashes; the query hook resets the query.
   useEffect(() => {
-    if (open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset when the palette opens
-      setQuery(requestedQuery.current ?? '')
-      requestedQuery.current = null
-      setFiles([])
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset when the palette opens
+    if (open) setFiles([])
   }, [open])
 
   // Debounced server search — only with a query. The empty state lists recently

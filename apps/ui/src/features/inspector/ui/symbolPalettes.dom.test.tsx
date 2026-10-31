@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { DOCUMENT_SYMBOL_OVERLAY_ID } from './GoToSymbol.surface'
+import { QUICK_OPEN_OVERLAY_ID } from './QuickOpen.surface'
 import { WORKSPACE_SYMBOL_OVERLAY_ID } from './WorkspaceSymbols.surface'
 
 let teardown: () => Promise<void>
@@ -26,6 +27,7 @@ const palettes: [string, string, () => Promise<Palette>][] = [
     WORKSPACE_SYMBOL_OVERLAY_ID,
     async () => (await import('./WorkspaceSymbols')).WorkspaceSymbols,
   ],
+  ['QuickOpen', QUICK_OPEN_OVERLAY_ID, async () => (await import('./QuickOpen')).QuickOpen],
 ]
 
 describe.each(palettes)('%s overlay query', (_name, overlayId, load) => {
