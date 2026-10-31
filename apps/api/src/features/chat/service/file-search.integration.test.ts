@@ -8,7 +8,7 @@ import { replaceContent, searchContent } from './file-ops'
 
 let dir: string
 const ctx = (): FileOpsContext => ({
-  requireSession: async () => ({ id: 's1', executionBackend: 'local' }) as SessionRecord,
+  requireSession: async () => ({ id: 's1' }) as SessionRecord,
   resolveSessionWorkingDir: async () => dir,
 })
 

@@ -10,7 +10,7 @@ test('Undo keeps a failed restore in the journal so a repaired source can be ret
   const dir = await mkdtemp(path.join(tmpdir(), 'undo-retry-'))
   const sessionId = `undo-${crypto.randomUUID()}`
   const ctx: FileOpsContext = {
-    requireSession: async () => ({ id: sessionId, executionBackend: 'local' }) as never,
+    requireSession: async () => ({ id: sessionId }) as never,
     resolveSessionWorkingDir: async () => dir,
   }
   try {

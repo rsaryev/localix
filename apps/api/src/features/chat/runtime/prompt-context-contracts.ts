@@ -4,7 +4,7 @@ import type { ResolvedRunAgent } from '../../agents/invocation-service'
 import type { ToolDenial } from '../../capabilities/resolve'
 import type { CapabilitySourceRepository } from '../../capabilities/source-repository'
 import type { PermissionRule } from '../../projects/contracts'
-import type { createEnvironment } from '../../agent-core/tools/environments'
+import type { ExecutionEnvironment } from '../../agent-core/tools/environment'
 import type {
   discoverFilesystemSkills,
   SkillDiscoveryLogger,
@@ -62,7 +62,7 @@ export interface PromptContextDeps {
 export interface PreparedRunContext {
   agent: AgentDefinition
   capabilities: ResolvedRunAgent['capabilities']
-  env: ReturnType<typeof createEnvironment>
+  env: ExecutionEnvironment
   defaultCwd: string
   disabledTools: string[]
   /** The denying scope+rule behind each `disabledTools` entry — the ledger's `policy` reason. */

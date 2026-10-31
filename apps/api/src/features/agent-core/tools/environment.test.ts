@@ -3,8 +3,6 @@ import { mkdtemp, rm, realpath } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { LocalEnvironment } from './environments/local'
-import { SSHEnvironment, DockerEnvironment } from './environments/remote'
-import { createEnvironment } from './environments'
 import { shellQuote, interpretRipgrep } from './environment'
 
 // ---------------------------------------------------------------------------
@@ -119,63 +117,6 @@ describe('LocalEnvironment', () => {
     const output = await env.searchFiles('hello', tmpDir, { glob: '*.ts' })
     expect(output).toContain('foo.ts')
     expect(output).not.toContain('foo.js')
-  })
-})
-
-// ---------------------------------------------------------------------------
-// SSHEnvironment — command shape (no real SSH; just inspect config)
-// ---------------------------------------------------------------------------
-
-describe('SSHEnvironment', () => {
-  it('stores host and default port', () => {
-    const env = new SSHEnvironment({ kind: 'ssh', sshHost: 'user@example.com' })
-    expect(env.config.sshHost).toBe('user@example.com')
-    expect(env.config.sshPort).toBeUndefined()
-  })
-
-  it('stores custom port', () => {
-    const env = new SSHEnvironment({ kind: 'ssh', sshHost: 'user@host', sshPort: 2222 })
-    expect(env.config.sshPort).toBe(2222)
-  })
-
-  it('throws when constructed with wrong kind', () => {
-    expect(() => new SSHEnvironment({ kind: 'local' } as any)).toThrow()
-  })
-})
-
-// ---------------------------------------------------------------------------
-// DockerEnvironment — command shape
-// ---------------------------------------------------------------------------
-
-describe('DockerEnvironment', () => {
-  it('stores container name', () => {
-    const env = new DockerEnvironment({ kind: 'docker', containerName: 'myapp' })
-    expect(env.config.containerName).toBe('myapp')
-  })
-
-  it('throws when constructed with wrong kind', () => {
-    expect(() => new DockerEnvironment({ kind: 'local' } as any)).toThrow()
-  })
-})
-
-// ---------------------------------------------------------------------------
-// createEnvironment factory
-// ---------------------------------------------------------------------------
-
-describe('createEnvironment', () => {
-  it('returns LocalEnvironment for kind=local', () => {
-    const env = createEnvironment({ kind: 'local' })
-    expect(env.config.kind).toBe('local')
-  })
-
-  it('returns SSHEnvironment for kind=ssh', () => {
-    const env = createEnvironment({ kind: 'ssh', sshHost: 'user@host' })
-    expect(env.config.kind).toBe('ssh')
-  })
-
-  it('returns DockerEnvironment for kind=docker', () => {
-    const env = createEnvironment({ kind: 'docker', containerName: 'c1' })
-    expect(env.config.kind).toBe('docker')
   })
 })
 

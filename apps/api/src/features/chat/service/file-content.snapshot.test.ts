@@ -7,7 +7,7 @@ import type { FileOpsContext } from './file-ops-context'
 import { localEnvironment } from '../../agent-core/tools/environments/local'
 
 const context = (dir: string): FileOpsContext => ({
-  requireSession: async () => ({ id: 'snapshot', executionBackend: 'local' }) as never,
+  requireSession: async () => ({ id: 'snapshot' }) as never,
   resolveSessionWorkingDir: async () => dir,
 })
 

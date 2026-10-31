@@ -13,12 +13,10 @@ import { assertNotWorkspaceRoot, attempt, requireKind } from './file-tree-guards
 import type { FileDeleteResponse, FileUndoResponse } from '../contracts'
 
 /**
- * Delete a tree entry (file or directory tree). On the LOCAL backend the default
- * is REVERSIBLE: the entry is MOVED into the trash (`~/.localix/trash/<stamp>-<name>`)
- * and journaled so ⌘Z can restore it. `permanent: true` (Shift+Delete) removes it
- * for good via `rm -rf`. The ssh/docker backends have no local trash, so they
- * always delete permanently regardless of the flag — the UI's confirm dialog says
- * so. The UI guards both paths behind a confirm dialog.
+ * Delete a tree entry (file or directory tree). The default is REVERSIBLE: the entry is
+ * MOVED into the trash (`~/.localix/trash/<stamp>-<name>`) and journaled so ⌘Z can
+ * restore it. `permanent: true` (Shift+Delete) removes it for good via `rm -rf`. The UI
+ * guards both paths behind a confirm dialog.
  */
 export async function deleteEntry(
   ctx: FileOpsContext,
@@ -27,15 +25,14 @@ export async function deleteEntry(
   targetPath: string,
   opts?: { permanent?: boolean },
 ): Promise<FileDeleteResponse> {
-  const { session, env, dir } = await openSessionEnv(ctx, userId, sessionId)
+  const { env, dir } = await openSessionEnv(ctx, userId, sessionId)
   const target = resolveAgainst(dir, targetPath)
   assertNotWorkspaceRoot(dir, target)
   // Never let an empty/blank path collapse to `rm -rf /` style damage.
   if (target === path.parse(target).root)
     throw new InvalidRequestError('refused', 'Refusing to delete the filesystem root')
 
-  const isLocal = !session.executionBackend || session.executionBackend === 'local'
-  const useTrash = isLocal && !opts?.permanent
+  const useTrash = !opts?.permanent
   const bin = useTrash ? trashDir() : null
   const tree = treeFsFor(env)
 

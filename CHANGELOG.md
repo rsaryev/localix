@@ -65,6 +65,12 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
   that one's place, keeping its data, instead of failing with "already called". Apps Localix
   installs on its own still leave yours alone.
 
+### Removed
+
+- **SSH and Docker execution adapters**: the unused groundwork for running a session's tools over
+  SSH or in a Docker container is gone, along with its documentation. Sessions run on the local
+  machine, as before.
+
 ## v0.1.0-beta.22 — 2026-10-30
 
 A fix for the Store after the move to mini app marketplaces.

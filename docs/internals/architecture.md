@@ -127,8 +127,8 @@ is the contract between the two.
 
 ## Limits
 
-- The release desktop starts a local sidecar. SSH and Docker execution adapters exist as groundwork,
-  but the session environment selector is not wired.
+- The release desktop starts a local sidecar. Sessions execute on that machine; there is no remote
+  execution adapter.
 - The core event socket is multiplexed, while terminal panes use separate stream sockets. Treating
   all live traffic as one connection is incorrect.
 - SQLite and filesystem stores are local process dependencies. This layout is not a distributed

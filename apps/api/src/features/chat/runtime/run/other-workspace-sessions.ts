@@ -8,8 +8,6 @@ export interface RunningChatWorkspace {
   title: string
   project_id: string | null
   root_session_id: string | null
-  execution_backend: string
-  execution_target: string | null
   working_dir: string | null
 }
 
@@ -35,10 +33,7 @@ export function otherWorkspaceSessionsSection(
 ): RuntimeSection | undefined {
   const matching = rows.filter(
     (row) =>
-      row.id !== session.id &&
-      row.execution_backend === session.executionBackend &&
-      row.execution_target === session.executionTarget &&
-      normalizeProjectDir(workingDir(row)) === normalizeProjectDir(cwd),
+      row.id !== session.id && normalizeProjectDir(workingDir(row)) === normalizeProjectDir(cwd),
   )
   if (!matching.length) return undefined
 

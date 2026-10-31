@@ -36,12 +36,11 @@ is the working folder. `CLAUDE_CONFIG_DIR` moves the whole tree, and `autoMemory
 own Claude Code settings names another folder (a repository's committed settings cannot).
 `autoMemoryEnabled: false` or `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` turns memory off.
 
-| Who                      | What it gets                                                                             |
-| ------------------------ | ---------------------------------------------------------------------------------------- |
-| A chat, a scheduled run  | The folder's path, how to save into it, and the first 200 lines or 25 KB of `MEMORY.md`  |
-| A fork                   | Its parent's prompt, memory included                                                     |
-| A subagent               | No project memory; an agent file's own `memory: user \| project \| local` folder instead |
-| A run over SSH or Docker | No memory: its file tools cannot reach the folder                                        |
+| Who                     | What it gets                                                                             |
+| ----------------------- | ---------------------------------------------------------------------------------------- |
+| A chat, a scheduled run | The folder's path, how to save into it, and the first 200 lines or 25 KB of `MEMORY.md`  |
+| A fork                  | Its parent's prompt, memory included                                                     |
+| A subagent              | No project memory; an agent file's own `memory: user \| project \| local` folder instead |
 
 The agent saves a memory with the ordinary file tools: one fact per file, starting with frontmatter
 (`name`, `description`, and `type: user | feedback | project | reference` under `metadata`), then a

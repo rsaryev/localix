@@ -7,7 +7,6 @@ import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
-import type { ExecutionEnvironment } from '../environment'
 import { localEnvironment } from '../environments/local'
 import { withEnvScripts } from './bash-run-context'
 
@@ -25,9 +24,7 @@ describe('withEnvScripts', () => {
     expect(result.exitCode).toBe(0)
   })
 
-  it('leaves the command alone without scripts or off the local backend', () => {
+  it('leaves the command alone without scripts', () => {
     expect(withEnvScripts({ env: localEnvironment }, 'ls')).toBe('ls')
-    const remote = { config: { kind: 'ssh' } } as unknown as ExecutionEnvironment
-    expect(withEnvScripts({ env: remote, envScripts: ['/x.sh'] }, 'ls')).toBe('ls')
   })
 })

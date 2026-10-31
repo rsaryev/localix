@@ -50,8 +50,6 @@ export function sessionFixture(overrides: Partial<SessionRecord> = {}): SessionR
     createdAt: FIXTURE_TIMESTAMP,
     updatedAt: FIXTURE_TIMESTAMP,
     lastMessageAt: FIXTURE_TIMESTAMP,
-    executionBackend: 'local',
-    executionTarget: null,
     // A fixture project, not the real default one: a session record always carries a project
     // (its capability scope is keyed by it), and a test must not have to create a directory on
     // disk to build one.

@@ -22,8 +22,6 @@ function session(id: string, overrides: Partial<SessionRecord> = {}): SessionRec
     createdAt: timestamp,
     updatedAt: timestamp,
     lastMessageAt: timestamp,
-    executionBackend: 'local',
-    executionTarget: null,
     projectId: 'PRJ-test',
     parentSessionId: null,
     rootSessionId: id,

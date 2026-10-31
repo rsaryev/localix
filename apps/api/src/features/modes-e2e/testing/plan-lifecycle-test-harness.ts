@@ -53,8 +53,6 @@ function sessionRow(id: string, overrides: Partial<SessionRecord> = {}): Session
     createdAt: at,
     updatedAt: at,
     lastMessageAt: at,
-    executionBackend: 'local',
-    executionTarget: null,
     projectId: 'PRJ-test',
     parentSessionId: null,
     rootSessionId: id,

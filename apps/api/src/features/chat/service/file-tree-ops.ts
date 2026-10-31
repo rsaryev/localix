@@ -236,9 +236,7 @@ export async function duplicateEntry(
 }
 
 /**
- * Reveal a tree entry in the host OS file manager (Finder/Explorer/xdg). Only
- * meaningful for a LOCAL-backend session — the resolved path is a remote path for
- * ssh/docker, so we refuse those rather than reveal a non-existent local path.
+ * Reveal a tree entry in the host OS file manager (Finder/Explorer/xdg).
  */
 export async function revealEntry(
   ctx: FileOpsContext,
@@ -246,11 +244,6 @@ export async function revealEntry(
   sessionId: string,
   targetPath: string,
 ): Promise<{ opened: true }> {
-  const { session, dir } = await openSessionEnv(ctx, userId, sessionId)
-  if (session.executionBackend && session.executionBackend !== 'local')
-    throw new InvalidRequestError(
-      'reveal_unsupported',
-      'Reveal is only available for local sessions',
-    )
+  const { dir } = await openSessionEnv(ctx, userId, sessionId)
   return revealPath(resolveAgainst(dir, targetPath))
 }

@@ -9,7 +9,7 @@ import {
   type PermissionRule,
 } from '../../projects/contracts'
 import { resolveEffectiveAgentConfig } from '../../effective-config/effective-config'
-import { createEnvironment, executionConfigFor } from '../../agent-core/tools/environments'
+import { localEnvironment } from '../../agent-core/tools/environments/local'
 import { resolveAgentPromptContext } from './prompt-agent-context'
 import type { LoadedMiniApps } from '../../mini-apps/loader'
 import type { LoadedPlugins } from '../../plugins/loader'
@@ -76,18 +76,14 @@ export async function prepareRunContext(
     session,
   )
   const [project, defaultCwd] = await Promise.all([projectPromise, defaultCwdPromise])
-  // Claude Code's auto memory folder for the run's repository, shared with Claude Code itself. A
-  // run on another machine or in a container has no such folder its file tools can reach.
-  const memoryDir =
-    (session.executionBackend ?? 'local') === 'local'
-      ? autoMemoryDir({ cwd: defaultCwd, homeDir: ctx.claudeHome ?? claudeCodeHome() })
-      : null
+  // Claude Code's auto memory folder for the run's repository, shared with Claude Code itself.
+  const memoryDir = autoMemoryDir({ cwd: defaultCwd, homeDir: ctx.claudeHome ?? claudeCodeHome() })
   const memory = memoryDir ? { dir: memoryDir, ...(await readMemoryIndex(memoryDir)) } : null
   const resolvedAgent = params.agent
   if (resolvedAgent.definition.id !== route.agentId) {
     throw new Error(`Agent is unavailable: ${route.agentId}`)
   }
-  const env = createEnvironment(executionConfigFor(session))
+  const env = localEnvironment
 
   // Malformed project settings degrade to built-in defaults (safeJsonParse → null).
   const projectSettings = safeJsonParse<unknown>(project?.settings)

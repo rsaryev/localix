@@ -2,8 +2,6 @@ import path from 'node:path'
 import { localixWorkspaceDir } from '../../../lib/env'
 import type { DetachedChild } from './environments/spawn'
 
-export type BackendKind = 'local' | 'docker' | 'ssh'
-
 /**
  * Resolve a tool's working directory: an absolute `cwd` as-is, a relative one
  * against `defaultCwd` (the session's resolved workspace —
@@ -30,12 +28,7 @@ export function resolveToolCwd(cwd: string | undefined, defaultCwd?: string): st
 export { shellQuote } from '@localixai/mini-app-sdk/backend'
 
 export interface ExecutionEnvironmentConfig {
-  kind: BackendKind
-  // Docker
-  containerName?: string
-  // SSH
-  sshHost?: string // user@host
-  sshPort?: number // default 22
+  kind: 'local'
 }
 
 /**

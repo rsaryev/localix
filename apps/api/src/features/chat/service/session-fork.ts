@@ -59,8 +59,6 @@ export async function forkSession(
     createdAt: timestamp,
     updatedAt: timestamp,
     lastMessageAt: timestamp,
-    executionBackend: source.executionBackend,
-    executionTarget: source.executionTarget,
     pinnedSkills: source.pinnedSkills,
     // A fork is the same conversation with the same agent, still on the model it was on — but
     // only what the SOURCE chose is copied as a choice (`chosenRoute`). A model the source was

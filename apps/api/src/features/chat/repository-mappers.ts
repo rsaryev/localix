@@ -58,8 +58,6 @@ export const mapSession = (
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   lastMessageAt: row.last_message_at,
-  executionBackend: (row.execution_backend ?? 'local') as 'local' | 'ssh' | 'docker',
-  executionTarget: row.execution_target ?? null,
   projectId: row.project_id,
   parentSessionId: row.parent_session_id ?? null,
   rootSessionId: row.root_session_id ?? row.id,

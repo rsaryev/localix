@@ -58,8 +58,6 @@ function session(activatedTools: string[]): SessionRecord {
     createdAt: '2026-08-18T00:00:00.000Z',
     updatedAt: '2026-08-18T00:00:00.000Z',
     lastMessageAt: '2026-08-18T00:00:00.000Z',
-    executionBackend: 'local',
-    executionTarget: null,
     projectId: 'PRJ-test',
     parentSessionId: null,
     rootSessionId: 's1',

@@ -40,8 +40,6 @@ const session = {
   createdAt: '2026-10-26T00:00:00.000Z',
   updatedAt: '2026-10-26T00:00:00.000Z',
   lastMessageAt: '2026-10-26T00:00:00.000Z',
-  executionBackend: 'local',
-  executionTarget: null,
   projectId: 'PRJ-test',
   parentSessionId: null,
   rootSessionId: 's1',

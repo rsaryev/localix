@@ -63,8 +63,7 @@ agent permission to call its tools.
 ## Limits
 
 - Localix is in beta. Expect rough edges, and breaking changes between releases until 1.0.
-- Sessions currently execute on the local machine. SSH and Docker execution adapters exist in
-  source, but no product control selects them for a session.
+- Sessions execute on the local machine. There is no remote (SSH or container) execution.
 - Localix does not supply a hosted model or provider credential. A direct run stops when its
   provider connection or session model is missing.
 - A task-board card does not create a workspace or execution context. Any explicit delegation uses

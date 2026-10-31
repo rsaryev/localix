@@ -98,13 +98,13 @@ Each recipe walks through one task from setup to a visible result.
 
 ### Integrations
 
-| Guide                                                          | Covers                                                         |
-| -------------------------------------------------------------- | -------------------------------------------------------------- |
-| [Connect MCP servers](features/mcp.md)                         | Connect external tool servers and inspect their availability.  |
-| [Use hooks and slash commands](features/hooks-and-commands.md) | Use lifecycle hooks and slash commands.                        |
-| [Execution environments](features/execution-environments.md)   | Understand local execution and the remote-adapter limitations. |
-| [Manage credentials with Vault](features/secrets.md)           | Store vault credentials and use secret interpolation.          |
-| [Send messages into a session](features/webhook.md)            | Push an external message into a session.                       |
+| Guide                                                          | Covers                                                        |
+| -------------------------------------------------------------- | ------------------------------------------------------------- |
+| [Connect MCP servers](features/mcp.md)                         | Connect external tool servers and inspect their availability. |
+| [Use hooks and slash commands](features/hooks-and-commands.md) | Use lifecycle hooks and slash commands.                       |
+| [Execution environments](features/execution-environments.md)   | Understand how tools run on the local machine.                |
+| [Manage credentials with Vault](features/secrets.md)           | Store vault credentials and use secret interpolation.         |
+| [Send messages into a session](features/webhook.md)            | Push an external message into a session.                      |
 
 ## Extending Localix
 

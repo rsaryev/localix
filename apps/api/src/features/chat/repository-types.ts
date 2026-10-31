@@ -111,8 +111,6 @@ export interface SessionRecord {
   createdAt: string
   updatedAt: string
   lastMessageAt: string
-  executionBackend: 'local' | 'ssh' | 'docker'
-  executionTarget: string | null
   /** Never null: every session belongs to a project (see `projects/default-project.ts`). */
   projectId: string
   parentSessionId: string | null

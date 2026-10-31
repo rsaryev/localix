@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'bun:test'
 import { createBashTool } from './bash'
 import { localEnvironment } from '../environments/local'
-import { SSHEnvironment, DockerEnvironment } from '../environments/remote'
 import type { ExecutionEnvironment } from '../environment'
 import type { AsyncToolRegistry, ToolAction } from '@localixai/agent/agents'
 import { FAST_SETTLE } from './testing/test-settle'
@@ -51,35 +50,7 @@ describe('createBashTool — local (default)', () => {
   })
 })
 
-describe('createBashTool — error cases', () => {
-  it('non-local env with background=true → isError', async () => {
-    const env = new DockerEnvironment({ kind: 'docker', containerName: 'c1' })
-    const tool = createBashTool(env)
-    const result = await tool.execute(
-      'call_1',
-      { command: 'ls', background: true },
-      undefined,
-      undefined,
-      undefined,
-    )
-    expect(result.isError).toBe(true)
-    expect(result.content).toContain('background mode is not supported')
-  })
-
-  it('ssh env with background=true → isError', async () => {
-    const env = new SSHEnvironment({ kind: 'ssh', sshHost: 'user@host' })
-    const tool = createBashTool(env)
-    const result = await tool.execute(
-      'call_2',
-      { command: 'ls', background: true },
-      undefined,
-      undefined,
-      undefined,
-    )
-    expect(result.isError).toBe(true)
-    expect(result.content).toContain('background mode is not supported')
-  })
-
+describe('createBashTool — background', () => {
   it('local env with background=true is allowed (no isError from backend check)', async () => {
     // background:true on local should not be blocked at the validation step
     // (it proceeds to spawn — we just verify it doesn't return an immediate isError)
@@ -140,26 +111,5 @@ describe('createBashTool — error cases', () => {
     expect(final.details?.isStreaming).toBe(false)
     expect(final.done).toBe(true)
     expect(final.output).toContain('got:hello')
-  })
-})
-
-describe('SSHEnvironment — command construction', () => {
-  it('uses ssh with correct host and default port', () => {
-    const env = new SSHEnvironment({ kind: 'ssh', sshHost: 'user@example.com' })
-    expect(env.config.sshHost).toBe('user@example.com')
-    expect(env.config.sshPort).toBeUndefined()
-    // Default port 22 is used internally in exec
-  })
-
-  it('stores custom sshPort', () => {
-    const env = new SSHEnvironment({ kind: 'ssh', sshHost: 'user@host.com', sshPort: 2222 })
-    expect(env.config.sshPort).toBe(2222)
-  })
-})
-
-describe('DockerEnvironment — command construction', () => {
-  it('stores container name', () => {
-    const env = new DockerEnvironment({ kind: 'docker', containerName: 'myapp' })
-    expect(env.config.containerName).toBe('myapp')
   })
 })

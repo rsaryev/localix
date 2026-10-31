@@ -149,14 +149,6 @@ export function createBashTool(
         return { content: 'background mode is disabled in sub sessions', isError: true }
       }
 
-      // Background mode is only supported for the local backend
-      if (background && env.config.kind !== 'local') {
-        return {
-          content: `background mode is not supported for backend=${env.config.kind}`,
-          isError: true,
-        }
-      }
-
       const cwd = resolveCwd(input, defaultCwd)
       // A background job runs until it exits or is stopped: `timeout` is the CALL's budget, and
       // models pass it out of habit (`python3 -m http.server`, `timeout: 60` — LOCALIX-388), which

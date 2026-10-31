@@ -9,8 +9,6 @@ import {
 
 const current = {
   id: 's1',
-  executionBackend: 'local',
-  executionTarget: null,
 } as SessionRecord
 
 function row(over: Partial<RunningChatWorkspace> = {}): RunningChatWorkspace {
@@ -19,8 +17,6 @@ function row(over: Partial<RunningChatWorkspace> = {}): RunningChatWorkspace {
     title: 'Fix API',
     project_id: 'p1',
     root_session_id: null,
-    execution_backend: 'local',
-    execution_target: null,
     working_dir: '/repo',
     ...over,
   }
@@ -40,16 +36,15 @@ describe('other workspace sessions', () => {
     expect(section?.text).not.toContain('s3')
   })
 
-  test('does not advertise a missing tool or conflate distinct backends', () => {
+  test('does not advertise a tool the session cannot use', () => {
     const section = otherWorkspaceSessionsSection(
       current,
       '/repo',
-      [row({ execution_backend: 'ssh' }), row({ id: 's3', title: 'Test' })],
+      [row({ id: 's3', title: 'Test' })],
       false,
     )
     expect(section?.text).toContain('s3 — Test')
     expect(section?.text).not.toContain('GlobalSearch')
-    expect(section?.text).not.toContain('s2')
   })
 
   test('default-project sandboxes share only the same root, including forks', () => {

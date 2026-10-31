@@ -17,7 +17,7 @@ import { localEnvironment } from '../../agent-core/tools/environments/local'
 
 let dir: string
 const ctx = (): FileOpsContext => ({
-  requireSession: async () => ({ id: 's1', executionBackend: 'local' }) as unknown as SessionRecord,
+  requireSession: async () => ({ id: 's1' }) as unknown as SessionRecord,
   resolveSessionWorkingDir: async () => dir,
 })
 

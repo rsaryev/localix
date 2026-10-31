@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 
-import { createEnvironment, executionConfigFor } from '../../agent-core/tools/environments'
+import { localEnvironment } from '../../agent-core/tools/environments/local'
 import type { SessionRecord } from '../repository'
 
 /**
@@ -25,7 +25,7 @@ export interface FileOpsContext {
  */
 export const openSessionEnv = async (ctx: FileOpsContext, userId: string, sessionId: string) => {
   const session = await ctx.requireSession(userId, sessionId)
-  const env = createEnvironment(executionConfigFor(session))
+  const env = localEnvironment
   const dir = await ctx.resolveSessionWorkingDir(userId, session)
   return { session, env, dir }
 }

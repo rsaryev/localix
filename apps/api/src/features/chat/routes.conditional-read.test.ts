@@ -23,8 +23,7 @@ let dir: string
 
 const service = () => {
   const ctx: FileOpsContext = {
-    requireSession: async () =>
-      ({ id: 'session-a', executionBackend: 'local' }) as unknown as SessionRecord,
+    requireSession: async () => ({ id: 'session-a' }) as unknown as SessionRecord,
     resolveSessionWorkingDir: async () => dir,
   }
   return {

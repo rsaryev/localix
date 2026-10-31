@@ -75,15 +75,13 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
     }
   }
 
-  // Lazily-armed file-tree change watcher. Local sessions only; an ssh/docker tree
-  // is invisible to a local fs.watch.
+  // Lazily-armed file-tree change watcher. Sessions run on this machine, so a local fs.watch sees the tree.
   const fileWatchService = deps.ports.createFileWatcher({
     streamRegistry,
     // Quick-open's file-list memo and the root's language servers (root-change-fanout.ts).
     onRootChanged: rootChangeFanout(deps.lspManager),
     resolveRoot: async (userId, sessionId) => {
       const session = await requireSession(userId, sessionId)
-      if ((session.executionBackend ?? 'local') !== 'local') return null
       return { root: await resolveSessionWorkingDir(userId, session), local: true }
     },
   })

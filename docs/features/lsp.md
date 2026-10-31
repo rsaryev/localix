@@ -255,7 +255,6 @@ terminal edit, a build, a branch switch — reaches the project's running langua
 server receives only the changes under its own root. A file open in the editor is left out: its
 buffer is what the server checks, and the editor reloads it from disk itself.
 
-- Local sessions only; an SSH or Docker session has no local watcher.
 - Changes inside `.git`, `.hg`, or `.svn`, and inside an installed package under `node_modules`, are
   not sent.
 - A burst of more than 1,024 changed paths in one settled batch is not sent at all. Servers then
@@ -265,9 +264,8 @@ buffer is what the server checks, and the editor reloads it from disk itself.
 
 - Java, C/C++, C#, Ruby, PHP, Swift, Kotlin, Svelte, Markdown, Lua, shell, Zig, Dart, and Elixir
   have recognized language IDs but no built-in server definition.
-- Language-server processes and executable discovery run on the API host. Selecting SSH or Docker
-  for file tools does not start an LSP server there. Remote editing can work while language services
-  remain unavailable; the server needs a usable local root and dependencies on the API host.
+- Language-server processes and executable discovery run on the API host; the server needs a usable
+  local root and dependencies there.
 - Built-in definitions win over plugin definitions. A plugin server never registers an extension a
   built-in definition handles, even when the built-in executable is missing or still installing.
 - The first file of a language needs a network connection (and Go, for Go files without `gopls`).

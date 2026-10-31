@@ -28,7 +28,7 @@ import type { ExecutionEnvironment } from '../../agent-core/tools/environment'
 let dir: string
 let trash: string
 const ctx = (): FileOpsContext => ({
-  requireSession: async () => ({ id: 's1', executionBackend: 'local' }) as unknown as SessionRecord,
+  requireSession: async () => ({ id: 's1' }) as unknown as SessionRecord,
   resolveSessionWorkingDir: async () => dir,
 })
 
@@ -292,7 +292,7 @@ describe('duplicateEntry', () => {
     const oneSnapshot: FileOpsContext = {
       requireSession: async () => {
         sessionReads += 1
-        return { id: 's1', executionBackend: 'local' } as SessionRecord
+        return { id: 's1' } as SessionRecord
       },
       resolveSessionWorkingDir: async () => dir,
     }

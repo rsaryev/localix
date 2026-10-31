@@ -21,7 +21,7 @@ import { ccSessionEnvFilesOf } from './cc-hook-session-facts'
 import { settingsEnvScriptFor } from './settings-env-script'
 import { claudeCodeSettingsEnv } from '../../../cc-settings/settings-env'
 import { dirname } from 'node:path'
-import type { createEnvironment } from '../../../agent-core/tools/environments'
+import type { ExecutionEnvironment } from '../../../agent-core/tools/environment'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { RunnerDeps } from '../agent-runner-types'
 import { buildFileToolPorts } from './file-tool-ports'
@@ -72,7 +72,7 @@ export function buildRunToolRegistry(
     session: SessionRecord
     /** The agent taking this turn — whose rules decided everything below. */
     agentId: string
-    env: ReturnType<typeof createEnvironment>
+    env: ExecutionEnvironment
     defaultCwd: string
     disabledTools: string[]
     /** The denying rule behind each `disabledTools` entry — the ledger's policy reason. */

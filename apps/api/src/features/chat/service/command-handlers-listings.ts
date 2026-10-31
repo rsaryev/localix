@@ -96,11 +96,6 @@ export async function handleMemoryControlCommand(
   directReply: DirectReply,
 ): Promise<MessageMutationResponse> {
   const arg = commandRemainder(prompt)
-  // As a run does (`prompt-context.ts`): the folder is on this machine, out of reach of another.
-  if ((session.executionBackend ?? 'local') !== 'local')
-    return directReply(
-      'This conversation runs on another machine or in a container, which has no auto memory folder, so `/memory` has nothing to show or save.',
-    )
   const cwd = await ctx.resolveSessionWorkingDir(userId, session)
   const dir = autoMemoryDir({ cwd, homeDir: claudeCodeHome() })
   if (!dir) {

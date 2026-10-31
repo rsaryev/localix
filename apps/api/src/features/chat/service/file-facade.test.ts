@@ -18,8 +18,7 @@ afterEach(() => {
 function facade(arm: (userId: string, sessionId: string) => Promise<boolean>) {
   return createChatFileFacade({
     fileOpsCtx: {
-      requireSession: async () =>
-        ({ id: 's1', executionBackend: 'local' }) as unknown as SessionRecord,
+      requireSession: async () => ({ id: 's1' }) as unknown as SessionRecord,
       resolveSessionWorkingDir: async () => dir,
     },
     fileWatchService: { arm } as unknown as ReturnType<typeof createFileWatchService>,

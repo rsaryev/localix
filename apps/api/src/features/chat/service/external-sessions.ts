@@ -127,8 +127,6 @@ export async function resolveExternalSession(
     createdAt: timestamp,
     updatedAt: timestamp,
     lastMessageAt: timestamp,
-    executionBackend: 'local',
-    executionTarget: null,
     pinnedSkills: [],
     activatedTools: [],
     archivedAt: null,

@@ -41,8 +41,6 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
           'session.title',
           'session.project_id',
           'session.root_session_id',
-          'session.execution_backend',
-          'session.execution_target',
           'project.working_dir',
         ])
         .where('session.user_id', '=', userId)
