@@ -12,7 +12,7 @@ beforeAll(() => {
 // animation frames. A clock that jumps a second per read makes every commit due at once, and a
 // frame queue the test pumps replaces the display refresh, so no real time has to pass.
 type Frame = (time: number) => void
-let nowSpy: ReturnType<typeof spyOn> | undefined
+let nowSpy: { mockRestore(): void } | undefined
 let clock = 0
 let frameClock = 0
 let frameId = 0

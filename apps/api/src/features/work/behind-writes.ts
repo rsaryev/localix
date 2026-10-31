@@ -8,14 +8,14 @@ import { errorMessage } from '../../lib/errors'
 export function behindWrites(warn?: (message: string) => void) {
   const writing = new Set<Promise<unknown>>()
   return {
-    behind(what: string, write: () => Promise<unknown>): void {
+    behind: (what: string, write: () => Promise<unknown>): void => {
       const done = write()
         .catch((error: unknown) => warn?.(`work record ${what} not stored: ${errorMessage(error)}`))
         .finally(() => writing.delete(done))
       writing.add(done)
     },
     /** Resolves once every write started so far has landed (or been logged as failed). */
-    async flush(): Promise<void> {
+    flush: async (): Promise<void> => {
       while (writing.size > 0) await Promise.all(writing)
     },
   }

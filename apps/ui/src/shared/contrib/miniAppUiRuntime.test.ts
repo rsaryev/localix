@@ -135,7 +135,7 @@ describe('converging on the snapshot', () => {
       settled.push([name, ok]),
     )
     expect(failures).toEqual(['hung'])
-    expect(settled.sort()).toEqual([
+    expect(settled.sort(([a], [b]) => a.localeCompare(b))).toEqual([
       ['fine', true],
       ['hung', false],
     ])

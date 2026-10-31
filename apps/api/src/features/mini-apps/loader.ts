@@ -50,7 +50,7 @@ async function importOnce(
   ctx: Parameters<typeof importNativeModule>[1],
 ): Promise<Imported> {
   const kept = key === null ? undefined : imported.get(key)
-  if (kept && kept.revision === revision) return kept.result
+  if (kept?.revision === revision) return kept.result
   const result = await importNativeModule(entry, ctx)
   if (key !== null) imported.set(key, { revision, result })
   return result

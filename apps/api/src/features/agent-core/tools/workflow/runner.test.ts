@@ -106,7 +106,7 @@ describe('runWorkflow', () => {
   test('a started agent passed to parallel() or a pipeline stage is null, hinted and awaited', async () => {
     const { host, events } = fakeHost(() => 'ok')
     let finished = 0
-    const slow = host.runAgent
+    const slow = host.runAgent.bind(host)
     host.runAgent = async (request, signal) => {
       await Promise.resolve()
       const reply = await slow(request, signal)

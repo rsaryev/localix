@@ -36,7 +36,9 @@ export function recommendationFor(reason: RecommendReason | undefined): string {
       return 'for what you installed'
     case 'project':
       return 'for this project'
-    default:
+    case 'context':
+    case 'trusted':
+    case undefined:
       return 'for your work'
   }
 }

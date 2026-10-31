@@ -67,7 +67,7 @@ describe('the mini app store’s background updates and installs', () => {
         marketplaceSource(other),
       ],
       (async (input: string | URL | Request, init?: RequestInit) =>
-        String(input).startsWith('https://ada.test/')
+        (input instanceof Request ? input.url : input.toString()).startsWith('https://ada.test/')
           ? other.fetchImpl(input, init)
           : localix.fetchImpl(input, init)) as typeof fetch,
     )
