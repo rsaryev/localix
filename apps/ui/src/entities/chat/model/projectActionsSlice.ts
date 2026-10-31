@@ -67,7 +67,7 @@ export function createProjectActions({ set, customSet, get }: ProjectActionsDeps
         sessionBelongsToScope(session, id),
       )
       const firstRootSession = projectSessions.find((s) => !s.parentSessionId)
-      const remembered = loadRememberedActiveSession(id)
+      const remembered = id ? loadRememberedActiveSession(id) : null
       const activeSessionId =
         remembered && projectSessions.some((s) => s.id === remembered)
           ? remembered

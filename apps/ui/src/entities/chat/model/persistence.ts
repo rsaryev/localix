@@ -32,8 +32,7 @@ const LAST_WORKSPACE_KEY = workspaceStorageKey('localix_last_workspace')
 const PROMPT_HISTORY_KEY = 'localix_prompt_history'
 const PROMPT_HISTORY_LIMIT = 150
 
-const activeSessionKey = (projectId?: string | null) =>
-  projectId ? `${ACTIVE_SESSION_KEY}_${projectId}` : ACTIVE_SESSION_KEY
+const activeSessionKey = (projectId: string) => `${ACTIVE_SESSION_KEY}_${projectId}`
 
 /**
  * Record the open chat: the project's remembered chat and the launch-restore pair, together. Called ONLY by the location ledger (`locationLedger.ts`), which follows the URL
@@ -56,7 +55,7 @@ export function forgetSessionLocation(projectId: string | null, sessionId: strin
   }
 }
 
-export function loadRememberedActiveSession(projectId?: string | null): string | null {
+export function loadRememberedActiveSession(projectId: string): string | null {
   return loadString(activeSessionKey(projectId))
 }
 
