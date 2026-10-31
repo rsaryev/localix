@@ -3,7 +3,7 @@
 // scrollWidth>clientWidth math is unit-testable without a DOM. Deliberately generic:
 // it knows nothing about tabs — any horizontally-scrolling container can consume it
 // to paint edge fades.
-import { useEffect, useRef, useState, type DependencyList, type RefObject } from 'react'
+import { useEffect, useEffectEvent, useState, type DependencyList, type RefObject } from 'react'
 
 /** Which edges have content clipped out of view (drives an edge fade per side). */
 export interface TabOverflowState {
@@ -66,10 +66,9 @@ export function useTabOverflow<T extends HTMLElement>(
   onResize?: () => void,
 ): TabOverflowState {
   const [state, setState] = useState<TabOverflowState>(NO_OVERFLOW)
-  // Held in a ref so a new callback identity per render never re-attaches the
+  // An effect event, so a new callback identity per render never re-attaches the
   // observer below.
-  const onResizeRef = useRef(onResize)
-  onResizeRef.current = onResize
+  const resized = useEffectEvent(() => onResize?.())
 
   useEffect(() => {
     if (!enabled) {
@@ -91,13 +90,13 @@ export function useTabOverflow<T extends HTMLElement>(
     measure()
     const ro = new ResizeObserver(() => {
       measure()
-      onResizeRef.current?.()
+      resized()
     })
     ro.observe(el)
     el.addEventListener('scroll', measure, { passive: true })
     const onWindowResize = () => {
       measure()
-      onResizeRef.current?.()
+      resized()
     }
     window.addEventListener('resize', onWindowResize)
     return () => {
