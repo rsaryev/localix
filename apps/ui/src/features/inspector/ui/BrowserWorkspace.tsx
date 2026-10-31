@@ -6,6 +6,7 @@ import { publishLiveTabMessageContext } from '@/entities/workspace-grid/model/li
 import { TabPanel, useTabPanelIds } from '@localixai/kit/tabs'
 import { tabIdInScope } from '@/entities/workspace-grid/model'
 import { usePreviewStore, type PreviewEntry } from '../model/previewStore'
+import { personActionLines, usePersonActions } from '../model/personActions'
 import { useBrowserHistory } from '../model/browserHistory'
 import { addressDestination, browserEngine, isLocalBrowserUrl } from '../model/browserUrl'
 import { openPreviewFromClick } from '../model/openPreview'
@@ -32,6 +33,7 @@ export function BrowserWorkspace({
   const openBrowserTab = usePreviewStore((s) => s.openBrowserTab)
   const openBrowserHistory = usePreviewStore((s) => s.openBrowserHistory)
   const visits = useBrowserHistory((s) => s.visits)
+  const personDid = usePersonActions((s) => s.bySession[sessionId])
   // The grid id of THIS chat's Browser tab — the key its live context is read back under.
   const itemId = tabIdInScope('preview', 'preview', sessionId)
   const tabIds = useTabPanelIds('browser')
@@ -74,6 +76,9 @@ export function BrowserWorkspace({
           content: JSON.stringify({
             active_tab_id: current?.previewId ?? null,
             tabs: roster,
+            // What the person did here since you last looked, so you do not act on a tab they
+            // closed or moved.
+            ...(personDid?.length ? { person_did: personActionLines(personDid) } : {}),
             history: {
               total: visits.length,
               recent: visits.slice(0, 5).map(({ url, title }) => ({ url, title })),
@@ -84,7 +89,7 @@ export function BrowserWorkspace({
       ],
     })
     return () => publishLiveTabMessageContext(itemId, null)
-  }, [itemId, tabs, current?.previewId, visits])
+  }, [itemId, tabs, current?.previewId, visits, personDid])
 
   const pageActive = bodyActive && !newTab
   const engine = current ? browserEngine(current) : null

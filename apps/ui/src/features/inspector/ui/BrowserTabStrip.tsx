@@ -6,6 +6,7 @@ import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 import { IconButton } from '@localixai/kit/icon-button'
 import { TabStrip, type StripTabItem, type useTabPanelIds } from '@localixai/kit/tabs'
+import { usePersonActions } from '../model/personActions'
 import { usePreviewStore, type PreviewEntry } from '../model/previewStore'
 import { BROWSER_HISTORY_URL, browserEngine, hostsInFrame } from '../model/browserUrl'
 import { closeNativePages } from '../model/nativePages'
@@ -25,8 +26,19 @@ export const NEW_TAB_ID = 'browser:new-tab'
 const reportNative = (failure: string) => (error: unknown) =>
   void toast.error(failure, { description: errorMessage(error, '') || undefined })
 
+/** The agent reads what the person closed in its next roster. */
+function noteClosedByPerson(ids: string[]): void {
+  const strips = usePreviewStore.getState().previewTabsBySession
+  for (const [sessionId, tabs] of Object.entries(strips)) {
+    for (const tab of tabs) {
+      if (ids.includes(tab.previewId)) usePersonActions.getState().closed(sessionId, tab)
+    }
+  }
+}
+
 export function closeBrowserTabs(ids: string[]): void {
   const closable = ids.filter((id) => !browserTabTransferBus.pending(id))
+  noteClosedByPerson(closable)
   usePreviewStore.getState().closeBrowserTabs(closable)
   closeNativePages(
     closable,

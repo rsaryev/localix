@@ -4,6 +4,9 @@ import { registerDom } from '@localixai/kit/testing/dom'
 import { usePreviewStore } from '../model/previewStore'
 import { useBrowserHistory } from '../model/browserHistory'
 import { BrowserWorkspace } from './BrowserWorkspace'
+import { usePersonActions } from '../model/personActions'
+import { liveTabMessageContext } from '@/entities/workspace-grid/model/liveTabMessageContext'
+import { tabIdInScope } from '@/entities/workspace-grid/model'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -148,6 +151,49 @@ describe('BrowserWorkspace tabs', () => {
       } else {
         delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView
       }
+    }
+  })
+})
+
+describe('BrowserWorkspace roster for the agent', () => {
+  test('tells the agent a tab it opened was closed by the person', async () => {
+    const { createRoot } = await import('react-dom/client')
+    const previous = usePreviewStore.getState()
+    const page = {
+      previewId: 'tab-a',
+      url: 'https://example.com/a',
+      title: 'Example',
+      version: 0,
+      originSessionId: 'session-1',
+      nativePage: true,
+    }
+    usePersonActions.setState({ bySession: {} })
+    usePreviewStore.setState({
+      previewBySession: { 'session-1': page },
+      previewTabsBySession: { 'session-1': [page] },
+    })
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    try {
+      await act(async () => root.render(<BrowserWorkspace sessionId="session-1" active={false} />))
+      await act(async () => {
+        container
+          .querySelector<HTMLButtonElement>('button[aria-label="Close Example"]')
+          ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      })
+      const published = JSON.stringify(
+        liveTabMessageContext(tabIdInScope('preview', 'preview', 'session-1')),
+      )
+      expect(published).toContain(
+        'The person closed tab tab-a (Example, https://example.com/a), which you opened.',
+      )
+    } finally {
+      await act(async () => root.unmount())
+      usePreviewStore.setState({
+        previewBySession: previous.previewBySession,
+        previewTabsBySession: previous.previewTabsBySession,
+      })
+      usePersonActions.setState({ bySession: {} })
     }
   })
 })

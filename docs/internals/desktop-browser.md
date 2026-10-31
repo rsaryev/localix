@@ -57,6 +57,12 @@ in flight sweeps along the toolbar's bottom edge. What belongs to the browser ra
 page lives once on the tab strip: history, a new tab, closing, and reordering by drag. A new tab is
 a tab of its own, its address field focused over the pages visited most recently.
 
+The agent reads a live "Browser tabs" roster of each chat's strip. It also carries what the person
+did there since: a tab they closed (said to be one the agent opened, when it was) and an address
+they typed into a tab. Only the person's own actions are recorded, the last five per chat, one line
+per tab; the agent's own closes and navigations are not. The roster is read with the next message,
+and a command for a closed tab is answered at once with the tabs that are open.
+
 The agent bridge is injected once the page's document has parsed and is the one the tab is loading,
 never by comparing addresses: a page that rewrites its own URL after loading, as Google search does,
 is still the page that loaded. While WebKit reports a load in flight, a `complete` document is the

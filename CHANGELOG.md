@@ -6,6 +6,9 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ### Added
 
+- **Browser tells the agent what you did**: when you close a tab the agent opened, or type a new
+  address into one of its tabs, the agent is told on its next turn, so it stops working on a page
+  you already closed or moved.
 - **Browser tells what changed in order**: after a click or typing, the agent is shown the lines
   that changed with the line above each one and a mark between changes that are apart, so one of
   several identical rows or scores is told by its place, and a control that appeared comes with a

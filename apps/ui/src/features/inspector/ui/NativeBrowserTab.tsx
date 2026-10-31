@@ -8,6 +8,7 @@ import { useNativeBrowserPage } from './useNativeBrowserPage'
 import { useNativePageEvents } from './useNativePageEvents'
 import { usePreviewViewport } from './usePreviewViewport'
 import { addressDestination } from '../model/browserUrl'
+import { usePersonActions } from '../model/personActions'
 import { usePreviewStore } from '../model/previewStore'
 import type { PreviewEntry } from '../model/preview'
 
@@ -88,6 +89,7 @@ export function NativeBrowserTab({
       onOpenElsewhere(url)
       return
     }
+    usePersonActions.getState().navigated(sessionId, tab, url)
     updateTab(sessionId, tab.previewId, { url, title: undefined })
     void invoke?.('browser_navigate', { tabId: tab.previewId, url }).catch(
       reportTo('Could not open the address'),
