@@ -4,19 +4,18 @@ import { schemaIssue } from './contracts-base'
 
 import { mapCcRuleList } from '../ext/cc-tool-names'
 import { trimmedFrontmatterField } from '../ext/frontmatter'
-import { argumentHintField } from '../agent-core/skill-frontmatter'
-import {
-  parseMarkdownFrontmatter,
-  scalarField,
-  splitTokenList,
-} from '../agent-core/skill-discovery'
+import { argumentHintField, scalarField } from '../agent-core/skill-frontmatter'
 import {
   MAX_SKILL_MARKDOWN_BYTES,
   readSkillMarkdownFile,
   skillFileErrorDetail,
 } from '../agent-core/skill-file'
-import { parseYamlFrontmatterBlock, splitFrontmatter } from '../agent-core/frontmatter-yaml'
-import { frontmatterBool } from '../agent-core/frontmatter-values'
+import {
+  parseYamlFrontmatterBlock,
+  splitFrontmatter,
+  parseMarkdownFrontmatter,
+} from '../agent-core/frontmatter-yaml'
+import { frontmatterBool, splitTokenList } from '../agent-core/frontmatter-values'
 import {
   PLUGIN_QUALIFIED_NAME_RE,
   pluginAgentSchema,

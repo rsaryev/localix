@@ -1,3 +1,4 @@
+import { scalarField } from '../agent-core/skill-frontmatter'
 /**
  * Shared frontmatter-value coercion primitives for the plugins + agents
  * discovery loaders (both parse Claude-Code-style markdown frontmatter and
@@ -5,8 +6,6 @@
  * rule in ONE place means `true`/`yes`/`1` (and their negatives) are read the
  * same way everywhere a CC scalar becomes a boolean.
  */
-
-import { scalarField } from '../agent-core/skill-discovery'
 
 /**
  * Read a frontmatter field as a trimmed non-empty string, or undefined. Folds

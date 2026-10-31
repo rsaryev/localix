@@ -1,9 +1,12 @@
 import { createHash } from 'node:crypto'
 import { promises as fs } from 'node:fs'
-import { parseYamlFrontmatterBlock } from '../../agent-core/frontmatter-yaml'
-import { parseMarkdownFrontmatter, scalarField } from '../../agent-core/skill-discovery'
+import {
+  parseYamlFrontmatterBlock,
+  parseMarkdownFrontmatter,
+} from '../../agent-core/frontmatter-yaml'
 import { collectMarkdownFiles, parseAgentFile } from '../../plugins/discovery-cc-files'
 import { buildLoadedAgent, type LoadedPluginAgent } from '../../plugins/loader-contract'
+import { scalarField } from '../../agent-core/skill-frontmatter'
 
 /**
  * A Claude Code agent file as the catalog knows it (sub-agents.md). The format is Claude Code's:

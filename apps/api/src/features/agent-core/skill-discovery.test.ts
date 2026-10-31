@@ -2,12 +2,10 @@ import { describe, it, expect, beforeAll, afterAll, spyOn } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import {
-  discoverFilesystemSkills,
-  splitTokenList,
-  parseMarkdownFrontmatter,
-  scalarField,
-} from './skill-discovery'
+import { discoverFilesystemSkills } from './skill-discovery'
+import { parseMarkdownFrontmatter } from './frontmatter-yaml'
+import { splitTokenList } from './frontmatter-values'
+import { scalarField } from './skill-frontmatter'
 
 describe('scalarField', () => {
   it('passes a string through and leaves undefined undefined', () => {

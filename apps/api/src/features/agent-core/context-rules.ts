@@ -1,8 +1,7 @@
 import { promises as fs, type Dirent } from 'node:fs'
 import { join, relative } from 'node:path'
 import { isPathBelow } from '../../lib/path-containment'
-import { parseMarkdownFrontmatter } from './skill-frontmatter'
-import { parseYamlFrontmatterBlock } from './frontmatter-yaml'
+import { parseYamlFrontmatterBlock, parseMarkdownFrontmatter } from './frontmatter-yaml'
 
 /**
  * MODULAR RULE FILES — `.localix/rules/**\/*.md` and Claude Code's `.claude/rules/**\/*.md`,

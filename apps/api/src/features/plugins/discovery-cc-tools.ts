@@ -1,5 +1,5 @@
 import { mapCcToolList } from '../ext/cc-tool-names'
-import { splitTokenList } from '../agent-core/skill-discovery'
+import { splitTokenList } from '../agent-core/frontmatter-values'
 
 /** True for a non-null, non-array object (a YAML mapping node). */
 export function isPlainRecord(v: unknown): v is Record<string, unknown> {

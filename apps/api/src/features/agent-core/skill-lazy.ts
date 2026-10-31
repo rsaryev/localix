@@ -1,10 +1,6 @@
 import { readSkillMarkdownFileSync } from './skill-file'
-import {
-  makeSkill,
-  parseMarkdownFrontmatter,
-  type DiscoveredSkill,
-  type SkillFrontmatter,
-} from './skill-frontmatter'
+import { makeSkill, type DiscoveredSkill, type SkillFrontmatter } from './skill-frontmatter'
+import { parseMarkdownFrontmatter } from './frontmatter-yaml'
 
 /**
  * Keep discovery metadata-only after parsing. The prompt needs only each skill's name and

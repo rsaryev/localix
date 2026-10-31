@@ -1,9 +1,10 @@
 import { DECLARABLE_EFFORTS_TEXT, isDeclarableEffort } from '../../db/types'
-import { frontmatterBool } from './frontmatter-values'
+import { frontmatterBool, splitTokenList } from './frontmatter-values'
 import { basename, dirname } from 'node:path'
 
-import { parseMarkdownFrontmatter, scalarField, splitTokenList } from './skill-discovery'
 import { readSkillMarkdownFile, skillFileErrorDetail } from './skill-file'
+import { parseMarkdownFrontmatter } from './frontmatter-yaml'
+import { scalarField } from './skill-frontmatter'
 
 /**
  * Pure per-`SKILL.md` validation — the skill-domain counterpart of the plugin

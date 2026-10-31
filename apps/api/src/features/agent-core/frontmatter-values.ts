@@ -9,8 +9,6 @@
 // Reading the frontmatter is the one YAML parse in `frontmatter-yaml.ts`; a hand-rolled line
 // reader used to live here and could read a file differently from the YAML parse of the same
 // block. The VALUE splitting below is this module's own.
-export { parseMarkdownFrontmatter } from './frontmatter-yaml'
-
 /**
  * Split a space/comma/YAML-inline-array string (or a pre-parsed string array from
  * block-list YAML frontmatter) into trimmed non-empty tokens. Respects parentheses

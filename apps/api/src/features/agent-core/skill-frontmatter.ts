@@ -5,17 +5,14 @@
  * How frontmatter parses, and how one of its values splits into a list, is a different
  * subject and lives in `frontmatter-values.ts` — nothing there knows what a skill is. No
  * filesystem access lives in either; `skill-discovery.ts` owns the fs walk + CRUD and
- * composes both, re-exporting the public parsers for existing importers.
+ * composes both.
  */
-import { parseYamlFrontmatterBlock, renderFrontmatterFile } from './frontmatter-yaml'
 import {
-  frontmatterBool,
+  parseYamlFrontmatterBlock,
+  renderFrontmatterFile,
   parseMarkdownFrontmatter,
-  splitPhraseList,
-  splitTokenList,
-} from './frontmatter-values'
-
-export { parseMarkdownFrontmatter, splitPhraseList, splitTokenList }
+} from './frontmatter-yaml'
+import { frontmatterBool, splitPhraseList, splitTokenList } from './frontmatter-values'
 
 export interface DiscoveredSkill {
   // ---- Core fields -------------------------------------------------------

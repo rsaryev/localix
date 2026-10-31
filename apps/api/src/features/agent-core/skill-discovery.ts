@@ -25,11 +25,11 @@ import { skillSourceLock } from './skill-source-policy'
  *
  * How a base dir is READ (the SKILL.md directory format, symlinks, archives)
  * lives in `skill-scan.ts`; the pure parsing
- * layer (frontmatter → DiscoveredSkill) in `skill-frontmatter.ts`. Both re-export
- * their public surface here, so callers keep one import path.
+ * layer (frontmatter → DiscoveredSkill) in `skill-frontmatter.ts`. The skill type and
+ * the scan entry points are re-exported here; frontmatter readers are imported from
+ * the modules that define them.
  */
 export type { DiscoveredSkill } from './skill-frontmatter'
-export { parseMarkdownFrontmatter, scalarField, splitTokenList } from './skill-frontmatter'
 export { skillRoot, readSkillsFromRoot } from './skill-scan'
 
 /** Minimal warning sink shared with the API's existing feature-level logger contracts. */
