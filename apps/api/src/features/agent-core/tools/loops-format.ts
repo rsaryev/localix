@@ -2,7 +2,7 @@
 
 import { loopClockTime, loopLastStatusLabel } from '../../loops/format'
 import type { SessionLoop } from '../../loops/contracts'
-import { plural } from './tool-output'
+import { plural } from '../../../lib/plural'
 
 function cadence(l: SessionLoop): string {
   if (l.kind === 'dynamic')

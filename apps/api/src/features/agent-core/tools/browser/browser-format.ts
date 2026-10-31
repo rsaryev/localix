@@ -5,7 +5,7 @@
 // separate from the relay flow in browser.ts.
 
 import type { PreviewCommandResult, PreviewSnapshot } from '../preview/preview-control'
-import { plural } from '../tool-output'
+import { plural } from '../../../../lib/plural'
 
 // Prepended when the preview reloaded between the agent's commands. The dev-server
 // file-watch auto-reload (or a location.reload()) resets the DOM — so a value you set

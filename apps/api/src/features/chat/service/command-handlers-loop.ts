@@ -5,7 +5,7 @@ import type { ExistingMessages } from './run-agent'
 import { splitCommandArg } from './slash-commands'
 import { getLoopEngine } from '../../loops/runtime-binding'
 import { LOOP_MAINTENANCE_PROMPT } from '../../loops/contracts'
-import { plural } from '../../agent-core/tools/tool-output'
+import { plural } from '../../../lib/plural'
 
 /**
  * Handles the `/loop …` control command. `list` replies directly; every other

@@ -19,8 +19,8 @@
  * other builder in `reminders.ts` answers "what does this history say", and this one answers
  * "what is this run allowed to do" — a fact about the run, from `contracts/turn-budget.ts`.
  */
-import { plural } from '../../agent-core/tools/tool-output'
 import { wrapSystemReminder } from './system-reminder'
+import { plural } from '../../../lib/plural'
 
 /**
  * The cap above which the budget is not worth mentioning.

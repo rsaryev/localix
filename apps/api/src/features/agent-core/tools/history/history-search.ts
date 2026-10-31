@@ -20,10 +20,6 @@ import {
   truncate,
 } from './history-search-format'
 
-// Re-export the pure formatting/text helpers + types so existing importers
-// (tests, tool routes) keep their stable `./history-search` surface.
-export * from './history-search-format'
-
 // ---- modes ------------------------------------------------------------------------
 
 export type HistorySearchRepo = Pick<

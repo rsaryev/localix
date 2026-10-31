@@ -1,8 +1,8 @@
 import type { AgentToolResult, AgentToolUpdateCallback } from '@localixai/agent/agents'
 import { DEFAULT_MAX_LINES } from '@localixai/agent'
 import { modelFacingMatches, truncateOutput } from './search-output'
-import { plural } from '../tool-output'
 import type { SearchToolDetails } from './search-contracts'
+import { plural } from '../../../../lib/plural'
 
 /** Keep one sentinel beyond the model-facing line cap so truncation is observable. */
 export const FILE_LIST_LIMIT = DEFAULT_MAX_LINES

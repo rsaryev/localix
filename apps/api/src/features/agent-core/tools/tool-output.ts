@@ -12,18 +12,6 @@ import { plural } from '../../../lib/plural'
  * which end survived, the follow-up advice) stay parameters.
  */
 
-/**
- * A count and its noun, pluralized: `1 file` / `2 files`.
- *
- * This used to be a second implementation of the `${n} thing${n === 1 ? '' : 's'}`
- * rule — one for the tools suite, one for the rest of the app. Two owners of one rule
- * is the same duplication the rule was extracted to kill, just at a coarser grain, so
- * the tools suite now RE-EXPORTS the app-wide owner rather than restating it. The
- * re-export stays because ~30 call sites in this suite import `plural` from here, and
- * moving them is churn with no reader benefit.
- */
-export { plural }
-
 /** Which end of the output survived the cap. */
 export type TruncationKept = 'first' | 'last'
 

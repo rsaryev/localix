@@ -1,4 +1,4 @@
-import { plural } from '../tool-output'
+import { plural } from '../../../../lib/plural'
 
 /**
  * Outline read mode — the token-cheap "signatures only" view of a source file,

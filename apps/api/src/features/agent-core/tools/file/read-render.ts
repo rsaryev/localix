@@ -1,4 +1,4 @@
-import { plural } from '../tool-output'
+import { plural } from '../../../../lib/plural'
 
 /** Result of rendering a numbered line-range read. */
 export interface LineRangeRender {

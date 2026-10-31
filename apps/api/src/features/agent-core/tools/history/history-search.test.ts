@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test'
-import { toFtsMatchQuery, extractMessageText } from './history-search'
 import type { HistorySearchRepo } from './history-search'
 import { createGlobalSearchTool } from '../global-search/global-search'
+import { toFtsMatchQuery, extractMessageText } from './history-search-format'
 
 /** The history modes now live in `GlobalSearch`; these tests drive them through it. */
 const createHistorySearchTool = (repo: HistorySearchRepo, userId: string) =>
