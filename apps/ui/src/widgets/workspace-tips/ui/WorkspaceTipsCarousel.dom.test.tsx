@@ -56,7 +56,7 @@ test('the tips carousel pages by buttons and arrows, ends by handing back to the
   const { visibleTips } = await import('./workspaceTips')
   // No plugin features a command here, so the slide that teaches one stays out.
   await stubCommands([])
-  const WORKSPACE_TIPS = visibleTips({ featuredCommand: false })
+  const WORKSPACE_TIPS = visibleTips({ featuredCommand: false, island: false })
   const { useChatStore } = await import('@/entities/chat/model/store')
   // The model slide reads live connections; the test has no server behind it.
   useChatStore.setState({ loadProjects: async () => {} })
@@ -164,6 +164,73 @@ test('the goal slide appears only when a plugin features a command, and names it
 
   await act(async () => root.unmount())
   host.remove()
+})
+
+// The island is off by default and asks nothing of a person who never turns it on, so its slide is
+// where it is offered: only in the macOS desktop app, where it exists.
+test('the island slide shows only in the macOS desktop app, and its switch drives the real setting', async () => {
+  const { act } = await import('react')
+  const { createRoot } = await import('react-dom/client')
+  const { MemoryRouter } = await import('react-router')
+  const { WorkspaceTipsCarousel } = await import('./WorkspaceTipsCarousel')
+  const { WORKSPACE_TIPS } = await import('./workspaceTips')
+  const { __resetIslandSetting, setIslandEnabled } = await import('@/shared/lib/islandSetting')
+  const island = WORKSPACE_TIPS.find((tip) => tip.id === 'island')!
+  const view = (
+    <MemoryRouter>
+      <WorkspaceTipsCarousel onFinish={() => {}} />
+    </MemoryRouter>
+  )
+  const calls: [string, unknown][] = []
+  const desktop = window as unknown as { __TAURI__?: unknown }
+  desktop.__TAURI__ = {
+    core: {
+      invoke: async (command: string, args?: unknown) => {
+        calls.push([command, args])
+        return command === 'island_enabled' ? false : null
+      },
+    },
+  }
+  await stubCommands([])
+  const host = document.createElement('div')
+  document.body.append(host)
+  const labels = () =>
+    [...host.querySelectorAll('.wt-seg')].map((seg) => seg.getAttribute('aria-label'))
+  const seg = () =>
+    [...host.querySelectorAll<HTMLButtonElement>('.wt-seg')].find(
+      (button) => button.getAttribute('aria-label') === `Show tip: ${island.lead}`,
+    )
+
+  // Not the macOS desktop app: no slide, and the shell is never asked.
+  __resetIslandSetting(false)
+  let root = createRoot(host)
+  await act(async () => root.render(view))
+  await act(() => turns())
+  expect(labels()).not.toContain(`Show tip: ${island.lead}`)
+  expect(calls).toEqual([])
+  await act(async () => root.unmount())
+
+  // The macOS desktop app: the slide shows the shell's value, off by default.
+  __resetIslandSetting(true)
+  root = createRoot(host)
+  await act(async () => root.render(view))
+  await act(() => turns())
+  await act(async () => seg()!.click())
+  expect(host.querySelector('section')?.getAttribute('aria-label')).toBe(island.lead)
+  const trigger = host.querySelector<HTMLButtonElement>('section .wt-pick')!
+  expect(trigger.getAttribute('aria-label')).toBe('Agent island: Off. Change')
+
+  await act(async () => setIslandEnabled(true))
+  await act(() => turns())
+  expect(calls).toContainEqual(['set_island_enabled', { enabled: true }])
+  expect(host.querySelector('section .wt-pick')?.getAttribute('aria-label')).toBe(
+    'Agent island: On. Change',
+  )
+
+  await act(async () => root.unmount())
+  host.remove()
+  __resetIslandSetting(false)
+  delete desktop.__TAURI__
 })
 
 test('the appearance slide ends in the theme and the glass, and the glass pick sets the level', async () => {

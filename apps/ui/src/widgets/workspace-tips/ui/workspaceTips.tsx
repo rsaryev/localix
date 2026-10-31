@@ -3,6 +3,7 @@ import { ApprovalScene } from './scenes/ApprovalScene'
 import { DecisionAction, DecisionScene } from './scenes/DecisionScene'
 import { AppearanceAction, AppearanceScene } from './scenes/AppearanceScene'
 import { GoalAction, GoalScene } from './scenes/GoalScene'
+import { IslandAction, IslandScene } from './scenes/IslandScene'
 import { KeymapAction, KeymapScene } from './scenes/KeymapScene'
 import { MentionScene } from './scenes/MentionScene'
 import { MiniAppsAction, MiniAppsScene } from './scenes/MiniAppsScene'
@@ -23,6 +24,8 @@ export interface WorkspaceTip {
   Action?: ComponentType
   /** Shown only when an enabled mini app or plugin features a command for this slide to teach. */
   needsFeaturedCommand?: boolean
+  /** Shown only in the macOS desktop app, the one place the agent island exists. */
+  needsIsland?: boolean
 }
 
 /**
@@ -33,7 +36,7 @@ export interface WorkspaceTip {
  * slides so the carousel never reads as a settings form. Every scene draws a surface
  * that exists today — no split groups, no rail theme button. Ids are stable: the
  * last-seen tip is remembered. A slide that needs a featured command is left out while
- * no enabled plugin features one.
+ * no enabled plugin features one; the island slide is left out outside the macOS desktop app.
  */
 export const WORKSPACE_TIPS: WorkspaceTip[] = [
   {
@@ -42,6 +45,14 @@ export const WORKSPACE_TIPS: WorkspaceTip[] = [
     rest: 'Fonts and code style live in Preferences; one click sets the theme —',
     Scene: AppearanceScene,
     Action: AppearanceAction,
+  },
+  {
+    id: 'island',
+    lead: 'An agent at the notch.',
+    rest: 'When an agent needs your answer and Localix is in the background, the request opens at the notch —',
+    Scene: IslandScene,
+    Action: IslandAction,
+    needsIsland: true,
   },
   {
     id: 'model',
@@ -109,9 +120,12 @@ export const WORKSPACE_TIPS: WorkspaceTip[] = [
 /** What the optional slides need, as known now. */
 export interface TipRequirements {
   featuredCommand: boolean
+  island: boolean
 }
 
 /** The slides to show now: the full list minus those whose requirement is unmet. */
 export function visibleTips(met: TipRequirements): WorkspaceTip[] {
-  return WORKSPACE_TIPS.filter((tip) => !tip.needsFeaturedCommand || met.featuredCommand)
+  return WORKSPACE_TIPS.filter(
+    (tip) => (!tip.needsFeaturedCommand || met.featuredCommand) && (!tip.needsIsland || met.island),
+  )
 }

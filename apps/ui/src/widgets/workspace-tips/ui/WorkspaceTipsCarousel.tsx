@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { useFeaturedCommand } from '@/shared/contrib/useFeaturedCommand'
+import { useIslandEnabled } from '@/shared/lib/islandSetting'
 // Shared scene styles first: each scene's own stylesheet overrides `.wt-pane` after it.
 import './tips.css'
 import { visibleTips, WORKSPACE_TIPS, type WorkspaceTip } from './workspaceTips'
@@ -42,7 +43,8 @@ function loopMs(stage: HTMLElement | null): number {
  */
 export function WorkspaceTipsCarousel({ onFinish }: { onFinish: () => void }) {
   const featuredCommand = useFeaturedCommand() !== null
-  const tips = visibleTips({ featuredCommand })
+  const island = useIslandEnabled() !== null
+  const tips = visibleTips({ featuredCommand, island })
   // The current slide is held by id, not position: a slide that appears once plugins load
   // must not move the person to a different tip.
   const [{ id, leaving }, setState] = useState<{

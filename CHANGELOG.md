@@ -10,7 +10,8 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
   work in another app. Answer it there with the same card as in the app, and the island disappears;
   leave it alone and it folds back into the notch, where a light keeps showing that it waits. A
   light also runs along the notch while agents work. It never opens while Localix is the active app.
-  Turn it on in Settings → Preferences → Agent island; it is off by default.
+  Turn it on in Settings → Preferences → Agent island or from its slide in Set up; it is off by
+  default.
 - **Browser reads pages inside frames**: the agent now sees and can click or type into the controls
   of an embedded same-origin frame, such as a cookie banner or an embedded form, and knows when a
   frame covers the page. A frame from another site is reported as not reachable instead of being
