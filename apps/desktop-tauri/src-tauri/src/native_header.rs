@@ -70,8 +70,7 @@ pub(crate) fn apply(window: &Window, tint: [f64; 4]) -> Result<(), String> {
     let native = unsafe { &*ptr.cast::<NSWindow>() };
     let content = native.contentView().ok_or("Window has no content view")?;
     let frame = unsafe { content.superview() }.ok_or("Window has no frame view")?;
-    crate::native_titlebar_backdrop::synchronize(&frame);
-    crate::native_tab_controls::synchronize(&frame);
+    sync_frame(&frame);
     if let Some(previous) = frame.viewWithTag(HEADER_TINT_TAG) {
         previous.removeFromSuperview();
     }
@@ -89,6 +88,11 @@ pub(crate) fn apply(window: &Window, tint: [f64; 4]) -> Result<(), String> {
     Ok(())
 }
 
+fn sync_frame(frame: &NSView) {
+    crate::native_titlebar_backdrop::synchronize(frame);
+    crate::native_tab_controls::synchronize(frame);
+}
+
 pub(crate) fn invalidate(window: &Window) {
     crate::native_chrome::synchronize(window);
     if let Ok(ptr) = window.ns_window() {
@@ -97,8 +101,7 @@ pub(crate) fn invalidate(window: &Window) {
             .contentView()
             .and_then(|content| unsafe { content.superview() })
         {
-            crate::native_titlebar_backdrop::synchronize(&frame);
-            crate::native_tab_controls::synchronize(&frame);
+            sync_frame(&frame);
             if let Some(coat) = frame.viewWithTag(HEADER_TINT_TAG) {
                 coat.setNeedsDisplay(true);
             }
