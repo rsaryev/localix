@@ -16,7 +16,6 @@
   "exports": {
     ".": "./src/index.ts",
     "./answer-markdown": "./src/features/agent-core/answer-markdown.ts",
-    "./agent-policy": "./src/features/agents/policy.ts",
     "./bootstrap": "./src/bootstrap.ts",
     "./client": "./src/client.ts",
     "./external-agent-contracts": "./src/features/external-agents/shared/contracts.ts",

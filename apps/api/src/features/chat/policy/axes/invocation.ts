@@ -4,7 +4,8 @@
  *
  * Trusted provenance only (`runtime/execution-context.ts`): it is stamped by the host that
  * dispatched the run, never by a client. It names the host whose admission rules apply to the
- * agent (`agents/policy.ts`), so a run cannot borrow a more trusted host's permissions.
+ * agent (its `invocation:<host>` rules, `capabilities/builtin-agent-presets.ts`), so a run
+ * cannot borrow a more trusted host's permissions.
  */
 import type { RunInvocation } from '../../runtime/execution-context'
 import { defineAxis, type AxisVariant } from '../axis'

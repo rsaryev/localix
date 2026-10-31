@@ -53,9 +53,8 @@ current state.
 | UI slices have no public entry; outsiders import `model/store` and other internals.                                         | `apps/ui/src/features/external-agents/model/openSession.ts`                                                                                   |
 | Desktop calls bypass the platform layer in the inspector feature.                                                           | `apps/ui/src/features/inspector/ui/useNativeBrowserPage.ts`                                                                                   |
 
-Good examples to copy: the directory port in `apps/api/src/bootstrap/agent-directory-ports.ts`, the
-pure policy in `apps/api/src/features/agents/policy.ts`, and the runtime ports in
-`apps/api/src/features/chat/runtime/run/runtime-tool-ports.ts`.
+Good examples to copy: the directory port in `apps/api/src/bootstrap/agent-directory-ports.ts` and
+the runtime ports in `apps/api/src/features/chat/runtime/run/runtime-tool-ports.ts`.
 
 ## Change feed coverage (C1, C5)
 
