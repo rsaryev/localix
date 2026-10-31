@@ -2,7 +2,7 @@
 import { latestActiveTerminalWait } from '@localixai/agent'
 import type { UiSession } from '../contracts'
 import type { StreamEventOf, StreamReducers } from './types'
-import { noticePosition } from './notice-position'
+import { conversationAnchor, noticePosition } from './notice-position'
 
 const MAX_TERMINAL_LIFECYCLE_NOTICES = 20
 let terminalLifecycleCounter = 0
@@ -33,9 +33,7 @@ function terminalLifecycleNotice(
     return session
   }
   const tail = session.messages.at(-1)
-  const anchor = [...session.messages]
-    .reverse()
-    .find((message) => message.role !== 'system' && !message.isInternal)
+  const anchor = conversationAnchor(session)
   const withinMessage = noticePosition(session, anchor)
   if (
     tail?.terminalLifecycle?.kind === kind &&

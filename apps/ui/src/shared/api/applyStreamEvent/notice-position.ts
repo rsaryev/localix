@@ -1,5 +1,10 @@
 import type { UiSession } from '../contracts'
 
+/** The latest message of the conversation itself — not a system row, not an internal one. */
+export function conversationAnchor(session: UiSession): UiSession['messages'][number] | undefined {
+  return session.messages.findLast((message) => message.role !== 'system' && !message.isInternal)
+}
+
 /** Freeze the live item's boundary before subsequent deltas grow the same reply. */
 export function noticePosition(
   session: UiSession,

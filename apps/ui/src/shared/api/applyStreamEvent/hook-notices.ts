@@ -1,7 +1,7 @@
 /** Bounded hook notices and mini app problem pointers in the transcript. */
 import { miniAppLabel } from '@/shared/contrib/miniAppAttribution'
 import type { StreamEventOf, StreamReducers } from './types'
-import { noticePosition } from './notice-position'
+import { conversationAnchor, noticePosition } from './notice-position'
 
 const MAX_HOOK_NOTICES = 5
 let hookNoticeCounter = 0
@@ -45,9 +45,7 @@ export const hookNoticeReducers: StreamReducers<'hook.notice'> = {
     // compact system notice anchored after the latest conversation message.
     if (event.sessionId !== session.id) return session
     hookNoticeCounter += 1
-    const anchorMsg = [...session.messages]
-      .reverse()
-      .find((m) => m.role !== 'system' && !m.isInternal)
+    const anchorMsg = conversationAnchor(session)
     const notice = {
       id: `sys-hook_notice-${Date.now()}-${hookNoticeCounter}`,
       createdAt: new Date().toISOString(),
