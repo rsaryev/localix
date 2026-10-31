@@ -26,6 +26,15 @@ struct Record {
 #[derive(Default)]
 pub(crate) struct WorkspaceDrags(Mutex<BTreeMap<Key, Record>>);
 
+/// Keep a reservation while it is unexpired or its drag is still in flight.
+#[cfg(any(target_os = "macos", test))]
+fn retain_live(entries: &mut BTreeMap<Key, Record>) {
+    entries.retain(|_, entry| {
+        entry.expires > Instant::now()
+            || matches!(entry.phase, Phase::Preparing | Phase::Preview(_))
+    });
+}
+
 #[cfg(any(target_os = "macos", test))]
 impl WorkspaceDrags {
     pub(crate) fn accepts_snapshot(&self, key: &Key, destination: &str) -> bool {
@@ -34,17 +43,11 @@ impl WorkspaceDrags {
     }
     #[cfg(target_os = "macos")]
     pub(crate) fn prune(&self) {
-        self.0.lock().unwrap().retain(|_, entry| {
-            entry.expires > Instant::now()
-                || matches!(entry.phase, Phase::Preparing | Phase::Preview(_))
-        });
+        retain_live(&mut self.0.lock().unwrap());
     }
     pub(crate) fn reserve(&self, key: &Key) -> Result<Option<String>, String> {
         let mut entries = self.0.lock().unwrap();
-        entries.retain(|_, entry| {
-            entry.expires > Instant::now()
-                || matches!(entry.phase, Phase::Preparing | Phase::Preview(_))
-        });
+        retain_live(&mut entries);
         if let Some(entry) = entries.get(key) {
             return match &entry.phase {
                 Phase::Preview(label) => Ok(Some(label.clone())),
