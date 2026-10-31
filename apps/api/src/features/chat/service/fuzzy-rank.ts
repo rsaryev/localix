@@ -1,5 +1,6 @@
-import { normalizeSearchText, rankSearchCandidates, scoreSearchFields } from '@localixai/search'
+import { normalizeSearchText, rankSearchCandidates } from '@localixai/search'
 
+/** Shared-engine path profile used by quick-open and every project file picker. */
 function pathFields(path: string) {
   const basename = path.slice(path.lastIndexOf('/') + 1)
   const normalized = normalizeSearchText(path)
@@ -13,12 +14,6 @@ function pathFields(path: string) {
     { text: initials, weight: 0.95 },
     { text: path, weight: 0.75 },
   ]
-}
-
-/** Shared-engine path profile used by quick-open and every project file picker. */
-export function fuzzyScore(pathStr: string, query: string): number | null {
-  const score = scoreSearchFields(pathFields(pathStr), query.replace(/\s+/g, ''))
-  return score > 0 ? score : null
 }
 
 /**

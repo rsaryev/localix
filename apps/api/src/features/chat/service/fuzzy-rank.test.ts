@@ -1,24 +1,24 @@
 import { describe, expect, test } from 'bun:test'
-import { fuzzyScore, rankFiles } from './fuzzy-rank'
+import { rankFiles } from './fuzzy-rank'
 
-describe('fuzzyScore', () => {
-  test('returns null when the query is not a subsequence', () => {
-    expect(fuzzyScore('src/FileTab.tsx', 'zzz')).toBeNull()
-    expect(fuzzyScore('a.ts', 'abc')).toBeNull()
+describe('path matching', () => {
+  test('a path the query is not a subsequence of is not offered', () => {
+    expect(rankFiles(['src/FileTab.tsx', 'a.ts'], 'zzz', 10)).toEqual([])
+    expect(rankFiles(['a.ts'], 'abc', 10)).toEqual([])
   })
 
-  test('a basename-substring match outscores an incidental scatter', () => {
-    const direct = fuzzyScore('src/inspector/FileTab.tsx', 'filetab')! // basename substring → +5
-    const scatter = fuzzyScore('features/inspector/lib/abstract.ts', 'filetab')
-    // 'filetab' is not a subsequence of the scatter path → no match at all.
-    expect(scatter).toBeNull()
-    expect(direct).toBeGreaterThan(0)
+  test('a basename match is offered, an incidental scatter is not', () => {
+    expect(
+      rankFiles(['features/inspector/lib/abstract.ts', 'src/inspector/FileTab.tsx'], 'filetab', 10),
+    ).toEqual(['src/inspector/FileTab.tsx'])
   })
 
-  test('word-boundary matches score higher than mid-word ones', () => {
-    const boundary = fuzzyScore('src/quick-open.ts', 'qo')! // q at /, o at - → both boundaries
-    const midword = fuzzyScore('aqbocd.ts', 'qo')! // q, o mid-word
-    expect(boundary).toBeGreaterThan(midword)
+  test('word-boundary matches rank above mid-word ones', () => {
+    // Listed longest-last so path length alone would order them the other way.
+    expect(rankFiles(['aqbocd.ts', 'src/quick-open.ts'], 'qo', 10)).toEqual([
+      'src/quick-open.ts',
+      'aqbocd.ts',
+    ])
   })
 })
 

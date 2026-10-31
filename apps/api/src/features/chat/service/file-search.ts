@@ -36,7 +36,7 @@ export { type ReplaceContentResult } from './replace-commit'
  * unavailable or a regex is malformed, so the UI degrades quietly.
  *
  * Ranking: fuzzy mode scores subsequence matches (exact-basename + boundary +
- * consecutive-run bonuses, shorter paths break ties — see `fuzzyScore`). We have
+ * consecutive-run bonuses, shorter paths break ties — see `rankPaths`). We have
  * no per-file recency source here, so "recent" ordering is intentionally omitted;
  * the UI surfaces recents separately (e.g. QuickOpen's recent-files group).
  */
