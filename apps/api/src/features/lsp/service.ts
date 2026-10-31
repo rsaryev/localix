@@ -67,6 +67,11 @@ export function createLspDocumentService(deps: LspServiceDeps): LspDocumentServi
     commitWorkspaceEdit,
   })
 
+  /**
+   * The open doc, only for the user who opened it. Session ids are enumerable, so a
+   * sessionId-only lookup would let another user corrupt an open buffer and trigger
+   * diagnostics on a session they don't own.
+   */
   async function ownedOpenDoc(
     userId: string,
     sessionId: string,
@@ -146,10 +151,7 @@ export function createLspDocumentService(deps: LspServiceDeps): LspDocumentServi
 
     async change(userId, sessionId, file, content) {
       const doc = await ownedOpenDoc(userId, sessionId, file)
-      // Ownership: only the user who opened the doc may mutate it. Session ids are
-      // enumerable, so a sessionId-only lookup would let another user corrupt an
-      // open buffer + trigger diagnostics on a session they don't own.
-      if (!doc || doc.userId !== userId) return // (also: change before open — editor opens on mount)
+      if (!doc) return // another user's doc, or a change before open (the editor opens on mount)
       // ORDERING INVARIANT: this extension of `doc.syncing` is the barrier every
       // read-side request awaits (see `projectRootAfterSync`). The editor fires
       // `lsp.change` WITHOUT awaiting it and asks for a format immediately after, so a
