@@ -73,7 +73,3 @@ export const VAULT_TYPE_PRESENTATION: Record<VaultItemType, VaultTypePresentatio
   wireless_router: { Icon: Wifi, tone: 'info' },
   secure_note: { Icon: NotebookPen, tone: 'neutral' },
 }
-
-export function vaultTypeIcon(type: VaultItemType): LucideIcon {
-  return VAULT_TYPE_PRESENTATION[type].Icon
-}

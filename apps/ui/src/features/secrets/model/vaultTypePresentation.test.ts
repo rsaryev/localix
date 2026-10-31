@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import { VAULT_ITEM_TYPES } from '@localixai/api/client'
-import { VAULT_TYPE_PRESENTATION, vaultTypeIcon } from './vaultTypePresentation'
+import { VAULT_TYPE_PRESENTATION } from './vaultTypePresentation'
 
 describe('Vault item type icon vocabulary', () => {
   test('covers every canonical type with a distinct local monochrome icon', () => {
@@ -13,7 +13,6 @@ describe('Vault item type icon vocabulary', () => {
   })
 
   test('resolves the crypto wallet presentation through the shared registry', () => {
-    expect(vaultTypeIcon('crypto_wallet')).toBe(VAULT_TYPE_PRESENTATION.crypto_wallet.Icon)
     expect(VAULT_TYPE_PRESENTATION.crypto_wallet.tone).toBe('warning')
   })
 })

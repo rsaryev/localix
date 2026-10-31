@@ -98,14 +98,6 @@ export interface ReadClassification {
   fates: Map<string, ReadFate>
 }
 
-/** `toolCallId`s of the live reads, bounded by count and total size. */
-export function liveReadItemIds(
-  messages: readonly ChatMessage[],
-  opts: LiveReadOptions = {},
-): Set<string> {
-  return classifyReads(messages, opts).live
-}
-
 export function classifyReads(
   messages: readonly ChatMessage[],
   opts: LiveReadOptions = {},

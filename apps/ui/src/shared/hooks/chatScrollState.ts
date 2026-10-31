@@ -51,10 +51,6 @@ function touchMeasurementSession(sessionId: string): void {
   }
 }
 
-export function hasChatScrollSnapshot(sessionId: string | null | undefined): boolean {
-  return Boolean(sessionId && snapshots.has(sessionId))
-}
-
 export function getChatScrollSnapshot(
   sessionId: string | null | undefined,
 ): ChatScrollSnapshot | null {

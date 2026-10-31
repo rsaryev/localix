@@ -18,11 +18,6 @@ import { buildUiLocationUri, listUiLocations } from '@/shared/contrib/uiLocation
 /** A palette command as the search surface consumes it (subset of PaletteCommand). */
 export type SearchCommandEntry = UiCommandEntry
 
-/** Compatibility facade for callers/tests; all client domains use the shared relevance engine. */
-export function clientScore(haystack: string, needle: string): number {
-  return scoreSearchFields([{ text: haystack }], needle)
-}
-
 function bestScore(fields: Array<string | undefined>, needle: string): number {
   return scoreSearchFields(
     fields.map((text) => ({ text })),

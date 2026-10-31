@@ -1,12 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import type { AttentionItem } from '@localixai/api/client'
 
-import {
-  attentionBySession,
-  dialogAttentionItem,
-  dockAttentionCount,
-  topAttentionItem,
-} from './select'
+import { attentionBySession, dialogAttentionItem, dockAttentionCount } from './select'
 import {
   applyAttentionRoster,
   loadAttention,
@@ -54,7 +49,6 @@ describe('the one ranking every channel shares', () => {
     const hitl = item({ kind: 'interaction', sessionId: 's', at: '2026-10-03T08:00:00.000Z' })
     const plan = item({ kind: 'plan', sessionId: 's', at: '2026-10-03T12:00:00.000Z' })
     const items = [plan, hitl]
-    expect(topAttentionItem(items, 's')).toBe(hitl)
     expect(attentionBySession(items).get('s')).toEqual([hitl, plan])
     // Memoized on the roster: every row reading it shares one grouping and stable arrays.
     expect(attentionBySession(items)).toBe(attentionBySession(items))
@@ -62,7 +56,7 @@ describe('the one ranking every channel shares', () => {
 
   test('a kind this client does not know is ignored, not mis-ranked', () => {
     const future = item({ kind: 'from-the-future' as AttentionItem['kind'], sessionId: 's' })
-    expect(topAttentionItem([future], 's')).toBeNull()
+    expect(attentionBySession([future]).get('s')).toBeUndefined()
     expect(dialogAttentionItem([future], null, none)).toBeNull()
     expect(dockAttentionCount([future])).toBe(0)
   })

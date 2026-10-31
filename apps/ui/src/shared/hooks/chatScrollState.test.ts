@@ -6,7 +6,6 @@ import {
   clearChatScrollSnapshotsForTests,
   measurementsUsableAtWidth,
   getChatScrollSnapshot,
-  hasChatScrollSnapshot,
   isUsableScrollViewport,
   restoredScrollTop,
   saveChatScrollSnapshot,
@@ -41,12 +40,6 @@ describe('chatScrollState', () => {
   it('distinguishes a hidden zero-height pane from a usable viewport', () => {
     expect(isUsableScrollViewport({ clientHeight: 0 })).toBe(false)
     expect(isUsableScrollViewport({ clientHeight: 640 })).toBe(true)
-  })
-
-  it('reports whether a remounted session has state before the virtualizer pins it', () => {
-    expect(hasChatScrollSnapshot('a')).toBe(false)
-    saveChatScrollSnapshot('a', { scrollTop: 10, follow: false })
-    expect(hasChatScrollSnapshot('a')).toBe(true)
   })
 
   it('keeps measured row geometry when later scroll events update only the offset', () => {

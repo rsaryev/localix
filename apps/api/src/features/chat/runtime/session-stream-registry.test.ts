@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { createSessionStreamRegistry, isLiveOnlyEvent } from './session-stream-registry'
-import { requiresWatchedSession } from './session-stream-policy'
+import { WATCH_GATED_EVENTS } from './session-stream-policy'
 import type { AgentStreamEvent } from '../contracts'
 
 /**
@@ -815,7 +815,7 @@ describe('subscribeScoped', () => {
  * the watch gate: a frame quietly moved to `watched` goes unreachable for every session the user is
  * not looking at.
  */
-describe('requiresWatchedSession', () => {
+describe('watch-gated events', () => {
   const EXPECTED_ROSTER: AgentStreamEvent['type'][] = [
     'session.updated', // the sidebar row itself
     'session.deleted', // committed removal of the entire conversation tree
@@ -839,10 +839,10 @@ describe('requiresWatchedSession', () => {
     'preview.closed', // background hosts release without selecting the conversation
   ]
 
-  test('requiresWatchedSession is the exact complement', () => {
-    for (const type of EXPECTED_ROSTER) expect(requiresWatchedSession(type)).toBe(false)
+  test('the watch gate is the exact complement of the roster', () => {
+    for (const type of EXPECTED_ROSTER) expect(WATCH_GATED_EVENTS.has(type)).toBe(false)
     for (const type of ['message.delta', 'message.updated', 'child_session.activity'] as const) {
-      expect(requiresWatchedSession(type)).toBe(true)
+      expect(WATCH_GATED_EVENTS.has(type)).toBe(true)
     }
   })
 })

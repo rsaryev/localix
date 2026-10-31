@@ -21,9 +21,6 @@
 /** One message per field, keyed by the draft's own field names. */
 export type FieldErrors<K extends string> = Partial<Record<K, string>>
 
-export const hasFieldErrors = <K extends string>(errors: FieldErrors<K>): boolean =>
-  Object.values(errors).some(Boolean)
-
 /**
  * Move focus to the first field that failed, so a long form does not leave the reader
  * hunting for the message it just printed.

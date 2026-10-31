@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'bun:test'
 import type { ChatMessage } from '../chat'
-import { classifyReads, liveReadItemIds } from './live-reads'
+import { classifyReads, type LiveReadOptions } from './live-reads'
 import { planContextCompression } from './plan'
 import { applyPlan } from './apply'
 import { HUGE_BUDGET, namedTool } from './_test-helpers'
@@ -29,6 +29,9 @@ const session = (items: ToolBackedItem[]): ChatMessage[] => [
     content: `next ${i}`,
   })),
 ]
+
+const liveReadItemIds = (messages: readonly ChatMessage[], opts: LiveReadOptions = {}) =>
+  classifyReads(messages, opts).live
 
 describe('liveReadItemIds', () => {
   it('keeps the last read of a file, drops an earlier read of the same file', () => {

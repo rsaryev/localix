@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
-import { defineAgentTool, isAgentToolAvailable, validateToolRegistry } from './toolset'
+import { defineAgentTool, validateToolRegistry } from './toolset'
 
 describe('defineAgentTool', () => {
   test('is an identity passthrough (returns the same object reference)', () => {
@@ -29,16 +29,6 @@ function makeTool(label?: string) {
 }
 
 describe('toolset', () => {
-  test('descriptor availability is evaluated from runtime surface capabilities', () => {
-    const uiTool = {
-      ...makeTool(),
-      availability: { requiredCapabilities: ['workbench-ui'] },
-    }
-    expect(isAgentToolAvailable(uiTool, { capabilities: ['workbench-ui', 'other'] })).toBe(true)
-    expect(isAgentToolAvailable(uiTool, { capabilities: [] })).toBe(false)
-    expect(isAgentToolAvailable(makeTool(), { capabilities: [] })).toBe(true)
-  })
-
   test('validates unique model and dispatch projections while allowing hidden dispatch tools', () => {
     const visible = makeTool()
     const hidden = { ...makeTool(), name: 'hidden' }

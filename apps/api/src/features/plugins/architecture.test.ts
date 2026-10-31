@@ -12,7 +12,7 @@ import { pluginConfigOptionSchema } from './contracts-config'
 import { validatePlugin } from './validate'
 import { pluginTrustClass } from './enable'
 import { trustFallback } from '../ext/trust'
-import { copyPluginTree } from './install-helpers'
+import { copyExtensionTree } from '../ext/install-tree'
 
 /**
  * Build a COMPLETE `ResolvedEntrypoints` — a plugin that contributes nothing,
@@ -141,7 +141,7 @@ describe('install copy', () => {
       await fs.writeFile(join(src, 'server.pyc'), 'bytecode')
 
       await fs.rm(dest, { recursive: true, force: true }) // cp wants a fresh dest
-      await copyPluginTree(src, dest)
+      await copyExtensionTree(src, dest)
 
       for (const kept of [
         '.claude-plugin/plugin.json',

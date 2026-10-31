@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'bun:test'
 import {
-  clientScore,
   searchSettings,
   searchCommands,
   searchUiLocations,
@@ -10,21 +9,6 @@ import {
 } from './searchClient'
 import { ALL_SCOPE, scopeById } from './scopes'
 import { registerUiLocation, unregisterUiLocation } from '@/shared/contrib/uiLocations'
-
-describe('clientScore', () => {
-  it('ranks exact > prefix > boundary > mid > subsequence > none', () => {
-    const scores = [
-      clientScore('theme', 'theme'),
-      clientScore('theme preset', 'theme'),
-      clientScore('color theme', 'theme'),
-      clientScore('atheme', 'theme'),
-      clientScore('t-h-e-m-e', 'theme'),
-    ]
-    expect(scores[0]).toBe(1)
-    expect(scores.every((score, index) => index === 0 || scores[index - 1]! > score)).toBe(true)
-    expect(clientScore('nope', 'theme')).toBe(0)
-  })
-})
 
 const cmds: SearchCommandEntry[] = [
   {

@@ -1,16 +1,4 @@
-import type { AgentTool, ToolSurface } from './types'
-
-/**
- * Evaluate a tool descriptor against the current runtime surface. This is the
- * single policy predicate used before model and dispatch projection.
- */
-export function isAgentToolAvailable(tool: AgentTool, surface?: ToolSurface): boolean {
-  const required = tool.availability?.requiredCapabilities
-  if (!required || required.length === 0) return true
-  if (!surface) return false
-  const available = new Set(surface.capabilities)
-  return required.every((capability) => available.has(capability))
-}
+import type { AgentTool } from './types'
 
 export function defineAgentTool<TInput = unknown, TDetails = unknown>(
   tool: AgentTool<TInput, TDetails>,

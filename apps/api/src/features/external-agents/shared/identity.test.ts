@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { linkKeyOf, parseLinkKey, sameKey } from './identity'
+import { linkKeyOf, parseLinkKey } from './identity'
 
 describe('link identity', () => {
   it('keeps the SAME native id in two providers apart', () => {
@@ -9,12 +9,6 @@ describe('link identity', () => {
     const a = linkKeyOf({ provider: 'claude-code', nativeSessionId: shared })
     const b = linkKeyOf({ provider: 'codex', nativeSessionId: shared })
     expect(a).not.toBe(b)
-    expect(
-      sameKey(
-        { provider: 'claude-code', nativeSessionId: shared },
-        { provider: 'codex', nativeSessionId: shared },
-      ),
-    ).toBe(false)
   })
 
   it('round-trips every provider’s real id shape', () => {

@@ -50,14 +50,6 @@ export function attentionBySession(
   return bySession
 }
 
-/** The item a session's badge shows: its highest-priority, newest item. */
-export function topAttentionItem(
-  items: readonly AttentionItem[],
-  sessionId: string,
-): AttentionItem | null {
-  return attentionBySession(items).get(sessionId)?.[0] ?? null
-}
-
 /**
  * The item the cross-session dialog shows, or null. Only a kind allowed to interrupt, never one in
  * the conversation on screen (that chat already shows it in place), never one snoozed here.

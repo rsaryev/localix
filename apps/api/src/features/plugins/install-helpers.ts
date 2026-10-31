@@ -6,13 +6,7 @@ import { randomUUID } from 'node:crypto'
 
 import { ApiError } from '../../lib/errors'
 import { gitUrl, isGitSource } from '../ext/git-source'
-import {
-  copyExtensionTree,
-  isUnderInstallRoot,
-  readManifestName,
-  rmrf,
-  stripDotGit,
-} from '../ext/install-tree'
+import { isUnderInstallRoot, readManifestName, rmrf, stripDotGit } from '../ext/install-tree'
 import { findManifestPath } from './discovery'
 import { PLUGIN_ID_NAME_RE } from './contracts'
 import { marketplaceOnlyHint } from './claude-code-marketplace'
@@ -106,9 +100,6 @@ export async function installFromLocal(
     )
   })
 }
-
-/** Copy a plugin source tree whole (VCS metadata aside), handling symlinks as Claude Code does. */
-export const copyPluginTree = copyExtensionTree
 
 async function manifestName(dir: string): Promise<string> {
   // A mini app names itself; else the plugin's manifest (Claude Code's, or a legacy one) does.

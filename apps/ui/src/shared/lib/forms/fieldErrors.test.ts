@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { focusFirstInvalid, hasFieldErrors, type FieldErrors } from './fieldErrors'
+import { focusFirstInvalid, type FieldErrors } from './fieldErrors'
 
 type Field = 'name' | 'prompt' | 'limit'
 
@@ -13,15 +13,6 @@ function docWith(ids: readonly string[]) {
 }
 
 const IDS = { name: 'f-name', prompt: 'f-prompt', limit: 'f-limit' }
-
-describe('hasFieldErrors', () => {
-  test('an object of cleared fields is not an error', () => {
-    // `clear` writes `undefined` rather than deleting, so the keys outlive the messages.
-    expect(hasFieldErrors({})).toBe(false)
-    expect(hasFieldErrors({ name: undefined } as FieldErrors<Field>)).toBe(false)
-    expect(hasFieldErrors({ name: 'Required.' })).toBe(true)
-  })
-})
 
 describe('focusFirstInvalid', () => {
   /**

@@ -175,11 +175,3 @@ export const WATCH_GATED_EVENTS = new Set<AgentStreamEvent['type']>(
 export function isLiveOnlyEvent(type: AgentStreamEvent['type']): boolean {
   return NON_REPLAYABLE_EVENTS.has(type)
 }
-
-/**
- * Does this frame require the receiving connection to have DECLARED it is watching the publish
- * key (see {@link DeliveryScope})? `false` = roster class, delivered to every connection.
- */
-export function requiresWatchedSession(type: AgentStreamEvent['type']): boolean {
-  return WATCH_GATED_EVENTS.has(type)
-}

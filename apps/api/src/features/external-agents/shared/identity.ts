@@ -47,7 +47,3 @@ export function parseLinkKey(raw: string): ExternalSessionKey | null {
     return null
   }
 }
-
-export function sameKey(a: ExternalSessionKey, b: ExternalSessionKey): boolean {
-  return a.provider === b.provider && a.nativeSessionId === b.nativeSessionId
-}

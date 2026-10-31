@@ -12,14 +12,3 @@ export function mediaSrc(att: { mediaType: string; data?: string; mediaId?: stri
   if (att.data) return `data:${att.mediaType};base64,${att.data}`
   return ''
 }
-
-/**
- * Resolve a server-emitted media reference (e.g. a HITL card's `thumb`) to a
- * loadable URL. The API emits a RELATIVE `/rpc/media/:id` path for file-backed
- * media — that must be resolved against the API origin (the UI may be served from
- * a different port in dev). Data URLs and absolute URLs pass through unchanged.
- */
-export function resolveMediaPath(pathOrUrl: string): string {
-  if (pathOrUrl.startsWith('/rpc/media/')) return `${API_BASE_URL}${pathOrUrl}`
-  return pathOrUrl
-}
