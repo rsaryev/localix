@@ -20,8 +20,6 @@
     "apps/api": {
       "ignoreBinaries": ["plutil"],
       "entry": [
-        "src/index.ts",
-        "src/bootstrap.ts",
         "migrations/*.ts",
         "scripts/**/*.ts",
         "src/**/*.test.ts",
@@ -40,24 +38,15 @@
     },
     "apps/ui": {
       "entry": [
-        "src/app/main.tsx",
         "src/app/kit/testing/*.ts",
-        "vite.config.ts",
         "src/**/*.surface.{ts,tsx}",
         "src/**/*.test.{ts,tsx}",
         "build/**/*.test.ts"
       ],
-      "ignoreDependencies": [
-        "vaul",
-        "@fontsource-variable/dm-sans",
-        "@fontsource-variable/fira-code",
-        "@fontsource-variable/geist",
-        "@fontsource-variable/jetbrains-mono",
-        "@fontsource/fragment-mono"
-      ]
+      "ignoreDependencies": ["vaul"]
     },
     "apps/landing": {
-      "entry": ["src/main.tsx", "vite.config.ts", "scripts/**/*.mjs"],
+      "entry": ["scripts/**/*.mjs"],
       "ignoreDependencies": ["@happy-dom/global-registrator"]
     },
     "apps/desktop-tauri": {
@@ -71,31 +60,18 @@
       "entry": ["src/index.ts", "src/worker.ts", "src/**/*.test.ts"]
     },
     "packages/kit": {
-      "entry": ["src/entries/*.ts", "src/testing/*.ts", "**/*.test.{ts,tsx}", "test-preload.ts"],
+      "entry": ["src/entries/*.ts", "src/testing/*.ts", "**/*.test.{ts,tsx}"],
       "ignoreDependencies": ["mediabunny"]
     },
     "packages/cli": {
       "entry": ["bin/localix.mjs", "src/main.ts", "src/**/*.test.ts", "scripts/**/*.mjs"],
       "ignoreUnresolved": ["scripts/build.mjs"]
     },
-    "packages/mini-app-sdk": {
-      "entry": ["src/backend/index.ts", "src/ui/index.ts", "src/manifest/index.ts"]
+    "packages/mini-app-kit-compiler": {
+      "entry": []
     }
   },
-  "ignore": [
-    "apps/desktop-tauri/src-tauri/resources/**",
-    "apps/desktop-tauri/src-tauri/target/**",
-    "docs/assets/screenshots/fixtures/**"
-  ],
-  "ignoreDependencies": [
-    "@vtsls/language-server",
-    "dockerfile-language-server-nodejs",
-    "vscode-langservers-extracted",
-    "yaml-language-server",
-    "@types/shell-quote",
-    "tailwindcss",
-    "@localixai/visual-feedback",
-    "hono"
-  ],
-  "ignoreBinaries": ["lipo", "rustc", "strip", "tauri"]
+  "ignore": ["docs/assets/screenshots/fixtures/**"],
+  "ignoreDependencies": ["@types/shell-quote", "tailwindcss", "hono"],
+  "ignoreBinaries": ["rustc", "tauri"]
 }
