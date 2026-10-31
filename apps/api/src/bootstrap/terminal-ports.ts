@@ -1,4 +1,4 @@
-import { agentTerminalOf } from '../features/terminal/agent-scope'
+import { agentTerminalOf, agentTerminalReader } from '../features/terminal/agent-scope'
 import { stripAnsi } from '../features/terminal/scrollback-digest'
 import { recordTerminalWork } from '../features/terminal/terminal-work'
 import type { ChatServiceDeps } from '../features/chat/service/context'
@@ -21,6 +21,7 @@ export function createTerminalPorts(
   ChatServiceDeps,
   'spawnTerminalJob' | 'readTerminalJob' | 'terminalControl' | 'closeSessionTerminals'
 > {
+  const agentTerminal = agentTerminalReader(() => serviceRefs.terminalService)
   return {
     spawnTerminalJob: async ({ userId, sessionId, cwd, command, wakesAgent }) => {
       if (!serviceRefs.terminalService) throw new Error('terminal service unavailable')
@@ -79,42 +80,16 @@ export function createTerminalPorts(
       // the service owns terminals per USER, which is right for the human panel, but an
       // agent may only touch panes bound to its own chat session. `list` already filtered
       // on chatSessionId and these four did not.
-      screen: async ({ userId, sessionId, terminalId }) =>
-        (await agentTerminalOf(
-          serviceRefs.terminalService,
-          userId,
-          sessionId,
-          terminalId,
-        )?.screen()) ?? null,
-      finalScreen: async ({ userId, sessionId, terminalId }) => {
-        // The archive is the only thing this reads, and `get()` returns undefined for
-        // exactly the ids the archive holds — the service deletes the live entry on exit.
-        // So the previous `agentTerminalOf(...) || !get(...)` had its right operand true
-        // precisely when there was something to leak: the session guard was inert when it
-        // mattered, and another session's exited pane came back in full. `finalScreen`
-        // itself compares only userId. Check the claim against the ARCHIVED record, which
-        // still carries chatSessionId.
-        if (!sessionId) return null
-        const archived = serviceRefs.terminalService?.archivedTerminal(userId, terminalId)
-        if (!archived || archived.chatSessionId !== sessionId) return null
-        return (await serviceRefs.terminalService?.finalScreen(userId, terminalId)) ?? null
-      },
+      // An exited pane's final screen is checked against its ARCHIVED record (agent-scope.ts).
+      screen: agentTerminal.screen,
+      finalScreen: agentTerminal.finalScreen,
       write: ({ userId, sessionId, terminalId, data }) => {
         const session = agentTerminalOf(serviceRefs.terminalService, userId, sessionId, terminalId)
         if (!session) return false
         session.write(data)
         return true
       },
-      watch: ({ userId, sessionId, terminalId }, onEvent) => {
-        const session = agentTerminalOf(serviceRefs.terminalService, userId, sessionId, terminalId)
-        if (!session) return null
-        const offData = session.subscribe(() => onEvent('output'))
-        const offExit = session.onExit(() => onEvent('exit'))
-        return () => {
-          offData()
-          offExit()
-        }
-      },
+      watch: agentTerminal.watch,
       list: ({ userId, sessionId }) =>
         (serviceRefs.terminalService?.list(userId) ?? []).flatMap((t) =>
           t.chatSessionId === sessionId ? [{ terminalId: t.id, command: t.command }] : [],

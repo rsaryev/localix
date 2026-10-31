@@ -1,4 +1,5 @@
-import type { TerminalSession } from './session'
+import type { MiniAppScreenSnapshot, TerminalReadHost } from '@localixai/mini-app-sdk/backend'
+import type { TerminalSession, TerminalSessionInfo } from './session'
 
 /**
  * Session confinement for AGENT access to terminals.
@@ -77,5 +78,45 @@ export function watchAgentTerminal(
   return () => {
     offData()
     offExit()
+  }
+}
+
+/** The slice of the terminal service an agent-side reader needs. */
+interface AgentTerminalSource {
+  get(userId: string, terminalId: string): TerminalSession | undefined
+  archivedTerminal(
+    userId: string,
+    terminalId: string,
+  ): Pick<TerminalSession, 'chatSessionId'> | undefined
+  finalScreen(userId: string, terminalId: string): Promise<MiniAppScreenSnapshot | null>
+  list(userId: string): Pick<TerminalSessionInfo, 'id' | 'chatSessionId' | 'command'>[]
+}
+
+/**
+ * A read-only view of the agent's own panes — the screen, the final screen of one that exited,
+ * the list and a watch — behind the same boundary as `agentTerminalOf`. `source` is read on each
+ * call: the terminal service is wired after the readers that hold this.
+ */
+export function agentTerminalReader(
+  source: () => AgentTerminalSource | undefined,
+): Required<TerminalReadHost> {
+  return {
+    screen: async ({ userId, sessionId, terminalId }) =>
+      (await agentTerminalOf(source(), userId, sessionId, terminalId)?.screen()) ?? null,
+    finalScreen: async ({ userId, sessionId, terminalId }) => {
+      // An exited pane is only in the archive (`get()` no longer finds it), so the session claim
+      // is checked against the ARCHIVED record, which still carries chatSessionId; the service's
+      // own `finalScreen` compares only the user.
+      if (!sessionId) return null
+      const service = source()
+      const archived = service?.archivedTerminal(userId, terminalId)
+      if (!archived || archived.chatSessionId !== sessionId) return null
+      return (await service?.finalScreen(userId, terminalId)) ?? null
+    },
+    list: ({ userId, sessionId }) =>
+      (source()?.list(userId) ?? []).flatMap((t) =>
+        t.chatSessionId === sessionId ? [{ terminalId: t.id, command: t.command }] : [],
+      ),
+    watch: (input, onEvent) => watchAgentTerminal(source(), input, onEvent),
   }
 }

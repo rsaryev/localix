@@ -2,7 +2,7 @@
 
 import { describe, expect, test } from 'bun:test'
 
-import { resolveAgentTerminal, watchAgentTerminal } from './agent-scope'
+import { agentTerminalReader, resolveAgentTerminal, watchAgentTerminal } from './agent-scope'
 import type { TerminalSession } from './session'
 
 /**
@@ -122,5 +122,55 @@ describe('watchAgentTerminal', () => {
       ),
     ).toBeNull()
     expect(p.data.size).toBe(0)
+  })
+})
+
+describe('agentTerminalReader', () => {
+  const SCREEN = { text: 'DONE', cursor: { row: 0, col: 0 }, cols: 80, rows: 24 }
+  // The service once a pane has exited: `get` no longer finds it, the archive does.
+  const exited = (over: Partial<TerminalSession> = {}) => {
+    const archived = term(over)
+    return {
+      get: () => undefined,
+      archivedTerminal: (userId: string, id: string) =>
+        archived.userId === userId && archived.id === id ? archived : undefined,
+      finalScreen: async () => SCREEN,
+      list: () => [],
+    }
+  }
+
+  test('the final screen of its own session’s exited pane', async () => {
+    const reader = agentTerminalReader(() => exited())
+    expect(await reader.finalScreen({ userId: 'u1', sessionId: 's1', terminalId: 't1' })).toBe(
+      SCREEN,
+    )
+  })
+
+  test('no final screen for another session’s pane, without a session, or without the service', async () => {
+    const input = { userId: 'u1', sessionId: 's1', terminalId: 't1' }
+    expect(
+      await agentTerminalReader(() => exited({ chatSessionId: 's2' })).finalScreen(input),
+    ).toBeNull()
+    expect(
+      await agentTerminalReader(() => exited()).finalScreen({ ...input, sessionId: null }),
+    ).toBeNull()
+    expect(
+      await agentTerminalReader(() => exited()).finalScreen({ ...input, userId: 'u2' }),
+    ).toBeNull()
+    expect(await agentTerminalReader(() => undefined).finalScreen(input)).toBeNull()
+  })
+
+  test('lists only the session’s own live panes', () => {
+    const reader = agentTerminalReader(() => ({
+      ...exited(),
+      list: () => [
+        { id: 't1', chatSessionId: 's1', command: 'psql' },
+        { id: 't2', chatSessionId: 's2', command: 'vim' },
+      ],
+    }))
+    expect(reader.list({ userId: 'u1', sessionId: 's1' })).toEqual([
+      { terminalId: 't1', command: 'psql' },
+    ])
+    expect(agentTerminalReader(() => undefined).list({ userId: 'u1', sessionId: 's1' })).toEqual([])
   })
 })

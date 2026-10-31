@@ -8,7 +8,7 @@ import {
   installedExternalAgents,
   detectInstalledExternalAgents,
 } from '../features/external-agents/installed'
-import { agentTerminalOf, watchAgentTerminal } from '../features/terminal/agent-scope'
+import { agentTerminalReader } from '../features/terminal/agent-scope'
 import { watchPathNative } from '../features/fs-watch/path-watch'
 import type { InfraPhase } from './infra'
 import type { RegistriesPhase } from './registries'
@@ -37,32 +37,13 @@ export function createExternalAgentsPhase({
     logger.warn({ event: 'external_agents.start_failed', error: String(error) }),
   )
   service.setPathWatch(watchPathNative)
+  const terminals = agentTerminalReader(() => serviceRefs.terminalService)
+  const user = env.LOCALIX_DEFAULT_USER_ID
   service.setTerminalRead({
-    screen: async ({ sessionId, terminalId }) =>
-      (await agentTerminalOf(
-        serviceRefs.terminalService,
-        env.LOCALIX_DEFAULT_USER_ID,
-        sessionId,
-        terminalId,
-      )?.screen()) ?? null,
-    list: ({ sessionId }) =>
-      (serviceRefs.terminalService?.list(env.LOCALIX_DEFAULT_USER_ID) ?? []).flatMap((terminal) =>
-        terminal.chatSessionId === sessionId
-          ? [{ terminalId: terminal.id, command: terminal.command }]
-          : [],
-      ),
-    finalScreen: async ({ sessionId, terminalId }) => {
-      const terminal = serviceRefs.terminalService
-      const archived = terminal?.archivedTerminal(env.LOCALIX_DEFAULT_USER_ID, terminalId)
-      if (!sessionId || archived?.chatSessionId !== sessionId) return null
-      return (await terminal?.finalScreen(env.LOCALIX_DEFAULT_USER_ID, terminalId)) ?? null
-    },
-    watch: (input, onEvent) =>
-      watchAgentTerminal(
-        serviceRefs.terminalService,
-        { userId: env.LOCALIX_DEFAULT_USER_ID, ...input },
-        onEvent,
-      ),
+    screen: (input) => terminals.screen({ ...input, userId: user }),
+    list: (input) => terminals.list({ ...input, userId: user }),
+    finalScreen: (input) => terminals.finalScreen({ ...input, userId: user }),
+    watch: (input, onEvent) => terminals.watch({ userId: user, ...input }, onEvent),
   })
   const resources = createExternalAgentResourceProvider(service)
   resourceRefsRegistry.register(resources)

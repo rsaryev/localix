@@ -1,5 +1,5 @@
 import { workspaceCapabilities } from './mini-app-workspace-capabilities'
-import { agentTerminalOf, watchAgentTerminal } from '../features/terminal/agent-scope'
+import { agentTerminalReader } from '../features/terminal/agent-scope'
 import type { LoadMiniAppsOptions } from '../features/mini-apps/loader'
 import type { createMiniAppWakes } from '../features/mini-apps/mini-app-wake'
 import {
@@ -56,33 +56,10 @@ export function createMiniAppHostServices(deps: {
     // The same ownership-checked reader the interactive `terminal` tool uses, minus every
     // write. A mini app that watches external agents could otherwise only see the screens the
     // MODEL happened to look at, which makes its state an observation log rather than a
-    // reading.
-    terminalRead: {
-      // Resolved through the SAME agent boundary the interactive terminal tool uses
-      // (terminal/agent-scope.ts): the service owns panes per USER, so without the session
-      // component a mini app could read a pane belonging to another chat.
-      screen: async ({ userId, sessionId, terminalId }) =>
-        (await agentTerminalOf(
-          serviceRefs.terminalService,
-          userId,
-          sessionId,
-          terminalId,
-        )?.screen()) ?? null,
-      finalScreen: async ({ userId, sessionId, terminalId }) => {
-        // `get()` returns undefined for exactly the ids the archive holds, so the session
-        // claim is checked against the ARCHIVED record, which still carries it.
-        if (!sessionId) return null
-        const archived = serviceRefs.terminalService?.archivedTerminal(userId, terminalId)
-        if (!archived || archived.chatSessionId !== sessionId) return null
-        return (await serviceRefs.terminalService?.finalScreen(userId, terminalId)) ?? null
-      },
-      list: ({ userId, sessionId }) =>
-        (serviceRefs.terminalService?.list(userId) ?? []).flatMap((t) =>
-          t.chatSessionId === sessionId ? [{ terminalId: t.id, command: t.command }] : [],
-        ),
-      // The pane's own output and exit, so a reader re-reads `screen` when it can have changed.
-      watch: (input, onEvent) => watchAgentTerminal(serviceRefs.terminalService, input, onEvent),
-    },
+    // reading. Resolved through the same agent boundary (terminal/agent-scope.ts): the service
+    // owns panes per USER, so without the session component a mini app could read a pane
+    // belonging to another chat.
+    terminalRead: agentTerminalReader(() => serviceRefs.terminalService),
     sessionStorage: {
       resolveDataDir: (...args) =>
         resolveMiniAppSessionDataDir({
