@@ -63,6 +63,15 @@ export function unknownSession(sessionId: string): SessionFacts {
   }
 }
 
+/** The session a row is about; a missing or unreadable one still names its row. */
+export async function resolveSession(
+  lookup: LookupSession,
+  userId: string,
+  sessionId: string,
+): Promise<SessionFacts> {
+  return (await lookup(userId, sessionId).catch(() => null)) ?? unknownSession(sessionId)
+}
+
 /**
  * An internal verifier job (a Claude Code hook's `agent` evaluator) is plumbing, not work anybody
  * asked for: its outcome is reported by the hook that ran it.

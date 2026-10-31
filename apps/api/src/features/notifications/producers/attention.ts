@@ -6,7 +6,7 @@ import type { NotificationJournal } from '../journal'
 import {
   openChatAction,
   resourceOrigin,
-  unknownSession,
+  resolveSession,
   type LookupSession,
   type OrderedLane,
   type SessionFacts,
@@ -85,9 +85,7 @@ export function mirrorAttentionToJournal(deps: {
   return deps.registry.observe({
     raised(userId, item) {
       lane.run(async () => {
-        const session =
-          (await lookupSession(userId, item.sessionId).catch(() => null)) ??
-          unknownSession(item.sessionId)
+        const session = await resolveSession(lookupSession, userId, item.sessionId)
         const shape = ROW[item.kind]
         const open = openChatAction(session)
         const focus = shape.focus?.(item)

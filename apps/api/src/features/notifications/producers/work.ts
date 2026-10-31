@@ -5,7 +5,7 @@ import type { RaiseFact } from '../contracts'
 import {
   openChatAction,
   resourceOrigin,
-  unknownSession,
+  resolveSession,
   type LookupSession,
   type OrderedLane,
 } from './facts'
@@ -120,8 +120,7 @@ export function createWorkNotifications(deps: {
     fact: Omit<RaiseFact, 'origin' | 'actions' | 'body'> & { body?: string },
     resource: { kind: string; id: string; label: string },
   ) => {
-    const session =
-      (await lookupSession(userId, sessionId).catch(() => null)) ?? unknownSession(sessionId)
+    const session = await resolveSession(lookupSession, userId, sessionId)
     journal.record(userId, {
       ...fact,
       body: fact.body?.trim() || session.title,

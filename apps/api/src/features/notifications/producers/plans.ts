@@ -3,7 +3,7 @@ import type { NotificationJournal } from '../journal'
 import {
   openChatAction,
   resourceOrigin,
-  unknownSession,
+  resolveSession,
   type LookupSession,
   type OrderedLane,
 } from './facts'
@@ -35,9 +35,7 @@ export function createPlanNotifications(deps: {
   return {
     completed(userId, plan) {
       lane.run(async () => {
-        const session =
-          (await lookupSession(userId, plan.sessionId).catch(() => null)) ??
-          unknownSession(plan.sessionId)
+        const session = await resolveSession(lookupSession, userId, plan.sessionId)
         journal.record(userId, {
           key: planCompletedKey(plan),
           topic: 'run.completed',

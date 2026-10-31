@@ -8,7 +8,7 @@ import {
   isInternalSession,
   openChatAction,
   resourceOrigin,
-  unknownSession,
+  resolveSession,
   type LookupSession,
 } from './facts'
 
@@ -62,9 +62,7 @@ export async function recordInterruptedRuns(
   runs: readonly InterruptedRun[],
 ): Promise<void> {
   for (const run of runs) {
-    const session =
-      (await deps.lookupSession(run.userId, run.sessionId).catch(() => null)) ??
-      unknownSession(run.sessionId)
+    const session = await resolveSession(deps.lookupSession, run.userId, run.sessionId)
     if (isInternalSession(session)) continue
     const child = session.sessionKind === 'subagent' || session.sessionKind === 'job'
     deps.journal.record(run.userId, {
