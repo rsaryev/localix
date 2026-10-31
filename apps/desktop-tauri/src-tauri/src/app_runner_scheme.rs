@@ -49,10 +49,11 @@ fn serve(root: &Path, task: &ProtocolObject<dyn WKURLSchemeTask>) {
     let mut keys = vec![ns_string!("Content-Type")];
     let mime = NSString::from_str(file.as_deref().map_or("text/plain", host::mime_type));
     let mut values = vec![mime];
-    let csp = host::content_security_policy().map(|csp| NSString::from_str(&csp));
-    if let (Some(csp), true) = (csp, path.ends_with(".html") || !path.contains('.')) {
-        keys.push(ns_string!("Content-Security-Policy"));
-        values.push(csp);
+    if path.ends_with(".html") || !path.contains('.') {
+        if let Some(csp) = host::content_security_policy() {
+            keys.push(ns_string!("Content-Security-Policy"));
+            values.push(NSString::from_str(csp));
+        }
     }
     let values: Vec<&NSString> = values.iter().map(|value| &**value).collect();
     let headers = NSDictionary::from_slices(&keys, &values);

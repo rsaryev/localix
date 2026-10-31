@@ -135,10 +135,15 @@ pub(crate) fn mime_type(file: &Path) -> &'static str {
 
 /// The shell's own Content-Security-Policy (`tauri.conf.json`), so a standalone mini app's page
 /// runs under the same rules as the workspace that serves it through Tauri.
-pub(crate) fn content_security_policy() -> Option<String> {
-    let config: serde_json::Value =
-        serde_json::from_str(include_str!("../tauri.conf.json")).ok()?;
-    Some(config.pointer("/app/security/csp")?.as_str()?.to_string())
+/// The config is a compile-time constant, so it is parsed once.
+pub(crate) fn content_security_policy() -> Option<&'static str> {
+    static CSP: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+    CSP.get_or_init(|| {
+        let config: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.conf.json")).ok()?;
+        Some(config.pointer("/app/security/csp")?.as_str()?.to_string())
+    })
+    .as_deref()
 }
 
 #[cfg(test)]
