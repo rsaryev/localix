@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'bun:test'
-import { inlineCodeToPath, inlineCodeLine, fileHrefToPath, fileHrefLine } from './markdownFileRef'
+import { inlineCodeToPath, inlineCodeLine, fileHrefToReference } from './markdownFileRef'
+
+const pathOf = (href?: string) => fileHrefToReference(href)?.path ?? null
+const lineOf = (href?: string) => fileHrefToReference(href)?.line
 
 describe('inlineCodeToPath', () => {
   it('links paths with a directory', () => {
@@ -39,31 +42,31 @@ describe('inlineCodeLine', () => {
   })
 })
 
-describe('fileHrefToPath', () => {
+describe('a file href → its path', () => {
   it('returns a workspace file path, stripping a #L line anchor', () => {
-    expect(fileHrefToPath('src/a.ts')).toBe('src/a.ts')
-    expect(fileHrefToPath('src/a.ts#L42')).toBe('src/a.ts')
-    expect(fileHrefToPath('src/a.ts#L42-L50')).toBe('src/a.ts')
-    expect(fileHrefToPath('docs/guide.md')).toBe('docs/guide.md')
+    expect(pathOf('src/a.ts')).toBe('src/a.ts')
+    expect(pathOf('src/a.ts#L42')).toBe('src/a.ts')
+    expect(pathOf('src/a.ts#L42-L50')).toBe('src/a.ts')
+    expect(pathOf('docs/guide.md')).toBe('docs/guide.md')
   })
 
   it('ignores web/mail/anchor schemes and non-file hrefs', () => {
-    expect(fileHrefToPath('https://example.com/a.ts')).toBeNull()
-    expect(fileHrefToPath('mailto:x@y.com')).toBeNull()
-    expect(fileHrefToPath('#section')).toBeNull()
-    expect(fileHrefToPath('just-a-word')).toBeNull() // no slash, no extension
-    expect(fileHrefToPath(undefined)).toBeNull()
+    expect(pathOf('https://example.com/a.ts')).toBeNull()
+    expect(pathOf('mailto:x@y.com')).toBeNull()
+    expect(pathOf('#section')).toBeNull()
+    expect(pathOf('just-a-word')).toBeNull() // no slash, no extension
+    expect(pathOf(undefined)).toBeNull()
   })
 })
 
-describe('fileHrefLine', () => {
+describe('a file href → its line', () => {
   it('extracts the line from a #L42 / #42 anchor', () => {
-    expect(fileHrefLine('src/a.ts#L42')).toBe(42)
-    expect(fileHrefLine('src/a.ts#7')).toBe(7)
-    expect(fileHrefLine('src/a.ts#L42-L50')).toBe(42)
+    expect(lineOf('src/a.ts#L42')).toBe(42)
+    expect(lineOf('src/a.ts#7')).toBe(7)
+    expect(lineOf('src/a.ts#L42-L50')).toBe(42)
   })
   it('returns undefined without an anchor', () => {
-    expect(fileHrefLine('src/a.ts')).toBeUndefined()
-    expect(fileHrefLine(undefined)).toBeUndefined()
+    expect(lineOf('src/a.ts')).toBeUndefined()
+    expect(lineOf(undefined)).toBeUndefined()
   })
 })

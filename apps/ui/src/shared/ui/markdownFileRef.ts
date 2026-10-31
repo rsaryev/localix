@@ -95,15 +95,6 @@ function schemeFileReference(href: string, scheme: 'sandbox:' | 'file:'): FileHr
   }
 }
 
-/**
- * Chat/provider artifact links use `sandbox:/absolute/path`. Resolve only that
- * exact hostless shape into a local path; malformed/host-bearing variants stay
- * inert instead of falling through as relative application navigation.
- */
-export function sandboxHrefToPath(href?: string): string | null {
-  return href ? (schemeFileReference(href, 'sandbox:')?.path ?? null) : null
-}
-
 /** Inline `code` text that names a file → its bare path (`:line` stripped), else null. */
 export function inlineCodeToPath(text: string): string | null {
   const t = text.trim()
@@ -152,14 +143,4 @@ export function fileHrefToReference(href?: string): FileHrefReference | null {
   if (!validFilePath(path) || (!/\.[a-z0-9]+$/i.test(path) && !path.includes('/'))) return null
   const line = lineFromHash(hash)
   return { path, ...(line ? { line } : {}) }
-}
-
-/** A markdown file link → its resolved path, else null. */
-export function fileHrefToPath(href?: string): string | null {
-  return fileHrefToReference(href)?.path ?? null
-}
-
-/** 1-indexed line from a canonical Localix query or `#L42` / `#42` anchor. */
-export function fileHrefLine(href?: string): number | undefined {
-  return fileHrefToReference(href)?.line
 }

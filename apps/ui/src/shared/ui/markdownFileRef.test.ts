@@ -1,13 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 
-import {
-  inlineCodeToPath,
-  inlineCodeLine,
-  fileHrefToPath,
-  fileHrefLine,
-  fileHrefToReference,
-  sandboxHrefToPath,
-} from './markdownFileRef'
+import { inlineCodeToPath, inlineCodeLine, fileHrefToReference } from './markdownFileRef'
+
+const pathOf = (href?: string) => fileHrefToReference(href)?.path ?? null
+const lineOf = (href?: string) => fileHrefToReference(href)?.line
 
 describe('inlineCodeToPath', () => {
   test('a directory path with an extension is a file token', () => {
@@ -50,62 +46,62 @@ describe('inlineCodeLine', () => {
   })
 })
 
-describe('fileHrefToPath', () => {
+describe('a file href → its path', () => {
   test('a workspace-relative href is a file path', () => {
-    expect(fileHrefToPath('src/foo.ts')).toBe('src/foo.ts')
-    expect(fileHrefToPath('README.md')).toBe('README.md')
+    expect(pathOf('src/foo.ts')).toBe('src/foo.ts')
+    expect(pathOf('README.md')).toBe('README.md')
   })
 
   test('strips a #L42 / #42 line anchor', () => {
-    expect(fileHrefToPath('src/foo.ts#L42')).toBe('src/foo.ts')
-    expect(fileHrefToPath('src/foo.ts#42')).toBe('src/foo.ts')
+    expect(pathOf('src/foo.ts#L42')).toBe('src/foo.ts')
+    expect(pathOf('src/foo.ts#42')).toBe('src/foo.ts')
   })
 
   test('resolves a hostless sandbox artifact href to its absolute file path', () => {
     const plan = '\u041f\u043b\u0430\u043d'
     expect(
-      fileHrefToPath('sandbox:/Users/me/.localix/workspace/LOCALIX-7/%D0%9F%D0%BB%D0%B0%D0%BD.pdf'),
+      pathOf('sandbox:/Users/me/.localix/workspace/LOCALIX-7/%D0%9F%D0%BB%D0%B0%D0%BD.pdf'),
     ).toBe(`/Users/me/.localix/workspace/LOCALIX-7/${plan}.pdf`)
-    expect(sandboxHrefToPath('sandbox:/C:/Users/me/report.pdf')).toBe('C:/Users/me/report.pdf')
+    expect(pathOf('sandbox:/C:/Users/me/report.pdf')).toBe('C:/Users/me/report.pdf')
   })
 
   test('resolves canonical Localix and standard hostless file URIs', () => {
     expect(
       fileHrefToReference('localix://ui/work-item/file?path=%2FUsers%2Fme%2FMy+Report.pdf&line=12'),
     ).toEqual({ path: '/Users/me/My Report.pdf', line: 12 })
-    expect(fileHrefToPath('file:///Users/me/My%20Report.pdf')).toBe('/Users/me/My Report.pdf')
-    expect(fileHrefToPath('file:///C:/Users/me/report.pdf')).toBe('C:/Users/me/report.pdf')
+    expect(pathOf('file:///Users/me/My%20Report.pdf')).toBe('/Users/me/My Report.pdf')
+    expect(pathOf('file:///C:/Users/me/report.pdf')).toBe('C:/Users/me/report.pdf')
   })
 
   test('rejects malformed sandbox links instead of treating them as app paths', () => {
-    expect(fileHrefToPath('sandbox://remote.example/report.pdf')).toBeNull()
-    expect(fileHrefToPath('sandbox:relative/report.pdf')).toBeNull()
-    expect(fileHrefToPath('sandbox:/tmp/report.pdf?download=1')).toBeNull()
-    expect(fileHrefToPath('file://remote.example/report.pdf')).toBeNull()
-    expect(fileHrefToPath('localix://resource/fixture-doc/abc')).toBeNull()
-    expect(fileHrefToPath('localix://ui/work-item/file?path=%2Fa.ts&extra=1')).toBeNull()
+    expect(pathOf('sandbox://remote.example/report.pdf')).toBeNull()
+    expect(pathOf('sandbox:relative/report.pdf')).toBeNull()
+    expect(pathOf('sandbox:/tmp/report.pdf?download=1')).toBeNull()
+    expect(pathOf('file://remote.example/report.pdf')).toBeNull()
+    expect(pathOf('localix://resource/fixture-doc/abc')).toBeNull()
+    expect(pathOf('localix://ui/work-item/file?path=%2Fa.ts&extra=1')).toBeNull()
   })
 
   test('rejects web/mail/anchor schemes and undefined', () => {
-    expect(fileHrefToPath('https://x.com/a.ts')).toBeNull()
-    expect(fileHrefToPath('mailto:x@y.com')).toBeNull()
-    expect(fileHrefToPath('#section')).toBeNull()
-    expect(fileHrefToPath(undefined)).toBeNull()
+    expect(pathOf('https://x.com/a.ts')).toBeNull()
+    expect(pathOf('mailto:x@y.com')).toBeNull()
+    expect(pathOf('#section')).toBeNull()
+    expect(pathOf(undefined)).toBeNull()
   })
 
   test('a bare word with no extension or slash is not a file href', () => {
-    expect(fileHrefToPath('foo')).toBeNull()
+    expect(pathOf('foo')).toBeNull()
   })
 })
 
-describe('fileHrefLine', () => {
+describe('a file href → its line', () => {
   test('reads the line from a #L42 / #42 anchor', () => {
-    expect(fileHrefLine('src/foo.ts#L42')).toBe(42)
-    expect(fileHrefLine('src/foo.ts#42')).toBe(42)
+    expect(lineOf('src/foo.ts#L42')).toBe(42)
+    expect(lineOf('src/foo.ts#42')).toBe(42)
   })
 
   test('undefined when there is no anchor', () => {
-    expect(fileHrefLine('src/foo.ts')).toBeUndefined()
-    expect(fileHrefLine(undefined)).toBeUndefined()
+    expect(lineOf('src/foo.ts')).toBeUndefined()
+    expect(lineOf(undefined)).toBeUndefined()
   })
 })
