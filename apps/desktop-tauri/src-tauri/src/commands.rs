@@ -278,6 +278,15 @@ async fn open_url_macos(url: String) -> Result<(), String> {
     })?
 }
 
+/// The theme name the shell follows ("dark" or "light"), or `None` to follow the OS.
+fn parse_theme(theme: &str) -> Option<&'static str> {
+    match theme {
+        "dark" => Some("dark"),
+        "light" => Some("light"),
+        _ => None,
+    }
+}
+
 /// Sync the native window/OS chrome to the app's resolved theme so the macOS
 /// traffic lights, native context menus and scrollbars (and the Windows menu bar)
 /// match the UI's dark/light. "system" (or anything unrecognized) follows the OS.
@@ -293,11 +302,14 @@ pub(crate) fn set_theme(
         return;
     }
     use tauri::Theme;
-    let resolved = match theme.as_str() {
-        "dark" => Some(Theme::Dark),
-        "light" => Some(Theme::Light),
-        _ => None,
-    };
+    let saved = parse_theme(&theme);
+    let resolved = saved.map(|t| {
+        if t == "dark" {
+            Theme::Dark
+        } else {
+            Theme::Light
+        }
+    });
     {
         let w = caller.window();
         let _ = w.set_theme(resolved);
@@ -324,14 +336,7 @@ pub(crate) fn set_theme(
     let _ = (material_theme, header_tint);
     crate::native_browser::apply_browser_theme(&app, &theme);
     // Remember it so the next launch can paint the startup background to match.
-    save_theme(
-        &app,
-        match theme.as_str() {
-            "dark" => Some("dark"),
-            "light" => Some("light"),
-            _ => None,
-        },
-    );
+    save_theme(&app, saved);
 }
 
 /// Set the dock/taskbar badge count (e.g. background HITL requests awaiting the
@@ -490,7 +495,7 @@ fn read_drag_pasteboard_paths() -> Vec<DraggedPath> {
 
 #[cfg(test)]
 mod tests {
-    use super::allowed_external_url;
+    use super::{allowed_external_url, parse_theme};
 
     #[test]
     fn external_url_allowlist_accepts_only_browser_and_mail_targets() {
@@ -504,6 +509,15 @@ mod tests {
         assert!(!allowed_external_url("data:text/html,hello"));
         assert!(!allowed_external_url("localix://session/LOCALIX-1"));
         assert!(!allowed_external_url("not a url"));
+    }
+
+    #[test]
+    fn only_dark_and_light_pin_the_native_theme() {
+        assert_eq!(parse_theme("dark"), Some("dark"));
+        assert_eq!(parse_theme("light"), Some("light"));
+        assert_eq!(parse_theme("system"), None);
+        assert_eq!(parse_theme("Dark"), None);
+        assert_eq!(parse_theme(""), None);
     }
 
     #[cfg(target_os = "macos")]
