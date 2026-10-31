@@ -93,7 +93,7 @@ export async function createStandaloneApp(source: StandaloneAppSource): Promise<
 }
 
 /** {@link createStandaloneApp}, with a failure said in a toast. */
-export async function installStandaloneApp(source: StandaloneAppSource): Promise<void> {
+async function installStandaloneApp(source: StandaloneAppSource): Promise<void> {
   try {
     await createStandaloneApp(source)
   } catch (error) {
@@ -103,7 +103,7 @@ export async function installStandaloneApp(source: StandaloneAppSource): Promise
   }
 }
 
-export async function openStandaloneApp(app: InstalledStandaloneApp): Promise<void> {
+async function openStandaloneApp(app: InstalledStandaloneApp): Promise<void> {
   try {
     await tauriInvoke()?.('mini_app_open', { miniApp: app.miniApp })
   } catch (error) {
