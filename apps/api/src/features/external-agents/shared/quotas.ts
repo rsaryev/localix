@@ -35,13 +35,6 @@ export function quotaIsCurrent(quota: QuotaReading, now: number): boolean {
 }
 
 /**
- * Where a percentage stops being background and starts being a decision. Below this the figure is
- * trivia; above it, it is the answer to "can I start another agent right now", which is the question
- * an orchestrator actually has.
- */
-export const QUOTA_WARN_PERCENT = 80
-
-/**
  * How long a live delegation's screen must be unchanged before saying so is informative.
  *
  * Below this the mark appears on every healthy delegation — a screen redraws between turns — and a
@@ -55,25 +48,6 @@ export function quietMinutes(lastChangeAt: number | undefined, now: number): num
   if (lastChangeAt === undefined) return undefined
   const quiet = now - lastChangeAt
   return quiet >= QUIET_SCREEN_MS ? Math.round(quiet / 60_000) : undefined
-}
-
-/**
- * The window a caller is actually up against: the fullest one still running.
- *
- * With two windows open, the weekly can read 7% while the 5-hour one reads 45% — and the 5-hour one
- * is what stops the next agent from starting. Showing "the quota" without choosing means showing
- * whichever the provider happened to list first.
- */
-export function bindingQuota(
-  quotas: readonly QuotaReading[],
-  now: number,
-): QuotaReading | undefined {
-  let binding: QuotaReading | undefined
-  for (const quota of quotas) {
-    if (!quotaIsCurrent(quota, now)) continue
-    if (!binding || quota.usedPercent > binding.usedPercent) binding = quota
-  }
-  return binding
 }
 
 /** One wording for every surface, so the workspace chip and the tool never disagree by a rounding. */
