@@ -1,12 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  GRACE_MS,
-  groupKey,
-  nextPurgeAt,
-  planBindings,
-  type BoundRow,
-  type FoundAgent,
-} from './plan'
+import { GRACE_MS, groupKey, planBindings, type BoundRow, type FoundAgent } from './plan'
 
 const user = { projectId: '', source: 'user' }
 const row = (id: string, name: string, path: string, bodyHash = id, extra = {}): BoundRow => ({
@@ -91,8 +84,6 @@ describe('agent binding plan', () => {
     const back = plan(missing, [found('a', '/u/a.md', 'id-a')], 1000 + 5)
     expect(back.update).toMatchObject([{ row: { id: 'id-a' } }])
     expect(back.purge).toEqual([])
-    expect(nextPurgeAt(missing)).toBe(1000 + GRACE_MS)
-    expect(nextPurgeAt(rows)).toBeNull()
   })
 
   test('a group that was not scanned is left alone and a gone one is purged', () => {

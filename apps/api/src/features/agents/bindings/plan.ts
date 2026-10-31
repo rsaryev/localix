@@ -112,11 +112,3 @@ export function planBindings(input: {
   }
   return plan
 }
-
-/** The next moment a missing row can be purged, or null when none waits. */
-export function nextPurgeAt(rows: readonly BoundRow[], graceMs = GRACE_MS): number | null {
-  const due = rows.flatMap((row) =>
-    row.missingSince === undefined ? [] : [Date.parse(row.missingSince) + graceMs],
-  )
-  return due.length > 0 ? Math.min(...due) : null
-}
