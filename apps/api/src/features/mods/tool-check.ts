@@ -1,6 +1,6 @@
 import { classifyToolCall, type AgentTool } from '@localixai/agent/agents'
 import { agentOf, fieldOf, fireIn, hearsIn, type ModEventScope } from './event-scope'
-import { toolCallEvent } from './tool-shapes'
+import { toolCallEvent } from '../ext/cc-tool-shapes'
 
 /**
  * `tool.check`: whether a tool call may run, decided before the call does. Core answers Localix's

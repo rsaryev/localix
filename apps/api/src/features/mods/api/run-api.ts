@@ -1,8 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import type { AgentTool } from '@localixai/agent/agents'
-import { claudeCodeToolResponse } from '../../ext/cc-tool-shapes'
+import {
+  claudeCodeToolResponse,
+  claudeCodeToolName,
+  localToolName,
+  toolInputOf,
+} from '../../ext/cc-tool-shapes'
 import type { ModVerdict } from '../tool-check'
-import { claudeCodeToolName, localToolName, toolInputOf } from '../tool-shapes'
 
 /**
  * `$.tool`, `$.mcp` and `$.ui.ask`: the tools of the conversation's running turn, as Claude Code's mods call

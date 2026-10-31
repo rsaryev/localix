@@ -1,11 +1,10 @@
 import { mcpInputSchema, type AgentTool, type AgentToolResult } from '@localixai/agent/agents'
 import { isBlockedThrow } from '../agent-core/tools/tool-error-result'
-import { singleCalls } from '../ext/cc-tool-shapes'
+import { singleCalls, toolCallEvent, toolInputOf } from '../ext/cc-tool-shapes'
 import type { ModScene } from './contracts'
 import { agentOf } from './event-scope'
 import type { ModsHost } from './host'
 import { coreAnswer, resultOf } from './tool-answers'
-import { toolCallEvent, toolInputOf } from './tool-shapes'
 
 /**
  * `tool.call` in Localix. Every tool call of a conversation goes through the mods enabled there:
@@ -19,8 +18,6 @@ import { toolCallEvent, toolInputOf } from './tool-shapes'
  * several files is one `tool.call` per file, as Claude Code's single-file tools make them.
  * A mod's own tools (`$.tool.register`) have no core behind them: a `tool.call` hook answers them.
  */
-
-export { ModToolDeniedError } from './tool-answers'
 
 /** A mod's tool, named as Claude Code names it, characters outside `[A-Za-z0-9_-]` as `_`. */
 export const modToolName = (plugin: string, name: string) =>

@@ -1,7 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import type { AssistantMessage, ModelStepHook, ReasoningEffort } from '@localixai/agent'
 import { agentOf, fieldOf, fireIn, hearsIn, type ModEventScope } from './event-scope'
-import { claudeCodeToolName, localToolName, toolCallEvent, toolInputOf } from './tool-shapes'
+import {
+  claudeCodeToolName,
+  localToolName,
+  toolCallEvent,
+  toolInputOf,
+} from '../ext/cc-tool-shapes'
 
 /**
  * `turn.step`: each model request of a turn, before it is sent. The event streams: a hook is an

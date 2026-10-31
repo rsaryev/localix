@@ -7,7 +7,7 @@ import {
   hearsIn,
   type ModEventScope,
 } from './event-scope'
-import { claudeCodeToolName } from './tool-shapes'
+import { claudeCodeToolName } from '../ext/cc-tool-shapes'
 
 /**
  * `tool.describe`: each tool of a run as the model will read it — its description, and whether it

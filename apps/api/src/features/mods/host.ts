@@ -295,5 +295,3 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
 }
 
 export type ModsHost = ReturnType<typeof createModsHost>
-
-export { INERT_MOD_PORTS } from './contracts'

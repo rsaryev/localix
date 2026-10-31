@@ -15,8 +15,6 @@ import {
  * (the managed settings). The files and the merge are Claude Code's (`cc-settings/`).
  */
 
-export type { SettingsSource }
-
 const SOURCES: readonly SettingsSource[] = ['user', 'project', 'local', 'flag', 'policy']
 
 const isRecord = (value: unknown): value is Settings =>

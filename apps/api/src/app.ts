@@ -47,7 +47,7 @@ import type { MediaStore } from './features/media/store'
 import { createSystemRoutes } from './features/system/routes'
 import { clientEvent } from './features/mods/conversation-events'
 import { createModRoutes } from './features/mods/routes'
-import { createModsHost, INERT_MOD_PORTS, type ModsHost } from './features/mods/host'
+import { createModsHost, type ModsHost } from './features/mods/host'
 import { createStorageRoutes } from './features/storage/routes'
 import type { StorageService } from './features/storage/service'
 import { createShellCommandRoutes } from './features/shell-command/routes'
@@ -84,6 +84,7 @@ import {
 import type { HostRouteContext } from '@localixai/mini-app-sdk/backend'
 import { createUiLocationCatalogRoutes } from './features/ui-locations/routes'
 import type { UiLocationCatalogService } from './features/ui-locations/service'
+import { INERT_MOD_PORTS } from './features/mods/contracts'
 
 export type AppContext = HostRouteContext
 
