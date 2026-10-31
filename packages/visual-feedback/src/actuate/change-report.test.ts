@@ -118,6 +118,29 @@ describe('refs in the report', () => {
     }
   })
 
+  test('a ref the report minted still resolves after the page re-renders that control', async () => {
+    document.body.innerHTML = '<button id="a">Open</button>'
+    const deps = depsFor()
+    try {
+      deps.reg.put(document.getElementById('a')!)
+      deps.prevTree.value = stateForDiff()
+      document.body.insertAdjacentHTML('beforeend', '<button id="b">Save</button>')
+      const { diff } = await postAction(deps)
+      const ref = /\+ button "Save" \[ref=(e\d+)\]/.exec(diff!)![1]!
+      // A re-render mounts a new node in place of the one the ref named.
+      document.getElementById('b')!.replaceWith(
+        Object.assign(document.createElement('button'), {
+          id: 'b',
+          textContent: 'Save',
+        }),
+      )
+      expect(deps.reg.get(ref)).toBe(document.getElementById('b')!)
+      expect(deps.reg.identityOf(ref)).toMatchObject({ role: 'button', name: 'Save' })
+    } finally {
+      deps.console.uninstall()
+    }
+  })
+
   test('a button already known keeps the ref the model has', async () => {
     document.body.innerHTML = '<button id="a">Open</button><div>1</div>'
     const deps = depsFor()

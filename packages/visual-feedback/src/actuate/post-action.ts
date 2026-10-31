@@ -2,6 +2,25 @@ import type { ActuateDeps } from './types'
 import { settleCommit, settleTransitions } from './settle'
 import { captureState, changeReport } from './diff'
 import { buildSnapshot } from '../snapshot/index'
+import { roleLabel, shouldEmit } from '../snapshot/classify'
+import { generateSelector } from '../core/identify'
+import { ownerFrame } from '../core/frames'
+import type { RefIdentity } from '../snapshot/ref-registry'
+
+/**
+ * The identity a snapshot would have captured for an interactive element, so a ref the report
+ * mints heals after a re-render like a snapshot's. A frame's control has no selector of the
+ * top document, as in the snapshot.
+ */
+function identityFor(el: Element): RefIdentity {
+  const framed = ownerFrame(el) !== null
+  return {
+    selector: framed ? undefined : generateSelector(el).selector,
+    role: roleLabel(el),
+    name: shouldEmit(el, true).name,
+    ...(framed ? { framed: true } : {}),
+  }
+}
 
 /** What the settled page changed, or that it changed so much that it is to be read whole. */
 async function afterAction(deps: ActuateDeps): Promise<{ diff?: string; whole?: boolean }> {
@@ -20,7 +39,7 @@ async function afterAction(deps: ActuateDeps): Promise<{ diff?: string; whole?: 
   // registry (valid until the next snapshot). None before a first snapshot, whose refs the
   // model has not seen.
   const refFor = (el: Element) =>
-    deps.reg.refOf(el) ?? (deps.reg.isEmpty() ? undefined : deps.reg.put(el))
+    deps.reg.refOf(el) ?? (deps.reg.isEmpty() ? undefined : deps.reg.put(el, identityFor(el)))
   const report = changeReport(deps.prevTree.value, next, refFor)
   deps.prevTree.value = next.text
   if (!report) return {}
