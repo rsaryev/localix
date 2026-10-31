@@ -21,16 +21,6 @@ function isInherit(value: string | undefined): boolean {
   return !value || value.trim().toLowerCase() === 'inherit'
 }
 
-/**
- * Does resolving this value REQUIRE the catalog? True only for a bare family alias — `inherit`,
- * an empty value and an already-concrete id all resolve without it. Callers use this to skip a
- * catalog read on the common paths (`resolveModelAlias` still degrades safely without one, which
- * is exactly the silent no-op this exists to avoid).
- */
-export function isModelAliasFamily(value: string | undefined): boolean {
-  return !isInherit(value) && familyOf(value!) !== undefined
-}
-
 /** The alias family a value names EXACTLY (`sonnet`), or undefined (a concrete id). */
 function familyOf(value: string): ModelAliasFamily | undefined {
   const v = value.trim().toLowerCase()
