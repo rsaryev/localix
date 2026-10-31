@@ -20,7 +20,6 @@ export interface RemedyRegistry {
   changeSchema: z.ZodType<unknown>
   describe(ctx: RemedyContext, change: unknown): Promise<ProposalCard>
   apply(ctx: RemedyContext, change: unknown): Promise<{ summary: string }>
-  remedyIdOf(change: unknown): string
 }
 
 export function createRemedyRegistry(remedies: readonly Remedy[] = REMEDIES): RemedyRegistry {
@@ -40,7 +39,6 @@ export function createRemedyRegistry(remedies: readonly Remedy[] = REMEDIES): Re
   }
   return {
     changeSchema,
-    remedyIdOf: (change) => resolve(change).remedy.id,
     describe: (ctx, change) => {
       const { remedy, parsed } = resolve(change)
       return remedy.describe(ctx, parsed)

@@ -56,8 +56,10 @@ describe('the remedy registry', () => {
 
   test('every remedy resolves its own change, and an unknown kind is refused', () => {
     const registry = createRemedyRegistry()
-    expect(registry.remedyIdOf({ kind: 'tool.enable', name: 'Loops' })).toBe('tool.enable')
-    expect(() => registry.remedyIdOf({ kind: 'nope' })).toThrow()
+    expect(registry.changeSchema.safeParse({ kind: 'tool.enable', name: 'Loops' }).success).toBe(
+      true,
+    )
+    expect(registry.changeSchema.safeParse({ kind: 'nope' }).success).toBe(false)
   })
 
   // Installing, enabling and removing a plugin, mini app or MCP server is the Store's (`store`),
@@ -65,7 +67,7 @@ describe('the remedy registry', () => {
   test('offers no remedy for a plugin, a mini app or an MCP server', () => {
     const registry = createRemedyRegistry()
     for (const kind of ['plugin.enable', 'mini-app.enable', 'mcp.server.enable'])
-      expect(() => registry.remedyIdOf({ kind, name: 'x' })).toThrow()
+      expect(registry.changeSchema.safeParse({ kind, name: 'x' }).success).toBe(false)
     expect(REMEDIES.map((remedy) => remedy.id)).toEqual(['tool.enable'])
   })
 })
