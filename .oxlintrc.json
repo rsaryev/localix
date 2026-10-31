@@ -167,6 +167,7 @@
     "**/.turbo",
     "**/*.d.ts",
     "apps/landing/src/generated",
+    "docs/assets/screenshots/fixtures",
     "vendor",
     ".agents/skills"
   ]

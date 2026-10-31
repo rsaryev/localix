@@ -67,6 +67,26 @@ The seed turns semantic search on and waits for the real index. The query shares
 the matched fixture message, so the hit is the model's work; how it was found is not shown. Both
 scenarios start from the workspace (`start` in `plan.mjs`) rather than an open conversation.
 
+## Editor completion
+
+`editor/completion` needs the TypeScript language server. Localix installs it from the network the
+first time a `.ts` file opens, which a capture must not depend on, and the capture home has no
+installs of its own. Copy the server your own Localix already installed into the capture home before
+starting the isolated API, and restart the API after changing the fixture file
+(`fixtures/release-studio/src/assist.ts`), because the running server keeps the symbols it first
+read:
+
+```bash
+R=<capture-root>
+mkdir -p $R/home/.localix/language-servers
+cp -cR ~/.localix/language-servers/typescript $R/home/.localix/language-servers/
+```
+
+The scenario opens `assist.ts`, puts the caret after `channel.` and asserts the status bar position,
+the breadcrumb symbol and the nine members the server returns. The landing capture
+(`bun scripts/screenshots/landing.mjs --grep editor/completion`) runs it at the narrower 1200×750
+window, where it gives the chat more room so the composer is not clipped.
+
 ## Store evidence
 
 The `store/*` scenarios need a home of their own. A person's Store has a few mini apps installed and

@@ -20,6 +20,7 @@ import { fixtureFile } from './runtime.mjs'
 export const LANDING_SHOTS = {
   'providers/model-browser': 'models',
   'browser/agent-preview': 'workspace',
+  'editor/completion': 'editor',
   'chat/agent-card-live': 'subagents',
   'store/search-wide': 'store',
 }

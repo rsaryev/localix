@@ -40,7 +40,7 @@ test('the loop is one titled section of cards, each with its words and a real ca
   const title = section.querySelector('h2')!
   expect(section.getAttribute('aria-labelledby')).toBe(title.id)
   const cards = [...section.querySelectorAll('article')]
-  expect(cards.length).toBe(5)
+  expect(cards.length).toBe(6)
   let withCapture = 0
   for (const card of cards) {
     expect(card.querySelector('h3')?.textContent).toBeTruthy()

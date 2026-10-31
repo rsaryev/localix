@@ -20,6 +20,7 @@
     "apps/landing/src/generated",
     "apps/api/migrations/*.ts",
     "packages/mini-app-sdk/mini-app.api.md",
+    "docs/assets/screenshots/fixtures",
     "vendor",
     ".agents/skills",
     "bun.lock"

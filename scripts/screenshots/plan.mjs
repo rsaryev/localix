@@ -242,6 +242,14 @@ export const capturePlan = {
     purpose: 'A real passing fixture test run beside the seeded conversation',
     scenario: 'editor',
   },
+  'editor/completion': {
+    guide: 'features/editor.md',
+    purpose:
+      'A TypeScript file with the language server’s completion list after channel., offering the properties and methods of the object, under the symbol breadcrumb',
+    scenario: 'editor-completion',
+    timeout: 120_000,
+    preservePointer: true,
+  },
 }
 export const retainedShots = {
   'plugins/agent-build': 'Working checklist fixture; extending/build-with-the-agent.md',

@@ -59,6 +59,7 @@
             "features/settings.md",
             "features/keyboard-shortcuts.md",
             "features/visual-feedback.md",
+            "features/editor.md",
             "features/lsp.md",
             "features/cost-tracking.md",
             "features/notifications.md",

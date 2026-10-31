@@ -15,6 +15,7 @@ for (const [key, spec] of Object.entries(capturePlan)) {
       Boolean(spec.requires && process.env[spec.requires] !== '1'),
       `Enable ${spec.requires} with its isolated dependency first.`,
     )
+    if (spec.timeout) test.setTimeout(spec.timeout)
     const fixture = JSON.parse(await fs.readFile(fixtureFile, 'utf8'))
     if (spec.scenario === 'agent-command')
       await (await import('./agent-command.mjs')).seedAgentCommand(fixture)

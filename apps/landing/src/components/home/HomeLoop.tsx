@@ -23,7 +23,7 @@ interface Card {
 const CARDS: Card[] = [
   {
     title: 'Any model, or one on your computer',
-    text: 'Sign in or paste an API key, then pick the model for each chat and for background work like titles and recaps. A local model keeps what you send on this computer. A decision model answers a typed question instead of writing text: the browser’s next click, a game’s move, a mini app’s small choices, with the caller’s own fallback when it has no answer.',
+    text: 'Sign in or paste an API key, then pick the model for each chat and for background work like titles and recaps. A local model keeps what you send on this computer. With OpenRouter connected, quick choices such as the browser’s next click go to a small, fast decision model instead of the chat’s model, with a fallback when it has no answer.',
     capture: {
       name: 'models',
       alt: 'The model picker: this chat’s model and background workloads, the providers, an API key form and the chosen model’s context, pricing and capabilities',
@@ -34,13 +34,25 @@ const CARDS: Card[] = [
     ],
   },
   {
-    title: 'Editor, terminals and browser in one window',
+    title: 'Terminals and browser in one window',
     text: 'The agent works inside your project folder, with its files, terminals and Git, and you work next to it in the same window. It can open the page it builds in the Browser, beside you. Link Claude Code, Codex, Gemini CLI or another installed coding agent to a chat, and its terminal opens beside the conversation.',
     capture: {
       name: 'workspace',
       alt: 'The workspace: the project’s chats on the left, the page the agent built in the Browser, and the chat on the right',
     },
     docs: [{ slug: 'features--workspace', label: 'The workspace' }],
+  },
+  {
+    title: 'An editor that knows your code',
+    text: 'Files open in the editor behind VS Code, with completion, hover, parameter hints, errors underlined as you type, go to definition and rename across files. Language servers install themselves, for the languages Localix supports, the first time you open one of their files. Predicting your next edit is optional: it is off by default and uses model usage.',
+    capture: {
+      name: 'editor',
+      alt: 'A TypeScript file in the editor: the language server’s completion list after channel., offering the object’s properties and methods, under the symbol breadcrumb, with the chat beside it',
+    },
+    docs: [
+      { slug: 'features--editor', label: 'The editor' },
+      { slug: 'features--lsp', label: 'Language servers' },
+    ],
   },
   {
     title: 'Subagents in parallel',
@@ -53,7 +65,7 @@ const CARDS: Card[] = [
   },
   {
     title: 'The Store',
-    text: 'Find, install and update mini apps, plugins, skills, agents and MCP servers in one tab, from Localix’s own sources and Anthropic’s marketplaces. Search matches by meaning and reaches inside packages. A plugin lists what it adds and what runs on your computer before you say yes. Everything written for Claude Code loads as it is, with no conversion.',
+    text: 'Find, install and update mini apps, plugins, skills, agents and MCP servers in one tab, from the Localix marketplace, Localix Community, Anthropic’s marketplaces and any you add under Sources. Search matches by meaning and reaches inside packages. A plugin lists what it adds and what runs on your computer before you say yes. Most of what you wrote for Claude Code loads as it is, with no conversion.',
     capture: {
       name: 'store',
       alt: 'The Store searching for git: commands, screens and MCP servers found inside packages, with the packages below',

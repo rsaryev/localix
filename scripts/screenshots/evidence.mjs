@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test'
 
 export async function verifyEvidence(page, scenario) {
+  if (scenario === 'editor-completion')
+    return (await import('./editor-completion.mjs')).verifyEditorCompletion(page)
   if (scenario === 'agent-command')
     return (await import('./agent-command.mjs')).verifyAgentCommand(page)
   if (scenario === 'agent-management')
