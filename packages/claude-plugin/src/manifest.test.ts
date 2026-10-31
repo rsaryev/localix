@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { checkPluginName, componentSources, parseClaudePluginManifest, parseHooksFile } from '.'
+import { componentSources, parseClaudePluginManifest } from '.'
+import { checkPluginName } from './names'
 
 describe('parseClaudePluginManifest', () => {
   test('loads the documented fields and keeps the rest of a plugin when one field is wrong', () => {
@@ -134,28 +135,5 @@ describe('componentSources', () => {
     expect(
       componentSources({ monitors: './a.json', experimental: { monitors: [] } }).monitors,
     ).toEqual({ inline: [] })
-  })
-})
-
-describe('parseHooksFile', () => {
-  test('a hooks file wraps its events and may name one hooks module', () => {
-    const { file, issues } = parseHooksFile(
-      { hooks: { Stop: [] }, modules: ['./register.ts'] },
-      'hooks/hooks.json',
-    )
-    expect(file).toEqual({ hooks: { Stop: [] }, modules: ['./register.ts'] })
-    expect(issues).toEqual([])
-  })
-
-  test('a bare event map is refused, as Claude Code refuses it', () => {
-    expect(parseHooksFile({ Stop: [] }, 'hooks/hooks.json').file).toBeNull()
-  })
-
-  test('more than one module, or one that is not code, is an error', () => {
-    const { issues } = parseHooksFile({ modules: ['./a.js', './b.py'] }, 'hooks/hooks.json')
-    expect(issues.map((found) => found.message)).toEqual([
-      'A plugin has at most one hooks module',
-      'Not a JavaScript or TypeScript module: ./b.py',
-    ])
   })
 })

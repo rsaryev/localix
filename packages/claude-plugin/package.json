@@ -2,7 +2,7 @@
   "name": "@localixai/claude-plugin",
   "version": "0.1.0",
   "private": true,
-  "description": "The Claude Code plugin format: the plugin.json and hooks.json schemas, name and path rules, and where each component lives.",
+  "description": "The Claude Code plugin format: the plugin.json schema, name and path rules, and where each component lives.",
   "license": "MIT",
   "files": [
     "dist",

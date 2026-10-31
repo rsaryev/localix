@@ -6,7 +6,6 @@
 export {
   createModsEngine,
   freezeDeep,
-  ModLoadError,
   type DispatchOptions,
   type Hook,
   type HookFailure,

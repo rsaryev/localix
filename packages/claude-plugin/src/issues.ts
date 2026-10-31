@@ -14,6 +14,3 @@ export const issue = (
   path: string,
   message: string,
 ): PluginIssue => ({ severity, path, message })
-
-export const hasErrors = (issues: readonly PluginIssue[]): boolean =>
-  issues.some((found) => found.severity === 'error')
