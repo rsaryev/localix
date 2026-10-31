@@ -165,16 +165,33 @@ describe('what the model is offered on a busy page', () => {
     expect(Object.values(ask.questions.type_value!.criteria)).toEqual(['London'])
   })
 
-  test('typing is not offered when every field is filled or every value is placed', () => {
+  test('a value is placed only by a field that holds it whole, not by a longer text', () => {
+    const fields: PreviewSnapshotElement[] = [
+      { ref: 'e1', role: 'textbox', name: 'Guests', value: '10', editable: true },
+      { ref: 'e2', role: 'combobox', name: 'To', value: 'London Heathrow', editable: true },
+    ]
+    const ask = goalAsk({ ...base, elements: fields, values: ['1', 'London'] })
+    expect(Object.values(ask.questions.type_value!.criteria)).toEqual(['1', 'London'])
+  })
+
+  test('a field prefilled with something else can be typed over', () => {
+    const fields: PreviewSnapshotElement[] = [
+      { ref: 'e1', role: 'combobox', name: 'To', value: 'Paris', editable: true },
+      { ref: 'e2', role: 'combobox', name: 'From', value: 'Zurich', editable: true },
+    ]
+    const ask = goalAsk({ ...base, elements: fields, values: ['London', 'Zurich'] })
+    // Paris is wrong and may be corrected; Zurich is right and stays.
+    expect(Object.keys(ask.questions.type_target!.criteria)).toEqual(['e1'])
+    expect(Object.values(ask.questions.type_value!.criteria)).toEqual(['London'])
+  })
+
+  test('typing is not offered when every value is placed in its field', () => {
     const full: PreviewSnapshotElement[] = [
       { ref: 'e1', role: 'textbox', name: 'To', value: 'London', editable: true },
-      { ref: 'e2', role: 'textbox', name: 'Note', value: '', editable: true },
+      { ref: 'e2', role: 'textbox', name: 'From', value: 'Zurich (ZRH)', editable: true },
     ]
-    expect(
-      Object.keys(goalAsk({ ...base, elements: full }).questions.operation!.criteria),
-    ).not.toContain('TYPE_TEXT')
-    const filledAll = full.map((e) => ({ ...e, value: 'x' }))
-    const ask = goalAsk({ ...base, elements: filledAll, values: ['Paris'] })
+    const ask = goalAsk({ ...base, elements: full, values: ['london', 'Zurich'] })
+    expect(Object.keys(ask.questions.operation!.criteria)).not.toContain('TYPE_TEXT')
     expect(ask.questions.type_target).toBeUndefined()
   })
 })

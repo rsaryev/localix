@@ -81,16 +81,31 @@ export function describeElement(element: PreviewSnapshotElement): string {
 }
 
 const clickable = (element: PreviewSnapshotElement) => !element.states?.includes('disabled')
-/** A field to type into: editable, enabled, and still empty (typing over a value is `steps`' job). */
-const editable = (element: PreviewSnapshotElement) =>
-  clickable(element) && !!element.editable && !element.value
+/** A field's text and a supplied value, compared whole: case, outer spaces and a code in brackets aside. */
+const normalize = (text: string) =>
+  text
+    .replace(/\s*\([^)]*\)\s*$/, '')
+    .trim()
+    .toLowerCase()
 
-/** The supplied values (with their `v1..` keys) that no element on the page already shows. */
+/** Whether the field shows this value as a whole ("Zurich (ZRH)" shows "Zurich"; "10" does not show "1"). */
+const holds = (element: PreviewSnapshotElement, value: string) =>
+  !!element.value && normalize(element.value) === normalize(value)
+
+/**
+ * A field to type into: editable, enabled, and empty or holding something other than the values
+ * supplied (a prefilled wrong value must be correctable; one that is already right is left alone).
+ */
+const editable = (element: PreviewSnapshotElement, values: readonly string[]) =>
+  clickable(element) &&
+  !!element.editable &&
+  (!element.value || !values.some((value) => holds(element, value)))
+
+/** The supplied values (with their `v1..` keys) that no element on the page already shows whole. */
 function unplaced(input: GoalAskInput): Array<[key: string, value: string]> {
-  const shown = input.elements.map((element) => element.value?.toLowerCase() ?? '')
   return input.values
     .map((value, i): [string, string] => [valueKey(i), value])
-    .filter(([, value]) => !shown.some((text) => text && text.includes(value.toLowerCase())))
+    .filter(([, value]) => !input.elements.some((element) => holds(element, value)))
 }
 
 const valueKey = (index: number) => `v${index + 1}`
@@ -101,7 +116,10 @@ function operationsNow(input: GoalAskInput): GoalOperation[] {
   return GOAL_OPERATIONS.filter((operation) => {
     if (operation === 'CLICK') return input.elements.some(clickable)
     if (operation === 'TYPE_TEXT')
-      return unplaced(input).length > 0 && input.elements.some(editable)
+      return (
+        unplaced(input).length > 0 &&
+        input.elements.some((element) => editable(element, input.values))
+      )
     if (operation === 'PRESS_ENTER') return last?.operation === 'TYPE_TEXT'
     // A scroll that moved nothing the snapshot shows is not offered again in that direction, and
     // three scrolls in a row end scrolling: Flights runs spent half their actions scrolling a page
@@ -183,7 +201,7 @@ export function goalAsk(given: GoalAskInput): DecisionAsk {
     questions.type_target = {
       type: 'choice',
       instructions: `Goal: ${input.goal}\n\n${premise('TYPE_TEXT, into which field')}`,
-      criteria: targetCriteria(input.elements.filter(editable)),
+      criteria: targetCriteria(input.elements.filter((element) => editable(element, input.values))),
     }
     questions.type_value = {
       type: 'choice',
