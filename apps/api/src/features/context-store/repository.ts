@@ -118,13 +118,8 @@ export function createContextStoreRepository(db: Kysely<AppDatabase>) {
     },
 
     /**
-     * Chunk + index one tool output. Idempotent per tool_call_id (re-indexing a
-     * call replaces its chunks — the label-replace rule that keeps a re-run from
-     * accumulating stale copies). Returns the indexed chunk count, 0 when the
-     * text has no indexable content.
-     */
-    /**
-     * Index one tool output for chunk search.
+     * Index one tool output for chunk search. Idempotent per tool_call_id: re-indexing a call
+     * replaces its chunks, so a re-run does not accumulate stale copies.
      *
      * Reports `covered: 'full' | 'prefix'` rather than a bare count: chunking drops the
      * tail past its per-output cap, and a count alone cannot distinguish a fully indexed

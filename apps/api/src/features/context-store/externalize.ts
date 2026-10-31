@@ -27,7 +27,6 @@ export const EXTERNALIZE_THRESHOLD_BYTES = 20_000
 export interface ExternalizeOptions {
   userId: string
   sessionId: string
-  threshold?: number
   /**
    * Host secret shield for tool arguments. Required because this hook is a
    * durable persistence boundary; callers without a shield must pass a
@@ -42,7 +41,6 @@ export function buildExternalizeAfterToolCall(
   store: ContextStore,
   options: ExternalizeOptions,
 ): NonNullable<AgentRuntimeRunInput['afterToolCall']> {
-  const threshold = options.threshold ?? EXTERNALIZE_THRESHOLD_BYTES
   return async ({ toolCallId, toolName, input, result }) => {
     // Persist the RICHEST sanitized copy. Bash and filtered tools may retain raw
     // output in details.output even when their ordinary model text is shorter.
@@ -73,7 +71,7 @@ export function buildExternalizeAfterToolCall(
       !result.supersedeKey &&
       details?.kind !== 'image' &&
       !isIndexSkippedTool(toolName) &&
-      textBytes >= threshold
+      textBytes >= EXTERNALIZE_THRESHOLD_BYTES
     if (shouldIndex) {
       try {
         const indexed = await store.indexToolOutput({
