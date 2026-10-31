@@ -198,6 +198,27 @@ describe('what is happening in the background, as rows', () => {
     expect(calls).toEqual(['update store'])
   })
 
+  // Update all first reads every source again, which takes seconds before any job starts: the
+  // strip says so instead of looking as if the press did nothing.
+  test('while Update all reads the sources, the offer shows it is checking', () => {
+    const { ops, calls } = recordingOps()
+    const { updates } = buildActivity(
+      {
+        store: {
+          jobs: [],
+          updates: [
+            { ref: { kind: 'plugin', id: 'review@localix' }, displayName: 'Review', to: '1.1.0' },
+          ],
+        },
+        storeChecking: true,
+      },
+      ops,
+    )
+    expect(updates[0]?.running).toEqual({ percent: null, status: 'Checking for updates…' })
+    expect(updates[0]?.action).toBeUndefined()
+    expect(calls).toEqual([])
+  })
+
   test('updates of one kind say which kind', () => {
     const { updates } = buildActivity(
       {

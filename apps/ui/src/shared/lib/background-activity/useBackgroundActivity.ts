@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import useSWR from 'swr'
 
 import { localModelsApi } from '@/shared/api/localModelsApi'
@@ -26,6 +26,8 @@ export function useBackgroundActivity(host: { restartToUpdate?: () => void } = {
   const { status: localModels, refresh: refreshModels } = useLocalModelsStatus()
   const { state: app } = useDesktopUpdate({ poll: false })
   const { restartToUpdate } = host
+  // Update all reads every source again before it answers, which takes seconds.
+  const [storeChecking, setStoreChecking] = useState(false)
 
   return useMemo(() => {
     const after = (work: Promise<unknown>, refresh: () => unknown) =>
@@ -35,14 +37,20 @@ export function useBackgroundActivity(host: { restartToUpdate?: () => void } = {
       pauseModel: (id) => after(localModelsApi.pause(id), refreshModels),
       resumeModel: (id) => after(localModelsApi.install(id), refreshModels),
       cancelModel: (id) => after(localModelsApi.cancel(id), refreshModels),
-      updateStore: () => after(storeApi.applyUpdates(), () => store.mutate()),
+      updateStore: () => {
+        setStoreChecking(true)
+        after(storeApi.applyUpdates(), () => {
+          setStoreChecking(false)
+          return store.mutate()
+        })
+      },
       ...(restartToUpdate ? { restartToUpdate } : {}),
     }
-    const built = buildActivity({ store: store.data, localModels, app }, ops)
+    const built = buildActivity({ store: store.data, localModels, app, storeChecking }, ops)
     return { ...built, ...progressOf(built.items) }
     // `mutate` is stable per key; the data are what change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.data, localModels, app, restartToUpdate, refreshModels])
+  }, [store.data, localModels, app, storeChecking, restartToUpdate, refreshModels])
 }
 
 /**

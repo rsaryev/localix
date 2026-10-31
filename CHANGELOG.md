@@ -61,6 +61,9 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ### Fixed
 
+- **Update all for plugins**: after **Update all** above the composer updates a plugin, the strip no
+  longer keeps offering the same update as if nothing happened. While the Store reads its sources
+  first, the strip says **Checking for updates…** instead of staying still.
 - **Rust code intelligence**: opening a `.rs` file starts rust-analyzer again when rustup is
   installed without its rust-analyzer component. Localix used to start rustup's stand-in, which
   exits at once, and showed no hover, diagnostics or go-to-definition; it now downloads and runs its

@@ -52,6 +52,8 @@ export interface ActivitySources {
   store?: StoreActivity | null
   localModels?: LocalModelsStatus | null
   app?: DesktopUpdateState | null
+  /** Update all was pressed and the Store is still reading its sources: no job has started yet. */
+  storeChecking?: boolean
 }
 
 export interface ActivityOps {
@@ -173,7 +175,11 @@ function appOffer(app: DesktopUpdateState, ops: ActivityOps): UpdateOffer {
 }
 
 /** The Store's updates as one offer: Update all, or how far the running update is. */
-function storeOffer(activity: StoreActivity, ops: ActivityOps): UpdateOffer | null {
+function storeOffer(
+  activity: StoreActivity,
+  ops: ActivityOps,
+  checking: boolean,
+): UpdateOffer | null {
   const running = activity.jobs.filter((job) => job.action === 'update')
   const all = [
     ...activity.updates.map((u) => ({ ref: u.ref, label: u.displayName, to: u.to })),
@@ -194,7 +200,9 @@ function storeOffer(activity: StoreActivity, ops: ActivityOps): UpdateOffer | nu
             status: `Updating ${first.displayName}${percent === null ? '' : ` · ${percent}%`}`,
           },
         }
-      : { action: { id: 'update-all', label: 'Update all', run: ops.updateStore } }),
+      : checking
+        ? { running: { percent: null, status: 'Checking for updates…' } }
+        : { action: { id: 'update-all', label: 'Update all', run: ops.updateStore } }),
   }
 }
 
@@ -220,7 +228,7 @@ export function buildActivity(
   }
   if (store) {
     items.push(...storeItems(store, ops))
-    const offer = storeOffer(store, ops)
+    const offer = storeOffer(store, ops, sources.storeChecking ?? false)
     if (offer) updates.push(offer)
   }
   if (localModels) items.push(...modelItems(localModels, ops))
