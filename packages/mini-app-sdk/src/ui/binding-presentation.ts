@@ -1,5 +1,6 @@
 import type { MessageContextBindingDraft } from './contrib'
 import { fileExtension, mediaTypeForPath } from './file-types'
+import { mediaTypeForExtension } from '../media-types'
 
 export type ContextBindingPreviewKind = 'image' | 'text'
 
@@ -23,18 +24,6 @@ export function contextBindingFileName(binding: MessageContextBindingDraft): str
 export function contextBindingFileType(binding: MessageContextBindingDraft): string | null {
   return binding.target.kind === 'file' ? stringAttribute(binding, 'type') : null
 }
-
-const IMAGE_PREVIEW_EXTENSIONS = new Set([
-  'avif',
-  'bmp',
-  'gif',
-  'ico',
-  'jpeg',
-  'jpg',
-  'png',
-  'svg',
-  'webp',
-])
 
 const TEXT_PREVIEW_EXTENSIONS = new Set([
   'css',
@@ -81,7 +70,7 @@ export function contextBindingPreviewKind(
   if (mediaType?.startsWith('image/')) return 'image'
   if (mediaType?.startsWith('text/')) return 'text'
   const extension = fileExtension(candidate)
-  if (IMAGE_PREVIEW_EXTENSIONS.has(extension)) return 'image'
+  if (mediaTypeForExtension(extension)?.startsWith('image/')) return 'image'
   if (TEXT_PREVIEW_EXTENSIONS.has(extension)) return 'text'
   return null
 }

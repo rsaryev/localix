@@ -58,4 +58,14 @@ describe('context binding presentation', () => {
     expect(contextBindingPreviewKind(image)).toBe('image')
     expect(contextBindingImageMimeType(image)).toBe('image/png')
   })
+
+  test('every image file a person can attach previews as an image, by its extension alone', () => {
+    for (const extension of ['avif', 'bmp', 'gif', 'ico', 'jpeg', 'jpg', 'png', 'svg', 'webp']) {
+      const name = `picture.${extension}`
+      const binding = createMessageBindingDraft('file', `/workspace/${name}`, name)
+      expect(contextBindingPreviewKind(binding)).toBe('image')
+    }
+    const video = createMessageBindingDraft('file', '/workspace/clip.mp4', 'clip.mp4')
+    expect(contextBindingPreviewKind(video)).toBeNull()
+  })
 })
