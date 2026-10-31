@@ -1,6 +1,6 @@
 import { afterAll, afterEach, describe, expect, test } from 'bun:test'
 
-import { acceptAttribute, attachmentGate } from '@/shared/lib/attachment-policy'
+import { attachmentGate } from '@/shared/lib/attachment-policy'
 import {
   filesFromDesktopPick,
   filesToAttachments,
@@ -21,14 +21,12 @@ describe('attachmentGate', () => {
       allowPdf: true,
       allowAudio: true,
       allowDocuments: true,
-      limitPickerToAllowedKinds: false,
     })
     expect(attachmentGate([])).toEqual({
       allowImages: true,
       allowPdf: true,
       allowAudio: true,
       allowDocuments: true,
-      limitPickerToAllowedKinds: false,
     })
   })
 
@@ -38,21 +36,18 @@ describe('attachmentGate', () => {
       allowPdf: false,
       allowAudio: false,
       allowDocuments: true,
-      limitPickerToAllowedKinds: false,
     })
     expect(attachmentGate(['text'])).toEqual({
       allowImages: false,
       allowPdf: false,
       allowAudio: false,
       allowDocuments: true,
-      limitPickerToAllowedKinds: false,
     })
     expect(attachmentGate(['image', 'pdf', 'audio'])).toEqual({
       allowImages: true,
       allowPdf: true,
       allowAudio: true,
       allowDocuments: true,
-      limitPickerToAllowedKinds: false,
     })
   })
 })
@@ -174,60 +169,6 @@ describe('filesToAttachments — partial-failure batch (crumple zone)', () => {
     // so nothing is orphaned (created count === staged previews).
     expect(pending[0]!.previewUrl).toBeDefined()
     expect(created).toEqual([pending[0]!.previewUrl!])
-  })
-})
-
-describe('acceptAttribute', () => {
-  const TEXT = '.txt,.md,.json,.csv,.log,.xml,.yaml,.yml,text/*'
-
-  test('text-only gate → just the text accept list', () => {
-    expect(
-      acceptAttribute({
-        allowImages: false,
-        allowPdf: false,
-        allowAudio: false,
-        allowDocuments: false,
-      }),
-    ).toBe(TEXT)
-  })
-
-  test('images prepend the image mimes', () => {
-    expect(
-      acceptAttribute({
-        allowImages: true,
-        allowPdf: false,
-        allowAudio: false,
-        allowDocuments: false,
-      }),
-    ).toBe(`image/png,image/jpeg,image/gif,image/webp,${TEXT}`)
-  })
-
-  test('pdf prepends ahead of images', () => {
-    expect(
-      acceptAttribute({
-        allowImages: true,
-        allowPdf: true,
-        allowAudio: false,
-        allowDocuments: false,
-      }),
-    ).toBe(`application/pdf,image/png,image/jpeg,image/gif,image/webp,${TEXT}`)
-  })
-
-  test('documents prepend ahead of pdf + images', () => {
-    expect(
-      acceptAttribute({
-        allowImages: true,
-        allowPdf: true,
-        allowAudio: false,
-        allowDocuments: true,
-      }),
-    ).toBe(
-      `.docx,.xlsx,.pptx,.odt,application/pdf,image/png,image/jpeg,image/gif,image/webp,${TEXT}`,
-    )
-  })
-
-  test('the fully permissive composer gate leaves the file picker unrestricted', () => {
-    expect(acceptAttribute(attachmentGate(['text']))).toBe('')
   })
 })
 

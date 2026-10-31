@@ -261,7 +261,7 @@ export function PromptInput(props: PromptInputProps) {
   })
   const dropzone = props.dropzone ?? ownDropzone
   const { dragKind, handleFiles } = dropzone
-  const filePicker = useComposerFileInput(handleFiles, attachmentGate)
+  const filePicker = useComposerFileInput(handleFiles)
   // Pills under file references, and the ghost suggestion after the caret.
   const composerHighlight = useComposerMirror({ prompt, suggestionGhost })
 

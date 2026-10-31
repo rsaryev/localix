@@ -6,7 +6,6 @@ import { Textarea } from '@localixai/kit/textarea'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { matchesChord, withChordHint } from '@/shared/lib/keybindings'
 import { AttachmentTray } from '@/shared/ui/attachments/AttachmentTray'
-import { acceptAttribute } from '@/shared/lib/attachment-policy'
 import type { CommentDraft } from './useCommentDraft'
 
 /** Ref for a field that takes the keyboard when it appears (the one thing `autoFocus` did). */
@@ -113,7 +112,6 @@ export function CommentDraftCard({
         ref={fileInputRef}
         type="file"
         multiple
-        accept={acceptAttribute(draft.gate)}
         className="hidden"
         onChange={(event) => {
           const files = Array.from(event.target.files ?? [])

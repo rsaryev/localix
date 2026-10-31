@@ -20,8 +20,6 @@ export interface AttachmentGate {
   /** Office documents (docx/xlsx/pptx/odt). Not a model modality — handled by the
    *  extraction pipeline — so allowed regardless of the model, unless a caller opts out. */
   allowDocuments: boolean
-  /** False for the composer: unsupported native modalities still remain selectable as files. */
-  limitPickerToAllowedKinds?: boolean
 }
 
 /**
@@ -39,7 +37,6 @@ export function attachmentGate(inputModalities: string[] | undefined): Attachmen
       allowPdf: true,
       allowAudio: true,
       allowDocuments: true,
-      limitPickerToAllowedKinds: false,
     }
   return {
     allowImages: inputModalities.includes('image'),
@@ -47,7 +44,6 @@ export function attachmentGate(inputModalities: string[] | undefined): Attachmen
     allowAudio: inputModalities.includes('audio'),
     // Office docs are read via extraction/spill, not a native modality — always on.
     allowDocuments: true,
-    limitPickerToAllowedKinds: false,
   }
 }
 
@@ -56,16 +52,3 @@ export function attachmentGate(inputModalities: string[] | undefined): Attachmen
  * being dumped into the textarea (keeps the composer usable for huge clipboards).
  */
 export const LARGE_PASTE_CHARS = 4000
-
-/** The accept attribute for the file picker, derived from the gate. */
-export function acceptAttribute(gate: AttachmentGate): string {
-  // An unrestricted composer gate must leave the browser picker unrestricted too;
-  // an extension/MIME allowlist would still make arbitrary agent-readable files
-  // impossible to select even though drop/paste accepts them.
-  if (gate.limitPickerToAllowedKinds === false) return ''
-  const parts = ['.txt,.md,.json,.csv,.log,.xml,.yaml,.yml,text/*']
-  if (gate.allowImages) parts.unshift('image/png,image/jpeg,image/gif,image/webp')
-  if (gate.allowPdf) parts.unshift('application/pdf')
-  if (gate.allowDocuments) parts.unshift('.docx,.xlsx,.pptx,.odt')
-  return parts.join(',')
-}

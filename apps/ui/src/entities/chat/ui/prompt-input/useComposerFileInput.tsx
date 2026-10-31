@@ -1,6 +1,5 @@
 import { useCallback, useRef } from 'react'
 
-import { acceptAttribute, type AttachmentGate } from '@/shared/lib/attachment-policy'
 import { filesFromDesktopPick } from '@/shared/lib/attachments/file-staging'
 import { desktopPickFiles } from '@/shared/lib/desktopDialogs'
 
@@ -9,10 +8,7 @@ import { desktopPickFiles } from '@/shared/lib/desktopDialogs'
  * file input this returns for the composer to render. Either way the picked files are staged
  * through `handleFiles`.
  */
-export function useComposerFileInput(
-  handleFiles: (files: File[]) => void,
-  attachmentGate: AttachmentGate | undefined,
-) {
+export function useComposerFileInput(handleFiles: (files: File[]) => void) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const openPicker = useCallback(async () => {
     const files = filesFromDesktopPick(await desktopPickFiles())
@@ -20,9 +16,8 @@ export function useComposerFileInput(
       fileInputRef.current?.click()
       return
     }
-    // Opened without `extensions` on purpose: `pick_files` filters by extension only, while the
-    // browser input's `accept` hint is partly MIME types (`acceptAttribute`), so a filter here
-    // would diverge from it. The composer stages every kind rather than refusing after the pick.
+    // Opened without `extensions` on purpose, like the input below without `accept`: the composer
+    // stages every kind of file rather than refusing after the pick.
     handleFiles(files)
   }, [handleFiles])
   const fileInput = (
@@ -30,7 +25,6 @@ export function useComposerFileInput(
       ref={fileInputRef}
       type="file"
       multiple
-      accept={attachmentGate ? acceptAttribute(attachmentGate) : undefined}
       className="hidden"
       onChange={(e) => {
         const files = Array.from(e.target.files ?? [])
