@@ -1,16 +1,16 @@
 import { resolve as resolvePath } from 'node:path'
 
-import { CONTEXT_UNAVAILABLE_KIND } from '@localixai/mini-app-sdk/backend'
+import {
+  CONTEXT_UNAVAILABLE_KIND,
+  type ContextContribution,
+  type ContextReference,
+  type ContextResolver,
+  type ResolveContext,
+} from '@localixai/mini-app-sdk/backend'
 
 import { formatRefExpansionBlock } from '../../contracts/context-refs'
 import { refKindSpec } from '../../contracts/context-ref-kinds'
 import { contextRefSchema, type ContextRef, type ContextRefExpansion } from '../projects/contracts'
-import type {
-  ContextContribution,
-  ContextReference,
-  ContextResolver,
-  ResolveContext,
-} from './contracts'
 
 /**
  * Context Fabric's resolver for the references core itself owns — `@file`, `@folder`, `@session`,

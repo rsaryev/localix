@@ -7,7 +7,7 @@
  */
 
 import type { AuxLanguageModelDeps } from '../autocomplete/resolve-model'
-import type { ContextContribution } from '../context-fabric/contracts'
+import type { ContextContribution } from '@localixai/mini-app-sdk/backend'
 import type { CompletionReference } from '../inline-completion/contracts'
 import type {
   ContextCollectionResult,

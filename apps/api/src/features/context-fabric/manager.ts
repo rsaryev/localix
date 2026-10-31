@@ -5,7 +5,7 @@ import type {
   ContextReference,
   ResolveContext,
   ContextSensitivity,
-} from './contracts'
+} from '@localixai/mini-app-sdk/backend'
 import { fnv1aHex } from '../../lib/fnv1a'
 import { mapLimit } from '../../lib/map-limit'
 import type { ContextProviderRegistry } from './registry'

@@ -1,7 +1,9 @@
-import type { ResourceRefProvider } from '@localixai/mini-app-sdk/backend'
+import {
+  type ResourceRefProvider,
+  type ContextProviderContribution,
+  createResourceContextProvider,
+} from '@localixai/mini-app-sdk/backend'
 
-import type { ContextProviderContribution } from '../context-fabric/contracts'
-import { createResourceContextProvider } from '../context-fabric/resource-context-provider'
 import { createCapabilityResourceProvider } from './resource-provider'
 
 /**

@@ -8,7 +8,7 @@ import type {
   AutomaticContextProvider,
   ContextProviderContribution,
   ContextResolver,
-} from './contracts'
+} from '@localixai/mini-app-sdk/backend'
 
 const resolver: ContextResolver = {
   id: 'files',

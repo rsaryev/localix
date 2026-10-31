@@ -16,7 +16,7 @@ import type {
   ContextDestination,
   ContextReference,
   ResolveContext,
-} from '../context-fabric/contracts'
+} from '@localixai/mini-app-sdk/backend'
 import type { ContextManager, ExplicitContextCollectionResult } from '../context-fabric/manager'
 import { COMPLETION_RAW_CONTEXT_BYTES } from './completion-context'
 

@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, realpath, rm, symlink, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createContextPolicy } from './policy'
-import type { ContextContribution, ResolveContext } from './contracts'
+import type { ContextContribution, ResolveContext } from '@localixai/mini-app-sdk/backend'
 
 const roots: string[] = []
 afterEach(async () => {

@@ -10,7 +10,7 @@ import {
 } from './testing/mini-app-contract-kit'
 import { createContextManager } from './manager'
 import { createContextProviderRegistry } from './registry'
-import type { ContextProviderContribution } from './contracts'
+import type { ContextProviderContribution } from '@localixai/mini-app-sdk/backend'
 
 function managerFor(...contributions: ContextProviderContribution[]) {
   const registry = createContextProviderRegistry()

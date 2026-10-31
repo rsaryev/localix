@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import type { LanguageModelRequest } from '@localixai/agent/runtime'
 
-import type { ContextContribution } from '../context-fabric/contracts'
+import type { ContextContribution } from '@localixai/mini-app-sdk/backend'
 import {
   renderSessionDigest,
   clip,

@@ -1,12 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import { parseResourceUri } from '@localixai/mini-app-sdk/backend'
-
-import type { ContextReference, ContextResolver } from './contracts'
+import type { ContextReference, ContextResolver } from './context-fabric'
 import {
   createResourceContextProvider,
   namespacedResourceKind,
   type ResourceContextExpander,
 } from './resource-context-provider'
+import { parseResourceUri } from './resource-uri'
 
 const ctx = { destination: 'chat' as const, userId: 'u', sessionId: 's', maxBytes: 10_000 }
 

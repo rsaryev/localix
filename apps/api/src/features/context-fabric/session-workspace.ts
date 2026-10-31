@@ -1,4 +1,4 @@
-import type { ResolveContext } from './contracts'
+import type { ResolveContext } from '@localixai/mini-app-sdk/backend'
 
 /**
  * The trusted workspace a session's context is contained in: the session's effective root plus

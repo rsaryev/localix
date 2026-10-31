@@ -3,7 +3,7 @@ import type {
   ContextDestination,
   ContextProviderContribution,
   ContextResolver,
-} from './contracts'
+} from '@localixai/mini-app-sdk/backend'
 import {
   CORE_CONTEXT_MAX_TOKENS,
   validateContextContribution,

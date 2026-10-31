@@ -7,7 +7,7 @@ import type {
   ContextReference,
   ContextResolver,
   ResolveContext,
-} from '../contracts'
+} from '@localixai/mini-app-sdk/backend'
 import { createContextManager } from '../manager'
 import { createContextProviderRegistry } from '../registry'
 import { validateContextContribution } from '../contribution-validate'

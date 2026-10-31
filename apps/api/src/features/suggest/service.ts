@@ -26,8 +26,10 @@ import { startCompletionOperation } from './operation'
 import type { SurfaceContextResolver } from './context-resolvers'
 import { isModelRoutingTaskEnabled } from '../../contracts/model-task-catalog'
 import type { Usage } from '@localixai/agent'
-import type { MiniAppTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
-import type { ContextContribution } from '../context-fabric/contracts'
+import type {
+  MiniAppTextInputCompletionSurface,
+  ContextContribution,
+} from '@localixai/mini-app-sdk/backend'
 import { mergeCompletionReferences } from '../autocomplete/completion-references'
 import { packCompletionContext, renderCompletionContext } from '../autocomplete/completion-context'
 import { extractIdentifiers } from '../autocomplete/predict-next-edit-context'

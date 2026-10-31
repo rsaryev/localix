@@ -1,7 +1,10 @@
-import { CONTEXT_UNAVAILABLE_KIND } from '@localixai/mini-app-sdk/backend'
+import {
+  CONTEXT_UNAVAILABLE_KIND,
+  type ResourceProviderRegistry,
+  type ContextContribution,
+  type ContextResolver,
+} from '@localixai/mini-app-sdk/backend'
 
-import type { ResourceProviderRegistry } from '@localixai/mini-app-sdk/backend'
-import type { ContextContribution, ContextResolver } from './contracts'
 import { estimateTokens } from '../../lib/tokens'
 
 /**

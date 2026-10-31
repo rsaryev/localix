@@ -9,9 +9,8 @@
  * picker could keep the three tables near the caret. Here policy runs without a byte budget,
  * then ranking, then excerpting, then the prompt budget: in that order and nowhere else.
  */
-import { CONTEXT_UNAVAILABLE_KIND } from '@localixai/mini-app-sdk/backend'
+import { CONTEXT_UNAVAILABLE_KIND, type ContextContribution } from '@localixai/mini-app-sdk/backend'
 
-import type { ContextContribution } from '../context-fabric/contracts'
 import { packContextContributions } from '../context-fabric/manager'
 import {
   packContextWindows,

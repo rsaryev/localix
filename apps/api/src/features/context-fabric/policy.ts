@@ -2,7 +2,7 @@ import { realpath } from 'node:fs/promises'
 import { relative, sep } from 'node:path'
 import { isPathWithin } from '../../lib/path-containment'
 import { hasSecretShape } from '../../lib/secret-redaction'
-import type { ContextContribution, ResolveContext } from './contracts'
+import type { ContextContribution, ResolveContext } from '@localixai/mini-app-sdk/backend'
 import type { ContextDropReason } from './manager'
 
 export type ContextPolicyDecision =

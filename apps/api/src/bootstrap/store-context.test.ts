@@ -4,7 +4,7 @@ import type {
   ContextContribution,
   ContextDestination,
   ContextReference,
-} from '../features/context-fabric/contracts'
+} from '@localixai/mini-app-sdk/backend'
 import { createContextManager } from '../features/context-fabric/manager'
 import { createContextProviderRegistry } from '../features/context-fabric/registry'
 import { createStoreWorkingContext } from './store-context'

@@ -1,7 +1,10 @@
 import type { MessageBindingContribution, MessageContextBinding } from '@localixai/agent'
-import { CONTEXT_UNAVAILABLE_KIND } from '@localixai/mini-app-sdk/backend'
+import {
+  CONTEXT_UNAVAILABLE_KIND,
+  type ContextReference,
+  type ResolveContext,
+} from '@localixai/mini-app-sdk/backend'
 
-import type { ContextReference, ResolveContext } from './contracts'
 import type { ContextManager, ExplicitReferenceStatus } from './manager'
 import { HOST_REF_PROVIDER } from './host-ref-resolver'
 

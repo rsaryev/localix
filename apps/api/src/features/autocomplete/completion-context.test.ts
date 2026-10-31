@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import type { ContextContribution } from '../context-fabric/contracts'
+import type { ContextContribution } from '@localixai/mini-app-sdk/backend'
 import { packContextContributions } from '../context-fabric/manager'
 import { packCompletionContext } from './completion-context'
 

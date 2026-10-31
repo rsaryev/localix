@@ -8,7 +8,7 @@ import {
 } from '../chat/service/message-bindings'
 import type { ChatServiceDeps } from '../chat/service/context'
 import { captureContextBindings } from '../context-fabric/binding-capture'
-import type { ContextResolver } from '../context-fabric/contracts'
+import type { ContextResolver } from '@localixai/mini-app-sdk/backend'
 import { createContextManager } from '../context-fabric/manager'
 import { createContextProviderRegistry } from '../context-fabric/registry'
 import { createCapabilityContextProvider } from './context-provider'

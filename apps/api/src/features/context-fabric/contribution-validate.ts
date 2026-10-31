@@ -5,7 +5,7 @@ import type {
   ContextProviderContribution,
   ContextResolver,
   ContextSensitivity,
-} from './contracts'
+} from '@localixai/mini-app-sdk/backend'
 
 /**
  * Content-free validation for a mini app/subsystem Context Fabric contribution.

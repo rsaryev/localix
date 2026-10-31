@@ -12,7 +12,7 @@
  * Neither path lets a surface put text in the prompt that the admission policy has not seen.
  */
 import type { CompletionReference } from '../inline-completion/contracts'
-import type { ContextContribution, ResolveContext } from '../context-fabric/contracts'
+import type { ContextContribution, ResolveContext } from '@localixai/mini-app-sdk/backend'
 import type { ContextManager } from '../context-fabric/manager'
 import { COMPLETION_RAW_CONTEXT_BYTES } from '../autocomplete/completion-context'
 import { resolveCompletionReferences } from '../autocomplete/completion-references'

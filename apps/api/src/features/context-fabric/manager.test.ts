@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { contextFingerprint, createContextManager, packContextContributions } from './manager'
 import { createContextProviderRegistry } from './registry'
-import type { ContextContribution } from './contracts'
+import type { ContextContribution } from '@localixai/mini-app-sdk/backend'
 
 const contribution = (over: Partial<ContextContribution>): ContextContribution => ({
   id: 'a',

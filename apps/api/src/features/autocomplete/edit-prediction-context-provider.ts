@@ -1,5 +1,5 @@
 import { formatEditEvents } from './predict-next-edit-context'
-import type { AutomaticContextProvider, ContextContribution } from '../context-fabric/contracts'
+import type { AutomaticContextProvider, ContextContribution } from '@localixai/mini-app-sdk/backend'
 
 /**
  * Host-owned automatic Context Fabric adapter for Edit Prediction's existing,

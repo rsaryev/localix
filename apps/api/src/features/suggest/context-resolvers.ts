@@ -9,7 +9,7 @@
  */
 import { isTextItem } from '@localixai/agent/agents'
 
-import type { ContextContribution } from '../context-fabric/contracts'
+import type { ContextContribution } from '@localixai/mini-app-sdk/backend'
 import {
   isContributedSurfaceId,
   type InlineCompletionContextRequest,
