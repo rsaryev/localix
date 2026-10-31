@@ -26,7 +26,7 @@ use crate::tray::setup_tray_after_ready;
 /// arrival order; after that, links dispatch straight through.
 #[derive(Default)]
 pub(crate) struct DeepLinks {
-    pub(crate) ready: AtomicBool,
+    ready: AtomicBool,
     pending: Mutex<Vec<String>>,
 }
 
