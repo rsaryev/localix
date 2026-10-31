@@ -6,6 +6,7 @@ import { promisify } from 'node:util'
 import { localixHome } from '../../../../lib/env'
 import { childEnvNonInteractive } from '../../../../lib/login-shell-env'
 import { isPathWithin, resolveWithin } from '../../../../lib/path-containment'
+import { withoutRepoLocation } from '../../../../lib/git-in'
 
 /**
  * `agent(prompt, { isolation: 'worktree' })`: the agent works in a fresh git worktree of the
@@ -22,26 +23,14 @@ import { isPathWithin, resolveWithin } from '../../../../lib/path-containment'
 
 const GIT_TIMEOUT_MS = 60_000
 
-/** Variables that point git at another repository (a hook exports them); each call names its own. */
-const REPO_LOCATION_VARS = [
-  'GIT_DIR',
-  'GIT_WORK_TREE',
-  'GIT_INDEX_FILE',
-  'GIT_OBJECT_DIRECTORY',
-  'GIT_ALTERNATE_OBJECT_DIRECTORIES',
-  'GIT_COMMON_DIR',
-  'GIT_NAMESPACE',
-  'GIT_PREFIX',
-]
-
 /** Run git in `cwd` and answer its trimmed standard output; throws on a non-zero exit. */
 export type GitRunner = (cwd: string, args: string[]) => Promise<string>
 
 const execFileAsync = promisify(execFile)
 
 export function createGitRunner(env: NodeJS.ProcessEnv = childEnvNonInteractive()): GitRunner {
-  const clean = { ...env }
-  for (const key of REPO_LOCATION_VARS) delete clean[key]
+  // Each call names its own repository.
+  const clean = withoutRepoLocation(env)
   return async (cwd, args) => {
     const { stdout } = await execFileAsync('git', ['-C', cwd, ...args], {
       env: clean,

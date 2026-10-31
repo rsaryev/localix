@@ -7,6 +7,7 @@ import { InvalidRequestError } from '../../lib/domain-errors'
 import { errorMessage } from '../../lib/errors'
 import { childEnvNonInteractive } from '../../lib/login-shell-env'
 import { rmrf } from '../ext/install-tree'
+import { withoutRepoLocation } from '../../lib/git-in'
 
 const execFileAsync = promisify(execFile)
 
@@ -23,22 +24,10 @@ export interface GitCheckoutTarget {
 
 const GIT_TIMEOUT_MS = 120_000
 
-/** Variables that point git at another repository (a hook exports them); the fetch owns `dest`. */
-const REPO_LOCATION_VARS = [
-  'GIT_DIR',
-  'GIT_WORK_TREE',
-  'GIT_INDEX_FILE',
-  'GIT_OBJECT_DIRECTORY',
-  'GIT_ALTERNATE_OBJECT_DIRECTORIES',
-  'GIT_COMMON_DIR',
-  'GIT_NAMESPACE',
-  'GIT_PREFIX',
-]
-
 async function git(args: string[], cwd?: string): Promise<string> {
   // Never prompt: a host without stored credentials fails instead of waiting for a password.
-  const env = childEnvNonInteractive()
-  for (const key of REPO_LOCATION_VARS) delete env[key]
+  // The fetch owns `dest`: nothing a hook exported may point it at another repository.
+  const env = withoutRepoLocation(childEnvNonInteractive())
   const { stdout } = await execFileAsync('git', args, {
     cwd,
     timeout: GIT_TIMEOUT_MS,

@@ -7,6 +7,25 @@ const execFileAsync = promisify(execFile)
 
 export type GitRunner = (args: string[]) => Promise<string | null>
 
+/** Variables that point git at another repository (a hook exports them). */
+const REPO_LOCATION_VARS = [
+  'GIT_DIR',
+  'GIT_WORK_TREE',
+  'GIT_INDEX_FILE',
+  'GIT_OBJECT_DIRECTORY',
+  'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+  'GIT_COMMON_DIR',
+  'GIT_NAMESPACE',
+  'GIT_PREFIX',
+]
+
+/** `env` without the variables that would point git at a repository other than the one a call names. */
+export function withoutRepoLocation(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const clean = { ...env }
+  for (const key of REPO_LOCATION_VARS) delete clean[key]
+  return clean
+}
+
 /**
  * Git, run in `cwd` with the person's own environment minus the variables that redirect it
  * (`GIT_DIR`, `GIT_WORK_TREE`, …). Resolves to the output without its trailing whitespace, or
