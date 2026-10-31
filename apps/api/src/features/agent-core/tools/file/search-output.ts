@@ -48,14 +48,6 @@ export function truncateOutput(output: string): SearchOutput {
 const MIN_GROUP_LINES = 10
 
 /**
- * Group ripgrep `path:line:text` output by FILE, so the path is printed once
- * per file instead of on every match line (repeated paths are routinely
- * 40-60% of a search result's bytes). Identical match text within a file is
- * collapsed to one entry listing its line numbers. Conservative by design:
- * any line that doesn't parse as `path:line:text` aborts grouping (returns
- * null → caller keeps the raw output), and the caller applies never-worse.
- */
-/**
  * Parse `path:line:text` output into file → (text → line numbers), insertion-ordered.
  *
  * Conservative by construction: ONE unparseable line aborts the whole parse and returns null.
@@ -99,6 +91,14 @@ export function matchedFiles(output: string): { file: string; line: number }[] {
   return out
 }
 
+/**
+ * Group ripgrep `path:line:text` output by FILE, so the path is printed once
+ * per file instead of on every match line (repeated paths are routinely
+ * 40-60% of a search result's bytes). Identical match text within a file is
+ * collapsed to one entry listing its line numbers. Conservative by design:
+ * any line that doesn't parse as `path:line:text` aborts grouping (returns
+ * null → caller keeps the raw output), and the caller applies never-worse.
+ */
 export function groupMatches(output: string): string | null {
   const lines = output.split('\n').filter((l) => l !== '')
   if (lines.length < MIN_GROUP_LINES) return null

@@ -7,18 +7,6 @@ import { heavyMutateInputs } from '@localixai/agent'
 import type { ChatRepository } from '../../../chat/repository'
 import type { ContextStore, ToolOutputArtifact } from '../../../context-store/repository'
 
-/**
- * Reverse the context-compression layers on demand. When an old tool result is
- * crushed/truncated in the wire to save context (the `CRUSH_MARKER` / `ELISION_MARKER`
- * phrases, carrying the originating `tool_call_id`), the FULL
- * original is still persisted in the session history — only the model-facing wire
- * copy was shrunk. This tool fetches that original back by `tool_call_id`, so the
- * agent can recover a dropped detail (a specific row, a middle log line) instead of
- * re-running the command. For a MUTATING call the elided payload is its heavy INPUT
- * (`content` / `patch`), not its one-line result — so those args are served back too,
- * or the elision pointer would promise a recovery this tool cannot perform. This is what makes aggressive compression safe (headroom's
- * compress-cache-retrieve idea, but the "cache" is just our durable message store).
- */
 /** Cap the returned text so a huge original can't blow the context back up. */
 const MAX_OUTPUT_CHARS = 100_000
 
@@ -88,6 +76,18 @@ export function storedToolCallOutput(
  * Exact-output leg of the consolidated `ToolOutput` model tool. Kept as a narrow
  * function because context search also uses the same durable artifact/history sources
  * for lazy indexing; the model-facing schema lives in context-search.ts.
+ *
+ * It reverses the context-compression layers on demand. When an old tool result is
+ * crushed/truncated in the wire to save context (the `CRUSH_MARKER` / `ELISION_MARKER`
+ * phrases, carrying the originating `tool_call_id`), the FULL
+ * original is still persisted in the session history — only the model-facing wire
+ * copy was shrunk. This tool fetches that original back by `tool_call_id`, so the
+ * agent can recover a dropped detail (a specific row, a middle log line) instead of
+ * re-running the command. For a MUTATING call the elided payload is its heavy INPUT
+ * (`content` / `patch`), not its one-line result — so those args are served back too,
+ * or the elision pointer would promise a recovery this tool cannot perform.
+ * This is what makes aggressive compression safe (headroom's
+ * compress-cache-retrieve idea, but the "cache" is just our durable message store).
  */
 export async function retrieveStoredOutput(
   repo: RetrieveOutputRepo,
@@ -145,10 +145,3 @@ function outputResult(
       : text,
   }
 }
-
-/**
- * The preferred recovery half of context compression. Profiles expose it by
- * default, but the effective disabledTools policy may remove it like any other
- * tool. Both compression layers receive that final availability and suppress
- * dead recovery calls when it is disabled.
- */
