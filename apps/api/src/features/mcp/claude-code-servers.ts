@@ -1,6 +1,6 @@
-import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
+import { readJsonRecordSync } from '../../lib/json'
 import { isRecord } from '../../lib/record'
 import { claudeStateFile } from '../cc-settings/config-dir'
 import { managedSettingsDir } from '../cc-settings/managed-settings'
@@ -54,15 +54,6 @@ export interface ClaudeCodeMcpInput extends SettingsFilesInput {
 
 type Scope = 'managed' | 'local' | 'project' | 'user'
 
-function readJson(file: string): Record<string, unknown> | undefined {
-  try {
-    const parsed: unknown = JSON.parse(readFileSync(file, 'utf8'))
-    return isRecord(parsed) ? parsed : undefined
-  } catch {
-    return undefined
-  }
-}
-
 const serversOf = (doc: Record<string, unknown> | undefined) =>
   doc && isRecord(doc.mcpServers) ? doc.mcpServers : {}
 
@@ -90,7 +81,7 @@ export function claudeCodeMcpServers(input: ClaudeCodeMcpInput): McpServerRecord
   const layers = readSettingsFileLayers(input)
   const cwd = resolve(input.cwd)
   const root = localSettingsRoot(cwd, input.homeDir, input.platform)
-  const state = readJson(claudeStateFile(input.homeDir, env))
+  const state = readJsonRecordSync(claudeStateFile(input.homeDir, env))
   const projects = state && isRecord(state.projects) ? state.projects : {}
   const local = [cwd, root].flatMap((dir) => {
     const entry = dir ? projects[dir] : undefined
@@ -98,14 +89,17 @@ export function claudeCodeMcpServers(input: ClaudeCodeMcpInput): McpServerRecord
   })
   const managedDir =
     input.managed === null ? null : (input.managed?.dir ?? managedSettingsDir(input.platform))
-  const exclusive = managedDir ? readJson(join(managedDir, 'managed-mcp.json')) : undefined
+  const exclusive = managedDir
+    ? readJsonRecordSync(join(managedDir, 'managed-mcp.json'))
+    : undefined
   const provided = layers
     .filter((l) => l.source === 'policy')
     .map((l) => (isRecord(l.settings.managedMcpServers) ? l.settings.managedMcpServers : {}))
   const trusted = claudeCodeTrusts(input)
   const approved = approval(layers, trusted)
   const mcpJson =
-    readJson(join(cwd, '.mcp.json')) ?? (root ? readJson(join(root, '.mcp.json')) : undefined)
+    readJsonRecordSync(join(cwd, '.mcp.json')) ??
+    (root ? readJsonRecordSync(join(root, '.mcp.json')) : undefined)
 
   // Highest scope first; the first definition of a name is the one that loads.
   const ranked: Array<[Scope, Record<string, unknown>]> = [

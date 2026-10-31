@@ -1,7 +1,7 @@
 import { readFileSync, statSync } from 'node:fs'
 import { dirname, join, parse, resolve } from 'node:path'
 
-import { isRecord } from '../../lib/record'
+import { readJsonRecordSync } from '../../lib/json'
 import { claudeConfigDir } from './config-dir'
 import {
   readManagedFiles,
@@ -42,21 +42,6 @@ export interface SettingsFilesInput {
   /** The managed source; the machine's own by default, `null` to read none. */
   managed?: ManagedSettingsSource | null
   platform?: NodeJS.Platform
-}
-
-function readSettingsFile(file: string): Settings | undefined {
-  let text: string
-  try {
-    text = readFileSync(file, 'utf8')
-  } catch {
-    return undefined
-  }
-  try {
-    const parsed: unknown = JSON.parse(text)
-    return isRecord(parsed) ? parsed : undefined
-  } catch {
-    return undefined
-  }
 }
 
 /**
@@ -109,7 +94,7 @@ export function readSettingsFileLayers(input: SettingsFilesInput): SettingsLayer
   const configDir = claudeConfigDir(input.homeDir, env)
   const layers: SettingsLayer[] = []
   const push = (source: SettingsSource, file: string, anchorDir: string) => {
-    const settings = readSettingsFile(file)
+    const settings = readJsonRecordSync(file)
     if (settings) layers.push({ source, file, anchorDir, settings })
   }
   push('user', join(configDir, 'settings.json'), configDir)

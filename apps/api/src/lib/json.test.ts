@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { readJsonFile, safeJsonParse } from './json'
+import { readJsonFile, readJsonRecordSync, safeJsonParse } from './json'
 
 describe('safeJsonParse', () => {
   test('parses valid JSON into the typed value', () => {
@@ -37,6 +37,25 @@ describe('readJsonFile', () => {
       expect(await readJsonFile(join(dir, 'ok.json'))).toEqual({ a: 1 })
       expect(await readJsonFile(join(dir, 'bad.json'))).toBeUndefined()
       expect(await readJsonFile(join(dir, 'missing.json'))).toBeUndefined()
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('readJsonRecordSync', () => {
+  test('is the object a file holds, and undefined for anything else', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'json-record-'))
+    try {
+      await writeFile(join(dir, 'ok.json'), '{"a":1}')
+      await writeFile(join(dir, 'array.json'), '[1]')
+      await writeFile(join(dir, 'null.json'), 'null')
+      await writeFile(join(dir, 'bad.json'), '{')
+      await writeFile(join(dir, 'empty.json'), '')
+      expect(readJsonRecordSync(join(dir, 'ok.json'))).toEqual({ a: 1 })
+      for (const name of ['array', 'null', 'bad', 'empty', 'missing']) {
+        expect(readJsonRecordSync(join(dir, `${name}.json`))).toBeUndefined()
+      }
     } finally {
       await rm(dir, { recursive: true, force: true })
     }

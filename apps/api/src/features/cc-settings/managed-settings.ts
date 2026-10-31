@@ -1,7 +1,8 @@
 import { execFile } from 'node:child_process'
-import { promises as fs, readdirSync, readFileSync } from 'node:fs'
+import { promises as fs, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { readJsonRecordSync } from '../../lib/json'
 import { isRecord } from '../../lib/record'
 import { mergeSettingsLayer, type Settings } from './settings-merge'
 
@@ -33,24 +34,9 @@ export interface ManagedSettingsSource {
   readMdm?: () => Promise<Settings | undefined>
 }
 
-function readJsonObject(file: string): Settings | undefined {
-  let text: string
-  try {
-    text = readFileSync(file, 'utf8')
-  } catch {
-    return undefined
-  }
-  try {
-    const parsed: unknown = JSON.parse(text)
-    return isRecord(parsed) ? parsed : undefined
-  } catch {
-    return undefined
-  }
-}
-
 /** `managed-settings.json`, then `managed-settings.d/*.json` alphabetically, merged. */
 export function readManagedFiles(dir: string): Settings | undefined {
-  const base = readJsonObject(join(dir, 'managed-settings.json'))
+  const base = readJsonRecordSync(join(dir, 'managed-settings.json'))
   const dropInDir = join(dir, 'managed-settings.d')
   let entries: string[] = []
   try {
@@ -61,7 +47,7 @@ export function readManagedFiles(dir: string): Settings | undefined {
   const names = entries.filter((name) => name.endsWith('.json') && !name.startsWith('.')).sort()
   let merged = base
   for (const name of names) {
-    const part = readJsonObject(join(dropInDir, name))
+    const part = readJsonRecordSync(join(dropInDir, name))
     if (part) merged = mergeSettingsLayer(merged ?? {}, part)
   }
   return merged
