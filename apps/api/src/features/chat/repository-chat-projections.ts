@@ -28,9 +28,9 @@ function mapChatProjection(row: ChatProjectionRow) {
   return {
     id: row.id,
     title: row.title,
-    projectId: row.project_id ?? null,
+    projectId: row.project_id,
     agentId: row.agent_id ?? null,
-    runtimeStatus: row.runtime_status ?? 'idle',
+    runtimeStatus: row.runtime_status,
     ...routeFromRow(row),
     updatedAt: row.updated_at,
     sessionKind: 'chat' as const,

@@ -63,8 +63,8 @@ export const mapSession = (
   projectId: row.project_id,
   parentSessionId: row.parent_session_id ?? null,
   rootSessionId: row.root_session_id ?? row.id,
-  sessionKind: row.session_kind ?? 'chat',
-  runtimeStatus: row.runtime_status ?? 'idle',
+  sessionKind: row.session_kind,
+  runtimeStatus: row.runtime_status,
   ...(row.external_agent_provider ? { externalAgentProvider: row.external_agent_provider } : {}),
   ...(row.external_agent_session_key
     ? { externalAgentSessionKey: row.external_agent_session_key }

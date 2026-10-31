@@ -71,7 +71,7 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
       return rows.map((row) => ({
         id: row.id,
         title: row.title,
-        projectId: row.project_id ?? null,
+        projectId: row.project_id,
         parentSessionId: row.parent_session_id ?? null,
         sessionKind: row.session_kind,
       }))
@@ -95,7 +95,7 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
       return rows.map((row) => ({
         id: row.id,
         title: row.title,
-        runtimeStatus: row.runtime_status ?? 'idle',
+        runtimeStatus: row.runtime_status,
         updatedAt: row.updated_at,
       }))
     },
@@ -125,7 +125,7 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
         userId: row.user_id,
         parentSessionId: row.parent_session_id,
         sessionKind: row.session_kind,
-        runtimeStatus: row.runtime_status ?? 'idle',
+        runtimeStatus: row.runtime_status,
         title: row.title,
         provenance: parseSessionProvenance(row.invocation_json),
       }))
@@ -170,7 +170,7 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
       return row
         ? {
             ...routeFromRow(row),
-            projectId: row.project_id ?? null,
+            projectId: row.project_id,
             agentId: row.agent_id ?? null,
           }
         : null

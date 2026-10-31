@@ -22,7 +22,7 @@ export function createRuntimeQueries(db: Kysely<AppDatabase>) {
         .select(['user_id', 'runtime_status'])
         .where('id', '=', id)
         .executeTakeFirst()
-      return row ? { userId: row.user_id, runtimeStatus: row.runtime_status ?? 'idle' } : null
+      return row ? { userId: row.user_id, runtimeStatus: row.runtime_status } : null
     },
 
     /**
@@ -138,8 +138,8 @@ export function createRuntimeQueries(db: Kysely<AppDatabase>) {
         entries.push({
           sessionId: row.id,
           taskName: row.task_name,
-          runtimeStatus: row.runtime_status ?? 'idle',
-          sessionKind: row.session_kind ?? 'chat',
+          runtimeStatus: row.runtime_status,
+          sessionKind: row.session_kind,
         })
       }
       return entries
