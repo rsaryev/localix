@@ -9,14 +9,13 @@
  * back without reaching for the mouse.
  *
  * The parts advertise themselves — no component imports another (FSD-clean); the
- * DOM is the sole mediator. Only the pure `nextFocusPart` ordering is unit
- * tested; the DOM glue is thin.
+ * DOM is the sole mediator.
  */
 
 export type FocusPart = 'sidebar' | 'editor' | 'chat'
 
 /** Ring order = spatial reading order across the workspace (left → right). */
-export const FOCUS_RING: readonly FocusPart[] = ['sidebar', 'editor', 'chat']
+const FOCUS_RING: readonly FocusPart[] = ['sidebar', 'editor', 'chat']
 
 /**
  * Given the parts currently present (in ring order) and the part that owns focus
@@ -52,27 +51,27 @@ const PREFERRED: Record<FocusPart, string> = {
 function partContainer(part: FocusPart): HTMLElement | null {
   if (part === 'editor') {
     // Prefer the focused group so F6 lands in the editor the user last touched.
-    return (document.querySelector('[data-focus-part="editor"][data-focus-active="true"]') ??
-      document.querySelector('[data-focus-part="editor"]')) as HTMLElement | null
+    return (
+      document.querySelector<HTMLElement>('[data-focus-part="editor"][data-focus-active="true"]') ??
+      document.querySelector<HTMLElement>('[data-focus-part="editor"]')
+    )
   }
-  return document.querySelector(`[data-focus-part="${part}"]`) as HTMLElement | null
+  return document.querySelector<HTMLElement>(`[data-focus-part="${part}"]`)
 }
 
 /** The part currently containing focus, or null if focus is outside the ring. */
 export function currentFocusPart(): FocusPart | null {
-  const active = document.activeElement as HTMLElement | null
-  const host = active?.closest?.('[data-focus-part]') as HTMLElement | null
-  const val = host?.getAttribute('data-focus-part')
-  return val === 'sidebar' || val === 'editor' || val === 'chat' ? val : null
+  const val = document.activeElement?.closest('[data-focus-part]')?.getAttribute('data-focus-part')
+  return FOCUS_RING.find((part) => part === val) ?? null
 }
 
 /** Parts present in the DOM right now, in ring order. */
-export function presentFocusParts(): FocusPart[] {
+function presentFocusParts(): FocusPart[] {
   return FOCUS_RING.filter((p) => partContainer(p) != null)
 }
 
 function focusInto(part: FocusPart, container: HTMLElement): void {
-  const target = container.querySelector(PREFERRED[part]) as HTMLElement | null
+  const target = container.querySelector<HTMLElement>(PREFERRED[part])
   if (target) {
     target.focus()
     return
