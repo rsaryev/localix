@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { toggleInSet } from './toggleInSet'
+import { toggleInSet } from './utilities'
 
 describe('toggleInSet', () => {
   test('adds a value that is absent', () => {

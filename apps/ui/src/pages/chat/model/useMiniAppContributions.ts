@@ -16,7 +16,7 @@ import {
 } from '@/shared/contrib/runtimeViews'
 import { whenUiSurfacesReady } from '@/shared/contrib/discover'
 import { startUiLocationCatalogSync } from '@/shared/contrib/uiLocationCatalogSync'
-import { enqueueMicrotask } from '@/shared/lib/enqueueMicrotask'
+import { enqueueMicrotask } from '@localixai/mini-app-sdk/ui'
 import { useSettledContribScope } from './useSettledContribScope'
 
 export function useMiniAppContributions({

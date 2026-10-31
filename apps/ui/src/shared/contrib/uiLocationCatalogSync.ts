@@ -1,11 +1,10 @@
 import { client, unwrap } from '@/shared/api/internal'
 import { eventSocket } from '@/shared/api/eventSocket'
-import type { UiAgentLocationCatalogSnapshot } from '@localixai/mini-app-sdk/ui'
+import { type UiAgentLocationCatalogSnapshot, enqueueMicrotask } from '@localixai/mini-app-sdk/ui'
 import { createBoundedCache } from '@localixai/kit/lib'
 import { createUiLocationCatalogSync } from './uiLocationCatalogPublisher'
 import { subscribeUiLocations, uiAgentLocationCatalogSnapshot } from './uiLocations'
 import { tabPublisherId } from './uiLocationPublisherId'
-import { enqueueMicrotask } from '@/shared/lib/enqueueMicrotask'
 
 const WORKBENCH_UI_CAPABILITY = 'workbench-ui'
 const CATALOG_READY_WAIT_MS = 1_500

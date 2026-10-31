@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { backendClient } from '@/shared/api/client'
 import type { SystemToggleState } from '@/shared/api/system-client'
-import { enqueueMicrotask } from '@/shared/lib/enqueueMicrotask'
+import { enqueueMicrotask } from '@localixai/mini-app-sdk/ui'
 import { useResourceRevision } from '@/shared/api/useResourceRevision'
 
 /**
