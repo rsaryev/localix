@@ -34,7 +34,10 @@ const patternOf = (pattern: string) =>
 
 export function httpUrlAllowed(url: string, allowed: readonly string[]): boolean {
   const target = normalized(url)
-  return allowed.some((pattern) => patternOf(pattern).test(target) || patternOf(pattern).test(url))
+  return allowed.some((pattern) => {
+    const re = patternOf(pattern)
+    return re.test(target) || re.test(url)
+  })
 }
 
 /** Hold the registry's http hooks to the policy, in place. */
