@@ -9,8 +9,7 @@ import {
   type PermissionRule,
 } from '../../projects/contracts'
 import { resolveEffectiveAgentConfig } from '../../effective-config/effective-config'
-import { createEnvironment } from '../../agent-core/tools/environments'
-import type { ExecutionEnvironmentConfig } from '../../agent-core/tools/environment'
+import { createEnvironment, executionConfigFor } from '../../agent-core/tools/environments'
 import { resolveAgentPromptContext } from './prompt-agent-context'
 import type { LoadedMiniApps } from '../../mini-apps/loader'
 import type { LoadedPlugins } from '../../plugins/loader'
@@ -88,17 +87,7 @@ export async function prepareRunContext(
   if (resolvedAgent.definition.id !== route.agentId) {
     throw new Error(`Agent is unavailable: ${route.agentId}`)
   }
-  const execConfig: ExecutionEnvironmentConfig =
-    session.executionBackend === 'ssh'
-      ? {
-          kind: 'ssh',
-          sshHost: session.executionTarget ?? '',
-          sshPort: 22,
-        }
-      : session.executionBackend === 'docker'
-        ? { kind: 'docker', containerName: session.executionTarget ?? '' }
-        : { kind: 'local' }
-  const env = createEnvironment(execConfig)
+  const env = createEnvironment(executionConfigFor(session))
 
   // Malformed project settings degrade to built-in defaults (safeJsonParse → null).
   const projectSettings = safeJsonParse<unknown>(project?.settings)

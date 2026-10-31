@@ -1,8 +1,7 @@
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 
-import { createEnvironment } from '../../agent-core/tools/environments'
-import type { ExecutionEnvironmentConfig } from '../../agent-core/tools/environment'
+import { createEnvironment, executionConfigFor } from '../../agent-core/tools/environments'
 import type { SessionRecord } from '../repository'
 
 /**
@@ -19,14 +18,6 @@ export interface FileOpsContext {
   now?: () => number
 }
 
-/** The execution environment a file op runs in — local, or the session's ssh/docker backend. */
-const execConfigFor = (session: SessionRecord): ExecutionEnvironmentConfig =>
-  session.executionBackend === 'ssh'
-    ? { kind: 'ssh', sshHost: session.executionTarget ?? '', sshPort: 22 }
-    : session.executionBackend === 'docker'
-      ? { kind: 'docker', containerName: session.executionTarget ?? '' }
-      : { kind: 'local' }
-
 /**
  * Shared per-op preamble: load the session, build its backend-aware execution
  * environment, and resolve its working dir. Every file operation starts from this
@@ -34,7 +25,7 @@ const execConfigFor = (session: SessionRecord): ExecutionEnvironmentConfig =>
  */
 export const openSessionEnv = async (ctx: FileOpsContext, userId: string, sessionId: string) => {
   const session = await ctx.requireSession(userId, sessionId)
-  const env = createEnvironment(execConfigFor(session))
+  const env = createEnvironment(executionConfigFor(session))
   const dir = await ctx.resolveSessionWorkingDir(userId, session)
   return { session, env, dir }
 }

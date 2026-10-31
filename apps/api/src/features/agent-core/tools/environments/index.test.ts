@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { createEnvironment } from './index'
+import { createEnvironment, executionConfigFor } from './index'
 import { SSHEnvironment, DockerEnvironment } from './remote'
 import { LocalEnvironment, localEnvironment } from './local'
 import type { ExecutionEnvironmentConfig } from '../environment'
@@ -37,5 +37,29 @@ describe('createEnvironment', () => {
 
   test('an unknown kind falls back to local', () => {
     expect(createEnvironment(persistedConfigWithUnknownKind)).toBe(localEnvironment)
+  })
+})
+
+describe('executionConfigFor', () => {
+  test.each([
+    [{ executionBackend: 'local', executionTarget: null }, { kind: 'local' }],
+    [
+      { executionBackend: 'ssh', executionTarget: 'me@box' },
+      { kind: 'ssh', sshHost: 'me@box', sshPort: 22 },
+    ],
+    [
+      { executionBackend: 'ssh', executionTarget: null },
+      { kind: 'ssh', sshHost: '', sshPort: 22 },
+    ],
+    [
+      { executionBackend: 'docker', executionTarget: 'web-1' },
+      { kind: 'docker', containerName: 'web-1' },
+    ],
+    [
+      { executionBackend: 'docker', executionTarget: null },
+      { kind: 'docker', containerName: '' },
+    ],
+  ] as const)('a %o session runs in %o', (session, config) => {
+    expect(executionConfigFor(session)).toEqual(config)
   })
 })
