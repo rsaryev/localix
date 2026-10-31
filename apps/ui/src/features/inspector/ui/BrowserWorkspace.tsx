@@ -6,7 +6,7 @@ import { publishLiveTabMessageContext } from '@/entities/workspace-grid/model/li
 import { TabPanel, useTabPanelIds } from '@localixai/kit/tabs'
 import { tabIdInScope } from '@/entities/workspace-grid/model'
 import { usePreviewStore, type PreviewEntry } from '../model/previewStore'
-import { personActionLines, usePersonActions } from '../model/personActions'
+import { personActionLines, personActionsExpireIn, usePersonActions } from '../model/personActions'
 import { useBrowserHistory } from '../model/browserHistory'
 import { addressDestination, browserEngine, isLocalBrowserUrl } from '../model/browserUrl'
 import { openPreviewFromClick } from '../model/openPreview'
@@ -38,6 +38,13 @@ export function BrowserWorkspace({
   const itemId = tabIdInScope('preview', 'preview', sessionId)
   const tabIds = useTabPanelIds('browser')
   const [newTab, setNewTab] = useState(false)
+  // What the person did is told for a few minutes, then dropped from the roster.
+  useEffect(() => {
+    const wait = personActionsExpireIn(personDid)
+    if (wait === null) return
+    const timer = setTimeout(() => usePersonActions.getState().prune(sessionId), wait)
+    return () => clearTimeout(timer)
+  }, [personDid, sessionId])
 
   // Where an address gets a new tab: a local one as a dev preview, resolved by the server so its
   // probe and dev-server recovery come with it; any other as a native browser page. The new-tab

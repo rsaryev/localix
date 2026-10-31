@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { personActionLines, usePersonActions } from './personActions'
+import {
+  PERSON_ACTION_TTL_MS,
+  personActionLines,
+  personActionsExpireIn,
+  usePersonActions,
+} from './personActions'
 
 const tab = { previewId: 't2', url: 'https://example.com/a', title: 'Example', version: 0 }
 
@@ -43,5 +48,30 @@ describe('what the person did in the Browser, as the agent reads it', () => {
     expect(usePersonActions.getState().bySession['s1']).toHaveLength(5)
     expect(personActionLines(usePersonActions.getState().bySession['s1']).at(-1)).toContain('t7')
     expect(usePersonActions.getState().bySession['s2']).toHaveLength(1)
+  })
+
+  test('an action is told for a while, then forgotten: the roster does not repeat it forever', () => {
+    const { closed, navigated, prune } = usePersonActions.getState()
+    closed('s1', tab, 1_000)
+    navigated('s1', { ...tab, previewId: 't3' }, 'https://example.com/b', 1_000 + 60_000)
+    // Inside the window both are still told.
+    prune('s1', 1_000 + PERSON_ACTION_TTL_MS - 1)
+    expect(usePersonActions.getState().bySession['s1']).toHaveLength(2)
+    // The older one has been told long enough; the newer one has not.
+    prune('s1', 1_000 + PERSON_ACTION_TTL_MS)
+    expect(personActionLines(usePersonActions.getState().bySession['s1'])).toEqual([
+      'The person navigated tab t3 to https://example.com/b.',
+    ])
+    prune('s1', 1_000 + 60_000 + PERSON_ACTION_TTL_MS)
+    expect(usePersonActions.getState().bySession['s1']).toBeUndefined()
+  })
+
+  test('says how long until the oldest action is forgotten, for the timer that prunes', () => {
+    const { closed } = usePersonActions.getState()
+    expect(personActionsExpireIn(undefined, 5_000)).toBeNull()
+    closed('s1', tab, 1_000)
+    expect(personActionsExpireIn(usePersonActions.getState().bySession['s1'], 11_000)).toBe(
+      PERSON_ACTION_TTL_MS - 10_000,
+    )
   })
 })
