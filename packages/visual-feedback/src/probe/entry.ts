@@ -21,6 +21,8 @@ import { createReloadTracker, safeSessionStorage } from '../actuate/reload-detec
 import { installResourceErrorCapture } from '../actuate/resource-errors'
 import { installDialogAutoDismiss } from '../actuate/dialog-capture'
 import { attachFailedResources } from '../actuate/attach-failed-resources'
+import { installInflightTracker } from '../actuate/inflight'
+import { attachBusy, isPageBusy } from '../actuate/page-busy'
 
 interface ProbeConfig {
   servedFile?: string
@@ -95,6 +97,8 @@ function mount(): () => void {
   // Failures already surfaced to the agent (a snapshot's full list or a prior diff
   // result) — a diff-only drive result then reports only what's NEW since.
   const reportedResources = new Set<string>()
+  // The page's own requests in flight: a quiet DOM with an answer on the way is still loading.
+  const activity = installInflightTracker(window)
 
   // Native dialogs (alert/confirm/prompt) BLOCK the JS event loop; inside the probe's
   // iframe that freezes the postMessage bridge, so every later command times out with
@@ -212,6 +216,8 @@ function mount(): () => void {
           // Surface failed page subresources: the FULL list on a snapshot-bearing result,
           // or only NEW-since-last-command failures on a diff-only drive result.
           result = attachFailedResources(result, resourceErrors.read(), reportedResources)
+          // Still loading after the settle (own requests in flight, a progress bar): say so.
+          result = attachBusy(result, isPageBusy(activity))
           transport.send({
             type: 'command-result',
             commandId: msg.commandId,
@@ -239,6 +245,7 @@ function mount(): () => void {
     transport.destroy()
     actuate.console.uninstall()
     resourceErrors.uninstall()
+    activity.restore()
     dialogs.uninstall()
     window.removeEventListener('keydown', onKeyDown, true)
     cursor.set(false)

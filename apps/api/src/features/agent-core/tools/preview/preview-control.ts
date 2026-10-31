@@ -168,6 +168,9 @@ export interface PreviewCommandResult {
   /** Subresources that FAILED to load since the previous command, on a diff-only drive
    *  result (the snapshot path uses `snapshot.failedResources`). Bounded; non-empty only. */
   failedResources?: string[]
+  /** The page still says it is loading after the action (parsing, own requests in flight, a
+   *  busy region or progress bar). Present only when true. */
+  busy?: boolean
 }
 
 /** Outcome of relaying a command to the open preview. */

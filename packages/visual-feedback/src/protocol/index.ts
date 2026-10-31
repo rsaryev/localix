@@ -283,6 +283,12 @@ export interface VfCommandResult {
    * a mid-session 404 (e.g. a stylesheet gone after a file move) on the action that hit it.
    */
   failedResources?: string[]
+  /**
+   * The page still says it is working after the settle: the document is parsing, a request of
+   * its own is in flight, or a busy region / progress bar is shown. Present only when true; the
+   * agent is told the page is still loading so it re-reads instead of acting on half a page.
+   */
+  busy?: boolean
 }
 
 /** Why a command failed — drives the agent's recovery (re-snapshot, dismiss overlay…). */

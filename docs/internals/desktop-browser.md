@@ -67,8 +67,11 @@ strip over the page.
 
 The bridge adds passive safety nets, all in `packages/visual-feedback`. Dialogs are cancelled only
 while a command is in flight (the page's own dialog otherwise). Failed subresources ride the reply.
-`leaving()` also reads the Navigation API, unhandled link clicks and form submits. There is no push
-channel from the page to the shell, so `navigatedAfter` still polls the shell and the bridge.
+A passive wrapper around `fetch` and XHR (the page's call and result are untouched) tracks
+own-origin requests, which expire after five seconds; with a shown `aria-busy` region or progress
+bar they set `busy` on the reply. `leaving()` also reads the Navigation API, unhandled link clicks
+and form submits. There is no push channel from the page to the shell, so `navigatedAfter` still
+polls the shell and the bridge.
 
 ## Limits
 

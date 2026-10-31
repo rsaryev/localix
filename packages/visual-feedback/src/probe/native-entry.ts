@@ -4,6 +4,8 @@ import { createRefRegistry } from '../snapshot/index'
 import { installConsoleCapture, runCommand, type ActuateDeps } from '../actuate/index'
 import { installResourceErrorCapture } from '../actuate/resource-errors'
 import { attachFailedResources } from '../actuate/attach-failed-resources'
+import { installInflightTracker } from '../actuate/inflight'
+import { attachBusy, isPageBusy } from '../actuate/page-busy'
 import { installScopedDialogGuard } from '../actuate/dialog-guard'
 import { trackLeaving } from './native-leaving'
 
@@ -37,6 +39,8 @@ if (!window.__localixBrowser) {
   // A 404'd stylesheet or script leaves a real site silently broken: it is named in the reply.
   const resourceErrors = installResourceErrorCapture()
   const reportedResources = new Set<string>()
+  // The page's own requests in flight: a quiet DOM with an answer on the way is still loading.
+  const activity = installInflightTracker(window)
   // The page's own dialogs stay the person's; they are cancelled only while a command runs.
   const dialogs = installScopedDialogGuard(deps.console)
   window.__localixBrowser = {
@@ -50,7 +54,10 @@ if (!window.__localixBrowser) {
           (r) =>
             results.set(id, {
               ...r,
-              result: attachFailedResources(r.result, resourceErrors.read(), reportedResources),
+              result: attachBusy(
+                attachFailedResources(r.result, resourceErrors.read(), reportedResources),
+                isPageBusy(activity),
+              ),
             }),
           (error) =>
             results.set(id, {

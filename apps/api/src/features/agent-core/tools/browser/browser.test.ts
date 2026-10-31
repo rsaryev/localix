@@ -547,6 +547,30 @@ describe('browser tool', () => {
     expect(res.content).toContain('assets/theme.css')
   })
 
+  it('says the page is still loading when the probe reports it busy after an action', async () => {
+    const busy: PreviewSendOutcome = {
+      ok: true,
+      result: { action: 'click', note: 'clicked', diff: '(no visible change)', busy: true },
+    }
+    const res = await toolWith(busy).tool.execute('bz1', CLICK_E1)
+    expect(res.content).toContain('page is still loading')
+    expect(res.content).toContain('(no visible change)')
+  })
+
+  it('says the page is still loading on a snapshot of a busy page', async () => {
+    const busy: PreviewSendOutcome = {
+      ok: true,
+      result: { ...(snapshotResult as { result: object }).result, busy: true } as never,
+    }
+    const res = await toolWith(busy).tool.execute('bz2', { action: 'snapshot' })
+    expect(res.content).toContain('page is still loading')
+  })
+
+  it('a settled page carries no loading hint', async () => {
+    const res = await toolWith(snapshotResult).tool.execute('bz3', { action: 'snapshot' })
+    expect(res.content).not.toContain('still loading')
+  })
+
   it('a clean drive action carries no ⚠ block', async () => {
     const clean: PreviewSendOutcome = {
       ok: true,

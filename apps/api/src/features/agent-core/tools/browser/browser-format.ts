@@ -35,6 +35,15 @@ function failedResourcesHint(s: PreviewSnapshot): string {
   return `\n\n⚠ failed to load: ${failed.join(', ')} — the page is running WITHOUT these resources (a wrong path / missing file). If styling or behavior looks broken, fix that before touching the UI controls.`
 }
 
+// The page itself says it is still working (parsing, its own requests in flight, a progress
+// bar) after the settle: a "(no visible change)" or a half-filled list is then not the final
+// state. Tell the model to read again rather than click again.
+function busyHint(r: PreviewCommandResult): string {
+  return r.busy
+    ? '\n\n[heads-up: the page is still loading (a request of its own is in flight, or it shows a progress bar). What you see may be incomplete: wait a moment and read again before acting again.]'
+    : ''
+}
+
 /** A snapshot reply: page header + the accessibility tree + the page-health hints. */
 export function snapshotContent(r: PreviewCommandResult): string {
   const s = r.snapshot
@@ -43,7 +52,7 @@ export function snapshotContent(r: PreviewCommandResult): string {
   const viewport = r.viewport
     ? `\nActual CSS viewport: ${r.viewport.width} × ${r.viewport.height}.`
     : ''
-  return `${head}${viewport}\n\n${s.tree}${emptyPageHint(s)}${failedResourcesHint(s)}`
+  return `${head}${viewport}\n\n${s.tree}${emptyPageHint(s)}${failedResourcesHint(s)}${busyHint(r)}`
 }
 
 // Errors/warnings the probe captured DURING this action (uncaught throws, unhandled
@@ -78,7 +87,7 @@ export function actionContent(r: PreviewCommandResult): string {
     )
   else if (r.diff) lines.push('', 'Changes:', r.diff)
   // Errors/dialogs that fired during the action ride the SAME result.
-  return lines.join('\n') + actionWarnings(r)
+  return lines.join('\n') + actionWarnings(r) + busyHint(r)
 }
 
 /**

@@ -39,7 +39,7 @@ looking at. It starts no separate browser, and nothing is installed in your app.
 | `wait` step                 | Holds a batch until text or a selector appears, or goes away (`gone`), then says how long it took.    | Polls in the page for `timeout_ms`, default 10 s, at most 15 s; on timeout the batch stops.                            |
 | `select` step               | Picks a dropdown option by value or visible label; the snapshot lists up to 50 enabled options.       | Native `<select>` only; sets the value, fires `input` and `change`, and reports an option already chosen as unchanged. |
 | `steps`                     | One ordered batch of `click`, `hover`, `type`, `select`, `press` and `scroll`, validated whole first. | Events are synthesized, so controls that demand a trusted gesture can reject them.                                     |
-| Any drive action            | A short diff of what changed, with the full tree on request (`snapshot_after`).                       | Settling waits two animation frames, plus up to 400 ms for root animations.                                            |
+| Any drive action            | A short diff of what changed, with the full tree on request (`snapshot_after`).                       | Settling waits until the DOM has been quiet for 100 ms, at most 700 ms; a page still loading is flagged.               |
 | `take_screenshot`           | The page, or one element by ref, rendered in the page.                                                | A DOM re-render of the viewport, not compositor pixels; capture can fail.                                              |
 | `console`, `evaluate`       | Console output and errors, and a page-side expression result.                                         | Preview dialogs are stubbed: `confirm` returns true, `prompt` null. Native tabs: see below.                            |
 | `viewport`                  | The frame resized to a named CSS size, checked against the page's real size.                          | Layout only; no device pixel ratio, touch or user agent.                                                               |
@@ -49,6 +49,12 @@ an agent command runs in it: then `alert`, `confirm` and `prompt` are cancelled 
 false, `prompt` null; nothing is ever accepted) and their text comes back with the action. A
 stylesheet, script or image that failed to load is listed in the next snapshot, and a link click or
 form submit that will replace the page is noticed before the new page commits.
+
+After an action the page is resampled once its DOM has been quiet for 100 ms (never longer than 700
+ms), so a result that arrives from the network a moment later is in the diff. If the page still says
+it is working then (its own fetch or XHR requests in flight, a shown `aria-busy` region or progress
+bar, a document still parsing), the reply says the page is still loading: read again before acting
+again.
 
 A long page is read in windows instead of through `evaluate`: `read` returns the text from `offset`
 and ends with the offset to continue from. Going back, forward or reloading changes the page, so

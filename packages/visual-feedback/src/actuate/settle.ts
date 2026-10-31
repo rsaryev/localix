@@ -69,24 +69,83 @@ export async function settleCommit(): Promise<void> {
   await settleFrame()
 }
 
-export function settleTransitions(maxWaitMs = 400): Promise<void> {
-  const hasPending = (): boolean => {
-    try {
-      const els = [document.documentElement, document.body].filter(Boolean) as Element[]
-      const anims = els.flatMap((el) =>
-        typeof el.getAnimations === 'function' ? el.getAnimations() : [],
-      )
-      return anims.some((a) => a.playState === 'running' || a.pending)
-    } catch {
-      return false
-    }
+/** What the settle needs from the page; injected by tests so no test sleeps. */
+export interface SettleEnv {
+  now: () => number
+  sleep: (ms: number) => Promise<void>
+  frame: () => Promise<void>
+  /** Calls `onMutation` on every DOM change until the returned function is called. */
+  watch: (onMutation: () => void) => () => void
+  /** An html/body animation or transition is still running. */
+  animating: () => boolean
+}
+
+/** Shortest settle, the quiet the DOM must keep, the poll step, and the default cap. */
+const MIN_SETTLE_MS = 30
+const QUIET_MS = 100
+const POLL_MS = 16
+const SETTLE_CAP_MS = 700
+
+function animating(): boolean {
+  try {
+    const els = [document.documentElement, document.body].filter(Boolean) as Element[]
+    const anims = els.flatMap((el) =>
+      typeof el.getAnimations === 'function' ? el.getAnimations() : [],
+    )
+    return anims.some((a) => a.playState === 'running' || a.pending)
+  } catch {
+    return false
   }
-  return (async () => {
-    const start = now()
-    await settleFrame()
-    await settleFrame()
-    while (hasPending() && now() - start < maxWaitMs) {
-      await new Promise<void>((resolve) => nativeSetTimeout(() => resolve(), 16))
+}
+
+function watchDom(onMutation: () => void): () => void {
+  if (typeof MutationObserver !== 'function' || !document.documentElement) return () => {}
+  const observer = new MutationObserver(onMutation)
+  observer.observe(document.documentElement, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    characterData: true,
+  })
+  return () => observer.disconnect()
+}
+
+const pageEnv: SettleEnv = {
+  now,
+  sleep: nativeSleep,
+  frame: settleFrame,
+  watch: watchDom,
+  animating,
+}
+
+/**
+ * Settle after a state-changing action: wait until the DOM has been quiet for 100 ms (and the
+ * settle ran at least 30 ms) with no html/body animation running, so a result that arrives from
+ * the network, or a transition's final colour, is in the resample. Bounded by `maxWaitMs`
+ * (default 700): a page that never stops changing cannot stall the command. Every wait is
+ * a native timer or the rAF-with-native-fallback frame, so a hidden tab (paused rAF) or a
+ * page that patched setTimeout cannot stall it. `Element.getAnimations` is scoped to html/body
+ * so an unrelated spinner elsewhere does not force every action to the cap.
+ */
+export async function settleTransitions(
+  maxWaitMs = SETTLE_CAP_MS,
+  env: SettleEnv = pageEnv,
+): Promise<void> {
+  const start = env.now()
+  let last = start
+  const stop = env.watch(() => {
+    last = env.now()
+  })
+  try {
+    await env.frame()
+    await env.frame()
+    for (;;) {
+      const t = env.now()
+      if (t - start >= maxWaitMs) return
+      if (t - start >= MIN_SETTLE_MS && t - last >= QUIET_MS && !env.animating()) return
+      await env.sleep(POLL_MS)
     }
-  })()
+  } finally {
+    stop()
+  }
 }

@@ -1,9 +1,8 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
-const turns = async (n = 10) => {
-  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
-}
+// The bridge answers after the page's DOM has been quiet for ~100 ms (real time): poll for it.
+const turns = () => new Promise((r) => setTimeout(r, 5))
 
 beforeAll(() => GlobalRegistrator.register())
 afterAll(async () => {
@@ -18,7 +17,7 @@ test('the native bridge installs once and returns an agent snapshot by command I
   expect(bridge).toBeDefined()
   bridge!.run('snapshot-1', { action: 'snapshot' })
   let outcome: unknown
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0; attempt < 200; attempt += 1) {
     outcome = bridge!.take('snapshot-1')
     if (outcome) break
     await turns()
@@ -49,7 +48,7 @@ async function answer(
 ) {
   const bridge = window.__localixBrowser!
   bridge.run(id, command)
-  for (let attempt = 0; attempt < 50; attempt += 1) {
+  for (let attempt = 0; attempt < 200; attempt += 1) {
     const outcome = bridge.take(id) as { result?: Record<string, unknown> } | undefined
     if (outcome) return outcome
     await turns()
@@ -85,4 +84,14 @@ test('a stylesheet that failed to load is listed in the next snapshot', async ()
     result: { snapshot: { failedResources?: string[] } }
   }
   expect(reply.result.snapshot.failedResources).toContain('stylesheet assets/theme.css')
+})
+
+test('a page that still shows a progress bar after the command is marked busy', async () => {
+  await import('./native-entry')
+  document.body.innerHTML = '<button>Go</button>'
+  expect((await answer('b1', { action: 'snapshot' })).result?.busy).toBeUndefined()
+  document.body.innerHTML = '<button>Go</button><div role="progressbar"></div>'
+  document.querySelector('[role=progressbar]')!.getBoundingClientRect = () =>
+    new DOMRect(10, 10, 100, 8)
+  expect((await answer('b2', { action: 'snapshot' })).result?.busy).toBe(true)
 })
