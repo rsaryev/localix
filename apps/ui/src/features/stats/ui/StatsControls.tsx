@@ -2,7 +2,7 @@ import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import { TextAction } from '@localixai/kit/text-action'
 import type { UsageStatRow } from '@/shared/api/contracts'
-import { formatTokens, formatUsd, shortKey } from './format'
+import { formatTokens, formatUsd, shortKey } from '@localixai/mini-app-sdk/ui/utilities'
 import { TABLE_STICKY_HEAD, TABLE_TD, TABLE_TH } from './tableCells'
 
 export function BreakdownTable({

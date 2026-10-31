@@ -10,13 +10,18 @@ import {
 } from '@/shared/hooks/useUsageStats'
 import { TrendChart, DistributionChart } from '@localixai/mini-app-sdk/ui/stats-charts'
 import { LogsTable } from './LogsTable'
-import { agentLabel, formatTokens, formatUsd, kindLabel, providerLabel, shortKey } from './format'
+import { agentLabel, kindLabel, providerLabel } from './format'
+import {
+  formatTokens,
+  formatUsd,
+  shortKey,
+  errorMessage,
+} from '@localixai/mini-app-sdk/ui/utilities'
 import { cacheHitRate } from '@localixai/agent'
 import { BreakdownTable } from './StatsControls'
 import { StatsFilterBar } from './StatsFilterBar'
 import { StateNotice } from '@localixai/kit/state-notice'
 import { ProblemLine, useProblemReport } from '@/shared/ui/problem-report'
-import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 const GROUP_TITLE: Record<UsageGroupBy, string> = {
   model: 'Cost by model',

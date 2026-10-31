@@ -1,16 +1,14 @@
 import { describe, expect, test } from 'bun:test'
 import { USAGE_AUXILIARY_KINDS, USAGE_KIND_LABELS } from '@localixai/api/client'
 
+import { formatShortDateTime, kindLabel, providerLabel } from './format'
 import {
   formatBucketLabel,
   formatDuration,
-  formatShortDateTime,
   formatTokens,
   formatUsd,
-  kindLabel,
-  providerLabel,
   shortKey,
-} from './format'
+} from '@localixai/mini-app-sdk/ui/utilities'
 
 describe('formatUsd', () => {
   test('compact across magnitudes', () => {

@@ -1,16 +1,6 @@
 import { USAGE_KIND_LABELS } from '@localixai/api/usage-types'
 import type { UsageKindKey } from '@localixai/api/client'
 
-// Keep the stats panel API stable while sharing generic formatters with the rest
-// of the UI layer.
-export {
-  formatBucketLabel,
-  formatDuration,
-  formatTokens,
-  formatUsd,
-  shortKey,
-} from '@localixai/mini-app-sdk/ui/utilities'
-
 export function kindLabel(key: string): string {
   return USAGE_KIND_LABELS[key as UsageKindKey] ?? key
 }
