@@ -26,14 +26,16 @@ import { claudeCodeHookCall } from '../ext/cc-tool-shapes'
 import { ccDomainRuleMatches, ccPathRuleMatches } from '../cc-settings/cc-path-rule'
 
 import { matchesToolName } from './matcher'
+import { parseRuleString } from '../cc-settings/permission-rules'
+import { globToRegExpSource } from '../cc-settings/path-glob'
 import {
-  bashSubcommands,
-  globToRegExpSource,
   matchBashSpecifier,
-  parseRuleString,
   specifierIsAll,
   specifierMatchesValue,
-} from '../cc-settings/permission-rules'
+} from '../cc-settings/permission-value-match'
+// The splitter lives in agent-core beside the read-only classifier: the live permission engine
+// needs the same decomposition, and a second copy is how the two answers drift apart.
+import { splitCompoundCommand } from '../agent-core/tools/bash/bash-command-shape'
 
 /**
  * Hook file guards historically treat a basename glob such as `*.ts` as matching
@@ -127,7 +129,7 @@ export function evaluateIfGuard(
   if (name === 'Bash' || parsed.tool.trim().toLowerCase() === 'bash') {
     const command = stringField(view, 'command') ?? stringField(toolInput, 'command')
     if (command === undefined) return true // no command to test → fail open
-    const subs = bashSubcommands(command)
+    const subs = splitCompoundCommand(command)
     if (subs === null) return true // substitution present → fail open
     return subs.some((s) => matchBashSpecifier(specifier, s))
   }

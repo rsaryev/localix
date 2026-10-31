@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 
-import {
-  matchBashSpecifier,
-  parseRuleString,
-  specifierIsAll,
-  specifierMatchesValue,
-} from './permission-rules'
+import { parseRuleString } from './permission-rules'
+import { matchBashSpecifier, specifierIsAll, specifierMatchesValue } from './permission-value-match'
 
 // The Claude Code `Tool(specifier)` grammar the hook `if` guard matches with.
 

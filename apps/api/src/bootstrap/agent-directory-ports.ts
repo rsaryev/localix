@@ -2,7 +2,7 @@ import type { createAgentsService } from '../features/agents/service'
 import { claudeCodeHome } from '../features/cc-settings/config-dir'
 import { readSettingsLayers } from '../features/cc-settings/settings-files'
 import { settingsPermissionRules } from '../features/cc-settings/settings-permissions'
-import { specifierMatchesValue } from '../features/cc-settings/permission-rules'
+import { specifierMatchesValue } from '../features/cc-settings/permission-value-match'
 import { claudeCodeMainAgent } from '../features/cc-settings/settings-modes'
 
 type AgentsService = ReturnType<typeof createAgentsService>

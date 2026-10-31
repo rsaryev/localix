@@ -5,7 +5,7 @@
  * (or undefined when nothing is visible). No I/O.
  */
 
-import { globToRegExpSource } from '../../cc-settings/permission-rules'
+import { globToRegExpSource } from '../../cc-settings/path-glob'
 import { isSkillDisabled, type SkillOverrides } from '../../agent-core/skill-overrides'
 import { skillCallName } from '../../agent-core/tools/skill-names'
 

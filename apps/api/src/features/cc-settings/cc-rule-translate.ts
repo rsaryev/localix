@@ -22,7 +22,8 @@ import { join } from 'node:path'
 import type { PermissionRule } from '../agent-core/permission-engine'
 import { normalizeCcToolName } from '../ext/cc-tool-names'
 import { nativeCommandPatterns } from './native-command-patterns'
-import { parseRuleString, specifierIsAll } from './permission-rules'
+import { parseRuleString } from './permission-rules'
+import { specifierIsAll } from './permission-value-match'
 import { isHomePath } from '../../lib/home-path'
 
 const PATH_TOOLS: Readonly<Record<string, readonly string[]>> = {
