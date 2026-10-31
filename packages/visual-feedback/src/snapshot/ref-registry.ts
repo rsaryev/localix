@@ -64,6 +64,8 @@ export interface RefRegistry {
   /** No snapshot has run in this document yet (neither generation holds a ref): a ref the
    *  agent names came from a snapshot another renderer of the same page took. */
   isEmpty(): boolean
+  /** How many refs the current generation holds. */
+  size(): number
 }
 
 function normalizeKey(raw: string): string {
@@ -116,6 +118,9 @@ export function createRefRegistry(): RefRegistry {
     refOf(el) {
       for (const [ref, entry] of map) if (entry.el === el) return ref
       return null
+    },
+    size() {
+      return map.size
     },
     isEmpty() {
       return map.size === 0 && prev.size === 0

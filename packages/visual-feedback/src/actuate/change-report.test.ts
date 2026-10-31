@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
 import { changeReport, diffTrees, captureState, stateForDiff } from './diff'
-import { postAction } from './post-action'
+import { MAX_REPORT_REFS, postAction } from './post-action'
 import { createRefRegistry } from '../snapshot/index'
 import { installConsoleCapture, type ActuateDeps } from './index'
 
@@ -136,6 +136,22 @@ describe('refs in the report', () => {
       )
       expect(deps.reg.get(ref)).toBe(document.getElementById('b')!)
       expect(deps.reg.identityOf(ref)).toMatchObject({ role: 'button', name: 'Save' })
+    } finally {
+      deps.console.uninstall()
+    }
+  })
+
+  test('refs minted by reports stop at a cap; the line is still told, without a ref', async () => {
+    document.body.innerHTML = '<button id="a">Open</button>'
+    const deps = depsFor()
+    try {
+      deps.reg.put(document.getElementById('a')!)
+      // A long session of actions without a fresh snapshot has filled the registry.
+      for (let i = 0; i < MAX_REPORT_REFS; i += 1) deps.reg.put(document.createElement('i'))
+      deps.prevTree.value = stateForDiff()
+      document.body.insertAdjacentHTML('beforeend', '<button id="b">Save</button>')
+      const { diff } = await postAction(deps)
+      expect(diff).toMatch(/^\+ button "Save"$/m)
     } finally {
       deps.console.uninstall()
     }

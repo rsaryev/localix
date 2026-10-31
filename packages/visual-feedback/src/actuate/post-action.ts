@@ -22,6 +22,12 @@ function identityFor(el: Element): RefIdentity {
   }
 }
 
+/**
+ * Past this many refs the report names controls without minting more: a long run of actions
+ * with no snapshot between them must not grow the registry (a snapshot holds at most 800).
+ */
+export const MAX_REPORT_REFS = 1600
+
 /** What the settled page changed, or that it changed so much that it is to be read whole. */
 async function afterAction(deps: ActuateDeps): Promise<{ diff?: string; whole?: boolean }> {
   // Wait for the page to SETTLE before resampling the document-state signature.
@@ -39,7 +45,10 @@ async function afterAction(deps: ActuateDeps): Promise<{ diff?: string; whole?: 
   // registry (valid until the next snapshot). None before a first snapshot, whose refs the
   // model has not seen.
   const refFor = (el: Element) =>
-    deps.reg.refOf(el) ?? (deps.reg.isEmpty() ? undefined : deps.reg.put(el, identityFor(el)))
+    deps.reg.refOf(el) ??
+    (deps.reg.isEmpty() || deps.reg.size() >= MAX_REPORT_REFS
+      ? undefined
+      : deps.reg.put(el, identityFor(el)))
   const report = changeReport(deps.prevTree.value, next, refFor)
   deps.prevTree.value = next.text
   if (!report) return {}
