@@ -2,9 +2,7 @@ import {
   COMPONENT_KINDS,
   componentCount,
   hasUpdate,
-  onShelf,
   parseShelf,
-  shelfCounts,
   type CreateForm,
   type ItemAction,
   type DiscoverResponse,
@@ -24,6 +22,7 @@ import { makeListing } from '@localixai/store/testing'
 import type { StorePageQuery } from '@/shared/api/store-client'
 import { MonitorDown } from 'lucide-react'
 import type { StoreInstallExtra } from '@/shared/lib/storeInstallExtra'
+import { onShelf, shelfCounts } from '@localixai/store/testing'
 
 export const HOSTED = 'https://hosted.test/mini-app-marketplace.json'
 export const ADA = 'https://ada.test/mini-app-marketplace.json'

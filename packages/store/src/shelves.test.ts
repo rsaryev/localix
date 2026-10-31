@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 
 import { listingSchema } from './contract'
-import { SHELVES, onShelf, parseShelf, shelfCounts } from './shelves'
-import { makeListing } from './testing'
+import { SHELVES, parseShelf } from './shelves'
+import { makeListing, onShelf, shelfCounts } from './testing'
 
 const atlas = makeListing({
   id: 'atlas',

@@ -1,5 +1,7 @@
 import type { Listing, ListingDetail, PackageKind } from '../contract'
 
+export { onShelf, shelfCounts } from './shelves'
+
 /**
  * A listing as a provider would hand it over, with every required field filled: a verified
  * package from a built-in source, nothing installed.

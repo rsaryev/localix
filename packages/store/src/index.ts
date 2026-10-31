@@ -138,10 +138,8 @@ export {
   componentCount,
   hasUpdate,
   isActiveJob,
-  onShelf,
   packageShelf,
   parseShelf,
-  shelfCounts,
 } from './shelves'
 export type { BrowsableComponentKind, ShelfId } from './shelves'
 export { opensFile } from './opens'
