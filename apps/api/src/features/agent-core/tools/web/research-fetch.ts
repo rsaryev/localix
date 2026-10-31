@@ -1,6 +1,11 @@
 import type { AgentToolResult } from '@localixai/agent/agents'
 import { errorMessage } from '../../../../lib/errors'
-import { checkUrlSafety, readBodyCapped, type HostResolver, type HttpFetch } from './net-safety'
+import {
+  checkUrlSafety,
+  readBodyCapped,
+  type HostResolver,
+  type HttpFetch,
+} from '@localixai/mini-app-sdk/backend'
 import { extractTitle } from './html-text'
 import { extractReadable } from './readable-extract'
 

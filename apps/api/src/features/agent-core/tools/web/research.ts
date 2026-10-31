@@ -5,7 +5,7 @@ import { defineAgentTool, type AgentSource, type AgentToolResult } from '@locali
 import { errorMessage } from '../../../../lib/errors'
 import { TOOL } from '../../tool-names'
 import { fetchReadablePage, type ReadablePageDeps } from './research-fetch'
-import type { HttpFetch } from './net-safety'
+import type { HttpFetch } from '@localixai/mini-app-sdk/backend'
 import {
   RESEARCH_BACKENDS,
   ResearchBackendCooldownError,

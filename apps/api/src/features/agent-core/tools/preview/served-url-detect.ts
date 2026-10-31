@@ -19,7 +19,7 @@
  *     origin, not merely the first.
  *
  * ── Why the private-range list is NOT shared with the SSRF guard ──────────────
- * `tools/web/net-safety.ts` has a near-identical list, and fusing them is tempting.
+ * the SDK's `net-safety.ts` has a near-identical list, and fusing them is tempting.
  * They stay apart on purpose, because they are the same DATA under OPPOSITE stakes:
  *
  *   - net-safety is a GUARD. A range it wrongly calls private is a blocked fetch
@@ -42,7 +42,7 @@
  * someone narrows the guard; it can never pressure the guard to shrink.
  *
  * What IS shared is the stakes-NEUTRAL parsing MECHANISM (IPv6 → 16 bytes + embedded-v4
- * detection), owned by the backend SDK and re-exported through `../ip-literal`. That is not
+ * detection), owned by the backend SDK (`ip-literal.ts`). That is not
  * policy — both want identical decoding. Each side still applies its OWN private-range
  * predicate on the bytes, so the "two lists" invariant is untouched.
  */

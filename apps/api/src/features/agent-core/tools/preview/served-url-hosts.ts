@@ -12,7 +12,7 @@
  * proves every address the guard calls private is non-public here, so the preview never
  * opens a banner the guard would refuse to fetch.
  */
-import { ipv6ToBytes, embeddedV4 } from '../ip-literal'
+import { ipv6ToBytes, embeddedV4 } from '@localixai/mini-app-sdk/backend'
 
 export type HostKind = 'custom' | 'loopback' | 'private-ip' | 'public-ip'
 
@@ -36,7 +36,7 @@ function isLoopbackIpv4(value: string): boolean {
  * advertise), so the detector may open them.
  *
  * This list is deliberately a SEPARATE copy from the SSRF guard's
- * (`tools/web/net-safety.ts` `isPrivateIPv4`) — see the module header for why. The
+ * (the SDK's `net-safety.ts` `isPrivateIPv4`) — see the module header for why. The
  * relation between them is one-way and enforced at runtime by
  * `served-url-detect.net-safety-parity.test.ts`: anything the GUARD calls private must
  * be non-public HERE. Widening this list is always safe; the guard must never be
@@ -64,7 +64,7 @@ function isIpv6(value: string): boolean {
  * embedded-v4 cases need a real byte decode — a prefix heuristic can't see a hex-form
  * v4-mapped loopback (`::ffff:7f00:1`) or NAT64 (`64:ff9b::…`), which then classified as
  * `public-ip` and a private dev-server advertised in that form went undetected. The
- * decoder is the SAME stakes-neutral `../ip-literal` mechanism the SSRF guard uses; the
+ * decoder is the SAME stakes-neutral SDK `ip-literal` mechanism the SSRF guard uses; the
  * loopback/private classification below is the detector's OWN policy (see the module
  * header + the net-safety-parity ratchet). Dotted-embedded forms (`::ffff:10.0.0.1`)
  * never reach here — `isIpv6` rejects the dots — and fall through to `custom`.

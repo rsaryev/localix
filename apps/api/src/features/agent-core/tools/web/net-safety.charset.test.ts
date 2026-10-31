@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, test } from 'bun:test'
-import { readBodyCapped } from './net-safety'
+import { readBodyCapped } from '@localixai/mini-app-sdk/backend'
 
 const body = (bytes: number[], streamed = true) =>
   streamed

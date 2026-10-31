@@ -5,7 +5,7 @@ import {
   isPrivateAddress,
   checkUrlSafety,
   readBodyCapped,
-} from './net-safety'
+} from '@localixai/mini-app-sdk/backend'
 import { htmlToText, decodeEntities, extractTitle, stripToText } from './html-text'
 import { fetchReadablePage } from './research-fetch'
 import { extractReadable } from './readable-extract'

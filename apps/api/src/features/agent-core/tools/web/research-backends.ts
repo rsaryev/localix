@@ -16,7 +16,7 @@ import { sleep } from '@localixai/agent/backoff'
 import { DOMParser, parseHTML } from 'linkedom'
 
 import { decodeEntities, stripToText } from './html-text'
-import { readBodyCapped, type HttpFetch } from './net-safety'
+import { readBodyCapped, type HttpFetch } from '@localixai/mini-app-sdk/backend'
 
 /** Provider-neutral lanes exposed to the model instead of provider names. */
 export type ResearchSourceType = 'web' | 'academic' | 'code' | 'community' | 'encyclopedia'

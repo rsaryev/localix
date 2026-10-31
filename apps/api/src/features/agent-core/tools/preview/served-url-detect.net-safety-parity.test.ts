@@ -1,7 +1,7 @@
 /**
  * The RATCHET between the SSRF guard and the preview detector.
  *
- * `tools/web/net-safety.ts` (GUARD) and `tools/preview/served-url-detect.ts` (DETECTOR)
+ * the SDK's `net-safety.ts` (GUARD) and `tools/preview/served-url-detect.ts` (DETECTOR)
  * each own a private-range list, deliberately — see the detector's module header. The
  * lists are the same data under OPPOSITE stakes: a range the GUARD wrongly calls public
  * is an SSRF hole; a range the DETECTOR wrongly calls public is only a dev server we
@@ -23,7 +23,7 @@
  * Nothing here imports one module into the other; the coupling is a test, not a wire.
  */
 import { describe, expect, test } from 'bun:test'
-import { isPrivateAddress } from '../web/net-safety'
+import { isPrivateAddress } from '@localixai/mini-app-sdk/backend'
 import { classifyHost, isUnspecifiedHost } from './served-url-detect'
 
 /**
