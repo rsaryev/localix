@@ -84,6 +84,20 @@ export function localSettingsRoot(
   }
 }
 
+/** The managed source the input names: the machine's own by default, none for `null`. */
+const managedSourceOf = (input: SettingsFilesInput) =>
+  input.managed === undefined ? systemManagedSource(input.platform) : input.managed
+
+/** The managed settings as a layer, anchored at the session's folder (home without one). */
+function policyLayer(
+  managed: ManagedSettingsSource,
+  settings: Settings,
+  cwd: string | null,
+  homeDir: string,
+): SettingsLayer {
+  return { source: 'policy', file: managed.dir, anchorDir: cwd ?? homeDir, settings }
+}
+
 /**
  * The settings files of the session, lowest precedence first, read synchronously: the managed
  * layer here is the file-based policy alone (`managed-settings.json` and its drop-ins). For a
@@ -107,16 +121,11 @@ export function readSettingsFileLayers(input: SettingsFilesInput): SettingsLayer
     if (root && root !== cwd) push('local', join(cwd, '.claude', 'settings.local.json'), cwd)
     push('local', join(root ?? cwd, '.claude', 'settings.local.json'), cwd)
   }
-  const managed = input.managed === undefined ? systemManagedSource(input.platform) : input.managed
+  const managed = managedSourceOf(input)
   if (managed) {
     const settings = readManagedFiles(managed.dir)
     if (settings && Object.keys(settings).length > 0)
-      layers.push({
-        source: 'policy',
-        file: managed.dir,
-        anchorDir: cwd ?? input.homeDir,
-        settings,
-      })
+      layers.push(policyLayer(managed, settings, cwd, input.homeDir))
   }
   return layers
 }
@@ -124,17 +133,12 @@ export function readSettingsFileLayers(input: SettingsFilesInput): SettingsLayer
 /** Every settings layer of the session, the MDM policy included; absent files are skipped. */
 export async function readSettingsLayers(input: SettingsFilesInput): Promise<SettingsLayer[]> {
   const layers = readSettingsFileLayers({ ...input, managed: null })
-  const managed = input.managed === undefined ? systemManagedSource(input.platform) : input.managed
+  const managed = managedSourceOf(input)
   if (managed) {
     const settings = await readManagedSettings(managed)
     const cwd = input.cwd ? resolve(input.cwd) : null
     if (Object.keys(settings).length > 0)
-      layers.push({
-        source: 'policy',
-        file: managed.dir,
-        anchorDir: cwd ?? input.homeDir,
-        settings,
-      })
+      layers.push(policyLayer(managed, settings, cwd, input.homeDir))
   }
   return layers
 }
