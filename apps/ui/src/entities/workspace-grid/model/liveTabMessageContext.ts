@@ -33,15 +33,20 @@ function bindingSignature(binding: MessageContextBindingDraft): string {
     ...binding,
     target: {
       ...binding.target,
-      attributes: binding.target.attributes
-        ? Object.fromEntries(
-            Object.entries(binding.target.attributes).sort(([left], [right]) =>
-              left.localeCompare(right),
-            ),
-          )
-        : undefined,
+      attributes: sortedAttributes(binding.target.attributes),
     },
   })
+}
+
+/** A target's attributes with their keys in order, so equal attributes give the same JSON. */
+export function sortedAttributes(
+  attributes: MessageContextBindingDraft['target']['attributes'],
+): MessageContextBindingDraft['target']['attributes'] {
+  return attributes
+    ? Object.fromEntries(
+        Object.entries(attributes).sort(([left], [right]) => left.localeCompare(right)),
+      )
+    : undefined
 }
 
 function cloneBinding<T extends MessageContextBindingDraft>(binding: T): T {

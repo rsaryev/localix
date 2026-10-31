@@ -11,7 +11,7 @@ import {
 import { miniAppViewTarget } from '@localixai/api/mini-app-view-target'
 import { activeWorkItemContribution } from './capabilities'
 import { GLOBAL_SCOPE, scopeOf } from './scope'
-import { liveTabMessageContext } from './liveTabMessageContext'
+import { liveTabMessageContext, sortedAttributes } from './liveTabMessageContext'
 
 function coreMessageBinding(item: WorkItem): MessageBindingDragPayload | null {
   switch (item.kind) {
@@ -158,13 +158,7 @@ function dedupeBindings(
       kind: binding.target.kind,
       token: binding.target.token,
       uri: binding.target.uri,
-      attributes: binding.target.attributes
-        ? Object.fromEntries(
-            Object.entries(binding.target.attributes).sort(([left], [right]) =>
-              left.localeCompare(right),
-            ),
-          )
-        : undefined,
+      attributes: sortedAttributes(binding.target.attributes),
     })
     if (seen.has(key)) return false
     seen.add(key)
