@@ -27,7 +27,7 @@ import { randomUUID } from 'node:crypto'
 
 import { addMessageTiming } from '../../session-timing'
 import { emptyAssistantPayload, sessionAgent, toPersistedMessage } from '../message-envelope'
-import { zeroUsageTotals } from '../usage-normalize'
+import { freshRowAccounting } from './turn-state'
 import type { TurnEventContext } from './event-handlers'
 import type { PersistedMessage } from '../../contracts'
 
@@ -90,41 +90,7 @@ export async function splitAssistantRowForSteer(
   state.completedTurnCheckpoint = undefined
   ctx.acc.reset()
 
-  // Row-scoped accounting starts over: the usage ledger upserts by message id, so
-  // without this part 2's rows would re-carry part 1's totals (a double count).
-  state.usageTotals = zeroUsageTotals()
-  state.actualCostSum = 0
-  state.estimatedCostSum = 0
-  state.turnsWithUsage = 0
-  state.turnsWithActualCost = 0
-  state.lastTurnContextTokens = undefined
-  state.lastTurnUsage = undefined
-  const nowMs = Date.now()
-  state.timing = {
-    modelMs: 0,
-    revealMs: 0,
-    ttftMs: undefined,
-    toolGenMs: 0,
-    waitMs: 0,
-    toolMs: 0,
-    hitlMs: 0,
-    idleMs: 0,
-    totalMs: 0,
-    turns: 0,
-    tools: [],
-  }
-  state.runStartedAt = nowMs
-  state.turnStartedAt = nowMs
-  state.turnFirstTokenAt = undefined
-  state.turnToolGenAt = undefined
-  // Streaming dedup state is per-row: a fresh row must not suppress its first delta
-  // because part 1 already sent identical text.
-  state.lastSent = {
-    text: '',
-    reasoning: '',
-    items: undefined,
-    textItemId: '',
-    reasoningItemId: '',
-  }
-  state.lastDbFlushAt = 0
+  // Row-scoped accounting starts over with the row; part 1's timing already folded into the
+  // session base above.
+  Object.assign(state, freshRowAccounting(Date.now()))
 }

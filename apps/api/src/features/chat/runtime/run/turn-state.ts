@@ -42,19 +42,20 @@ export function computeContextEstimateDrift(
   }
 }
 
-export function createRunTurnState(init: {
-  payload: StoredMessagePayload
-  assistantCreatedAt: string
-  baseSessionTiming: SessionTimingAggregate
-}): RunTurnState {
-  const runStartedAt = Date.now()
+/**
+ * The accounting that belongs to one assistant ROW, as a row starts: a run's first row, and the
+ * fresh row a steer split opens. The usage ledger upserts by message id, so a row that carried
+ * the previous row's totals would count them twice.
+ */
+export function freshRowAccounting(nowMs: number) {
   return {
-    payload: init.payload,
-    currentPayload: init.payload,
-    assistantCreatedAt: init.assistantCreatedAt,
-    completedTurnCheckpoint: undefined,
-    completedToolTurnIndex: undefined,
-    completedTurnIndex: undefined,
+    usageTotals: zeroUsageTotals(),
+    actualCostSum: 0,
+    estimatedCostSum: 0,
+    turnsWithUsage: 0,
+    turnsWithActualCost: 0,
+    lastTurnContextTokens: undefined,
+    lastTurnUsage: undefined,
     timing: {
       modelMs: 0,
       revealMs: 0,
@@ -68,21 +69,33 @@ export function createRunTurnState(init: {
       turns: 0,
       tools: [],
     },
-    runStartedAt,
-    turnStartedAt: runStartedAt,
+    runStartedAt: nowMs,
+    turnStartedAt: nowMs,
     turnFirstTokenAt: undefined,
     turnToolGenAt: undefined,
+    // Streaming dedup state is per-row: a fresh row must not suppress its first delta.
+    lastSent: { text: '', reasoning: '', items: undefined, textItemId: '', reasoningItemId: '' },
+    lastDbFlushAt: 0,
+  } satisfies Partial<RunTurnState>
+}
+
+export function createRunTurnState(init: {
+  payload: StoredMessagePayload
+  assistantCreatedAt: string
+  baseSessionTiming: SessionTimingAggregate
+}): RunTurnState {
+  return {
+    ...freshRowAccounting(Date.now()),
+    payload: init.payload,
+    currentPayload: init.payload,
+    assistantCreatedAt: init.assistantCreatedAt,
+    completedTurnCheckpoint: undefined,
+    completedToolTurnIndex: undefined,
+    completedTurnIndex: undefined,
     toolStartTimes: new Map(),
     hitlStartTimes: new Map(),
     hitlWaitedMs: new Map(),
     baseSessionTiming: init.baseSessionTiming,
-    usageTotals: zeroUsageTotals(),
-    actualCostSum: 0,
-    estimatedCostSum: 0,
-    turnsWithUsage: 0,
-    turnsWithActualCost: 0,
-    lastTurnContextTokens: undefined,
-    lastTurnUsage: undefined,
     initialContextEstimate: undefined,
     contextEstimateDrift: undefined,
     pendingTools: new Map(),
@@ -93,14 +106,6 @@ export function createRunTurnState(init: {
     toolCallsThisRun: 0,
     configurationReloadPending: false,
     stopReason: undefined,
-    lastDbFlushAt: 0,
-    lastSent: {
-      text: '',
-      reasoning: '',
-      items: undefined,
-      textItemId: '',
-      reasoningItemId: '',
-    },
     usedKeyId: undefined,
   }
 }

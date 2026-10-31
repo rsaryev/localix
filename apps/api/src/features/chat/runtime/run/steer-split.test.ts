@@ -178,4 +178,41 @@ describe('splitAssistantRowForSteer', () => {
     await splitAssistantRowForSteer(ctx)
     expect(state.lastSent.text).toBe('')
   })
+
+  it('every row-scoped field starts over exactly as a fresh run state does', async () => {
+    const { ctx, state } = makeCtx()
+    state.usageTotals.inputTokens = 10
+    state.turnsWithActualCost = 2
+    state.lastTurnContextTokens = 900
+    state.lastTurnUsage = { inputTokens: 1 } as typeof state.lastTurnUsage
+    state.timing.turns = 4
+    state.timing.ttftMs = 30
+    state.turnFirstTokenAt = 5
+    state.turnToolGenAt = 6
+    state.lastSent.textItemId = 'text-1'
+    state.lastDbFlushAt = 99
+    await splitAssistantRowForSteer(ctx)
+
+    const fresh = createRunTurnState({
+      payload: emptyAssistantPayload('fresh', DEFAULT_AGENT_AUTHOR),
+      assistantCreatedAt: '2026-07-10 00:00:00',
+      baseSessionTiming: emptySessionTiming(),
+    })
+    const rowScoped = (s: typeof state) => ({
+      usageTotals: s.usageTotals,
+      actualCostSum: s.actualCostSum,
+      estimatedCostSum: s.estimatedCostSum,
+      turnsWithUsage: s.turnsWithUsage,
+      turnsWithActualCost: s.turnsWithActualCost,
+      lastTurnContextTokens: s.lastTurnContextTokens,
+      lastTurnUsage: s.lastTurnUsage,
+      timing: s.timing,
+      turnFirstTokenAt: s.turnFirstTokenAt,
+      turnToolGenAt: s.turnToolGenAt,
+      lastSent: s.lastSent,
+      lastDbFlushAt: s.lastDbFlushAt,
+    })
+    expect(rowScoped(state)).toEqual(rowScoped(fresh))
+    expect(state.turnStartedAt).toBe(state.runStartedAt)
+  })
 })
