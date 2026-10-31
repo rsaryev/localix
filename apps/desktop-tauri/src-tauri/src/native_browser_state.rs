@@ -156,7 +156,7 @@ mod observe {
 
     /// Stop following every page of a window that is gone.
     pub(crate) fn forget_owner(owner: &str) {
-        let prefix = format!("browser-{owner}--");
+        let prefix = crate::native_browser::owner_prefix(owner);
         crate::main_queue::defer(move || {
             let labels: Vec<String> = OBSERVERS.with(|observers| {
                 observers

@@ -250,7 +250,12 @@ fn navigable(next: &Url) -> bool {
 
 pub(crate) fn page_label(owner: &str, tab_id: &str) -> Result<String, String> {
     label(tab_id)?;
-    Ok(format!("browser-{owner}--{tab_id}"))
+    Ok(format!("{}{tab_id}", owner_prefix(owner)))
+}
+
+/// The start of every page label of one owner; `page_label` builds on it.
+pub(crate) fn owner_prefix(owner: &str) -> String {
+    format!("browser-{owner}--")
 }
 
 /// A page's address where the engine can be read from any thread. On macOS `Webview::url()`

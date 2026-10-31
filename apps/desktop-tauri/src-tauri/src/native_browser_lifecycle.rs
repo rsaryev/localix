@@ -94,7 +94,7 @@ impl NativeBrowserLifecycle {
     }
 
     pub(crate) fn forget_owner(&self, owner: &str) {
-        let prefix = format!("browser-{owner}--");
+        let prefix = crate::native_browser::owner_prefix(owner);
         self.0
             .lock()
             .unwrap()
