@@ -17,6 +17,7 @@ import { createModPanes } from './panes'
 import { createModRegistry } from './registry'
 import { summarize } from './summary'
 import { createModHealth, RESTART_RULES, SUPERVISOR_CLOCK } from './restarts'
+import { errorMessage } from '../../lib/errors'
 
 /**
  * The process-wide mods host. Every enabled plugin with a hooks module is bundled here once, and
@@ -137,7 +138,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
     } catch (error) {
       dispose()
       drop(id)
-      health.fail(plugin, error instanceof Error ? error.message : String(error))
+      health.fail(plugin, errorMessage(error))
       return null
     }
   }
@@ -194,7 +195,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
       health.forget(source.plugin)
       sources.set(source.plugin, await hooksLoader.bundle(source))
     } catch (error) {
-      health.fail(source.plugin, error instanceof Error ? error.message : String(error))
+      health.fail(source.plugin, errorMessage(error))
       return
     }
     await instanceIn(source.plugin, ports.workspaceDir)

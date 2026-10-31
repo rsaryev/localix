@@ -25,6 +25,7 @@ import { createStateApi, type StateSpaces } from './state-api'
 import { createStoreApi } from './store-api'
 import { createSystemApi } from './system-api'
 import { createUiApi } from './ui-api'
+import { errorMessage } from '../../../lib/errors'
 
 /**
  * One mod's `$`: the mods API bound to Localix. Calls act in the scene of the event being handled
@@ -60,8 +61,7 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
   const scene = () => currentScene(fallback)
   const system = createSystemApi({
     cwd: () => scene().cwd,
-    onTimerError: (call, error) =>
-      ports.report(plugin, `${call}: ${error instanceof Error ? error.message : String(error)}`),
+    onTimerError: (call, error) => ports.report(plugin, `${call}: ${errorMessage(error)}`),
   })
   const textOf = (input: unknown) =>
     typeof input === 'string' ? input : stringOr((input as { text?: unknown } | null)?.text)

@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { stringOr } from '../contracts'
+import { errorMessage } from '../../../lib/errors'
 
 /**
  * `$.store`: a mod's key-value store, kept as one JSON file in its data directory and shared by
@@ -40,7 +41,7 @@ function jsonOf(value: unknown): string {
       return field
     })
   } catch (error) {
-    throw new Error(`store.set: ${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`store.set: ${errorMessage(error)}`)
   }
   if (text === undefined) throw new Error('store.set: the value is not JSON data')
   return text

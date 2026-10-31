@@ -5,6 +5,7 @@ import type { ModScene } from './contracts'
 import { agentOf } from './event-scope'
 import type { ModsHost } from './host'
 import { coreAnswer, resultOf } from './tool-answers'
+import { errorMessage } from '../../lib/errors'
 
 /**
  * `tool.call` in Localix. Every tool call of a conversation goes through the mods enabled there:
@@ -64,7 +65,7 @@ async function callThrough(
         // A `PreToolUse` hook or the permission check refused the call: `next(e)` resolves to
         // `{ deny }`, as in Claude Code, rather than throwing at the hook.
         if (!isBlockedThrow(error)) throw error
-        refused = { error, reason: error instanceof Error ? error.message : String(error) }
+        refused = { error, reason: errorMessage(error) }
         return { deny: refused.reason }
       }
       return coreAnswer(tool, local, ran, scope.scene.cwd)

@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { isPathBelow } from '../../lib/path-containment'
 import type { BunPlugin } from 'bun'
 import { CLAUDE_CODE_RUNTIME, ModBuildError } from './module-build'
+import { errorMessage } from '../../lib/errors'
 
 /**
  * A `Client`'s surface module, as the desktop runs it: read off the hooks module's source at load
@@ -81,7 +82,7 @@ export async function bundleClientModules(
   for (const module of modules) {
     const result = await bundleClientModule(root, module).then(
       (code) => ({ code }),
-      (error: unknown) => ({ problem: error instanceof Error ? error.message : String(error) }),
+      (error: unknown) => ({ problem: errorMessage(error) }),
     )
     const body = 'code' in result ? result.code : result.problem
     const revision = createHash('sha256').update(body).digest('hex').slice(0, 16)

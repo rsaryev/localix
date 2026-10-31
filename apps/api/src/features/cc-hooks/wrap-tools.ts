@@ -26,6 +26,7 @@ import type { CcHooksRuntime } from './run'
 import type { HookLogger } from './executor'
 import { blockTaskCompletion, reviewTaskCreation, taskBoardEvent } from './task-events'
 import type { McpElicitationHookCarrier } from '../agent-core/tools/hitl/mcp-elicitation'
+import { errorMessage } from '../../lib/errors'
 
 /**
  * AskUserQuestion's `answers` are a hook's, not the model's, so the ask tool's schema leaves them
@@ -175,7 +176,7 @@ export function wrapToolsWithCcHooks(
         // `kind:'blocked'`.
         if (isBlockedThrow(error)) throw error
         result = resultFromThrow(tool.name, error)
-        failure = error instanceof Error ? error.message : String(error)
+        failure = errorMessage(error)
       }
       if (failure !== undefined) {
         const failed = await runtime.runPostToolUseFailure(

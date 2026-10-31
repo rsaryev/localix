@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
+import { errorMessage } from '../../../lib/errors'
 
 /**
  * `$.state`: Claude Code's reactive state, values a drawing depends on. A value is named by a
@@ -171,7 +172,7 @@ function textOf(value: unknown): string {
       return field
     })
   } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error)
+    const reason = errorMessage(error)
     throw new Error(`state.set: value is not JSON data: ${reason}`)
   }
   if (text === undefined) throw new Error(`state.set: value is not JSON data: a ${typeof value}`)
