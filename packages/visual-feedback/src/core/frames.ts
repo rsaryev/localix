@@ -41,7 +41,8 @@ export function frameIsShown(frame: Element): boolean {
 /** The frame element holding `el`'s document, or null for the top document. */
 export function ownerFrame(el: Element): Element | null {
   const view = el.ownerDocument?.defaultView
-  if (!view) return null
+  // The actuator's own window is the page it drives, even where an embedder holds it in a frame.
+  if (!view || view === window) return null
   try {
     if (view.frameElement) return view.frameElement
     const parent = view.parent

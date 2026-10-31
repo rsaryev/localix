@@ -9,6 +9,7 @@ import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
 import { runCommand, installConsoleCapture, type ActuateDeps } from './index'
 import { buildSnapshot, createRefRegistry } from '../snapshot/index'
+import { ownerFrame } from '../core/frames'
 
 function makeDeps(): ActuateDeps {
   return {
@@ -201,5 +202,18 @@ describe('same-origin frames', () => {
     const result = await runCommand({ action: 'click', ref: ref(tree, 'Pay') }, deps)
     expect(result.errorCode).toBe('intercepted')
     expect(result.error).toMatch(/cross-origin frame, not reachable/)
+  })
+
+  test('a probe running inside a same-origin embedder owns its window: its page is not a frame', () => {
+    // The probe in a srcdoc/blob iframe: its own document is the page it drives, so the host
+    // iframe that holds it must not add an offset to its points.
+    document.body.innerHTML = '<button id="b">Go</button>'
+    const host = document.createElement('iframe')
+    Object.defineProperty(window, 'frameElement', { value: host, configurable: true })
+    try {
+      expect(ownerFrame(document.getElementById('b')!)).toBeNull()
+    } finally {
+      delete (window as { frameElement?: unknown }).frameElement
+    }
   })
 })
