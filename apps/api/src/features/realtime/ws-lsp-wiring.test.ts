@@ -1,6 +1,5 @@
 /// <reference types="bun" />
 
-import { createChatFeaturePorts } from '../../bootstrap/chat-feature-ports'
 import { describe, expect, it } from 'bun:test'
 import { testWork } from '../../testing/work-fixture'
 
@@ -8,6 +7,7 @@ import { createApp } from '../../app'
 import {
   createTestCatalogService as createCatalogService,
   createTestChatService as createChatService,
+  testChatFeaturePorts,
 } from '../chat/test-harness'
 import { createDatabase, destroyDatabase } from '../../db'
 import { createProviderConnectionsService } from '../provider-connections/service'
@@ -83,7 +83,7 @@ async function withRealtimeSocket<T>(
   const chatService = createChatService({
     db,
     work: testWork(db),
-    ports: createChatFeaturePorts(db),
+    ports: testChatFeaturePorts(db),
     catalogService,
     providerConnectionsService,
   })

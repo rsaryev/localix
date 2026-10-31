@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 
-import { createChatFeaturePorts } from '../../../bootstrap/chat-feature-ports'
 import { __resetCapabilityRevision } from '../../capabilities/revision'
 import type { SessionRecord } from '../repository'
 import { createRunScopeCache } from '../runtime/run-scope'
 import { handleControlCommand } from './command-handlers'
 import type { CommandHandlerContext } from './command-handlers-context'
 import { createChatServiceGraph } from './service-graph'
+import { testChatFeaturePorts } from '../test-harness'
 
 const session = { id: 's', userId: 'u', title: 'Chat' } as SessionRecord
 
@@ -104,7 +104,7 @@ describe('direct slash-command transcript reads', () => {
       loads += 1
       return edited ? ['edited_tool'] : []
     }
-    const { pluginService } = createChatFeaturePorts({} as never)
+    const { pluginService } = testChatFeaturePorts({} as never)
     const ctx = directContext({ replies: [] })
     ctx.pluginService = pluginService
 
@@ -124,7 +124,7 @@ describe('direct slash-command transcript reads', () => {
    */
   test('the chat graph uses the host plugin service when it is given one', () => {
     const host = { marker: 'host-owned' } as never
-    const ports = createChatFeaturePorts({} as never, { pluginService: host })
+    const ports = testChatFeaturePorts({} as never, { pluginService: host })
     const graph = createChatServiceGraph({ db: {}, runner: {}, ports } as never)
     expect(graph.pluginService).toBe(host)
   })

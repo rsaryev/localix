@@ -1,72 +1,40 @@
-import { capabilityStores } from './capability-stores'
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../db/types'
 import { createAvailabilityWriter } from '../features/capabilities/availability'
 import { createCapabilitySourceRepository } from '../features/capabilities/source-repository'
-import { capabilitiesChanged } from '../features/capabilities/revision'
 import type { ChatFeaturePorts } from '../features/chat/feature-ports'
 import { createContextStoreRepository } from '../features/context-store/repository'
 import { createFileWatchService } from '../features/fs-watch/service'
 import { createMcpRepository } from '../features/mcp/repository'
-import { createPluginService, type PluginService } from '../features/plugins/service'
-import { createMiniAppService, type MiniAppService } from '../features/mini-apps/service'
+import type { PluginService } from '../features/plugins/service'
+import type { MiniAppService } from '../features/mini-apps/service'
 import { createProjectsRepository } from '../features/projects/repository'
 import { createUsageRepository } from '../features/usage/repository'
 import { createUserProfileRepository } from '../features/user/repository'
-import { userHome } from '../lib/env'
 
 /**
  * Builds the stores chat depends on from other features (`ChatFeaturePorts`).
  *
- * `pluginService` and `miniAppService` are the HOST's when there is one. Building a second is a fallback for callers
- * with no host (tests): two services mean two inspection caches importing the same plugins, and
- * two `onChanged` owners where only the host's reconciles the live channel/backend/monitor hosts.
- * The fallback keeps the revision owner wired so a mutation still invalidates run-scope caches.
+ * `pluginService` and `miniAppService` are the HOST's: a second pair would mean two inspection
+ * caches importing the same plugins, and two `onChanged` owners where only the host's reconciles
+ * the live channel/backend/monitor hosts. A test with no host builds its own through
+ * `testChatFeaturePorts` (`features/chat/test-harness.ts`).
  */
 export function createChatFeaturePorts(
   db: Kysely<AppDatabase>,
-  options: {
-    pluginService?: PluginService
-    miniAppService?: MiniAppService
-    now?: () => string
-  } = {},
+  services: { pluginService: PluginService; miniAppService: MiniAppService },
 ): ChatFeaturePorts {
-  const projectsRepo = createProjectsRepository(db)
-  const pluginService =
-    options.pluginService ??
-    createPluginService({
-      db,
-      capabilityStores,
-      homeDir: userHome(),
-      now: options.now,
-      resolveProjectCwd: async (...args) =>
-        (await projectsRepo.getProject(...args))?.workingDir ?? null,
-      onChanged: () => {
-        capabilitiesChanged()
-      },
-    })
-  const resolveProjectCwd = async (userId: string, projectId: string) =>
-    (await projectsRepo.getProject(userId, projectId))?.workingDir ?? null
-  const miniAppService =
-    options.miniAppService ??
-    createMiniAppService({
-      db,
-      capabilityStores,
-      homeDir: userHome(),
-      now: options.now,
-      resolveProjectCwd,
-    })
   return {
     usageRepo: createUsageRepository(db),
     userProfileRepo: createUserProfileRepository(db),
-    projectsRepo,
+    projectsRepo: createProjectsRepository(db),
     mcpRepo: createMcpRepository(db),
     availabilityWriter: createAvailabilityWriter(db),
     pluginRepo: createCapabilitySourceRepository(db, 'plugin'),
     miniAppRepo: createCapabilitySourceRepository(db, 'mini-app'),
     contextStore: createContextStoreRepository(db),
-    pluginService,
-    miniAppService,
+    pluginService: services.pluginService,
+    miniAppService: services.miniAppService,
     createFileWatcher: createFileWatchService,
   }
 }

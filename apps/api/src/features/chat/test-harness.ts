@@ -2,7 +2,15 @@ import type { AgentRuntime, LanguageModel, LanguageModelFactory } from '@localix
 
 import type { CatalogResponse } from '../catalog/contracts'
 import { createCatalogService } from '../catalog/service'
+import type { Kysely } from 'kysely'
+import { capabilityStores } from '../../bootstrap/capability-stores'
 import { createChatFeaturePorts } from '../../bootstrap/chat-feature-ports'
+import type { AppDatabase } from '../../db/types'
+import { userHome } from '../../lib/env'
+import { capabilitiesChanged } from '../capabilities/revision'
+import { createMiniAppService, type MiniAppService } from '../mini-apps/service'
+import { createPluginService, type PluginService } from '../plugins/service'
+import { createProjectsRepository } from '../projects/repository'
 import { createChatRepository } from './repository'
 import type { AgentTurnAdmission } from './runtime/agent-turn-ticket'
 import { dispatchParams } from './runtime/run-params'
@@ -99,7 +107,7 @@ export function createTestChatService(
     : undefined
   const service = createChatService({
     ...deps,
-    ports: deps.ports ?? createChatFeaturePorts(deps.db),
+    ports: deps.ports ?? testChatFeaturePorts(deps.db),
     ...(runner ? { runner } : {}),
     ...createTestRuntimeDeps(),
   })
@@ -128,4 +136,34 @@ export function createTestChatService(
   }
 
   return service
+}
+
+/**
+ * Chat's feature ports for a test with no host. The plugin and mini app services it does not
+ * pass are built here, with the revision owner wired so a mutation still invalidates run-scope
+ * caches.
+ */
+export function testChatFeaturePorts(
+  db: Kysely<AppDatabase>,
+  services: { pluginService?: PluginService; miniAppService?: MiniAppService } = {},
+) {
+  const projectsRepo = createProjectsRepository(db)
+  const resolveProjectCwd = async (userId: string, projectId: string) =>
+    (await projectsRepo.getProject(userId, projectId))?.workingDir ?? null
+  return createChatFeaturePorts(db, {
+    pluginService:
+      services.pluginService ??
+      createPluginService({
+        db,
+        capabilityStores,
+        homeDir: userHome(),
+        resolveProjectCwd,
+        onChanged: () => {
+          capabilitiesChanged()
+        },
+      }),
+    miniAppService:
+      services.miniAppService ??
+      createMiniAppService({ db, capabilityStores, homeDir: userHome(), resolveProjectCwd }),
+  })
 }

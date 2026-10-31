@@ -25,7 +25,6 @@ import { DEFAULT_AGENT_AUTHOR, USER_AUTHOR } from '../../db'
  * reddens.
  */
 
-import { createChatFeaturePorts } from '../../bootstrap/chat-feature-ports'
 import { serializeMessagePayload } from '../../db/payload'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
@@ -42,6 +41,7 @@ import { createChatRepository } from './repository'
 import {
   createTestCatalogService as createCatalogService,
   createTestChatService as createChatService,
+  testChatFeaturePorts,
 } from './test-harness'
 
 const tempDir = join(tmpdir(), `localix-chat-repo-concurrency-tests-${process.pid}`)
@@ -66,7 +66,7 @@ async function externalServices() {
   const first = createChatService({
     db: firstDb,
     work: testWork(firstDb),
-    ports: createChatFeaturePorts(firstDb),
+    ports: testChatFeaturePorts(firstDb),
     catalogService: createCatalogService(),
     providerConnectionsService: createProviderConnectionsService({ db: firstDb }),
   })
@@ -88,7 +88,7 @@ async function externalServices() {
   const second = createChatService({
     db: secondDb,
     work: testWork(secondDb),
-    ports: createChatFeaturePorts(secondDb),
+    ports: testChatFeaturePorts(secondDb),
     catalogService: createCatalogService(),
     providerConnectionsService: createProviderConnectionsService({ db: secondDb }),
   })
@@ -101,7 +101,7 @@ async function seededRow() {
   const chatService = createChatService({
     db,
     work: testWork(db),
-    ports: createChatFeaturePorts(db),
+    ports: testChatFeaturePorts(db),
     catalogService: createCatalogService(),
     providerConnectionsService: createProviderConnectionsService({ db }),
   })
@@ -136,7 +136,7 @@ describe('repository.insertMessages — atomic turn preamble', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
-      ports: createChatFeaturePorts(db),
+      ports: testChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })
@@ -276,7 +276,7 @@ describe('repository.listMessages — cross-run parse cache coherence', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
-      ports: createChatFeaturePorts(db),
+      ports: testChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })

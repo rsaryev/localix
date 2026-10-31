@@ -2,14 +2,17 @@ import { describe, expect, test } from 'bun:test'
 import { randomUUID } from 'node:crypto'
 import { tempDirPerTest } from '@localixai/testing'
 
-import { createChatFeaturePorts } from '../../../../bootstrap/chat-feature-ports'
 import { createDatabase } from '../../../../db/connection'
 import { migrateToLatest } from '../../../../db/migrator'
 import { sessionFixture } from '../../../../testing/session-fixture'
 import { testWork } from '../../../../testing/work-fixture'
 import { createProviderConnectionsService } from '../../../provider-connections/service'
 import { createChatRepository } from '../../repository'
-import { createTestCatalogService, createTestRuntimeDeps } from '../../test-harness'
+import {
+  createTestCatalogService,
+  createTestRuntimeDeps,
+  testChatFeaturePorts,
+} from '../../test-harness'
 import { createAgentRunner } from '../agent-runner'
 import { createHitlRegistry } from '../hitl-registry'
 import { createSessionStreamRegistry } from '../session-stream-registry'
@@ -35,7 +38,7 @@ describe('a conversation has one agent, fixed at creation', () => {
     const runner = createAgentRunner({
       db,
       work: testWork(db),
-      ports: createChatFeaturePorts(db),
+      ports: testChatFeaturePorts(db),
       repo,
       catalogService: createTestCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),

@@ -1,6 +1,5 @@
 import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
-import { createChatFeaturePorts } from '../../../../bootstrap/chat-feature-ports'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
@@ -14,6 +13,7 @@ import { createChatRepository } from '../../repository'
 import {
   createTestCatalogService as createCatalogService,
   createTestRuntimeDeps,
+  testChatFeaturePorts,
 } from '../../test-harness'
 import { createAgentRunner } from '../agent-runner'
 import { createHitlRegistry } from '../hitl-registry'
@@ -48,7 +48,7 @@ describe('drain — a delivery to a session without an agent', () => {
     const runner = createAgentRunner({
       db,
       work: testWork(db),
-      ports: createChatFeaturePorts(db),
+      ports: testChatFeaturePorts(db),
       repo,
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),

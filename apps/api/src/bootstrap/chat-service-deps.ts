@@ -95,9 +95,9 @@ export interface ChatServicePhaseInput extends Pick<
 > {
   uiLocationCatalogService: ChatServiceDeps['uiLocationCatalog']
   /** The host's plugin service; chat shares it rather than building a second. */
-  pluginService?: PluginService
+  pluginService: PluginService
   /** The host's mini app service: what `/mini-app` reads and changes. */
-  miniAppService?: MiniAppService
+  miniAppService: MiniAppService
   agentNotifications: NonNullable<ChatServiceDeps['notifications']>
   logger: ReturnType<typeof createLogger>
   capabilityRegistry: ReturnType<typeof createCapabilityRegistry>

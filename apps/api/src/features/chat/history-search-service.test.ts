@@ -1,5 +1,4 @@
 import { DEFAULT_AGENT_AUTHOR, USER_AUTHOR } from '../../db'
-import { createChatFeaturePorts } from '../../bootstrap/chat-feature-ports'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -15,6 +14,7 @@ import { createChatRepository } from './repository'
 import {
   createTestCatalogService as createCatalogService,
   createTestChatService as createChatService,
+  testChatFeaturePorts,
 } from './test-harness'
 
 const tempDir = makeTempDir('localix-history-search')
@@ -33,7 +33,7 @@ describe('chatService.searchHistory', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
-      ports: createChatFeaturePorts(db),
+      ports: testChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })
