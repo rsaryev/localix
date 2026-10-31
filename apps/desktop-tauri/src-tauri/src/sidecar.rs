@@ -296,7 +296,7 @@ pub(crate) fn prepare_api(app: &tauri::App) -> (String, Option<(std::path::PathB
             return (init_error_script(&message), None);
         }
     };
-    let init = init_script(Some(port));
+    let init = init_script(port);
     let res = match app.path().resource_dir() {
         Ok(path) => path.join("resources"),
         Err(error) => {
@@ -762,11 +762,8 @@ fn should_report_termination(
     !stopping && (!ready || owns_runtime || code != Some(0))
 }
 
-fn init_script(port: Option<u16>) -> String {
-    let selected = port.map_or_else(
-        || "undefined".into(),
-        |port| format!("Number(sessionStorage.getItem('__localix_api_port'))||{port}"),
-    );
+fn init_script(port: u16) -> String {
+    let selected = format!("Number(sessionStorage.getItem('__localix_api_port'))||{port}");
     format!(
         "window.__LOCALIX_DESKTOP=true;window.__LOCALIX_API_PORT={selected};window.__LOCALIX_OAUTH_PORT=window.__LOCALIX_API_PORT;window.__LOCALIX_UPDATER={updater};window.__LOCALIX_RUNTIME_STATUS='starting';window.__LOCALIX_RUNTIME_ERROR=null;",
         updater = crate::updater::UPDATER_ENABLED
@@ -799,8 +796,7 @@ mod tests {
             "false"
         };
         let flag = format!("window.__LOCALIX_UPDATER={expected};");
-        assert!(init_script(Some(4100)).contains(&flag));
-        assert!(init_script(None).contains(&flag));
+        assert!(init_script(4100).contains(&flag));
         assert!(init_error_script("boom").contains(&flag));
         assert_eq!(crate::updater::UPDATER_ENABLED, cfg!(localix_updater));
     }
