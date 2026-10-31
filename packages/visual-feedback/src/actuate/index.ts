@@ -11,7 +11,7 @@
  *  - React-friendly value setting (native setter) so `input` events register.
  */
 
-import type { VfCommand, VfSnapshot } from '../protocol/index'
+import type { VfCommand, VfRect, VfSnapshot } from '../protocol/index'
 import { getElementSummary } from '../core/identify'
 import { getViewportRect } from '../core/geometry'
 import { buildSnapshot } from '../snapshot/index'
@@ -295,6 +295,8 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
       if (!steps.length) return fail('bad_request', '`steps` requires a non-empty array.')
       const notes: string[] = []
       let stepSnapshot: VfSnapshot | undefined
+      // Where the last click or typing landed: the host shows the person that spot.
+      let lastRect: VfRect | null | undefined
       for (let i = 0; i < steps.length; i++) {
         const sub = await dispatch({ ...steps[i], snapshotAfter: false } as VfCommand, {
           ...deps,
@@ -305,6 +307,8 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
         }
         if (sub.result?.action === 'snapshot' && sub.result.snapshot)
           stepSnapshot = sub.result.snapshot
+        if ((steps[i].action === 'click' || steps[i].action === 'type') && sub.result?.rect)
+          lastRect = sub.result.rect
         notes.push(stepNote(steps[i].action, sub.result))
       }
       // The outer cursor was captured before the first step → recentErrors spans the batch.
@@ -319,6 +323,7 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
           note: notes.join(' → '),
           ...tail,
           ...(snapshot ? { snapshot } : {}),
+          ...(lastRect ? { rect: lastRect } : {}),
         },
       }
     }

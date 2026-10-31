@@ -75,4 +75,38 @@ describe('steps batch surfaces read-action output', () => {
     expect(r.result?.note ?? '').toContain('console →')
     expect(r.result?.note ?? '').toContain('button pressed')
   })
+
+  test('a batch answers with the rect of the last control it clicked or typed into', async () => {
+    document.body.innerHTML = '<button id="go">Go</button><input id="q" aria-label="Query">'
+    const place = (id: string, rect: DOMRect) =>
+      (document.getElementById(id)!.getBoundingClientRect = () => rect)
+    place('go', new DOMRect(10, 20, 100, 30))
+    place('q', new DOMRect(40, 60, 200, 24))
+    const deps: ActuateDeps = {
+      reg: createRefRegistry(),
+      console: installConsoleCapture(),
+      prevTree: { value: '' },
+      settle: async () => {},
+    }
+    buildSnapshot(deps.reg)
+    const click = await runCommand(
+      { action: 'steps', steps: [{ action: 'click', selector: '#go' }, { action: 'snapshot' }] },
+      deps,
+    )
+    expect(click.result?.rect).toEqual({ x: 10, y: 20, width: 100, height: 30 })
+    const both = await runCommand(
+      {
+        action: 'steps',
+        steps: [
+          { action: 'click', selector: '#go' },
+          { action: 'type', selector: '#q', text: 'hi' },
+          { action: 'snapshot' },
+        ],
+      },
+      deps,
+    )
+    expect(both.result?.rect).toEqual({ x: 40, y: 60, width: 200, height: 24 })
+    const none = await runCommand({ action: 'steps', steps: [{ action: 'snapshot' }] }, deps)
+    expect(none.result?.rect).toBeUndefined()
+  })
 })
