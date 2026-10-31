@@ -10,6 +10,7 @@
         "lib/wait.mjs",
         "cc-parity/run.mjs",
         "screenshots/{audit,fixture-service,mcp-prompts-server,publish,run,runtime,scripted-provider,seed}.mjs",
+        "screenshots/landing.mjs",
         "screenshots/playwright.config.mjs",
         "screenshots/*.pw.mjs",
         "**/*.test.{ts,mjs}"
@@ -40,6 +41,7 @@
     "apps/ui": {
       "entry": [
         "src/app/main.tsx",
+        "src/app/kit/testing/*.ts",
         "vite.config.ts",
         "src/**/*.surface.{ts,tsx}",
         "src/**/*.test.{ts,tsx}",
@@ -59,7 +61,8 @@
       "ignoreDependencies": ["@happy-dom/global-registrator"]
     },
     "apps/desktop-tauri": {
-      "entry": ["scripts/**/*.test.ts", "scripts/check-*.mjs"]
+      "entry": ["scripts/**/*.test.ts", "scripts/check-*.mjs"],
+      "ignoreDependencies": ["@localixai/mini-app-sdk"]
     },
     "packages/*": {
       "entry": ["src/index.ts", "src/**/*.test.{ts,tsx,mjs}"]
@@ -72,13 +75,18 @@
       "ignoreDependencies": ["mediabunny"]
     },
     "packages/cli": {
-      "entry": ["bin/localix.mjs", "src/main.ts", "src/**/*.test.ts", "scripts/**/*.mjs"]
+      "entry": ["bin/localix.mjs", "src/main.ts", "src/**/*.test.ts", "scripts/**/*.mjs"],
+      "ignoreUnresolved": ["scripts/build.mjs"]
     },
     "packages/mini-app-sdk": {
       "entry": ["src/backend/index.ts", "src/ui/index.ts", "src/manifest/index.ts"]
     }
   },
-  "ignore": ["apps/desktop-tauri/src-tauri/resources/**", "apps/desktop-tauri/src-tauri/target/**"],
+  "ignore": [
+    "apps/desktop-tauri/src-tauri/resources/**",
+    "apps/desktop-tauri/src-tauri/target/**",
+    "docs/assets/screenshots/fixtures/**"
+  ],
   "ignoreDependencies": [
     "@vtsls/language-server",
     "dockerfile-language-server-nodejs",
@@ -86,7 +94,8 @@
     "yaml-language-server",
     "@types/shell-quote",
     "tailwindcss",
-    "@localixai/visual-feedback"
+    "@localixai/visual-feedback",
+    "hono"
   ],
   "ignoreBinaries": ["lipo", "rustc", "strip", "tauri"]
 }
