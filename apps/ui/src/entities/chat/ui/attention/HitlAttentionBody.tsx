@@ -31,8 +31,7 @@ export function HitlAttentionBody({
   sessionTitle,
   openChat,
   settle,
-  keyboardActive = true,
-}: AttentionBodyProps & { keyboardActive?: boolean }) {
+}: AttentionBodyProps) {
   // The item carries the whole `hitl.requested` payload; the request is its `request` field.
   const interaction = useMemo(
     () => fromHitlRequest((item.interaction as { request?: unknown } | undefined)?.request),
@@ -94,7 +93,7 @@ export function HitlAttentionBody({
           <ChatInteractionOverlay
             interaction={interaction}
             submittingRequestId={submittingId}
-            keyboardActive={keyboardActive}
+            keyboardActive
             // In a dialog the frame is its BODY and adopts the modal measure and seam.
             chrome="dialog"
             onAnswer={(requestId, answers) =>
