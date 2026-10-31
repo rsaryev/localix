@@ -1,11 +1,4 @@
-import {
-  useMemo,
-  useRef,
-  useState,
-  type ComponentType,
-  type KeyboardEvent,
-  type ReactNode,
-} from 'react'
+import { useRef, useState, type ComponentType, type KeyboardEvent, type ReactNode } from 'react'
 import { PanelLeft, type LucideIcon } from 'lucide-react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Select } from '../controls/select'
@@ -85,10 +78,10 @@ export function SidebarNav({
   selectSize?: 'md' | 'lg' | 'xl'
 }) {
   const shown = groups.filter((group) => group.items.length > 0)
-  const items = useMemo(() => shown.flatMap((group) => group.items), [shown])
+  const items = shown.flatMap((group) => group.items)
   const [focused, setFocused] = useState<string | null>(null)
   const rows = useRef(new Map<string, HTMLButtonElement>())
-  const typeahead = useRef(createTypeaheadBuffer({ timeoutMs: 600 }))
+  const typeahead = useRef(createTypeaheadBuffer())
 
   if (mode === 'select') {
     const options = items.map((item) => ({

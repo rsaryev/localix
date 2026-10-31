@@ -65,12 +65,11 @@ function CoordinateMenu({
   const [typeahead] = React.useState(() => createTypeaheadBuffer({ timeoutMs: 500 }))
   const contentRef = React.useRef<HTMLDivElement>(null)
 
-  const close = React.useCallback(() => onClose(), [onClose])
-  const contextValue = React.useMemo(() => ({ close }), [close])
+  const contextValue = React.useMemo(() => ({ close: onClose }), [onClose])
 
   return (
     <CoordinateMenuContext.Provider value={contextValue}>
-      <Popover open modal onOpenChange={(open) => !open && close()}>
+      <Popover open modal onOpenChange={(open) => !open && onClose()}>
         <PopoverAnchor asChild>
           <span
             aria-hidden="true"
@@ -108,7 +107,7 @@ function CoordinateMenu({
             }
             if (event.key === 'Tab') {
               event.preventDefault()
-              close()
+              onClose()
               return
             }
             if (
