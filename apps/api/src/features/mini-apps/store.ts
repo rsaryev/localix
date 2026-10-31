@@ -2,6 +2,7 @@ import { join } from 'node:path'
 
 import { ConflictError, NotFoundError } from '../../lib/domain-errors'
 import { errorMessage } from '../../lib/errors'
+import { installedLocally } from './local-install'
 import { MINI_APPS_SUBDIR } from './paths'
 import {
   ACTIVE_PHASES,
@@ -90,7 +91,8 @@ export function createMiniAppStore(deps: {
   const busy = (name: string) => ACTIVE_PHASES.has(jobs.get(name)?.phase ?? 'done')
 
   async function run(offer: Offer, userId: string | undefined): Promise<void> {
-    const fresh = (await installedBy(join(installRoot, offer.name))) === null
+    // New to the person unless it is this very app already: what Get replaced is not an update.
+    const fresh = !(await holdsOffer(offer, installRoot))
     const label = offer.displayName ?? offer.name
     const kind = fresh ? 'install' : 'update'
     const outcome = {
@@ -165,6 +167,25 @@ export function createMiniAppStore(deps: {
     return `${holder} is installed; remove it to install the one from ${offer.marketplace}`
   }
 
+  /**
+   * What Get on `offer` puts aside, in the person's words, or null: nothing holds its name, this
+   * very app does, or a folder put here by hand does — its only copy, which nothing replaces.
+   */
+  async function replacement(offer: Offer): Promise<string | null> {
+    const dir = join(installRoot, offer.name)
+    const by = await installedBy(dir)
+    if (!by || (await holdsOffer(offer, installRoot))) return null
+    if (by === 'person') {
+      // Built from a folder elsewhere (`local-install.ts`): that folder keeps the source.
+      return (await installedLocally(dir))
+        ? `Replaces your "${offer.name}", built on this computer; its data stays`
+        : null
+    }
+    const record = await readInstallRecord(dir)
+    const holder = record ? `"${offer.name}" from ${record.marketplace}` : `"${offer.name}"`
+    return `Replaces ${holder}; its data stays`
+  }
+
   const enqueue = (offer: Offer, userId?: string) => {
     setJob(offer, { phase: 'queued' })
     queue = queue.then(() => run(offer, userId)).then(reportIfDrained)
@@ -180,6 +201,9 @@ export function createMiniAppStore(deps: {
       return { entries: sorted, ...read }
     },
 
+    /** What Get on `ref` would replace here, said for the person, or null (`replacement`). */
+    replacement: async (ref: string): Promise<string | null> => replacement(await offerFor(ref)),
+
     /** One app's store page: its row, README, screenshots and what it brings. */
     async detail(ref: string): Promise<MiniAppStorePage<MiniAppStoreEntry>> {
       const offer = await offerFor(ref)
@@ -194,12 +218,22 @@ export function createMiniAppStore(deps: {
     /**
      * Queue an install; it runs after the ones before it and resolves once queued. Refused at
      * once — before anything is downloaded — for an app no marketplace offers, one built for a
-     * newer Localix, a name another app already holds here, a marketplace whose signature changed,
-     * an archive Localix blocks, or an unverified publisher the person has not said yes to.
+     * newer Localix, a name another app already holds here (unless `replace`), a marketplace whose
+     * signature changed, an archive Localix blocks, or an unverified publisher the person has not
+     * said yes to.
      */
     async install(
       ref: string,
-      opts: { userId?: string; acceptUnverified?: boolean } = {},
+      opts: {
+        userId?: string
+        acceptUnverified?: boolean
+        /**
+         * The person pressed Get on this app: what holds its name here — a mini app they built,
+         * or the same name from another marketplace — is replaced (`replacement`). A folder put
+         * here by hand is not, and installs Localix starts on its own leave all of them.
+         */
+        replace?: boolean
+      } = {},
     ): Promise<void> {
       const offer = await offerFor(ref)
       const { name } = offer
@@ -210,7 +244,8 @@ export function createMiniAppStore(deps: {
           `"${name}" needs a newer Localix (mini app API ${offer.apiVersion}); update Localix first`,
         )
       const conflict = await nameConflict(offer)
-      if (conflict) throw new ConflictError('mini_app_name_taken', conflict)
+      if (conflict && !(opts.replace && (await replacement(offer))))
+        throw new ConflictError('mini_app_name_taken', conflict)
       // The marketplace is no longer signed by a key kept for it: someone else may have written it.
       if (offer.signature === 'mismatch')
         throw new ConflictError(

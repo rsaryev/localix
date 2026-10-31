@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { generateKeyPairSync } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 import { publicKeyOf } from '@localixai/mini-app-sdk/marketplace-signature'
-import { tempDirPerTest } from '@localixai/testing'
+import { tempDirPerTest, writeTree } from '@localixai/testing'
 
 import {
   hostedMiniAppMarketplace,
@@ -10,6 +12,7 @@ import {
   type MarketplaceEntry,
 } from '../../testing/mini-app-marketplace'
 import type { MiniAppMarketplaceSource } from './marketplaces'
+import { MINI_APPS_SUBDIR } from './paths'
 import { createMiniAppStore } from './store'
 import type { MiniAppConfigField } from './contracts'
 import { createMiniAppStoreProvider } from './store-provider'
@@ -361,6 +364,37 @@ describe('the mini apps in the Store', () => {
     await provider.install('radio', 'user', { plan: true }, actor)
     await store.settled()
     expect((await provider.listings(actor)).listings[0]!.installs).toHaveLength(1)
+  })
+
+  // A mini app built here and the one its author published by the same name: Get takes the
+  // published one, in place of the copy the name held. Their data is kept by name, so it stays.
+  test('Get on an app whose name a mini app of the person’s holds replaces that copy', async () => {
+    const { offer, store, provider } = setup()
+    offer('atlas')
+    const dir = join(root(), 'home', MINI_APPS_SUBDIR, 'atlas')
+    writeTree(dir, {
+      [MINI_APP_MANIFEST_FILE]: JSON.stringify({ name: 'atlas', version: '0.2.0' }),
+      '.localix-install.json': JSON.stringify({
+        kind: 'localix-local-install',
+        source: '/src/atlas',
+      }),
+    })
+
+    // What the person is asked to confirm, here or in the agent's card, says what gives way.
+    expect((await provider.plan('atlas@localix', 'user', actor)).warnings).toContain(
+      'Replaces your "atlas", built on this computer; its data stays',
+    )
+    await provider.install('atlas@localix', 'user', { plan: true }, actor)
+    await store.settled()
+
+    const atlas = (await provider.listings(actor)).listings.find(
+      (listing) => listing.ref.id === 'atlas@localix',
+    )
+    expect(atlas?.installs).toMatchObject([{ scope: 'user', version: '1.0.0' }])
+    expect(JSON.parse(readFileSync(join(dir, '.localix-install.json'), 'utf8'))).toMatchObject({
+      kind: 'localix-marketplace-install',
+      marketplace: 'localix',
+    })
   })
 
   test('a mini app is installed for the person only, never for a project', async () => {

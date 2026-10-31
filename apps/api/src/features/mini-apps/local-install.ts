@@ -38,7 +38,7 @@ export interface LocalInstallDeps {
 
 const BUILT_MODULE = /\.(?:mjs|js)$/u
 
-async function installedLocally(dir: string): Promise<boolean> {
+export async function installedLocally(dir: string): Promise<boolean> {
   try {
     const record = JSON.parse(await fs.readFile(join(dir, INSTALL_RECORD_FILE), 'utf8'))
     return record?.kind === LOCAL_INSTALL_KIND

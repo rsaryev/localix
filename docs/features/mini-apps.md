@@ -65,6 +65,11 @@ that dialog filled in. An app is `<app>@<marketplace>`, such as `notes@ada`; a m
 unique on your computer, and you run one app of a name. See
 [Mini app marketplaces](../extending/mini-app-marketplace.md) for the format.
 
+**Get** on an app replaces what holds its name here: a mini app you built and installed from its
+folder, or the same name from another marketplace. The data kept under that name stays, and the
+confirmation says what gives way. A folder you put among your mini apps by hand is its only copy and
+is never replaced, and apps Localix installs on its own replace nothing.
+
 `/mini-app marketplace list` shows the marketplaces and how many apps each offers,
 `/mini-app marketplace add <owner/repo or url>` reads one and adds it, replying with its publisher
 and app count or why it was refused, and `/mini-app marketplace remove <name or url>` removes one

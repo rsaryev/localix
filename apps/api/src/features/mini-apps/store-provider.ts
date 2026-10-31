@@ -27,7 +27,7 @@ import {
 
 /** What the provider needs of the mini app service: its store, marketplaces and the person's apps. */
 export interface MiniAppStoreProviderDeps {
-  store: Pick<MiniAppStore, 'list' | 'detail' | 'install' | 'refresh' | 'subscribe'>
+  store: Pick<MiniAppStore, 'list' | 'detail' | 'install' | 'replacement' | 'refresh' | 'subscribe'>
   marketplaces: {
     list(): Promise<MiniAppMarketplaceSource[]>
     add(raw: string): Promise<unknown>
@@ -185,6 +185,7 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
       personOnly(scope)
       const { page, listing } = await listingFor(id, actor)
       const unverified = !listing.publisher.verified && listing.installs.length === 0
+      const replaces = listing.installs.length === 0 ? await deps.store.replacement(id) : null
       return {
         scope,
         adds: miniAppComponents(page.entry),
@@ -194,6 +195,7 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
         warnings: [
           ...(unverified ? [`${listing.publisher.name} is not a publisher Localix verifies`] : []),
           ...(listing.incompatible ? [listing.incompatible] : []),
+          ...(replaces ? [replaces] : []),
         ],
         needsConsent: unverified,
       }
@@ -201,7 +203,12 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
 
     async install(id, scope, consent, actor) {
       personOnly(scope)
-      await deps.store.install(id, { userId: actor.userId, acceptUnverified: consent.plan })
+      // Get is the person's choice of this app: a copy its name holds here gives way to it.
+      await deps.store.install(id, {
+        userId: actor.userId,
+        acceptUnverified: consent.plan,
+        replace: true,
+      })
     },
 
     // An update replaces a copy the person already chose to run: no second yes.

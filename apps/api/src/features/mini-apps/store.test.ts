@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { generateKeyPairSync } from 'node:crypto'
-import { promises as fs } from 'node:fs'
+import { promises as fs, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 import { publicKeyOf } from '@localixai/mini-app-sdk/marketplace-signature'
@@ -31,6 +31,10 @@ function setup(extra: Partial<MiniAppMarketplaceSource> = {}) {
   })
   const home = join(root(), 'home')
   const changes: string[] = []
+  /** Each install as the feature hears it: a fresh one is switched on for the person. */
+  const installs: { name: string; fresh: boolean }[] = []
+  /** What the Event Center is told once the jobs settle. */
+  const outcomes: { name: string; kind: string }[] = []
   let pokes = 0
   const store = createMiniAppStore({
     homeDir: home,
@@ -39,12 +43,17 @@ function setup(extra: Partial<MiniAppMarketplaceSource> = {}) {
       marketplaceSource(ada),
     ],
     trust: memoryTrust(),
-    onInstalled: async (name) => void changes.push(name),
+    onInstalled: async (name, { fresh }) => {
+      changes.push(name)
+      installs.push({ name, fresh })
+    },
+    onJobsSettled: (settled) =>
+      void outcomes.push(...settled.map(({ name, kind }) => ({ name, kind }))),
     fetchImpl: servingAll(localix, ada),
   })
   store.subscribe(() => pokes++)
   const appDir = (name: string) => join(home, '.localix', 'mini-apps', name)
-  return { localix, ada, home, store, changes, appDir, pokes: () => pokes }
+  return { localix, ada, home, store, changes, installs, outcomes, appDir, pokes: () => pokes }
 }
 
 describe('the mini app store', () => {
@@ -122,6 +131,13 @@ describe('the mini app store', () => {
     await expect(store.install('notes@ada', { acceptUnverified: true })).rejects.toThrow(
       '"notes" from localix is installed; remove it to install the one from ada',
     )
+
+    // The person pressed Get on ada's: it takes the name.
+    await store.install('notes@ada', { acceptUnverified: true, replace: true })
+    await store.settled()
+    const after = (await store.list()).entries
+    expect(after.find((entry) => entry.id === 'notes@ada')?.installed).not.toBeNull()
+    expect(after.find((entry) => entry.id === 'notes@localix')?.installed).toBeNull()
   })
 
   test('a newer version from its own marketplace is an update; another marketplace’s is not', async () => {
@@ -144,7 +160,7 @@ describe('the mini app store', () => {
   })
 
   test('an app the person made is theirs: no marketplace offers it an update or a replacement', async () => {
-    const { appDir, store } = setup()
+    const { appDir, store, installs, outcomes } = setup()
     writeTree(appDir('atlas'), {
       [MINI_APP_MANIFEST_FILE]: JSON.stringify({ name: 'atlas', version: '2.0.0' }),
       '.localix-install.json': JSON.stringify({
@@ -160,6 +176,31 @@ describe('the mini app store', () => {
     await expect(store.install('atlas@localix')).rejects.toThrow(
       /of yours is already called "atlas"/,
     )
+
+    // Unless the person asks for this one in its place: built from a folder elsewhere, the copy
+    // loses nothing, and what arrives is a new app for them, switched on and said as installed.
+    await store.install('atlas@localix', { replace: true })
+    await store.settled()
+    expect(
+      (await store.list()).entries.find((entry) => entry.id === 'atlas@localix')?.installed,
+    ).toEqual({ version: '1.0.0' })
+    expect(installs).toEqual([{ name: 'atlas', fresh: true }])
+    expect(outcomes).toEqual([{ name: 'atlas', kind: 'install' }])
+  })
+
+  test('a folder put here by hand is its only copy: even Get does not replace it', async () => {
+    const { appDir, store } = setup()
+    writeTree(appDir('atlas'), {
+      [MINI_APP_MANIFEST_FILE]: JSON.stringify({ name: 'atlas', version: '2.0.0' }),
+    })
+
+    await expect(store.install('atlas@localix', { replace: true })).rejects.toThrow(
+      /of yours is already called "atlas"/,
+    )
+    await store.settled()
+    expect(
+      JSON.parse(readFileSync(join(appDir('atlas'), MINI_APP_MANIFEST_FILE), 'utf8')).version,
+    ).toBe('2.0.0')
   })
 
   test('a build Localix blocks is not installed, from whichever marketplace', async () => {

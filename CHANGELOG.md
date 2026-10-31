@@ -10,6 +10,10 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
   installed without its rust-analyzer component. Localix used to start rustup's stand-in, which
   exits at once, and showed no hover, diagnostics or go-to-definition; it now downloads and runs its
   own rust-analyzer instead.
+- **Get replaces a mini app by the same name**: in the Store, **Get** on an app whose name one of
+  your own mini apps, or the same app from another marketplace, already holds now installs it in
+  that one's place, keeping its data, instead of failing with "already called". Apps Localix
+  installs on its own still leave yours alone.
 
 ## v0.1.0-beta.22 — 2026-10-30
 
