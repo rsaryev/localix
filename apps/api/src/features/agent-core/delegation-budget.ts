@@ -46,19 +46,6 @@ export const DELEGATION_SLOT_CAP = 10
  */
 export const DELEGATIONS_PER_HUMAN_TURN = 24
 
-export interface DelegationBudget {
-  maxPerHumanTurn: number
-}
-
-export const DEFAULT_DELEGATION_BUDGET: DelegationBudget = {
-  maxPerHumanTurn: DELEGATIONS_PER_HUMAN_TURN,
-}
-
-export interface DelegationFacts {
-  /** Child sessions created in this conversation's whole tree since the person's last message. */
-  createdSinceHuman: number
-}
-
 export type DelegationAdmission =
   | { ok: true }
   /**
@@ -73,17 +60,18 @@ function nonNegative(value: number): number {
   return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0
 }
 
-/** Decide whether one more child may be created. Concurrency is not a reason: the lanes wait. */
-export function admitDelegation(
-  budget: DelegationBudget,
-  facts: DelegationFacts,
-): DelegationAdmission {
-  const created = nonNegative(facts.createdSinceHuman)
-  if (created >= budget.maxPerHumanTurn) {
+/**
+ * Decide whether one more child may be created, given the child sessions created in this
+ * conversation's whole tree since the person's last message. Concurrency and depth are not
+ * reasons: the lanes and the hierarchy own those.
+ */
+export function admitDelegation(createdSinceHuman: number): DelegationAdmission {
+  const created = nonNegative(createdSinceHuman)
+  if (created >= DELEGATIONS_PER_HUMAN_TURN) {
     return {
       ok: false,
       reason:
-        `You have started ${created} new subagents since the user last wrote, which is the limit of ${budget.maxPerHumanTurn} per user message. ` +
+        `You have started ${created} new subagents since the user last wrote, which is the limit of ${DELEGATIONS_PER_HUMAN_TURN} per user message. ` +
         'Give follow-up work to the subagents you already have with `SendMessage` — that starts none — or do the rest yourself. ' +
         'The limit resets when the user writes again.',
     }

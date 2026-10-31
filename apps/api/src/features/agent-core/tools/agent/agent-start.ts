@@ -1,5 +1,5 @@
 import { errorMessage } from '../../../../lib/errors'
-import { admitDelegation, DEFAULT_DELEGATION_BUDGET } from '../../delegation-budget'
+import { admitDelegation } from '../../delegation-budget'
 import { holdReport, type HeldReport } from '../../delegation-awaits'
 import { delegatesAt, delegationNote } from '../../delegation-hierarchy'
 import { ONE_SHOT_EXECUTION, PARENT_LINE } from '../../prompt/sections/subagent-contract'
@@ -95,9 +95,7 @@ export async function launchAgent(
   if (!self) return refuse('Only an agent can start a subagent.')
   if (!delegatesAt(depth))
     return refuse('A subagent cannot start subagents of its own: do the work yourself.')
-  const admission = admitDelegation(DEFAULT_DELEGATION_BUDGET, {
-    createdSinceHuman: (await opts.delegationsSinceHuman?.()) ?? 0,
-  })
+  const admission = admitDelegation((await opts.delegationsSinceHuman?.()) ?? 0)
   if (!admission.ok) return refuse(admission.reason)
   try {
     const delegator = await opts.resolveAgent(self, { projectId: opts.projectId })
