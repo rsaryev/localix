@@ -2,7 +2,6 @@ import type {
   ConfirmToolRequest,
   ConfirmToolResponse,
 } from '../../../agent-core/tools/hitl/confirm'
-import type { ConfirmOutcome, RequestConfirmArgs } from '../../../agent-core/permission-engine'
 import { runHitlRequestHooks, runHitlResolvedHooks } from '../../../mini-apps/hooks-lifecycle'
 import type { RunHookContext } from './run-hook-context'
 import type { CcHookToolRef } from '../../../cc-hooks'
@@ -16,6 +15,7 @@ import { confirmTitle, readConfirmAnswer, wireGrants } from './confirm-answer'
 import { hostPolicy } from '../../policy/session-policy'
 import { hookConfirmOutcome, raceCardWithPermissionHooks } from './permission-request-hook'
 import { grantsFromUpdates, permissionSuggestions } from './permission-hook-grants'
+import type { ConfirmOutcome, RequestConfirmArgs } from '../../../agent-core/permission-gate'
 
 /**
  * Builds the per-run "request a tool-approval confirm" function: tracks the

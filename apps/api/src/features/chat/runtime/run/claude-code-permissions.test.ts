@@ -4,8 +4,9 @@ import { join } from 'node:path'
 import type { AgentTool } from '@localixai/agent/agents'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
-import { createPermissionGate, type PermissionRule } from '../../../agent-core/permission-engine'
+import type { PermissionRule } from '../../../agent-core/permission-engine'
 import { claudeCodeGateOptions, loadClaudeCodePermissions } from './claude-code-permissions'
+import { createPermissionGate } from '../../../agent-core/permission-gate'
 
 /**
  * A person's Claude Code `permissions` reach a Localix run's gate: a deny in any settings file

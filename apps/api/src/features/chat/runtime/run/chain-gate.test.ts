@@ -5,13 +5,14 @@ import { z } from 'zod'
 import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
 import type { On } from '@localixai/claude-plugin/mods'
 
-import { createPermissionGate, type PermissionRule } from '../../../agent-core/permission-engine'
+import type { PermissionRule } from '../../../agent-core/permission-engine'
 import type { ConfirmOutcome } from '../../../agent-core/permission-gate'
 import type { CcHooksRuntime } from '../../../cc-hooks'
 import { EMPTY_RUNTIME } from '../../../cc-hooks/runtime-results'
 import { hostWithMod } from '../../../mods/testing/testing-host'
 import { createChainGate } from './chain-gate'
 import { applyToolWrapperChain } from './tool-wrapper-chain'
+import { createPermissionGate } from '../../../agent-core/permission-gate'
 
 /**
  * Claude Code decides a call in this order: the mods' `tool.call` hooks, the `PreToolUse` hooks

@@ -6,8 +6,8 @@ import { builtinAgentPreset } from '../../../capabilities/builtin-agent-presets'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from '../../../capabilities/resolve'
 import { applyPermissionMode } from '../../../capabilities/permission-mode-policy'
 import { resolveRunProfile } from '../../../agent-core/run-shape'
-import { createPermissionGate } from '../../../agent-core/permission-engine'
 import { externalToolSurface } from './external-tool-surface'
+import { createPermissionGate } from '../../../agent-core/permission-gate'
 
 const external: AgentTool = {
   name: 'mcp_records_read',

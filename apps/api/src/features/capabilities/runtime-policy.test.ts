@@ -1,15 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import type { AgentTool } from '@localixai/agent/agents'
-import {
-  createPermissionGate,
-  evaluate,
-  extractCallFacts,
-  type ToolFacts,
-} from '../agent-core/permission-engine'
+import { evaluate, extractCallFacts, type ToolFacts } from '../agent-core/permission-engine'
 import { skillPermissionRules } from '../chat/runtime/run/permission-gate-build'
 import { builtinAgentPreset } from './builtin-agent-presets'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from './resolve'
 import type { Rule } from '../agent-core/capability-rule'
+import { createPermissionGate } from '../agent-core/permission-gate'
 
 // One literal serves as both the registered tool and the facts `evaluate` reads off it.
 const tool = { name: 'Bash', mutates: true, effect: 'external' } as AgentTool & ToolFacts

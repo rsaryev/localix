@@ -4,12 +4,13 @@ import path from 'node:path'
 import { z } from 'zod'
 import type { AgentTool } from '@localixai/agent/agents'
 
-import { createPermissionGate, type PermissionRule } from '../../../agent-core/permission-engine'
+import type { PermissionRule } from '../../../agent-core/permission-engine'
 import type { CcHooksRuntime } from '../../../cc-hooks'
 import type { PreToolUseResult } from '../../../cc-hooks/runtime-contracts'
 import { EMPTY_RUNTIME } from '../../../cc-hooks/runtime-results'
 import { createChainGate } from './chain-gate'
 import { applyToolWrapperChain } from './tool-wrapper-chain'
+import { createPermissionGate } from '../../../agent-core/permission-gate'
 
 /**
  * A PreToolUse hook's allow/ask decides the card at the gate inside the chain: the defect this

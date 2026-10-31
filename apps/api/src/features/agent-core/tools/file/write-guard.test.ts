@@ -3,10 +3,10 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { AgentTool } from '@localixai/agent/agents'
 import { tempDirPerTest } from '@localixai/testing'
-import { createPermissionGate } from '../../permission-engine'
 import { builtinAgentPreset } from '../../../capabilities/builtin-agent-presets'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from '../../../capabilities/resolve'
 import { createWriteTool, type WriteToolInput } from './write'
+import { createPermissionGate } from '../../permission-gate'
 
 /**
  * The write tool's blind-overwrite guard runs BEFORE the permission gate (the engine loop's

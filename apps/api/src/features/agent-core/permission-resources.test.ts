@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import type { AgentTool } from '@localixai/agent/agents'
 import { z } from 'zod'
-import { createPermissionGate, evaluate, extractCallFacts } from './permission-engine'
+import { evaluate, extractCallFacts } from './permission-engine'
+import { createPermissionGate } from './permission-gate'
 
 const tool: AgentTool = {
   name: 'records',

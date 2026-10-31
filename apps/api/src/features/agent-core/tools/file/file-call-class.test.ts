@@ -4,8 +4,9 @@ import { classifyToolCall, type AgentTool, type CallClass } from '@localixai/age
 import { createEditTool } from './edit'
 import { createWriteTool } from './write'
 import { isPlanFilePath } from '../../plan-paths'
-import { createPermissionGate, type PermissionRule } from '../../permission-engine'
+import type { PermissionRule } from '../../permission-engine'
 import { scopeToOwnPlan } from './file-call-class'
+import { createPermissionGate } from '../../permission-gate'
 
 /**
  * Plan mode refuses `files`, so these classes decide whether the agent can keep its plan as a

@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import type { AgentTool } from '@localixai/agent/agents'
 
-import { createPermissionGate, type PermissionRule, type ToolFacts } from './permission-engine'
+import type { PermissionRule, ToolFacts } from './permission-engine'
+import { createPermissionGate } from './permission-gate'
 
 const tool = { name: 'Bash', mutates: true, effect: 'external' } as AgentTool & ToolFacts
 const bash = (action: PermissionRule['action'], extra: Partial<PermissionRule> = {}) => [

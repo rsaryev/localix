@@ -3,9 +3,10 @@ import os from 'node:os'
 import path from 'node:path'
 import type { AgentTool } from '@localixai/agent/agents'
 
-import { createPermissionGate, type PermissionRule } from './permission-engine'
+import type { PermissionRule } from './permission-engine'
 import type { RequestConfirmArgs } from './permission-gate'
 import type { PreToolUseVerdict } from './permission-hook-decision'
+import { createPermissionGate } from './permission-gate'
 
 /**
  * A Claude Code PreToolUse hook's allow/ask at the gate (hooks.md, PreToolUse decision control):

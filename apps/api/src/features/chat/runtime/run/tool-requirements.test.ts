@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { createToolOutputTool } from '../../../agent-core/tools/context-search/context-search'
-import { createPermissionGate, type PermissionRule } from '../../../agent-core/permission-engine'
+import type { PermissionRule } from '../../../agent-core/permission-engine'
 import { assertRunToolRequirements } from './tool-requirements'
+import { createPermissionGate } from '../../../agent-core/permission-gate'
 
 const recovery = createToolOutputTool({} as never, {} as never, 'user', 'session')
 const call = {

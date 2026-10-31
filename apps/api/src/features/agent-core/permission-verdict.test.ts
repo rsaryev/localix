@@ -3,8 +3,9 @@ import os from 'node:os'
 import path from 'node:path'
 import type { AgentTool } from '@localixai/agent/agents'
 
-import { createPermissionGate, type PermissionRule } from './permission-engine'
+import type { PermissionRule } from './permission-engine'
 import { verdictOf, type CallVerdict } from './permission-verdict'
+import { createPermissionGate } from './permission-gate'
 
 /**
  * A host reviews the gate's verdict before the gate acts on it (Claude Code mods' `tool.check`),

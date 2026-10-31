@@ -4,12 +4,9 @@ import { builtinAgentPreset } from '../../../capabilities/builtin-agent-presets'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from '../../../capabilities/resolve'
 import { applyPermissionMode } from '../../../capabilities/permission-mode-policy'
 import { createReadTool } from '../../../agent-core/tools/file/read'
-import {
-  createPermissionGate,
-  evaluate,
-  extractCallFacts,
-} from '../../../agent-core/permission-engine'
+import { evaluate, extractCallFacts } from '../../../agent-core/permission-engine'
 import { skillPermissionRules } from './permission-gate-build'
+import { createPermissionGate } from '../../../agent-core/permission-gate'
 
 const root = '/workspace'
 const grants = skillPermissionRules(['Bash(git *)', 'Read'])

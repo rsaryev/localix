@@ -4,9 +4,10 @@ import { join } from 'node:path'
 import type { AgentTool } from '@localixai/agent/agents'
 import { tempDirPerTest } from '@localixai/testing'
 
-import { createPermissionGate, type PermissionRule } from '../../../agent-core/permission-engine'
+import type { PermissionRule } from '../../../agent-core/permission-engine'
 import { resolveRunProfile } from '../../../agent-core/run-shape'
 import { memoryRoots } from './memory-roots'
+import { createPermissionGate } from '../../../agent-core/permission-gate'
 
 /**
  * A run keeps its memory as Claude Code does, with the file tools and no card: the folder lives

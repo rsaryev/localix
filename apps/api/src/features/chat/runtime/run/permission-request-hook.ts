@@ -5,7 +5,7 @@
  * person, so a slow hook (one that waits to deny a card left unanswered) races the person fairly.
  */
 import type { CcHookToolRef, CcHooksRuntime, PermissionRequestResult } from '../../../cc-hooks'
-import type { ConfirmOutcome } from '../../../agent-core/permission-engine'
+import type { ConfirmOutcome } from '../../../agent-core/permission-gate'
 
 export type CardRace<T> =
   | { kind: 'card'; value: T }

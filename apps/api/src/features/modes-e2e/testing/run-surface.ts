@@ -11,7 +11,6 @@
  */
 import type { AgentTool, CallClass } from '@localixai/agent/agents'
 
-import { createPermissionGate } from '../../agent-core/permission-engine'
 import { resolveRunProfile, type AgentSessionKind } from '../../agent-core/run-shape'
 import {
   productionCoreDeps,
@@ -25,6 +24,7 @@ import type { PermissionMode } from '../../../contracts/permission-modes'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from '../../capabilities/resolve'
 import type { Rule } from '../../agent-core/capability-rule'
 import { WORKSPACE, type CallCase } from './core-call-cases'
+import { createPermissionGate } from '../../agent-core/permission-gate'
 
 export type Decision = 'allow' | 'ask' | 'deny'
 

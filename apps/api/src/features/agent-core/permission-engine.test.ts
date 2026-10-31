@@ -4,11 +4,12 @@ import { mkdir, mkdtemp, realpath, symlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { AgentTool } from '@localixai/agent/agents'
 import type { PermissionRule } from '../projects/contracts'
-import { evaluate, extractCallFacts, createPermissionGate } from './permission-engine'
+import { evaluate, extractCallFacts } from './permission-engine'
 import { resourceOnlyCall } from './permission-facts'
 import { DEFAULT_AGENT_NAME } from '../../db/author'
 import { builtinAgentPreset } from '../capabilities/builtin-agent-presets'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from '../capabilities/resolve'
+import { createPermissionGate } from './permission-gate'
 
 const ROOT = path.join(os.homedir(), 'proj')
 

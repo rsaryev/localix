@@ -5,7 +5,7 @@
  */
 import type { AgentTool, GateRefusalTracker } from '@localixai/agent/agents'
 
-import { createPermissionGate, type PermissionRule } from '../../../agent-core/permission-engine'
+import type { PermissionRule } from '../../../agent-core/permission-engine'
 import {
   verdictOf,
   type CallVerdict,
@@ -17,6 +17,7 @@ import { claudeCodeAllowRules, claudeCodeDenyRules } from '../../../cc-settings/
 import { createConfirmRequester } from './confirm-requester'
 import { ownPlanDirForRun } from '../plan-view'
 import type { RunHookContext } from './run-hook-context'
+import { createPermissionGate } from '../../../agent-core/permission-gate'
 
 export interface BuildRunPermissionGateOptions extends RunHookContext {
   abortSignal: AbortSignal

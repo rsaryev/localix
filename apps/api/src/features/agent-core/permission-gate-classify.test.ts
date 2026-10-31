@@ -3,7 +3,8 @@ import os from 'node:os'
 import path from 'node:path'
 import type { AgentTool, CallClass } from '@localixai/agent/agents'
 
-import { createPermissionGate, type PermissionRule } from './permission-engine'
+import type { PermissionRule } from './permission-engine'
+import { createPermissionGate } from './permission-gate'
 
 /**
  * The gate judges a call on the tool's own class of THAT input (`AgentTool.classify`), and a

@@ -16,8 +16,7 @@
  * ordering alone says what all three used to.
  *
  * The RUNTIME half — the gate that enacts a decision on a live tool call — lives in
- * `permission-gate.ts` and is re-exported at the bottom, so this file stays the one
- * import site for the whole permission surface.
+ * `permission-gate.ts`, which depends on this file and never the other way round.
  */
 import type { CallClass } from '@localixai/agent/agents'
 
@@ -93,16 +92,3 @@ export function evaluate(
 export function describeRule(rule: PermissionRule): string {
   return `${rule.permission}(${rule.pattern})`
 }
-
-// ── The gate (a beforeToolCall) ───────────────────────────────────────────────
-//
-// Lives in `permission-gate.ts`, and is re-exported here so this module stays the
-// ONE import site for the whole permission surface (as it already is for
-// `permission-facts`). The gate is the RUNTIME half — carve-outs, HITL confirm,
-// session grants, provenance — and changes for entirely different reasons than the
-// rule language above.
-export {
-  createPermissionGate,
-  type ConfirmOutcome,
-  type RequestConfirmArgs,
-} from './permission-gate'
