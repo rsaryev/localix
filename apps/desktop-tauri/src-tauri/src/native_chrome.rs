@@ -18,20 +18,30 @@ pub(crate) struct Geometry {
     pub(crate) fullscreen: bool,
 }
 
+/// Titlebar height while the window is fullscreen.
+const FULLSCREEN_TITLEBAR_HEIGHT: f64 = 36.0;
+/// Space reserved for the traffic lights while the window is fullscreen.
+const FULLSCREEN_BUTTON_GAP: f64 = 8.0;
+/// Space added after the traffic lights in a windowed titlebar.
+const BUTTON_GAP_PADDING: f64 = 8.0;
+/// Bounds of the measured button-row height.
+const MIN_TITLEBAR_HEIGHT: f64 = 28.0;
+const MAX_TITLEBAR_HEIGHT: f64 = 80.0;
+
 fn geometry_from_sizes(inset: f64, titlebar: f64, button_right: f64, fullscreen: bool) -> Geometry {
     if fullscreen {
         return Geometry {
-            titlebar_height: 36.0,
+            titlebar_height: FULLSCREEN_TITLEBAR_HEIGHT,
             tabbar_height: inset.max(0.0),
-            button_gap: 8.0,
+            button_gap: FULLSCREEN_BUTTON_GAP,
             fullscreen: true,
         };
     }
-    let titlebar_height = titlebar.clamp(28.0, 80.0);
+    let titlebar_height = titlebar.clamp(MIN_TITLEBAR_HEIGHT, MAX_TITLEBAR_HEIGHT);
     Geometry {
         titlebar_height,
         tabbar_height: (inset - titlebar_height).max(0.0),
-        button_gap: button_right.max(0.0) + 8.0,
+        button_gap: button_right.max(0.0) + BUTTON_GAP_PADDING,
         fullscreen: false,
     }
 }

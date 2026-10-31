@@ -9,9 +9,9 @@ use objc2_app_kit::{
 use objc2_core_foundation::{CGPoint, CGRect, CGSize};
 use tauri::{Manager, Window};
 
-pub(crate) const HEADER_TINT_TAG: isize = 91376256;
+const HEADER_TINT_TAG: isize = 91376256;
 
-pub(crate) fn valid_tint(tint: [f64; 4]) -> bool {
+fn valid_tint(tint: [f64; 4]) -> bool {
     tint.iter()
         .all(|value| value.is_finite() && (0.0..=1.0).contains(value))
 }
