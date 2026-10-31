@@ -59,8 +59,6 @@ export const pluginRecordSchema = z.object({
   description: z.string(),
   author: z.string().optional(),
   homepage: z.string().optional(),
-  /** Provenance from the manifest: source it was migrated from; absent = native. */
-  migratedFrom: z.string().optional(),
   /** Set when the plugin is a Claude Code plugin, loaded in place. */
   importedFrom: z.literal('claude-code').optional(),
   /** '' = global (`~/.localix/plugins`); otherwise the project id this plugin is scoped to. */

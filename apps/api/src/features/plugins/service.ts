@@ -130,7 +130,6 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       description: plugin.manifest.description,
       author: plugin.manifest.author,
       homepage: plugin.manifest.homepage,
-      migratedFrom: plugin.manifest.migratedFrom,
       ...(plugin.manifest.origin ? { importedFrom: plugin.manifest.origin.format } : {}),
       projectId: plugin.projectId,
       scope: plugin.scope,

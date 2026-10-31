@@ -52,12 +52,6 @@ export const pluginManifestSchema = z.object({
   /** Discovery tags (Claude Code `keywords`). Informational only. */
   keywords: z.array(z.string()).optional(),
   /**
-   * Provenance: where this plugin was migrated from — a source URL or marketplace
-   * entry (e.g. a Claude Code plugin repo). Absent = written natively for Localix.
-   * Purely informational (shown in Settings); set it when converting a foreign plugin.
-   */
-  migratedFrom: z.string().optional(),
-  /**
    * The plugin is in the Claude Code format, read in place (`layout/claude-code.ts`); absent for a
    * plugin with no manifest. `source`/`version`/`importedAt` remain on the root `plugin.json`
    * files earlier versions wrote at install, which are now ignored.

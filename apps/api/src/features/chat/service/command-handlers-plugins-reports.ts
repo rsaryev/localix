@@ -20,11 +20,7 @@ export function pluginDetailsReply(p: PluginRecord): string {
   const lines = [
     `**${p.name}**${p.displayName && p.displayName !== p.name ? ` (${p.displayName})` : ''} v${p.version} — ${p.description || '(no description)'}`,
     `- **Enabled:** ${p.enabled ? 'yes' : 'no'} | **Origin:** ${pluginOriginLabel(p)} | **Source:** ${p.source}`,
-    ...(p.importedFrom === 'claude-code'
-      ? [`- **Imported from Claude Code**${p.migratedFrom ? `: ${p.migratedFrom}` : ''}`]
-      : p.migratedFrom
-        ? [`- **Migrated from:** ${p.migratedFrom}`]
-        : []),
+    ...(p.importedFrom === 'claude-code' ? ['- **Imported from Claude Code**'] : []),
     `- **Validation:** ${errWarn}`,
     ...(chips.length ? [`- **Provides:** ${chips.join(' | ')}`] : []),
     ...(p.error ? [`- **Load error:** ${p.error}`] : []),
