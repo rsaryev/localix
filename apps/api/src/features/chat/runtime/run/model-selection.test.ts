@@ -27,7 +27,6 @@ function makeArgs(opts: {
             if (opts.credentialFails) throw new Error('vault entry unreadable')
             return connection
           },
-          ensureFreshKeys: async () => connection,
           credentialStoreFor: async () => ({}),
         },
         languageModelFactory: { create: () => ({}) },
@@ -183,7 +182,6 @@ describe('resolveRunModel — guard branches', () => {
           providerConnectionsService: {
             listConnections: async () => ({ connections: [connection] }),
             requireConnection: async () => connection,
-            ensureFreshKeys: async () => connection,
             credentialStoreFor: async () => ({ get: async () => null }),
           },
           languageModelFactory: {
@@ -241,7 +239,6 @@ describe('resolveRunModel — guard branches', () => {
               required.push(id)
               return live
             },
-            ensureFreshKeys: async () => live,
             credentialStoreFor: async () => ({}),
           },
           languageModelFactory: { create: () => ({}) },

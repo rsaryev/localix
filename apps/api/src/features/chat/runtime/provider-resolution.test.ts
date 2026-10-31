@@ -19,8 +19,7 @@ describe('resolveAuxiliaryModel — graceful fallbacks', () => {
     const deps = {
       providerConnectionsService: {
         listConnections: async () => ({ connections: [{ id: 'conn-1', providerId: 'p' }] }),
-        requireConnection: async () => ({ id: 'conn-1' }),
-        ensureFreshKeys: async () => ({
+        requireConnection: async () => ({
           id: 'conn-1',
           providerId: 'p',
           keys: [{ id: 'key', enabled: true, priority: 0, apiKey: 'k', authType: 'api-key' }],
@@ -70,8 +69,7 @@ describe('resolveAuxiliaryModel — graceful fallbacks', () => {
       deps: {
         providerConnectionsService: {
           listConnections: async () => ({ connections: [{ id: 'conn-1', providerId: 'p' }] }),
-          requireConnection: async () => ({ id: 'conn-1' }),
-          ensureFreshKeys: async () => ({
+          requireConnection: async () => ({
             id: 'conn-1',
             providerId: 'p',
             keys: [{ id: 'key', enabled: true, priority: 0, apiKey: 'k', authType: 'api-key' }],
@@ -123,8 +121,7 @@ describe('resolveAuxiliaryModel — graceful fallbacks', () => {
 
   test('a provider missing from the catalog → null', async () => {
     const deps = makeDeps({
-      requireConnection: async () => ({}),
-      ensureFreshKeys: async () => ({ providerId: 'missing', keys: [], label: 'L' }),
+      requireConnection: async () => ({ providerId: 'missing', keys: [], label: 'L' }),
     })
     expect(
       await resolveAuxiliaryModel({
@@ -138,8 +135,7 @@ describe('resolveAuxiliaryModel — graceful fallbacks', () => {
 
   test('no enabled key for the connection → null', async () => {
     const deps = makeDeps({
-      requireConnection: async () => ({}),
-      ensureFreshKeys: async () => ({
+      requireConnection: async () => ({
         providerId: 'p',
         label: 'L',
         keys: [{ enabled: false, priority: 0, apiKey: 'k', authType: 'key' }],
@@ -160,8 +156,7 @@ describe('resolveAuxiliaryModel — graceful fallbacks', () => {
     const deps = {
       providerConnectionsService: {
         listConnections: async () => ({ connections: [{ id: 'conn', providerId: 'image' }] }),
-        requireConnection: async () => ({ id: 'conn' }),
-        ensureFreshKeys: async () => ({
+        requireConnection: async () => ({
           id: 'conn',
           providerId: 'image',
           keys: [{ id: 'key', enabled: true, priority: 0, apiKey: 'k', authType: 'api-key' }],
@@ -190,8 +185,7 @@ describe('resolveAuxiliaryModel — graceful fallbacks', () => {
     const deps = {
       providerConnectionsService: {
         listConnections: async () => ({ connections: [{ id: 'conn', providerId: 'p' }] }),
-        requireConnection: async () => ({ id: 'conn' }),
-        ensureFreshKeys: async () => ({
+        requireConnection: async () => ({
           id: 'conn',
           providerId: 'p',
           keys: [{ id: 'key', enabled: true, priority: 0, apiKey: 'k', authType: 'api-key' }],
@@ -215,8 +209,7 @@ describe('resolveAuxiliaryModel — graceful fallbacks', () => {
     const deps = {
       providerConnectionsService: {
         listConnections: async () => ({ connections }),
-        requireConnection: async () => connections[0],
-        ensureFreshKeys: async () => ({
+        requireConnection: async () => ({
           ...connections[0],
           keys: [{ id: 'key', enabled: true, priority: 0, apiKey: 'k', authType: 'api-key' }],
         }),
@@ -294,13 +287,13 @@ describe('resolveLanguageModel — connection ownership', () => {
         listConnections: async () => ({ connections }),
         requireConnection: async (_userId: string, id: string) => {
           required.push(id)
-          return connections.find((connection) => connection.id === id)
+          const connection = connections.find((candidate) => candidate.id === id)!
+          return {
+            ...connection,
+            label: connection.id,
+            keys: [{ id: 'key-1', enabled: true, priority: 0, apiKey: 'key', authType: 'api-key' }],
+          }
         },
-        ensureFreshKeys: async (_userId: string, connection: (typeof connections)[number]) => ({
-          ...connection,
-          label: connection.id,
-          keys: [{ id: 'key-1', enabled: true, priority: 0, apiKey: 'key', authType: 'api-key' }],
-        }),
         credentialStoreFor: async () => ({
           get: async () => ({ type: 'api-key', key: 'key' }),
           modify: async () => ({ type: 'api-key', key: 'key' }),
@@ -365,12 +358,11 @@ describe('resolveLanguageModel — the route rule', () => {
         listConnections: async () => ({ connections }),
         requireConnection: async (_userId: string, id: string) => {
           required.push(id)
-          return connections.find((connection) => connection.id === id)
+          return {
+            ...connections.find((connection) => connection.id === id),
+            keys: [{ id: 'k1', enabled: true, priority: 0, apiKey: 'key', authType: 'api-key' }],
+          }
         },
-        ensureFreshKeys: async (_userId: string, connection: (typeof connections)[number]) => ({
-          ...connection,
-          keys: [{ id: 'k1', enabled: true, priority: 0, apiKey: 'key', authType: 'api-key' }],
-        }),
         credentialStoreFor: async () => ({}),
       },
       catalogService: { getCatalog: async () => catalog },
@@ -400,10 +392,8 @@ describe('which provider owns a model', () => {
     ({
       providerConnectionsService: {
         listConnections: async () => ({ connections }),
-        requireConnection: async (_user: string, id: string) =>
-          connections.find((connection) => connection.id === id),
-        ensureFreshKeys: async (_user: string, connection: object) => ({
-          ...connection,
+        requireConnection: async (_user: string, id: string) => ({
+          ...connections.find((connection) => connection.id === id),
           keys: [key],
         }),
         credentialStoreFor: async () => ({}),

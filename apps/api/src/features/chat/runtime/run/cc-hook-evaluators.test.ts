@@ -131,8 +131,7 @@ describe('prompt hook billing', () => {
   const modelDeps = (complete: () => Promise<unknown>) => ({
     providerConnectionsService: {
       listConnections: async () => ({ connections: [{ id: 'connection', providerId: 'p' }] }),
-      requireConnection: async () => ({ id: 'connection' }),
-      ensureFreshKeys: async () => ({
+      requireConnection: async () => ({
         id: 'connection',
         providerId: 'p',
         keys: [{ id: 'key', enabled: true, priority: 0, apiKey: 'k', authType: 'api-key' }],
@@ -236,8 +235,7 @@ describe('the model a hook names', () => {
   const deps = (created: unknown[]) => ({
     providerConnectionsService: {
       listConnections: async () => ({ connections: [{ id: 'connection', providerId: 'p' }] }),
-      requireConnection: async () => ({ id: 'connection' }),
-      ensureFreshKeys: async () => ({
+      requireConnection: async () => ({
         id: 'connection',
         providerId: 'p',
         keys: [{ id: 'key', enabled: true, priority: 0, apiKey: 'k', authType: 'api-key' }],

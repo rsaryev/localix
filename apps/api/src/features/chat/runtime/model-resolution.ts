@@ -33,10 +33,9 @@ function servesLanguageModel(
 
 /**
  * Resolve a provider connection and model into the narrow LanguageModel port — the shared
- * connection sequence (requireConnection → ensureFreshKeys → catalog
- * entry → first enabled key → runtime factory) every auxiliary path
- * repeated. Fails open to `null` on any miss. Returns the catalog `entry` and
- * fresh `connection` too so callers can derive a provider id / strip the model
+ * connection sequence (requireConnection → catalog entry → first enabled key → runtime
+ * factory) every auxiliary path repeated. Fails open to `null` on any miss. Returns the catalog
+ * `entry` and the `connection` too so callers can derive a provider id / strip the model
  * prefix without re-finding them. Pass `catalog` to reuse an already-fetched one.
  *
  * Deps subset typed via Pick so service-layer callers (which thread the same
@@ -69,7 +68,7 @@ export async function resolveConnectionModel(params: {
 }): Promise<{
   model: ReturnType<RunnerDeps['languageModelFactory']['create']>
   entry: Catalog['providers'][number]
-  connection: Awaited<ReturnType<RunnerDeps['providerConnectionsService']['ensureFreshKeys']>>
+  connection: Awaited<ReturnType<RunnerDeps['providerConnectionsService']['requireConnection']>>
   credential: ReturnType<typeof toRuntimeCredential>
   credentialId: string
   credentialStore: Awaited<
@@ -78,13 +77,9 @@ export async function resolveConnectionModel(params: {
   rawModelId: string
 } | null> {
   try {
-    const raw = await params.deps.providerConnectionsService.requireConnection(
+    const connection = await params.deps.providerConnectionsService.requireConnection(
       params.userId,
       params.providerConnectionId,
-    )
-    const connection = await params.deps.providerConnectionsService.ensureFreshKeys(
-      params.userId,
-      raw,
     )
     if (params.providerId !== undefined && connection.providerId !== params.providerId) return null
     const catalog = params.catalog ?? (await params.deps.catalogService.getCatalog())
@@ -149,7 +144,7 @@ export async function resolveLanguageModel(params: {
 }): Promise<{
   model: ReturnType<RunnerDeps['languageModelFactory']['create']>
   entry: Catalog['providers'][number]
-  connection: Awaited<ReturnType<RunnerDeps['providerConnectionsService']['ensureFreshKeys']>>
+  connection: Awaited<ReturnType<RunnerDeps['providerConnectionsService']['requireConnection']>>
   credential: ReturnType<typeof toRuntimeCredential>
   credentialId: string
   credentialStore: Awaited<
@@ -205,7 +200,7 @@ export async function resolveLanguageModel(params: {
       providerId,
       modelId,
       catalog,
-    }).catch(() => null)
+    })
     if (resolved?.model) return { ...resolved, providerConnectionId: id }
   }
   return null

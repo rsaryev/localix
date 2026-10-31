@@ -638,14 +638,6 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
 
     requireConnection: requireConnectionRecord,
 
-    /**
-     * Refresh any expired OAuth access tokens on a connection's keys (and persist the
-     * new tokens) before the runtime builds the provider. Static keys are untouched.
-     * Refresh failures are swallowed — the pool's failover/cooldown handles a dead key.
-     */
-    ensureFreshKeys: async (userId: string, connection: ProviderConnectionRecord) =>
-      requireConnectionRecord(userId, connection.id),
-
     credentialStoreFor(userId: string, connectionId: string, keyId: string) {
       return requireRawConnectionRecord(userId, connectionId).then((connection) =>
         credentialStoreFor(userId, connection.providerId, connectionId, keyId),

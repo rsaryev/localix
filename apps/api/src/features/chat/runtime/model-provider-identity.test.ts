@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { resolveLanguageModel } from './model-resolution'
 
-function harness(refreshProvider?: string) {
+function harness(readProvider?: string) {
   const required: string[] = []
   const built: unknown[] = []
   const connections = [
@@ -22,13 +22,13 @@ function harness(refreshProvider?: string) {
       listConnections: async () => ({ connections }),
       requireConnection: async (_owner: string, id: string) => {
         required.push(id)
-        return connections.find((connection) => connection.id === id)!
+        const connection = connections.find((candidate) => candidate.id === id)!
+        return {
+          ...connection,
+          providerId: readProvider ?? connection.providerId,
+          keys: [{ id: 'key', enabled: true, priority: 0, apiKey: 'test', authType: 'api-key' }],
+        }
       },
-      ensureFreshKeys: async (_owner: string, connection: (typeof connections)[number]) => ({
-        ...connection,
-        providerId: refreshProvider ?? connection.providerId,
-        keys: [{ id: 'key', enabled: true, priority: 0, apiKey: 'test', authType: 'api-key' }],
-      }),
       credentialStoreFor: async () => ({}),
     },
     languageModelFactory: {
@@ -74,7 +74,7 @@ describe('explicit native provider identity', () => {
     },
   )
 
-  test('cannot switch provider identity while refreshing the selected connection', async () => {
+  test('cannot switch provider identity between listing and reading the selected connection', async () => {
     const h = harness('a')
     expect(
       await resolveLanguageModel({

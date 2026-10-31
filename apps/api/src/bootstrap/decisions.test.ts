@@ -29,10 +29,8 @@ function composed(connections = [{ id: 'or-connection', providerId: 'openrouter'
     catalogService: { getFullCatalog: async () => catalog, getCatalog: async () => catalog },
     providerConnectionsService: {
       listConnections: async () => ({ connections }),
-      requireConnection: async (_owner: string, id: string) =>
-        connections.find((connection) => connection.id === id)!,
-      ensureFreshKeys: async (_owner: string, connection: (typeof connections)[number]) => ({
-        ...connection,
+      requireConnection: async (_owner: string, id: string) => ({
+        ...connections.find((connection) => connection.id === id)!,
         keys: [{ id: 'key', enabled: true, priority: 0, apiKey: 'sk', authType: 'api-key' }],
       }),
       credentialStoreFor: async () => ({}),
