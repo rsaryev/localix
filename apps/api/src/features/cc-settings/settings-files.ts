@@ -139,11 +139,6 @@ export async function readSettingsLayers(input: SettingsFilesInput): Promise<Set
   return layers
 }
 
-/** The session's settings with every layer merged, as Claude Code applies them. */
-export async function readMergedSettings(input: SettingsFilesInput): Promise<Settings> {
-  return mergeSettingsSources(await readSettingsLayers(input))
-}
-
 /** `outputStyle` of the session's settings: the style a chat speaks in when none is chosen. */
 export function claudeCodeOutputStyle(input: SettingsFilesInput): string | undefined {
   const style = mergeSettingsSources(readSettingsFileLayers(input)).outputStyle
