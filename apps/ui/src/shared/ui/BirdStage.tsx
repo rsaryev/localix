@@ -1,6 +1,9 @@
 import { useMemo, type CSSProperties } from 'react'
-import type { ResolvedTheme } from '../theme/useTheme'
-import { cn } from '@localixai/mini-app-sdk/ui/classes'
+
+/** Vertical spread of the wind lines, in px. */
+const WIND_SPREAD = 220
+/** The monochrome mask the bird is painted through. */
+const MASK_URL = '/logo-dark.svg'
 
 interface WindLine {
   id: number
@@ -14,13 +17,13 @@ interface WindLine {
 
 // Deterministic (index-seeded — no Math.random) so repeat renders stay stable
 // and there's no hydration/flicker mismatch.
-function buildWindLines(count: number, spread: number): WindLine[] {
+function buildWindLines(count: number): WindLine[] {
   return Array.from({ length: count }, (_, i) => {
     const r = (n: number) => (((Math.sin(i * 12.9898 + n * 78.233) * 43758.5453) % 1) + 1) % 1
     const duration = 1.4 + r(1) * 1.8
     return {
       id: i,
-      y: (r(2) - 0.5) * spread,
+      y: (r(2) - 0.5) * WIND_SPREAD,
       width: 120 + r(3) * 200,
       delay: -r(4) * duration,
       duration,
@@ -31,22 +34,7 @@ function buildWindLines(count: number, spread: number): WindLine[] {
 }
 
 interface BirdStageProps {
-  resolvedTheme?: ResolvedTheme
-  /** Stage box sizing classes (defaults to the empty-chat size). */
-  stageClassName?: string
-  /** Bird image sizing classes. */
-  birdClassName?: string
-  /** Optional art direction for the wind layer without moving the bird. */
-  windClassName?: string
-  /** Horizontal origin of each wind line. Defaults outside the compact chat stage. */
-  windRight?: string
-  /** Multiplier for the generated wind opacity. */
-  windIntensity?: number
   lineCount?: number
-  /** Vertical spread of the wind lines, in px. */
-  spread?: number
-  /** Public path used by the monochrome mask. */
-  maskUrl?: string
   /**
    * How many times the wind and the bird's drift play before the stage settles still; `Infinity`
    * never settles. The empty chat is the screen the app sits on, and a stage animating forever
@@ -57,56 +45,30 @@ interface BirdStageProps {
   cycles?: number
   /** Render the bird at rest: no intro, drift or wind. */
   still?: boolean
-  className?: string
 }
 
 /**
- * The Localix bird — the flying-logo hero shared by the empty chat state and the
- * landing hero. Single source of truth so the two never drift. Animations
+ * The Localix bird — the flying logo of the empty chat. Animations
  * (bird-intro/drift, wind-sweep) come from the shared index.css.
  *
  * The artwork is painted from semantic CSS tokens rather than selected from a
  * light/dark pair. New themes therefore inherit a readable bird automatically,
  * while `--bird-foreground` and `--bird-wind` remain optional art-direction hooks.
  */
-export function BirdStage({
-  stageClassName = 'size-44',
-  birdClassName = 'size-20',
-  windClassName,
-  windRight = '-40%',
-  windIntensity = 1,
-  lineCount = 28,
-  spread = 220,
-  maskUrl = '/logo-dark.svg',
-  cycles = 3,
-  still = false,
-  className,
-}: BirdStageProps) {
-  const windLines = useMemo(
-    () => buildWindLines(still ? 0 : lineCount, spread),
-    [still, lineCount, spread],
-  )
+export function BirdStage({ lineCount = 28, cycles = 3, still = false }: BirdStageProps) {
+  const windLines = useMemo(() => buildWindLines(still ? 0 : lineCount), [still, lineCount])
   const repeat = Number.isFinite(cycles) ? String(cycles) : 'infinite'
 
   return (
     <div
-      className={cn(
-        'relative flex items-center justify-center select-none',
-        stageClassName,
-        className,
-      )}
+      className="relative flex items-center justify-center select-none size-44"
       style={
         still ? undefined : { animation: 'bird-intro var(--dur-slow) var(--ease-emphasized) both' }
       }
       aria-hidden
     >
       {/* Wind lines */}
-      <div
-        className={cn(
-          'pointer-events-none absolute inset-0 flex items-center justify-center overflow-visible',
-          windClassName,
-        )}
-      >
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-visible">
         {windLines.map((l) => {
           return (
             <div
@@ -115,14 +77,14 @@ export function BirdStage({
               style={
                 {
                   top: `calc(50% + ${l.y}px)`,
-                  right: windRight,
+                  right: '-40%',
                   width: l.width,
                   height: l.thickness,
                   background:
                     'linear-gradient(90deg, transparent 5%, var(--bird-wind, var(--foreground)) 50%, transparent 95%)',
                   '--wind-delay': `${l.delay}s`,
                   '--wind-dur': `${l.duration}s`,
-                  '--wind-opacity': Math.min(0.72, l.maxOpacity * windIntensity),
+                  '--wind-opacity': l.maxOpacity,
                   animation: `wind-sweep calc(var(--wind-dur, 2s) * var(--bird-wind-duration-scale, 1)) var(--wind-delay, 0s) linear ${repeat} forwards`,
                 } as CSSProperties
               }
@@ -143,11 +105,11 @@ export function BirdStage({
         }
       >
         <div
-          className={cn('aspect-square object-contain', birdClassName)}
+          className="aspect-square object-contain size-20"
           style={{
             backgroundColor: 'var(--bird-foreground, var(--foreground))',
-            WebkitMaskImage: `url(${maskUrl})`,
-            maskImage: `url(${maskUrl})`,
+            WebkitMaskImage: `url(${MASK_URL})`,
+            maskImage: `url(${MASK_URL})`,
             WebkitMaskPosition: 'center',
             maskPosition: 'center',
             WebkitMaskRepeat: 'no-repeat',
