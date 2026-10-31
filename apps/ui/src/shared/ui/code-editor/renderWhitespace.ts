@@ -28,12 +28,6 @@ export function setRenderWhitespace(value: boolean): void {
   for (const fn of listeners) fn(enabled)
 }
 
-/** Flip whitespace rendering; returns the new value. */
-export function toggleRenderWhitespace(): boolean {
-  setRenderWhitespace(!enabled)
-  return enabled
-}
-
 /** Subscribe to whitespace-rendering changes; returns an unsubscribe fn. */
 export function subscribeRenderWhitespace(fn: (value: boolean) => void): () => void {
   listeners.add(fn)

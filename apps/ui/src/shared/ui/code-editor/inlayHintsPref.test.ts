@@ -2,7 +2,6 @@ import { describe, expect, it } from 'bun:test'
 import {
   getInlayHintsEnabled,
   setInlayHintsEnabled,
-  toggleInlayHintsEnabled,
   subscribeInlayHintsEnabled,
 } from './inlayHintsPref'
 
@@ -11,12 +10,11 @@ describe('inlayHints preference', () => {
     expect(getInlayHintsEnabled()).toBe(true)
   })
 
-  it('toggle flips the current value and returns it', () => {
+  it('set changes the value it reads back', () => {
     const start = getInlayHintsEnabled()
-    const next = toggleInlayHintsEnabled()
-    expect(next).toBe(!start)
-    expect(getInlayHintsEnabled()).toBe(next)
-    toggleInlayHintsEnabled() // restore
+    setInlayHintsEnabled(!start)
+    expect(getInlayHintsEnabled()).toBe(!start)
+    setInlayHintsEnabled(start) // restore
   })
 
   it('notifies subscribers on change and stops after unsubscribe', () => {

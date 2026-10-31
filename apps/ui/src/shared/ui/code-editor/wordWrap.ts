@@ -26,12 +26,6 @@ export function setWordWrap(value: boolean): void {
   for (const fn of listeners) fn(enabled)
 }
 
-/** Flip word-wrap; returns the new value. */
-export function toggleWordWrap(): boolean {
-  setWordWrap(!enabled)
-  return enabled
-}
-
 /** Subscribe to word-wrap changes; returns an unsubscribe fn. */
 export function subscribeWordWrap(fn: (value: boolean) => void): () => void {
   listeners.add(fn)

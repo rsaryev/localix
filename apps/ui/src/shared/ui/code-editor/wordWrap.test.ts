@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'bun:test'
-import { getWordWrap, setWordWrap, toggleWordWrap, subscribeWordWrap } from './wordWrap'
+import { getWordWrap, setWordWrap, subscribeWordWrap } from './wordWrap'
 
 describe('wordWrap preference', () => {
-  it('toggle flips the current value and returns it', () => {
+  it('set changes the value it reads back', () => {
     const start = getWordWrap()
-    const next = toggleWordWrap()
-    expect(next).toBe(!start)
-    expect(getWordWrap()).toBe(next)
-    toggleWordWrap() // restore
+    setWordWrap(!start)
+    expect(getWordWrap()).toBe(!start)
+    setWordWrap(start) // restore
   })
 
   it('notifies subscribers on change and stops after unsubscribe', () => {

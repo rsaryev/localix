@@ -30,12 +30,6 @@ export function setInlayHintsEnabled(value: boolean): void {
   for (const fn of listeners) fn(enabled)
 }
 
-/** Flip inlay hints; returns the new value. */
-export function toggleInlayHintsEnabled(): boolean {
-  setInlayHintsEnabled(!enabled)
-  return enabled
-}
-
 /** Subscribe to inlay-hints changes; returns an unsubscribe fn. */
 export function subscribeInlayHintsEnabled(fn: (value: boolean) => void): () => void {
   listeners.add(fn)

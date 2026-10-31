@@ -2,17 +2,15 @@ import { describe, expect, it } from 'bun:test'
 import {
   getRenderWhitespace,
   setRenderWhitespace,
-  toggleRenderWhitespace,
   subscribeRenderWhitespace,
 } from './renderWhitespace'
 
 describe('renderWhitespace preference', () => {
-  it('toggle flips the current value and returns it', () => {
+  it('set changes the value it reads back', () => {
     const start = getRenderWhitespace()
-    const next = toggleRenderWhitespace()
-    expect(next).toBe(!start)
-    expect(getRenderWhitespace()).toBe(next)
-    toggleRenderWhitespace() // restore
+    setRenderWhitespace(!start)
+    expect(getRenderWhitespace()).toBe(!start)
+    setRenderWhitespace(start) // restore
   })
 
   it('notifies subscribers on change and stops after unsubscribe', () => {
