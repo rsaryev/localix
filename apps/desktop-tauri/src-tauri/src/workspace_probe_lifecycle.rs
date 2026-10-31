@@ -3,6 +3,20 @@ use objc2_app_kit::{NSWindow, NSWindowButton};
 use std::sync::mpsc::Sender;
 use tauri::{AppHandle, Manager};
 
+/// Click the window's red close button the way a person would.
+pub(crate) fn click_close_button(app: &AppHandle, label: &str) {
+    if let Some(window) = app.get_window(label) {
+        if let Ok(ptr) = window.ns_window() {
+            let native = unsafe { &*ptr.cast::<NSWindow>() };
+            if let Some(button) = native.standardWindowButton(NSWindowButton::CloseButton) {
+                unsafe {
+                    button.performClick(None);
+                }
+            }
+        }
+    }
+}
+
 pub(crate) fn run(
     app: AppHandle,
     label: String,
@@ -11,16 +25,7 @@ pub(crate) fn run(
 ) {
     eprintln!("[window-lifecycle] start {action}");
     if action == "red_close_reopen" {
-        if let Some(window) = app.get_window(&label) {
-            if let Ok(ptr) = window.ns_window() {
-                let native = unsafe { &*ptr.cast::<NSWindow>() };
-                if let Some(button) = native.standardWindowButton(NSWindowButton::CloseButton) {
-                    unsafe {
-                        button.performClick(None);
-                    }
-                }
-            }
-        }
+        click_close_button(&app, &label);
     } else if action == "minimize_reopen" {
         if let Some(window) = crate::workspace_windows::active_window(&app) {
             if let Ok(ptr) = window.ns_window() {

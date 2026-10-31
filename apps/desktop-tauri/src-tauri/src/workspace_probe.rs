@@ -56,18 +56,7 @@ pub(crate) async fn workspace_probe(
         } else if action.as_deref() == Some("close") {
             crate::workspace_lifecycle::close(&app, &label);
         } else if action.as_deref() == Some("red_close") {
-            if let Some(window) = app.get_window(&label) {
-                if let Ok(ptr) = window.ns_window() {
-                    let native = unsafe { &*ptr.cast::<NSWindow>() };
-                    if let Some(button) =
-                        native.standardWindowButton(objc2_app_kit::NSWindowButton::CloseButton)
-                    {
-                        unsafe {
-                            button.performClick(None);
-                        }
-                    }
-                }
-            }
+            crate::workspace_probe_lifecycle::click_close_button(&app, &label);
         } else if action.as_deref() == Some("hide_window") {
             crate::workspace_visibility::hide(&app, &label);
         } else if action.as_deref() == Some("reopen") {
