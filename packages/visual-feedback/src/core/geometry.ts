@@ -8,11 +8,19 @@
  */
 
 import type { VfRect } from '../protocol/index'
+import { frameOrigin, ownerFrame } from './frames'
 
-/** Element bounding rect in viewport px. */
+/** Element bounding rect in viewport px (the page's, for an element inside a frame). */
 export function getViewportRect(el: Element): VfRect {
   const r = el.getBoundingClientRect()
-  return { x: r.left, y: r.top, width: r.width, height: r.height }
+  let x = r.left
+  let y = r.top
+  for (let f = ownerFrame(el); f; f = ownerFrame(f)) {
+    const o = frameOrigin(f)
+    x += o.x
+    y += o.y
+  }
+  return { x, y, width: r.width, height: r.height }
 }
 
 /**

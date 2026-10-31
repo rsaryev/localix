@@ -10,6 +10,7 @@ import { buildSnapshot, type RefRegistry } from '../snapshot/index'
 import type { ActuateDeps, ActuateResult } from './types'
 import { getElementSummary, getSemanticRole } from '../core/identify'
 import { stateForDiff } from './diff'
+import { frameDocument, inOverlayFrame, isFrame } from '../core/frames'
 
 /* ------------------------------- targeting -------------------------------- */
 
@@ -148,7 +149,11 @@ const CLOSE_SELECTOR =
 /** Find a plausible close/dismiss control inside (the dialog around) a covering
  *  element, so a "covered" error can name it. */
 export function findCloseControl(blocker: Element): Element | null {
-  const scope = blocker.closest('[role="dialog"],[aria-modal="true"]') ?? blocker
+  const inner = isFrame(blocker) ? frameDocument(blocker) : null
+  const scope =
+    blocker.closest('[role="dialog"],[aria-modal="true"]') ??
+    inner?.body ??
+    (inOverlayFrame(blocker) ? blocker.ownerDocument.body : blocker)
   const el = scope.querySelector(CLOSE_SELECTOR)
   if (el) return el
   // Fallback: a button whose visible text is just an ×/close glyph.
@@ -166,10 +171,13 @@ export function interceptedClickResult(
 ): ActuateResult {
   const closer = findCloseControl(blocker)
   const closeNote = closer ? ` Its close control: ${getElementSummary(closer)}.` : ''
+  // A frame the actuator cannot enter hides what it shows: say so, or the agent hunts for it.
+  const reach =
+    isFrame(blocker) && !frameDocument(blocker) ? ' It is a cross-origin frame, not reachable.' : ''
   return {
     ok: false,
     errorCode: 'intercepted',
-    error: `${getElementSummary(target)} is covered by ${getElementSummary(blocker)} (${getSemanticRole(blocker) ?? blocker.tagName.toLowerCase()}).${closeNote}`,
+    error: `${getElementSummary(target)} is covered by ${getElementSummary(blocker)} (${getSemanticRole(blocker) ?? blocker.tagName.toLowerCase()}).${closeNote}${reach}`,
     result: { action: 'click', snapshot: buildSnapshot(deps.reg, { root: deps.root }) },
   }
 }

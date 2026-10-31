@@ -11,13 +11,18 @@
 
 import { deepElementFromPoint } from '../core/identify'
 import { normalizeKeyName } from '../keys/index'
+import { frameOrigin, ownerFrame, realmOf } from '../core/frames'
 
-/** Center point of `el`, clamped into the viewport so elementFromPoint is valid. */
+/**
+ * Center point of `el`, clamped into ITS viewport so elementFromPoint is valid. In a frame the
+ * point is in the frame's own coordinates, which is what its events carry.
+ */
 export function centerPoint(el: Element): { x: number; y: number } {
   const r = el.getBoundingClientRect()
+  const view = realmOf(el)
   return {
-    x: Math.max(1, Math.min(r.left + r.width / 2, window.innerWidth - 1)),
-    y: Math.max(1, Math.min(r.top + r.height / 2, window.innerHeight - 1)),
+    x: Math.max(1, Math.min(r.left + r.width / 2, view.innerWidth - 1)),
+    y: Math.max(1, Math.min(r.top + r.height / 2, view.innerHeight - 1)),
   }
 }
 
@@ -26,10 +31,29 @@ export function occludedBy(el: Element): Element | null {
   const r = el.getBoundingClientRect()
   if (r.width === 0 && r.height === 0) return null // not laid out — skip the check
   const { x, y } = centerPoint(el)
-  const top = deepElementFromPoint(x, y)
-  if (!top || top === el || el.contains(top) || top.contains(el)) return null
-  if (top.tagName === 'LABEL' && (top as HTMLLabelElement).control === el) return null
-  return top
+  const top = deepElementFromPoint(x, y, el.ownerDocument)
+  if (top && top !== el && !el.contains(top) && !top.contains(el)) {
+    if (!(top.tagName === 'LABEL' && (top as HTMLLabelElement).control === el)) return top
+  }
+  return coveringFrame(el, x, y)
+}
+
+/**
+ * In a frame, the page may cover the frame at the point: walk out frame by frame, translating the
+ * point, and name what is on top there unless it is the frame itself (or holds it).
+ */
+function coveringFrame(el: Element, x: number, y: number): Element | null {
+  let px = x
+  let py = y
+  for (let frame = ownerFrame(el); frame; frame = ownerFrame(frame)) {
+    const o = frameOrigin(frame)
+    px += o.x
+    py += o.y
+    const parentDoc = frame.ownerDocument
+    const top = parentDoc.elementFromPoint(px, py)
+    if (top && top !== frame && !top.contains(frame) && !top.shadowRoot?.contains(frame)) return top
+  }
+  return null
 }
 
 /**
@@ -49,7 +73,7 @@ export function occludedBy(el: Element): Element | null {
  * on that descendant here.
  */
 export function hitTarget(el: Element, x: number, y: number): Element {
-  const deep = deepElementFromPoint(x, y)
+  const deep = deepElementFromPoint(x, y, el.ownerDocument)
   return deep && el.contains(deep) ? deep : el
 }
 
@@ -63,12 +87,13 @@ export function dispatchMouse(el: Element, type: string, x: number, y: number): 
   const isDown = type === 'mousedown'
   // detail = click count (1 for mousedown/mouseup/click); 0 for hover-ish moves.
   const clickish = isDown || type === 'mouseup' || type === 'click'
+  const realm = realmOf(el)
   el.dispatchEvent(
-    new MouseEvent(type, {
+    new realm.MouseEvent(type, {
       bubbles: true,
       cancelable: true,
       composed: true,
-      view: window,
+      view: realm as unknown as Window,
       clientX: x,
       clientY: y,
       button: 0,
@@ -79,10 +104,11 @@ export function dispatchMouse(el: Element, type: string, x: number, y: number): 
 }
 
 export function dispatchPointer(el: Element, type: string, x: number, y: number): void {
-  if (typeof PointerEvent !== 'function') return
+  const realm = realmOf(el)
+  if (typeof realm.PointerEvent !== 'function') return
   const isDown = type === 'pointerdown'
   el.dispatchEvent(
-    new PointerEvent(type, {
+    new realm.PointerEvent(type, {
       bubbles: true,
       cancelable: true,
       composed: true,
@@ -117,8 +143,11 @@ export function synthClick(el: Element): void {
 
 /** Set an input/textarea value via the native setter so React/Vue trackers fire. */
 function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement, value: string): void {
+  const realm = realmOf(el)
   const proto =
-    el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
+    el instanceof realm.HTMLTextAreaElement
+      ? realm.HTMLTextAreaElement.prototype
+      : realm.HTMLInputElement.prototype
   // `PropertyDescriptor.set` is a third-party (lib.es5.d.ts) method-shorthand
   // declaration we can't edit, so call it inline via `.call` rather than storing an
   // unbound reference.
@@ -129,13 +158,14 @@ function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement, value: strin
 
 export function fillValue(el: Element, text: string): void {
   ;(el as HTMLElement).focus?.()
-  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+  const realm = realmOf(el)
+  if (el instanceof realm.HTMLInputElement || el instanceof realm.HTMLTextAreaElement) {
     setNativeValue(el, text)
-    el.dispatchEvent(new Event('input', { bubbles: true }))
-    el.dispatchEvent(new Event('change', { bubbles: true }))
+    el.dispatchEvent(new realm.Event('input', { bubbles: true }))
+    el.dispatchEvent(new realm.Event('change', { bubbles: true }))
   } else if ((el as HTMLElement).isContentEditable) {
     ;(el as HTMLElement).textContent = text
-    el.dispatchEvent(new InputEvent('input', { bubbles: true }))
+    el.dispatchEvent(new realm.InputEvent('input', { bubbles: true }))
   } else {
     throw new Error('target is not a text field')
   }

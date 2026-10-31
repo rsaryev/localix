@@ -1,8 +1,16 @@
 import type { VfCommand } from '../protocol/index'
 import type { ActuateDeps, PreparedActionResult } from './types'
 import { pressKey } from './input'
+import { frameDocument, isFrame } from '../core/frames'
 import { fail, resolveWithHeal, isHealFail, healFailResult, withHeal, snapAfter } from './target'
 import type { Healed } from './target'
+
+/** The focused element, entering a same-origin frame that holds the focus. */
+function deepActive(doc: Document): Element | null {
+  const active = doc.activeElement
+  const inner = active && isFrame(active) ? frameDocument(active) : null
+  return inner ? (deepActive(inner) ?? active) : active
+}
 
 /** Dispatch a key sequence synchronously, resolving untargeted focus for each key. */
 export function performPress(cmd: VfCommand, deps: ActuateDeps): PreparedActionResult {
@@ -20,7 +28,7 @@ export function performPress(cmd: VfCommand, deps: ActuateDeps): PreparedActionR
   // Untargeted keys go where a keyboard sends them: the element focused NOW, which a
   // Tab earlier in the same sequence may have just changed — inside the root, when there is one.
   const focused = () => {
-    const active = document.activeElement
+    const active = deepActive(document)
     if (!deps.root) return active ?? document.body
     return active && deps.root.contains(active) ? active : deps.root
   }

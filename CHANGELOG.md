@@ -6,6 +6,10 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ### Added
 
+- **Browser reads pages inside frames**: the agent now sees and can click or type into the controls
+  of an embedded same-origin frame, such as a cookie banner or an embedded form, and knows when a
+  frame covers the page. A frame from another site is reported as not reachable instead of being
+  missing.
 - **See the agent work in a browser tab**: while the agent runs a command in one of your browser
   tabs, the tab shows a small spinner, and after a click or typing a blue box briefly marks the
   element it targeted. With reduced motion the box appears without fading.

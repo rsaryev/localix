@@ -7,6 +7,7 @@
 
 import { getViewportRect } from '../core/geometry'
 import { getElementSummary } from '../core/identify'
+import { realmOf } from '../core/frames'
 import type { VfCommand } from '../protocol/index'
 import { enabledOptions, optionsSuffix, type SelectOption } from '../snapshot/field'
 import { postAction } from './post-action'
@@ -24,7 +25,10 @@ function findOption(options: SelectOption[], wanted: string): SelectOption | und
 }
 
 function setNativeSelectValue(select: HTMLSelectElement, value: string): void {
-  const descriptor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')
+  const descriptor = Object.getOwnPropertyDescriptor(
+    realmOf(select).HTMLSelectElement.prototype,
+    'value',
+  )
   if (descriptor?.set) descriptor.set.call(select, value)
   else select.value = value
 }
@@ -39,7 +43,8 @@ export async function performSelect(
   if (cmd.text == null)
     return fail('bad_request', '`select` requires `text` (an option value or label).')
   const select = t.el
-  if (!(select instanceof HTMLSelectElement)) return fail('failed', 'not a dropdown')
+  if (!(select instanceof realmOf(select).HTMLSelectElement))
+    return fail('failed', 'not a dropdown')
 
   const options = enabledOptions(select)
   const chosen = findOption(options, cmd.text)
@@ -56,8 +61,8 @@ export async function performSelect(
     setNativeSelectValue(select, chosen.value)
     // Duplicate values leave the first match selected; the option itself decides.
     if (select.selectedIndex !== chosen.index) select.options[chosen.index].selected = true
-    select.dispatchEvent(new Event('input', { bubbles: true }))
-    select.dispatchEvent(new Event('change', { bubbles: true }))
+    select.dispatchEvent(new (realmOf(select).Event)('input', { bubbles: true }))
+    select.dispatchEvent(new (realmOf(select).Event)('change', { bubbles: true }))
   }
   return {
     ok: true,

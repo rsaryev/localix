@@ -6,6 +6,7 @@
  */
 
 import { identifyingClasses, meaningfulClasses } from './css-classes'
+import { frameDocument, frameOrigin, isFrame } from './frames'
 
 /** Parent that crosses an open shadow boundary (host when at a shadow root). */
 function parentCrossingShadow(el: Element): Element | null {
@@ -288,13 +289,27 @@ export function getComputedStyleSnapshot(el: Element): string | undefined {
   return parts.length ? parts.join('; ') : undefined
 }
 
-/** elementFromPoint that pierces open shadow roots to the deepest target. */
-export function deepElementFromPoint(x: number, y: number): Element | null {
-  let el = document.elementFromPoint(x, y)
+/**
+ * elementFromPoint that pierces open shadow roots and same-origin frames to the deepest target.
+ * `doc` is the document the point is in; entering a frame moves the point into its coordinates.
+ */
+export function deepElementFromPoint(
+  x: number,
+  y: number,
+  doc: Document = document,
+): Element | null {
+  let el = doc.elementFromPoint(x, y)
   while (el?.shadowRoot) {
     const deeper = el.shadowRoot.elementFromPoint(x, y)
     if (!deeper || deeper === el) break
     el = deeper
+  }
+  const inner = el && isFrame(el) ? frameDocument(el) : null
+  if (el && inner) {
+    const o = frameOrigin(el)
+    const hit = deepElementFromPoint(x - o.x, y - o.y, inner)
+    // Bare frame content is the frame itself to a person: that is what covers the page there.
+    return hit && hit !== inner.documentElement && hit !== inner.body ? hit : el
   }
   return el
 }

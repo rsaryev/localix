@@ -13,6 +13,7 @@
 import { VF_IGNORE_ATTR } from '../protocol/index'
 import type { VfElement, VfSnapshot } from '../protocol/index'
 import { generateSelector } from '../core/identify'
+import { frameDocument, frameIsShown, isFrame, isOverlayFrame } from '../core/frames'
 import {
   SKIP_TAGS,
   viewOf,
@@ -45,7 +46,14 @@ interface WalkCtx {
   elements: VfElement[]
   /** Whether each of `elements` is on screen now. */
   inView: boolean[]
+  /** How many same-origin frames deep the walk is (0 on the top document). */
+  frames: number
+  /** The walk is inside a frame that is a modal over its page. */
+  modal: boolean
 }
+
+/** Frames inside frames are followed this deep: a consent frame in a widget frame, no further. */
+const MAX_FRAME_DEPTH = 3
 
 /** Structured interactive nodes kept per snapshot; the tree keeps its own node cap. */
 const MAX_ELEMENTS = 250
@@ -92,6 +100,8 @@ function walk(el: Element, depth: number, ctx: WalkCtx): void {
   const cs = viewOf(el)?.getComputedStyle(el) ?? null
   if (isHidden(el, cs)) return
 
+  if (isFrame(el)) return void walkFrame(el, depth, ctx)
+
   const interactive = isInteractive(el, cs)
   const { emit, name } = shouldEmit(el, interactive)
   let childDepth = depth
@@ -113,7 +123,15 @@ function walk(el: Element, depth: number, ctx: WalkCtx): void {
     // the cost of generateSelector's uniqueness checks to a handful of nodes.
     const ref = ctx.reg.put(
       el,
-      interactive ? { selector: generateSelector(el).selector, role, name } : undefined,
+      // A selector is the top document's: in a frame it could name a control of the page instead.
+      interactive
+        ? {
+            selector: ctx.frames ? undefined : generateSelector(el).selector,
+            role,
+            name,
+            ...(ctx.frames ? { framed: true } : {}),
+          }
+        : undefined,
     )
     const label = name ? `${role} "${name}"` : role
     // A field's value is shown apart from its label, so an empty field reads as empty.
@@ -132,7 +150,7 @@ function walk(el: Element, depth: number, ctx: WalkCtx): void {
         ...(value ? { value } : {}),
         ...(stateList.length ? { states: stateList } : {}),
         ...(isEditable(el) ? { editable: true } : {}),
-        ...(el.closest(DIALOG) ? { dialog: true } : {}),
+        ...(ctx.modal || el.closest(DIALOG) ? { dialog: true } : {}),
       })
     }
     childDepth = depth + 1
@@ -147,6 +165,29 @@ function walk(el: Element, depth: number, ctx: WalkCtx): void {
   const root = (el as Element & { shadowRoot?: ShadowRoot | null }).shadowRoot
   const children = root ? root.children : el.children
   for (const child of Array.from(children)) walk(child, childDepth, ctx)
+}
+
+/**
+ * A frame the person sees as part of the page: a same-origin one is walked like the page, a
+ * cross-origin one is named as out of reach (nothing in it is offered, so say so).
+ */
+function walkFrame(frame: Element, depth: number, ctx: WalkCtx): void {
+  if (!frameIsShown(frame)) return
+  const title = (frame.getAttribute('title') || frame.getAttribute('name') || '').trim()
+  const label = title ? `frame "${title.slice(0, 80)}"` : 'frame'
+  const pad = '  '.repeat(Math.min(depth, ctx.maxDepth))
+  const doc = ctx.frames < MAX_FRAME_DEPTH ? frameDocument(frame) : null
+  if (!doc?.body) {
+    ctx.lines.push(`${pad}- ${label} — cross-origin frame, not reachable`)
+    return
+  }
+  if (!ctx.interactiveOnly) ctx.lines.push(`${pad}- ${label}`)
+  const outer = ctx.modal
+  ctx.frames++
+  ctx.modal = outer || isOverlayFrame(frame)
+  for (const child of Array.from(doc.body.children)) walk(child, depth + 1, ctx)
+  ctx.frames--
+  ctx.modal = outer
 }
 
 export interface SnapshotOptions {
@@ -178,6 +219,8 @@ export function buildSnapshot(reg: RefRegistry, opts: SnapshotOptions = {}): VfS
     truncated: false,
     elements: [],
     inView: [],
+    frames: 0,
+    modal: false,
   }
   const start = opts.root ?? document.body ?? document.documentElement
   if (start) for (const child of Array.from(start.children)) walk(child, 0, ctx)

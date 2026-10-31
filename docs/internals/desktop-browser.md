@@ -85,6 +85,13 @@ bar they set `busy` on the reply. `leaving()` also reads the Navigation API, unh
 and form submits. There is no push channel from the page to the shell, so `navigatedAfter` still
 polls the shell and the bridge.
 
+Frames count as part of the page. The snapshot walks a visible same-origin iframe (in view or just
+below, at least 3% of the viewport) under a `frame` line, with refs that resolve inside it; clicks,
+typing and the occlusion check translate the point through each frame's origin. A fixed frame on top
+that covers at least 10% of the viewport marks its controls as a dialog. A visible frame of another
+origin is listed as "cross-origin frame, not reachable". Only the top document's probe walks frames,
+so the same code serves framed local pages and native tabs.
+
 ## Limits
 
 - Only macOS captures a native page's picture. On Windows a page still hides under an app overlay;

@@ -30,6 +30,8 @@ export interface RefIdentity {
   role?: string
   /** Accessible name, e.g. the button text / input value/placeholder. */
   name?: string
+  /** The element lives in a frame: only another control of a frame can stand in for it. */
+  framed?: boolean
 }
 
 interface RefEntry {
@@ -137,6 +139,7 @@ export function createRefRegistry(): RefRegistry {
       for (const entry of map.values()) {
         if (!entry.el.isConnected) continue
         if (entry.identity.role !== identity.role || entry.identity.name !== identity.name) continue
+        if (Boolean(entry.identity.framed) !== Boolean(identity.framed)) continue
         if (found && found !== entry.el) return null // ambiguous — refuse to guess
         found = entry.el
       }
