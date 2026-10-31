@@ -197,8 +197,7 @@ export function createAppServicesPhase({
       agents: agentsService,
       user: {
         getAgentSettings: async (...args) =>
-          ((await userService.getProfile(...args).catch(() => null))?.agentSettings ??
-            null) as Record<string, unknown> | null,
+          (await userService.getProfile(...args).catch(() => null))?.agentSettings ?? null,
       },
       bumpCapabilityRevision: () => {
         capabilitiesChanged()

@@ -100,9 +100,7 @@ async function renderAgent(ctx: RemedyContext, name: string): Promise<string> {
 async function renderSetting(ctx: RemedyContext, name: string): Promise<string> {
   if (name !== 'modelRouting')
     return `Setting "${name}" is not inspectable here; only "modelRouting" is.`
-  const settings = (await ctx.ports.user.getAgentSettings(ctx.userId)) as {
-    modelRouting?: Record<string, { enabled?: boolean; modelId?: string }>
-  } | null
+  const settings = await ctx.ports.user.getAgentSettings(ctx.userId)
   return [
     'Model routes (task · enabled · model):',
     ...MODEL_ROUTING_TASKS.filter((task) => task.key !== 'session').map((task) => {

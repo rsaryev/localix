@@ -2,6 +2,7 @@ import type { z } from 'zod'
 import type { ProposalCard } from '../agent-core/tools/configure/configure-contracts'
 import type { Rule, RuleOrigin } from '../agent-core/capability-rule'
 import type { AgentSummary } from '../agents/contracts'
+import type { AgentSettings } from '../user/contracts'
 
 export type { ProposalCard }
 
@@ -70,7 +71,7 @@ export interface RemedyPorts {
   }
   /** Read-only for the same reason: `inspect` reports the routes, Settings chooses them. */
   user: {
-    getAgentSettings(userId: string): Promise<Record<string, unknown> | null>
+    getAgentSettings(userId: string): Promise<AgentSettings | null>
   }
   /** Bump the process-wide capability revision after a direct rule write. */
   bumpCapabilityRevision(): void
