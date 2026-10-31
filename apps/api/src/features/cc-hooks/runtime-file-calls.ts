@@ -7,6 +7,7 @@
  */
 import type { CcHookToolRef, CcHooksRuntime, PreToolUseResult } from './runtime-contracts'
 import { joinContext } from './runtime-results'
+import { isRecord } from '../../lib/record'
 
 type Fields = Record<string, unknown>
 type ToolRunners = Pick<
@@ -16,9 +17,6 @@ type ToolRunners = Pick<
 
 /** The list each file tool names its files in. */
 const LIST_KEY: Record<string, string> = { Edit: 'edits', Write: 'files', Read: 'reads' }
-
-const isRecord = (value: unknown): value is Fields =>
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 
 const toolName = (tool: CcHookToolRef) => (typeof tool === 'string' ? tool : tool.name)
 

@@ -6,6 +6,7 @@ import {
   type Settings,
   type SettingsSource,
 } from '../../cc-settings/settings-merge'
+import { isRecord } from '../../../lib/record'
 
 /**
  * `$.settings.read`: Claude Code's settings as its engine runs under them — one source as loaded,
@@ -16,9 +17,6 @@ import {
  */
 
 const SOURCES: readonly SettingsSource[] = ['user', 'project', 'local', 'flag', 'policy']
-
-const isRecord = (value: unknown): value is Settings =>
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 
 export function createSettingsApi(input: {
   cwd: () => string
