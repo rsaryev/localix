@@ -5,9 +5,9 @@ import { dirName } from '@localixai/mini-app-sdk/ui/utilities'
 import { createBoundedCache } from '@localixai/kit/lib'
 
 /** Recently-used clean text snapshots retained after an editor body is evicted. */
-export const FILE_CONTENT_CACHE_MAX_ENTRIES = 24
+const FILE_CONTENT_CACHE_MAX_ENTRIES = 24
 /** Approximate JS heap budget (UTF-16 content + small entry overhead). */
-export const FILE_CONTENT_CACHE_MAX_BYTES = 16 * 1024 * 1024
+const FILE_CONTENT_CACHE_MAX_BYTES = 16 * 1024 * 1024
 
 type Entry = {
   sessionId: string

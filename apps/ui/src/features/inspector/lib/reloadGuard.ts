@@ -50,8 +50,8 @@ export interface ReloadGuard {
   reset(): void
 }
 
-export const DEFAULT_RELOAD_DEBOUNCE_MS = 250
-export const DEFAULT_SAVE_SETTLE_MS = 500
+const DEFAULT_RELOAD_DEBOUNCE_MS = 250
+const DEFAULT_SAVE_SETTLE_MS = 500
 
 export function createReloadGuard(deps: ReloadGuardDeps = {}): ReloadGuard {
   const now = deps.now ?? Date.now

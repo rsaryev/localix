@@ -35,8 +35,8 @@ export interface DirRefreshQueue {
   reset(): void
 }
 
-export const DEFAULT_DIR_REFRESH_DELAY_MS = 80
-export const DEFAULT_DIR_REFRESH_CONCURRENCY = 6
+const DEFAULT_DIR_REFRESH_DELAY_MS = 80
+const DEFAULT_DIR_REFRESH_CONCURRENCY = 6
 
 export function createDirRefreshQueue(
   run: (dir: string) => Promise<unknown>,

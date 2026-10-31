@@ -17,14 +17,14 @@ export interface FileTreeEntryRow extends VisibleRow {
   ariaSetSize: number
 }
 
-export interface FileTreeEditRow {
+interface FileTreeEditRow {
   kind: 'edit'
   key: string
   depth: number
   edit: EditState
 }
 
-export interface FileTreeStatusRow {
+interface FileTreeStatusRow {
   kind: 'status'
   key: string
   depth: number
@@ -194,7 +194,7 @@ export type FileTreeNavigationKey =
   | 'Home'
   | 'End'
 
-export type FileTreeNavigation = { kind: 'focus'; path: string } | { kind: 'toggle'; path: string }
+type FileTreeNavigation = { kind: 'focus'; path: string } | { kind: 'toggle'; path: string }
 
 /**
  * Resolve tree navigation from the flat semantic model rather than mounted DOM.

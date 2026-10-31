@@ -89,7 +89,7 @@ export function routePreviewUpdated(
 }
 
 /** Close the pages of deleted conversations and drop their previews. */
-export function forgetSessionPreviews(sessionIds: readonly string[]): void {
+function forgetSessionPreviews(sessionIds: readonly string[]): void {
   const previews = usePreviewStore.getState()
   for (const id of sessionIds) {
     closeNativePages(
