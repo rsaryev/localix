@@ -1,35 +1,21 @@
 export {
   COMPONENT_KINDS,
   PACKAGE_KINDS,
-  componentKindSchema,
-  componentSchema,
   installPlanSchema,
-  installSchema,
-  jobPhaseSchema,
-  jobSchema,
   listingDetailSchema,
-  listingRefSchema,
-  listingSchema,
   packageKindSchema,
   scopeSchema,
   sourcePreviewSchema,
-  sourceViewSchema,
   TRUSTS,
   trustSchema,
 } from './contract'
-export { readCuration, readSuggestFor, suggestForSchema } from './curation'
+export { readCuration } from './curation'
 export type { Curation, SuggestFor } from './curation'
-export {
-  collectionSchema,
-  collectionStyleSchema,
-  editorialSchema,
-  readCollections,
-} from './collections'
-export type { Collection, CollectionStyle, Editorial } from './collections'
+export { readCollections } from './collections'
+export type { Collection, Editorial } from './collections'
 export type {
   ComponentKind,
   InstallPlan,
-  JobPhase,
   Listing,
   ListingDetail,
   ListingRef,
@@ -43,12 +29,8 @@ export type {
   Trust,
 } from './contract'
 export {
-  CONFIG_FIELD_TYPES,
   actionResultSchema,
-  configFieldSchema,
-  configValueSchema,
   createFormSchema,
-  itemActionSchema,
   listingConfigFromFields,
   listingConfigSchema,
   scalarConfigValues,
@@ -59,12 +41,11 @@ export type {
   ConfigField,
   ConfigValue,
   CreateForm,
-  DeclaredField,
   ItemAction,
   ListingConfig,
   ShelfPlan,
 } from './config'
-export type { InstallableProvider, ProviderListings, StoreActor, StoreProvider } from './provider'
+export type { InstallableProvider, StoreActor, StoreProvider } from './provider'
 export { createChangeSignal } from './change-signal'
 export {
   actionRequestSchema,
@@ -91,16 +72,12 @@ export {
   openersQuerySchema,
   openersResponseSchema,
   storeActivitySchema,
-  storeFacetsSchema,
-  storeProblemSchema,
   updatesApplyResponseSchema,
 } from './routes'
 export type {
   DiscoverResponse,
-  ListingsQuery,
   ListingsResponse,
   OpenersResponse,
-  ShelfActionsResponse,
   SourcesResponse,
   StoreActivity,
   StoreFacets,
@@ -109,18 +86,13 @@ export type {
 export {
   recommendDismissalSchema,
   recommendDismissalsSchema,
-  recommendEventSchema,
   recommendEventsSchema,
   recommendStatsSchema,
   recommendQuerySchema,
   recommendReadSchema,
-  recommendReasonSchema,
   recommendRequestSchema,
-  recommendResponseSchema,
-  workingReferenceSchema,
 } from './recommend-routes'
 export type {
-  RecommendDismissal,
   RecommendDismissals,
   RecommendEvent,
   RecommendRead,
@@ -132,7 +104,6 @@ export type {
 export {
   BROWSABLE_COMPONENT_KINDS,
   PACKAGE_SHELF_KINDS,
-  SHELVES,
   shelfKinds,
   capabilityShelf,
   componentCount,
