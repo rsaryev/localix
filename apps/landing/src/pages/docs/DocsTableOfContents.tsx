@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react'
 import { cn } from '../../lib/cn'
-import type { extractHeadings } from '../docsNav'
-
-type Heading = ReturnType<typeof extractHeadings>[number]
+import type { DocHeading } from './docBootstrap'
 
 /**
  * Scroll-spy over the rendered headings. The root margin puts the "current"
  * band near the top of the viewport, so the highlighted entry is the section
  * you are reading rather than the one furthest down the screen.
  */
-function useActiveHeading(headings: Heading[]) {
+function useActiveHeading(headings: DocHeading[]) {
   const [activeHeading, setActiveHeading] = useState<string | null>(null)
   useEffect(() => {
     if (headings.length < 2) return
@@ -34,7 +32,7 @@ function useActiveHeading(headings: Heading[]) {
  * pin on one line; a single
  * heading is not a table of contents, so it renders nothing.
  */
-export function DocsTableOfContents({ headings }: { headings: Heading[] }) {
+export function DocsTableOfContents({ headings }: { headings: DocHeading[] }) {
   const activeHeading = useActiveHeading(headings)
   if (headings.length < 2) return null
 

@@ -4,9 +4,10 @@ import { fileURLToPath } from 'node:url'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { Markdown } from '@localixai/markdown/react'
-import { hasMathSyntax, loadMathPlugins, extractMarkdownHeadings } from '@localixai/markdown'
+import { hasMathSyntax, loadMathPlugins } from '@localixai/markdown'
 import { renderDocsShell } from './render-docs.tsx'
 import { makeMdComponents } from '../src/pages/docs/markdownComponents.tsx'
+import { extractDocHeadings } from '../src/pages/docs/extractDocHeadings.ts'
 import { docPages, loadDocContent } from '../src/generated/docs.ts'
 import { SITE_ORIGIN } from '../src/lib/site.ts'
 
@@ -105,9 +106,7 @@ export function renderStaticDocHtml(template, page, bodyHtml = '', content = '')
     /(<script type="application\/ld\+json">)[\s\S]*?(<\/script>)/u,
     `$1\n      ${structuredData}\n    $2`,
   )
-  const headings = extractMarkdownHeadings(content).filter(
-    (heading) => heading.depth === 2 || heading.depth === 3,
-  )
+  const headings = extractDocHeadings(content)
   const active = {
     section: 'getting-started',
     sectionTitle: 'Documentation',

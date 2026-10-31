@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router'
 import { Markdown } from '@localixai/markdown/react'
-import { extractMarkdownHeadings } from '@localixai/markdown'
 import { makeMdComponents } from './markdownComponents'
+import { extractDocHeadings } from './extractDocHeadings'
 import type { DocHeading } from './docBootstrap'
 
 export function DocsArticle({
@@ -20,11 +20,7 @@ export function DocsArticle({
     [sourcePath, navigate],
   )
   useEffect(() => {
-    onHeadings(
-      extractMarkdownHeadings(content).filter(
-        (heading): heading is DocHeading => heading.depth === 2 || heading.depth === 3,
-      ),
-    )
+    onHeadings(extractDocHeadings(content))
   }, [content, onHeadings])
   return (
     <Markdown headingIds components={components}>

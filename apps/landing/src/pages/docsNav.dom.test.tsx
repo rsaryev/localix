@@ -16,7 +16,7 @@ test('renders Shell fences with Bash highlighting and copies the original source
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { Markdown } = await import('@localixai/markdown/react')
-  const { makeMdComponents } = await import('./docsNav')
+  const { makeMdComponents } = await import('./docs/markdownComponents')
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
@@ -48,7 +48,7 @@ test('shows and repeats clipboard failures for documentation code blocks', async
   const React = await import('react')
   const { act, createElement } = React
   const { createRoot } = await import('react-dom/client')
-  const { makeMdComponents } = await import('./docsNav')
+  const { makeMdComponents } = await import('./docs/markdownComponents')
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
@@ -91,7 +91,7 @@ test('ignores an older clipboard result after a newer request fails', async () =
   const React = await import('react')
   const { act, createElement } = React
   const { createRoot } = await import('react-dom/client')
-  const { makeMdComponents } = await import('./docsNav')
+  const { makeMdComponents } = await import('./docs/markdownComponents')
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
