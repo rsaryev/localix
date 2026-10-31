@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { CMD } from '@/shared/lib/keybindings'
 import { registerActionHandler } from '@/shared/lib/actions'
 import { cycleThemeMode } from '@/shared/theme/useTheme'
@@ -27,6 +27,18 @@ interface EditorShortcutsState {
   goToSymbolMounted: boolean
   workspaceSymbolsMounted: boolean
   globalSearchMounted: boolean
+}
+
+/**
+ * A palette's open flag, its setter, and whether it has ever opened: a lazy palette mounts the
+ * first time it opens and stays mounted after, so reopening it is as quick as an eager one.
+ */
+function useStickyOpen() {
+  const [open, setOpen] = useState(false)
+  const [opened, setOpened] = useState(false)
+  // Derived during render, React's way of adjusting state to a change: no effect, no ref.
+  if (open && !opened) setOpened(true)
+  return [open, setOpen, opened || open] as const
 }
 
 /**
@@ -68,71 +80,15 @@ export function useEditorShortcuts(opts: {
     reopenClosedTab,
     newChat,
   } = opts
-  const [commandPalette, setCommandPaletteState] = useState(false)
-  const [quickOpen, setQuickOpenState] = useState(false)
-  const [sessionSwitcher, setSessionSwitcherState] = useState(false)
-  const [projectSwitcher, setProjectSwitcherState] = useState(false)
-  const [goToSymbol, setGoToSymbolState] = useState(false)
-  const [workspaceSymbols, setWorkspaceSymbolsState] = useState(false)
-  const [globalSearch, setGlobalSearchState] = useState(false)
-  const commandPaletteMounted = useRef(false)
-  const quickOpenMounted = useRef(false)
-  const sessionSwitcherMounted = useRef(false)
-  const projectSwitcherMounted = useRef(false)
-  const goToSymbolMounted = useRef(false)
-  const workspaceSymbolsMounted = useRef(false)
-  const globalSearchMounted = useRef(false)
-  const setCommandPalette = useCallback<React.Dispatch<React.SetStateAction<boolean>>>((next) => {
-    setCommandPaletteState((current) => {
-      const value = typeof next === 'function' ? next(current) : next
-      if (value) commandPaletteMounted.current = true
-      return value
-    })
-  }, [])
-  const setQuickOpen = useCallback<React.Dispatch<React.SetStateAction<boolean>>>((next) => {
-    setQuickOpenState((current) => {
-      const value = typeof next === 'function' ? next(current) : next
-      if (value) quickOpenMounted.current = true
-      return value
-    })
-  }, [])
-  const setSessionSwitcher = useCallback<React.Dispatch<React.SetStateAction<boolean>>>((next) => {
-    setSessionSwitcherState((current) => {
-      const value = typeof next === 'function' ? next(current) : next
-      if (value) sessionSwitcherMounted.current = true
-      return value
-    })
-  }, [])
-  const setProjectSwitcher = useCallback<React.Dispatch<React.SetStateAction<boolean>>>((next) => {
-    setProjectSwitcherState((current) => {
-      const value = typeof next === 'function' ? next(current) : next
-      if (value) projectSwitcherMounted.current = true
-      return value
-    })
-  }, [])
-  const setGoToSymbol = useCallback<React.Dispatch<React.SetStateAction<boolean>>>((next) => {
-    setGoToSymbolState((current) => {
-      const value = typeof next === 'function' ? next(current) : next
-      if (value) goToSymbolMounted.current = true
-      return value
-    })
-  }, [])
-  const setWorkspaceSymbols = useCallback<React.Dispatch<React.SetStateAction<boolean>>>((next) => {
-    setWorkspaceSymbolsState((current) => {
-      const value = typeof next === 'function' ? next(current) : next
-      if (value) workspaceSymbolsMounted.current = true
-      return value
-    })
-  }, [])
-  const setGlobalSearch = useCallback<React.Dispatch<React.SetStateAction<boolean>>>((next) => {
-    setGlobalSearchState((current) => {
-      const value = typeof next === 'function' ? next(current) : next
-      if (value) globalSearchMounted.current = true
-      return value
-    })
-  }, [])
+  const [commandPalette, setCommandPalette, commandPaletteMounted] = useStickyOpen()
+  const [quickOpen, setQuickOpen, quickOpenMounted] = useStickyOpen()
+  const [sessionSwitcher, setSessionSwitcher, sessionSwitcherMounted] = useStickyOpen()
+  const [projectSwitcher, setProjectSwitcher, projectSwitcherMounted] = useStickyOpen()
+  const [goToSymbol, setGoToSymbol, goToSymbolMounted] = useStickyOpen()
+  const [workspaceSymbols, setWorkspaceSymbols, workspaceSymbolsMounted] = useStickyOpen()
+  const [globalSearch, setGlobalSearch, globalSearchMounted] = useStickyOpen()
 
-  // The tracked setters are stable wrappers around React state setters.
+  // The palette setters are React state setters, stable across renders.
   useEffect(() => {
     const disposers = [
       registerActionHandler({ commandId: CMD.nextEditor, run: () => cycleTab(1) }),
@@ -221,12 +177,12 @@ export function useEditorShortcuts(opts: {
     setWorkspaceSymbols,
     globalSearch,
     setGlobalSearch,
-    commandPaletteMounted: commandPaletteMounted.current,
-    quickOpenMounted: quickOpenMounted.current,
-    sessionSwitcherMounted: sessionSwitcherMounted.current,
-    projectSwitcherMounted: projectSwitcherMounted.current,
-    goToSymbolMounted: goToSymbolMounted.current,
-    workspaceSymbolsMounted: workspaceSymbolsMounted.current,
-    globalSearchMounted: globalSearchMounted.current,
+    commandPaletteMounted,
+    quickOpenMounted,
+    sessionSwitcherMounted,
+    projectSwitcherMounted,
+    goToSymbolMounted,
+    workspaceSymbolsMounted,
+    globalSearchMounted,
   }
 }
