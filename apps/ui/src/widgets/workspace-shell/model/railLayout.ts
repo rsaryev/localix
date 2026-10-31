@@ -130,20 +130,6 @@ export function moveRailItem(
   return canonicalEntries(top, bar, bottom, status, overflow)
 }
 
-/**
- * Nudge `id` by `delta` positions WITHIN the bar (keyboard "Move up/down").
- * Clamped at the edges; an id not currently on the bar (or unknown) is a no-op.
- * Returns a NEW canonical state.
- */
-export function moveWithinBar(
-  defs: RailItemDef[],
-  state: RailLayoutState | null,
-  id: string,
-  delta: number,
-): RailLayoutState {
-  return moveWithinRailArea(defs, state, id, 'bar', delta)
-}
-
 /** Nudge an entry within a visible rail area. */
 export function moveWithinRailArea(
   defs: RailItemDef[],

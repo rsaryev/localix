@@ -3,7 +3,7 @@ import {
   computeDropIndex,
   emptyRailLayout,
   moveRailItem,
-  moveWithinBar,
+  moveWithinRailArea,
   parseRailLayout,
   resetRailLayout,
   resolveRailAreas,
@@ -176,10 +176,10 @@ describe('moveRailItem', () => {
   })
 })
 
-describe('moveWithinBar', () => {
+describe('moving within the bar', () => {
   // Default bar: [files, source-control, notes, terminal].
   it('moves an entry down one position from the middle', () => {
-    const next = moveWithinBar(DEFS, null, 'viewlet:changes', 1)
+    const next = moveWithinRailArea(DEFS, null, 'viewlet:changes', 'bar', 1)
     expect(resolveRailAreas(DEFS, next).bar).toEqual([
       'section:files',
       'viewlet:notes',
@@ -189,7 +189,7 @@ describe('moveWithinBar', () => {
   })
 
   it('moves an entry up one position from the middle', () => {
-    const next = moveWithinBar(DEFS, null, 'viewlet:notes', -1)
+    const next = moveWithinRailArea(DEFS, null, 'viewlet:notes', 'bar', -1)
     expect(resolveRailAreas(DEFS, next).bar).toEqual([
       'section:files',
       'viewlet:notes',
@@ -199,28 +199,28 @@ describe('moveWithinBar', () => {
   })
 
   it('clamps at the top edge (first entry moved up stays first)', () => {
-    const next = moveWithinBar(DEFS, null, 'section:files', -1)
+    const next = moveWithinRailArea(DEFS, null, 'section:files', 'bar', -1)
     expect(resolveRailAreas(DEFS, next).bar).toEqual(resolveRailAreas(DEFS, null).bar)
   })
 
   it('clamps at the bottom edge (last entry moved down stays last)', () => {
-    const next = moveWithinBar(DEFS, null, 'viewlet:terminal', 5)
+    const next = moveWithinRailArea(DEFS, null, 'viewlet:terminal', 'bar', 5)
     expect(resolveRailAreas(DEFS, next).bar).toEqual(resolveRailAreas(DEFS, null).bar)
   })
 
   it('is a no-op for an unknown id', () => {
     const state = moveRailItem(DEFS, null, 'viewlet:notes', 'bar', 0)
-    expect(moveWithinBar(DEFS, state, 'section:nope', 1)).toEqual(state)
+    expect(moveWithinRailArea(DEFS, state, 'section:nope', 'bar', 1)).toEqual(state)
   })
 
   it('is a no-op for an entry sitting in the overflow', () => {
     const before = resolveRailAreas(DEFS, null)
-    const next = moveWithinBar(DEFS, null, 'viewlet:stats', -1)
+    const next = moveWithinRailArea(DEFS, null, 'viewlet:stats', 'bar', -1)
     expect(resolveRailAreas(DEFS, next)).toEqual(before)
   })
 
   it('never changes the overflow list', () => {
-    const next = moveWithinBar(DEFS, null, 'viewlet:notes', 1)
+    const next = moveWithinRailArea(DEFS, null, 'viewlet:notes', 'bar', 1)
     expect(resolveRailAreas(DEFS, next).overflow).toEqual(resolveRailAreas(DEFS, null).overflow)
   })
 })
