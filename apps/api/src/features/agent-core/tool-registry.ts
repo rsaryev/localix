@@ -19,7 +19,7 @@ import type { SpawnTerminalJob } from './tools/terminal/terminal-job'
 import type { RunProfile } from './run-shape'
 import { BUILTIN_TOOL_NAMES } from './tool-names'
 import type { WorkflowToolPort } from './tools/workflow/workflow'
-import { buildCoreTools, buildRegistryContext, type RegistryEntry } from './tool-registry-core'
+import { buildCoreTools, buildRegistryContext } from './tool-registry-core'
 import { buildNamedOptionals } from './tool-registry-optionals'
 import {
   isLive,
@@ -194,7 +194,7 @@ export function createRuntimeToolRegistry(
   const { agentProfile, disabled } = ctx
 
   const coreTools = buildCoreTools(options, ctx)
-  const namedOptionals = buildNamedOptionals(options, ctx)
+  const namedOptionals = buildNamedOptionals(options)
 
   // Every built-in is a CANDIDATE, built or not: a port the host left empty still gets a row,
   // so "the tool is simply not there" is no longer a state the ledger can express.
@@ -205,7 +205,7 @@ export function createRuntimeToolRegistry(
   // rule, reading each tool's own `exposure`.
   const extraTools = (policy.extraTools ?? []).filter((tool): tool is AgentTool => Boolean(tool))
   const built = new Map<string, AgentTool>()
-  for (const entry of [...coreTools, ...namedOptionals]) built.set(entry.tool.name, entry.tool)
+  for (const tool of [...coreTools, ...namedOptionals]) built.set(tool.name, tool)
   for (const tool of extraTools) if (!built.has(tool.name)) built.set(tool.name, tool)
   const withheld = policy.withheldByHost ?? {}
   for (const name of Object.keys(withheld)) built.delete(name)
@@ -230,23 +230,12 @@ export function createRuntimeToolRegistry(
     candidates,
   )
 
-  // One paired list so a filter keeps tool and descriptor aligned. The ledger is the only
-  // filter: nothing below re-derives a verdict. A live tool with a model-dependent part then
+  // The ledger is the only filter: nothing below re-derives a verdict. A live tool with a model-dependent part then
   // takes its variant for this model (`forModel`), so the schema offers only what it can use.
   const { modelInput } = policy
-  const entries: RegistryEntry[] = [
-    ...coreTools,
-    ...namedOptionals,
-    ...extraTools.map((tool) => ({ tool })),
-  ]
-    .filter((entry) => isLive(ledger, entry.tool.name))
-    .map((entry) =>
-      modelInput && entry.tool.forModel
-        ? { ...entry, tool: entry.tool.forModel(modelInput) }
-        : entry,
-    )
-
-  const tools = entries.map((e) => e.tool)
+  const tools = [...coreTools, ...namedOptionals, ...extraTools]
+    .filter((tool) => isLive(ledger, tool.name))
+    .map((tool) => (modelInput && tool.forModel ? tool.forModel(modelInput) : tool))
   return {
     tools,
     toolNames: tools.map((tool) => tool.name),

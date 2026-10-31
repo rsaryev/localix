@@ -19,11 +19,6 @@ import { CHAT_RUN_PROFILE, hasToolFeature, isToolLive, type RunProfile } from '.
 import { TOOL } from './tool-names'
 import type { RuntimeToolRegistryOptions } from './tool-registry'
 
-/** A registry row wraps the single authoritative tool descriptor. */
-export interface RegistryEntry {
-  tool: AgentTool
-}
-
 /**
  * Values DERIVED from the options that both the core-tool table and the assembly
  * need. Computing them once, in one place, keeps the derivation rules (especially
@@ -84,7 +79,7 @@ export function buildRegistryContext(options: RuntimeToolRegistryOptions): Regis
 export function buildCoreTools(
   options: RuntimeToolRegistryOptions,
   ctx: RegistryContext,
-): RegistryEntry[] {
+): AgentTool[] {
   const core = options.core ?? {}
   const { env, defaultCwd, reportDiagnostics, editorBuffer } = core
   const { bashTool, fileMtimes } = ctx
@@ -98,49 +93,35 @@ export function buildCoreTools(
   const fileToolConcurrency = { parallel: options.policy?.parallelFileTools ?? true }
 
   return [
-    {
-      tool: createAskTool(),
-    },
-    {
-      tool: bashTool,
-    },
-    {
-      tool: createReadTool(
-        env,
-        defaultCwd,
-        core.readOutline,
-        core.readDocumentExtractor,
-        fileMtimes,
-        editorBuffer,
-      ),
-    },
-    {
-      tool: createSearchTool(env, defaultCwd),
-    },
-    {
-      tool: createWriteTool(
-        env,
-        defaultCwd,
-        reportDiagnostics,
-        fileToolConcurrency,
-        fileMtimes,
-        editorBuffer,
-      ),
-    },
-    {
-      tool: createEditTool(
-        env,
-        defaultCwd,
-        reportDiagnostics,
-        fileToolConcurrency,
-        fileMtimes,
-        editorBuffer,
-      ),
-    },
-    {
-      // One keyless, composite network capability: metasearch → rank → safe page
-      // reads. The lower-level fetch/search adapters are not model-facing tools.
-      tool: createResearchTool({ config: core.researchConfig }),
-    },
+    createAskTool(),
+    bashTool,
+    createReadTool(
+      env,
+      defaultCwd,
+      core.readOutline,
+      core.readDocumentExtractor,
+      fileMtimes,
+      editorBuffer,
+    ),
+    createSearchTool(env, defaultCwd),
+    createWriteTool(
+      env,
+      defaultCwd,
+      reportDiagnostics,
+      fileToolConcurrency,
+      fileMtimes,
+      editorBuffer,
+    ),
+    createEditTool(
+      env,
+      defaultCwd,
+      reportDiagnostics,
+      fileToolConcurrency,
+      fileMtimes,
+      editorBuffer,
+    ),
+    // One keyless, composite network capability: metasearch → rank → safe page
+    // reads. The lower-level fetch/search adapters are not model-facing tools.
+    createResearchTool({ config: core.researchConfig }),
   ]
 }

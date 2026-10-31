@@ -7,105 +7,77 @@ import { createLoopsTool } from './tools/loops'
 import { createConfigureTool } from './tools/configure/configure'
 import { createPlanTool } from './tools/plan/plan'
 import { createWorkflowTool } from './tools/workflow/workflow'
+import type { AgentTool } from '@localixai/agent/agents'
 import type { RuntimeToolRegistryOptions } from './tool-registry'
-import type { RegistryContext, RegistryEntry } from './tool-registry-core'
 
 // Conditionally-registered ("named optional") tools for createRuntimeToolRegistry:
 // each is present only when its external dependency/options are provided. Extracted
 // from tool-registry.ts so that file owns core-tool construction plus the shared
-// profile/surface/disabledTools filtering and assembly. Each entry carries
-// only the authoritative AgentTool descriptor; no filtering happens here.
+// profile/surface/disabledTools filtering and assembly. No filtering happens here.
 
-// `ctx` is taken (not re-derived from `options`) so the profile default is resolved exactly
-// once, in buildRegistryContext — a second `options.agentProfile ?? orchestrator` fallback here
-// would be a second chance to get "which profile is this" wrong.
-export function buildNamedOptionals(
-  options: RuntimeToolRegistryOptions,
-  _ctx: RegistryContext,
-): RegistryEntry[] {
-  const namedOptionals: RegistryEntry[] = []
+export function buildNamedOptionals(options: RuntimeToolRegistryOptions): AgentTool[] {
+  const namedOptionals: AgentTool[] = []
   const optional = options.optional ?? {}
 
   if (optional.Store) {
-    namedOptionals.push({ tool: createStoreTool(optional.Store) })
+    namedOptionals.push(createStoreTool(optional.Store))
   }
 
-  if (optional.Agent) namedOptionals.push({ tool: createAgentTool(optional.Agent) })
-  if (optional.SendMessage)
-    namedOptionals.push({ tool: createSendMessageTool(optional.SendMessage) })
-  if (optional.TaskStop) namedOptionals.push({ tool: createTaskStopTool(optional.TaskStop) })
+  if (optional.Agent) namedOptionals.push(createAgentTool(optional.Agent))
+  if (optional.SendMessage) namedOptionals.push(createSendMessageTool(optional.SendMessage))
+  if (optional.TaskStop) namedOptionals.push(createTaskStopTool(optional.TaskStop))
 
   if (optional.Loops) {
-    namedOptionals.push({
-      tool: createLoopsTool(optional.Loops),
-    })
+    namedOptionals.push(createLoopsTool(optional.Loops))
   }
 
   if (optional.GlobalSearch) {
-    namedOptionals.push({
-      tool: optional.GlobalSearch,
-    })
+    namedOptionals.push(optional.GlobalSearch)
   }
 
   if (optional.ContextBudget) {
-    namedOptionals.push({
-      tool: optional.ContextBudget,
-    })
+    namedOptionals.push(optional.ContextBudget)
   }
 
   if (optional.ToolOutput) {
-    namedOptionals.push({
-      tool: optional.ToolOutput,
-    })
+    namedOptionals.push(optional.ToolOutput)
   }
 
   if (optional.Skill) {
-    namedOptionals.push({
-      tool: optional.Skill,
-    })
+    namedOptionals.push(optional.Skill)
   }
 
   if (optional.MiniAppGuide) {
-    namedOptionals.push({
-      tool: optional.MiniAppGuide,
-    })
+    namedOptionals.push(optional.MiniAppGuide)
   }
 
   if (optional.Jobs) {
-    namedOptionals.push({
-      tool: optional.Jobs,
-    })
+    namedOptionals.push(optional.Jobs)
   }
 
-  if (optional.Vault) namedOptionals.push({ tool: optional.Vault })
-  if (optional.ExternalAgentSessions) namedOptionals.push({ tool: optional.ExternalAgentSessions })
+  if (optional.Vault) namedOptionals.push(optional.Vault)
+  if (optional.ExternalAgentSessions) namedOptionals.push(optional.ExternalAgentSessions)
 
   if (optional.Browser) {
-    namedOptionals.push({
-      tool: createBrowserTool(optional.Browser),
-    })
+    namedOptionals.push(createBrowserTool(optional.Browser))
   }
 
   // Configuration proposals: inspect the ledger, raise a `config_change` HITL request. The
   // catalog marks it `never` for every unattended shape, so this branch only ever runs for a
   // chat — the port is simply not built elsewhere (`run/configure-options.ts`).
   if (optional.Configure) {
-    namedOptionals.push({
-      tool: createConfigureTool(optional.Configure),
-    })
+    namedOptionals.push(createConfigureTool(optional.Configure))
   }
 
   // The conversation's plan, in every mode: `complete` and `read` belong to the implementing
   // run after an approval. Each action checks the state it needs (`present` needs plan mode).
   if (optional.Plan) {
-    namedOptionals.push({
-      tool: createPlanTool(optional.Plan),
-    })
+    namedOptionals.push(createPlanTool(optional.Plan))
   }
 
   // Plugin workflows: present once a workflow command activated it for the session.
   if (optional.Workflow) {
-    namedOptionals.push({ tool: createWorkflowTool(optional.Workflow) })
+    namedOptionals.push(createWorkflowTool(optional.Workflow))
   }
 
   return namedOptionals
