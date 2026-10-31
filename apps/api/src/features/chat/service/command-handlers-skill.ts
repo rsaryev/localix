@@ -67,9 +67,12 @@ export async function handleSkillCommand(
     discoveredSkills.map((s) => s.name),
   )
   const skills = filterDisabledSkills(discoveredSkills, skillOverrides)
-  const skill =
-    skills.find((s) => s.name.toLowerCase() === skillCmd.name) ??
-    findPluginSkill(await ctx.gatherEnabledPluginSkills(userId, session), skillCmd.name)
+  // Read at most once per command: the stacked skills after the first look here too.
+  let pluginSkills: Promise<SkillRecord[]> | undefined
+  const findSkill = async (name: string) =>
+    skills.find((s) => s.name.toLowerCase() === name) ??
+    findPluginSkill(await (pluginSkills ??= ctx.gatherEnabledPluginSkills(userId, session)), name)
+  const skill = await findSkill(skillCmd.name)
   if (!skill) {
     // No matching skill — let the final unresolved-slash gate report it.
     return null
@@ -118,12 +121,7 @@ export async function handleSkillCommand(
   // `/write-tests /fix-issue 123`: the skills stacked after an inline first one, all taking `123`.
   const stack = skill.contextFork
     ? { extra: [], arg: skillCmd.arg }
-    : await stackedSkills(
-        skillCmd.arg,
-        async (name) =>
-          skills.find((s) => s.name.toLowerCase() === name) ??
-          findPluginSkill(await ctx.gatherEnabledPluginSkills(userId, session), name),
-      )
+    : await stackedSkills(skillCmd.arg, findSkill)
   const arg = stack.arg
   const render = async (one: SkillRecord) =>
     renderSkillBody(one, arg, {

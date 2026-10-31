@@ -27,14 +27,18 @@ const skill = (name: string, content: string, extra: Partial<SkillRecord> = {}):
   ...extra,
 })
 
-function context(skills: SkillRecord[]) {
+function context(skills: SkillRecord[], pluginSkills: SkillRecord[] = []) {
   const runs: Array<{ instruction: string; opts: Record<string, unknown> }> = []
+  let pluginCatalogReads = 0
   const ctx = {
     repo: { listMessages: async () => [] },
     runner: { isBusy: () => false, isRunning: () => false },
     now: () => 'now',
     gatherSessionSkills: async () => skills,
-    gatherEnabledPluginSkills: async () => [],
+    gatherEnabledPluginSkills: async () => {
+      pluginCatalogReads++
+      return pluginSkills
+    },
     loadSkillOverrides: async () => ({}),
     resolveSessionWorkingDir: async () => tmpdir(),
     runMacroCommand: async (...args: unknown[]) => {
@@ -43,7 +47,7 @@ function context(skills: SkillRecord[]) {
     },
     insertDirectReply: async () => ({ sessionId: 's1', messageId: 'r1' }),
   } as unknown as CommandHandlerContext
-  return { ctx, runs }
+  return { ctx, runs, pluginCatalogReads: () => pluginCatalogReads }
 }
 
 test('stacked skills all load, each with the trailing arguments', async () => {
@@ -65,4 +69,18 @@ test('stacked skills all load, each with the trailing arguments', async () => {
   ])
   await handleSkillCommand(stop.ctx, 'u1', 's1', session, '/one /forked x')
   expect(stop.runs[0]!.instruction).toContain('One: /forked x')
+})
+
+test('stacked plugin skills read the plugin catalog once', async () => {
+  const plugin = (name: string) =>
+    skill(`kit:${name}`, `${name} $ARGUMENTS.`, { pluginName: 'kit', pluginDir: tmpdir() })
+  const { ctx, runs, pluginCatalogReads } = context(
+    [],
+    [plugin('lint'), plugin('test'), plugin('ship')],
+  )
+  await handleSkillCommand(ctx, 'u1', 's1', session, '/lint /test /kit:ship 7')
+  expect(runs[0]!.instruction).toContain('lint 7.')
+  expect(runs[0]!.instruction).toContain('test 7.')
+  expect(runs[0]!.instruction).toContain('ship 7.')
+  expect(pluginCatalogReads()).toBe(1)
 })
