@@ -16,13 +16,6 @@ use std::sync::Mutex;
 
 use tauri::{AppHandle, Manager};
 
-/// Build the native application menu.
-///
-/// Tauri's `Menu::default` titles the macOS app submenu from the Cargo package
-/// name (`desktop-tauri`); we rebuild the same native structure but brand it
-/// "Localix" and point About at the real product metadata. The menu also carries
-/// the standard Edit items (Undo/Redo/Cut/Copy/Paste/Select-All) so those system
-/// shortcuts work reliably inside the webview on every OS.
 /// One entry the UI feeds into File ▸ Open Recent (a recent session).
 #[derive(Clone, serde::Deserialize)]
 pub struct RecentItem {
@@ -204,6 +197,13 @@ const REDO_ACCELERATOR: Option<&str> = Some("Ctrl+Y");
 /// landing page and the channel named in `release.yml`; change them together when beta ends.
 const RELEASE_CHANNEL: &str = "beta";
 
+/// Build the native application menu.
+///
+/// Tauri's `Menu::default` titles the macOS app submenu from the Cargo package
+/// name (`desktop-tauri`); we rebuild the same native structure but brand it
+/// "Localix" and point About at the real product metadata. The menu also carries
+/// the standard Edit items (Undo/Redo/Cut/Copy/Paste/Select-All) so those system
+/// shortcuts work reliably inside the webview on every OS.
 pub(crate) fn build_app_menu<R: tauri::Runtime>(
     handle: &tauri::AppHandle<R>,
     data: &MenuData,
