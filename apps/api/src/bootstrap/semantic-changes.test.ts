@@ -68,6 +68,7 @@ async function setup(seed: (db: Kysely<AppDatabase>) => Promise<void>) {
     await service.shutdown()
   }
   const store = createSemanticStore(db)
+  const keys = async (collection: string) => (await store.keysOf(collection)).sort()
   const settle = async () => {
     await feed.settle()
     for (let i = 0; i < 3; i++) await service.settle()
@@ -78,7 +79,7 @@ async function setup(seed: (db: Kysely<AppDatabase>) => Promise<void>) {
     service,
     settle,
     embedded: () => embedded,
-    keys: async (collection: string) => (await store.keysOf(collection)).sort(),
+    keys,
   }
 }
 
