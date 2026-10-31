@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { contextFingerprint, createContextManager, packContextContributions } from './manager'
+import { createContextManager, packContextContributions } from './manager'
 import { createContextProviderRegistry } from './registry'
 import type { ContextContribution } from '@localixai/mini-app-sdk/backend'
 
@@ -45,7 +45,7 @@ describe('packContextContributions', () => {
         contribution({ id: 'token', content: 'api_key = "0123456789abcdef"' }),
         contribution({ id: 'allowed', uri: 'file:///work/src/a.ts', content: 'const x = 1' }),
       ],
-      { maxBytes: 1000, maxItems: 8, isUriAllowed: (uri) => uri.startsWith('file:///work/') },
+      { maxBytes: 1000, maxItems: 8 },
     )
     expect(result.contributions.map((item) => item.id)).toEqual(['allowed'])
     expect(result.diagnostics).toEqual({ droppedByReason: { excluded_uri: 2, secret: 2 } })
@@ -180,19 +180,6 @@ describe('packContextContributions', () => {
         { providerId: 'healthy', status: 'ok', contributionCount: 1 },
         { providerId: 'slow', status: 'timeout', contributionCount: 0 },
       ]),
-    )
-  })
-
-  test('fingerprint changes with destination or contribution revision', () => {
-    const item = contribution({ revision: '1' })
-    expect(contextFingerprint('chat', [item])).not.toBe(
-      contextFingerprint('edit-prediction', [item]),
-    )
-    expect(contextFingerprint('chat', [item])).not.toBe(
-      contextFingerprint('chat', [{ ...item, revision: '2' }]),
-    )
-    expect(contextFingerprint('chat', [item])).not.toBe(
-      contextFingerprint('chat', [{ ...item, content: 'y' }]),
     )
   })
 

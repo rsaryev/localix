@@ -1,10 +1,9 @@
 /**
  * FNV-1a (32-bit) — the revision/fingerprint hash, owned once.
  *
- * Three modules had independently open-coded the same loop with the same seed and the
- * same prime, to answer the same question: "is this the same content as last time?"
- * (`context-fabric/manager.ts` `contextFingerprint`, `context-fabric/resource-context-provider.ts`
- * content and cache revisions. Identical bytes in, identical digest out — so
+ * Modules had independently open-coded the same loop with the same seed and the same prime,
+ * to answer the same question: "is this the same content as last time?" (the resource-context
+ * provider's content and cache revisions). Identical bytes in, identical digest out — so
  * consolidating them costs ZERO revision churn: no cache is invalidated,
  * no persisted revision string changes.
  *

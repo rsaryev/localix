@@ -1,15 +1,13 @@
 import type {
   AutomaticContextRequest,
   ContextContribution,
-  ContextDestination,
   ContextReference,
   ResolveContext,
   ContextSensitivity,
 } from '@localixai/mini-app-sdk/backend'
-import { fnv1aHex } from '../../lib/fnv1a'
 import { mapLimit } from '../../lib/map-limit'
 import type { ContextProviderRegistry } from './registry'
-import { createContextPolicy, type ContextPolicy } from './policy'
+import { createContextPolicy } from './policy'
 
 export interface ContextPackOptions {
   maxBytes: number
@@ -18,9 +16,6 @@ export interface ContextPackOptions {
   activeUri?: string
   /** Sensitive data is deny-by-default for auxiliary model tasks. */
   allowSensitive?: boolean
-  /** Host policy for filesystem-backed context. The core cannot infer a project
-   * root, so containment is supplied by the host rather than hard-coding it. */
-  isUriAllowed?: (uri: string) => boolean
 }
 
 export type ContextDropReason =
@@ -44,12 +39,12 @@ const SECRET_CONTENT =
 const EXCLUDED_URI =
   /(?:^|\/)(?:\.env(?:\.[^/]*)?|credentials(?:\.json)?|id_(?:rsa|ed25519)|\.npmrc)$/i
 
-function isSafeUri(uri: string | undefined, isUriAllowed?: (uri: string) => boolean): boolean {
+function isSafeUri(uri: string | undefined): boolean {
   if (!uri) return true
   // Reject traversal before a plugin gets a chance to smuggle a filesystem path into
   // a contribution. Opaque non-file resource schemes remain provider-owned.
   if (uri.split(/[\\/]/).includes('..')) return false
-  return !EXCLUDED_URI.test(uri) && (isUriAllowed?.(uri) ?? true)
+  return !EXCLUDED_URI.test(uri)
 }
 
 function isNoMoreSensitive(value: ContextSensitivity, maximum: ContextSensitivity): boolean {
@@ -206,7 +201,7 @@ export function packContextContributions(
       drop(item.id, 'empty')
       continue
     }
-    if (!isSafeUri(item.uri, options.isUriAllowed)) {
+    if (!isSafeUri(item.uri)) {
       drop(item.id, 'excluded_uri')
       continue
     }
@@ -318,11 +313,8 @@ function providerCall<T>(
  * it cannot fail or delay the model task. Explicit contributions are still shaped by
  * the same privacy, dedupe and budget policy as provider output.
  */
-export function createContextManager(
-  registry: ContextProviderRegistry,
-  packPolicy: Pick<ContextPackOptions, 'isUriAllowed'> = {},
-  admissionPolicy: ContextPolicy = createContextPolicy(),
-): ContextManager {
+export function createContextManager(registry: ContextProviderRegistry): ContextManager {
+  const admissionPolicy = createContextPolicy()
   const admit = async (
     items: readonly ContextContribution[],
     request: ResolveContext,
@@ -395,7 +387,6 @@ export function createContextManager(
             activeUri: request.document?.uri,
             maxBytes: request.maxBytes,
             maxItems: request.maxItems ?? DEFAULT_CONTEXT_ITEMS,
-            ...packPolicy,
           }),
           [...providerDropped, ...admission.dropped],
         ),
@@ -519,7 +510,6 @@ export function createContextManager(
         packContextContributions(admission.admitted, {
           maxBytes: request.maxBytes,
           maxItems: request.maxItems ?? DEFAULT_CONTEXT_ITEMS,
-          ...packPolicy,
         }),
         [...providerDropped, ...admission.dropped],
       )
@@ -533,13 +523,4 @@ export function createContextManager(
       return { ...merged, providerOutcomes, referenceOutcomes }
     },
   }
-}
-
-/** Public helper for destination-specific diagnostic namespaces. */
-export function contextFingerprint(
-  destination: ContextDestination,
-  items: readonly ContextContribution[],
-): string {
-  const input = `${destination}\n${items.map((item) => `${item.id}:${item.revision ?? ''}:${item.uri ?? ''}:${item.content}`).join('\n')}`
-  return `ctx1:${fnv1aHex(input)}`
 }
