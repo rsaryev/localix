@@ -4,6 +4,13 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+### Changed
+
+- **Install confirmation in the Store**: the sheet that asks before installing from a community
+  source lists its warnings together in one quiet panel, then what the app adds, runs and reaches,
+  each under its own word, instead of a column of centred sentences; a source called "Localix
+  Community" is no longer followed by "· Community".
+
 ### Fixed
 
 - **Rust code intelligence**: opening a `.rs` file starts rust-analyzer again when rustup is

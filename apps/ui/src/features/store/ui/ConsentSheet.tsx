@@ -49,7 +49,10 @@ export function ConsentSheet({
           <DialogTitle>Install {listing.displayName}?</DialogTitle>
           <DialogDescription className="text-balance">
             {KIND_LABELS[listing.ref.kind].one} from {listing.source.label}
-            {trust && TRUST_LABELS[trust] !== listing.source.label && ` · ${TRUST_LABELS[trust]}`}
+            {/* "Localix Community" already says Community. */}
+            {trust &&
+              !listing.source.label.toLowerCase().includes(TRUST_LABELS[trust].toLowerCase()) &&
+              ` · ${TRUST_LABELS[trust]}`}
           </DialogDescription>
         </DialogHeader>
         <DialogBody className="flex flex-col gap-4">

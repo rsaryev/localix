@@ -17,9 +17,12 @@ const COMMUNITY = {
   source: { id: 'ada/market', label: 'Ada’s market', trust: 'community' as const },
 }
 
-async function ask(project: { id: string; name: string } | null) {
+async function ask(
+  project: { id: string; name: string } | null,
+  source: typeof COMMUNITY.source = COMMUNITY.source,
+) {
   const view = await renderStore({
-    listings: [listing(COMMUNITY)],
+    listings: [listing({ ...COMMUNITY, source })],
     project,
     target: { shelf: 'package:plugin' },
   })
@@ -89,6 +92,41 @@ describe('the consent sheet', () => {
       expect(sheet.querySelector('[title="node check.js"]')).not.toBeNull()
       expect(text.split('Localix does not review').length - 1).toBe(1)
       expect(text.split('Ada’s market').length - 1).toBe(1)
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('names a source whose name already says Community once', async () => {
+    const { view, sheet } = await ask(null, {
+      id: 'localix-community',
+      label: 'Localix Community',
+      trust: 'community',
+    })
+    try {
+      expect(sheet.textContent?.split('Community').length).toBe(2)
+    } finally {
+      await view.done()
+    }
+  })
+
+  // Read in a second: the warnings as one list to heed, then what it adds, runs and reaches, each
+  // under its own word.
+  test('warnings are one list, and what it runs and reaches are named facts', async () => {
+    const { view, sheet } = await ask(null)
+    try {
+      const warnings = sheet.querySelector('ul[aria-label="Before you install"]')
+      expect([...(warnings?.querySelectorAll('li') ?? [])].map((li) => li.textContent)).toEqual([
+        'Localix does not review what this source lists',
+      ])
+      const facts = [...sheet.querySelectorAll('dt')].map((dt) => [
+        dt.textContent,
+        dt.nextElementSibling?.textContent,
+      ])
+      expect(facts).toEqual([
+        ['Runs', 'PreToolUse hook, on this computer'],
+        ['Reaches', 'api.example.test'],
+      ])
     } finally {
       await view.done()
     }

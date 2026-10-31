@@ -1,4 +1,4 @@
-import { Fragment } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { CircleAlert } from 'lucide-react'
 import { Skeleton } from '@localixai/kit/skeleton'
 import { COMPONENT_LABELS, plural } from '../model/presentation'
@@ -10,9 +10,9 @@ const listed = (items: readonly string[]) =>
   items.length < 2 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`
 
 /**
- * What the consent sheet asks a yes for, in a sentence or two read at a glance: the source's
- * warnings, what runs on this computer (each run's command on hover; the package's Permissions tab
- * lists them in full), the hosts it reaches and what it adds.
+ * What the consent sheet asks a yes for, read at a glance: the source's warnings first, as one list
+ * to heed, then what it adds, what runs on this computer (each run's command on hover; the
+ * package's Permissions tab lists them in full) and the hosts it reaches, each under its own word.
  */
 export function ConsentPlan({ plan, error, retry }: ReturnType<typeof useListingPlan>) {
   if (error && !plan)
@@ -31,41 +31,59 @@ export function ConsentPlan({ plan, error, retry }: ReturnType<typeof useListing
     return plural(count, one.toLowerCase(), many.toLowerCase())
   })
   return (
-    <div className="flex flex-col gap-1.5 text-center text-xs/relaxed text-balance text-text-soft">
-      {plan.warnings.map((warning) => (
-        <p key={warning}>
-          <CircleAlert
-            className="mr-1.5 inline size-3.5 -translate-y-px text-status-warning"
-            aria-hidden
-          />
-          {warning}
-        </p>
-      ))}
-      <p>
-        {plan.runs.length === 0 ? (
-          'Runs nothing on this computer.'
-        ) : (
-          <>
-            Runs on this computer:{' '}
-            {plan.runs.map((run, index) => (
-              <Fragment key={`${run.kind}:${run.name}`}>
-                {index > 0 && (index === plan.runs.length - 1 ? ' and ' : ', ')}
-                <span className="text-foreground" title={run.command}>
-                  {COMPONENT_LABELS[run.kind].one.toLowerCase()} {run.name}
-                </span>
-              </Fragment>
-            ))}
-            .
-          </>
-        )}
+    <div className="flex flex-col gap-3 text-xs/relaxed text-text-soft">
+      {plan.warnings.length > 0 && (
+        // The signal is the glyph's; the ground stays a quiet veil (`WorkbenchNoticeBar`).
+        <ul
+          aria-label="Before you install"
+          className="flex flex-col gap-1.5 rounded-lg bg-foreground/[0.04] px-3 py-2.5"
+        >
+          {plan.warnings.map((warning) => (
+            <li key={warning} className="flex items-start gap-2">
+              <CircleAlert
+                className="mt-[0.1875rem] size-3.5 shrink-0 text-status-warning"
+                aria-hidden
+              />
+              <span className="min-w-0 text-pretty">{warning}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 px-3">
+        {adds.length > 0 && <Fact term="Adds">{listed(adds)}</Fact>}
+        <Fact term="Runs">
+          {plan.runs.length === 0 ? (
+            'Nothing on this computer'
+          ) : (
+            <>
+              {plan.runs.map((run, index) => (
+                <Fragment key={`${run.kind}:${run.name}`}>
+                  {index > 0 && (index === plan.runs.length - 1 ? ' and ' : ', ')}
+                  <span className="text-foreground" title={run.command}>
+                    {run.name} {COMPONENT_LABELS[run.kind].one.toLowerCase()}
+                  </span>
+                </Fragment>
+              ))}
+              , on this computer
+            </>
+          )}
+        </Fact>
         {plan.network.length > 0 && (
-          <>
-            {' '}
-            Reaches <span className="text-foreground">{listed(plan.network)}</span>.
-          </>
+          <Fact term="Reaches">
+            <span className="text-foreground">{listed(plan.network)}</span>
+          </Fact>
         )}
-      </p>
-      {adds.length > 0 && <p>Adds {listed(adds)}.</p>}
+      </dl>
     </div>
+  )
+}
+
+/** One named fact of the plan: its word in the quiet column, what it says beside it. */
+function Fact({ term, children }: { term: string; children: ReactNode }) {
+  return (
+    <>
+      <dt className="text-text-faint">{term}</dt>
+      <dd className="min-w-0 text-pretty">{children}</dd>
+    </>
   )
 }
