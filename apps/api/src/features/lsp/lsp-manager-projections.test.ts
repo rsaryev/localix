@@ -65,8 +65,6 @@ test('projects current diagnostics in server order without cloning diagnostic ob
     publish.get('first')!({})
     expect(manager.getFileDiagnostics(root, file)).toEqual([warning, hint])
     expect(manager.getServerStates(root)[0]!.errorCount).toBe(0)
-    expect(manager.getDiagnostics('/other')).toEqual({})
-    expect(manager.getDiagnostics('/other')).not.toBe(manager.getDiagnostics('/other'))
     expect(manager.getFileDiagnostics('/other', file)).not.toBe(
       manager.getFileDiagnostics('/other', file),
     )

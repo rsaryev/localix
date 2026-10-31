@@ -183,10 +183,6 @@ export function createLspManager(options: LspManagerOptions = {}): LspManager {
       )
     },
 
-    getDiagnostics(projectRoot) {
-      return collectDiagnostics(projectRoot)
-    },
-
     getFileDiagnostics(projectRoot, filePath) {
       return collectDiagnostics(projectRoot)[filePath] ?? []
     },

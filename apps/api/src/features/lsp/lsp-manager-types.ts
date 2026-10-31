@@ -60,7 +60,6 @@ export interface LspManager {
     filePaths: readonly string[],
     projectRoot: string,
   ): Promise<DiagnosticsReport>
-  getDiagnostics(projectRoot: string): Record<string, LspDiagnostic[]>
   /** All current diagnostics for one file (every severity), '' when none. */
   getFileDiagnostics(projectRoot: string, filePath: string): LspDiagnostic[]
   /**
