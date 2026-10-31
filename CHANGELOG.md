@@ -28,7 +28,7 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 - **Browser waits for the page to settle**: after a click or typing, the agent now waits until the
   page has stopped changing, up to 0.7 s, so results that arrive from the network are in what it
   sees instead of a false "no visible change". If the page is still loading (a request of its own in
-  flight, a progress bar), the reply says so.
+  flight, a busy main region or an indeterminate progress bar), the reply says so.
 - **Browser reads long pages and moves through history**: the agent can now read a page's text in
   windows of about 8,000 characters, told where each window sits and where to continue, instead of
   writing a script. It can also go back, go forward and reload a tab, and in a native browser tab it
