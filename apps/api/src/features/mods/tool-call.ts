@@ -24,6 +24,10 @@ import { errorMessage } from '../../lib/errors'
 export const modToolName = (plugin: string, name: string) =>
   `mcp__${plugin}__${name}`.replace(/[^A-Za-z0-9_-]/g, '_')
 
+/** The tools this run's mods registered. */
+const scopedTools = (scope: ModToolScope) =>
+  scope.host.registry.tools().filter((tool) => scope.plugins.has(tool.instance))
+
 type Fields = Record<string, unknown>
 
 export interface ModToolScope {
@@ -86,12 +90,7 @@ async function callThrough(
 export function wrapInToolCall(tools: readonly AgentTool[], scope: ModToolScope): AgentTool[] {
   if (!scope.host.hears('tool.call', scope.plugins)) return [...tools]
   // A mod's own tool fires `tool.call` itself (`modTools`): wrapping it again would fire it twice.
-  const own = new Set(
-    scope.host.registry
-      .tools()
-      .filter((tool) => scope.plugins.has(tool.instance))
-      .map((tool) => modToolName(tool.plugin, tool.name)),
-  )
+  const own = new Set(scopedTools(scope).map((tool) => modToolName(tool.plugin, tool.name)))
   return tools.map((tool) =>
     own.has(tool.name)
       ? tool
@@ -121,33 +120,30 @@ export function wrapInToolCall(tools: readonly AgentTool[], scope: ModToolScope)
 
 /** The tools the enabled mods registered, each answered by their `tool.call` hooks. */
 export function modTools(scope: ModToolScope): AgentTool[] {
-  return scope.host.registry
-    .tools()
-    .filter((tool) => scope.plugins.has(tool.instance))
-    .map((spec) => {
-      const name = modToolName(spec.plugin, spec.name)
-      return {
-        name,
-        label: `${spec.plugin} · ${spec.name}`,
-        description: spec.description,
-        inputSchema: mcpInputSchema(spec.inputSchema ?? { type: 'object', properties: {} }),
-        activeVerb: 'Running',
-        async execute(toolCallId, input, signal) {
-          const unanswered: AgentToolResult = {
-            content: `No hook of ${spec.plugin} answered ${name}`,
-            isError: true,
-          }
-          const answer = await scope.host.dispatch(
-            'tool.call',
-            { ...toolCallEvent({ name }, input, toolCallId), ...agentOf(scope) },
-            () => ({ result: unanswered.content, text: unanswered.content, isError: true }),
-            scope.scene,
-            scope.plugins,
-            undefined,
-            signal,
-          )
-          return resultOf(answer, unanswered)
-        },
-      } satisfies AgentTool
-    })
+  return scopedTools(scope).map((spec) => {
+    const name = modToolName(spec.plugin, spec.name)
+    return {
+      name,
+      label: `${spec.plugin} · ${spec.name}`,
+      description: spec.description,
+      inputSchema: mcpInputSchema(spec.inputSchema ?? { type: 'object', properties: {} }),
+      activeVerb: 'Running',
+      async execute(toolCallId, input, signal) {
+        const unanswered: AgentToolResult = {
+          content: `No hook of ${spec.plugin} answered ${name}`,
+          isError: true,
+        }
+        const answer = await scope.host.dispatch(
+          'tool.call',
+          { ...toolCallEvent({ name }, input, toolCallId), ...agentOf(scope) },
+          () => ({ result: unanswered.content, text: unanswered.content, isError: true }),
+          scope.scene,
+          scope.plugins,
+          undefined,
+          signal,
+        )
+        return resultOf(answer, unanswered)
+      },
+    } satisfies AgentTool
+  })
 }
