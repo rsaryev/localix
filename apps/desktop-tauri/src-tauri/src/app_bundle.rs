@@ -60,6 +60,20 @@ fn bundle_id(app: &AppHandle, mini_app: &str) -> String {
     )
 }
 
+/// The installed app of one mini app, if it has one.
+fn find_installed(mini_app: &str) -> Option<InstalledApp> {
+    installed()
+        .into_iter()
+        .find(|entry| entry.mini_app == mini_app)
+}
+
+/// Where a bundle keeps its icon.
+fn icon_path(bundle: &Path) -> PathBuf {
+    bundle
+        .join("Contents/Resources")
+        .join(format!("{ICON}.icns"))
+}
+
 /// Every standalone mini app in the folder, read back from the bundles themselves.
 pub(crate) fn installed() -> Vec<InstalledApp> {
     let Some(entries) = apps_dir().and_then(|dir| std::fs::read_dir(dir).ok()) else {
@@ -104,9 +118,7 @@ pub(crate) fn install(
     let name = bundle_name(title).ok_or("the app needs a name")?;
     let dir = apps_dir().ok_or("no home folder")?;
     std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
-    let previous = installed()
-        .into_iter()
-        .find(|entry| entry.mini_app == mini_app);
+    let previous = find_installed(mini_app);
     // Another mini app's app may already use this title; keep both.
     let taken =
         |path: &Path| path.exists() && previous.as_ref().is_none_or(|entry| entry.path != path);
@@ -160,10 +172,7 @@ fn build(
     write(contents.join("PkgInfo"), b"APPL????")?;
     // A refresh of a bundle whose icon went missing keeps the generic one, not an empty file.
     if !icon.is_empty() {
-        write(
-            contents.join("Resources").join(format!("{ICON}.icns")),
-            icon,
-        )?;
+        write(icon_path(bundle), icon)?;
     }
     sign(bundle)
 }
@@ -201,11 +210,7 @@ pub(crate) fn refresh(app: &AppHandle) {
         if entry.host_build.as_deref() == Some(current.build.as_str()) {
             continue;
         }
-        let icon_file = entry
-            .path
-            .join("Contents/Resources")
-            .join(format!("{ICON}.icns"));
-        let icon = std::fs::read(icon_file).unwrap_or_default();
+        let icon = std::fs::read(icon_path(&entry.path)).unwrap_or_default();
         if let Err(error) = install(app, &entry.mini_app, &entry.name, &icon) {
             crate::log::logln(format!(
                 "standalone mini app {}: refresh failed: {error}",
@@ -220,10 +225,7 @@ pub(crate) fn uninstall(mini_app: &str) -> Result<(), String> {
     let _change = CHANGES
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
-    let Some(entry) = installed()
-        .into_iter()
-        .find(|entry| entry.mini_app == mini_app)
-    else {
+    let Some(entry) = find_installed(mini_app) else {
         return Ok(());
     };
     terminate(&entry.bundle_id);
@@ -237,10 +239,7 @@ pub(crate) fn uninstall(mini_app: &str) -> Result<(), String> {
 
 /// Launch (or bring forward) a mini app's app.
 pub(crate) fn open(mini_app: &str) -> Result<(), String> {
-    let entry = installed()
-        .into_iter()
-        .find(|entry| entry.mini_app == mini_app)
-        .ok_or("this mini app is not installed as an app")?;
+    let entry = find_installed(mini_app).ok_or("this mini app is not installed as an app")?;
     Command::new("/usr/bin/open")
         .arg(&entry.path)
         .spawn()
