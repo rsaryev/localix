@@ -69,9 +69,9 @@ Two rules decide what belongs here, and only the second is obvious:
 
 1. A permission is needed when the **UI calls it**. All the UI has is
    [`apps/ui/src/shared/lib/tauri.ts`](../ui/src/shared/lib/tauri.ts): `core.invoke`,
-   `event.listen`, and the current window's `isFullscreen()` / `setBadgeCount()`. Hence
-   `core:default` plus `set-badge-count` (not in the core defaults) and `start-dragging` (what
-   `data-tauri-drag-region` invokes behind the custom titlebar).
+   `event.listen`, and the current window's `isFullscreen()`. Hence `core:default` plus
+   `start-dragging` (what `data-tauri-drag-region` invokes behind the custom titlebar). The dock
+   badge goes through the Rust `set_badge` command and needs no capability.
 2. A permission is also needed when a **plugin injects a JavaScript shim**. The current capability
    grants `opener:allow-open-url` and `opener:allow-default-urls` for the opener's click handler,
    and `notification:allow-is-permission-granted` for the notification permission probe. These are

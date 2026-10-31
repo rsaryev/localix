@@ -51,12 +51,6 @@ export type ListenFn = (
 
 interface TauriWindowHandle {
   isFullscreen(): Promise<boolean>
-  /**
-   * Set the app-wide badge count on the dock (macOS) / taskbar-adjacent icon
-   * (Linux). `undefined` clears it. Unsupported on Windows (no-ops there).
-   * Available since @tauri-apps/api 2.2.0. App-wide, not per-window.
-   */
-  setBadgeCount(count?: number): Promise<void>
 }
 
 interface TauriGlobal {
