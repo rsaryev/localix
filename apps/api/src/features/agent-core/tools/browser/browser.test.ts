@@ -524,6 +524,8 @@ describe('browser tool', () => {
     }
     const res = await toolWith(withFailures).tool.execute('fr1', { action: 'snapshot' })
     expect(res.content).toContain('failed to load')
+    // Not every page is the person's own: the hint must not assume they can fix the files.
+    expect(res.content).not.toContain('fix that before')
     expect(res.content).toContain('assets/style.css')
     expect(res.content).toContain('app.js')
   })
@@ -562,6 +564,7 @@ describe('browser tool', () => {
     }
     const res = await toolWith(withFail).tool.execute('wf1', CLICK_E1)
     expect(res.content).toContain('newly failed to load')
+    expect(res.content).not.toContain('fix that before')
     expect(res.content).toContain('assets/theme.css')
   })
 

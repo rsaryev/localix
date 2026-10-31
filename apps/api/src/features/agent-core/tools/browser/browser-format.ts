@@ -28,11 +28,12 @@ function emptyPageHint(s: PreviewSnapshot): string {
 
 // A page whose stylesheet/script/image 404'd is silently broken — the theme flips
 // but nothing restyles. Surface the failed resources so the agent stops
-// blaming a working control and fixes the missing file/path instead.
+// blaming a working control. The wording stays neutral: the page may be a site the person does
+// not own, where a missing file is not theirs to fix.
 function failedResourcesHint(s: PreviewSnapshot): string {
   const failed = s.failedResources
   if (!failed?.length) return ''
-  return `\n\n⚠ failed to load: ${failed.join(', ')} — the page is running WITHOUT these resources (a wrong path / missing file). If styling or behavior looks broken, fix that before touching the UI controls.`
+  return `\n\n⚠ failed to load: ${failed.join(', ')} — the page is running WITHOUT these resources, which may be why it looks or behaves broken (not a control's fault).`
 }
 
 // The page itself says it is still working (parsing, its own requests in flight, a progress
@@ -68,7 +69,7 @@ function actionWarnings(r: PreviewCommandResult): string {
   }
   if (r.failedResources?.length) {
     blocks.push(
-      `⚠ newly failed to load: ${r.failedResources.join(', ')} — a wrong path / missing file; fix that before blaming a control.`,
+      `⚠ newly failed to load: ${r.failedResources.join(', ')} — the page runs without them, which may explain what looks broken.`,
     )
   }
   return blocks.length ? `\n\n${blocks.join('\n\n')}` : ''
