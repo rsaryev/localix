@@ -10,6 +10,21 @@ export type CapabilityResourceKind =
   | 'mcp'
   | 'view'
 
+const CAPABILITY_KINDS: ReadonlySet<string | undefined> = new Set([
+  'plugin',
+  'mini-app',
+  'skill',
+  'tool',
+  'agent',
+  'mcp',
+  'view',
+] satisfies CapabilityResourceKind[])
+
+const isCapabilityKind = (kind: string | undefined): kind is CapabilityResourceKind =>
+  CAPABILITY_KINDS.has(kind)
+
+const ALLOWED_QUERY = new Set(['scope', 'label', 'description', 'enabled'])
+
 export interface CapabilityResource {
   kind: CapabilityResourceKind
   id: string
@@ -18,16 +33,6 @@ export interface CapabilityResource {
   description?: string
   enabled?: boolean
 }
-
-const CAPABILITY_KINDS = new Set<CapabilityResourceKind>([
-  'plugin',
-  'mini-app',
-  'skill',
-  'tool',
-  'agent',
-  'mcp',
-  'view',
-])
 
 /** Stable resource URI carried by capability drag bindings. It contains only
  * compact, non-secret presentation facts captured at drag time. */
@@ -46,12 +51,11 @@ export function parseCapabilityResourceUri(uri: string): CapabilityResource | nu
   if (parsed?.primitive !== 'resource' || parsed.breadcrumbs.length !== 3) return null
   const [provider, rawKind, id] = parsed.breadcrumbs
   if (provider !== 'capability') return null
-  const kind = rawKind as CapabilityResourceKind
-  if (!CAPABILITY_KINDS.has(kind)) return null
-  const allowedQuery = new Set(['scope', 'label', 'description', 'enabled'])
+  if (!isCapabilityKind(rawKind)) return null
+
   const seenQuery = new Set<string>()
   for (const [key] of parsed.query) {
-    if (!allowedQuery.has(key) || seenQuery.has(key)) return null
+    if (!ALLOWED_QUERY.has(key) || seenQuery.has(key)) return null
     seenQuery.add(key)
   }
   const scope = parsed.query.get('scope') ?? ''
@@ -66,7 +70,7 @@ export function parseCapabilityResourceUri(uri: string): CapabilityResource | nu
   )
     return null
   return {
-    kind,
+    kind: rawKind,
     id,
     scope,
     ...(label ? { label } : {}),
