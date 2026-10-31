@@ -29,3 +29,22 @@ test('parameters stay isolated by agent, provider and model while preserving sib
   expect(agentModelSettingsFor(reset, 'a', 'p', 'm')).toMatchObject({ effort: 'high' })
   expect(agentModelSettingsFor(reset, 'a', 'p', 'm')?.maxTurns).toBeUndefined()
 })
+
+test('the list keeps the newest 200 entries and drops the oldest', () => {
+  const entries = Array.from({ length: 200 }, (_, i) => ({
+    agentId: `a${i}`,
+    providerId: 'p',
+    modelId: 'm',
+    maxTurns: 5,
+  }))
+  const next = setAgentModelSettings(entries, {
+    agentId: 'new',
+    providerId: 'p',
+    modelId: 'm',
+    maxTurns: 9,
+  })
+  expect(next).toHaveLength(200)
+  expect(next[0]?.agentId).toBe('new')
+  expect(agentModelSettingsFor(next, 'a199', 'p', 'm')).toBeUndefined()
+  expect(agentModelSettingsFor(next, 'a198', 'p', 'm')).toBeDefined()
+})

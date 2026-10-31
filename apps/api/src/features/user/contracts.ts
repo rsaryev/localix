@@ -1,6 +1,10 @@
 import { z } from 'zod'
 import { MAX_MAX_TURNS } from '../../contracts/turn-budget'
-import { MAX_CONTEXT_LIMIT_TOKENS, MIN_CONTEXT_LIMIT_TOKENS } from '@localixai/agent'
+import {
+  MAX_AGENT_MODEL_SETTINGS,
+  MAX_CONTEXT_LIMIT_TOKENS,
+  MIN_CONTEXT_LIMIT_TOKENS,
+} from '@localixai/agent'
 import { contextExclusionsSchema } from '../../contracts/context-exclusion-schema'
 import { REASONING_EFFORTS } from '../../db/types'
 import { isModelRoutingTaskKey } from '../../contracts/model-task-catalog'
@@ -114,7 +118,7 @@ const agentSettingsShape = {
         })
         .strict(),
     )
-    .max(200)
+    .max(MAX_AGENT_MODEL_SETTINGS)
     .superRefine((settings, ctx) => {
       const keys = new Set<string>()
       settings.forEach((entry, index) => {

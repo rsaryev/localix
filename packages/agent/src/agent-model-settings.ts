@@ -24,6 +24,9 @@ export function agentModelSettingsFor(
   )
 }
 
+/** How many triples a user keeps: newest first, the oldest dropped past this. */
+export const MAX_AGENT_MODEL_SETTINGS = 200
+
 /** Patch one triple, keeping its other parameters and every other agent/model intact. */
 export function setAgentModelSettings(
   settings: readonly AgentModelSettings[] | undefined,
@@ -37,5 +40,5 @@ export function setAgentModelSettings(
   const rest = (settings ?? []).filter((entry) => entry !== previous)
   const kept =
     next.effort !== undefined || next.maxTurns !== undefined || next.contextLimit !== undefined
-  return (kept ? [next, ...rest] : rest).slice(0, 200)
+  return (kept ? [next, ...rest] : rest).slice(0, MAX_AGENT_MODEL_SETTINGS)
 }
