@@ -10,10 +10,6 @@ export interface DeferredToolEntry {
   source: string
 }
 
-export function buildDeferredEntry(tool: AgentTool, source: string): DeferredToolEntry {
-  return { tool, source }
-}
-
 const MAX_TOOLS_PER_ACTIVATION = 8
 const MAX_DESCRIPTION_LENGTH = 100
 

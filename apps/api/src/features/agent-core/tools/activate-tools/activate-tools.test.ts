@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
 import { zodToJsonSchema } from '@localixai/agent'
 
-import { buildDeferredEntry, createActivateToolsTool, renderToolCatalog } from './activate-tools'
+import { createActivateToolsTool, renderToolCatalog } from './activate-tools'
 
 function tool(name: string, description: string): AgentTool {
   return defineAgentTool({
@@ -18,8 +18,8 @@ function tool(name: string, description: string): AgentTool {
 }
 
 const ENTRIES = [
-  buildDeferredEntry(tool('quote_lookup', 'Retrieve current market quotes.'), 'finance'),
-  buildDeferredEntry(tool('catalog_query', 'Execute a SQL query.\nReturns rows.'), 'catalog'),
+  { tool: tool('quote_lookup', 'Retrieve current market quotes.'), source: 'finance' },
+  { tool: tool('catalog_query', 'Execute a SQL query.\nReturns rows.'), source: 'catalog' },
 ]
 
 describe('renderToolCatalog', () => {
@@ -166,7 +166,7 @@ describe('a tool requested by its Claude Code name', () => {
     ...tool('mcp_namekit_db_echo', 'Echo the text back.'),
     aliases: ['mcp__plugin_namekit_db__echo'],
   }
-  const entries = [buildDeferredEntry(mcpTool, 'namekit_db'), ...ENTRIES]
+  const entries = [{ tool: mcpTool, source: 'namekit_db' }, ...ENTRIES]
 
   test('activates the tool and tells the model the name to call it by', async () => {
     const activate = createActivateToolsTool({ entries })
@@ -199,7 +199,7 @@ describe('a tool offered under a model name', () => {
     modelName: 'mcp__plugin_namekit_db__echo',
     aliases: ['mcp__plugin_namekit_db__echo'],
   }
-  const entries = [buildDeferredEntry(mcpTool, 'namekit_db'), ...ENTRIES]
+  const entries = [{ tool: mcpTool, source: 'namekit_db' }, ...ENTRIES]
 
   test('the catalog lists it under the model name', () => {
     const activate = createActivateToolsTool({ entries })
@@ -248,7 +248,10 @@ describe('a tool offered under a model name', () => {
 describe('the Claude Code MCP address in prompt text', () => {
   const github = tool('mcp_github_create_issue', 'Open an issue.')
   const withAlias = { ...tool('mcp_linear_list', 'List issues.'), aliases: ['mcp__linear__list'] }
-  const entries = [buildDeferredEntry(github, 'github'), buildDeferredEntry(withAlias, 'linear')]
+  const entries = [
+    { tool: github, source: 'github' },
+    { tool: withAlias, source: 'linear' },
+  ]
 
   test('a tool is activated by mcp__server__tool even when it carries no alias', async () => {
     const activate = createActivateToolsTool({ entries })

@@ -9,10 +9,7 @@ import {
   nextActivatedTools,
   splitDeferredTools,
 } from './tool-deferral'
-import {
-  buildDeferredEntry,
-  createActivateToolsTool,
-} from '../../../agent-core/tools/activate-tools/activate-tools'
+import { createActivateToolsTool } from '../../../agent-core/tools/activate-tools/activate-tools'
 import { claimSecondaryTools, indexToolPresentation } from './tool-namespace'
 
 const tool = (name: string, description = name): AgentTool =>
@@ -105,12 +102,10 @@ describe('deferred tool assembly', () => {
 
   test('the activator is both model-visible and dispatchable', () => {
     const { wrapped, direct, deferred } = assemble()
-    const entries = deferred.map((deferredTool) =>
-      buildDeferredEntry(
-        deferredTool,
-        deferredTool.name === 'catalog_query' ? 'plugins' : 'github',
-      ),
-    )
+    const entries = deferred.map((deferredTool) => ({
+      tool: deferredTool,
+      source: deferredTool.name === 'catalog_query' ? 'plugins' : 'github',
+    }))
     const activator = createActivateToolsTool({ entries })
     const modelTools = [...direct, activator]
     const dispatchTools = [...wrapped, activator]
@@ -132,7 +127,7 @@ describe('deferred tool assembly', () => {
     const modelTools = [
       ...direct,
       createActivateToolsTool({
-        entries: [buildDeferredEntry(deferredSurface, 'plugins')],
+        entries: [{ tool: deferredSurface, source: 'plugins' }],
       }),
     ]
     const dispatchTools = [...direct, deferredSurface, modelTools.at(-1)!]

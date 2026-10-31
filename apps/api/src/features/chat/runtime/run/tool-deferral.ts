@@ -1,9 +1,6 @@
 import type { AgentTool } from '@localixai/agent/agents'
 
-import {
-  buildDeferredEntry,
-  type DeferredToolEntry,
-} from '../../../agent-core/tools/activate-tools/activate-tools'
+import type { DeferredToolEntry } from '../../../agent-core/tools/activate-tools/activate-tools'
 import type { SessionRecord } from '../../repository'
 import type { RunEnv } from './types'
 
@@ -52,7 +49,7 @@ export function splitDeferredTools(
       direct.push(tool)
       continue
     }
-    externalEntries.push(buildDeferredEntry(tool, source))
+    externalEntries.push({ tool: tool, source: source })
     externalByName.set(tool.name, tool)
   }
   // Activation ORDER, not name order: appending keeps the earlier part of the tool list byte-identical
