@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'bun:test'
 import type { LanguageModelRequest } from '@localixai/agent/runtime'
 import { MAX_EDITS, PROMPT_WINDOW_BYTE_CEILING, PROMPT_WINDOW_LINES } from './contracts'
-import { createEditPredictionEngine } from './engine'
-import { parseNextEditReply, parseNextEditReplyDetailed } from './parse'
+import { createEditPredictionEngine, type NextEditService } from './engine'
+import { parseNextEditReplyDetailed } from './parse'
+
+const parseNextEditReply = (raw: string, fileContent: string) =>
+  parseNextEditReplyDetailed(raw, fileContent).edits
+
+/** The edits of a prediction, without the reason an empty one carries. */
+const predictEdits = (
+  service: NextEditService,
+  ...args: Parameters<NextEditService['predictDetailed']>
+) => service.predictDetailed(...args).then((result) => result.edits)
 import { buildEditPredictionPrompt as buildPrompt, numberFileForPrompt } from './prompt/build'
 import { nextEditReplySchema } from './validate'
 
@@ -443,7 +452,7 @@ describe('createEditPredictionEngine (same-file predict)', () => {
 
   it('predicts a same-file edit and threads edit history into the prompt', async () => {
     const { service, get } = makeService()
-    const edits = await service.predict('u', {
+    const edits = await predictEdits(service, 'u', {
       sessionId: 's',
       ...CORRELATION,
       filepath: '/proj/main.ts',
@@ -537,7 +546,7 @@ describe('createEditPredictionEngine (same-file predict)', () => {
     }
     const detailed = await service.predictDetailed('u', request)
     expect(detailed).toMatchObject({ outcome: 'predicted', edits: [expect.any(Object)] })
-    expect(await service.predict('u', { ...request, content: '  ' })).toBeNull()
+    expect(await predictEdits(service, 'u', { ...request, content: '  ' })).toBeNull()
   })
 
   it('reports a metadata-only typed outcome for a provider failure', () => {
@@ -559,7 +568,7 @@ describe('createEditPredictionEngine (same-file predict)', () => {
       recordOutcome: (event) => outcomes.push(event),
     })
     expect(
-      service.predict('u', {
+      predictEdits(service, 'u', {
         sessionId: 's',
         ...CORRELATION,
         filepath: '/p/a.ts',
@@ -709,7 +718,7 @@ describe('reversal guard, end to end through the engine', () => {
     const { service, outcomes } = engineReturning(
       '{"edits":[{"startLine":2,"endLine":2,"replacement":"const b = 1"}]}',
     )
-    const edits = await service.predict('u', request)
+    const edits = await predictEdits(service, 'u', request)
 
     // Nothing offered: the only hunk was an undo of the user's own edit.
     expect(edits).toBeNull()
@@ -720,7 +729,7 @@ describe('reversal guard, end to end through the engine', () => {
     const { service, outcomes } = engineReturning(
       '{"edits":[{"startLine":2,"endLine":2,"replacement":"const b = 20"}]}',
     )
-    const edits = await service.predict('u', request)
+    const edits = await predictEdits(service, 'u', request)
 
     expect(edits).toEqual([
       { startLine: 2, endLine: 2, original: 'const b = 2', replacement: 'const b = 20' },
@@ -793,7 +802,7 @@ describe('parse rejections are tallied by cause', () => {
       recordOutcome: (event) => outcomes.push(event as never),
     })
 
-    await service.predict('u', {
+    await predictEdits(service, 'u', {
       sessionId: 's',
       ...CORRELATION,
       filepath: '/proj/main.ts',

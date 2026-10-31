@@ -29,7 +29,7 @@ import {
   type PredictNextEditRequest,
 } from './contracts'
 import { createLanguageModelAdapter } from './model/adapter'
-import { EDIT_PREDICTION_PROMPT } from './prompt/registry'
+import { buildEditPredictionPrompt } from './prompt/build'
 import { parseNextEditReplyDetailed } from './parse'
 import { dropReversingEdits } from './reversal'
 import { buildResultCacheKey, editHistoryDigest, sha256Hex } from './cache/keys'
@@ -183,8 +183,7 @@ export function createEditPredictionEngine(deps: NextEditServiceDeps) {
         : undefined
       const [context, explicit] = await Promise.all([contextPromise, explicitPromise])
       if (operationSignal.aborted) return finish(abortedOutcome())
-      const prompt = EDIT_PREDICTION_PROMPT
-      const { systemPrompt, userContent } = prompt.build(req, [
+      const { systemPrompt, userContent } = buildEditPredictionPrompt(req, [
         ...(context?.contributions ?? []),
         ...(explicit?.contributions ?? []),
       ])
@@ -284,17 +283,7 @@ export function createEditPredictionEngine(deps: NextEditServiceDeps) {
     }
   }
 
-  /** Ergonomic local facade; RPC callers use `predictDetailed` to preserve the
-   * reason for an empty response. */
-  async function predict(
-    userId: string,
-    req: PredictNextEditRequest,
-    signal?: AbortSignal,
-  ): Promise<EditPrediction[] | null> {
-    return (await predictDetailed(userId, req, signal)).edits
-  }
-
-  return { predict, predictDetailed }
+  return { predictDetailed }
 }
 
 export type NextEditService = ReturnType<typeof createEditPredictionEngine>

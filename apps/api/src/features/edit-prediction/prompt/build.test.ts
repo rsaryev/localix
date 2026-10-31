@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { EDIT_PREDICTION_PROMPT } from './registry'
+import { buildEditPredictionPrompt } from './build'
 import type { PredictNextEditRequest } from '../contracts'
 
 const REQ: PredictNextEditRequest = {
@@ -14,8 +14,8 @@ const REQ: PredictNextEditRequest = {
   recentlyEditedRanges: [],
 }
 
-describe('prompt registry', () => {
-  it('exposes one canonical strict-JSON prompt', () => {
-    expect(EDIT_PREDICTION_PROMPT.build(REQ).systemPrompt).toContain('Reply with STRICT JSON only')
+describe('buildEditPredictionPrompt', () => {
+  it('asks for strict JSON', () => {
+    expect(buildEditPredictionPrompt(REQ).systemPrompt).toContain('Reply with STRICT JSON only')
   })
 })

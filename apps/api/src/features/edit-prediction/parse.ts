@@ -15,15 +15,6 @@
 import { MAX_EDITS, type EditPrediction } from './contracts'
 import { checkEdit, nextEditReplySchema, orderAndDedupeEdits, type EditRejection } from './validate'
 
-/**
- * Parse a model reply into validated SAME-FILE edits against `fileContent`, or
- * `null`. Accepts the canonical `{"edits":[…]}` object, optionally wrapped in a
- * JSON fence, with up to `MAX_EDITS` hunks.
- */
-export function parseNextEditReply(raw: string, fileContent: string): EditPrediction[] | null {
-  return parseNextEditReplyDetailed(raw, fileContent).edits
-}
-
 /** Per-cause tally of hunks the reply lost, by the rule that refused each one. */
 export type EditRejectionCounts = Partial<Record<EditRejection | 'schema', number>>
 
@@ -44,7 +35,9 @@ export interface ParsedNextEditReply {
 }
 
 /**
- * The parse plus the tally of what it refused.
+ * Parse a model reply into validated SAME-FILE edits against `fileContent` (`null` when none):
+ * the canonical `{"edits":[…]}` object, optionally wrapped in a JSON fence, with up to
+ * `MAX_EDITS` hunks. The parse plus the tally of what it refused.
  *
  * A dropped hunk is invisible in the result — a reply whose only hunk was mislocated is
  * indistinguishable from a model that returned nothing. Without this tally, changes to how the
