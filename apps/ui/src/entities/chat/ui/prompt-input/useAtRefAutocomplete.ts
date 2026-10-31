@@ -45,6 +45,9 @@ import {
   type AtRefSuggestion,
 } from './atRefSuggestions'
 
+/** A typed file search waits this long for the next keystroke before it asks. */
+const FILE_SEARCH_DEBOUNCE_MS = 300
+
 export type { AtRefSuggestion } from './atRefSuggestions'
 
 /** The mention-search filter the user can toggle in the menu. */
@@ -224,7 +227,7 @@ export function useAtRefAutocomplete(
         .catch(() => {
           if (seq === reqSeq.current) setSearchHits([])
         })
-    }, 300)
+    }, FILE_SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(id)
   }, [token, searchActive, searchQuery, sessionId, searchMode, searchType])
 

@@ -24,6 +24,11 @@ import {
 } from '@localixai/api/context-refs'
 import { resourceBreadcrumbs, type ResourceBreadcrumb } from './openResourceNav'
 
+/** A typed resource search waits this long for the next keystroke before it asks. */
+const RESOURCE_SEARCH_DEBOUNCE_MS = 180
+/** A failed browse asks again after this, while the picker is still open. */
+const RESOURCE_RETRY_MS = 1_500
+
 export interface ResourceDrill {
   /** The current level's children (or roots), in backend-owned browse order. */
   nodes: ResourceNode[]
@@ -175,10 +180,10 @@ export function useResourceDrill(input: ResourceDrillInput): ResourceDrill {
             setResourceNotices([resourceBrowseFailureNotice(input.partial)])
             resourceShownParent.current = parentKey
             setResourcePending(false)
-            retryTimer = setTimeout(() => setResourceRetry((value) => value + 1), 1_500)
+            retryTimer = setTimeout(() => setResourceRetry((value) => value + 1), RESOURCE_RETRY_MS)
           })
       },
-      search ? 180 : 0,
+      search ? RESOURCE_SEARCH_DEBOUNCE_MS : 0,
     )
 
     return () => {
