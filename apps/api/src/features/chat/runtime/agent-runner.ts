@@ -20,10 +20,9 @@ import { registerContextToolClasses } from '@localixai/agent'
 // Extension tools are NOT listed here: they self-classify via
 // `AgentTool.contextClass` and the plugin loader registers them generically, so
 // core never knows an extension tool's name.
-// `read` (images included) is already a base read-result tool. `view_image` was removed, but
-// saved sessions still hold its results, which are recoverable observations like a read.
+// `Read` (images included) is already a base read-result tool.
 registerContextToolClasses({
-  readResult: ['view_image', 'GlobalSearch'],
+  readResult: ['GlobalSearch'],
 })
 
 import type { RunnerDeps } from './agent-runner-types'
