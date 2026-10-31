@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import { TOOL, type ToolName } from '@localixai/api/tool-names'
+import type { ToolName } from '@localixai/api/tool-names'
 import { isAlwaysStandaloneToolName } from '@localixai/api/item-format'
 import {
   contributedToolMeta,
@@ -95,9 +95,4 @@ export function isCoreToolMetaName(name: string): boolean {
 /** Every name with a registered entry — the enumeration `meta.test.ts` guards over. */
 export function allToolMetaNames(): string[] {
   return Object.keys(META)
-}
-
-/** Every tool the SERVER owns. Re-exported so the guard derives from the owner, not from our copy. */
-export function coreToolNames(): ToolName[] {
-  return Object.values(TOOL)
 }

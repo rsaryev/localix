@@ -4,12 +4,15 @@ import {
   toolMeta,
   toolDisplayLabel,
   allToolMetaNames,
-  coreToolNames,
   nonCoreToolMeta,
   FALLBACK_META,
   MCP_META,
 } from './meta'
 import { TOOL_CARDS } from './registry'
+import { TOOL } from '@localixai/api/tool-names'
+
+/** Every tool the server owns: the guard derives from the owner, not from a copy. */
+const coreToolNames = Object.values(TOOL)
 
 /**
  * These are CONTRACT guards, not unit tests: each one names a mutation that must
@@ -33,12 +36,12 @@ describe('tool meta ↔ server TOOL enum (the owner contract)', () => {
     // render as the wrench, titled "Tool" / "Running", while nothing failed.
     // MUTATION: add `foo: 'foo'` to TOOL (apps/api/.../tool-names.ts) and no meta entry
     //           → red here AND at `bun run type-check` (CORE_META is Record<ToolName,…>).
-    const unlabeled = coreToolNames().filter((name) => toolMeta(name) === FALLBACK_META)
+    const unlabeled = coreToolNames.filter((name) => toolMeta(name) === FALLBACK_META)
     expect(unlabeled, 'server tools with no cards/meta.ts entry — they render as a wrench').toEqual(
       [],
     )
     // Anchor: the loop above is vacuous if TOOL is ever emptied or the import breaks.
-    expect(coreToolNames().length).toBeGreaterThan(20)
+    expect(coreToolNames.length).toBeGreaterThan(20)
   })
 
   test('every non-core meta entry is genuinely un-owned, with a stated reason', () => {
@@ -47,7 +50,7 @@ describe('tool meta ↔ server TOOL enum (the owner contract)', () => {
     // really does not own it — if a tool is later promoted INTO TOOL, its exemption is a lie
     // and this reddens, forcing it back into the type-checked core.
     // MUTATION: add `sleep` (a real TOOL member) to NON_CORE_META → red.
-    const owned = new Set<string>(coreToolNames())
+    const owned = new Set<string>(coreToolNames)
     for (const [name, meta] of Object.entries(nonCoreToolMeta())) {
       expect(
         owned.has(name),
@@ -66,7 +69,7 @@ describe('tool meta ↔ server TOOL enum (the owner contract)', () => {
     // Pins the partition itself: no third bucket, no orphan key that belongs to neither
     // the owner nor a justified exemption.
     // MUTATION: add an unjustified key straight to META → red.
-    const expected = [...coreToolNames(), ...Object.keys(nonCoreToolMeta())].sort()
+    const expected = [...coreToolNames, ...Object.keys(nonCoreToolMeta())].sort()
     expect(allToolMetaNames().sort()).toEqual(expected)
   })
 })
