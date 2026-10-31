@@ -1,8 +1,7 @@
 import { expect, test } from 'bun:test'
-import { mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
-import { bundleHooksModule, clearHooksCopies } from './module-build'
+import { bundleHooksModule } from './module-build'
 import { runBundle } from './testing/testing-bundle'
 
 const scratch = tempDirPerTest('mods-build', {})
@@ -25,16 +24,6 @@ test('each run of one bundle has its own module state', async () => {
     expect.stringContaining('[1]'),
     expect.stringContaining('[1]'),
   ])
-})
-
-test('the copies earlier versions wrote to disk are removed', async () => {
-  const out = scratch()
-  mkdirSync(join(out, 'load-0123456789abcdef'))
-  writeFileSync(join(out, 'load-0123456789abcdef', 'hooks-1.cjs'), '')
-  writeFileSync(join(out, 'hooks-2.mjs'), '')
-  writeFileSync(join(out, 'kept.json'), '{}')
-  await clearHooksCopies(out)
-  expect(readdirSync(out)).toEqual(['kept.json'])
 })
 
 test('a module importing a package is refused at build, naming it', async () => {

@@ -1,5 +1,4 @@
 import { promises as fs } from 'node:fs'
-import { join } from 'node:path'
 import { readClientModules } from './client-source'
 import { STATE_LIBRARY } from './state-library'
 
@@ -82,14 +81,4 @@ export async function bundleHooksModule(
   if (!build.success)
     throw new ModBuildError(build.logs.map((log) => log.message).join('\n') || 'build failed')
   return build.outputs[0]!.text()
-}
-
-/** Removes the copies of a module earlier versions of Localix wrote to disk for each load. */
-export async function clearHooksCopies(outDir: string): Promise<void> {
-  const names = await fs.readdir(outDir).catch(() => [] as string[])
-  await Promise.all(
-    names
-      .filter((name) => name.startsWith('load-') || /^hooks-.*\.(?:mjs|cjs)$/.test(name))
-      .map((name) => fs.rm(join(outDir, name), { recursive: true, force: true })),
-  )
 }

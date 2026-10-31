@@ -1,10 +1,9 @@
-import { join } from 'node:path'
 import type { BudgetClock, ModsApi, RegisterFunction } from '@localixai/claude-plugin/mods'
 import { bundleClientModules, type ClientBundle } from './client-modules'
 import type { ModSource, ModsPorts } from './contracts'
 import { loadModRuntime } from './isolation/guest-file'
 import { startModVm, type ModVm, type ModVmPort } from './isolation/mod-vm'
-import { bundleHooksModule, clearHooksCopies } from './module-build'
+import { bundleHooksModule } from './module-build'
 import { SUPERVISOR_CLOCK, type RestartRules } from './restarts'
 
 /**
@@ -58,18 +57,13 @@ const DEFAULT_MEMORY_LIMIT = 128 * 1024 * 1024
 
 export function createHooksLoader(input: HooksLoaderInput) {
   let loads = 0
-  const cleared = new Set<string>()
   const clock = input.clock ?? SUPERVISOR_CLOCK
 
-  /** Bundles the plugin's mod once; the copies earlier versions wrote to disk go. */
+  /** Bundles the plugin's mod once. */
   async function bundle(source: ModSource): Promise<LoadedMod> {
     const found = new Set<string>()
     const code = input.build ? '' : await bundleHooksModule(source, { clients: found })
     const clients = await bundleClientModules(source.root, found)
-    if (!input.build && !cleared.has(source.plugin)) {
-      cleared.add(source.plugin)
-      await clearHooksCopies(join(input.ports.dataDir(source.plugin), 'mod'))
-    }
     return { source, code, clients }
   }
 
