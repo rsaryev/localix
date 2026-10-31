@@ -32,6 +32,48 @@ const toHistoryMessageRow = (row: {
 })
 
 export function createHistoryQueries(db: Kysely<AppDatabase>) {
+  /**
+   * Like searchHistory, but each hit also carries the matched message id +
+   * sequence so callers can anchor a context window around it (GlobalSearch
+   * v2 discovery mode).
+   */
+  async function searchHistoryDetailed(
+    userId: string,
+    match: string,
+    limit: number,
+  ): Promise<HistorySearchHitDetailed[]> {
+    const result = await sql<{
+      id: string
+      session_id: string
+      role: string
+      snippet: string
+      sequence: number
+      created_at: string
+    }>`
+      SELECT
+        m.id,
+        m.session_id,
+        m.role,
+        snippet(agent_messages_fts, 0, '[', ']', '…', 20) AS snippet,
+        m.sequence,
+        m.created_at
+      FROM agent_messages_fts
+      JOIN agent_messages AS m ON m.rowid = agent_messages_fts.rowid
+      WHERE agent_messages_fts MATCH ${match}
+        AND m.user_id = ${userId}
+      ORDER BY agent_messages_fts.rank
+      LIMIT ${limit}
+    `.execute(db)
+    return result.rows.map((row) => ({
+      messageId: row.id,
+      sessionId: row.session_id,
+      role: row.role,
+      snippet: row.snippet,
+      sequence: row.sequence,
+      createdAt: row.created_at,
+    }))
+  }
+
   return {
     /**
      * Full-text search across a user's message history (FTS5). `match` must be a
@@ -39,73 +81,16 @@ export function createHistoryQueries(db: Kysely<AppDatabase>) {
      * degrade gracefully.
      */
     async searchHistory(userId: string, match: string, limit: number): Promise<HistorySearchHit[]> {
-      const result = await sql<{
-        session_id: string
-        role: string
-        snippet: string
-        created_at: string
-      }>`
-        SELECT
-          m.session_id,
-          m.role,
-          snippet(agent_messages_fts, 0, '[', ']', '…', 20) AS snippet,
-          m.created_at
-        FROM agent_messages_fts
-        JOIN agent_messages AS m ON m.rowid = agent_messages_fts.rowid
-        WHERE agent_messages_fts MATCH ${match}
-          AND m.user_id = ${userId}
-        ORDER BY agent_messages_fts.rank
-        LIMIT ${limit}
-      `.execute(db)
-      return result.rows.map((row) => ({
-        sessionId: row.session_id,
-        role: row.role,
-        snippet: row.snippet,
-        createdAt: row.created_at,
+      const hits = await searchHistoryDetailed(userId, match, limit)
+      return hits.map(({ sessionId, role, snippet, createdAt }) => ({
+        sessionId,
+        role,
+        snippet,
+        createdAt,
       }))
     },
 
-    /**
-     * Like searchHistory, but each hit also carries the matched message id +
-     * sequence so callers can anchor a context window around it (GlobalSearch
-     * v2 discovery mode). `match` must be a pre-sanitized FTS5 MATCH expression.
-     */
-    async searchHistoryDetailed(
-      userId: string,
-      match: string,
-      limit: number,
-    ): Promise<HistorySearchHitDetailed[]> {
-      const result = await sql<{
-        id: string
-        session_id: string
-        role: string
-        snippet: string
-        sequence: number
-        created_at: string
-      }>`
-        SELECT
-          m.id,
-          m.session_id,
-          m.role,
-          snippet(agent_messages_fts, 0, '[', ']', '…', 20) AS snippet,
-          m.sequence,
-          m.created_at
-        FROM agent_messages_fts
-        JOIN agent_messages AS m ON m.rowid = agent_messages_fts.rowid
-        WHERE agent_messages_fts MATCH ${match}
-          AND m.user_id = ${userId}
-        ORDER BY agent_messages_fts.rank
-        LIMIT ${limit}
-      `.execute(db)
-      return result.rows.map((row) => ({
-        messageId: row.id,
-        sessionId: row.session_id,
-        role: row.role,
-        snippet: row.snippet,
-        sequence: row.sequence,
-        createdAt: row.created_at,
-      }))
-    },
+    searchHistoryDetailed,
 
     /**
      * A ±window of messages around an anchor message, ordered by sequence. A null anchor
