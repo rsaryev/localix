@@ -43,10 +43,3 @@ export function matchingIndexedIds(index: MessageSearchIndexEntry[], query: stri
   }
   return out
 }
-
-/** Ordered ids of the messages whose text contains `query` (empty for a blank query). */
-export function matchingMessageIds(messages: SearchableMessage[], query: string): string[] {
-  const q = query.trim().toLowerCase()
-  if (!q) return []
-  return matchingIndexedIds(buildMessageSearchIndex(messages), q)
-}
