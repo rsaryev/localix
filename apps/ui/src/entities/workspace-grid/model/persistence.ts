@@ -92,47 +92,12 @@ function restoredScope(kind: WorkItem['kind'], stored: string | undefined): stri
   return stored
 }
 
-/**
- * Tabs of a kind that was replaced, restored as their successor: the mini app store became the
- * Store, opened on its Mini apps shelf (`docs/internals/store.md`).
- */
-const REPLACED_KINDS: Record<string, SerializedWorkItem> = {
-  'mini-app-store': {
-    kind: 'store',
-    id: 'store',
-    title: 'Store',
-    scope: GLOBAL_SCOPE,
-    payload: { shelf: 'package:mini-app' },
-  },
-}
-
-/** The stored grid with every replaced tab renamed to its successor, in the items and the tree. */
-function replaceKinds(raw: PersistedGrid): PersistedGrid {
-  const renamed = new Map<string, string>()
-  const items = raw.items.map((item) => {
-    const next = item && REPLACED_KINDS[item.kind]
-    if (!next) return item
-    renamed.set(item.id, next.id)
-    return next
-  })
-  if (renamed.size === 0) return raw
-  const rename = (id: string) => renamed.get(id) ?? id
-  const root = mapLeaves(raw.root, (leaf) => ({
-    ...leaf,
-    tabs: leaf.tabs.map(rename),
-    activeTab: leaf.activeTab ? rename(leaf.activeTab) : leaf.activeTab,
-    ...(leaf.tabHistory ? { tabHistory: leaf.tabHistory.map(rename) } : {}),
-  }))
-  return { ...raw, root, items }
-}
-
 /** Load + sanitize the persisted grid, or null when absent/empty. */
 export function loadGrid(): EditorState | null {
   const stored = loadJSON<PersistedGrid>(STORAGE_KEY)
   if (!stored?.root || !Array.isArray(stored.items)) return null
-  const raw = replaceKinds(stored)
   const items: Record<string, WorkItem> = {}
-  for (const s of raw.items) {
+  for (const s of stored.items) {
     if (!s || typeof s.id !== 'string' || !isRestorableForPersistence(s.kind)) continue
     const scope = restoredScope(s.kind, s.scope)
     if (scope === null) continue
@@ -144,12 +109,14 @@ export function loadGrid(): EditorState | null {
       ...(s.payload ? { payload: persistedPayload(s) } : {}),
     }
   }
-  const root = sanitizeTree(raw.root, new Set(Object.keys(items)))
+  const root = sanitizeTree(stored.root, new Set(Object.keys(items)))
   const allGroups = leaves(root).map((l) => l.id)
   if (allGroups.length === 0) return null
-  const activeGroup = allGroups.includes(raw.activeGroup) ? raw.activeGroup : allGroups[0]
+  const activeGroup = allGroups.includes(stored.activeGroup) ? stored.activeGroup : allGroups[0]
   const maximizedGroup =
-    raw.maximizedGroup && allGroups.includes(raw.maximizedGroup) ? raw.maximizedGroup : null
+    stored.maximizedGroup && allGroups.includes(stored.maximizedGroup)
+      ? stored.maximizedGroup
+      : null
   return { root, items, activeGroup, mru: [activeGroup], maximizedGroup, closed: [] }
 }
 
