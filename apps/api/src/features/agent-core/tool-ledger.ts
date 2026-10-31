@@ -45,7 +45,6 @@ export type WithholdReason =
   | { layer: 'authority'; kind: 'missing'; capability: string }
   | { layer: 'model'; kind: 'modality'; needs: string }
   | { layer: 'policy'; kind: 'rule'; denial: PolicyDenial | null }
-  | { layer: 'policy'; kind: 'disabled-plugin'; plugin: string }
 
 /** How a `policy` reason can be lifted — the input the `Configure` tool turns into a proposal. */
 export interface RemedyRef {
@@ -87,7 +86,7 @@ export interface ToolCandidate {
   missingCapability?: string
 }
 
-const remedyFor = (name: string, _denial: PolicyDenial | null): RemedyRef => ({
+const remedyFor = (name: string): RemedyRef => ({
   remedyId: 'tool.enable',
   target: name,
 })
@@ -172,7 +171,7 @@ function policyVerdict(facts: RunFacts, candidate: ToolCandidate): ToolVerdict |
   return {
     state: 'withheld',
     reason: { layer: 'policy', kind: 'rule', denial },
-    remedy: remedyFor(candidate.name, denial),
+    remedy: remedyFor(candidate.name),
   }
 }
 
@@ -256,7 +255,6 @@ export function describeWithholdReason(reason: WithholdReason): string {
     case 'model':
       return `this run's model cannot read ${reason.needs === 'image' ? 'images' : reason.needs}`
     case 'policy':
-      if (reason.kind === 'disabled-plugin') return `its plugin "${reason.plugin}" is disabled`
       return "switched off by this agent's rules"
   }
 }
