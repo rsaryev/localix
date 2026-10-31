@@ -31,18 +31,18 @@ export const usePreviewHosts = create<{
     }),
   releaseWorkspace: (workspace) => {
     const { live, foreground } = get()
-    const released = Object.keys(live).filter((key) => {
-      const [owner] = JSON.parse(key) as [string, string]
-      return owner === workspace && !foreground[key]
+    const released = Object.keys(live).flatMap((key) => {
+      const [owner, previewId] = JSON.parse(key) as [string, string]
+      return owner === workspace && !foreground[key] ? [{ key, previewId }] : []
     })
     if (released.length) {
       set((s) => {
         const next = { ...s.live }
-        for (const key of released) delete next[key]
+        for (const { key } of released) delete next[key]
         return { live: next }
       })
     }
-    return released.map((key) => (JSON.parse(key) as [string, string])[1])
+    return released.map(({ previewId }) => previewId)
   },
   attach: (key) => {
     set((s) => ({ foreground: { ...s.foreground, [key]: (s.foreground[key] ?? 0) + 1 } }))
