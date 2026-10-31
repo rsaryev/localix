@@ -13,7 +13,7 @@ import {
   servingAll,
 } from '../../testing/mini-app-marketplace'
 import { createMiniAppStore } from './store'
-import type { MiniAppMarketplaceSource } from './store-offers'
+import type { MiniAppMarketplaceSource } from './marketplaces'
 
 const root = tempDirPerTest('mini-app-store-')
 const LOCALIX_URL = 'https://localix.example.test/m/mini-app-marketplace.json'

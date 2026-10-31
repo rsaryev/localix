@@ -6,7 +6,7 @@ import type { AppDatabase } from '../../db/types'
 import { recordCoreChanges } from '../changes/core-entities'
 import { readRevocation, REVOCATION_FILE, type RevocationMark } from './revocation-file'
 import { readInstallRecord, type InstallRecord } from './store-install'
-import type { OfferRead } from './store-offers'
+import type { OfferRead } from './store-offer-types'
 
 /**
  * INSTALLED APPS THEIR MARKETPLACE TOOK BACK (`docs/extending/mini-app-marketplace.md`,

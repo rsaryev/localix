@@ -8,7 +8,7 @@ import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createMiniAppRevocations } from './revocations'
 import { INSTALL_RECORD_FILE } from './store-install'
-import type { Offer, OfferRead } from './store-offers'
+import type { Offer, OfferRead } from './store-offer-types'
 
 const tempDir = tempDirPerTest('mini-app-revocations-')
 const SHA = 'a'.repeat(64)

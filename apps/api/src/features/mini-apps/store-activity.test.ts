@@ -11,11 +11,9 @@ import {
   marketplaceSource,
   memoryTrust,
 } from '../../testing/mini-app-marketplace'
-import {
-  createMiniAppStore,
-  type MiniAppInstallOutcome,
-  type MiniAppMarketplaceSource,
-} from './store'
+import { createMiniAppStore } from './store'
+import type { MiniAppMarketplaceSource } from './marketplaces'
+import type { MiniAppInstallOutcome } from './store-activity'
 
 const root = tempDirPerTest('mini-app-store-activity-')
 function storeOver(sources: MiniAppMarketplaceSource[], fetchImpl?: typeof fetch) {

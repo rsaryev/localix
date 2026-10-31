@@ -14,17 +14,9 @@ import { storePage, type MiniAppStorePage } from './store-detail'
 import { storeEntry, type MiniAppJob, type MiniAppStoreEntry } from './store-entry'
 import { installedBy, installOffer, readInstallRecord } from './store-install'
 import { createStoreMediaReader, type StoreMediaKind } from './store-media'
-import {
-  createOfferReader,
-  readManifest,
-  type MiniAppMarketplaceSource,
-  type Offer,
-  type OfferRead,
-  type OfferTrust,
-} from './store-offers'
-
-export type { MiniAppPublisher, MiniAppMarketplaceSource, OfferTrust } from './store-offers'
-export type { MiniAppInstallOutcome } from './store-activity'
+import { createOfferReader, readManifest, type OfferTrust } from './store-offers'
+import type { MiniAppMarketplaceSource } from './marketplaces'
+import type { Offer, OfferRead } from './store-offer-types'
 
 /**
  * The mini app store: what the marketplaces offer, what is installed, and the installs in flight
@@ -37,8 +29,6 @@ export type { MiniAppInstallOutcome } from './store-activity'
  * the queue drains, how each install went is handed to `onJobsSettled`, which records it in the
  * person's journal (the owner announces).
  */
-
-export type { MiniAppJob, MiniAppJobPhase, MiniAppStoreEntry } from './store-entry'
 
 export interface MiniAppStoreListing extends Omit<OfferRead, 'offers'> {
   entries: MiniAppStoreEntry[]

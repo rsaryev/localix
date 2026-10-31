@@ -5,8 +5,9 @@ import { apiVersionTooNew } from '../ext/manifest-validate'
 
 import { installedBy, readInstallRecord } from './store-install'
 import { storeMediaUrl } from './store-media'
-import { readManifest, type Offer } from './store-offers'
-import type { MiniAppJob } from './store'
+import { readManifest } from './store-offers'
+import type { MiniAppJob } from './store-entry'
+import type { Offer } from './store-offer-types'
 
 /**
  * The mini app store's jobs and offers as the Store reads them: which phases are in flight, what

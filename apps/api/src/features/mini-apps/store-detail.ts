@@ -1,5 +1,5 @@
 import { storeMediaUrl, type StoreMediaReader } from './store-media'
-import type { Offer } from './store-offers'
+import type { Offer } from './store-offer-types'
 
 /** What an app's store page says beside its row (`GET /rpc/mini-apps/store/:id`). */
 export interface MiniAppStoreDetails {

@@ -2,7 +2,7 @@ import type { MarketplaceSignatureState } from '@localixai/mini-app-sdk/marketpl
 import type { SuggestFor } from '@localixai/store'
 
 import { iconOf, isIncompatible } from './store-activity'
-import type { MiniAppPublisher, Offer } from './store-offers'
+import type { MiniAppPublisher, Offer } from './store-offer-types'
 
 /** One app's row in the store (`store.ts`): what a marketplace offers, beside what is installed. */
 

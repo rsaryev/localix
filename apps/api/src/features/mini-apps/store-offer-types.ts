@@ -2,8 +2,6 @@ import type { BlockedArchive } from '@localixai/mini-app-sdk/marketplace'
 import type { MarketplaceSignatureState } from '@localixai/mini-app-sdk/marketplace-signature'
 import type { Editorial, SuggestFor } from '@localixai/store'
 
-export type { MiniAppMarketplaceSource } from './marketplaces'
-
 /** Who publishes an app — its marketplace's owner — and whether Localix vouches for them. */
 export interface MiniAppPublisher {
   name: string

@@ -6,7 +6,7 @@ import { downloadPinned, type DownloadProgress } from '../../lib/pinned-download
 import { unpackMiniAppArchive } from './archive'
 import { installCopy, isManagedCopy } from './managed-copy'
 import { MINI_APPS_SUBDIR } from './paths'
-import type { MiniAppPublisher, Offer } from './store-offers'
+import type { MiniAppPublisher, Offer } from './store-offer-types'
 
 /**
  * Beside an app a marketplace installed: which app it is — its identity is its name and the

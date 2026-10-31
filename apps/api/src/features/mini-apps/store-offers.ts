@@ -12,24 +12,8 @@ import type { Curation } from '@localixai/store'
 import { errorMessage } from '../../lib/errors'
 import { readMarketplaceFeed, type MarketplaceFeed, type MarketplaceLink } from './marketplace-feed'
 import { judgeMarketplace, type KeptTrust } from './marketplace-trust'
-import type {
-  MiniAppMarketplaceSource,
-  MiniAppPublisher,
-  Offer,
-  OfferRead,
-  Revocation,
-} from './store-offer-types'
-
-export type {
-  MiniAppMarketplaceSource,
-  MiniAppPublisher,
-  Offer,
-  OfferFile,
-  OfferMeta,
-  OfferRead,
-  OfferStore,
-  Revocation,
-} from './store-offer-types'
+import type { MiniAppPublisher, Offer, OfferRead, Revocation } from './store-offer-types'
+import type { MiniAppMarketplaceSource } from './marketplaces'
 
 /** The manifest of an installed app's folder, or null when there is none or it does not parse. */
 export async function readManifest(dir: string): Promise<Record<string, unknown> | null> {

@@ -4,7 +4,7 @@ import { Hono } from 'hono'
 import type { AppContext } from '../../app'
 import { createMiniAppRoutes, type MiniAppRoutesService } from './routes'
 import { NotFoundError } from '../../lib/domain-errors'
-import type { MiniAppStoreEntry } from './store'
+import type { MiniAppStoreEntry } from './store-entry'
 
 const entry: MiniAppStoreEntry = {
   id: 'atlas@localix',

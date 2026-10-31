@@ -20,7 +20,6 @@ import { installLocalPackage } from './local-install'
 import { toMiniAppRecord } from './records'
 import { resolveMiniAppUiFile } from './ui-artifact'
 import { createMiniAppWrites } from './service-writes'
-import type { MiniAppInstallOutcome, MiniAppMarketplaceSource } from './store'
 import { createMiniAppStoreParts } from './service-store'
 import {
   invokeMiniAppUiAction,
@@ -30,6 +29,8 @@ import {
   type MiniAppServiceScope,
 } from './service-ui'
 import { listViewsFromCatalog, readViewHtml } from './views'
+import type { MiniAppMarketplaceSource } from './marketplaces'
+import type { MiniAppInstallOutcome } from './store-activity'
 
 export interface MiniAppServiceDeps {
   db: Kysely<AppDatabase>

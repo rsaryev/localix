@@ -12,7 +12,8 @@ import {
   memoryTrust,
   type MarketplaceEntry,
 } from '../../testing/mini-app-marketplace'
-import { createMiniAppStore, type MiniAppJob } from './store'
+import { createMiniAppStore } from './store'
+import type { MiniAppJob } from './store-entry'
 
 const root = tempDirPerTest('mini-app-store-marketplace-')
 /** A released marketplace offering these apps, Localix's unless said. */

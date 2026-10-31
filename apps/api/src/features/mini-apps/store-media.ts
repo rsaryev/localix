@@ -12,7 +12,7 @@ import {
 import { NotFoundError, UnavailableError } from '../../lib/domain-errors'
 import { errorMessage } from '../../lib/errors'
 import { downloadPinned, isDownloaded } from '../../lib/pinned-download'
-import type { Offer, OfferFile } from './store-offers'
+import type { Offer, OfferFile } from './store-offer-types'
 
 /**
  * The files of an app's store page — its icon, screenshots and README — as the host serves them.
