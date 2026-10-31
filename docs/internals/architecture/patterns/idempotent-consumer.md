@@ -49,8 +49,8 @@ affect logs, heaps and load without breaking semantics.
 ## How Localix applies it
 
 - `packages/change-feed/src/consumer.ts` delivers, then saves the cursor; a crash between the two
-  redelivers the page. A throwing handler is retried with backoff (`apps/api/src/lib/backoff.ts`) up
-  to five attempts, then skipped and logged.
+  redelivers the page. A throwing handler is retried with backoff
+  (`apps/api/src/features/changes/retry.ts`) up to five attempts, then skipped and logged.
 - Ops are designed for idempotence (`packages/change-feed/src/contracts.ts`): `upserted` means
   re-read, `deleted` carries the ref needed for cleanup, `resync` means reconcile the kind.
 - The semantic index handlers in `apps/api/src/features/embeddings/targets.ts` re-embed or remove by

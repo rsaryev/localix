@@ -138,7 +138,7 @@ and injected into the tool by
 - [Anonymous adapter registry](../../../apps/api/src/features/agent-core/tools/web/research-backends.ts)
 - [Candidate ranking](../../../apps/api/src/features/agent-core/tools/web/research-ranking.ts)
 - [Safe page reader](../../../apps/api/src/features/agent-core/tools/web/research-fetch.ts)
-- [Network safety](../../../apps/api/src/features/agent-core/tools/web/net-safety.ts)
+- [Network safety](../../../packages/mini-app-sdk/src/backend/net-safety.ts)
 - [Shared source contract](../../../packages/agent/src/agents/sources.ts)
 - [MCP source normalization](../../../apps/api/src/features/mcp/mcp-result.ts)
 - [Message source action](../../../apps/ui/src/entities/chat/ui/MessageSources.tsx)

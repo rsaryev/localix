@@ -369,7 +369,7 @@ allow, but an expansion block never echoed the prompt, so there is nothing to le
 - [Manifest command precedence](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/manifest-load.ts)
 - [Dynamic option execution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/arg-options.ts)
 - [Native hook contracts](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/hooks.ts)
-- [Native hook dispatch](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/hooks.ts)
+- [Native hook dispatch](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/hooks-lifecycle.ts)
 - [Native tool-hook composition and limits](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/hooks-tools.ts)
 - [Native message hooks and bindings](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/hooks-messages.ts)
 - [Native hook wait and isolation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/hook-invoke.ts)

@@ -292,7 +292,7 @@ per platform, and a source type for a marketplace served by an API.
 
 ## Source of truth
 
-- [The marketplace schema](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/marketplace/schema.ts)
+- [The marketplace schema](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/marketplace/validate.ts)
 - [Signatures](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/marketplace/signature.ts)
 - [Reading a marketplace](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/marketplace-feed.ts)
 - [The build](https://github.com/rsaryev/localix-marketplace/tree/main/plugins/mini-app-authoring)

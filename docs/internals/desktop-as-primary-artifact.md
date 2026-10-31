@@ -313,9 +313,9 @@ release path as production-safe until an equivalent approval boundary is availab
   physical machine.
 - On Windows, a program the runtime starts belongs to its Job Object and closes when Localix quits.
   That includes an app opened from Localix that was not already running, unless it leaves the job.
-- Generated third-party notices inventory the installed npm runtime graph, bundled Monaco/Pi
-  notices, the Bun runtime, and the Rust crates linked for the host target. Packages and crates that
-  publish only license metadata are identified but cannot contribute text absent from their package.
+- Generated third-party notices inventory the installed npm runtime graph, bundled Monaco notices,
+  the Bun runtime, and the Rust crates linked for the host target. Packages and crates that publish
+  only license metadata are identified but cannot contribute text absent from their package.
 
 ## Related guides
 
