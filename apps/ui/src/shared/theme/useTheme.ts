@@ -1,8 +1,11 @@
 import { useSyncExternalStore } from 'react'
 // Relative (not `@/`) imports: this hook is also consumed by apps/landing via the
 // `@ui/*` alias, where `@/` resolves to landing/src and would not find these.
-import { applyPlatformDataset, isDesktop } from '@localixai/kit/environment'
-import { hasNativeWindowMaterial } from '@localixai/kit/environment'
+import {
+  applyPlatformDataset,
+  hasNativeWindowMaterial,
+  isDesktop,
+} from '@localixai/kit/environment'
 import { standaloneApp } from '../lib/standaloneApp'
 import { tauriInvoke } from '../lib/tauri'
 import { readNativeHeaderTint } from './nativeHeaderTint'

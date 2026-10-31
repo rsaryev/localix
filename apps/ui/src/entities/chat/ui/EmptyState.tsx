@@ -1,9 +1,9 @@
 import { BirdStage } from '@/shared/ui/BirdStage'
-import { useBirdStill } from './useBirdStill'
+import { useReducedMotion } from '@localixai/kit/environment'
 
 /** The empty chat: the flying Localix bird and nothing else, model connected or not. */
 export function EmptyState() {
-  const still = useBirdStill()
+  const still = useReducedMotion()
 
   return (
     <div className="flex flex-1 select-none flex-col items-center justify-center px-4 py-8">

@@ -6,6 +6,7 @@
  * subscribers) while this file owns everything about how the flip is painted.
  * Neither function touches theme state — they take the commit as a callback.
  */
+import { REDUCED_MOTION_QUERY } from '@localixai/kit/environment'
 
 /** Pointer position (viewport px) used as the origin of the reveal animation. */
 export interface ThemeChangeOrigin {
@@ -24,7 +25,7 @@ function supportsReveal(): boolean {
   return (
     typeof document !== 'undefined' &&
     typeof (document as ViewTransitionDocument).startViewTransition === 'function' &&
-    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    !window.matchMedia(REDUCED_MOTION_QUERY).matches
   )
 }
 
