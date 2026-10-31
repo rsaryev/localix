@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { detectToken, looksLikeMentionPartial } from './atRefToken'
+import { detectToken, looksLikeMentionPartial } from './context-refs'
 
 describe('looksLikeMentionPartial', () => {
   it('is true for slashed, dotted, or 2+ char partials', () => {

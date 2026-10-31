@@ -3,10 +3,9 @@
  * the ref-path partial split, and the mode-aware empty/highlight copy. `useAtRefAutocomplete`
  * owns only the React state around them.
  */
-import { refToken, resourceDrillPartial } from '@localixai/api/context-refs'
+import { refToken, resourceDrillPartial, type detectToken } from '@localixai/api/context-refs'
 import { chatUriToNativeToken } from './chatResourceToken'
 import type { AtRefSuggestion } from './atRefSuggestions'
-import type { detectToken } from './atRefToken'
 
 export type AtRefToken = NonNullable<ReturnType<typeof detectToken>>
 

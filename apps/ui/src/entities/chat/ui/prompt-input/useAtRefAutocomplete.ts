@@ -16,7 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { backendClient } from '@/shared/api/client'
 import type { DirEntry, FileSearchEntry } from '@/shared/api/contracts'
 import { useChatStore } from '../../model/store'
-import { detectToken } from './atRefToken'
+import { detectToken } from '@localixai/api/context-refs'
 import { useResourceDrill } from './useResourceDrill'
 import {
   acceptAtRefSuggestion,
