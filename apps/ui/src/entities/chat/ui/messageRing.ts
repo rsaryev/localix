@@ -1,7 +1,7 @@
 import { useMessageSearchStore } from '@/shared/lib/messageSearchBus'
 
 /** How long a pill click keeps the target card's search ring lit. */
-export const MESSAGE_RING_MS = 1600
+const MESSAGE_RING_MS = 1600
 
 /**
  * Light the message-search ring on `messageId` (the transcript scrolls to it through the search

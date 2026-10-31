@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react'
+import { useId, useState } from 'react'
 import { COLLAPSIBLE_MOTION } from '@localixai/kit/collapsible-motion'
 import { MessageText } from './MessageText'
 
@@ -32,7 +32,6 @@ function ChevronIcon({ open }: { open: boolean }) {
  */
 export function MessageReasoning({ text, isStreaming = false }: MessageReasoningProps) {
   const [open, setOpen] = useState(false)
-  const contentRef = useRef<HTMLDivElement>(null)
   const regionId = useId()
 
   if (!text.trim()) return null
@@ -60,10 +59,7 @@ export function MessageReasoning({ text, isStreaming = false }: MessageReasoning
         ].join(' ')}
       >
         <div className="min-h-0 overflow-hidden">
-          <div
-            ref={contentRef}
-            className="mt-[0.45rem] ml-[0.3rem] border-l border-dashed border-border pl-3 text-xs italic leading-relaxed text-text-faint"
-          >
+          <div className="mt-[0.45rem] ml-[0.3rem] border-l border-dashed border-border pl-3 text-xs italic leading-relaxed text-text-faint">
             {open && <MessageText text={text} isStreaming={isStreaming} />}
           </div>
         </div>

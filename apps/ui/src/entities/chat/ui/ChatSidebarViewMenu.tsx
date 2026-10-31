@@ -51,7 +51,7 @@ function axisRows<T extends string>(
   }))
 }
 
-export function chatSidebarViewEntries({
+function chatSidebarViewEntries({
   sortMode,
   onSortModeChange,
   showArchived,
