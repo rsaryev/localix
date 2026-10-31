@@ -65,6 +65,11 @@ waiting for its last resource. A command the bridge cannot run is answered to th
 it; a page that fails to open, reload, or navigate is reported to the Event Center rather than in a
 strip over the page.
 
+The bridge adds passive safety nets, all in `packages/visual-feedback`. Dialogs are cancelled only
+while a command is in flight (the page's own dialog otherwise). Failed subresources ride the reply.
+`leaving()` also reads the Navigation API, unhandled link clicks and form submits. There is no push
+channel from the page to the shell, so `navigatedAfter` still polls the shell and the bridge.
+
 ## Limits
 
 - Only macOS captures a native page's picture. On Windows a page still hides under an app overlay;

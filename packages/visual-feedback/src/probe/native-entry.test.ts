@@ -42,3 +42,47 @@ test('an unload that started reads as leaving, and fades when nothing replaces t
     clock.mockRestore()
   }
 })
+
+async function answer(
+  id: string,
+  command: Parameters<NonNullable<Window['__localixBrowser']>['run']>[1],
+) {
+  const bridge = window.__localixBrowser!
+  bridge.run(id, command)
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const outcome = bridge.take(id) as { result?: Record<string, unknown> } | undefined
+    if (outcome) return outcome
+    await turns()
+  }
+  throw new Error('the bridge did not answer')
+}
+
+test('a confirm() the page opens during a click is cancelled and named in the reply', async () => {
+  await import('./native-entry')
+  document.body.innerHTML = '<button id="del">Delete</button>'
+  let answered: boolean | undefined
+  ;(document.querySelector('#del') as HTMLButtonElement).onclick = () => {
+    answered = window.confirm('Delete everything?')
+  }
+  const snap = (await answer('s', { action: 'snapshot' })) as {
+    result: { snapshot: { tree: string } }
+  }
+  const ref = /\[ref=(e\d+)\]/.exec(snap.result.snapshot.tree)![1]
+  const reply = await answer('c', { action: 'click', ref })
+  expect(answered).toBe(false)
+  expect(reply.result?.recentErrors).toContain('[dialog] confirm("Delete everything?") cancelled')
+})
+
+test('a stylesheet that failed to load is listed in the next snapshot', async () => {
+  await import('./native-entry')
+  document.body.innerHTML = '<button>Go</button>'
+  const link = document.createElement('link')
+  link.rel = 'stylesheet'
+  link.href = 'assets/theme.css'
+  document.head.appendChild(link)
+  link.dispatchEvent(new Event('error'))
+  const reply = (await answer('r', { action: 'snapshot' })) as {
+    result: { snapshot: { failedResources?: string[] } }
+  }
+  expect(reply.result.snapshot.failedResources).toContain('stylesheet assets/theme.css')
+})

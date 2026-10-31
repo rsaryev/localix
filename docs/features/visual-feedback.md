@@ -39,8 +39,14 @@ looking at. It starts no separate browser, and nothing is installed in your app.
 | `steps`               | One ordered batch of `click`, `hover`, `type`, `select`, `press` and `scroll`, validated whole first. | Events are synthesized, so controls that demand a trusted gesture can reject them.                                     |
 | Any drive action      | A short diff of what changed, with the full tree on request (`snapshot_after`).                       | Settling waits two animation frames, plus up to 400 ms for root animations.                                            |
 | `take_screenshot`     | The page, or one element by ref, rendered in the page.                                                | A DOM re-render of the viewport, not compositor pixels; capture can fail.                                              |
-| `console`, `evaluate` | Console output and errors, and a page-side expression result.                                         | Native dialogs are stubbed: `confirm` returns true and `prompt` returns null.                                          |
+| `console`, `evaluate` | Console output and errors, and a page-side expression result.                                         | Preview dialogs are stubbed: `confirm` returns true, `prompt` null. Native tabs: see below.                            |
 | `viewport`            | The frame resized to a named CSS size, checked against the page's real size.                          | Layout only; no device pixel ratio, touch or user agent.                                                               |
+
+A native browser tab is also the person's own browsing, so its dialogs are left alone, except while
+an agent command runs in it: then `alert`, `confirm` and `prompt` are cancelled (`confirm` returns
+false, `prompt` null; nothing is ever accepted) and their text comes back with the action. A
+stylesheet, script or image that failed to load is listed in the next snapshot, and a link click or
+form submit that will replace the page is noticed before the new page commits.
 
 A page that renders late is read after it rendered: put a `wait` step before the `snapshot` step.
 The page polls every 100 ms on a native timer, so a preview in a hidden tab still answers. A batch

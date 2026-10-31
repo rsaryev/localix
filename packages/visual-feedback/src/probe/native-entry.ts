@@ -2,6 +2,10 @@
 import type { VfCommand } from '../protocol/index'
 import { createRefRegistry } from '../snapshot/index'
 import { installConsoleCapture, runCommand, type ActuateDeps } from '../actuate/index'
+import { installResourceErrorCapture } from '../actuate/resource-errors'
+import { attachFailedResources } from '../actuate/attach-failed-resources'
+import { installScopedDialogGuard } from '../actuate/dialog-guard'
+import { trackLeaving } from './native-leaving'
 
 interface NativeBridge {
   run: (id: string, command: VfCommand) => void
@@ -9,14 +13,6 @@ interface NativeBridge {
   /** The document began to unload moments ago: a navigation is replacing it. */
   leaving: () => boolean
 }
-
-/**
- * How long an unload that started counts as a navigation in flight. Engines other than WebKit on
- * macOS cannot say whether a load the page itself started (a link, a form) is in flight; the
- * document can. A download or a 204 answer unloads nothing, so the signal fades instead of
- * holding commands until the next page.
- */
-const LEAVING_MS = 3000
 
 /**
  * Results held for the host to take. A command whose host gave up (a timeout) is never taken;
@@ -37,27 +33,35 @@ if (!window.__localixBrowser) {
     prevTree: { value: '' },
   }
   const results = new Map<string, unknown>()
-  let leftAt = Number.NEGATIVE_INFINITY
-  // Passive: it never asks the person to confirm leaving.
-  window.addEventListener('beforeunload', () => {
-    leftAt = Date.now()
-  })
+  const leaving = trackLeaving(window, (window as { navigation?: EventTarget }).navigation)
+  // A 404'd stylesheet or script leaves a real site silently broken: it is named in the reply.
+  const resourceErrors = installResourceErrorCapture()
+  const reportedResources = new Set<string>()
+  // The page's own dialogs stay the person's; they are cancelled only while a command runs.
+  const dialogs = installScopedDialogGuard(deps.console)
   window.__localixBrowser = {
     run(id, command) {
       if (results.has(id)) return
       results.set(id, null)
       while (results.size > MAX_RESULTS) results.delete(results.keys().next().value as string)
-      void runCommand(command, deps).then(
-        (result) => results.set(id, result),
-        (error) =>
-          results.set(id, {
-            ok: false,
-            errorCode: 'failed',
-            error: error instanceof Error ? error.message : String(error),
-          }),
-      )
+      const release = dialogs.hold()
+      void runCommand(command, deps)
+        .then(
+          (r) =>
+            results.set(id, {
+              ...r,
+              result: attachFailedResources(r.result, resourceErrors.read(), reportedResources),
+            }),
+          (error) =>
+            results.set(id, {
+              ok: false,
+              errorCode: 'failed',
+              error: error instanceof Error ? error.message : String(error),
+            }),
+        )
+        .finally(release)
     },
-    leaving: () => Date.now() - leftAt < LEAVING_MS,
+    leaving,
     take(id) {
       const result = results.get(id)
       if (result !== null && result !== undefined) results.delete(id)

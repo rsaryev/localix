@@ -6,6 +6,11 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ### Added
 
+- **Browser safety nets on real sites**: when the agent drives a page in a native browser tab, a
+  dialog the page opens during the action (alert, confirm, prompt) is cancelled instead of freezing
+  the agent, and its text is reported back; your own dialogs while you browse are untouched. Failed
+  stylesheets, scripts and images are now listed too, and link clicks and form submits are followed
+  to the new page sooner.
 - **Browser picks dropdown options**: the agent can now choose an option of a form dropdown by its
   value or its visible label, and the page sees a real change. The page snapshot lists each
   dropdown's options (up to 50), and picking one that is already chosen is reported as unchanged. It
