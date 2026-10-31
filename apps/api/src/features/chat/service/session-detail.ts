@@ -1,12 +1,11 @@
 import { NotFoundError } from '../../../lib/domain-errors'
-import { getLoopEngine } from '../../loops/runtime-binding'
-import { toLoopSummary } from '../../loops/contracts'
 import type { createProjectsRepository } from '../../projects/repository'
 import type { ChatRepository, SessionRecord } from '../repository'
 import type { ModelContextRepository } from '../model-context-repository'
 import { loadModelViewBoundary } from '../runtime/model-view/view'
 import { toSessionSummary } from '../repository-mappers'
 import { findToolItemByCallId, toSourceRuntime } from './session-access'
+import { listSessionLoops } from './loop-ops'
 import type { HitlRegistry } from '../runtime/hitl-registry'
 import { deriveSessionTiming } from '../session-timing'
 import type { SessionDetail, SessionSourceRuntime, SessionWork } from '../contracts'
@@ -241,11 +240,7 @@ export async function getSessionDetail(
     sessionUsage,
     work: runner.listWork(userId, id),
     terminalWaits: runner.getTerminalWaits?.(userId, id) ?? [],
-    loops: (() => {
-      const engine = getLoopEngine()
-      if (!engine) return []
-      return engine.list(userId, id).map(toLoopSummary)
-    })(),
+    loops: listSessionLoops(userId, id),
     queuedMessages,
     // A terminal/thin client can ask for only the newest N messages — a long
     // session's full history is megabytes of JSON it will never render at once.
