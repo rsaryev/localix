@@ -13,6 +13,7 @@ import {
   MAX_OUTPUT_CHARS,
   MAX_OUTPUT_ITEMS,
   MAX_TOTAL_CALL_ARGS_CHARS,
+  OUTPUT_LIMIT_MESSAGE,
 } from './limits'
 
 /** A limit the script passed; the run fails with its message. */
@@ -41,9 +42,7 @@ export function createRunBudget(): RunBudget {
   const countOutput = (chars: number) => {
     outputChars += chars
     if (outputChars > MAX_OUTPUT_CHARS || outputItems > MAX_OUTPUT_ITEMS) {
-      throw new ScriptBudgetError(
-        `The script's output passed ${MAX_OUTPUT_CHARS} characters or ${MAX_OUTPUT_ITEMS} items. Output a summary instead.`,
-      )
+      throw new ScriptBudgetError(OUTPUT_LIMIT_MESSAGE)
     }
   }
 

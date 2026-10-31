@@ -5,9 +5,4 @@
  * which also takes its long-lived script VMs from here (the mods host runs each mod in one).
  */
 export { createEngine, type EngineOptions } from './engine'
-export {
-  StreamIdleTimeoutError,
-  PreflightRejection,
-  LanguageModelCompletionError,
-} from '@localixai/engine-models'
 export { bundledScriptSandboxOptions, createScriptVms } from '@localixai/engine-scripts'

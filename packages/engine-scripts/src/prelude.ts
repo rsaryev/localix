@@ -12,13 +12,11 @@
  * `("call", id, name, argsJson)`, `("output", "text" | "image", data, mimeType)` and
  * `("done", ok, valueJsonOrErrorJson)`.
  */
-import { MAX_OUTPUT_CHARS, MAX_OUTPUT_ITEMS } from './limits'
+import { MAX_OUTPUT_CHARS, MAX_OUTPUT_ITEMS, OUTPUT_LIMIT_MESSAGE } from './limits'
 import { LOCKDOWN_SOURCE } from './lockdown'
 
 const IMAGE_FORMS =
   'image() expects a base64 data: URL, an { image_url } object, or an image block { type: "image", data, mimeType }'
-
-const OUTPUT_LIMIT = `The script's output passed ${MAX_OUTPUT_CHARS} characters or ${MAX_OUTPUT_ITEMS} items. Output a summary instead.`
 
 export const PRELUDE_SOURCE = `(function (bridge, toolsJson) {
   "use strict";
@@ -133,7 +131,7 @@ export const PRELUDE_SOURCE = `(function (bridge, toolsJson) {
     spent.items += 1;
     if (spent.chars > ${MAX_OUTPUT_CHARS} || spent.items > ${MAX_OUTPUT_ITEMS}) {
       // Reported before it is thrown: a script that catches it does not get its output back.
-      const error = new RangeError(${JSON.stringify(OUTPUT_LIMIT)});
+      const error = new RangeError(${JSON.stringify(OUTPUT_LIMIT_MESSAGE)});
       report(false, errorJson(error));
       throw error;
     }

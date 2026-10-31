@@ -13,6 +13,9 @@
 export const MAX_OUTPUT_CHARS = 4 * 1024 * 1024
 export const MAX_OUTPUT_ITEMS = 50_000
 
+/** What a script that printed past either limit is told, in the VM and on the host alike. */
+export const OUTPUT_LIMIT_MESSAGE = `The script's output passed ${MAX_OUTPUT_CHARS} characters or ${MAX_OUTPUT_ITEMS} items. Output a summary instead.`
+
 /** Calls running at once; the rest wait their turn. Each may spawn a process or raise a card. */
 export const MAX_CONCURRENT_CALLS = 8
 /** Calls one script may make in all. Past it the script fails. */
