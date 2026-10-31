@@ -106,14 +106,16 @@ fn generation_of(lease: &str) -> Option<u64> {
     lease.split('-').next()?.parse().ok()
 }
 
+/// An id from the webview that is safe inside a label: 8 to 80 ASCII letters, digits or dashes.
+pub(crate) fn is_opaque_id(id: &str) -> bool {
+    (8..=80).contains(&id.len())
+        && id
+            .bytes()
+            .all(|ch| ch.is_ascii_alphanumeric() || ch == b'-')
+}
+
 pub(crate) fn validate_lease(lease: Option<&str>) -> Result<(), String> {
-    if lease.is_some_and(|lease| {
-        lease.len() < 8
-            || lease.len() > 80
-            || !lease
-                .bytes()
-                .all(|ch| ch.is_ascii_alphanumeric() || ch == b'-')
-    }) {
+    if lease.is_some_and(|lease| !is_opaque_id(lease)) {
         Err("Invalid browser renderer lease".into())
     } else {
         Ok(())
@@ -147,6 +149,22 @@ pub(crate) async fn on_ui<T: Send + 'static>(
 mod tests {
     use super::*;
     const PAGE: &str = "browser-main--page-1234";
+
+    #[test]
+    fn opaque_ids_hold_eight_to_eighty_safe_bytes() {
+        for len in [8, 80] {
+            let id = "a".repeat(len);
+            assert!(validate_lease(Some(&id)).is_ok());
+            assert!(crate::native_browser::page_label("main", &id).is_ok());
+        }
+        for len in [7, 81] {
+            let id = "a".repeat(len);
+            assert!(validate_lease(Some(&id)).is_err());
+            assert!(crate::native_browser::page_label("main", &id).is_err());
+        }
+        assert!(validate_lease(Some("abcdefg_h")).is_err());
+        assert!(validate_lease(None).is_ok());
+    }
 
     #[test]
     fn late_open_after_logical_close_cannot_recreate_the_page() {

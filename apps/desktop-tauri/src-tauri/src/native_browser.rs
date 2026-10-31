@@ -180,12 +180,7 @@ fn require_main(caller: &Webview) -> Result<(), String> {
 }
 
 fn label(tab_id: &str) -> Result<String, String> {
-    if tab_id.len() < 8
-        || tab_id.len() > 80
-        || !tab_id
-            .bytes()
-            .all(|ch| ch.is_ascii_alphanumeric() || ch == b'-')
-    {
+    if !crate::native_browser_lifecycle::is_opaque_id(tab_id) {
         return Err("Invalid browser tab ID".into());
     }
     Ok(format!("browser-{tab_id}"))
