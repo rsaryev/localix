@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { archiveOnly } from '../../../scripts/screenshots/plan.mjs'
+import { writeFileAtomic } from './atomic-write.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '../../..')
@@ -49,17 +50,6 @@ async function walkPngs(dir) {
 function importPath(fromFile, assetFile) {
   const relative = path.relative(path.dirname(fromFile), assetFile).split(path.sep).join('/')
   return relative.startsWith('.') ? relative : `./${relative}`
-}
-
-async function writeAtomically(file, source) {
-  await fs.mkdir(path.dirname(file), { recursive: true })
-  const temporary = `${file}.${process.pid}.tmp`
-  try {
-    await fs.writeFile(temporary, source, 'utf8')
-    await fs.rename(temporary, file)
-  } finally {
-    await fs.rm(temporary, { force: true })
-  }
 }
 
 /**
@@ -163,7 +153,7 @@ ${assetEntries}
 } as const
 `
 
-  await writeAtomically(outFile, source)
+  await writeFileAtomic(outFile, source)
   if (publicDir) {
     await copyPublicShots({ latest, publicDir })
   }

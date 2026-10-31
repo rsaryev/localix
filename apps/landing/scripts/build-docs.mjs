@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 import matter from 'gray-matter'
 import { extractMarkdownHeadings } from '@localixai/markdown'
 import { SITE_ORIGIN } from '../src/lib/site.ts'
+import { writeFileAtomic } from './atomic-write.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '../../..')
@@ -16,24 +17,6 @@ const publicNavFile = path.join(docsRoot, 'public-nav.json')
 const outFile = path.join(__dirname, '../src/generated/docs.ts')
 const contentDir = path.join(__dirname, '../src/generated/docs-pages')
 const sitemapFile = path.join(__dirname, '../public/sitemap.xml')
-let atomicWriteSequence = 0
-
-/** Replace one generated file atomically. Parallel Turbo tasks may both invoke
- * docs:gen; a direct write or whole-directory rm lets one observe the other's
- * half-written tree. Sibling temp files + rename keep every visible file complete. */
-async function writeFileAtomic(file, content) {
-  await fs.mkdir(path.dirname(file), { recursive: true })
-  const temp = path.join(
-    path.dirname(file),
-    `.${path.basename(file)}.${process.pid}.${atomicWriteSequence++}.tmp`,
-  )
-  try {
-    await fs.writeFile(temp, content, 'utf8')
-    await fs.rename(temp, file)
-  } finally {
-    await fs.rm(temp, { force: true })
-  }
-}
 
 const titleCase = (s) => s.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 
