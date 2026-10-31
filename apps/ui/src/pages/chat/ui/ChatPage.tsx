@@ -192,7 +192,7 @@ export function ChatPage() {
   useExternalSessionTerminal(activeSessionId)
   const uiNavigation = useUiNavigation({ sessionId: activeSessionId })
   const { sessionId: routeSessionId, sectionId, projectId: routeProjectId } = nav
-  const routePathname = useLocation().pathname
+  const { pathname: routePathname, search: routeSearch } = useLocation()
   // A neutral landing that mints a fresh GLOBAL draft: the bare index ("/") OR
   // "/global" with no session. We do NOT resurrect the last chat there.
   const isHomeRoute =
@@ -334,7 +334,7 @@ export function ChatPage() {
   // URL is the single source of truth for navigation: navigators write to it and
   // useUrlStoreSync syncs the Zustand data store FROM the URL (one-way), plus the
   // normalization/home redirects and per-scope section + sidebar memory.
-  const promptDeepLink = new URLSearchParams(useLocation().search).get('prompt')
+  const promptDeepLink = new URLSearchParams(routeSearch).get('prompt')
   useUrlStoreSync({
     hasHydrated,
     nav,
