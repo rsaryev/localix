@@ -10,6 +10,9 @@ use serde_json::Value;
 use tauri::Manager;
 use tauri::{AppHandle, Webview};
 
+/// The largest a drag anchor coordinate may be, in points.
+const MAX_ANCHOR: f64 = 10000.0;
+
 #[tauri::command]
 pub(crate) async fn workspace_drag_prepare(
     app: AppHandle,
@@ -26,7 +29,7 @@ pub(crate) async fn workspace_drag_prepare(
     if anchor.is_some_and(|point| {
         point
             .iter()
-            .any(|value| !value.is_finite() || *value < 0.0 || *value > 10000.0)
+            .any(|value| !value.is_finite() || *value < 0.0 || *value > MAX_ANCHOR)
     }) {
         return Err("Invalid workspace drag anchor".into());
     }

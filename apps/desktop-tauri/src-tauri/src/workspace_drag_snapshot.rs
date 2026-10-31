@@ -1,6 +1,9 @@
 //! Only an explicitly visible dragged pane is eligible for a content snapshot.
 use serde::Deserialize;
 
+#[cfg(any(target_os = "macos", test))]
+use crate::workspace_session_model::MIN_WORKSPACE_SIZE;
+
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct BrowserSnapshot {
@@ -13,6 +16,9 @@ pub(crate) struct DragSnapshot {
     pub(crate) browser: Option<BrowserSnapshot>,
 }
 
+/// The largest a captured pane rectangle may reach, in points.
+const MAX_RECT_EXTENT: f64 = 20000.0;
+
 fn valid_rect([x, y, width, height]: [f64; 4]) -> bool {
     [x, y, width, height]
         .iter()
@@ -21,8 +27,8 @@ fn valid_rect([x, y, width, height]: [f64; 4]) -> bool {
         && y >= 0.0
         && width >= 1.0
         && height >= 1.0
-        && x + width <= 20000.0
-        && y + height <= 20000.0
+        && x + width <= MAX_RECT_EXTENT
+        && y + height <= MAX_RECT_EXTENT
 }
 impl DragSnapshot {
     pub(crate) fn validate(&self) -> Result<(), String> {
@@ -81,16 +87,16 @@ pub(crate) fn preview_geometry(
     header: f64,
     screen: Option<PreviewScreen>,
 ) -> ([f64; 2], [f64; 2]) {
-    let mut width = rect[2].max(900.0);
-    let mut height = (rect[3] + header).max(600.0);
+    let mut width = rect[2].max(MIN_WORKSPACE_SIZE[0]);
+    let mut height = (rect[3] + header).max(MIN_WORKSPACE_SIZE[1]);
     if let Some(screen) = screen.filter(|screen| {
         screen.size.iter().all(|value| value.is_finite())
             && screen.size[0] >= 320.0
             && screen.size[1] > header
     }) {
         if screen.expanded {
-            width = (screen.size[0] / 2.0).max(900.0);
-            height = (screen.size[1] / 2.0).max(600.0);
+            width = (screen.size[0] / 2.0).max(MIN_WORKSPACE_SIZE[0]);
+            height = (screen.size[1] / 2.0).max(MIN_WORKSPACE_SIZE[1]);
         }
         width = width.min(screen.size[0]);
         height = height.min(screen.size[1]);

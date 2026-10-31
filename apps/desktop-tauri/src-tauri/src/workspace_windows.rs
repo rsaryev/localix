@@ -281,8 +281,11 @@ fn open_with_mode(
     provisional: bool,
     hidden: bool,
 ) -> Result<String, String> {
-    if workspaces(app).entries.len() >= 64 {
-        return Err("Close a workspace before opening another (64 workspaces maximum)".into());
+    if workspaces(app).entries.len() >= crate::workspace_session_model::MAX_WORKSPACES {
+        return Err(format!(
+            "Close a workspace before opening another ({} workspaces maximum)",
+            crate::workspace_session_model::MAX_WORKSPACES
+        ));
     }
     let label = match saved_label {
         Some(label) => label,

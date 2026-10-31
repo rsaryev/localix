@@ -56,7 +56,10 @@ pub(crate) fn build(
     let mut builder = WebviewWindowBuilder::new(app, label, WebviewUrl::App("index.html".into()))
         .title("Localix")
         .inner_size(1280.0, 832.0)
-        .min_inner_size(900.0, 600.0)
+        .min_inner_size(
+            crate::workspace_session_model::MIN_WORKSPACE_SIZE[0],
+            crate::workspace_session_model::MIN_WORKSPACE_SIZE[1],
+        )
         .resizable(true)
         // First-launch placement: center on the active monitor instead
         // of the OS default (top-left cascade on Windows/Linux). On the

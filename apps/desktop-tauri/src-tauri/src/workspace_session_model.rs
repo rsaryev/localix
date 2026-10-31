@@ -2,6 +2,11 @@
 #![cfg_attr(not(target_os = "macos"), allow(dead_code))]
 use serde::{Deserialize, Serialize};
 
+/// The smallest a workspace window may be, as width and height.
+pub(crate) const MIN_WORKSPACE_SIZE: [f64; 2] = [900.0, 600.0];
+/// The most workspace windows, and the most saved tabs, at once.
+pub(crate) const MAX_WORKSPACES: usize = 64;
+
 pub(crate) fn valid_label(label: &str) -> bool {
     label == "main"
         || label.strip_prefix("workspace-").is_some_and(|id| {
@@ -137,12 +142,16 @@ impl SavedSession {
 
     pub(crate) fn validated(self) -> Option<Self> {
         let mut seen = std::collections::HashSet::new();
-        if self.groups.len() > 64 || self.groups.iter().map(|g| g.tabs.len()).sum::<usize>() > 64 {
+        if self.groups.len() > MAX_WORKSPACES
+            || self.groups.iter().map(|g| g.tabs.len()).sum::<usize>() > MAX_WORKSPACES
+        {
             return None;
         }
         for group in &self.groups {
             if group.frame.is_some_and(|frame| {
-                !frame.iter().all(|v| v.is_finite()) || frame[2] < 900.0 || frame[3] < 600.0
+                !frame.iter().all(|v| v.is_finite())
+                    || frame[2] < MIN_WORKSPACE_SIZE[0]
+                    || frame[3] < MIN_WORKSPACE_SIZE[1]
             }) {
                 return None;
             }
