@@ -7,7 +7,8 @@ import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '../controls/button'
 import { IconButton } from '../controls/icon-button'
 import { gestureHint, type CanvasInteraction } from './keyboard'
-import { useCanvasCamera, useCanvasZoom } from './useCanvasCamera'
+import { useStore } from '@xyflow/react'
+import { useCanvasCamera } from './useCanvasCamera'
 
 /**
  * The zoom and the camera's actions, bottom right, on every board; and, the first time only, a
@@ -26,10 +27,11 @@ export function CanvasControls({
   showHint?: boolean
 }) {
   const camera = useCanvasCamera()
-  const zoom = useCanvasZoom()
   const hint = useDismissable(HINT.canvasGestures)
   const chord = (value: string) => formatChordText(value)
-  const percent = Math.round(zoom * 100)
+  // The rounded percent, not the zoom: a camera flight changes the zoom every frame, and the
+  // toolbar redraws only when the number it shows changes.
+  const percent = useStore((state) => Math.round(state.transform[2] * 100))
   return (
     <>
       {showHint && !hint.dismissed && (
