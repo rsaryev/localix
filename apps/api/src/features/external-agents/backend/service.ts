@@ -14,8 +14,7 @@ import { buildRoster } from './discovery/roster'
 import { computeStats, type ExternalAgentStats, type StatsQuery } from './discovery/stats'
 import { ManifestRegistry } from './detection/registry'
 import { LiveStore, type LiveEntry } from './live/store'
-import { correlateOnce } from './live/correlate'
-import { scheduleCorrelationAttempt } from './live/correlation-scheduler'
+import { CORRELATE_ATTEMPT_DELAYS_MS, correlateOnce } from './live/correlate'
 import { observeToolCall } from './live/observe'
 import { waitForStates, type WaitRequest, type WaitOutcome } from './live/waiters'
 import { startWaitPoll } from './live/wait-poll'
@@ -150,12 +149,15 @@ export class AgentSessionsService {
   private scheduleCorrelation(terminalId: string, attempt = 0): void {
     // A correlation in flight at shutdown would otherwise schedule its retry onto a dead service.
     if (this.stopped) return
-    scheduleCorrelationAttempt({
-      attempt,
-      timers: () => this.timers,
-      correlate: () => this.tryCorrelate(terminalId),
-      retry: () => this.scheduleCorrelation(terminalId, attempt + 1),
-    })
+    if (attempt >= CORRELATE_ATTEMPT_DELAYS_MS.length) return
+    // The timer is retired before trying, so a retry never counts the one that fired.
+    const timer = setTimeout(() => {
+      this.timers.delete(timer)
+      void this.tryCorrelate(terminalId).then((adopted) => {
+        if (!adopted) this.scheduleCorrelation(terminalId, attempt + 1)
+      })
+    }, CORRELATE_ATTEMPT_DELAYS_MS[attempt])
+    this.timers.add(timer)
   }
 
   private async tryCorrelate(terminalId: string): Promise<boolean> {
