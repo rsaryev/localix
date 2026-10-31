@@ -93,13 +93,15 @@ export async function buildShotManifest({
     }
 
     const dimensions = pngDimensions(await fs.readFile(file))
-    const width = REQUIRED_WIDTH
-    const height = REQUIRED_HEIGHT
-    const density = dimensions.width / width
+    const density = dimensions.width / REQUIRED_WIDTH
     const validDensity = Number.isInteger(density) && density >= 1 && density <= 3
-    if (!validDensity || dimensions.height !== height * density || (placeholder && density !== 1)) {
+    if (
+      !validDensity ||
+      dimensions.height !== REQUIRED_HEIGHT * density ||
+      (placeholder && density !== 1)
+    ) {
       throw new Error(
-        `${relative} must be ${width}×${height}${placeholder ? '' : ' at 1×, 2×, or 3× density'}; got ${dimensions.width}×${dimensions.height}`,
+        `${relative} must be ${REQUIRED_WIDTH}×${REQUIRED_HEIGHT}${placeholder ? '' : ' at 1×, 2×, or 3× density'}; got ${dimensions.width}×${dimensions.height}`,
       )
     }
 

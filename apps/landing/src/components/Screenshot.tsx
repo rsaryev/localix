@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Button } from '@localixai/kit/button'
+import { CAPTURE_HEIGHT, CAPTURE_WIDTH } from '../lib/capture'
 import {
   Dialog,
   DialogContent,
@@ -87,8 +88,8 @@ export function Screenshot({
               <img
                 src={src}
                 alt={alt}
-                width={1600}
-                height={1000}
+                width={CAPTURE_WIDTH}
+                height={CAPTURE_HEIGHT}
                 draggable={false}
                 className="screenshot-full-image"
               />

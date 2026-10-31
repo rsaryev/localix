@@ -3,6 +3,7 @@ import { highlightCode } from '@localixai/markdown/highlight'
 import { childrenToText, type Components } from '@localixai/markdown/react'
 import { screenshotAssets } from '../../generated/shots'
 import { Screenshot } from '../../components/Screenshot'
+import { CAPTURE_HEIGHT, CAPTURE_WIDTH } from '../../lib/capture'
 import { DocCodeBlock } from './DocCodeBlock'
 import { pathToSlug, resolveRepoPath } from './docLinks'
 
@@ -26,8 +27,8 @@ function DocImage({ src, alt, capture = false }: { src: string; alt: string; cap
     <img
       src={src}
       alt={alt}
-      width={capture ? 1600 : undefined}
-      height={capture ? 1000 : undefined}
+      width={capture ? CAPTURE_WIDTH : undefined}
+      height={capture ? CAPTURE_HEIGHT : undefined}
       loading="lazy"
       className={capture ? 'screenshot-thumbnail' : undefined}
       onError={() => setFailed(true)}

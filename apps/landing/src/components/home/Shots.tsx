@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
+import { CAPTURE_HEIGHT, CAPTURE_WIDTH } from '../../lib/capture'
 import './shots.css'
 
 /**
@@ -12,17 +13,13 @@ export interface Capture {
   alt: string
 }
 
-/** The published size of every capture, so each panel holds its place before the picture loads. */
-const WIDTH = 1600
-const HEIGHT = 1000
-
 function Picture({ capture, lazy }: { capture: Capture; lazy?: boolean }) {
   return (
     <img
       src={`/landing/${capture.name}.webp`}
       alt={capture.alt}
-      width={WIDTH}
-      height={HEIGHT}
+      width={CAPTURE_WIDTH}
+      height={CAPTURE_HEIGHT}
       loading={lazy ? 'lazy' : undefined}
       decoding="async"
     />
