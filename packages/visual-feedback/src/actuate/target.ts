@@ -142,18 +142,15 @@ export function healFailResult(action: VfCommand['action'], t: HealFail): Actuat
   }
 }
 
+const CLOSE_SELECTOR =
+  'button[aria-label*="close" i],[aria-label*="dismiss" i],button[title*="close" i],[data-dismiss],.close,.modal-close'
+
 /** Find a plausible close/dismiss control inside (the dialog around) a covering
  *  element, so a "covered" error can name it. */
 export function findCloseControl(blocker: Element): Element | null {
   const scope = blocker.closest('[role="dialog"],[aria-modal="true"]') ?? blocker
-  const sel =
-    'button[aria-label*="close" i],[aria-label*="dismiss" i],button[title*="close" i],[data-dismiss],.close,.modal-close'
-  try {
-    const el = scope.querySelector(sel)
-    if (el) return el
-  } catch {
-    /* bad selector impossible here, but stay defensive */
-  }
+  const el = scope.querySelector(CLOSE_SELECTOR)
+  if (el) return el
   // Fallback: a button whose visible text is just an ×/close glyph.
   for (const b of Array.from(scope.querySelectorAll('button,[role="button"]'))) {
     if (/^(×|✕|✖|╳|x|close)$/i.test((b.textContent ?? '').trim())) return b

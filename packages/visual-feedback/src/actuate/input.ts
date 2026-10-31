@@ -10,7 +10,7 @@
  */
 
 import { deepElementFromPoint } from '../core/identify'
-import { NAMED_KEYS } from '../keys/index'
+import { normalizeKeyName } from '../keys/index'
 
 /** Center point of `el`, clamped into the viewport so elementFromPoint is valid. */
 export function centerPoint(el: Element): { x: number; y: number } {
@@ -149,7 +149,7 @@ function keyInit(chord: string): KeyboardEventInit & { key: string } {
   // A trailing '+' is the PLUS key itself ("+", "Ctrl++"), not an empty key.
   if (key === '' && trimmed.endsWith('+')) key = '+'
   const mods = new Set(parts.map((m) => m.toLowerCase()))
-  const k = NAMED_KEYS[key.toLowerCase()] ?? key
+  const k = normalizeKeyName(key)
   return {
     key: k,
     code: physicalCode(k),
