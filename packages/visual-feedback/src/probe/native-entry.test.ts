@@ -95,3 +95,22 @@ test('a page that still shows a progress bar after the command is marked busy', 
     new DOMRect(10, 10, 100, 8)
   expect((await answer('b2', { action: 'snapshot' })).result?.busy).toBe(true)
 })
+
+test('a failure while decorating a finished result is the command failing, not no answer', async () => {
+  await import('./native-entry')
+  // The busy check reads the page after the command ran; a page that breaks it must not leave
+  // the host polling for a result nothing will ever store.
+  const spy = spyOn(document, 'querySelectorAll').mockImplementation(() => {
+    throw new Error('page broke the query')
+  })
+  try {
+    const reply = (await answer('decorate', { action: 'console' })) as {
+      ok?: boolean
+      error?: string
+    }
+    expect(reply.ok).toBe(false)
+    expect(reply.error).toContain('page broke the query')
+  } finally {
+    spy.mockRestore()
+  }
+})

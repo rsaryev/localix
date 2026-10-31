@@ -49,23 +49,25 @@ if (!window.__localixBrowser) {
       results.set(id, null)
       while (results.size > MAX_RESULTS) results.delete(results.keys().next().value as string)
       const release = dialogs.hold()
+      const failed = (error: unknown) =>
+        results.set(id, {
+          ok: false,
+          errorCode: 'failed',
+          error: error instanceof Error ? error.message : String(error),
+        })
+      // `.catch` after `.then(ok)`, not beside it: a throw while decorating a finished result is
+      // the command failing too, and the host would otherwise poll for an answer never stored.
       void runCommand(command, deps)
-        .then(
-          (r) =>
-            results.set(id, {
-              ...r,
-              result: attachBusy(
-                attachFailedResources(r.result, resourceErrors.read(), reportedResources),
-                isPageBusy(activity),
-              ),
-            }),
-          (error) =>
-            results.set(id, {
-              ok: false,
-              errorCode: 'failed',
-              error: error instanceof Error ? error.message : String(error),
-            }),
+        .then((r) =>
+          results.set(id, {
+            ...r,
+            result: attachBusy(
+              attachFailedResources(r.result, resourceErrors.read(), reportedResources),
+              isPageBusy(activity),
+            ),
+          }),
         )
+        .catch(failed)
         .finally(release)
     },
     leaving,
