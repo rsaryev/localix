@@ -6,7 +6,7 @@ import type {
   FormatTextSource,
 } from '@/shared/ui/code-editor/CodeEditor'
 import type { MonacoEditorExtension } from '@/shared/ui/code-editor/monaco/extensions'
-import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppEditorRunContext, PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import type { NextEditContextSource } from './useFileLsp'
 
 export interface FileTabProps {
@@ -64,11 +64,5 @@ export type SessionFileTabProps = FileTabProps & {
 }
 
 /** The editor state a Run action needs: the whole document, the current selection, and
- *  the caret offset (to resolve the statement under the cursor). */
-export interface EditorRunContext {
-  fullText: string
-  selectedText: string
-  cursorOffset: number
-  /** Run Monaco's native Format Document command for this editor. */
-  formatDocument: () => Promise<void>
-}
+ *  the caret offset (to resolve the statement under the cursor). The SDK owns its shape. */
+export type EditorRunContext = MiniAppEditorRunContext

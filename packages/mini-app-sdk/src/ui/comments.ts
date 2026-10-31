@@ -43,7 +43,7 @@ interface CommentsState {
 
 const genId = () => globalThis.crypto?.randomUUID?.() ?? `c-${Date.now()}-${Math.random()}`
 
-/** Process-wide accumulation store. Filter by scope with {@link selectScopeComments}. */
+/** Process-wide accumulation store. Filter by scope with {@link useScopeComments}. */
 export const useComments = create<CommentsState>((set) => ({
   comments: [],
   add: (scope, anchor, body) => {

@@ -10,7 +10,6 @@ export interface MiniAppUiTransport {
 
 let transport: MiniAppUiTransport | null = null
 
-/** Bind the host transport before discovering bundled mini app UI modules. */
 /** Bind the host transport; the unbind restores the previous one (see `bindMiniAppUiRuntime`). */
 export function bindMiniAppUiTransport(next: MiniAppUiTransport): () => void {
   const previous = transport
@@ -117,25 +116,6 @@ export class MiniAppApiError extends Error {
   }
 }
 
-/**
- * The two error bodies a mini app route actually answers with.
- *
- * The host envelope (`jsonError`) is NESTED — `{ error: { code, message, detail } }`. Several
- * mini app routes hand-roll a FLAT one instead — `{ error, code, detail }`, which is what
- * `toErrorInfo()` naturally spreads into. Reading only the nested shape was a miss on every field:
- * a person whose spreadsheet would not open was told "Request failed with status 400" while the
- * sentence naming the reason, and the library's own words, were both on the wire and both thrown
- * away. A bundled mini app worked around it with a private copy of this function.
- *
- * So read BOTH. The flat shape is only trusted when `error` is a string — that is what separates
- * it from the nested one, whose `error` is an object.
- *
- * And when a route answers nothing readable at all, the fallback is a SENTENCE, not the status
- * line. `Request failed with status 500` names neither what failed nor what to do; the host's own
- * transport classifies the same statuses this way, and the two must not word one failure
- * differently just because it crossed a mini app boundary.
- */
-
 /** One sentence per status class, matching the host transport's table. */
 function statusSentence(status: number): string {
   if (status === 0) return 'Cannot reach the Localix server.'
@@ -162,6 +142,24 @@ interface WireError {
   prerequisite?: Prerequisite
 }
 
+/**
+ * The two error bodies a mini app route actually answers with.
+ *
+ * The host envelope (`jsonError`) is NESTED — `{ error: { code, message, detail } }`. Several
+ * mini app routes hand-roll a FLAT one instead — `{ error, code, detail }`, which is what
+ * `toErrorInfo()` naturally spreads into. Reading only the nested shape was a miss on every field:
+ * a person whose spreadsheet would not open was told "Request failed with status 400" while the
+ * sentence naming the reason, and the library's own words, were both on the wire and both thrown
+ * away. A bundled mini app worked around it with a private copy of this function.
+ *
+ * So read BOTH. The flat shape is only trusted when `error` is a string — that is what separates
+ * it from the nested one, whose `error` is an object.
+ *
+ * And when a route answers nothing readable at all, the fallback is a SENTENCE, not the status
+ * line. `Request failed with status 500` names neither what failed nor what to do; the host's own
+ * transport classifies the same statuses this way, and the two must not word one failure
+ * differently just because it crossed a mini app boundary.
+ */
 function readWireError(body: JsonError | null, status: number): WireError {
   const nested = body && typeof body.error === 'object' ? body.error : null
   if (nested) {

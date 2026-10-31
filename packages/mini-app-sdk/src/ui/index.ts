@@ -365,13 +365,3 @@ export type {
   MiniAppUiApi,
   MiniAppUiInvokeOptions,
 } from './bridge'
-
-/**
- * The provider-id vocabulary, re-exported for the UI half.
- *
- * It lives under `backend/` because that is where the owning contract is, but it is PURE DATA with no
- * imports — so a mini app UI that mints resource URIs can derive the id instead of re-spelling it.
- * That matters for exactly one shape today: the UI builds `localix://resource/<provider>/…` and the
- * backend's `providerSegments(PROVIDER, uri)` has to accept it, so a rename that moved one and not
- * the other would fail silently, with URIs that no longer resolve.
- */

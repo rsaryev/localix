@@ -5,6 +5,7 @@ import {
   type MessageBindingDragPayload,
 } from './message-binding-drag-contracts'
 import { DROP_HINTS } from './message-binding-drop-hints'
+import { utf8ByteLength } from '../utf8'
 
 /** UTF-8 spends at least one and at most three bytes per UTF-16 code unit (a
  *  surrogate PAIR costs four, i.e. two per unit), so both bounds settle the
@@ -12,7 +13,7 @@ import { DROP_HINTS } from './message-binding-drop-hints'
 export function exceedsDragByteCap(serialized: string): boolean {
   if (serialized.length > MESSAGE_BINDING_DRAG_MAX_BYTES) return true
   if (serialized.length * 3 <= MESSAGE_BINDING_DRAG_MAX_BYTES) return false
-  return new TextEncoder().encode(serialized).byteLength > MESSAGE_BINDING_DRAG_MAX_BYTES
+  return utf8ByteLength(serialized) > MESSAGE_BINDING_DRAG_MAX_BYTES
 }
 
 /**

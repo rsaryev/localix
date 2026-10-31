@@ -230,7 +230,6 @@ function revokedProblems(revoked: unknown, at: string): string[] {
 
 function appProblems(app: unknown, at: string, check: MarketplaceCheck): string[] {
   if (!isRecord(app)) return [`${at}: an app`]
-  const text = [app.name, app.displayName, app.description]
   return [
     ...unknownFields(app, APP_FIELDS, at, 'an app'),
     ...(typeof app.name === 'string' && app.name.length <= 64 && MINI_APP_NAME_RE.test(app.name)
@@ -241,9 +240,10 @@ function appProblems(app: unknown, at: string, check: MarketplaceCheck): string[
     ...curationProblems(app, at, check),
     ...revokedProblems(app.revoked, at),
     ...(['name', 'displayName', 'description'] as const)
-      .filter(
-        (_, index) => typeof text[index] === 'string' && INVISIBLE.test(text[index] as string),
-      )
+      .filter((key) => {
+        const value = app[key]
+        return typeof value === 'string' && INVISIBLE.test(value)
+      })
       .map((key) => `${at}.${key}: holds an invisible character`),
   ]
 }
