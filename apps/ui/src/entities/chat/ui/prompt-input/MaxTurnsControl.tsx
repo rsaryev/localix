@@ -9,8 +9,6 @@ import { DEFAULT_MAX_TURNS } from '@localixai/api/turn-budget'
 import { SETTING_TRIGGER_CLASS } from './model-select/settingTrigger'
 import { maxTurnsChoices, maxTurnsLabel } from './model-select/modelSettingChoices'
 
-export { maxTurnsLabel }
-
 /** A model setting for the selected agent, with an explicit inherited default. */
 export function MaxTurnsControl({
   value,

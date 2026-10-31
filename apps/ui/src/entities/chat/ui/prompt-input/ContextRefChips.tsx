@@ -89,8 +89,6 @@ export function ComposerContextManifest({
   )
 }
 
-export { contextRefSourceLabel } from './ContextManifestRefRow'
-
 export function ContextStatusNotice({
   tone = 'warning',
   title,

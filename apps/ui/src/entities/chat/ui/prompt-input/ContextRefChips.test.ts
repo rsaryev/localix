@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { contextRefSourceLabel } from './ContextRefChips'
+import { contextRefSourceLabel } from './ContextManifestRefRow'
 
 describe('context indicator provenance', () => {
   test('distinguishes automatic, explicit, and in-message context', () => {
