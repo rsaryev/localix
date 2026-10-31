@@ -1,6 +1,5 @@
 import { randomBytes, createHash } from 'node:crypto'
 
-import { base64url } from '../../lib/base64url'
 import { errorMessage } from '../../lib/errors'
 import {
   createManifestOAuthAdapter,
@@ -47,9 +46,9 @@ export function makeMiniAppOAuth(miniAppName: string): MiniAppOAuth {
         )
       }
       const adapter = createManifestOAuthAdapter(`mini-app:${miniAppName}`, spec)
-      const state = base64url(randomBytes(24))
-      const verifier = base64url(randomBytes(32))
-      const challenge = base64url(createHash('sha256').update(verifier).digest())
+      const state = randomBytes(24).toString('base64url')
+      const verifier = randomBytes(32).toString('base64url')
+      const challenge = createHash('sha256').update(verifier).digest('base64url')
       const { url, redirectUri } = adapter.buildAuthorizeUrl!({
         state,
         verifier,
