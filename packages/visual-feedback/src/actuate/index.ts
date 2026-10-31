@@ -14,6 +14,8 @@
 import type { VfCommand, VfRect, VfSnapshot } from '../protocol/index'
 import { getElementSummary } from '../core/identify'
 import { getViewportRect } from '../core/geometry'
+import { deepActive } from '../core/frames'
+import { isEditable } from '../snapshot/field'
 import { buildSnapshot } from '../snapshot/index'
 import { rasterizeElement } from '../rasterize/index'
 import {
@@ -241,7 +243,10 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
     }
 
     case 'type': {
-      const t = resolveWithHeal(cmd, deps)
+      // No target: the field that has focus, as a person types after a click that opened a
+      // dialog with its own, not yet snapshotted, field.
+      const focused = cmd.ref || cmd.selector ? null : focusedField(deps.root)
+      const t = focused ? { ok: true as const, el: focused } : resolveWithHeal(cmd, deps)
       if (isHealFail(t)) return healFailResult('type', t)
       if (cmd.text == null) return fail('bad_request', '`type` requires `text`.')
       fillValue(t.el, cmd.text)
@@ -328,4 +333,11 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
       }
     }
   }
+}
+
+/** The focused element when it takes typed text (inside the root, when there is one). */
+function focusedField(root?: Element): Element | null {
+  const active = deepActive(document)
+  if (!active || !isEditable(active)) return null
+  return !root || root.contains(active) ? active : null
 }

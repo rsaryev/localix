@@ -226,6 +226,21 @@ describe('select step', () => {
   })
 })
 
+// A click that opens a search dialog focuses a field no snapshot has named yet; the next step types
+// into it without a ref, as a person would.
+describe('type step', () => {
+  const check = (step: Record<string, unknown>) =>
+    missingFieldMessage({ action: 'steps', steps: [{ action: 'type', ...step }] as never })
+
+  test('without a target reaches the page, which types into the focused field', () => {
+    expect(check({ text: 'Georgia' })).toBeNull()
+  })
+
+  test('without text is refused before anything runs', () => {
+    expect(check({ ref: 'e3' })).toContain('"type" step needs "text"')
+  })
+})
+
 describe('wait step', () => {
   const parse = (step: Record<string, unknown>) =>
     browserInputSchema.safeParse({ action: 'steps', steps: [{ action: 'wait', ...step }] })

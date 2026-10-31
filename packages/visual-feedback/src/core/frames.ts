@@ -28,6 +28,14 @@ export function frameDocument(frame: Element): Document | null {
   }
 }
 
+/** The focused element, entering open shadow roots and a same-origin frame that hold the focus. */
+export function deepActive(doc: Document): Element | null {
+  let active = doc.activeElement
+  while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement
+  const inner = active && isFrame(active) ? frameDocument(active) : null
+  return inner ? (deepActive(inner) ?? active) : active
+}
+
 /** Whether the frame is big enough and in view (or just below it) to count as page content. */
 export function frameIsShown(frame: Element): boolean {
   const view = frame.ownerDocument.defaultView

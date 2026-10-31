@@ -798,7 +798,7 @@ describe('browser tool', () => {
     // its steps obey the same guards, or a half-built setup would be photographed.
     const { tool, sent } = toolWith(snapshotResult)
     const res = await tool.execute('g5', { action: 'take_screenshot', steps: [{ action: 'type' }] })
-    expect(res.content).toContain('steps[0]: a "type" step needs a target')
+    expect(res.content).toContain('steps[0]: a "type" step needs "text"')
     expect(sent).toHaveLength(0)
   })
 

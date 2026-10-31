@@ -218,15 +218,15 @@ type Step = NonNullable<BrowserInput['steps']>[number]
 /** What one step is missing, in the words its own action would use; null when complete. */
 function missingStepField(step: Step): string | null {
   if (
-    (step.action === 'click' ||
-      step.action === 'type' ||
-      step.action === 'select' ||
-      step.action === 'hover') &&
+    (step.action === 'click' || step.action === 'select' || step.action === 'hover') &&
     !normalizeRef(step.ref) &&
     !step.selector
   )
     return `a "${step.action}" step needs a target: a "ref" from the latest snapshot (e.g. "e3") or a CSS "selector". Take a snapshot first.`
-  // `press`/`scroll` may legitimately target the page (no ref/selector).
+  // `press`/`scroll` may legitimately target the page (no ref/selector), and `type` the field that
+  // has focus (a click before it may have opened a dialog with its own field).
+  if (step.action === 'type' && step.text == null)
+    return 'a "type" step needs "text": what to type into its target, or into the focused field.'
   if (step.action === 'press' && !step.key && !step.keys?.length)
     return 'a "press" step needs a "key" (e.g. "Enter") or "keys" (e.g. ["ArrowUp","ArrowRight"]).'
   if (step.action === 'select' && step.text == null)
