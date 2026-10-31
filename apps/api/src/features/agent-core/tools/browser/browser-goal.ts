@@ -5,7 +5,7 @@
  * target an observed ref.
  *
  * It never decides success. It stops on the model's DONE or BLOCKED, a decision without answers,
- * a relay failure, the step cap, or the same action twice without a visible change, and returns
+ * a relay failure, the step cap, the same action twice without a visible change, or the same page state a third time, and returns
  * the trace and the FINAL page snapshot — the agent reads the page and judges the result, as the
  * prompt's verification rule asks of every browser action.
  */
@@ -53,6 +53,8 @@ export interface GoalInput {
   values: readonly string[]
   previewId?: string
   signal?: AbortSignal
+  /** Called after each step with the whole trace so far, so the person sees the run live. */
+  onProgress?: (lines: string[]) => void
 }
 
 export const NO_DECISION_MODEL =
@@ -70,6 +72,15 @@ const STEP_OF: Partial<Record<GoalOperation, (ref?: string, value?: string) => P
   SCROLL_UP: () => ({ action: 'scroll', direction: 'up' }),
 }
 
+/** A state seen this often is a loop: the third return to it ends the run. */
+export const GOAL_STATE_RETURNS = 3
+
+/** What the person would call "the same page": address, visible words, controls and their values. */
+const fingerprint = (snapshot: PreviewSnapshot) =>
+  [snapshot.url, pageText(snapshot.tree), ...(snapshot.elements ?? []).map(describeElement)].join(
+    '\n',
+  )
+
 const sameAction = (a: GoalStep | undefined, b: GoalStep) =>
   !!a && a.operation === b.operation && a.ref === b.ref && a.value === b.value
 
@@ -84,6 +95,7 @@ export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result>
   // round trip, so a step costs one browser call and one decision, not two calls.
   let latest: PreviewSnapshot | undefined
   let retriedStale = false
+  const seen = new Map<string, number>()
 
   for (let decisions = 0; decisions < GOAL_MAX_DECISIONS; decisions++) {
     if (input.signal?.aborted) {
@@ -99,6 +111,16 @@ export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result>
     }
     if (!snapshot?.elements) return { content: NO_ELEMENTS, isError: true }
     latest = snapshot
+    // A WAIT looks at the same page on purpose; any other way back to a state is a loop.
+    if (history.at(-1)?.operation !== 'WAIT') {
+      const state = fingerprint(snapshot)
+      const count = (seen.get(state) ?? 0) + 1
+      seen.set(state, count)
+      if (count >= GOAL_STATE_RETURNS) {
+        stopped = 'the same page state came back a third time'
+        break
+      }
+    }
     const ask = goalAsk({
       goal: input.goal,
       page: { url: snapshot.url, title: snapshot.title, text: pageText(snapshot.tree) },
@@ -124,6 +146,7 @@ export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result>
     }
     if (pick.operation === 'DONE' || pick.operation === 'BLOCKED') {
       history.push(step)
+      progress()
       // Confidence is a second axis (TypeSafe's confidence-gated routing): a DONE the model barely
       // prefers is reported as a doubt, so the agent knows the page needs a hard look.
       stopped =
@@ -136,6 +159,7 @@ export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result>
     }
     if (pick.operation === 'WAIT') {
       history.push(step)
+      progress()
       await sleep(GOAL_WAIT_MS)
       latest = undefined
       continue
@@ -155,7 +179,8 @@ export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result>
         retriedStale = true
         continue
       }
-      history.push({ ...step, changed: false })
+      history.push({ ...step, changed: false, failed: true })
+      progress()
       stopped = `the action failed: ${acted.error}`
       break
     }
@@ -183,12 +208,17 @@ export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result>
       latest = undefined
     }
     history.push({ ...step, changed })
+    progress()
     if (repeated && !changed) {
       stopped = 'the same action twice without a visible change'
       break
     }
   }
   return finish(stopped)
+
+  function progress() {
+    input.onProgress?.(history.map((step, i) => `${i + 1}. ${traceLine(step)}`))
+  }
 
   /** The trace and the page as it is now, for the agent to judge. */
   async function finish(reason: string): Promise<Result> {
@@ -198,6 +228,12 @@ export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result>
       : await deps.send({ action: 'snapshot', ...tab })
     const lines = history.map((step, i) => `${i + 1}. ${traceLine(step)}`)
     const header = `Goal: ${input.goal}\nThe decision model${model ? ` (${model})` : ''} took ${history.length} ${history.length === 1 ? 'step' : 'steps'}; stopped: ${reason}.`
+    const typed = new Set(
+      history.filter((step) => step.operation === 'TYPE_TEXT' && !step.failed).map((s) => s.value),
+    )
+    const unused = input.values.filter((value) => !typed.has(value))
+    if (unused.length)
+      lines.push(`Values never typed: ${unused.map((value) => JSON.stringify(value)).join(', ')}`)
     const page =
       'error' in final
         ? `The final page could not be read: ${final.error}`

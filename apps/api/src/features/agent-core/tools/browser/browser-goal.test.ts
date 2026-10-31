@@ -180,7 +180,7 @@ describe('the goal action', () => {
                 stats: { nodes: 1, interactive: 1, chars: 0 },
                 url: 'u',
                 title: 't',
-                elements: [{ ref: 'e1', role: 'button', name: 'More' }],
+                elements: [{ ref: 'e1', role: 'button', name: `More ${n}` }],
               },
             },
           }
@@ -190,5 +190,71 @@ describe('the goal action', () => {
       input,
     )
     expect(result.content).toContain('took 20 steps; stopped: the 20-action limit')
+  })
+  test('stops when the same page state comes back a third time', async () => {
+    let on = 'A'
+    const send = async (command: PreviewCommand): Promise<PreviewSendOutcome> => {
+      const snapshot = (): PreviewSnapshot => ({
+        tree: `- text "State ${on}"`,
+        stats: { nodes: 1, interactive: 1, chars: 10 },
+        url: 'https://example.test/',
+        title: 'T',
+        elements: [{ ref: 'e1', role: 'button', name: 'Toggle' }],
+      })
+      if (command.action === 'snapshot')
+        return { ok: true, result: { action: 'snapshot', snapshot: snapshot() } }
+      on = on === 'A' ? 'B' : 'A'
+      return { ok: true, result: { action: 'steps', snapshot: snapshot() } }
+    }
+    const model = scripted([{ operation: 'CLICK', click_target: 'e1' }])
+    const result = await runGoal({ send, decide: model.decide, sleep: async () => {} }, input)
+    expect(result.content).toContain('stopped: the same page state came back a third time')
+    expect(model.asked).toHaveLength(4)
+  })
+
+  test('names the given values that were never typed', async () => {
+    const tab = page()
+    const model = scripted([
+      { operation: 'TYPE_TEXT', type_target: 'e1', type_value: 'v1' },
+      { operation: 'DONE' },
+    ])
+    const result = await runGoal(
+      { send: tab.send, decide: model.decide, sleep: async () => {} },
+      { ...input, values: ['London', 'Paris'] },
+    )
+    expect(result.content).toContain('Values never typed: "Paris"')
+    const all = await runGoal(
+      { send: page().send, decide: scripted([{ operation: 'DONE' }]).decide },
+      input,
+    )
+    expect(all.content).toContain('Values never typed: "London"')
+    const typed = await runGoal(
+      {
+        send: page().send,
+        decide: scripted([
+          { operation: 'TYPE_TEXT', type_target: 'e1', type_value: 'v1' },
+          { operation: 'DONE' },
+        ]).decide,
+        sleep: async () => {},
+      },
+      input,
+    )
+    expect(typed.content).not.toContain('Values never typed')
+  })
+
+  test('streams each step as it is taken', async () => {
+    const tab = page()
+    const model = scripted([
+      { operation: 'TYPE_TEXT', type_target: 'e1', type_value: 'v1' },
+      { operation: 'CLICK', click_target: 'e2' },
+      { operation: 'DONE' },
+    ])
+    const updates: string[][] = []
+    await runGoal(
+      { send: tab.send, decide: model.decide, sleep: async () => {} },
+      { ...input, onProgress: (lines) => updates.push(lines) },
+    )
+    expect(updates.map((lines) => lines.length)).toEqual([1, 2, 3])
+    expect(updates[1]![1]).toContain('CLICK button "Search" [e2]')
   })
 })

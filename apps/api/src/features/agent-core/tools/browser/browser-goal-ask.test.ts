@@ -154,4 +154,27 @@ describe('what the model is offered on a busy page', () => {
     ].join('\n')
     expect(pageText(tree)).toBe('Flights · 24 results · €122')
   })
+  test('a field that already holds a value, or a value already on the page, is not offered', () => {
+    const filled: PreviewSnapshotElement[] = [
+      { ref: 'e1', role: 'combobox', name: 'From', value: 'Zurich (ZRH)', editable: true },
+      { ref: 'e2', role: 'combobox', name: 'To', value: '', editable: true },
+      { ref: 'e3', role: 'button', name: 'Search' },
+    ]
+    const ask = goalAsk({ ...base, elements: filled, values: ['Zurich', 'London'] })
+    expect(Object.keys(ask.questions.type_target!.criteria)).toEqual(['e2'])
+    expect(Object.values(ask.questions.type_value!.criteria)).toEqual(['London'])
+  })
+
+  test('typing is not offered when every field is filled or every value is placed', () => {
+    const full: PreviewSnapshotElement[] = [
+      { ref: 'e1', role: 'textbox', name: 'To', value: 'London', editable: true },
+      { ref: 'e2', role: 'textbox', name: 'Note', value: '', editable: true },
+    ]
+    expect(
+      Object.keys(goalAsk({ ...base, elements: full }).questions.operation!.criteria),
+    ).not.toContain('TYPE_TEXT')
+    const filledAll = full.map((e) => ({ ...e, value: 'x' }))
+    const ask = goalAsk({ ...base, elements: filledAll, values: ['Paris'] })
+    expect(ask.questions.type_target).toBeUndefined()
+  })
 })

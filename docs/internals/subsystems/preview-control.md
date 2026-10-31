@@ -215,13 +215,16 @@ among those available now (CLICK, TYPE_TEXT, PRESS_ENTER right after typing, SCR
 WAIT, DONE, BLOCKED), and a target head for each operation over the snapshot's `elements`
 (`click_target`, `type_target`, and `type_value` over the agent's `values`). Only the head of the
 chosen operation executes, through the same relay commands `steps` uses. Disabled controls are never
-offered as targets, and the model types only one of the supplied `values`. Page text is data for the
-model, never instructions.
+offered as targets, a field that already holds a value is not a typing target, and the model types
+only one of the supplied `values` that no element already shows. Page text is data for the model,
+never instructions.
 
 The loop stops on DONE or BLOCKED, a decision without answers, a relay error, the same action twice
-with no visible change, 20 actions, or 40 decision requests. A target gone since the snapshot is
-read again and decided again once per step. It returns one trace line per action and a fresh
-snapshot. DONE is the model's judgement, not proof: the agent verifies the page itself. Spend is
+with no visible change, the third return to the same page state (address, visible text and element
+descriptions), 20 actions, or 40 decision requests. A target gone since the snapshot is read again
+and decided again once per step. It returns one trace line per action, a `Values never typed:` line
+when some `values` went unused, and a fresh snapshot; each step also streams as a tool update while
+the run goes. DONE is the model's judgement, not proof: the agent verifies the page itself. Spend is
 recorded under **Decisions** with the purpose `browser.goal`. Without a decision model, or when a
 probe returns no `elements`, the action says to use `steps`. The pure parts live in
 `browser-goal-ask.ts`; the loop is `browser-goal.ts`.

@@ -6,6 +6,9 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ### Added
 
+- **Browser goals stop going in circles**: a multi-step goal now ends when the page returns to the
+  same state a third time, no longer offers to type into fields that already hold a value, shows
+  each step as it happens, and lists any of your values it never typed.
 - **Page previews keep your project private**: previewing a folder no longer serves hidden files
   such as `.env` or `.git`, only the page files themselves (`/.well-known/` stays available).
 - **Browser tells the agent what you did**: when you close a tab the agent opened, or type a new

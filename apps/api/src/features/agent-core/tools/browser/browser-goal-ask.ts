@@ -36,6 +36,8 @@ export interface GoalStep {
   probability: number
   /** Whether the page changed after it (a diff, a navigation). */
   changed?: boolean
+  /** The action itself failed, so a TYPE_TEXT did not type its value. */
+  failed?: boolean
 }
 
 /** A decision read: what to do now, or why nothing can be done. */
@@ -79,7 +81,17 @@ export function describeElement(element: PreviewSnapshotElement): string {
 }
 
 const clickable = (element: PreviewSnapshotElement) => !element.states?.includes('disabled')
-const editable = (element: PreviewSnapshotElement) => clickable(element) && !!element.editable
+/** A field to type into: editable, enabled, and still empty (typing over a value is `steps`' job). */
+const editable = (element: PreviewSnapshotElement) =>
+  clickable(element) && !!element.editable && !element.value
+
+/** The supplied values (with their `v1..` keys) that no element on the page already shows. */
+function unplaced(input: GoalAskInput): Array<[key: string, value: string]> {
+  const shown = input.elements.map((element) => element.value?.toLowerCase() ?? '')
+  return input.values
+    .map((value, i): [string, string] => [valueKey(i), value])
+    .filter(([, value]) => !shown.some((text) => text && text.includes(value.toLowerCase())))
+}
 
 const valueKey = (index: number) => `v${index + 1}`
 
@@ -88,7 +100,8 @@ function operationsNow(input: GoalAskInput): GoalOperation[] {
   const last = input.history.at(-1)
   return GOAL_OPERATIONS.filter((operation) => {
     if (operation === 'CLICK') return input.elements.some(clickable)
-    if (operation === 'TYPE_TEXT') return input.values.length > 0 && input.elements.some(editable)
+    if (operation === 'TYPE_TEXT')
+      return unplaced(input).length > 0 && input.elements.some(editable)
     if (operation === 'PRESS_ENTER') return last?.operation === 'TYPE_TEXT'
     // A scroll that moved nothing the snapshot shows is not offered again in that direction, and
     // three scrolls in a row end scrolling: Flights runs spent half their actions scrolling a page
@@ -175,7 +188,7 @@ export function goalAsk(given: GoalAskInput): DecisionAsk {
     questions.type_value = {
       type: 'choice',
       instructions: `Goal: ${input.goal}\n\n${premise('TYPE_TEXT, with which supplied value')}`,
-      criteria: Object.fromEntries(input.values.map((value, i) => [valueKey(i), value])),
+      criteria: Object.fromEntries(unplaced(input)),
     }
   }
   return {

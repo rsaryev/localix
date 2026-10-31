@@ -1,5 +1,10 @@
 import type { z } from 'zod'
-import { defineAgentTool, type AgentTool, type AgentToolResult } from '@localixai/agent/agents'
+import {
+  defineAgentTool,
+  type AgentTool,
+  type AgentToolResult,
+  type AgentToolUpdateCallback,
+} from '@localixai/agent/agents'
 import { TOOL } from '../../tool-names'
 import type {
   PreviewAction,
@@ -57,6 +62,8 @@ export interface BrowserDetails {
   target?: string
   diff?: string
   value?: string
+  /** A running `goal`: the trace so far, streamed after each step. */
+  steps?: string[]
 }
 
 export interface BrowserToolDeps {
@@ -134,7 +141,11 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
   }
 
   /** One resolved action, start to finish (open/close are tool-only; the rest relay). */
-  async function runAction(input: ResolvedInput, signal?: AbortSignal): Promise<ActionOutcome> {
+  async function runAction(
+    input: ResolvedInput,
+    signal?: AbortSignal,
+    onUpdate?: AgentToolUpdateCallback<BrowserDetails>,
+  ): Promise<ActionOutcome> {
     if (input.action === 'goal') {
       const missing = missingFieldMessage(input)
       if (missing) return { result: { content: missing, isError: true } }
@@ -144,6 +155,7 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
           values: input.values ?? [],
           previewId: input.preview_id,
           signal,
+          onProgress: (steps) => onUpdate?.({ action: 'goal', steps }),
         }),
       }
     }
@@ -230,14 +242,19 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
     mutates: true,
     classify: classifyBrowserCall,
     executionMode: 'sequential',
-    async execute(_toolCallId, rawInput: BrowserInput, signal?: AbortSignal): Promise<ToolResult> {
+    async execute(
+      _toolCallId,
+      rawInput: BrowserInput,
+      signal?: AbortSignal,
+      onUpdate?: AgentToolUpdateCallback<BrowserDetails>,
+    ): Promise<ToolResult> {
       // Lenient action inference: when a call omits `action` but its payload names
       // exactly one action's required field (e.g. only `expression` → evaluate), infer
       // it instead of hard-rejecting the whole call (a wasted round-trip).
       const action = rawInput.action ?? inferAction(rawInput)
       if (!action) return { content: MISSING_ACTION_MESSAGE, isError: true }
 
-      const { result, reloaded } = await runAction({ ...rawInput, action }, signal)
+      const { result, reloaded } = await runAction({ ...rawInput, action }, signal, onUpdate)
 
       // Prepend a reload notice (DOM was reset since the agent's last command) to
       // whatever the action returned, and flag an INFERRED action so the model learns
