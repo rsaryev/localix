@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import type { DecisionAsk } from '@localixai/mini-app-sdk/backend'
+import type { DecisionAsk, DecisionOptions } from '@localixai/mini-app-sdk/backend'
 import { createMiniAppDecisionHost } from './mini-app-host'
-import type { DecisionCallOptions, DecisionService } from './service'
+import type { DecisionService } from './service'
 
 const ask: DecisionAsk = {
   state: { title: 'Pricing' },
@@ -9,7 +9,7 @@ const ask: DecisionAsk = {
 }
 
 function host(authorize: (userId: string, sessionId: string) => Promise<unknown>) {
-  const calls: DecisionCallOptions[] = []
+  const calls: DecisionOptions[] = []
   const service: DecisionService = {
     available: async () => ({ model: 'jev' }),
     decide: async (_userId, _ask, options) => {
@@ -27,7 +27,6 @@ describe('host.decisions for a mini app', () => {
     expect(calls).toEqual([
       expect.objectContaining({
         purpose: 'mini-app:fixture-board:triage',
-        usageKind: 'decision',
         sessionId: 's1',
       }),
     ])

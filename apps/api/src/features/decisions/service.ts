@@ -21,14 +21,6 @@ import {
 } from '@localixai/mini-app-sdk/backend'
 import type { DecisionBackend } from './models'
 
-/** The ledger row a decision's spend lands in. */
-export type DecisionUsageKind = 'decision'
-
-export interface DecisionCallOptions extends DecisionOptions {
-  /** Default `decision`. */
-  usageKind?: DecisionUsageKind
-}
-
 export interface DecisionRecord {
   purpose: string
   sessionId: string
@@ -48,7 +40,8 @@ export interface DecisionServiceDeps {
     model: string
     providerConnectionId: string | null
     providerId: string
-    kind: DecisionUsageKind
+    /** The ledger row a decision's spend lands in. */
+    kind: 'decision'
     usage: DecisionResult['usage']
   }): void
   log?(record: DecisionRecord): void
@@ -57,7 +50,7 @@ export interface DecisionServiceDeps {
 }
 
 export interface DecisionService extends DecisionHost {
-  decide(userId: string, ask: DecisionAsk, options: DecisionCallOptions): Promise<DecisionOutcome>
+  decide(userId: string, ask: DecisionAsk, options: DecisionOptions): Promise<DecisionOutcome>
 }
 
 const clampDeadline = (ms: number | undefined) =>
@@ -125,7 +118,7 @@ export function createDecisionService(deps: DecisionServiceDeps): DecisionServic
           model,
           providerConnectionId: decider.providerConnectionId,
           providerId: decider.providerId,
-          kind: options.usageKind ?? 'decision',
+          kind: 'decision',
           usage: result.usage,
         })
         return { model, answers: result.answers }

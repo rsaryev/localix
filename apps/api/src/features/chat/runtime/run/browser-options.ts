@@ -77,7 +77,6 @@ export function buildBrowserOptions(input: {
           decide: (ask, options) =>
             deps.decisions!.decide(userId, ask, {
               purpose: 'browser.goal',
-              usageKind: 'decision',
               sessionId: session.id,
               ...(options.signal ? { signal: options.signal } : {}),
             }),

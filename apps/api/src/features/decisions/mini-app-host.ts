@@ -29,7 +29,7 @@ export function createMiniAppDecisionHost(
     async decide(userId, ask, options) {
       const purpose = miniAppPurpose(miniAppName, options.purpose)
       await authorize(userId, options.sessionId)
-      return service.decide(userId, ask, { ...options, purpose, usageKind: 'decision' })
+      return service.decide(userId, ask, { ...options, purpose })
     },
   }
 }

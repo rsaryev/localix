@@ -49,7 +49,7 @@ describe('the decision service', () => {
   test('answers with the default model, records the spend, logs without the state', async () => {
     const { decisions, ledger, records } = service()
     expect(await decisions.available('u1')).toEqual({ model: MODEL })
-    const outcome = await decisions.decide('u1', ask, { ...options, usageKind: 'decision' })
+    const outcome = await decisions.decide('u1', ask, options)
     expect(outcome).toMatchObject({
       status: 'answered',
       model: MODEL,
