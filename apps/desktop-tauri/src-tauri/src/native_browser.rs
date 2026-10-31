@@ -801,6 +801,15 @@ const PLACEHOLDER_TIMEOUT: Duration = Duration::from_secs(2);
 const NAVIGATION_STATE_TIMEOUT: Duration = Duration::from_secs(2);
 /// A bounded DOM observation or action from `browser_eval`.
 const EVAL_TIMEOUT: Duration = Duration::from_secs(10);
+/// The largest script `browser_eval` and `browser_inject` accept, in bytes.
+const MAX_SCRIPT_BYTES: usize = 128_000;
+
+fn check_script(script: &str) -> Result<(), String> {
+    if script.len() > MAX_SCRIPT_BYTES {
+        return Err("Browser script is too large".into());
+    }
+    Ok(())
+}
 
 /// Capture a rectangle of the calling main view — a plugin panel the agent asked to see.
 #[tauri::command]
@@ -973,9 +982,7 @@ pub(crate) async fn browser_eval(
     script: String,
 ) -> Result<String, String> {
     require_main(&caller)?;
-    if script.len() > 128_000 {
-        return Err("Browser script is too large".into());
-    }
+    check_script(&script)?;
     let view = page(&app, &caller, &tab_id)?;
 
     #[cfg(target_os = "macos")]
@@ -1055,9 +1062,7 @@ pub(crate) fn browser_inject(
     script: String,
 ) -> Result<(), String> {
     require_main(&caller)?;
-    if script.len() > 128_000 {
-        return Err("Browser script is too large".into());
-    }
+    check_script(&script)?;
     page(&app, &caller, &tab_id)?
         .eval(script)
         .map_err(|error| error.to_string())
@@ -1065,7 +1070,16 @@ pub(crate) fn browser_inject(
 
 #[cfg(test)]
 mod tests {
-    use super::{clip_to_content, css_to_logical, label, page_url};
+    use super::{check_script, clip_to_content, css_to_logical, label, page_url};
+
+    #[test]
+    fn scripts_are_capped_at_128_000_bytes() {
+        assert!(check_script(&"a".repeat(128_000)).is_ok());
+        assert_eq!(
+            check_script(&"a".repeat(128_001)),
+            Err("Browser script is too large".to_string())
+        );
+    }
 
     #[test]
     fn native_frames_are_clipped_to_current_window_content() {
