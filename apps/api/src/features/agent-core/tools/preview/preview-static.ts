@@ -16,6 +16,16 @@ import { createPreviewServerCache } from './preview-server-cache'
 
 const staticServers = createPreviewServerCache('static')
 
+/**
+ * A path with a dot segment (`.env`, `.git/…`, `a/.ssh/…`) is private to the project, not part of
+ * the page: only a leading `.well-known/` is public.
+ */
+function hasHiddenSegment(rel: string): boolean {
+  const segments = rel.split(/[\\/]+/).filter(Boolean)
+  const start = segments[0] === '.well-known' ? 1 : 0
+  return segments.slice(start).some((segment) => segment.startsWith('.'))
+}
+
 /** The root's real path, or the lexical one when it cannot be resolved (nothing then serves). */
 function realRootOf(root: string): string {
   try {
@@ -43,6 +53,7 @@ export function ensureStaticServer(dir: string): number {
         const url = new URL(req.url)
         let rel = decodeURIComponent(url.pathname).replace(/^\/+/, '')
         if (rel === '') rel = 'index.html'
+        if (hasHiddenSegment(rel)) return new Response('Not found', { status: 404 })
         const abs = path.resolve(root, rel)
         // Path-traversal guard: never serve outside the directory. ROOT-INCLUSIVE
         // (`isPathWithin`) — exactly the rule this hand-rolled `abs !== root ||
@@ -65,6 +76,10 @@ export function ensureStaticServer(dir: string): number {
           return new Response('Forbidden', { status: 403 })
         }
         if (!isPathWithin(realRoot, real)) return new Response('Forbidden', { status: 403 })
+        // ...and a link must not lead into a hidden file or directory either.
+        if (hasHiddenSegment(path.relative(realRoot, real))) {
+          return new Response('Not found', { status: 404 })
+        }
         const file = Bun.file(real)
         if (!(await file.exists())) return new Response('Not found', { status: 404 })
         if (abs.endsWith('.html') || abs.endsWith('.htm')) {

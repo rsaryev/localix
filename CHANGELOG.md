@@ -6,6 +6,8 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ### Added
 
+- **Page previews keep your project private**: previewing a folder no longer serves hidden files
+  such as `.env` or `.git`, only the page files themselves (`/.well-known/` stays available).
 - **Browser tells the agent what you did**: when you close a tab the agent opened, or type a new
   address into one of its tabs, the agent is told on its next turn, so it stops working on a page
   you already closed or moved.

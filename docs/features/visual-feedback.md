@@ -201,11 +201,11 @@ attached is reviewed in the composer's attached-context list.
 | **Rotate frame**    | Swaps the selected fixed width and height.                             | Hidden for responsive fill                             |
 | **Attach feedback** | Attaches the observation as context, screenshot nested inside it.      | Requires a selected capture and session; note optional |
 
-| Preview input                 | Probe path                                                                 | Boundary                                                                              |
-| ----------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Static HTML served by Localix | The loopback static server injects the probe into the HTML response.       | Only files below the selected static root are served.                                 |
-| HTTP or HTTPS preview         | A loopback reverse proxy injects the probe and relays the upstream origin. | Loopback upstreams only; the proxy removes CSP and frame-blocking headers.            |
-| Frame-blocked preview         | The UI shows a blocked-state card and can engage the injecting proxy.      | Frame-busting script, bot protection, or an unreachable origin can still prevent use. |
+| Preview input                 | Probe path                                                                 | Boundary                                                                                                               |
+| ----------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Static HTML served by Localix | The loopback static server injects the probe into the HTML response.       | Only files below the selected static root are served; dotfiles and dot-directories answer 404, except `/.well-known/`. |
+| HTTP or HTTPS preview         | A loopback reverse proxy injects the probe and relays the upstream origin. | Loopback upstreams only; the proxy removes CSP and frame-blocking headers.                                             |
+| Frame-blocked preview         | The UI shows a blocked-state card and can engage the injecting proxy.      | Frame-busting script, bot protection, or an unreachable origin can still prevent use.                                  |
 
 ## Limits
 
