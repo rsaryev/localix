@@ -193,12 +193,7 @@ async function handoff(target: Handoff): Promise<{ opened: true }> {
   return { opened: true }
 }
 
-/** Open a directory in the platform's file manager. */
-export async function openDirectory(dir: string): Promise<{ opened: true }> {
-  return handoff({ kind: 'path', path: dir })
-}
-
-/** Open a FILE in the OS default app for its type. */
+/** Open a path in the OS default app for it: a folder in the file manager, a file in its app. */
 export async function openPath(file: string): Promise<{ opened: true }> {
   return handoff({ kind: 'path', path: file })
 }

@@ -14,7 +14,7 @@ import { refKindSpec } from '../../contracts/context-ref-kinds'
 import type { ResourceExpansionResult } from './expand-refs'
 import { createUserRefExpander } from './user-ref-expander'
 import { createProjectsRepository, type ProjectRecord } from './repository'
-import { openDirectory, pickDirectory, pickFiles } from './native-dialogs'
+import { openPath, pickDirectory, pickFiles } from './native-dialogs'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import { toDto, applyProjectSettingsPatch } from './project-record'
 import {
@@ -297,7 +297,7 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
           'Project folder does not exist',
         )
       }
-      return openDirectory(project.workingDir)
+      return openPath(project.workingDir)
     },
   }
 }
