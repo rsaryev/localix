@@ -5,11 +5,13 @@ import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 import { IconButton } from '@localixai/kit/icon-button'
+import { Spinner } from '@localixai/kit/spinner'
 import { TabStrip, type StripTabItem, type useTabPanelIds } from '@localixai/kit/tabs'
 import { usePersonActions } from '../model/personActions'
 import { usePreviewStore, type PreviewEntry } from '../model/previewStore'
 import { BROWSER_HISTORY_URL, browserEngine, hostsInFrame } from '../model/browserUrl'
 import { closeNativePages } from '../model/nativePages'
+import { isAgentWorking, useAgentPresence } from '../model/agentPresence'
 import {
   browserTabTransferBus,
   useBrowserTabTransferState,
@@ -128,6 +130,7 @@ export function BrowserTabStrip({
   onOpenHistory: () => void
 }) {
   const transfer = useBrowserTabTransferState()
+  const presence = useAgentPresence((state) => state.tabs)
   useEffect(() => {
     const listen = platformCapabilities().desktop.listener()
     if (!listen) return
@@ -153,7 +156,11 @@ export function BrowserTabStrip({
       label,
       title: tab.url,
       closeLabel: `Close ${label}`,
-      icon: tabIcon(tab),
+      icon: isAgentWorking(presence, tab.previewId) ? (
+        <Spinner size="xs" label="The agent is working in this tab" />
+      ) : (
+        tabIcon(tab)
+      ),
       disabled: transfer.pending.has(tab.previewId),
       onClose: (id: string) => closeBrowserTabs([id]),
       onAuxClose: (id: string) => closeBrowserTabs([id]),

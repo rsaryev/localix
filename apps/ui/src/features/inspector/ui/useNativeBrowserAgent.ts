@@ -8,6 +8,8 @@ import { browserEngine } from '../model/browserUrl'
 import { decodeEvalResult, ensureNativeProbe } from './nativeProbe'
 import { drivesPage, navigatedAfter, navigatedResult, runInPage } from './nativeCommand'
 import { elementShot } from './nativeShot'
+import { highlightRect, highlightScript } from './nativeHighlight'
+import { useAgentPresence } from '../model/agentPresence'
 
 /**
  * Claim a command once, then drive the exact native tab ID with the shared actuator.
@@ -29,6 +31,7 @@ export function useNativeBrowserAgent(tabsBySession: PreviewsBySession): void {
       const invoke = platformCapabilities().desktop.invoker()
       if (!invoke) return
       inFlight.current.add(event.commandId)
+      let claimedHere = false
       void (async () => {
         const claimed = await backendClient.previewResult(event.commandId, {
           ok: false,
@@ -36,6 +39,9 @@ export function useNativeBrowserAgent(tabsBySession: PreviewsBySession): void {
           hostId,
         })
         if (!claimed) return
+        // The tab shows the agent at work from the claim to a moment after the answer.
+        useAgentPresence.getState().begin(tab.previewId)
+        claimedHere = true
         try {
           await ensureNativeProbe(tab)
           // An element's picture is cut from the WebView's own capture (`nativeShot.ts`).
@@ -123,6 +129,14 @@ export function useNativeBrowserAgent(tabsBySession: PreviewsBySession): void {
                 ? { action: 'viewport', previewId: tab.previewId, viewport }
                 : { ...outcome.result, previewId: tab.previewId },
           })
+          // After the answer, so it never colours what the agent read; a page that moved on has
+          // no use for the box.
+          const rect = navigated ? null : highlightRect(event.command.action, outcome.result)
+          if (rect)
+            void invoke('browser_inject', {
+              tabId: tab.previewId,
+              script: highlightScript(rect),
+            }).catch(() => {})
         } catch (error) {
           await backendClient.previewResult(event.commandId, {
             ok: false,
@@ -131,7 +145,10 @@ export function useNativeBrowserAgent(tabsBySession: PreviewsBySession): void {
             error: error instanceof Error ? error.message : String(error),
           })
         }
-      })().finally(() => inFlight.current.delete(event.commandId))
+      })().finally(() => {
+        inFlight.current.delete(event.commandId)
+        if (claimedHere) useAgentPresence.getState().end(tab.previewId)
+      })
     })
   }, [tabsBySession])
 }

@@ -44,6 +44,11 @@ looking at. It starts no separate browser, and nothing is installed in your app.
 | `console`, `evaluate`       | Console output and errors, and a page-side expression result.                                         | Preview dialogs are stubbed: `confirm` returns true, `prompt` null. Native tabs: see below.                            |
 | `viewport`                  | The frame resized to a named CSS size, checked against the page's real size.                          | Layout only; no device pixel ratio, touch or user agent.                                                               |
 
+You can watch the agent work in a native tab. While it runs a command there, the tab's icon in the
+strip turns into a small spinner, which stays for a moment after the last answer. After a click or
+typing, a blue box flashes over the element it targeted. The box ignores the pointer, never changes
+the page's own content, and appears without the fade when your system asks for reduced motion.
+
 A native browser tab is also the person's own browsing, so its dialogs are left alone, except while
 an agent command runs in it: then `alert`, `confirm` and `prompt` are cancelled (`confirm` returns
 false, `prompt` null; nothing is ever accepted) and their text comes back with the action. A

@@ -34,6 +34,12 @@ any pending bounds command; switching pages retains the hidden view and its hist
 and Browser-strip ownership separately close views when the Browser or its pages are removed. Native
 workspace storage keys keep transferred page strips independent across reloads.
 
+Agent presence is the browser's own view state. `useNativeBrowserAgent` marks a tab working in
+`agentPresence` from a command's claim until its reply, and the model keeps it for a short linger
+afterwards; the tab strip reads it and shows a spinner in place of the tab icon. After a click or
+typing that did not navigate, the host injects one passive, inert box over the rect the actuator
+reported, after the reply was sent, so it never colours what the agent read.
+
 On macOS a page introduces itself as the installed Safari: the user agent carries
 `Version/<Safari bundle version> Safari/605.1.15`. A plain WKWebView omits those tokens, and Google
 then serves its legacy page, which has no dark theme and does not follow the pane's width.

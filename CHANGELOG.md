@@ -6,6 +6,9 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ### Added
 
+- **See the agent work in a browser tab**: while the agent runs a command in one of your browser
+  tabs, the tab shows a small spinner, and after a click or typing a blue box briefly marks the
+  element it targeted. With reduced motion the box appears without fading.
 - **Browser goals stop going in circles**: a multi-step goal now ends when the page returns to the
   same state a third time, no longer offers to type into fields that already hold a value, shows
   each step as it happens, and lists any of your values it never typed.
