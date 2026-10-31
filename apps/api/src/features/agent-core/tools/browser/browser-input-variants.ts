@@ -52,7 +52,7 @@ export function browserInputSchemaFor(options: { images: boolean; goal: boolean 
 
 /** The description's `goal` sentence, said only where the action is offered. */
 const GOAL_SENTENCE =
-  ' Multi-step page work (a form, a search, a date picker): prefer goal — a decision model clicks and types only your values toward it, fast; then verify the page it returns. steps: single precise actions.'
+  ' Multi-step page work (a form, a search, a date picker): prefer goal — a decision model clicks and types only your values toward it; then verify the page it returns. steps: single precise actions.'
 
 /** The description for a run, with or without the `goal` action. */
 export const browserDescription = (goal: boolean) =>
