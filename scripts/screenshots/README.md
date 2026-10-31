@@ -48,6 +48,30 @@ bunx playwright install chromium
 Alternatively, set `CAPTURE_BROWSER` to an installed Chrome executable. `LOCALIX_CAPTURE_ROOT` can
 select another dedicated `localix-…capture…` directory beneath the system temporary directory.
 
+## Live agent question
+
+The `agents/island-request` scenario needs a run that genuinely blocks on the agent's
+`AskUserQuestion` tool. Start the isolated API with the scripted provider preload instead of the
+plain command printed by `screenshots:prepare`:
+
+```bash
+TURBO_ENV_MODE=loose BUN_OPTIONS="--preload=$PWD/scripts/screenshots/scripted-provider.mjs" \
+  LOCALIX_DB_FILE=<capture-root>/localix.db LOCALIX_DEV_API_PORT=5151 LOCALIX_DEV_UI_PORT=5150 \
+  VITE_DEV_HOST=127.0.0.1 bun scripts/dev-servers.mjs
+```
+
+`TURBO_ENV_MODE=loose` lets Turborepo pass `BUN_OPTIONS` to the API; use the `--preload=` form,
+because a separate argument breaks `bun install` and `bun x`. The preload answers only requests that
+carry the seeded placeholder key, with a scripted OpenAI Responses stream that calls
+`AskUserQuestion` once per user turn and then replies with a short text. Every other request uses
+the real `fetch`. The scenario sends a message to the `Island question fixture` conversation and
+waits for the live request, then opens the island page (`#/island`) in the browser, where it shows
+the request card exactly as the desktop island does, without the native glass. The scenario refuses
+to send anything unless the running API process left the preload's marker beside the capture
+database. The run is real; the model reply is scripted. The capture is the browser preview: how the
+panel sits on a real notch is checked by the native smoke check
+(`apps/desktop-tauri/scripts/check-agent-island.mjs`), not by this test.
+
 ## Local models and semantic search
 
 `local-models/settings` and `search/meaning-match` are opt-in: they need the pinned embedding model

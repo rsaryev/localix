@@ -81,8 +81,10 @@ clear the overlay when the request or run resolves.
 ### Cross-session attention
 
 Everything waiting on you is one list, kept by the server and read again after a reload or a
-reconnect. Three places read it: the dialog, the sidebar row's badge and the dock badge. Each kind
-has a fixed rank. Blocked requests come first, then plans, then mentions.
+reconnect. Three places read it: the dialog, the sidebar row's badge and the dock badge. On a Mac,
+the optional [agent island](agent-island.md) also shows blocked requests at the notch while Localix
+is in the background. Each kind has a fixed rank. Blocked requests come first, then plans, then
+mentions.
 
 | Kind                | What the dialog shows                                                                                                                                               | Sidebar badge   | Dock |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ---- |

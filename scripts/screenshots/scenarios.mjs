@@ -40,6 +40,8 @@ async function editor(page) {
 export async function compose(page, scenario) {
   if (scenario === 'editor-completion')
     return (await import('./editor-completion.mjs')).composeEditorCompletion(page)
+  if (scenario.startsWith('island-'))
+    return (await import('./agent-island.mjs')).composeIsland(page)
   if (scenario === 'agent-command')
     return (await import('./agent-command.mjs')).composeAgentCommand(page)
   if (scenario === 'agent-management')

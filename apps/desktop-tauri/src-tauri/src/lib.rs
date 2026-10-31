@@ -116,6 +116,20 @@ mod deeplink;
 mod frontend_flush;
 #[cfg(target_os = "macos")]
 mod instance;
+#[cfg_attr(not(target_os = "macos"), path = "island_unsupported.rs")]
+mod island;
+#[cfg(target_os = "macos")]
+mod island_commands;
+#[cfg(target_os = "macos")]
+mod island_destination;
+#[cfg(target_os = "macos")]
+mod island_lifecycle;
+#[cfg(target_os = "macos")]
+mod island_macos;
+#[cfg(target_os = "macos")]
+mod island_material;
+#[cfg(target_os = "macos")]
+mod island_pointer;
 mod log;
 #[cfg(target_os = "macos")]
 mod macos_tabs;
@@ -268,6 +282,8 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init());
+    #[cfg(target_os = "macos")]
+    let builder = builder.plugin(tauri_nspanel::init());
     let builder = with_updater(builder);
     #[cfg(target_os = "macos")]
     let builder = builder.manage(crate::workspace_drag_state::WorkspaceDrags::default());
@@ -364,6 +380,14 @@ pub fn run() {
             forward_menu_command(app, id);
         })
         .invoke_handler(tauri::generate_handler![
+            island::island_ready,
+            island::island_workspace_focus,
+            island::island_open_session,
+            island::island_set_layout,
+            island::island_geometry,
+            island::island_set_grab,
+            island::island_enabled,
+            island::set_island_enabled,
             notify,
             frontend_log,
             focus_app,
@@ -420,6 +444,7 @@ pub fn run() {
         ])
         .manage(PendingUpdate::default())
         .manage(DeepLinks::default())
+        .manage(island::IslandState::default())
         .manage(ZoomState::default())
         .manage(MenuState::default())
         .manage(ApiSidecar::default())

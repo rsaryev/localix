@@ -46,7 +46,10 @@ for (const [key, spec] of Object.entries(capturePlan)) {
     // launch, and the open dialog covered every surface a scenario reached for.
     if (!spec.firstRun)
       await page.addInitScript(() => localStorage.setItem('localix.setup.done', '1'))
-    if (spec.firstRun) {
+    const island = spec.scenario.startsWith('island-')
+    if (island) {
+      await (await import('./agent-island.mjs')).openIsland(page, uiOrigin, spec.notch)
+    } else if (spec.firstRun) {
       // No saved UI state, cleared once so a reload inside the scenario keeps what it wrote.
       await page.addInitScript(() => {
         if (sessionStorage.getItem('capture_first_run')) return
@@ -67,6 +70,7 @@ for (const [key, spec] of Object.entries(capturePlan)) {
     }
     await compose(page, spec.scenario)
     await verifyEvidence(page, spec.scenario)
+    if (spec.notch) await (await import('./agent-island.mjs')).verifyNotchLayout(page, spec)
     await page.evaluate(async () => {
       await document.fonts.ready
     })
@@ -82,6 +86,8 @@ for (const [key, spec] of Object.entries(capturePlan)) {
       }
     }
     expect(errors).toEqual([])
+    // Validate the state we actually capture after pointer movement and settled transitions.
+    if (island) await verifyEvidence(page, spec.scenario)
     const date = new Intl.DateTimeFormat('en-CA', {
       year: 'numeric',
       month: '2-digit',

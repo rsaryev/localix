@@ -37,6 +37,7 @@ const CONTROL_FILES = [
   'ContextExclusionsSection.tsx',
   'ResearchSection.tsx',
   'NotificationsSection.tsx',
+  'IslandSection.tsx',
 ] as const
 const normalizeTitle = (title: string) =>
   title

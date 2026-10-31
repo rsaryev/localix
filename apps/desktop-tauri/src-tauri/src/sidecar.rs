@@ -175,6 +175,10 @@ fn publish_status(app: &tauri::AppHandle, status: &str, detail: Option<&str>, po
     for window in crate::workspace_windows::views(app) {
         let _ = window.eval(status_script(status, detail, port));
     }
+    // The island is not a workspace but reads the same API, so it needs the port too.
+    if let Some(window) = app.get_webview_window(crate::island::LABEL) {
+        let _ = window.eval(status_script(status, detail, port));
+    }
 }
 
 /// Replay the recorded runtime status into the webview.
@@ -185,7 +189,9 @@ fn publish_status(app: &tauri::AppHandle, status: &str, detail: Option<&str>, po
 /// nothing here is OS-specific; the race is a webview-lifecycle one.
 #[tauri::command]
 pub(crate) fn resync_runtime_status(app: tauri::AppHandle, caller: tauri::Webview) {
-    if crate::workspace_windows::require_workspace(&caller).is_err() {
+    if crate::workspace_windows::require_workspace(&caller).is_err()
+        && !crate::island::is_island(&caller)
+    {
         return;
     }
     let (status, detail, port) = {

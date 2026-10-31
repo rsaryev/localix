@@ -39,6 +39,13 @@ repository holds no mini app and no plugin: Localix's own live in the
 [Localix marketplace](https://github.com/rsaryev/localix-marketplace) and install from it like
 anyone's.
 
+The desktop [agent island](agent-island.md) uses a separate UI entry (`app/islandEntry.tsx`) and the
+existing attention pipeline. Its native host lives in `island.rs` (page commands in
+`island_commands.rs`), `island_macos.rs` and `island_pointer.rs`; the state machine and request
+queue live under `features/agent-island/`, and the card is the shared `HitlAttentionBody`
+(`embedded`). Island sizes live in `features/agent-island/model/geometry.ts` and its Rust mirror
+`island::geometry`.
+
 A [mini app installed as a Mac app](mini-app-mac-apps.md) is a mini app installed as its own macOS
 app: a generated bundle whose executable is a clone of the desktop binary. `app_runner*.rs` is that
 binary's app mode (window, glass, menu, the page served from the host's UI build); `app_bundle*.rs`

@@ -57,6 +57,25 @@ export const PREFERENCES_SETTINGS_INDEX: SettingsIndexEntry[] = [
     anchor: 'prefs-notifications',
   },
   {
+    id: 'prefs.island',
+    tab: 'preferences',
+    tabLabel: 'Preferences',
+    title: 'Agent island',
+    description:
+      'Answer an agent’s question or approval at the notch while Localix is in the background.',
+    keywords: ['island', 'notch', 'dynamic island', 'menu bar', 'approval', 'question', 'request'],
+    anchor: 'prefs-island',
+  },
+  {
+    id: 'prefs.island-enabled',
+    tab: 'preferences',
+    tabLabel: 'Preferences',
+    title: 'Show the agent island',
+    description: 'Turn the island on or off on this device. Off by default.',
+    keywords: ['island', 'notch', 'disable', 'hide', 'off', 'light'],
+    anchor: 'prefs-island',
+  },
+  {
     id: 'prefs.theme',
     tab: 'preferences',
     tabLabel: 'Preferences',

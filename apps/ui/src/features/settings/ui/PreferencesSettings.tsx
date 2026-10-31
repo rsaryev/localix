@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { SettingsControlRow, SettingsPage, SettingsSection } from './SettingsScaffold'
 import { NotificationsSection } from './NotificationsSection'
+import { IslandSection } from './IslandSection'
 import { ModBandSection } from './ModBandSection'
 import { TypographySection } from './typography/TypographySection'
 import { Input } from '@localixai/kit/input'
@@ -151,6 +152,8 @@ export function PreferencesSettings() {
       <ModBandSection />
 
       <NotificationsSection />
+
+      <IslandSection />
 
       <SpendAlertField />
     </SettingsPage>

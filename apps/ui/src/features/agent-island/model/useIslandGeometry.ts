@@ -1,0 +1,31 @@
+import { useEffect, useState } from 'react'
+import { platformCapabilities } from '@/shared/lib/platformCapabilities'
+import { useTauriEvent } from '@/shared/hooks/useTauriEvent'
+import { isIslandGeometry, PREVIEW_GEOMETRY } from './geometry'
+
+/** The host's measured cutout, re-sent when displays change; the preview keeps the fallback. */
+export function useIslandGeometry() {
+  const [geometry, setGeometry] = useState(PREVIEW_GEOMETRY)
+  useEffect(() => {
+    let alive = true
+    void platformCapabilities()
+      .desktop.invoker()?.('island_geometry')
+      .then((value) => {
+        if (alive && isIslandGeometry(value)) setGeometry(value)
+      })
+      .catch((error) => console.warn('[agent-island] geometry unavailable', error))
+    return () => {
+      alive = false
+    }
+  }, [])
+  useTauriEvent('island-geometry', (value) => {
+    if (isIslandGeometry(value)) setGeometry(value)
+  })
+  return {
+    geometry,
+    nativeMaterial: Boolean(geometry.nativeMaterial),
+    nativePointer: Boolean(geometry.nativePanel),
+    notchHeight: geometry.notchHeight,
+    hasNotch: geometry.notchWidth > 0,
+  }
+}

@@ -1,5 +1,12 @@
 // A shot is evidence for a user action, never decoration for every document.
 export const capturePlan = {
+  'agents/island-request': {
+    guide: 'features/agent-island.md',
+    purpose:
+      'A live agent question opens the island at the notch as the usual card, stays pending when folded and reopens from the notch',
+    scenario: 'island-request',
+    notch: { compactWidth: 200, compactHeight: 32, notchWidth: 200, notchHeight: 32 },
+  },
   'agents/edit-command-tokens': {
     guide: 'features/agent-management.md',
     purpose: 'Agent command flags and values have separate editable crumbs',

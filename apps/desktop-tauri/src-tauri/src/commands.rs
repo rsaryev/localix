@@ -298,7 +298,9 @@ pub(crate) fn set_theme(
     material_theme: Option<String>,
     header_tint: Option<[f64; 4]>,
 ) {
-    if crate::workspace_windows::require_workspace(&caller).is_err() {
+    if crate::workspace_windows::require_workspace(&caller).is_err()
+        && !crate::island::is_island(&caller)
+    {
         return;
     }
     use tauri::Theme;
@@ -310,6 +312,20 @@ pub(crate) fn set_theme(
             Theme::Light
         }
     });
+    // The island shares the workspace material, clipped to its visible shape.
+    if crate::island::is_island(&caller) {
+        let _ = caller.window().set_theme(resolved);
+        #[cfg(target_os = "macos")]
+        if let Some(appearance) =
+            crate::window_material::Appearance::parse(material_theme.as_deref().unwrap_or(&theme))
+        {
+            if let Err(error) = crate::island_material::apply(&caller.window(), appearance) {
+                logln(format!("island material: {error}"));
+            }
+            crate::island_material::shape(&app);
+        }
+        return;
+    }
     {
         let w = caller.window();
         let _ = w.set_theme(resolved);
