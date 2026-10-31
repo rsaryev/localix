@@ -1,19 +1,11 @@
 import { useEffect } from 'react'
 import { codeFontSize, setRootFontPx } from '@localixai/kit/lib'
-import type { FontSize } from './fontOptions'
-import { CODE_FONT_STACKS, DEFAULT_CODE_FONT, UI_FONT_STACKS } from './fontOptions'
+import { CODE_FONT_STACKS, DEFAULT_CODE_FONT, fontSizePx, UI_FONT_STACKS } from './fontOptions'
 import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
 
 // The font stacks live in ./fontOptions — ONE owner, shared with the settings preview.
 // Restating them here is what let the picker advertise a fallback chain the editor did
 // not install; see the contract note on CODE_FONT_STACKS.
-
-const FONT_SIZE_MAP: Record<FontSize, string> = {
-  sm: '13px',
-  md: '14px',
-  lg: '15px',
-  xl: '16px',
-}
 
 export function useFontFamily() {
   // Raw preference — NO default. When unset we must NOT write an inline
@@ -43,7 +35,7 @@ export function useFontFamily() {
   }, [codeFont])
 
   useEffect(() => {
-    const size = FONT_SIZE_MAP[fontSize] ?? FONT_SIZE_MAP.md
+    const size = fontSizePx(fontSize)
     document.documentElement.style.fontSize = size
     // Monaco lays text out in pixels, so expose the matching scaled editor size.
     const rootPx = Number.parseFloat(size)
