@@ -48,7 +48,7 @@ function lastWord(session: UiSession): string | undefined {
   return message?.content?.trim()
 }
 
-export function SessionPreview({ binding, className }: PreviewProps) {
+function SessionPreview({ binding, className }: PreviewProps) {
   const ref = text(binding, 'sessionId')
   const listed = useListedSession(ref)
   const linked = useLinkedSession(ref)
@@ -89,7 +89,7 @@ export function SessionPreview({ binding, className }: PreviewProps) {
   )
 }
 
-export function MessagePreview({ binding, className }: PreviewProps) {
+function MessagePreview({ binding, className }: PreviewProps) {
   const linked = useLinkedSession(text(binding, 'sessionId'))
   if (linked.state === 'loading') return null
   const messageId = text(binding, 'messageId')
@@ -112,7 +112,7 @@ export function MessagePreview({ binding, className }: PreviewProps) {
   )
 }
 
-export function CallPreview({ binding, className }: PreviewProps) {
+function CallPreview({ binding, className }: PreviewProps) {
   const callId = text(binding, 'toolCallId')
   const found = useSessionOfCall(text(binding, 'sessionId') ? undefined : callId)
   const sessionRef = text(binding, 'sessionId') ?? found
@@ -132,7 +132,7 @@ export function CallPreview({ binding, className }: PreviewProps) {
   )
 }
 
-export function ProjectPreview({ binding, className }: PreviewProps) {
+function ProjectPreview({ binding, className }: PreviewProps) {
   const id = text(binding, 'projectId')
   const project = useChatStore((state) => state.projects.find((row) => row.id === id))
   const sessions = useChatStore(
@@ -152,7 +152,7 @@ export function ProjectPreview({ binding, className }: PreviewProps) {
   )
 }
 
-export interface PreviewProps {
+interface PreviewProps {
   binding: MessageContextBindingDraft
   className?: string
 }

@@ -12,7 +12,7 @@ import { listThirdPartyViews } from '@/shared/contrib/runtimeViews'
  * Every view Opens its grid tab (the CALLER supplies the same tab id its rail button
  * uses, so re-running focuses rather than duplicating).
  */
-export interface ThirdPartyViewCommandOpeners {
+interface ThirdPartyViewCommandOpeners {
   /** Open a view as a grid tab. */
   openWorkItem(input: {
     miniAppName: string

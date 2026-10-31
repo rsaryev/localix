@@ -17,7 +17,7 @@ import { LAUNCH_RESTORE_WAIT_MS } from '@/entities/chat/model/launchRestore'
  * `LAUNCH_RESTORE_WAIT_MS` and the home draft is one request after it, so past twice that the
  * redirect is not coming (the draft failed) and the route's own scope is the honest answer.
  */
-export const HOME_SCOPE_HOLD_MS = 2 * LAUNCH_RESTORE_WAIT_MS
+const HOME_SCOPE_HOLD_MS = 2 * LAUNCH_RESTORE_WAIT_MS
 
 export function useSettledContribScope(
   routeProjectId: string | null,

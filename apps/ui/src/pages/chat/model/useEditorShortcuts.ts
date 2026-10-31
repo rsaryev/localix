@@ -5,7 +5,7 @@ import { cycleThemeMode } from '@/shared/theme/useTheme'
 import { navigateBack, navigateForward } from '@/shared/lib/navHistory'
 import { jumpToPrompt } from '@/shared/lib/transcriptNavBus'
 
-export interface EditorShortcutsState {
+interface EditorShortcutsState {
   commandPalette: boolean
   setCommandPalette: React.Dispatch<React.SetStateAction<boolean>>
   quickOpen: boolean
