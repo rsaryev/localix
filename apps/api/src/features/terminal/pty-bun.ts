@@ -10,34 +10,6 @@ import { trackSpawnedProcess } from '../../lib/orphan-guard'
 import { childEnv } from '../../lib/login-shell-env'
 import { resolveShellConfig } from '../agent-core/tools/environments/shell'
 
-// Bun's `terminal` spawn option isn't in the ambient types this repo pins yet;
-// describe just the slice we use so the rest of the feature stays fully typed.
-interface BunTerminal {
-  write(data: string | BufferSource): number
-  resize(cols: number, rows: number): void
-  close(): void
-}
-interface BunTerminalSpawnOptions {
-  cwd: string
-  env: Record<string, string | undefined>
-  terminal: {
-    cols: number
-    rows: number
-    name?: string
-    data: (terminal: BunTerminal, data: Uint8Array) => void
-    exit?: (terminal: BunTerminal, exitCode: number, signal: string | null) => void
-  }
-}
-type BunSpawn = (
-  cmd: string[],
-  options: BunTerminalSpawnOptions,
-) => {
-  readonly pid: number
-  readonly terminal?: BunTerminal
-  readonly exited: Promise<number>
-  kill(signal?: number | string): void
-}
-
 const KILL_GRACE_MS = 500
 
 /**
@@ -96,7 +68,7 @@ export function ptyArgv(
  * calling thread — the API's event loop — until the child happened to exit on its own.
  */
 export function disposePty(
-  proc: { readonly terminal?: Pick<BunTerminal, 'close'> },
+  proc: { readonly terminal?: Pick<Bun.Terminal, 'close'> },
   killTree: () => void,
 ): void {
   killTree()
@@ -116,8 +88,7 @@ export const bunPtyBackend: PtyBackend = {
     // screen. See lib/stream-text.ts.
     const decode = createStreamTextDecoder()
 
-    const spawn = Bun.spawn as unknown as BunSpawn
-    const proc = spawn(ptyArgv(options), {
+    const proc = Bun.spawn(ptyArgv(options), {
       cwd: options.cwd,
       // `childEnv`, the one place child env is built: the repaired login env, and none of
       // the AppImage runtime's library paths (lib/appimage-env.ts) in the user's shell.
