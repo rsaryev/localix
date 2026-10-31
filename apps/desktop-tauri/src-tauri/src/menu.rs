@@ -56,8 +56,13 @@ impl Default for MenuState {
     }
 }
 
+/// Longest title in the app menu (Open Recent, Project items) before it is cut with an ellipsis.
+const MENU_TITLE_MAX: usize = 48;
+/// Longest recent-session title in the tray menu, a little narrower than the app menu.
+const TRAY_TITLE_MAX: usize = 44;
+
 /// Trim a session title to a sane menu width (menus shouldn't be a mile wide).
-pub(crate) fn ellipsize(s: &str, max: usize) -> String {
+fn ellipsize(s: &str, max: usize) -> String {
     let t = s.trim();
     if t.chars().count() <= max {
         return t.to_string();
@@ -90,7 +95,7 @@ fn build_open_recent<R: tauri::Runtime>(
             let item = MenuItem::with_id(
                 handle,
                 format!("recent:{}", it.id),
-                ellipsize(&it.title, 48),
+                ellipsize(&it.title, MENU_TITLE_MAX),
                 true,
                 None::<&str>,
             )?;
@@ -139,7 +144,7 @@ fn build_project_menu<R: tauri::Runtime>(
             let item = CheckMenuItem::with_id(
                 handle,
                 format!("project:{}", p.id),
-                ellipsize(&p.name, 48),
+                ellipsize(&p.name, MENU_TITLE_MAX),
                 true,
                 is_active,
                 None::<&str>,
@@ -591,7 +596,7 @@ pub(crate) fn build_tray_menu<R: tauri::Runtime>(
             menu.append(&MenuItem::with_id(
                 app,
                 format!("recent:{}", it.id),
-                ellipsize(&it.title, 44),
+                ellipsize(&it.title, TRAY_TITLE_MAX),
                 true,
                 None::<&str>,
             )?)?;
