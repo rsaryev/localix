@@ -58,7 +58,6 @@ export function ContributedActions({
     [actions, context],
   )
   const eligible = useSyncExternalStore(subscribe, visibility, visibility)
-  if (!sessionId || !surface) return null
   if (!context) return null
   const visible = actions.filter((_, index) => eligible[index] === '1')
   const run = async (action: ActionContribution) => {
