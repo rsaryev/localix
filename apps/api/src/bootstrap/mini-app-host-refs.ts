@@ -18,11 +18,6 @@ import type { PluginMonitorHost } from '../features/plugins/monitor-host'
  */
 export interface MiniAppHostRefs {
   onCapabilitiesSettled?: () => void
-  chatServiceForCwd?: Pick<
-    ReturnType<typeof createChatService>,
-    'resolveSessionCwd' | 'sessionCoordination'
-  >
-
   resolveProjectCwd?: (userId: string, projectId: string) => Promise<string | null>
   /** Enumerates the user's projects for the `workspaces` host seam (project-rooted providers). */
   listProjects?: (
@@ -59,3 +54,12 @@ export interface MiniAppHostRefs {
     }) => Promise<{ text: string } | { consumed: string }>
   }
 }
+
+/**
+ * A session's working folder through the late-bound chat service: null before the service exists
+ * and for a session it cannot resolve, so a reader treats both as "no folder".
+ */
+export const sessionCwdOrNull =
+  (hostRefs: MiniAppHostRefs) =>
+  async (userId: string, sessionId: string): Promise<string | null> =>
+    (await hostRefs.chatService?.resolveSessionCwd(userId, sessionId).catch(() => null)) ?? null

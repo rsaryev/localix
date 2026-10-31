@@ -33,7 +33,7 @@ import type { createLogger } from '../lib/logger'
 import { userHome, type loadEnv } from '../lib/env'
 import type { createDigestLoaders } from '../boot/digests'
 import type { RegistriesPhase } from './registries'
-import type { MiniAppHostRefs } from './mini-app-host-refs'
+import { sessionCwdOrNull, type MiniAppHostRefs } from './mini-app-host-refs'
 import type { createMiniAppBackendHost } from '../features/mini-apps/backend-host'
 import { MINI_APP_WARNINGS, PLUGIN_WARNINGS, warnOnce } from '../lib/warn-once'
 
@@ -134,7 +134,7 @@ export function createDomainServicesPhase({
       toResourceExpansionResult(await resourceRefsRegistry.expand(...args)),
     // The ownership-checked session-cwd seam: late-bound, because chat is built after this
     // phase and long before any request asks to expand a ref.
-    resolveSessionCwd: (...args) => hostRefs.chatServiceForCwd!.resolveSessionCwd(...args),
+    resolveSessionCwd: (...args) => hostRefs.chatService!.resolveSessionCwd(...args),
   })
   // Core's own reference kinds (file/folder/session/message/terminal/call/project/snippet) resolve
   // through Context Fabric like every provider's, so a sent message, an edit prediction and a
@@ -185,9 +185,7 @@ export function createDomainServicesPhase({
   })
   // Late-bound: chatService is created below, but a command's arg-options runner needs a
   // session's cwd. Hold a ref, assign it once chatService exists.
-  const resolveSessionCwd = async (userId: string, sessionId: string) =>
-    (await hostRefs.chatServiceForCwd?.resolveSessionCwd(userId, sessionId).catch(() => null)) ??
-    null
+  const resolveSessionCwd = sessionCwdOrNull(hostRefs)
   const pluginService = createPluginService({
     db,
     capabilityStores,

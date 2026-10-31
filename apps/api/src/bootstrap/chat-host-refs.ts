@@ -32,7 +32,6 @@ export function bindChatHostRefs({
   chatService: ReturnType<typeof createChatService>
 }) {
   // Fulfill the late-bound cwd resolver the mini app arg-options runner uses.
-  hostRefs.chatServiceForCwd = chatService
   hostRefs.chatService = chatService
   // ONE wake delivery for every producer that cannot await a turn — trigger fires, mini app
   // backends and plugin monitors, a finished child's report (see `features/triggers/delivery.ts`).

@@ -1,5 +1,5 @@
 import type { MiniAppHostServices } from '@localixai/mini-app-sdk/backend'
-import type { MiniAppHostRefs } from './mini-app-host-refs'
+import { sessionCwdOrNull, type MiniAppHostRefs } from './mini-app-host-refs'
 
 /**
  * The two workspace capabilities a mini app backend may hold, built from the late-bound host refs.
@@ -19,11 +19,11 @@ export function workspaceCapabilities(
   // Every session-half door goes through the chat service's `sessionCoordination`. Reading it per
   // call rather than destructuring it once is what keeps a mini app working across a chat-service
   // rebind — the ref is replaced, not mutated.
-  const coordination = () => hostRefs.chatServiceForCwd?.sessionCoordination
+  const coordination = () => hostRefs.chatService?.sessionCoordination
+  const sessionCwd = sessionCwdOrNull(hostRefs)
   return {
     workspaceScope: {
-      resolveSessionRoot: async (...args) =>
-        (await hostRefs.chatServiceForCwd?.resolveSessionCwd(...args).catch(() => null)) ?? null,
+      resolveSessionRoot: sessionCwd,
       resolveProjectRoot: async (...args) =>
         (await hostRefs.resolveProjectCwd?.(...args).catch(() => null)) ?? null,
     },
@@ -37,8 +37,7 @@ export function workspaceCapabilities(
       // Answered, not absent: a provider that reads a session's directory checks for it at
       // construction and disables itself when it is missing, so a half-supplied seam reads to the
       // user as a feature that silently vanished.
-      resolveSessionDirectory: async (...args) =>
-        (await hostRefs.chatServiceForCwd?.resolveSessionCwd(...args).catch(() => null)) ?? null,
+      resolveSessionDirectory: sessionCwd,
       readSessionMetadata: async (...args) =>
         (await coordination()?.readSessionMetadata(...args)) ?? null,
     },

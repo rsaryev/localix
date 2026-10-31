@@ -120,7 +120,7 @@ export function createMiniAppHostsPhase({
      * session id reaches `c.env` only once its ownership check passed. Read from the request rather
      * than captured, because a backend is wired once and the user switches session freely.
      *
-     * Late-bound on purpose: `chatServiceForCwd` is assigned far below, long before any request
+     * Late-bound on purpose: `hostRefs.chatService` is assigned far below, long before any request
      * arrives, and reading it through the closure is the same trick the mini app service already
      * uses for `resolveSessionCwd`.
      */
@@ -129,7 +129,7 @@ export function createMiniAppHostsPhase({
         userId,
         request,
         resolveSessionCwd: async (...args) =>
-          (await hostRefs.chatServiceForCwd?.resolveSessionCwd(...args)) ?? null,
+          (await hostRefs.chatService?.resolveSessionCwd(...args)) ?? null,
         resolveProjectCwd: (...args) => hostRefs.resolveProjectCwd!(...args),
         fallbackCwd: localixWorkspaceDir(),
       }),
