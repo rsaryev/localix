@@ -114,7 +114,15 @@ export async function searchContent(
   query: string,
   opts: ContentSearchOptions = {},
 ): Promise<FileContentSearchResult> {
-  const { env, dir: root } = await openSessionEnv(ctx, userId, sessionId)
+  return searchContentIn(await openSessionEnv(ctx, userId, sessionId), query, opts)
+}
+
+/** {@link searchContent} in an environment the caller already opened. */
+async function searchContentIn(
+  { env, dir: root }: Awaited<ReturnType<typeof openSessionEnv>>,
+  query: string,
+  opts: ContentSearchOptions,
+): Promise<FileContentSearchResult> {
   const limit = opts.limit ?? 300
   // Clamp context to a small, sane window (guards a hostile/large query param).
   const contextLines = Math.max(0, Math.min(3, Math.trunc(opts.contextLines ?? 0)))
@@ -217,9 +225,10 @@ export async function replaceContent(
   if (!re) return { filesChanged: 0, replacements: 0 }
 
   // Reuse the search to get the exact set of files that contain matches.
-  const search = await searchContent(ctx, userId, sessionId, query, { ...opts, limit: 100_000 })
+  const opened = await openSessionEnv(ctx, userId, sessionId)
+  const search = await searchContentIn(opened, query, { ...opts, limit: 100_000 })
   const files = [...new Set(search.matches.map((m) => m.path))]
-  const { env, dir: root } = await openSessionEnv(ctx, userId, sessionId)
+  const { env, dir: root } = opened
   const paths = files.map((rel) => resolveAgainst(root, rel))
 
   // Hold every target path lock while reading, writing, and (if necessary)
