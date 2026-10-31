@@ -5,40 +5,11 @@ import {
 } from '../../db/types'
 import { describe, it, expect } from 'bun:test'
 import {
-  editDistance,
   checkApiVersion,
   isRequiredConfigMissing,
   isUnsafeRelPath,
   isKebabCase,
 } from './manifest-validate'
-
-describe('editDistance', () => {
-  it('returns 0 for identical strings', () => {
-    expect(editDistance('abc', 'abc')).toBe(0)
-  })
-
-  it('returns 1 for a single substitution', () => {
-    expect(editDistance('cat', 'bat')).toBe(1)
-  })
-
-  it('returns 1 for a single insertion', () => {
-    expect(editDistance('cat', 'cats')).toBe(1)
-  })
-
-  it('returns 1 for a single deletion', () => {
-    expect(editDistance('cats', 'cat')).toBe(1)
-  })
-
-  it('returns 2 for two edits', () => {
-    expect(editDistance('kitten', 'sitten')).toBe(1)
-    expect(editDistance('abc', 'xyz')).toBe(3)
-  })
-
-  it('caps at 3 when length difference > 2', () => {
-    expect(editDistance('a', 'abcdef')).toBe(3)
-    expect(editDistance('abcdef', 'a')).toBe(3)
-  })
-})
 
 describe('checkApiVersion', () => {
   it('pushes a warning when apiVersion is undefined', () => {

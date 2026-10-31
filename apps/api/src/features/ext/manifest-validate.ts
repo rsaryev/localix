@@ -6,21 +6,6 @@
  * Extracted in Phase 0.6 of the plugins-subsystem unification.
  */
 
-import { levenshtein } from '../../lib/edit-distance'
-
-// ---------------------------------------------------------------------------
-// Edit distance
-// ---------------------------------------------------------------------------
-
-/**
- * Edit distance for typo-suggestion warnings on unrecognized manifest fields — only `<= 2` is a
- * suggestion, so it is the shared bounded Levenshtein with that bound: exact up to 2, above 2
- * otherwise (no full matrix for an unrelated field name).
- */
-export function editDistance(a: string, b: string): number {
-  return levenshtein(a, b, 2)
-}
-
 // ---------------------------------------------------------------------------
 // API version compatibility
 // ---------------------------------------------------------------------------
