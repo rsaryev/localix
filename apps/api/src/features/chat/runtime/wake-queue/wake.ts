@@ -12,7 +12,11 @@
  */
 import { randomUUID } from 'node:crypto'
 
-import { createPriorityQueue, type PriorityQueue } from '../../../../lib/priority-queue'
+import {
+  createPriorityQueue,
+  type PriorityQueue,
+  type QueueItem,
+} from '../../../../lib/priority-queue'
 import { defaultQueuePolicy } from '../queue-policy'
 import { createRunCompletion, type RunCompletion, type RunExecutionOutcome } from '../run-outcome'
 import type { EnqueueParams, WakeOptions, WakeQueueContext } from '../wake-queue-contracts'
@@ -92,17 +96,17 @@ export function createWake(ctx: WakeQueueContext, deps: WakeDeps) {
    * store no longer treats as pending, so only an unleased one is a fold target.
    */
   const pendingTicketOf = (q: PriorityQueue<PendingTurn>, params: EnqueueParams) => {
-    if (!params.agentTurn) return undefined
+    const incoming = params.agentTurn
+    if (!incoming) return undefined
     const item = q
       .list()
       .find(
-        (entry) =>
+        (entry): entry is QueueItem<TicketTurn> =>
           ticketOf(entry.value) !== undefined &&
           !entry.value.failure &&
           !leases.isLeased(params.session.id, entry.id),
       )
-    const ticket = item && ticketOf(item.value)
-    return item && ticket ? { item, ticket } : undefined
+    return item ? { item, incoming } : undefined
   }
 
   const foldIntoPending = async (
@@ -113,13 +117,13 @@ export function createWake(ctx: WakeQueueContext, deps: WakeDeps) {
   ): Promise<void> => {
     const { userId, session } = params
     const merge = mergeAgentTicket(
-      { ticket: pending.ticket, priority: pending.item.priority },
-      { ticket: params.agentTurn!, priority },
+      { ticket: pending.item.value.agentTurn, priority: pending.item.priority },
+      { ticket: pending.incoming, priority },
     )
     if (!merge.changed) return
     const id = pending.item.id
     const mergedValue: TicketTurn = {
-      ...(pending.item.value as TicketTurn),
+      ...pending.item.value,
       agentTurn: merge.ticket,
     }
     if (
