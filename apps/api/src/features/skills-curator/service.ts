@@ -12,7 +12,7 @@ import {
   moveDir,
   moveToArchive,
   readCuratorMarker,
-  skillBases,
+  skillBase,
   scanArchivedSkills,
   scanSkillRoots,
   writeCuratorMarker,
@@ -189,8 +189,8 @@ export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): Skil
           `An active skill named "${input.name}" already exists`,
         )
       }
-      const [{ base }] = skillBases(workingDir, globalBase)
-      const target = join(skillRoot(base!), basename(entry.skill.dir))
+      const { base } = skillBase(workingDir, globalBase)
+      const target = join(skillRoot(base), basename(entry.skill.dir))
       if (
         await fs.stat(target).then(
           () => true,

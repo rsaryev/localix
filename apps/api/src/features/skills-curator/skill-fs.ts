@@ -9,13 +9,13 @@ import type { SkillScope, SkillUsageRecord } from './repository'
 export const defaultArchiveRoot = (): string => join(localixHome(), 'skills-archive')
 
 /** The one exact skill root to scan (project or no-project home; no fallback). */
-export function skillBases(
+export function skillBase(
   workingDir: string | null,
   globalBase: string,
-): Array<{ base: string; scope: SkillScope }> {
+): { base: string; scope: SkillScope } {
   return workingDir && workingDir !== globalBase
-    ? [{ base: workingDir, scope: 'project' }]
-    : [{ base: globalBase, scope: 'global' }]
+    ? { base: workingDir, scope: 'project' }
+    : { base: globalBase, scope: 'global' }
 }
 
 /** Active skills of the one exact root (`.claude/skills`), first-wins by name. */
@@ -23,11 +23,10 @@ export async function scanSkillRoots(
   workingDir: string | null,
   globalBase: string,
 ): Promise<DiscoveredSkill[]> {
+  const { base, scope } = skillBase(workingDir, globalBase)
   const byName = new Map<string, DiscoveredSkill>()
-  for (const { base, scope } of skillBases(workingDir, globalBase)) {
-    for (const s of await readSkillsFromRoot(skillRoot(base), scope)) {
-      if (!byName.has(s.name)) byName.set(s.name, s)
-    }
+  for (const s of await readSkillsFromRoot(skillRoot(base), scope)) {
+    if (!byName.has(s.name)) byName.set(s.name, s)
   }
   return [...byName.values()]
 }
@@ -48,8 +47,8 @@ export async function scanArchivedSkills(
   archiveRoot: string,
   projectId: string,
 ): Promise<DiscoveredSkill[]> {
-  const [{ scope }] = skillBases(workingDir, globalBase)
-  return readSkillsFromRoot(archiveDirOf(archiveRoot, projectId), scope!)
+  const { scope } = skillBase(workingDir, globalBase)
+  return readSkillsFromRoot(archiveDirOf(archiveRoot, projectId), scope)
 }
 
 /** Renames a folder, copying then removing it when the two places are on different volumes. */
