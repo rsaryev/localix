@@ -28,7 +28,6 @@ export function MiniAppContextBindingIcon({ binding, className }: MiniAppContext
 }
 
 type BindingPreviewState =
-  | { key: string; kind: 'loading' }
   | { key: string; kind: 'image'; src: string }
   | { key: string; kind: 'text'; text: string }
   | { key: string; kind: 'unavailable' }
@@ -54,16 +53,15 @@ function FileBindingPreview({
   onIntrinsicSize,
 }: MiniAppContextBindingPreviewProps) {
   'use no memo'
-  // The caller's chat, as it says: a path is read from THAT workspace. Filling a missing one with
-  // the chat on screen previewed a same-named file from another project.
-  const resolvedSessionId = sessionId
+  // `sessionId` is the caller's chat, as it says: a path is read from THAT workspace. Filling a
+  // missing one with the chat on screen previewed a same-named file from another project.
   const path = contextBindingFilePath(binding)
   const mediaId = contextBindingMediaId(binding)
   const previewKind = contextBindingPreviewKind(binding)
   const fallbackMimeType = contextBindingImageMimeType(binding)
   // What a stored state answers: a new target, kind or fallback type is a new question, so an
   // old answer stops matching without any state being reset from an effect.
-  const target = mediaId ? `media\0${mediaId}` : `${resolvedSessionId ?? ''}\0${path ?? ''}`
+  const target = mediaId ? `media\0${mediaId}` : `${sessionId ?? ''}\0${path ?? ''}`
   const key = `${target}\0${previewKind ?? ''}\0${fallbackMimeType ?? ''}`
   const [stored, setState] = useState<BindingPreviewState>({ key: '', kind: 'unavailable' })
   // A stored media image needs no request: its address is known while rendering. Only a failed
@@ -80,7 +78,7 @@ function FileBindingPreview({
     mediaImage && !(stored.key === key && stored.kind === 'unavailable') ? mediaImage : stored
 
   useEffect(() => {
-    if (!previewKind || (!mediaId && (!path || !resolvedSessionId))) return
+    if (!previewKind || (!mediaId && (!path || !sessionId))) return
     if (mediaId && previewKind === 'image') return
     const controller = new AbortController()
     const content = mediaId
@@ -95,7 +93,7 @@ function FileBindingPreview({
             mimeType: response.headers.get('content-type') ?? undefined,
           }
         })
-      : backendClient.getFileContent(resolvedSessionId!, path!, { signal: controller.signal })
+      : backendClient.getFileContent(sessionId!, path!, { signal: controller.signal })
     void content
       .then((response) => {
         if (response.truncated) {
@@ -123,7 +121,7 @@ function FileBindingPreview({
         if (!controller.signal.aborted) setState({ key, kind: 'unavailable' })
       })
     return () => controller.abort()
-  }, [fallbackMimeType, key, mediaId, path, previewKind, resolvedSessionId])
+  }, [fallbackMimeType, key, mediaId, path, previewKind, sessionId])
 
   const classes = [className, 'lx-binding-preview'].filter(Boolean).join(' ')
   if (state.key === key && state.kind === 'image') {
@@ -147,11 +145,7 @@ function FileBindingPreview({
   if (state.key === key && state.kind === 'text') {
     return <pre className={`${classes} is-text`}>{state.text}</pre>
   }
-  if (
-    previewKind &&
-    (mediaId || resolvedSessionId) &&
-    (state.key !== key || state.kind === 'loading')
-  ) {
+  if (previewKind && (mediaId || sessionId) && state.key !== key) {
     return (
       <div
         className={`${classes} is-loading`}
