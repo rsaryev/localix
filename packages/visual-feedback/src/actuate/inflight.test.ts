@@ -128,3 +128,37 @@ test('an XHR counts from send to loadend and still reaches the native methods', 
     proto.send = originalSend
   }
 })
+
+test('restore leaves a wrapper the page installed after the tracker in place', () => {
+  const original = window.fetch
+  const proto = XMLHttpRequest.prototype
+  const originalOpen = proto.open
+  const originalSend = proto.send
+  const tracker = installInflightTracker(window, clock)
+  const theirFetch = (() => Promise.resolve(new Response('mine'))) as unknown as typeof window.fetch
+  const theirOpen = function () {} as typeof proto.open
+  const theirSend = function () {} as typeof proto.send
+  window.fetch = theirFetch
+  proto.open = theirOpen
+  proto.send = theirSend
+  try {
+    tracker.restore()
+    expect(window.fetch).toBe(theirFetch)
+    expect(proto.open).toBe(theirOpen)
+    expect(proto.send).toBe(theirSend)
+  } finally {
+    window.fetch = original
+    proto.open = originalOpen
+    proto.send = originalSend
+  }
+})
+
+test('restore puts the originals back when nothing wrapped the tracker', () => {
+  const original = window.fetch
+  const originalSend = XMLHttpRequest.prototype.send
+  const tracker = installInflightTracker(window, clock)
+  expect(window.fetch).not.toBe(original)
+  tracker.restore()
+  expect(window.fetch).toBe(original)
+  expect(XMLHttpRequest.prototype.send).toBe(originalSend)
+})

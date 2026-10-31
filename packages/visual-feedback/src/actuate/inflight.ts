@@ -47,8 +47,13 @@ export function installInflightTracker(
   }
 
   const nativeFetch = win.fetch
+  let wrappedFetch: typeof win.fetch | undefined
   if (typeof nativeFetch === 'function') {
-    win.fetch = function (this: unknown, input: RequestInfo | URL, init?: RequestInit) {
+    win.fetch = wrappedFetch = function (
+      this: unknown,
+      input: RequestInfo | URL,
+      init?: RequestInit,
+    ) {
       const result = nativeFetch.call(this, input, init)
       track(input instanceof Request ? input.url : String(input), result)
       return result
@@ -59,12 +64,17 @@ export function installInflightTracker(
   const nativeOpen = proto?.open
   const nativeSend = proto?.send
   const urls = new WeakMap<object, string>()
+  let wrappedOpen: typeof nativeOpen
+  let wrappedSend: typeof nativeSend
   if (proto && nativeOpen && nativeSend) {
-    proto.open = function (this: XMLHttpRequest, ...args: unknown[]) {
+    proto.open = wrappedOpen = function (this: XMLHttpRequest, ...args: unknown[]) {
       urls.set(this, String(args[1]))
       return (nativeOpen as (...a: unknown[]) => void).apply(this, args)
     } as typeof proto.open
-    proto.send = function (this: XMLHttpRequest, body?: Document | XMLHttpRequestBodyInit | null) {
+    proto.send = wrappedSend = function (
+      this: XMLHttpRequest,
+      body?: Document | XMLHttpRequestBodyInit | null,
+    ) {
       track(
         urls.get(this) ?? '',
         new Promise((resolve) => this.addEventListener('loadend', resolve, { once: true })),
@@ -79,11 +89,12 @@ export function installInflightTracker(
       for (const start of started.values()) if (t - start < maxAgeMs) return true
       return false
     },
+    // Only what is still ours: a page that wrapped these after us keeps its wrapper.
     restore: () => {
-      if (nativeFetch) win.fetch = nativeFetch
+      if (nativeFetch && win.fetch === wrappedFetch) win.fetch = nativeFetch
       if (proto && nativeOpen && nativeSend) {
-        proto.open = nativeOpen
-        proto.send = nativeSend
+        if (proto.open === wrappedOpen) proto.open = nativeOpen
+        if (proto.send === wrappedSend) proto.send = nativeSend
       }
     },
   }
