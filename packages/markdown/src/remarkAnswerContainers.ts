@@ -23,7 +23,8 @@ import type {
 } from 'mdast'
 import { parseContainerMarker, type ContainerKind } from './dialect'
 
-const meaningful = (children: PhrasingContent[]) =>
+/** A phrasing run without its whitespace-only text nodes. */
+export const meaningful = (children: PhrasingContent[]) =>
   children.filter((child) => !(child.type === 'text' && child.value.trim() === ''))
 
 /** Separator text between a lead and what follows: ` — `, ` · `, `: ` or just a line break. */

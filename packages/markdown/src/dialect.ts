@@ -60,15 +60,19 @@ function isCalloutKind(value: string): value is CalloutKind {
  * also what GitHub does, so a typo degrades to readable text instead of a mislabelled box.
  */
 export function parseCalloutMarker(text: string): CalloutMarker | null {
+  const marker = readMarker(text)
+  return marker && isCalloutKind(marker.kind) ? { ...marker, kind: marker.kind } : null
+}
+
+/** A `[!KIND] title` marker line of either form, before its kind is checked. */
+function readMarker(text: string): { kind: string; title: string; consumed: number } | null {
   const match = CALLOUT_MARKER.exec(text)
   if (!match) return null
-  const kind = match[1].toLowerCase()
-  if (!isCalloutKind(kind)) return null
   const rest = text.slice(match[0].length)
   const lineEnd = rest.indexOf('\n')
   const title = (lineEnd === -1 ? rest : rest.slice(0, lineEnd)).trim()
   const consumed = match[0].length + (lineEnd === -1 ? rest.length : lineEnd + 1)
-  return { kind, title, consumed }
+  return { kind: match[1].toLowerCase(), title, consumed }
 }
 
 /**
@@ -140,14 +144,8 @@ export interface ContainerMarker {
 
 /** Read a container marker at a quote's start. An unknown kind is not one (nor a callout). */
 export function parseContainerMarker(text: string): ContainerMarker | null {
-  const match = CALLOUT_MARKER.exec(text)
-  if (!match) return null
-  const kind = match[1].toLowerCase()
-  if (!isContainerKind(kind)) return null
-  const rest = text.slice(match[0].length)
-  const lineEnd = rest.indexOf('\n')
-  const title = (lineEnd === -1 ? rest : rest.slice(0, lineEnd)).trim()
-  return { kind, title, consumed: match[0].length + (lineEnd === -1 ? rest.length : lineEnd + 1) }
+  const marker = readMarker(text)
+  return marker && isContainerKind(marker.kind) ? { ...marker, kind: marker.kind } : null
 }
 
 /**

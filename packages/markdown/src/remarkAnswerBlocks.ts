@@ -25,7 +25,7 @@ import type {
   Text,
 } from 'mdast'
 import { ATTRIBUTION_PREFIX, parseCalloutMarker } from './dialect'
-import { applyContainer, isShapedContainer } from './remarkAnswerContainers'
+import { applyContainer, isShapedContainer, meaningful } from './remarkAnswerContainers'
 
 /** Strip a `[!KIND]` marker off the quote's first paragraph; true when it was a callout. */
 function applyCallout(quote: Blockquote): boolean {
@@ -107,9 +107,6 @@ function applyAttribution(quote: Blockquote): void {
     quote.children.push(footer)
   }
 }
-
-const meaningful = (children: PhrasingContent[]) =>
-  children.filter((child) => !(child.type === 'text' && child.value.trim() === ''))
 
 /** The caption a line right under an image carries: that line is one emphasis and nothing else. */
 function emphasisCaption(next: Parents['children'][number] | undefined): PhrasingContent[] | null {
