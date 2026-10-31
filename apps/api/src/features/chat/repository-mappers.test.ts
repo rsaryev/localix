@@ -52,8 +52,6 @@ const baseRow = () => ({
   created_at: 'c',
   updated_at: 'u',
   last_message_at: 'l',
-  execution_backend: 'local',
-  execution_target: null,
   project_id: 'PRJ-test',
   parent_session_id: null,
   root_session_id: null,

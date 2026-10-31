@@ -26,8 +26,6 @@ export const mapSession = (
     created_at: string
     updated_at: string
     last_message_at: string
-    execution_backend: string
-    execution_target: string | null
     project_id: string
     parent_session_id: string | null
     root_session_id: string | null

@@ -99,10 +99,6 @@ export interface AgentSessionsTable {
   created_at: ColumnType<string, string | undefined, never>
   updated_at: ColumnType<string, string | undefined, string | undefined>
   last_message_at: ColumnType<string, string | undefined, string | undefined>
-  /** Execution backend kind: 'local' | 'ssh' | 'docker'. Defaults to 'local'. */
-  execution_backend: ColumnType<string, string | undefined, string | undefined>
-  /** SSH target 'user@host' or Docker container name. Null for local. */
-  execution_target: string | null
   /** NOT NULL: every session belongs to a project (`projects/default-project.ts`). */
   project_id: string
   parent_session_id: string | null
