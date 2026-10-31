@@ -185,7 +185,7 @@ export function createLocalCatalog(deps: {
      */
     async recommended(): Promise<LocalModelEntry[]> {
       await Promise.all([shapes.restore(), exact.restore()])
-      draftFor = await drafters.lookup().catch(() => draftFor)
+      draftFor = await drafters.lookup()
       const chat = await recommendedChat().catch(() => [])
       return [...chat, recommendedEmbedding()]
     },
@@ -197,7 +197,7 @@ export function createLocalCatalog(deps: {
     async list(options: CatalogQuery = {}): Promise<LocalModelEntry[]> {
       await Promise.all([shapes.restore(), exact.restore()])
       if (options.kind === 'embedding') return embeddingEntries()
-      draftFor = await drafters.lookup().catch(() => draftFor)
+      draftFor = await drafters.lookup()
       const id = options.id?.trim()
       const found = id ? await rows.lookup(id) : await rows.browse()
       const groups = chatGroups(found)
