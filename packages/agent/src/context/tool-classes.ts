@@ -14,9 +14,9 @@
 const pagedReadResultTools = new Set(['Read', 'Search'])
 const readResultTools = new Set(pagedReadResultTools)
 
-const mutateTools = new Set(['Write', 'Edit'])
+const mutateTools: ReadonlySet<string> = new Set(['Write', 'Edit'])
 
-const nonidempotentTools = new Set(['Bash'])
+const nonidempotentTools: ReadonlySet<string> = new Set(['Bash'])
 
 /**
  * Tools whose RESULT is a recoverable observation — re-readable from disk/source,
@@ -34,27 +34,21 @@ export const READ_RESULT_TOOLS: ReadonlySet<string> = readResultTools
 export const PAGED_READ_RESULT_TOOLS: ReadonlySet<string> = pagedReadResultTools
 
 /** Mutation tools that carry their heavy, recoverable payload in a single string arg. */
-export const MUTATE_TOOLS: ReadonlySet<string> = mutateTools
+export const MUTATE_TOOLS = mutateTools
 
 /** Side-effecting tools whose observations never supersede and are never superseded. */
-export const NONIDEMPOTENT_TOOLS: ReadonlySet<string> = nonidempotentTools
+export const NONIDEMPOTENT_TOOLS = nonidempotentTools
 
 export interface ContextToolClassRegistration {
   /** Tool names whose results are recoverable observations (join READ_RESULT_TOOLS). */
   readResult?: readonly string[]
-  /** Single-string-arg mutation tools (join MUTATE_TOOLS). */
-  mutate?: readonly string[]
-  /** Side-effecting tools that never supersede / are never superseded. */
-  nonidempotent?: readonly string[]
 }
 
 /**
- * Register app-specific tool names into the VBC tool classes. Additive and
+ * Register app-specific read-result tool names into the VBC tool classes. Additive and
  * idempotent — call once at app bootstrap, before any compression planning.
  * The exported `*_TOOLS` sets reflect registrations immediately (same objects).
  */
 export function registerContextToolClasses(reg: ContextToolClassRegistration): void {
   for (const name of reg.readResult ?? []) readResultTools.add(name)
-  for (const name of reg.mutate ?? []) mutateTools.add(name)
-  for (const name of reg.nonidempotent ?? []) nonidempotentTools.add(name)
 }

@@ -51,18 +51,14 @@ describe('VBC tool-class vocabulary (single source of truth)', () => {
     }
   })
 
-  test('registerContextToolClasses extends the exported sets in place and is idempotent', () => {
-    registerContextToolClasses({
-      readResult: ['x_read'],
-      mutate: ['x_write'],
-      nonidempotent: ['x_run'],
-    })
+  test('registerContextToolClasses extends the read-result set in place and is idempotent', () => {
+    registerContextToolClasses({ readResult: ['x_read'] })
     registerContextToolClasses({ readResult: ['x_read'] })
 
     expect(READ_RESULT_TOOLS.has('x_read')).toBe(true)
     expect(PAGED_READ_RESULT_TOOLS.has('x_read')).toBe(false)
-    expect(MUTATE_TOOLS.has('x_write')).toBe(true)
-    expect(NONIDEMPOTENT_TOOLS.has('x_run')).toBe(true)
+    expect(MUTATE_TOOLS.has('x_read')).toBe(false)
+    expect(NONIDEMPOTENT_TOOLS.has('x_read')).toBe(false)
     expect([...READ_RESULT_TOOLS].filter((t) => t === 'x_read')).toHaveLength(1)
   })
 })
