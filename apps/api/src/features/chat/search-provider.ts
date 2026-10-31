@@ -10,7 +10,7 @@
  * maps the real `chatService` in. Both are `eager` (cheap indexed reads).
  */
 import type { SearchHit, SearchProvider } from '../agent-core/search/provider'
-import { bestFieldScore } from '../agent-core/search/match'
+import { bestFieldScore } from '@localixai/mini-app-sdk/backend'
 import { RESOURCE_PROVIDERS } from '../agent-core/resource-refs/providers'
 import { localixResourceUri, localixUiUri } from '@localixai/mini-app-sdk/navigation'
 import type { MessageSearchReads } from './repository-message-search'

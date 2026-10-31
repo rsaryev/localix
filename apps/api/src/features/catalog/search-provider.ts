@@ -4,7 +4,7 @@
  * tab, so hits use that canonical surface URI.
  */
 import type { SearchHit, SearchProvider } from '../agent-core/search/provider'
-import { bestFieldScore } from '../agent-core/search/match'
+import { bestFieldScore } from '@localixai/mini-app-sdk/backend'
 import { localixResourceUri, settingsUiUri } from '@localixai/mini-app-sdk/navigation'
 
 export interface ModelSearchRow {

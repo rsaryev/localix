@@ -4,7 +4,7 @@
  * workspace and selects its item. `eager` (a cheap metadata-only list).
  */
 import type { SearchHit, SearchProvider } from '../agent-core/search/provider'
-import { bestFieldScore } from '../agent-core/search/match'
+import { bestFieldScore } from '@localixai/mini-app-sdk/backend'
 import { vaultItemResourceUri } from './resource-provider'
 
 export interface SecretsSearchPort {

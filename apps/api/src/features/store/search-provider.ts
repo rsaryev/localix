@@ -9,7 +9,7 @@ import {
 } from '@localixai/store'
 
 import { ftsOrQuery, queryTerms } from '../../lib/fts-query'
-import { bestFieldScore } from '../agent-core/search/match'
+import { bestFieldScore } from '@localixai/mini-app-sdk/backend'
 import type { SearchHit, SearchProvider, SearchQuery } from '../agent-core/search/provider'
 import { fuse, isLookupQuery, unitScore, wordCoverage, type FusionInput } from '../search/hybrid'
 import type { StoreIndexRepository } from './index-repository'

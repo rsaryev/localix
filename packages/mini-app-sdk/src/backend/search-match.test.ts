@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { bestFieldScore } from './match'
+import { bestFieldScore } from './search-match'
 
 describe('bestFieldScore', () => {
   it('takes the strongest field', () =>

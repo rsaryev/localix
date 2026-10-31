@@ -5,7 +5,7 @@
  * as a native `@project:` ref. `eager` (a small indexed per-user table).
  */
 import type { SearchHit, SearchProvider } from '../agent-core/search/provider'
-import { bestFieldScore } from '../agent-core/search/match'
+import { bestFieldScore } from '@localixai/mini-app-sdk/backend'
 import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 
 /** One project as the provider reads it. */
