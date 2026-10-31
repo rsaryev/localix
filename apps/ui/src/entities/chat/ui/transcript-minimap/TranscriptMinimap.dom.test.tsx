@@ -38,7 +38,6 @@ async function mountMinimap(turns: number, onJump: (rowIndex: number) => void) {
         ticks={ticks}
         getOffsets={() => ({
           offsets: ticks.map((_, i) => i * 100),
-          totalSize: ticks.length * 100,
         })}
         onJump={onJump}
         sessionId="s1"

@@ -25,6 +25,10 @@ const RAIL_WIDTH = 22
  */
 const TICK_GAP = 9
 
+// `black` here is an ALPHA channel, not a colour: in a mask it means "keep these pixels". Nothing
+// theme-dependent to tokenise.
+const RAIL_MASK = 'linear-gradient(to bottom, transparent 0, black 8%, black 92%, transparent 100%)'
+
 /**
  * Thin per-message tick rail along the transcript's left edge. Pointer-only
  * chrome: ticks are labeled buttons for AT, but tabIndex={-1} keeps this
@@ -43,7 +47,7 @@ export function TranscriptMinimap({
   const layout = useTranscriptTicks(scrollEl, ticks.length, getOffsets, sessionId)
   const [hovered, setHovered] = useState<number | null>(null)
 
-  if (ticks.length < MINIMAP_MIN_MESSAGES || layout.fractions.length !== ticks.length) return null
+  if (ticks.length < MINIMAP_MIN_MESSAGES || layout.count !== ticks.length) return null
 
   // A WINDOW, not the whole conversation: only WINDOW_SIZE ticks exist at a time and the window
   // slides to stay centred on where you are reading. A million-message transcript therefore
@@ -86,14 +90,8 @@ export function TranscriptMinimap({
           className="absolute inset-0"
           onMouseLeave={() => setHovered(null)}
           style={{
-            maskImage:
-              // `black` here is an ALPHA channel, not a colour: in a mask it means "keep these
-              // pixels". Nothing theme-dependent to tokenise.
-              'linear-gradient(to bottom, transparent 0, black 8%, black 92%, transparent 100%)',
-            WebkitMaskImage:
-              // `black` here is an ALPHA channel, not a colour: in a mask it means "keep these
-              // pixels". Nothing theme-dependent to tokenise.
-              'linear-gradient(to bottom, transparent 0, black 8%, black 92%, transparent 100%)',
+            maskImage: RAIL_MASK,
+            WebkitMaskImage: RAIL_MASK,
           }}
         >
           {windowTicks.map((tick, i) => (

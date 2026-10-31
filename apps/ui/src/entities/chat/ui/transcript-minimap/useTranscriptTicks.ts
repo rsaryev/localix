@@ -4,18 +4,17 @@ import { currentTickAt } from './minimapModel'
 export interface TickOffsets {
   /** Scroll offset of each tick's row, in tick order. */
   offsets: number[]
-  totalSize: number
 }
 
 export interface TickLayout {
-  /** 0..1 vertical rail position per tick, in tick order. */
-  fractions: number[]
+  /** How many ticks were measured: the rail draws only once it matches the tick list. */
+  count: number
   /** Tick-array index nearest the current viewport position. */
   current: number
   viewportHeight: number
 }
 
-const EMPTY_LAYOUT: TickLayout = { fractions: [], current: 0, viewportHeight: 0 }
+const EMPTY_LAYOUT: TickLayout = { count: 0, current: 0, viewportHeight: 0 }
 
 /**
  * Owns minimap measurement and its cache. Two cadences on purpose:
@@ -53,12 +52,11 @@ export function useTranscriptTicks(
     const recompute = (remeasure: boolean) => {
       if (disposed) return
       if (remeasure) {
-        const { offsets, totalSize } = readOffsets()
+        const { offsets } = readOffsets()
         cachedOffsetsRef.current = offsets
         const viewportHeight = scrollEl.clientHeight
-        const safeTotal = Math.max(totalSize, 1)
         setLayout({
-          fractions: offsets.map((offset) => Math.min(offset / safeTotal, 1)),
+          count: offsets.length,
           current: currentTickAt(offsets, scrollEl.scrollTop, viewportHeight),
           viewportHeight,
         })

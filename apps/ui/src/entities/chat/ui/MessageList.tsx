@@ -229,7 +229,6 @@ function MessageListImpl({
       offsets: minimapTicks.map(
         (tick) => virtualizer.getOffsetForIndex(tick.index, 'start')?.[0] ?? 0,
       ),
-      totalSize: virtualizer.getTotalSize(),
     }),
     [minimapTicks, virtualizer],
   )
