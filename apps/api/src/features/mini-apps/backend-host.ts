@@ -33,7 +33,7 @@ import { Hono } from 'hono'
 import type { Env, Schema } from 'hono'
 import { createDebouncer } from '../../lib/debounce'
 import type { BackendSubsystem } from '../ext/subsystem-contrib'
-import type { SearchProviderRegistry } from '../agent-core/search/provider'
+import type { SearchProviderRegistry } from '@localixai/mini-app-sdk/backend'
 import { createMountDispatcher } from './backend-host-dispatch'
 import { createMiniAppUiActionTable } from './backend-host-ui-actions'
 

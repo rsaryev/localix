@@ -4,7 +4,7 @@ import {
   selectProviders,
   type SearchHit,
   type SearchProvider,
-} from './provider'
+} from './search-provider'
 
 const hit = (id: string, score = 0.5): SearchHit => ({ id, domain: 'x', title: id, score })
 const mk = (

@@ -4,7 +4,7 @@
  * the chat resource provider owns, so a result opens the project AND drops into chat
  * as a native `@project:` ref. `eager` (a small indexed per-user table).
  */
-import type { SearchHit, SearchProvider } from '../agent-core/search/provider'
+import type { SearchHit, SearchProvider } from '@localixai/mini-app-sdk/backend'
 import { bestFieldScore } from '@localixai/mini-app-sdk/backend'
 import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 

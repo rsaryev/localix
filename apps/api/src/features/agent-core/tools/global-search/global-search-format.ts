@@ -8,7 +8,7 @@
  * dropped is counted, never silently cut.
  */
 import { parseLocalixResourceUri } from '@localixai/mini-app-sdk/backend'
-import type { SearchHit } from '../../search/provider'
+import type { SearchHit } from '@localixai/mini-app-sdk/backend'
 import type { SearchResponse } from '../../../search/contracts'
 
 export const GLOBAL_SEARCH_MAX_CHARS = 8192

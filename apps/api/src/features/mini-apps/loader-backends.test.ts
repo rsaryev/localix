@@ -9,8 +9,8 @@ import { loadMiniAppBackends } from './loader'
 import { makeApiScratchDir } from '../../testing/scratch-dir'
 import { createSubsystemRegistry } from '../ext/subsystem-contrib'
 import { createWsFrameRegistry, createWsFrameConnection } from '../ext/ws-frame-registry'
-import { createResourceProviderRegistry } from '../agent-core/resource-refs/provider'
-import { createSearchProviderRegistry } from '../agent-core/search/provider'
+import { createResourceProviderRegistry } from '@localixai/mini-app-sdk/backend'
+import { createSearchProviderRegistry } from '@localixai/mini-app-sdk/backend'
 import { MINI_APP_MANIFEST_DIR, MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 declare global {

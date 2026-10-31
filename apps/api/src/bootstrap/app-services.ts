@@ -1,6 +1,6 @@
 import { createAuxAssistServices } from '../boot/aux-assist'
 import { buildSearchService } from '../boot/search'
-import type { SearchProvider } from '../features/agent-core/search/provider'
+import type { SearchProvider } from '@localixai/mini-app-sdk/backend'
 import { createBootShellCommandService } from '../boot/shell-command'
 import { createAgentConfigurationService } from '../features/effective-config/service'
 import { createTerminalService } from '../features/terminal/service'

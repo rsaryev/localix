@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { SemanticMatch, SemanticQuery } from '@localixai/mini-app-sdk/backend'
-import type { SearchQuery } from '../agent-core/search/provider'
+import type { SearchQuery } from '@localixai/mini-app-sdk/backend'
 import { catalogHits } from './catalog-hybrid'
 
 const rows = [

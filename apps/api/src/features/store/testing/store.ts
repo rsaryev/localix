@@ -1,7 +1,7 @@
 import type { StoreProvider } from '@localixai/store'
 
 import type { SemanticQuery } from '@localixai/mini-app-sdk/backend'
-import { createSearchProviderRegistry } from '../../agent-core/search/provider'
+import { createSearchProviderRegistry } from '@localixai/mini-app-sdk/backend'
 import { createSearchService, type SearchStrategyPort } from '../../search/service'
 import { createStoreIndexRepository } from '../index-repository'
 import { openStoreIndexDatabase } from '../index-repository-open'

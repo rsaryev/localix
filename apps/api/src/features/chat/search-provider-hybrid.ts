@@ -6,7 +6,7 @@
  * the old behaviour. Each function returns ready `SearchHit`s in the same id/uri grammar as
  * the lexical path — a result opens the same way whichever strategy found it.
  */
-import type { SearchHit, SearchQuery } from '../agent-core/search/provider'
+import type { SearchHit, SearchQuery } from '@localixai/mini-app-sdk/backend'
 import { bestFieldScore, type SemanticQuery } from '@localixai/mini-app-sdk/backend'
 import { ftsOrQuery, queryTerms } from '../../lib/fts-query'
 import { fuse, isLookupQuery, unitScore, wordCoverage, type FusionInput } from '../search/hybrid'

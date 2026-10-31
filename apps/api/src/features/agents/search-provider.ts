@@ -1,5 +1,5 @@
 import { localixUiUri } from '@localixai/uri'
-import type { SearchProvider } from '../agent-core/search/provider'
+import type { SearchProvider } from '@localixai/mini-app-sdk/backend'
 import { catalogHits } from '../search/catalog-hybrid'
 import { AGENTS_COLLECTION } from './semantic'
 

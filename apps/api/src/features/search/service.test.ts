@@ -3,7 +3,7 @@ import {
   createSearchProviderRegistry,
   type SearchHit,
   type SearchProvider,
-} from '../agent-core/search/provider'
+} from '@localixai/mini-app-sdk/backend'
 import { createSearchService, groupHits, sortHits, parseCursor, type DomainMeta } from './service'
 
 const hit = (domain: string, title: string, score: number): SearchHit => ({

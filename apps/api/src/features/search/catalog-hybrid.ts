@@ -8,7 +8,7 @@
  */
 import { bestFieldScore, SEMANTIC_GLOBAL_SCOPE } from '@localixai/mini-app-sdk/backend'
 import { catalogNameOf } from '../embeddings/list-source'
-import type { SearchHit, SearchQuery } from '../agent-core/search/provider'
+import type { SearchHit, SearchQuery } from '@localixai/mini-app-sdk/backend'
 import { queryTerms } from '../../lib/fts-query'
 import { fuse, isLookupQuery, unitScore, wordCoverage, type FusionInput } from './hybrid'
 

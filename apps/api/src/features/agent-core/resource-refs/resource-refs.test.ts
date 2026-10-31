@@ -7,7 +7,7 @@ import {
   providerSegments,
   truncationNotice,
   type ResourceRefProvider,
-} from './provider'
+} from '@localixai/mini-app-sdk/backend'
 import { expandContextRefs, type ResourceRefLoader } from '../../projects/expand-refs'
 import { parseContextRefs, toWireRef } from '../../../contracts/context-refs'
 import type { ContextRef } from '../../projects/contracts'

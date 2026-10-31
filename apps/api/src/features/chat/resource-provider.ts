@@ -25,14 +25,14 @@ import type {
   ResourceExpansion,
   ResourceNode,
   ResourceRefProvider,
-} from '../agent-core/resource-refs/provider'
+} from '@localixai/mini-app-sdk/backend'
 import {
   buildResourceUri,
   linkAction,
   noticeNode,
   providerSegments,
   truncationNotice,
-} from '../agent-core/resource-refs/provider'
+} from '@localixai/mini-app-sdk/backend'
 import { RESOURCE_PROVIDERS } from '../agent-core/resource-refs/providers'
 
 /** Core-owned chat provider key — derived from the shared vocabulary, never re-spelled. */

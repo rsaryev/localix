@@ -5,8 +5,8 @@ import { createSubsystemRegistry, type BackendSubsystem } from '../ext/subsystem
 import { createCapabilityRegistry } from '../ext/capability-registry'
 import { CAP_DOCUMENT_EXTRACT } from '@localixai/mini-app-sdk/backend'
 import { createWsFrameRegistry } from '../ext/ws-frame-registry'
-import { createResourceProviderRegistry } from '../agent-core/resource-refs/provider'
-import { createSearchProviderRegistry } from '../agent-core/search/provider'
+import { createResourceProviderRegistry } from '@localixai/mini-app-sdk/backend'
+import { createSearchProviderRegistry } from '@localixai/mini-app-sdk/backend'
 import { createContextProviderRegistry } from '../context-fabric/registry'
 
 /** A minimal sample-shaped subsystem: route + resource + search + WS + shutdown. */

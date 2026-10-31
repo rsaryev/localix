@@ -3,7 +3,7 @@
  * runtime adapter catalog. Models are configured through the Providers settings
  * tab, so hits use that canonical surface URI.
  */
-import type { SearchHit, SearchProvider } from '../agent-core/search/provider'
+import type { SearchHit, SearchProvider } from '@localixai/mini-app-sdk/backend'
 import { bestFieldScore } from '@localixai/mini-app-sdk/backend'
 import { localixResourceUri, settingsUiUri } from '@localixai/mini-app-sdk/navigation'
 

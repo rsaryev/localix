@@ -2,13 +2,13 @@ import type {
   ResourceExpansion,
   ResourceNode,
   ResourceRefProvider,
-} from '../agent-core/resource-refs/provider'
+} from '@localixai/mini-app-sdk/backend'
 import {
   decodeResourceSegment,
   buildResourceUri,
   linkAction,
   providerSegments,
-} from '../agent-core/resource-refs/provider'
+} from '@localixai/mini-app-sdk/backend'
 import { RESOURCE_PROVIDERS } from '../agent-core/resource-refs/providers'
 import type { SecretMeta } from './contracts'
 

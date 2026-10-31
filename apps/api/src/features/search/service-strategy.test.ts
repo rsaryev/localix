@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { createSearchProviderRegistry, type SearchQuery } from '../agent-core/search/provider'
+import { createSearchProviderRegistry, type SearchQuery } from '@localixai/mini-app-sdk/backend'
 import { createSearchService, type SearchStrategyPort } from './service'
 
 function harness(strategy?: SearchStrategyPort) {

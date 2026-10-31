@@ -3,7 +3,7 @@
  * write-only and never surfaced). Every hit deep-links to the dedicated Vault
  * workspace and selects its item. `eager` (a cheap metadata-only list).
  */
-import type { SearchHit, SearchProvider } from '../agent-core/search/provider'
+import type { SearchHit, SearchProvider } from '@localixai/mini-app-sdk/backend'
 import { bestFieldScore } from '@localixai/mini-app-sdk/backend'
 import { vaultItemResourceUri } from './resource-provider'
 

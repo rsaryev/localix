@@ -12,10 +12,7 @@
  */
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../db/types'
-import {
-  createSearchProviderRegistry,
-  type SearchProvider,
-} from '../features/agent-core/search/provider'
+import { createSearchProviderRegistry, type SearchProvider } from '@localixai/mini-app-sdk/backend'
 import { createSearchService } from '../features/search/service'
 import { createProjectsSearchProvider } from '../features/projects/search-provider'
 import {

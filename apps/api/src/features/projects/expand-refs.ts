@@ -59,9 +59,8 @@ export type ResourceRefLoader = (uri: string) => Promise<ResourceExpansionResult
 /**
  * The resource REGISTRY's expansion shape, stated structurally.
  *
- * Deliberately not imported from `agent-core/resource-refs/provider.ts`: this module is
- * free of agent-core imports (see above), and it should stay that way. We restate only the
- * four fields we consume, so the coupling is a shape, not a dependency.
+ * Deliberately not imported from the registry in `@localixai/mini-app-sdk/backend`: we
+ * restate only the four fields we consume, so the coupling is a shape, not a dependency.
  */
 export interface WeakResourceExpansion {
   ok: boolean

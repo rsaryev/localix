@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { SearchQuery } from '../agent-core/search/provider'
+import type { SearchQuery } from '@localixai/mini-app-sdk/backend'
 import { createAgentsSearchProvider } from '../agents/search-provider'
 import {
   createMessagesSearchProvider,

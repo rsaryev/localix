@@ -3,7 +3,7 @@ import { zValidator } from '../../lib/validator'
 import { z } from 'zod'
 import type { AppContext } from '../../app'
 import { defaultErrorHandler } from '../../lib/http'
-import type { ResourceProviderRegistry } from '../agent-core/resource-refs/provider'
+import type { ResourceProviderRegistry } from '@localixai/mini-app-sdk/backend'
 
 export const MAX_RESOURCE_PARTIAL_BYTES = 4 * 1024
 const utf8 = new TextEncoder()

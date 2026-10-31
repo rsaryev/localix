@@ -4,7 +4,7 @@ import {
   buildResourceUri,
   createResourceProviderRegistry,
   type ResourceRefProvider,
-} from '../agent-core/resource-refs/provider'
+} from '@localixai/mini-app-sdk/backend'
 import { ApiError } from '../../lib/errors'
 import { createResourceRefRoutes, MAX_RESOURCE_PARTIAL_BYTES } from './routes'
 

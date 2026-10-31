@@ -3,10 +3,10 @@
  * endpoint. A provider owns a DOMAIN (e.g. `sessions`) and turns a text query into a
  * flat list of ranked hits over ONE existing feature service via a narrow port.
  *
- * Mirrors `agent-core/resource-refs/provider.ts`: the core learns NOTHING about any
+ * Mirrors the resource-ref registry (`resource-refs.ts`): the core learns NOTHING about any
  * concrete domain — the search service fans a query out to the registered providers
  * and merges / ranks / groups the results. Registering ONE provider adds a whole new
- * searchable domain with no core edits. Lives in `agent-core` so it stays free of
+ * searchable domain with no core edits. Lives in the SDK, free of the host's
  * `features/*` value-imports; a concrete provider lives in its own feature and is
  * injected at bootstrap.
  *

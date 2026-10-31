@@ -4,7 +4,7 @@ import { createMiniAppBackendHost } from './backend-host'
 import { createSubsystemRegistry, type BackendSubsystem } from '../ext/subsystem-contrib'
 import { createCapabilityRegistry } from '../ext/capability-registry'
 import { createWsFrameRegistry } from '../ext/ws-frame-registry'
-import { createResourceProviderRegistry } from '../agent-core/resource-refs/provider'
+import { createResourceProviderRegistry } from '@localixai/mini-app-sdk/backend'
 import { createContextProviderRegistry } from '../context-fabric/registry'
 
 describe('stopping the mini app backend host (server shutdown)', () => {

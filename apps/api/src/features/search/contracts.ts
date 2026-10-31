@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { Problem, SearchHit } from '../agent-core/search/provider'
+import type { Problem, SearchHit } from '@localixai/mini-app-sdk/backend'
 import type { SearchStrategyNote } from '../embeddings/contracts'
 
 /**

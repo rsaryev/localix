@@ -2,7 +2,7 @@
  * PLUGINS search provider (agent-core search) — matches plugin name/displayName +
  * description over the plugin catalog. Every hit opens the plugin's Store page.
  */
-import type { SearchProvider } from '../agent-core/search/provider'
+import type { SearchProvider } from '@localixai/mini-app-sdk/backend'
 import { catalogHits } from '../search/catalog-hybrid'
 import { PLUGINS_COLLECTION } from './semantic'
 import { capabilityUiUri } from '@localixai/uri'

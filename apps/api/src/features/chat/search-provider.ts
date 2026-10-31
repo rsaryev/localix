@@ -9,7 +9,7 @@
  * with zero extra plumbing. Narrow structural ports keep this decoupled — bootstrap
  * maps the real `chatService` in. Both are `eager` (cheap indexed reads).
  */
-import type { SearchHit, SearchProvider } from '../agent-core/search/provider'
+import type { SearchHit, SearchProvider } from '@localixai/mini-app-sdk/backend'
 import { bestFieldScore } from '@localixai/mini-app-sdk/backend'
 import { RESOURCE_PROVIDERS } from '../agent-core/resource-refs/providers'
 import { localixResourceUri, localixUiUri } from '@localixai/mini-app-sdk/navigation'

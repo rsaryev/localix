@@ -2,7 +2,7 @@
  * SKILLS search provider (agent-core search) — matches skill name + description over
  * the discovered skills. Every hit addresses one row in its exact project scope.
  */
-import type { SearchProvider } from '../agent-core/search/provider'
+import type { SearchProvider } from '@localixai/mini-app-sdk/backend'
 import { catalogHits } from '../search/catalog-hybrid'
 import { SKILLS_COLLECTION } from './semantic'
 import { capabilityUiUri } from '@localixai/mini-app-sdk/navigation'

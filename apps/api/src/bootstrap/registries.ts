@@ -10,7 +10,7 @@ import { createEditPredictionContextProvider } from '../features/autocomplete/ed
 import { createCapabilityRegistry } from '../features/ext/capability-registry'
 import { createSubsystemRegistry } from '../features/ext/subsystem-contrib'
 import { createWsFrameRegistry } from '../features/ext/ws-frame-registry'
-import { createResourceProviderRegistry } from '../features/agent-core/resource-refs/provider'
+import { createResourceProviderRegistry } from '@localixai/mini-app-sdk/backend'
 import { createVaultResourceProvider } from '../features/secrets/resource-provider'
 import type { createSecretsService } from '../features/secrets/service'
 import type { createLogger } from '../lib/logger'

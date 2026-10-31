@@ -230,8 +230,8 @@ export type {
   ResourceNode,
   ResourceNodeAction,
   ResourceExpansion,
-} from './features/agent-core/resource-refs/provider'
-export type { SearchHit, SearchQuery, SearchProvider } from './features/agent-core/search/provider'
+} from '@localixai/mini-app-sdk/backend'
+export type { SearchHit, SearchQuery, SearchProvider } from '@localixai/mini-app-sdk/backend'
 export type {
   SearchRequest,
   SearchResponse,
