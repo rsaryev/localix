@@ -3,12 +3,19 @@ import { useMemo } from 'react'
 import { modelKindOf, type CatalogModel, type CatalogProvider } from '@localixai/agent/catalog'
 
 import { backendClient } from '@/shared/api/client'
+import type { CatalogResponse } from '@/shared/api/contracts'
 import { useRevalidateOnResources } from '@/shared/api/resourceGeneration'
 import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 
 export type { CatalogModel }
 
+// Fallbacks with one identity, so a caller memoising on them does not re-run every render while
+// the catalog loads.
 const NO_MODELS: CatalogModel[] = []
+const NO_PROVIDERS: CatalogProvider[] = []
+const NO_IDS: string[] = []
+const NO_OAUTH: CatalogResponse['oauthProviders'] = []
+const noRefetch = () => Promise.resolve(undefined)
 
 export function useModelsCatalog() {
   const workItemVisible = useWorkItemVisible()
@@ -38,13 +45,13 @@ export function useModelsCatalog() {
   return {
     /** Chat models: what every chat surface lists. */
     models: all ? chat : NO_MODELS,
-    providers: data?.providers ?? ([] as CatalogProvider[]),
-    oauthProviderIds: data?.oauthProviderIds ?? ([] as string[]),
-    oauthProviders: data?.oauthProviders ?? [],
+    providers: data?.providers ?? NO_PROVIDERS,
+    oauthProviderIds: data?.oauthProviderIds ?? NO_IDS,
+    oauthProviders: data?.oauthProviders ?? NO_OAUTH,
     isLoading,
     /** Truthy when the catalog fetch failed (lets callers show a retry, not an empty list). */
     error,
     /** Re-run the catalog fetch (SWR revalidate). */
-    refetch: workItemVisible ? mutate : () => Promise.resolve(undefined),
+    refetch: workItemVisible ? mutate : noRefetch,
   }
 }
