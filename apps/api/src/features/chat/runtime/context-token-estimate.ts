@@ -1,9 +1,4 @@
-import {
-  estimateChatMessageTokens,
-  IMAGE_TOKEN_ESTIMATE,
-  textEncoderByteLength,
-  type ChatMessage,
-} from '@localixai/agent'
+import { estimateChatMessageTokens, type ChatMessage } from '@localixai/agent'
 import type { PersistedMessage } from '../contracts'
 import {
   estimateContextFromMessages,
@@ -31,7 +26,6 @@ export {
 // WeakMap auto-evicts when a message is GC'd, and persisted messages are never
 // mutated in place, so identity caching stays correct.
 const tokenEstimateCache = new WeakMap<PersistedMessage, number>()
-const estimateTextTokens = (text: string): number => Math.ceil(textEncoderByteLength(text) / 4)
 
 /**
  * The exact text envelope used when a slash/plugin invocation is materialized
@@ -61,19 +55,7 @@ function computeMessageTokens(m: PersistedMessage): number {
   // ignored `items` entirely, so a tool-heavy history (where tool I/O dominates)
   // was undercounted by an order of magnitude: the size gate never fired and the
   // "recent tail" cut kept far more than its token budget.
-  const base = estimateChatMessageTokens(m.payload as unknown as ChatMessage)
-  const c = m.payload.content as unknown
-  if (!Array.isArray(c)) return base
-  // Legacy array-of-parts content (the shared estimator only counts string
-  // content): count text-ish parts by chars + a flat allowance per image part.
-  let tokens = 0
-  let images = 0
-  for (const part of c as Array<Record<string, unknown>>) {
-    const t = part?.type
-    if (t === 'image' || t === 'image_url' || t === 'input_image') images += 1
-    else tokens += estimateTextTokens(JSON.stringify(part))
-  }
-  return base + tokens + images * IMAGE_TOKEN_ESTIMATE
+  return estimateChatMessageTokens(m.payload as unknown as ChatMessage)
 }
 
 /**
