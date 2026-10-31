@@ -152,8 +152,7 @@ an item is raised and settled. From it follow the user-wide `attention.updated` 
 `GET /rpc/attention` (what a reload restores) and, through one observer
 (`apps/api/src/features/notifications/producers/attention.ts`), the journal row — whose key is the
 item's key. Plans under review, the durable kind, are rebuilt from their rows at boot; HITL requests
-are memory-only and the boot sweep settles their rows, along with any `question:` rows left by the
-retired queued questions.
+are memory-only and the boot sweep settles their rows.
 
 | Fact                     | Seam                                                                                                                                             | Key                                                                  | Raises nothing when                                                                  |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
