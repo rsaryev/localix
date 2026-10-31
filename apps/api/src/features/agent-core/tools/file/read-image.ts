@@ -1,8 +1,8 @@
 /**
  * `read` on an image: the file goes in front of the model as a native image part.
  *
- * The bytes travel as base64 over `env.exec`, so the same path works on the local, ssh and
- * docker backends without a binary-read primitive in the environment interface. A large PNG or
+ * The bytes travel as base64 over `env.exec`, so no binary-read primitive is needed in the
+ * environment interface. A large PNG or
  * JPEG is downscaled to the long edge vision models price by, and the model is TOLD it was
  * resized — otherwise it measures a 1568px screenshot and reports pixel positions for a
  * 4000px one. A model that cannot read images gets a text answer instead of the tool being

@@ -3,7 +3,7 @@
 // then dies with a confusing "command not found", burning a whole turn + a full
 // context replay. When a command uses `timeout` as a command word, prepend a
 // guarded POSIX shim: the function is defined ONLY when the real binary is missing
-// (`command -v timeout || …`), so a present GNU timeout (Linux ssh/docker backends,
+// (`command -v timeout || …`), so a present GNU timeout (Linux,
 // macOS coreutils) is never shadowed and keeps its full flag set. Plain
 // `timeout <secs> <cmd>` — the only form seen in practice — is emulated; flag forms
 // (`timeout -k …`) fall through to the absent binary exactly as before.

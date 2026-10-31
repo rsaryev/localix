@@ -20,7 +20,7 @@ import type { IndexedProjectFiles } from '../../agent-core/project-file-index'
  * file-tree mutations (the user's own create/rename/delete/paste) and from the
  * fs-watch feed (agent writes, builds, branch switches), so in practice the memo is
  * dropped as soon as it is wrong. The TTL is only the backstop for the case with no
- * live watcher — an ssh/docker session, or a tree nobody has opened.
+ * live watcher — a tree nobody has opened.
  */
 
 /** Backstop lifetime for an un-invalidated entry. Deliberately short: it only has

@@ -21,8 +21,7 @@ export { type ReplaceContentResult } from './replace-commit'
  * Project SEARCH over a session's working tree: file-name search (⌘P quick-open,
  * the composer @-autocomplete, the tree search box), content search (the inspector
  * search panel), and search-and-replace. Everything runs through the session's
- * execution environment (`rg`), so an ssh/docker session searches its own remote
- * tree; ranking/parsing/substitution are pure and unit-tested.
+ * execution environment (`rg`); ranking/parsing/substitution are pure and unit-tested.
  */
 
 /**
@@ -30,9 +29,8 @@ export { type ReplaceContentResult } from './replace-commit'
  * @-autocomplete, and the file-tree search box. Lists project files via
  * `rg --files` (respects .gitignore) then filters/ranks them.
  *
- * Backend-agnostic: everything runs through `ExecutionEnvironment.exec`, never a
- * direct `node:fs` read of the local path, so ssh/docker sessions search their
- * own remote tree. Returns an empty result (not an error) when ripgrep is
+ * Everything runs through `ExecutionEnvironment.exec`, never a direct `node:fs` read
+ * of the local path. Returns an empty result (not an error) when ripgrep is
  * unavailable or a regex is malformed, so the UI degrades quietly.
  *
  * Ranking: fuzzy mode scores subsequence matches (exact-basename + boundary +
@@ -96,8 +94,7 @@ export interface ContentSearchOptions {
  * Project content (text) search backing the inspector search panel's "Text" mode
  * — the substring/regex grep over file CONTENTS that filename search never did.
  *
- * Runs `rg --json` through the session's execution environment (backend-agnostic:
- * local/ssh/docker), so a query like `const a` finds every line containing it.
+ * Runs `rg --json` through the session's execution environment, so a query like `const a` finds every line containing it.
  * Defaults to a literal (fixed-string), smart-case match — the behaviour a user
  * typing into a search box expects. When `contextLines > 0`, `--context N` is
  * added and the surrounding lines are attached to each match (expandable
@@ -154,7 +151,7 @@ async function searchContentIn(
   // `match` event, each file adds `begin`/`end`, and each context line one more.
   const maxJsonLines = limit * (3 + 2 * contextLines) + 16
   // ripgrep's exit code has to survive the pipe (the pipeline reports HEAD's status,
-  // and `pipefail` is not portable across the ssh/docker shells). Route it out on
+  // and `pipefail` is not portable across shells). Route it out on
   // stderr, which `head` never sees.
   const command =
     `{ rg ${flags.join(' ')} -e ${shellQuote(query)} . ; echo "__RG_EXIT__$?" >&2 ; }` +
@@ -235,8 +232,7 @@ export async function replaceContent(
   // rolling back. The shared locks serialize this operation against editor saves,
   // agent write/edit, LSP edits, and other Replace-all requests.
   return withPathLocks(workspaceLockPaths(root, paths), async () => {
-    // Reads overlap (bounded): every target is already locked, so their order cannot matter,
-    // and a remote environment pays one round trip per file.
+    // Reads overlap (bounded): every target is already locked, so their order cannot matter.
     const planned = await mapLimit(paths, REPLACE_READ_CONCURRENCY, async (abs) => {
       let content: string
       try {

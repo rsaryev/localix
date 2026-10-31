@@ -129,7 +129,7 @@ export function childBgProc(
     // bare GUI launch — see lib/login-shell-env.ts) plus the unattended overlay:
     // a background job has no interactive TTY, so scaffolders/git must fail fast
     // instead of prompting. stdin stays open so the agent can still `write()` to
-    // a job that wants input. ssh/docker backends set the remote env far-side.
+    // a job that wants input.
     // Enabled plugins' `bin/` dirs (pathPrefix) go AFTER the user's PATH.
     env: childEnvNonInteractive(envOverrides, pathPrefix),
     stdio: ['pipe', 'pipe', 'pipe'],

@@ -2,10 +2,7 @@
  * THE PLAN'S FILES, read and written for the host — the draft the agent edits and the version
  * snapshots the person reviews (`plan-paths.ts` says where they are and why).
  *
- * The defect the port shape prevents: a conversation that runs on ssh or docker keeps its files
- * on that machine, and a host that reached for node `fs` would read a draft that is not there and
- * write snapshots nobody can see. So every read and write goes through the ROOT session's
- * execution environment — the same one the agent's tools and the file viewer use — supplied by
+ * Every read and write goes through the ROOT session's execution environment — the same one the agent's tools and the file viewer use — supplied by
  * the host (`bootstrap/session-services.ts`), which keeps this module free of chat and testable
  * with an in-memory environment.
  *

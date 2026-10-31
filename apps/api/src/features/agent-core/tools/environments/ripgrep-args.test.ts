@@ -3,27 +3,18 @@ import { writeFile } from 'node:fs/promises'
 import { makeTempDir, removeDir } from '@localixai/testing'
 import { join } from 'node:path'
 
-import { interpretRipgrep, shellQuote } from '../environment'
-import { buildRipgrepArgs, buildRipgrepCommand } from './ripgrep'
+import { interpretRipgrep } from '../environment'
+import { buildRipgrepArgs } from './ripgrep'
 import { spawnToResult } from './spawn'
 
 /**
- * REGRESSION — the ssh/docker backends dropped `--multiline`.
+ * REGRESSION — `--multiline` must reach ripgrep.
  *
- * `remote.ts` hand-rolled its own rg flag string under a comment claiming it "mirrors
- * local searchFiles' flag set". It did not: `local.ts` pushes `--multiline` when the
- * pattern contains a newline, because **ripgrep hard-errors (exit 2) on a multi-line
- * regex without it**. Models routinely write multi-line regexes, so the identical search
- * that succeeded locally FAILED on ssh/docker — and since `interpretRipgrep` turns an
- * empty exit-2 into a throw, the tool raised a hard error rather than returning matches.
- *
- * DORMANT in production today: every session runs on the local backend (the ssh/docker
- * execution backends are built but not wired to any session). This pins the behaviour so
- * it is correct the day they are.
- *
- * The fix is the DEDUPLICATION: one ordered-flag builder feeds both renderings, so the
- * flag set cannot drift again. These tests are written against that invariant — not
- * against a hard-coded flag list — so they keep holding as flags are added.
+ * `rg` hard-errors (exit 2) on a multi-line regex without it, and models routinely write
+ * multi-line regexes. `buildRipgrepArgs` pushes `--multiline` when the pattern contains a
+ * newline; since `interpretRipgrep` turns an empty exit-2 into a throw, a missing flag would
+ * raise a hard error rather than return matches. These tests are written against that
+ * invariant, not against a hard-coded flag list, so they keep holding as flags are added.
  */
 
 const NEWLINE_PATTERNS = [
@@ -46,41 +37,8 @@ describe('buildRipgrepArgs — the single source of truth for rg flags', () => {
   })
 })
 
-describe('the remote (ssh/docker) rendering cannot diverge from the local argv', () => {
-  // THE BUG, stated directly: this assertion failed before the dedup.
-  test.each(NEWLINE_PATTERNS)(
-    'the remote command carries --multiline for %s',
-    (_label, pattern) => {
-      expect(buildRipgrepCommand(pattern, '/w')).toContain('--multiline')
-    },
-  )
-
-  test('every option combination renders the local argv verbatim, only quoted', () => {
-    // Structural anti-divergence guard: the remote string IS the local token list,
-    // shell-quoted. A flag that reaches one backend therefore reaches the other by
-    // construction — a hand-rolled second flag list would break this immediately.
-    const cwd = '/work/dir with space'
-    for (const pattern of ['alpha', 'alpha\nbeta', "it's a 'quoted' pat"]) {
-      for (const opts of [
-        undefined,
-        { glob: '*.ts' },
-        { context: 3 },
-        { glob: '*.ts', context: 2 },
-      ]) {
-        const argv = buildRipgrepArgs(pattern, opts)
-        const expected = `cd ${shellQuote(cwd)} && rg ${argv.map(shellQuote).join(' ')}`
-        expect(buildRipgrepCommand(pattern, cwd, opts)).toBe(expected)
-      }
-    }
-  })
-})
-
-/**
- * BEHAVIOURAL proof, against the real ripgrep binary. The ssh/docker backends run their
- * command string through `bash -c` on the far side; we run the SAME string through
- * `bash -c` locally, which exercises the exact bytes rg would receive remotely.
- */
-describe('the remote command actually runs (real rg, via bash -c)', () => {
+/** BEHAVIOURAL proof, against the real ripgrep binary spawned with the argv we build. */
+describe('the argv actually runs (real rg)', () => {
   let dir: string
 
   beforeAll(async () => {
@@ -91,14 +49,12 @@ describe('the remote command actually runs (real rg, via bash -c)', () => {
     removeDir(dir)
   })
 
-  const runRemoteForm = async (pattern: string) => {
-    const command = buildRipgrepCommand(pattern, dir)
-    return spawnToResult('bash', ['-c', command], {})
-  }
+  const run = async (pattern: string) =>
+    spawnToResult('rg', buildRipgrepArgs(pattern), { cwd: dir })
 
   test('a MULTI-LINE pattern returns matches instead of hard-erroring (the regression)', async () => {
-    const result = await runRemoteForm('alpha\nbeta')
-    // Before the fix this was exit 2 with rg's
+    const result = await run('alpha\nbeta')
+    // Without the flag this is exit 2 with rg's
     // `the literal "\n" is not allowed in a regex` on stderr, which interpretRipgrep
     // (empty stdout + exit>=2) turns into a THROW.
     expect(result.exitCode).toBe(0)
@@ -107,19 +63,18 @@ describe('the remote command actually runs (real rg, via bash -c)', () => {
   })
 
   test('an ordinary pattern still matches, with line numbers and filenames', async () => {
-    const out = interpretRipgrep(await runRemoteForm('gamma'))
+    const out = interpretRipgrep(await run('gamma'))
     expect(out).toContain('sample.ts')
     expect(out).toContain('3:gamma')
   })
 
-  test('a pattern with single quotes survives the shell rendering', async () => {
-    // Guards shellQuote's `'\''` escaping on the path the remote backends take.
+  test('a pattern with single quotes reaches rg intact', async () => {
     await writeFile(join(dir, 'quoted.ts'), "it's here\n", 'utf8')
-    expect(interpretRipgrep(await runRemoteForm("it's here"))).toContain('quoted.ts')
+    expect(interpretRipgrep(await run("it's here"))).toContain('quoted.ts')
   })
 
   test('no matches is an empty string, NOT an error', async () => {
-    const result = await runRemoteForm('nothing_matches_this_xyzzy')
+    const result = await run('nothing_matches_this_xyzzy')
     expect(interpretRipgrep(result)).toBe('')
   })
 })
@@ -135,11 +90,5 @@ describe('a pattern that looks like a flag is still a pattern', () => {
     expect(args[args.indexOf('-e') + 1]).toBe('--color-|--token')
     // Still the last positional, so rg searches the working directory as before.
     expect(args.at(-1)).toBe('.')
-  })
-
-  test('the shell rendering carries the same tokens', () => {
-    // The ssh/docker backends render these tokens into `bash -c`; a fix that reached only the
-    // local spawn would be the divergence this builder exists to make inexpressible.
-    expect(buildRipgrepCommand('--token', '/w')).toContain("'-e' '--token'")
   })
 })

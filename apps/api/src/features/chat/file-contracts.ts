@@ -69,7 +69,7 @@ export interface DirListing {
    *  (or 0) means the listing is complete. The UI renders a "… N more items" row. */
   truncated?: number
   /** Whether disk changes reach the tree on their own (a local session with a working watcher).
-   *  When false — an ssh/docker session, a watcher in failure backoff — the tree offers a
+   *  When false — a watcher in failure backoff — the tree offers a
    *  manual Refresh. */
   live?: boolean
 }

@@ -3,8 +3,7 @@ import { MAX_DIR_ENTRIES } from './read-output'
 
 /**
  * If `targetPath` is a directory, return a sorted listing (one entry per line,
- * directories suffixed with `/`); otherwise return null. Uses env.exec so it works
- * identically across local / ssh / docker backends.
+ * directories suffixed with `/`); otherwise return null. Uses env.exec.
  */
 export async function tryListDirectory(
   env: ExecutionEnvironment,

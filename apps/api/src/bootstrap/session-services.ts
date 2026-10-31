@@ -84,8 +84,7 @@ export function wireSessionServices({
     repo: createPlanRepository(db),
     comments: serviceRefs.comments,
     // The draft and snapshots sit in the ROOT session's working dir and are read and written
-    // through its execution environment, as the file viewer does — so an ssh/docker session's
-    // plan is on that machine. A host write forgets the path in every session's read record, as
+    // through its execution environment, as the file viewer does. A host write forgets the path in every session's read record, as
     // an editor save does: the agent's next `edit` of a draft the host rewrote must re-read it.
     files: createPlanFiles({
       open: async ({ userId, sessionId }) => {

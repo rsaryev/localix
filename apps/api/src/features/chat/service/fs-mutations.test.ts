@@ -1,16 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import {
-  assertNotIntoSelf,
-  moveCmd,
-  copyCmd,
-  removeCmd,
-  mkdirCmd,
-  touchFileCmd,
-  probeKindCmd,
-  existsCmd,
-  trashEntryName,
-} from './fs-mutations'
+import { assertNotIntoSelf, trashEntryName } from './fs-mutations'
 
 /**
  * The containment RULE now lives in `lib/path-containment.ts` and is tested there; what
@@ -40,21 +30,6 @@ describe('assertNotIntoSelf', () => {
   })
   test('never refuses a file source', () => {
     expect(() => assertNotIntoSelf('/a/b.txt', '/a/b.txt', false)).not.toThrow()
-  })
-})
-
-describe('command builders', () => {
-  test('quote all path arguments', () => {
-    expect(moveCmd("/it's", '/$(x)')).toBe("mv -- '/it'\\''s' '/$(x)'")
-    expect(moveCmd('/a b', '/c')).toBe("mv -- '/a b' '/c'")
-    expect(copyCmd('/a', '/b')).toBe("cp -R -- '/a' '/b'")
-    expect(removeCmd('/a b')).toBe("rm -rf -- '/a b'")
-    expect(mkdirCmd('/a b')).toBe("mkdir -p '/a b'")
-    expect(touchFileCmd('/p', '/p/f')).toBe("mkdir -p '/p' && : > '/p/f'")
-  })
-  test('probe/exists emit stable sentinels', () => {
-    expect(probeKindCmd('/a')).toContain('printf D')
-    expect(existsCmd('/a')).toContain('__EXISTS__')
   })
 })
 

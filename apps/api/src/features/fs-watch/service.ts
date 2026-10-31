@@ -3,9 +3,8 @@ import { backoffMs } from '@localixai/agent/backoff'
 import { createDirWatcher, type DirWatcherHandle, type FsChange } from './watcher'
 
 /**
- * Resolve a session's watch root. Returns `null` for a non-local backend (an
- * ssh/docker tree isn't visible to a local `fs.watch`) or when the cwd can't be
- * resolved — either way the session simply has no live watcher and the UI keeps its
+ * Resolve a session's watch root. Returns `null` when the cwd can't be
+ * resolved — in that case the session simply has no live watcher and the UI keeps its
  * manual Refresh. Kept agnostic so the chat service owns the session→cwd knowledge.
  */
 export type ResolveWatchRoot = (

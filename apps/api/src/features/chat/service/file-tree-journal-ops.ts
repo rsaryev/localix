@@ -1,6 +1,6 @@
 import { ConflictError, InvalidRequestError } from '../../../lib/domain-errors'
 import path from 'node:path'
-import { treeFsFor, trashDir, trashEntryName } from './fs-mutations'
+import { localTreeFs, trashDir, trashEntryName } from './fs-mutations'
 import {
   recordFileOp,
   popLastFileOp,
@@ -25,7 +25,7 @@ export async function deleteEntry(
   targetPath: string,
   opts?: { permanent?: boolean },
 ): Promise<FileDeleteResponse> {
-  const { env, dir } = await openSessionEnv(ctx, userId, sessionId)
+  const { dir } = await openSessionEnv(ctx, userId, sessionId)
   const target = resolveAgainst(dir, targetPath)
   assertNotWorkspaceRoot(dir, target)
   // Never let an empty/blank path collapse to `rm -rf /` style damage.
@@ -34,7 +34,7 @@ export async function deleteEntry(
 
   const useTrash = !opts?.permanent
   const bin = useTrash ? trashDir() : null
-  const tree = treeFsFor(env)
+  const tree = localTreeFs
 
   const run = (): Promise<FileDeleteResponse> =>
     withPathLocks(workspaceLockPaths(dir, [target, ...(bin ? [bin] : [])]), async () => {
@@ -86,7 +86,7 @@ export async function undoLastFileOp(
   userId: string,
   sessionId: string,
 ): Promise<FileUndoResponse> {
-  const { env, dir } = await openSessionEnv(ctx, userId, sessionId)
+  const { dir } = await openSessionEnv(ctx, userId, sessionId)
   return withFileOpJournalLock(sessionId, async () => {
     const op = popLastFileOp(sessionId)
     if (!op) return { undone: false }
@@ -99,7 +99,7 @@ export async function undoLastFileOp(
 
     const source = op.kind === 'trash' ? op.trashPath : op.to
     const dest = op.kind === 'trash' ? op.original : op.from
-    const tree = treeFsFor(env)
+    const tree = localTreeFs
 
     return withPathLocks(workspaceLockPaths(dir, [source, dest]), async () => {
       // The restore target must be free, else we'd clobber a newer entry.

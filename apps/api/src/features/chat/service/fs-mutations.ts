@@ -4,7 +4,6 @@ import path from 'node:path'
 
 import { envString, localixHome } from '../../../lib/env'
 import { isPathWithin } from '../../../lib/path-containment'
-import { shellQuote as shq, type ExecutionEnvironment } from '../../agent-core/tools/environment'
 
 /**
  * Refuse moving/copying a FOLDER into itself or one of its own descendants — the
@@ -29,54 +28,11 @@ export function assertNotIntoSelf(source: string, destDir: string, isFolder: boo
     )
 }
 
-// ── Shell command builders (all paths quoted through `shellQuote`) ───────────
-
-/**
- * Probe an ENTRY's kind in one call: prints `D` (dir), `F` (file), or `N` (absent).
- * `-L` is tested first because `[ -d ]` and `[ -e ]` FOLLOW symlinks: a link to a
- * folder was reported as a folder (so the into-self guard and the journal treated
- * the link as the tree it points at), and a dangling link was reported absent, so
- * it could be neither renamed nor deleted from the tree. A link is its own entry.
- */
-export const probeKindCmd = (p: string): string =>
-  `if [ -L ${shq(p)} ]; then printf F; elif [ -d ${shq(p)} ]; then printf D; ` +
-  `elif [ -e ${shq(p)} ]; then printf F; else printf N; fi`
-
-/**
- * Prints `__EXISTS__` when the entry exists (else nothing). A dangling symlink
- * exists: `[ -e ]` alone called it absent and a create/rename then replaced it.
- */
-export const existsCmd = (p: string): string =>
-  `if [ -e ${shq(p)} ] || [ -L ${shq(p)} ]; then printf __EXISTS__; fi`
-
-/** Prints `D` when the path is an existing directory, else `N`. */
-export const isDirCmd = (p: string): string =>
-  `if [ -d ${shq(p)} ]; then printf D; else printf N; fi`
-
-/** `mkdir -p` the given directory. */
-export const mkdirCmd = (dir: string): string => `mkdir -p ${shq(dir)}`
-
-/** Create an empty file, ensuring its parent directory exists first. */
-export const touchFileCmd = (parent: string, target: string): string =>
-  `mkdir -p ${shq(parent)} && : > ${shq(target)}`
-
-/** Move/rename `from` → `to`. */
-export const moveCmd = (from: string, to: string): string => `mv -- ${shq(from)} ${shq(to)}`
-
-/** Recursively copy `from` → `to`. */
-export const copyCmd = (from: string, to: string): string => `cp -R -- ${shq(from)} ${shq(to)}`
-
-/** Recursively, forcibly remove `p` (permanent delete). */
-export const removeCmd = (p: string): string => `rm -rf -- ${shq(p)}`
-
 // ── Tree filesystem port ─────────────────────────────────────────────────────
 
 /**
- * The primitive operations a file-tree mutation needs, one implementation per
- * backend. The local backend used to run every one of them through a spawned
- * shell (`[ -d ]`, `mkdir -p`, `mv`, `cp -R`) — a trash move was four process
- * spawns — although the files sit on this machine; it now answers in-process.
- * ssh/docker keep the shell, because their files are far-side.
+ * The primitive operations a file-tree mutation needs, answered in-process (a shell
+ * round-trip per `[ -d ]`, `mkdir -p`, `mv` or `cp -R` made a trash move four process spawns).
  *
  * Kinds are those of the ENTRY: `kind`/`exists` never follow a symlink (a link to
  * a folder is a `file` entry, a dangling link exists), matching the Explorer's
@@ -180,54 +136,15 @@ export function createLocalTreeFs(io: LocalTreeIo = fs): TreeFs {
   }
 }
 
-/** The far-side port: the quoted command builders above, run in the session's shell. */
-export function createShellTreeFs(env: Pick<ExecutionEnvironment, 'exec'>): TreeFs {
-  const run = async (command: string, failure: string): Promise<string> => {
-    const res = await env.exec(command)
-    if (res.exitCode !== 0) throw new Error(res.stderr.trim() || failure)
-    return res.stdout.trim()
-  }
-  return {
-    async kind(p) {
-      const probe = await run(probeKindCmd(p), `Could not inspect ${p}`)
-      return probe === 'D' ? 'dir' : probe === 'F' ? 'file' : null
-    },
-    async exists(p) {
-      return (await run(existsCmd(p), `Could not inspect ${p}`)) === '__EXISTS__'
-    },
-    async isDir(p) {
-      return (await run(isDirCmd(p), `Could not inspect ${p}`)) === 'D'
-    },
-    async mkdirp(dir) {
-      await run(mkdirCmd(dir), `Could not create ${dir}`)
-    },
-    async createFile(target) {
-      await run(touchFileCmd(path.dirname(target), target), `Could not create ${target}`)
-    },
-    async move(from, to) {
-      await run(moveCmd(from, to), `Could not move ${from}`)
-    },
-    async copy(from, to) {
-      await run(copyCmd(from, to), `Could not copy ${from}`)
-    },
-    async remove(p) {
-      await run(removeCmd(p), `Could not delete ${p}`)
-    },
-  }
-}
-
-const localTreeFs = createLocalTreeFs()
-
-/** The port for a session's environment: in-process for local, the shell otherwise. */
-export const treeFsFor = (env: Pick<ExecutionEnvironment, 'config' | 'exec'>): TreeFs =>
-  env.config.kind === 'local' ? localTreeFs : createShellTreeFs(env)
+/** The in-process port every file-tree mutation runs through. */
+export const localTreeFs = createLocalTreeFs()
 
 // ── Trash ────────────────────────────────────────────────────────────────────
 
 /**
  * Absolute path of the local trash directory (`~/.localix/trash` by default,
  * overridable via `LOCALIX_TRASH_DIR` so tests don't pollute the real home). The
- * trash is a LOCAL-backend concept only — ssh/docker sessions delete permanently.
+ * trash is where a deleted entry goes before it is gone.
  *
  * Read through {@link envString}, so a BLANK `LOCALIX_TRASH_DIR=` means unset and
  * the default still wins. On a raw `process.env.X ?? default` an empty string is
@@ -252,7 +169,7 @@ export const trashEntryName = (name: string, now: number, salt = ''): string =>
  * Write `content` to `absPath` atomically on the LOCAL filesystem: write a temp
  * sibling then `rename` it over the target (rename is atomic within a filesystem),
  * so a crashed/interrupted save never leaves a half-written file. Only valid for a
- * real local path; the ssh/docker backends fall back to their generic writeFile.
+ * real local path.
  */
 export async function atomicWriteLocal(absPath: string, content: string): Promise<void> {
   const tmp = path.join(

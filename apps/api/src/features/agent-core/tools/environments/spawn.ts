@@ -35,8 +35,7 @@ export interface SpawnOptions {
   signal?: AbortSignal
   /**
    * Skip the output tail cap and keep the COMPLETE stdout. Used for full-file
-   * reads (`cat`) over ssh/docker — capping would silently truncate a large file
-   * to its last 2MB, unlike the local backend's node-fs read.
+   * reads (`cat`) — capping would silently truncate a large file to its last 2MB.
    */
   uncapped?: boolean
   /**
@@ -50,7 +49,7 @@ export interface SpawnOptions {
   /**
    * What a `timeout` deadline does to the child. `'kill'` (the default) reaps the
    * process tree and reports exit 124 — the only behaviour before this option, and
-   * the one every remote/uncapped caller keeps.
+   * the one every uncapped caller keeps.
    *
    * `'detach'` hands the still-running child back instead (see {@link DetachedChild}),
    * for callers that can promote a slow foreground command to a background job
@@ -60,11 +59,8 @@ export interface SpawnOptions {
 }
 
 /**
- * Spawn a child process and resolve with its captured output. The single
- * implementation shared by the local AND ssh/docker execution backends, so the
- * capture-cap, abort/timeout handling, and the orphaned-pipe grace window have
- * ONE source of truth. (A divergent per-backend copy is exactly how the remote
- * backends silently dropped the AbortSignal contract before this was unified.)
+ * Spawn a child process and resolve with its captured output. The capture-cap,
+ * abort/timeout handling, and the orphaned-pipe grace window live here.
  */
 export function spawnToResult(
   cmd: string,

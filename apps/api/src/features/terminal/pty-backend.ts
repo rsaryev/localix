@@ -3,9 +3,7 @@
  *
  * The terminal feature is layered so the transport (ws) and session lifecycle
  * (session.ts) never touch a concrete PTY implementation — they speak only this
- * interface. The bundled implementation (`pty-bun.ts`) uses Bun's native PTY, but
- * a future ssh/docker backend can satisfy the same contract without any change
- * upstream, mirroring how `ExecutionEnvironment` abstracts command execution.
+ * interface. The bundled implementation (`pty-bun.ts`) uses Bun's native PTY.
  */
 
 export interface PtySpawnOptions {
@@ -46,7 +44,7 @@ export interface PtyHandle {
   kill(): void
 }
 
-/** Spawns PTYs. One implementation per execution location (local, ssh, docker…). */
+/** Spawns PTYs. Spawns PTYs for this machine. */
 export interface PtyBackend {
   spawn(options: PtySpawnOptions): PtyHandle
 }

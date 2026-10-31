@@ -39,9 +39,9 @@ export function createChatFileFacade({
     resolveSessionWorkspaceMetadata,
 
     /**
-     * The session, its backend-aware execution environment and its working dir — for a host
-     * feature that keeps files beside the session's own (the plan's draft and snapshots), so it
-     * reaches them on ssh/docker the way the viewer does instead of through local `fs`.
+     * The session, its execution environment and its working dir — for a host feature that
+     * keeps files beside the session's own (the plan's draft and snapshots), so it reaches them
+     * the way the viewer does.
      */
     sessionEnvironment(userId: string, sessionId: string) {
       return openSessionEnv(fileOpsCtx, userId, sessionId)

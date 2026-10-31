@@ -55,8 +55,7 @@ export async function runForegroundCommand(
     // Ask for a HANDOVER rather than a kill at the deadline: a command that merely
     // outran its budget is still doing the work the model asked for, and killing it
     // throws that away AND leaves the model to start over. Only where a job could
-    // have been requested in the first place (and only the local backend can honour
-    // it — ssh/docker have no local child, so they still time out normally).
+    // have been requested in the first place.
     const result = await ctx.env.exec(execCommand, {
       cwd,
       timeout: timeoutSecs,

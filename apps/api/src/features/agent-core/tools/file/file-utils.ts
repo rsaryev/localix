@@ -124,8 +124,8 @@ async function suffixMatchInWorkspace(
 ): Promise<string> {
   let stdout: string
   try {
-    // `base` is MODEL-supplied, and `env.exec` takes a shell string (local, ssh and docker
-    // alike — there is no argv form). Splicing the glob between bare single quotes let a
+    // `base` is MODEL-supplied, and `env.exec` takes a shell string (there is no argv
+    // form). Splicing the glob between bare single quotes let a
     // name like `x'$(cmd)'` close the quote and run `cmd`, so the whole glob goes through
     // the one `shellQuote`. escapeGlob still runs first so ripgrep's globset reads the
     // basename literally; `**/x` matches `x` at any depth incl. root.

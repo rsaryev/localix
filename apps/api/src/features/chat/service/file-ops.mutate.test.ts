@@ -15,13 +15,11 @@ import {
   writeFile,
 } from './file-ops'
 import { incrementName } from './file-tree-ops'
-import { listRemoteDirectory } from './file-content'
 import type { FileOpsContext } from './file-ops'
 import { contentHash } from './file-ops-context'
 import { clearFileOpJournal } from './file-op-journal'
 import type { SessionRecord } from '../repository'
 import { withPathLock } from '../../agent-core/tools/file/file-utils'
-import type { ExecutionEnvironment } from '../../agent-core/tools/environment'
 
 // A local-backend session whose working dir is a throwaway temp folder, so the
 // create/rename/delete ops exercise the real shell path end-to-end.
@@ -252,28 +250,6 @@ describe('listDirectory cap', () => {
     const res = await listDirectory(ctx(), 'u', 's1')
     expect(res.entries.length).toBe(1000)
     expect(res.truncated).toBe(5)
-  })
-
-  test('bounds remote transport while preserving the exact omitted count', async () => {
-    const shown = Array.from({ length: 1000 }, (_, i) => `f${String(i).padStart(4, '0')}.txt`)
-    let command = ''
-    const env = {
-      async exec(nextCommand: string) {
-        command = nextCommand
-        return {
-          stdout: `1005\n\0${shown.map((name) => `./${name}\0`).join('')}`,
-          stderr: '',
-          exitCode: 0,
-        }
-      },
-    } as ExecutionEnvironment
-
-    const result = await listRemoteDirectory(env, '/remote/huge')
-
-    expect(command).toContain(`head -c ${1000 * 258 + 1}`)
-    expect(result?.entries).toHaveLength(1000)
-    expect(result?.entries[0]).toEqual({ name: 'f0000.txt', type: 'file' })
-    expect(result?.total).toBe(1005)
   })
 })
 

@@ -76,7 +76,7 @@ export function createChatService(deps: ChatServiceDeps) {
     /**
      * Ownership-checked session root metadata for platform services. Cwd-only
      * consumers must not call `listDirectory`: that needlessly enumerates the
-     * Explorer root and, for SSH/Docker sessions, adds a remote shell round-trip.
+     * Explorer root.
      */
     ...createChatFileFacade({
       fileOpsCtx: contexts.fileOpsCtx,

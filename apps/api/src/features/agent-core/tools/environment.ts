@@ -21,15 +21,11 @@ export function resolveToolCwd(cwd: string | undefined, defaultCwd?: string): st
 
 /**
  * POSIX single-quote wrapping: makes an arbitrary string safe as ONE shell word. Shell-arg
- * escaping for the file/search/patch tools and the ssh/docker backends — a divergent copy is a
+ * escaping for the file/search/patch tools — a divergent copy is a
  * command-injection risk, so the implementation lives once in the mini app SDK (shared with mini
  * app backends and the browser) and this module only re-exports it for the server side.
  */
 export { shellQuote } from '@localixai/mini-app-sdk/backend'
-
-export interface ExecutionEnvironmentConfig {
-  kind: 'local'
-}
 
 /**
  * Interpret a ripgrep invocation by exit code so callers can distinguish the
@@ -81,7 +77,6 @@ export interface SearchFilesOptions {
 }
 
 export interface ExecutionEnvironment {
-  readonly config: ExecutionEnvironmentConfig
   /** Read a file. Returns text content or throws. `signal` aborts a large read when
    *  the turn is cancelled (mirrors exec/searchFiles), so a huge file stops loading
    *  instead of reading to completion after the run is torn down. */
@@ -91,8 +86,7 @@ export interface ExecutionEnvironment {
   /** Run a shell command. Returns { stdout, stderr, exitCode }. `uncapped` keeps the
    *  FULL stdout (the default tail-caps at ~2 MB) — needed for reads that must round-trip
    *  intact, e.g. base64 of a binary. `pathPrefix` dirs are APPENDED to PATH
-   *  (e.g. enabled plugins' `bin/`) — local
-   *  backend only; remote backends run far-side and ignore local paths. */
+   *  (e.g. enabled plugins' `bin/`). */
   exec(
     command: string,
     opts?: {
@@ -103,11 +97,9 @@ export interface ExecutionEnvironment {
       pathPrefix?: string[]
       /**
        * Ask for the timed-out child to be handed back alive instead of killed, so a
-       * caller can promote a slow command to a background job. ADVISORY: only a
-       * backend that owns a local process can honour it. ssh/docker run the command
-       * far-side, where there is no child to adopt, so they ignore this and time out
-       * as usual — an absent `detached` in the result means "not detached", and the
-       * caller keeps its ordinary timeout handling.
+       * caller can promote a slow command to a background job. ADVISORY: an absent
+       * `detached` in the result means "not detached", and the caller keeps its ordinary
+       * timeout handling.
        */
       onTimeout?: 'kill' | 'detach'
     },

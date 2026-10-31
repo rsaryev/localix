@@ -1,10 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { atomicWriteFile } from '@localixai/mini-app-sdk/backend'
-import type {
-  ExecutionEnvironment,
-  ExecutionEnvironmentConfig,
-  SearchFilesOptions,
-} from '../environment'
+import type { ExecutionEnvironment, SearchFilesOptions } from '../environment'
 import { interpretRipgrep } from '../environment'
 import { buildRipgrepArgs } from './ripgrep'
 import { resolveShellConfig } from './shell'
@@ -13,8 +9,6 @@ import { childEnv, childEnvNonInteractive } from '../../../../lib/login-shell-en
 import type { DetachedChild } from './spawn'
 
 export class LocalEnvironment implements ExecutionEnvironment {
-  readonly config: ExecutionEnvironmentConfig = { kind: 'local' }
-
   async readFile(filePath: string, signal?: AbortSignal): Promise<string> {
     // Pass the turn's abort signal to node so a large read stops mid-flight when the
     // run is cancelled, matching exec/searchFiles (a huge file otherwise reads to
@@ -56,8 +50,7 @@ export class LocalEnvironment implements ExecutionEnvironment {
   }
 
   async searchFiles(pattern: string, cwd: string, opts?: SearchFilesOptions): Promise<string> {
-    // Flag set is shared with the ssh/docker backends (buildRipgrepArgs) so the three
-    // cannot drift; this backend spawns the tokens directly as argv.
+    // The tokens come from buildRipgrepArgs and are spawned directly as argv.
     const args = buildRipgrepArgs(pattern, opts)
     const result = await spawnToResult('rg', args, {
       cwd,

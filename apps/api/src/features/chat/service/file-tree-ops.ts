@@ -6,7 +6,7 @@ import {
 } from '../../../lib/domain-errors'
 import path from 'node:path'
 
-import { assertNotIntoSelf, treeFsFor, type TreeFs } from './fs-mutations'
+import { assertNotIntoSelf, localTreeFs, type TreeFs } from './fs-mutations'
 import { recordFileOp, withFileOpJournalLock } from './file-op-journal'
 import { withPathLocks, workspaceLockPaths } from '../../agent-core/tools/file/file-utils'
 import { revealPath } from '../../projects/native-dialogs'
@@ -19,9 +19,8 @@ export { deleteEntry, undoLastFileOp } from './file-tree-journal-ops'
 
 /**
  * The file-TREE surface of the inspector explorer: create / rename / paste /
- * delete / duplicate / undo / reveal. Every mutation is backend-agnostic (it runs
- * through the {@link TreeFs} port for the session's environment: native fs for a
- * local session, the far-side shell otherwise), serialized against the agent's
+ * delete / duplicate / undo / reveal. Every mutation runs in-process through
+ * the {@link TreeFs} port, serialized against the agent's
  * own writes by the shared per-path lock, and — where reversible — journaled so
  * ⌘Z can undo it.
  */
@@ -67,11 +66,11 @@ export async function createEntry(
   name: string,
   kind: 'file' | 'dir',
 ): Promise<FileEntryResponse> {
-  const { env, dir } = await openSessionEnv(ctx, userId, sessionId)
+  const { dir } = await openSessionEnv(ctx, userId, sessionId)
   const segment = validateSegment(name)
   const parent = resolveAgainst(dir, parentPath)
   const target = path.join(parent, segment)
-  const tree = treeFsFor(env)
+  const tree = localTreeFs
 
   return withPathLocks(workspaceLockPaths(dir, [target]), async () => {
     await ensureAbsent(tree, target)
@@ -94,12 +93,12 @@ export async function renameEntry(
   targetPath: string,
   newName: string,
 ): Promise<FileEntryResponse> {
-  const { env, dir } = await openSessionEnv(ctx, userId, sessionId)
+  const { dir } = await openSessionEnv(ctx, userId, sessionId)
   const segment = validateSegment(newName)
   const source = resolveAgainst(dir, targetPath)
   assertNotWorkspaceRoot(dir, source)
   const dest = path.join(path.dirname(source), segment)
-  const tree = treeFsFor(env)
+  const tree = localTreeFs
 
   return withFileOpJournalLock(sessionId, () =>
     withPathLocks(workspaceLockPaths(dir, [source, dest]), async () => {
@@ -150,7 +149,7 @@ export function incrementName(name: string, isFolder: boolean): string {
  * duplicates the tree (`cp -R`). On a copy name-collision we auto-increment
  * ({@link incrementName}) — the "Duplicate" ergonomic — rather than clobber; a
  * move-collision refuses (409). Refuses to paste a directory into itself or a
- * descendant (would loop). Backend-agnostic via {@link treeFsFor}.
+ * descendant (would loop). Runs through {@link localTreeFs}.
  */
 export async function pasteEntry(
   ctx: FileOpsContext,
@@ -160,12 +159,12 @@ export async function pasteEntry(
   destDirPath: string,
   mode: 'move' | 'copy',
 ): Promise<FileEntryResponse> {
-  const { env, dir } = await openSessionEnv(ctx, userId, sessionId)
+  const { dir } = await openSessionEnv(ctx, userId, sessionId)
   const source = resolveAgainst(dir, sourcePath)
   assertNotWorkspaceRoot(dir, source)
   const destDir = resolveAgainst(dir, destDirPath)
   const baseName = path.basename(source)
-  const tree = treeFsFor(env)
+  const tree = localTreeFs
 
   const run = async (): Promise<FileEntryResponse> => {
     // Pick a candidate before acquiring ALL relevant path locks in their global
@@ -221,7 +220,7 @@ export async function pasteEntry(
  * Duplicate a tree entry in place — copy it into its OWN parent directory with an
  * auto-incremented name ({@link incrementName}). Thin wrapper over the copy path of
  * {@link pasteEntry} (destDir = the source's parent), so the collision/guard logic
- * is shared. Backend-agnostic via {@link treeFsFor}.
+ * is shared. Runs through {@link localTreeFs}.
  */
 export async function duplicateEntry(
   ctx: FileOpsContext,

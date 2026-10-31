@@ -22,10 +22,6 @@ describe('LocalEnvironment', () => {
     await rm(tmpDir, { recursive: true, force: true })
   })
 
-  it('config.kind is local', () => {
-    expect(env.config.kind).toBe('local')
-  })
-
   it('writeFile creates file and readFile reads it back', async () => {
     const filePath = join(tmpDir, 'hello.txt')
     await env.writeFile(filePath, 'hello world')

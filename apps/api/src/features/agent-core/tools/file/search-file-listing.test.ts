@@ -6,7 +6,6 @@ import type { SearchToolDetails } from './search-contracts'
 const listingTool = (result: { stdout: string; stderr: string; exitCode: number }) =>
   createSearchTool(
     {
-      config: localEnvironment.config,
       readFile: localEnvironment.readFile.bind(localEnvironment),
       writeFile: localEnvironment.writeFile.bind(localEnvironment),
       searchFiles: localEnvironment.searchFiles.bind(localEnvironment),

@@ -8,7 +8,6 @@ import { FAST_SETTLE } from './testing/test-settle'
 /** A fake env whose foreground exec returns a fixed exit code (no real process). */
 function envWithExit(exitCode: number, stderr = ''): ExecutionEnvironment {
   return {
-    config: { kind: 'local' },
     exec: async () => ({ stdout: '', stderr, exitCode }),
     readFile: async () => '',
     writeFile: async () => {},

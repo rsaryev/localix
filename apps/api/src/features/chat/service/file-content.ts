@@ -24,7 +24,7 @@ import {
   knownLocalTextSnapshot,
 } from './local-text-snapshots'
 
-export { listDirectory, listRemoteDirectory } from './directory-listing'
+export { listDirectory } from './directory-listing'
 
 /**
  * Reading and writing a session's file CONTENT (the inspector viewer/editor).
@@ -104,8 +104,7 @@ export async function readFile(
   }
 
   const isSvg = path.extname(resolved).toLowerCase() === '.svg'
-  const localBefore =
-    env.config.kind === 'local' ? await localFileIdentity(resolved, opts?.signal) : null
+  const localBefore = await localFileIdentity(resolved, opts?.signal)
   if (localBefore && localBefore.bytes <= MAX_BYTES && opts?.knownHash) {
     const snapshot = knownLocalTextSnapshot(resolved, localBefore, opts.knownHash)
     if (snapshot) {
@@ -194,8 +193,7 @@ export async function readFile(
 }
 
 /**
- * Save full UTF-8 content from the inspector editor. Backend-agnostic (local/ssh/
- * docker) via `ExecutionEnvironment.writeFile`. Optimistic concurrency: the client
+ * Save full UTF-8 content from the inspector editor. Optimistic concurrency: the client
  * sends the `baseHash` it loaded; if the file changed on disk since (agent edit,
  * external formatter), we refuse with 409 so a human save never silently clobbers.
  * Serialized against the agent's write/edit tools through the shared per-path lock.
@@ -242,11 +240,8 @@ export async function writeResolvedFileUnderLock(
     )
   }
 
-  // Atomic write on the local backend (temp sibling + rename) so an interrupted
-  // save never leaves a half-written file; ssh/docker fall back to the generic
-  // environment writeFile.
-  if (env.config.kind === 'local') await atomicWriteLocal(resolved, content)
-  else await env.writeFile(resolved, content)
+  // Atomic write (temp sibling + rename) so an interrupted save never leaves a half-written file.
+  await atomicWriteLocal(resolved, content)
   // The user saved this file from the editor — no agent tool observed the new
   // content. Forget the path in every session's store rather than recording the
   // new mtime: `write` must then refuse the blind overwrite until the file is read
