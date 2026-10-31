@@ -1,12 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { AgentItem } from '@localixai/agent/agents'
 
-import {
-  groupConsecutiveItems,
-  isCollapsedGroup,
-  READ_ONLY_MIN_COUNT,
-  STACK_MIN_COUNT,
-} from './stacking'
+import { groupConsecutiveItems, isCollapsedGroup } from './stacking'
 
 // read/search = read-only + stackable, write = stackable only,
 // bash = neither (per cards/meta.ts).
@@ -82,8 +77,6 @@ describe('read-only folding', () => {
   // Both fold at 2: one card becoming a one-line summary keeps the height, where folding at 3
   // showed two cards and then swapped them for one row.
   test('read-only and same-name runs both fold at 2', () => {
-    expect(READ_ONLY_MIN_COUNT).toBe(2)
-    expect(STACK_MIN_COUNT).toBe(2)
     expect(fold([tool('Read', 'a'), tool('Search', 'b')])).toEqual([
       { n: 2, readOnly: true, collapsed: true },
     ])

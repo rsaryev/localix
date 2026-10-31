@@ -15,10 +15,10 @@ export interface ItemGroup {
 }
 
 /** Minimum run length before a same-name stackable group collapses into a summary row. */
-export const STACK_MIN_COUNT = 2
+const STACK_MIN_COUNT = 2
 
 /** Read-only exploration runs (reads, searches, lookups) fold at 2 calls. */
-export const READ_ONLY_MIN_COUNT = 2
+const READ_ONLY_MIN_COUNT = 2
 
 /**
  * Bucket consecutive tool-backed items into foldable runs: read-only calls merge across tool
