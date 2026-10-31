@@ -58,6 +58,14 @@ describe('wait step', () => {
     expect(r.result?.note).toContain('"results found" appeared after 0.3s')
   })
 
+  test('text is matched the way read shows it: whitespace collapsed on both sides', async () => {
+    document.body.innerHTML = '<div>Total</div>\n<div>\n  $5</div><p>Order   placed</p>'
+    const { clock, sleeps } = fakeTime()
+    for (const text of ['Total $5', 'Order placed', '  Total   $5 '])
+      expect((await runCommand(wait({ text }), depsWith(clock))).ok).toBe(true)
+    expect(sleeps).toEqual([])
+  })
+
   test('a selector that arrives later', async () => {
     const { clock } = fakeTime({
       1200: () => document.body.insertAdjacentHTML('beforeend', '<ul class="hits"></ul>'),

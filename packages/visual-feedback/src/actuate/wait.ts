@@ -18,8 +18,11 @@ const seconds = (ms: number) => `${Math.floor(ms / 1000)}.${Math.floor((ms % 100
 /** The page's visible text, read lazily so a missing body is just "no text yet". */
 function pageText(root: Element | undefined): string {
   const el = (root ?? document.body) as HTMLElement | null
-  return el?.innerText ?? el?.textContent ?? ''
+  return collapse(el?.innerText ?? el?.textContent ?? '')
 }
+
+/** `read` collapses runs of whitespace; a wanted text is compared the same way. */
+const collapse = (text: string): string => text.replace(/\s+/g, ' ').trim()
 
 export async function performWait(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResult> {
   const text = cmd.text
@@ -37,7 +40,7 @@ export async function performWait(cmd: VfCommand, deps: ActuateDeps): Promise<Ac
   const present = (): boolean =>
     selector
       ? (deps.root ?? document).querySelector(selector) !== null
-      : pageText(deps.root).includes(text!)
+      : pageText(deps.root).includes(collapse(text!))
   const gone = cmd.gone === true
   const satisfied = () => present() !== gone
 
