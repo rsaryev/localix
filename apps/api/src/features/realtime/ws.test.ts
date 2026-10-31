@@ -284,6 +284,36 @@ describe('deliverSessionFrameBatch', () => {
     expect(JSON.parse(sent[1]!.split('\n').slice(3).join('\n')).type).toBe('run.started')
   })
 
+  it('sends a long run of deltas as one frame carrying every append in order', () => {
+    const sent: string[] = []
+    const parts = Array.from({ length: 50 }, (_, i) => `t${i} `)
+    deliverSessionFrameBatch(
+      [
+        ...parts.map((part, i) => delta(String(i + 1), 'session-a', part)),
+        started('51', 'session-a'),
+      ],
+      {
+        epoch: 'boot-a',
+        bufferedBytes: () => 0,
+        send: (frame) => sent.push(frame),
+        close: () => {},
+      },
+    )
+
+    expect(sent).toHaveLength(2)
+    expect(sent[0]).toBe(
+      's\nboot-a:50\nsession-a\n' +
+        JSON.stringify({
+          type: 'message.delta',
+          sessionId: 'session-a',
+          messageId: 'message-1',
+          textItemId: 'text-1',
+          textAppend: parts.join(''),
+        }),
+    )
+    expect(sent[1]).toBe(`s\nboot-a:51\nsession-a\n${started('51', 'session-a').data}`)
+  })
+
   it('turns dropped frames into one ordered lag marker with the exact skipped count', () => {
     const sent: string[] = []
     deliverSessionFrameBatch([delta('7', 'session-a', 'A'), delta('8', 'session-a', 'B')], {

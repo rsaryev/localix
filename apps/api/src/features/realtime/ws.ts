@@ -279,13 +279,12 @@ function coalesceSessionFrames(frames: readonly StreamEnvelope[]): CoalescedSess
           ? [...(previous.event.itemAppends ?? []), ...(frame.event.itemAppends ?? [])]
           : undefined,
     }
-    coalesced[coalesced.length - 1] = {
-      ...frame,
-      event,
-      data: JSON.stringify(event),
-      sourceFrames: previous.sourceFrames + 1,
-    }
+    coalesced[coalesced.length - 1] = { ...frame, event, sourceFrames: previous.sourceFrames + 1 }
   }
+  // A merged run is serialized once, when it is complete: per merge, a run of n deltas cost n
+  // stringifies of a growing event. An unmerged frame keeps the bytes it arrived with.
+  for (const frame of coalesced)
+    if (frame.sourceFrames > 1) frame.data = JSON.stringify(frame.event)
   return coalesced
 }
 
