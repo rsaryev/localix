@@ -85,9 +85,16 @@ export async function prepare() {
   return projectRoot
 }
 
-/** Every mini app on the Store's shelf, installed for the capture home as a person installs one. */
+/**
+ * Every mini app on the Store's shelf that installs without a yes (a publisher Localix verifies),
+ * installed for the capture home as a person installs one. Community apps wait for a person's
+ * confirmation, which the `store-consent` scenario asks for, so they stay on the shelf.
+ */
 export async function installEveryMiniApp() {
-  const listings = async () => (await api('/store/listings?shelf=package:mini-app')).listings
+  const listings = async () =>
+    (await api('/store/listings?shelf=package:mini-app')).listings.filter(
+      (listing) => listing.publisher.verified,
+    )
   for (const listing of await listings()) {
     if (listing.installs.length === 0 && !listing.job)
       await api(`/store/mini-app/${listing.ref.id}/install`, {
