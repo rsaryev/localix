@@ -1,8 +1,7 @@
 import { promises as fsp } from 'node:fs'
 
-import type { MiniAppHelpers } from '@localixai/mini-app-sdk/backend'
+import { atomicWriteFile, type MiniAppHelpers } from '@localixai/mini-app-sdk/backend'
 
-import { atomicWriteFile } from '../agent-core/tools/file/file-io'
 import { decodeEntities, htmlToText, stripToText } from '../agent-core/tools/web/html-text'
 import { extractReadable } from '../agent-core/tools/web/readable-extract'
 

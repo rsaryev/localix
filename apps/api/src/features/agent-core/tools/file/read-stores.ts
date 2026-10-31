@@ -1,4 +1,4 @@
-import { statIfExists } from './file-io'
+import { statIfExists } from '@localixai/mini-app-sdk/backend'
 import type { FileMtimeStore } from './file-mtime'
 
 /** The session bookkeeping one read writes: the write guard's mtimes. */

@@ -25,7 +25,6 @@ import {
   createFileMtimeStore,
   resolveFileTarget,
   staleFileMessage,
-  statIfExists,
   withPathLocks,
   workspaceLockPaths,
   type DiagnosticsReporter,
@@ -46,6 +45,7 @@ import {
   type FileResult,
 } from './file-batch'
 import { mutationTargets, prepareEditArguments } from './mutation-input'
+import { statIfExists } from '@localixai/mini-app-sdk/backend'
 
 const editEntrySchema = z.object({
   path: z.string().min(1).describe('The file, relative to cwd.'),

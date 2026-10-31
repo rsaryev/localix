@@ -5,7 +5,7 @@ import { isPathWithin } from '../../lib/path-containment'
 import { type DiscoveredSkill, renderSkillFile } from './skill-frontmatter'
 import { scanScope, skillRoot, type SkillScanLogger, type SkillScanScope } from './skill-scan'
 import { assertSkillMarkdownSize, readSkillMarkdownFile } from './skill-file'
-import { atomicWriteFile } from './tools/file/file-io'
+import { atomicWriteFile } from '@localixai/mini-app-sdk/backend'
 import { recordSkillAuthored } from './skill-usage-recorder'
 import { skillSourceLock } from './skill-source-policy'
 

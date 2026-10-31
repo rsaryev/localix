@@ -1,5 +1,5 @@
 import { resolve } from 'node:path'
-import { statIfExists } from './file-io'
+import { statIfExists } from '@localixai/mini-app-sdk/backend'
 
 // ── Stale-file / read-before-write tracking ─────────────────────────────────────
 //

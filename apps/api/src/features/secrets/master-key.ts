@@ -25,7 +25,7 @@ import { mkdir, readFile } from 'node:fs/promises'
 import { randomBytes } from 'node:crypto'
 import path from 'node:path'
 
-import { atomicWriteFile } from '../agent-core/tools/file/file-io'
+import { atomicWriteFile } from '@localixai/mini-app-sdk/backend'
 
 /** Load `<dir>/.masterkey`, creating a random 0600 one ONLY when there is no file. */
 export async function loadOrCreateMasterKey(dir: string): Promise<Buffer> {

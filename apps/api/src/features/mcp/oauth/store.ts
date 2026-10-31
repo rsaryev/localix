@@ -8,10 +8,9 @@ import type {
 
 import { localixHome } from '../../../lib/env'
 import { createKeyedSerializer } from '../../../lib/keyed-serializer'
-import { safeFileKey } from '@localixai/mini-app-sdk/backend'
+import { atomicWriteFile, safeFileKey } from '@localixai/mini-app-sdk/backend'
 import { createAesCipher, type SecretCipher } from '../../secrets/cipher'
 import { loadOrCreateMasterKey } from '../../secrets/master-key'
-import { atomicWriteFile } from '../../agent-core/tools/file/file-io'
 
 /**
  * Encrypted-at-rest store of MCP OAuth material, per `(userId, serverId)`. Holds

@@ -16,7 +16,6 @@ import {
   createFileMtimeStore,
   resolveFileTarget,
   staleFileMessage,
-  statIfExists,
   withPathLocks,
   workspaceLockPaths,
   type DiagnosticsReporter,
@@ -37,6 +36,7 @@ import {
   type FileResult,
 } from './file-batch'
 import { mutationTargets, prepareWriteArguments } from './mutation-input'
+import { statIfExists } from '@localixai/mini-app-sdk/backend'
 
 const writeObjectSchema = z.object({
   files: z

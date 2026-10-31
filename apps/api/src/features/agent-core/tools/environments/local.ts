@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { atomicWriteFile } from '../file/file-utils'
+import { atomicWriteFile } from '@localixai/mini-app-sdk/backend'
 import type {
   ExecutionEnvironment,
   ExecutionEnvironmentConfig,

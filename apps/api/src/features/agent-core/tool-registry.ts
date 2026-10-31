@@ -1,7 +1,7 @@
 import type { AgentTool, ToolSurface } from '@localixai/agent/agents'
 import type { BrowserToolDeps } from './tools/browser/browser'
 import type { FileMtimeStore } from './tools/file/file-utils'
-import type { DocumentTextExtractor } from './tools/file/document-ports'
+import type { DocumentTextExtractor } from '@localixai/mini-app-sdk/backend'
 import type { ResearchConfig } from './tools/web/research'
 import type { DiagnosticsReporter, EditorBufferProbe } from './tools/file/file-utils'
 import type { OutlineProvider } from './tools/file/outline'

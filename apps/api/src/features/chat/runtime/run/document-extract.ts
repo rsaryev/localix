@@ -7,7 +7,7 @@ import {
   renderDocumentForModel,
   type DocumentExtractPort,
   type DocumentTextExtractor,
-} from '../../../agent-core/tools/file/document-ports'
+} from '@localixai/mini-app-sdk/backend'
 
 /**
  * The `Read` tool's extractor callback: an office/PDF path → bounded model-facing

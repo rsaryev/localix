@@ -20,7 +20,7 @@ import { copyFile, mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import type { MessageAttachment } from '@localixai/agent'
-import type { DocumentTextExtractor } from '../../../agent-core/tools/file/document-ports'
+import type { DocumentTextExtractor } from '@localixai/mini-app-sdk/backend'
 import type { MediaStore } from '../../../media/store'
 import { mapLimit } from '../../../../lib/map-limit'
 import {

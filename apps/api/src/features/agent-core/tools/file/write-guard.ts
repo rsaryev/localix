@@ -1,5 +1,6 @@
 import type { GuardVerdict } from '@localixai/agent/agents'
-import { resolveFileTarget, statIfExists, type FileMtimeStore } from './file-utils'
+import { statIfExists } from '@localixai/mini-app-sdk/backend'
+import { resolveFileTarget, type FileMtimeStore } from './file-utils'
 import { buildToolError } from '../tool-errors'
 
 /**

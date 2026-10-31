@@ -2,7 +2,6 @@ import { resolve } from 'node:path'
 import { resolveToolCwd, shellQuote } from '../environment'
 
 // Co-located file-tool helpers, re-exported so importers keep one stable surface.
-export * from './file-io'
 export * from './file-line-endings'
 export * from './file-mtime'
 export * from './file-path-lock'
