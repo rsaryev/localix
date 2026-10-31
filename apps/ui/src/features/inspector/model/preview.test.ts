@@ -4,7 +4,6 @@ import {
   recordPreview,
   activatePreview,
   closeTab,
-  closeTabsForSession,
   discardSessionPreviews,
   type PreviewMaps,
   type PreviewEntry,
@@ -88,24 +87,6 @@ describe('preview state transforms', () => {
     const after = closeTab(m, 'S', 'a')! // close a non-active tab
     expect(after.previewTabsBySession.S.map((e) => e.previewId)).toEqual(['b', 'c'])
     expect(after.previewBySession.S.previewId).toBe('c') // active untouched
-  })
-
-  test('closeTabsForSession(previewId) closes just that tab (delegates to closeTab)', () => {
-    const m = recordPreview(recordPreview(empty, 'S', entry('a')), 'S', entry('b'))
-    const after = closeTabsForSession(m, 'S', 'a')!
-    expect(after.previewTabsBySession.S.map((e) => e.previewId)).toEqual(['b'])
-  })
-
-  test("closeTabsForSession() closes ALL the session's preview tabs + clears active", () => {
-    const m = recordPreview(recordPreview(empty, 'S', entry('a')), 'S', entry('b'))
-    const after = closeTabsForSession(m, 'S')!
-    expect(after.previewTabsBySession.S).toEqual([])
-    expect(after.previewBySession.S).toBeUndefined()
-  })
-
-  test('closeTabsForSession is a no-op (null) when the session has no open preview tabs', () => {
-    expect(closeTabsForSession(empty, 'S')).toBeNull()
-    expect(closeTabsForSession(empty, 'S', 'a')).toBeNull()
   })
 
   test('discarding a deleted session removes its persisted keys without touching another session', () => {

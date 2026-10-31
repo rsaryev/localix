@@ -166,23 +166,3 @@ export function closeTab(
     previewTabsBySession: { ...m.previewTabsBySession, [sessionId]: remaining },
   }
 }
-
-/**
- * Close the session's preview tab(s) — used when the agent closes the preview via
- * `browser action="close"`. With a `previewId`, close just that tab (delegates
- * to `closeTab`); without one, close ALL of the session's open preview tabs and clear
- * its active entry. History is preserved (a closed preview stays re-openable). Returns
- * null when there is nothing open to close (no state change).
- */
-export function closeTabsForSession(
-  m: PreviewMaps,
-  sessionId: string,
-  previewId?: string,
-): Pick<PreviewMaps, 'previewBySession' | 'previewTabsBySession'> | null {
-  if (previewId) return closeTab(m, sessionId, previewId)
-  const open = m.previewTabsBySession[sessionId] ?? []
-  if (open.length === 0) return null
-  const previewBySession = { ...m.previewBySession }
-  delete previewBySession[sessionId]
-  return { previewBySession, previewTabsBySession: { ...m.previewTabsBySession, [sessionId]: [] } }
-}
