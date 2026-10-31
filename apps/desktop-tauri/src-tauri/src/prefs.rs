@@ -5,6 +5,7 @@
 //! the zoom clamp range. No caller needs to know any of that — they ask for
 //! `load_zoom(app)` or nudge the zoom by a menu id and get the invariants for free.
 
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use tauri::{AppHandle, Manager};
@@ -21,24 +22,29 @@ const ZOOM_MIN: f64 = 0.5;
 const ZOOM_MAX: f64 = 3.0;
 const ZOOM_STEP: f64 = 0.1;
 
-/// Path of the persisted zoom factor (a single float in the app config dir).
-fn zoom_file<R: tauri::Runtime>(app: &AppHandle<R>) -> Option<std::path::PathBuf> {
-    app.path().app_config_dir().ok().map(|d| d.join("zoom"))
+/// Path of a preference file in the app config dir: the single place that location is named.
+fn pref_file<R: tauri::Runtime>(app: &AppHandle<R>, name: &str) -> Option<PathBuf> {
+    app.path().app_config_dir().ok().map(|d| d.join(name))
+}
+
+/// Best-effort write that creates the config dir first; errors are ignored.
+fn write_pref(path: &Path, contents: &str) {
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    let _ = std::fs::write(path, contents);
 }
 
 /// Persist the current zoom so it survives a relaunch (native apps remember it).
 fn save_zoom<R: tauri::Runtime>(app: &AppHandle<R>, zoom: f64) {
-    if let Some(path) = zoom_file(app) {
-        if let Some(dir) = path.parent() {
-            let _ = std::fs::create_dir_all(dir);
-        }
-        let _ = std::fs::write(path, zoom.to_string());
+    if let Some(path) = pref_file(app, "zoom") {
+        write_pref(&path, &zoom.to_string());
     }
 }
 
 /// Load the persisted zoom (clamped), or 1.0 when unset/unreadable.
 pub(crate) fn load_zoom<R: tauri::Runtime>(app: &AppHandle<R>) -> f64 {
-    zoom_file(app)
+    pref_file(app, "zoom")
         .and_then(|p| std::fs::read_to_string(p).ok())
         .and_then(|s| s.trim().parse::<f64>().ok())
         .map(|z| z.clamp(ZOOM_MIN, ZOOM_MAX))
@@ -78,23 +84,14 @@ pub(crate) fn restore_zoom<R: tauri::Runtime>(app: &AppHandle<R>) {
     }
 }
 
-fn theme_file<R: tauri::Runtime>(app: &AppHandle<R>) -> Option<std::path::PathBuf> {
-    app.path().app_config_dir().ok().map(|d| d.join("theme"))
-}
-
 /// Persist the app's resolved theme ("dark"/"light") so the NEXT launch paints the
 /// matching window background before the UI loads — no wrong-colour flash even when
 /// the user forces a theme opposite to the OS. `None` (system) removes the file so
 /// startup follows the OS theme instead.
 pub(crate) fn save_theme<R: tauri::Runtime>(app: &AppHandle<R>, resolved: Option<&str>) {
-    if let Some(path) = theme_file(app) {
+    if let Some(path) = pref_file(app, "theme") {
         match resolved {
-            Some(t) => {
-                if let Some(dir) = path.parent() {
-                    let _ = std::fs::create_dir_all(dir);
-                }
-                let _ = std::fs::write(path, t);
-            }
+            Some(t) => write_pref(&path, t),
             None => {
                 let _ = std::fs::remove_file(path);
             }
@@ -104,7 +101,7 @@ pub(crate) fn save_theme<R: tauri::Runtime>(app: &AppHandle<R>, resolved: Option
 
 /// The persisted resolved theme: `Some(true)` dark, `Some(false)` light, `None` unset.
 pub(crate) fn load_theme_is_dark<R: tauri::Runtime>(app: &AppHandle<R>) -> Option<bool> {
-    theme_file(app)
+    pref_file(app, "theme")
         .and_then(|p| std::fs::read_to_string(p).ok())
         .and_then(|s| match s.trim() {
             "dark" => Some(true),
