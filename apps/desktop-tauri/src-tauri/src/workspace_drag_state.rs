@@ -148,6 +148,17 @@ impl Rect {
     pub(crate) fn contains(self, (x, y): (f64, f64)) -> bool {
         x >= self.left && x <= self.right && y >= self.top && y <= self.bottom
     }
+
+    pub(crate) fn from_frame(x: f64, y: f64, width: f64, height: f64) -> Rect {
+        // AppKit has a bottom-left origin. Negating y gives the classifier a downward axis
+        // without tying the origin to the primary display or applying a display's scale factor.
+        Rect {
+            left: x,
+            top: -(y + height),
+            right: x + width,
+            bottom: -y,
+        }
+    }
 }
 #[cfg(any(target_os = "macos", test))]
 #[derive(Clone, Copy, Debug, PartialEq)]

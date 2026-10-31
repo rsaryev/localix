@@ -33,12 +33,12 @@ fn native(app: &AppHandle, label: &str) -> Option<Retained<NSWindow>> {
 }
 fn rect(window: &NSWindow) -> Rect {
     let frame = window.frame();
-    Rect {
-        left: frame.origin.x,
-        top: -(frame.origin.y + frame.size.height),
-        right: frame.origin.x + frame.size.width,
-        bottom: -frame.origin.y,
-    }
+    Rect::from_frame(
+        frame.origin.x,
+        frame.origin.y,
+        frame.size.width,
+        frame.size.height,
+    )
 }
 
 pub(crate) fn start(

@@ -7,23 +7,7 @@ use tauri::{AppHandle, Webview};
 const CURSOR_QUERY_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
 
 #[cfg(any(target_os = "macos", test))]
-#[derive(Clone, Copy)]
-struct Rect {
-    left: f64,
-    top: f64,
-    right: f64,
-    bottom: f64,
-}
-
-#[cfg(any(target_os = "macos", test))]
-impl Rect {
-    fn contains(self, point: (f64, f64)) -> bool {
-        point.0 >= self.left
-            && point.0 <= self.right
-            && point.1 >= self.top
-            && point.1 <= self.bottom
-    }
-}
+use crate::workspace_drag_state::Rect;
 
 #[cfg(any(target_os = "macos", test))]
 fn destination(point: (f64, f64), source: Rect, visible: &[Rect]) -> Option<&'static str> {
@@ -57,18 +41,6 @@ fn released_destination(
     }
 }
 
-#[cfg(any(target_os = "macos", test))]
-fn screen_rect(x: f64, y: f64, width: f64, height: f64) -> Rect {
-    // AppKit has a bottom-left origin. Negating y gives the classifier a downward axis
-    // without tying the origin to the primary display or applying a display's scale factor.
-    Rect {
-        left: x,
-        top: -(y + height),
-        right: x + width,
-        bottom: -y,
-    }
-}
-
 #[cfg(target_os = "macos")]
 fn query_destination(
     app: &AppHandle,
@@ -84,7 +56,7 @@ fn query_destination(
         .map_err(|error| error.to_string())?;
     let source_native = unsafe { &*source_ptr.cast::<NSWindow>() };
     let frame = source_native.frame();
-    let source = screen_rect(
+    let source = Rect::from_frame(
         frame.origin.x,
         frame.origin.y,
         frame.size.width,
@@ -106,7 +78,7 @@ fn query_destination(
         let native = unsafe { &*ptr.cast::<NSWindow>() };
         if native.isVisible() && !native.isMiniaturized() {
             let frame = native.frame();
-            visible.push(screen_rect(
+            visible.push(Rect::from_frame(
                 frame.origin.x,
                 frame.origin.y,
                 frame.size.width,
@@ -217,7 +189,7 @@ mod tests {
 
     #[test]
     fn appkit_frames_and_cursor_share_screen_points_without_dpr_conversion() {
-        let source = screen_rect(-1200.0, 100.0, 1000.0, 800.0);
+        let source = Rect::from_frame(-1200.0, 100.0, 1000.0, 800.0);
         assert_eq!(destination((-700.0, -500.0), source, &[source]), None);
         assert_eq!(
             destination((-700.0, -901.0), source, &[source]),
@@ -228,7 +200,7 @@ mod tests {
             Some("window")
         );
         assert_eq!(destination((-700.0, -99.0), source, &[source]), None);
-        let other_display = screen_rect(0.0, -1000.0, 1600.0, 900.0);
+        let other_display = Rect::from_frame(0.0, -1000.0, 1600.0, 900.0);
         assert_eq!(
             destination((500.0, 500.0), source, &[source, other_display]),
             None
