@@ -9,6 +9,18 @@ import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createSkillUsageRepository } from './repository'
 
+/** One row, read the way the service reads them: through `list`. */
+async function rowOf(
+  repo: ReturnType<typeof createSkillUsageRepository>,
+  userId: string,
+  projectId: string,
+  skillName: string,
+  scope: string,
+) {
+  const rows = await repo.list(userId, projectId)
+  return rows.find((row) => row.skillName === skillName && row.scope === scope) ?? null
+}
+
 const tempDir = join(tmpdir(), `localix-skill-usage-repo-tests-${process.pid}`)
 
 async function makeDb() {
@@ -29,12 +41,12 @@ describe('skills-curator repository', () => {
     const db = await makeDb()
     const repo = createSkillUsageRepository(db)
 
-    expect(await repo.get('u1', '', 'deploy', 'global')).toBeNull()
+    expect(await rowOf(repo, 'u1', '', 'deploy', 'global')).toBeNull()
 
     await repo.recordUse('u1', '', 'deploy', 'global')
     await repo.recordUse('u1', '', 'deploy', 'global', '2026-06-10T00:00:00.000Z')
 
-    const row = await repo.get('u1', '', 'deploy', 'global')
+    const row = await rowOf(repo, 'u1', '', 'deploy', 'global')
     expect(row?.getCount).toBe(2)
     expect(row?.lastUsedAt).toBe('2026-06-10T00:00:00.000Z')
     expect(row?.pinned).toBe(false)
@@ -52,9 +64,9 @@ describe('skills-curator repository', () => {
     await repo.recordUse('u1', 'project-b', 'deploy', 'project')
     await repo.recordUse('u2', '', 'deploy', 'global')
 
-    expect((await repo.get('u1', '', 'deploy', 'global'))?.getCount).toBe(1)
-    expect((await repo.get('u1', 'project-a', 'deploy', 'project'))?.getCount).toBe(1)
-    expect((await repo.get('u1', 'project-b', 'deploy', 'project'))?.getCount).toBe(1)
+    expect((await rowOf(repo, 'u1', '', 'deploy', 'global'))?.getCount).toBe(1)
+    expect((await rowOf(repo, 'u1', 'project-a', 'deploy', 'project'))?.getCount).toBe(1)
+    expect((await rowOf(repo, 'u1', 'project-b', 'deploy', 'project'))?.getCount).toBe(1)
     expect(await repo.list('u1', '')).toHaveLength(1)
     expect(await repo.list('u1', 'project-a')).toHaveLength(1)
     expect(await repo.list('u2', '')).toHaveLength(1)
@@ -68,7 +80,7 @@ describe('skills-curator repository', () => {
 
     const pinned = await repo.setPinned('u1', '', 'notes', 'global', true)
     expect(pinned.pinned).toBe(true)
-    expect((await repo.get('u1', '', 'notes', 'global'))?.pinned).toBe(true)
+    expect((await rowOf(repo, 'u1', '', 'notes', 'global'))?.pinned).toBe(true)
 
     const archived = await repo.setArchivedAt(
       'u1',
@@ -82,7 +94,7 @@ describe('skills-curator repository', () => {
     const restored = await repo.setArchivedAt('u1', '', 'notes', 'global', null)
     expect(restored.archivedAt).toBeNull()
     // The pin survives archive/restore.
-    expect((await repo.get('u1', '', 'notes', 'global'))?.pinned).toBe(true)
+    expect((await rowOf(repo, 'u1', '', 'notes', 'global'))?.pinned).toBe(true)
 
     await destroyDatabase(db)
   })
@@ -97,7 +109,7 @@ describe('skills-curator repository', () => {
       Array.from({ length: 25 }, () => repo.recordUse('u1', '', 'deploy', 'global')),
     )
 
-    expect((await repo.get('u1', '', 'deploy', 'global'))?.getCount).toBe(25)
+    expect((await rowOf(repo, 'u1', '', 'deploy', 'global'))?.getCount).toBe(25)
 
     await destroyDatabase(db)
   })
@@ -112,7 +124,7 @@ describe('skills-curator repository', () => {
 
     await repo.recordUse('u1', '', 'deploy', 'global')
 
-    const row = await repo.get('u1', '', 'deploy', 'global')
+    const row = await rowOf(repo, 'u1', '', 'deploy', 'global')
     expect(row).toMatchObject({ pinned: true, archivedAt: '2026-01-01T00:00:00.000Z', getCount: 1 })
 
     await destroyDatabase(db)
@@ -121,7 +133,7 @@ describe('skills-curator repository', () => {
   test('markAuthored flags a skill created in Localix, dates a new row, and leaves use alone', async () => {
     const db = await makeDb()
     const repo = createSkillUsageRepository(db)
-    expect((await repo.get('u1', '', 'cc-made', 'global'))?.localixAuthored).toBeUndefined()
+    expect((await rowOf(repo, 'u1', '', 'cc-made', 'global'))?.localixAuthored).toBeUndefined()
 
     await repo.markAuthored('u1', '', 'mine', 'global', '2026-01-02T00:00:00.000Z')
     await repo.recordUse('u1', '', 'mine', 'global')
@@ -129,15 +141,15 @@ describe('skills-curator repository', () => {
     await repo.recordUse('u1', '', 'used-first', 'global')
     await repo.markAuthored('u1', '', 'used-first', 'global')
 
-    expect(await repo.get('u1', '', 'mine', 'global')).toMatchObject({
+    expect(await rowOf(repo, 'u1', '', 'mine', 'global')).toMatchObject({
       localixAuthored: true,
       createdAt: '2026-01-02T00:00:00.000Z',
       getCount: 1,
     })
-    expect((await repo.get('u1', '', 'used-first', 'global'))?.localixAuthored).toBe(true)
+    expect((await rowOf(repo, 'u1', '', 'used-first', 'global'))?.localixAuthored).toBe(true)
     // A row made by use alone (a skill Claude Code made) stays unflagged.
     await repo.recordUse('u1', '', 'cc-made', 'global')
-    expect((await repo.get('u1', '', 'cc-made', 'global'))?.localixAuthored).toBe(false)
+    expect((await rowOf(repo, 'u1', '', 'cc-made', 'global'))?.localixAuthored).toBe(false)
 
     await destroyDatabase(db)
   })

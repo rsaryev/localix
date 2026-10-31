@@ -45,9 +45,6 @@ function createFakeRepo(nowIso: () => string) {
     async list(_userId, projectId) {
       return [...rows.values()].filter((row) => row.projectId === projectId)
     },
-    async get(_userId, projectId, name, scope) {
-      return rows.get(key(projectId, name, scope)) ?? null
-    },
     async setPinned(_userId, projectId, name, scope, pinned) {
       const row = ensure(projectId, name, scope)
       row.pinned = pinned

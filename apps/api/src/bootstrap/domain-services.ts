@@ -63,7 +63,6 @@ export interface DomainServicesPhase {
   miniAppService: ReturnType<typeof createMiniAppService>
   agentsService: ReturnType<typeof createAgentsService>
   lspManager: ReturnType<typeof createLspManager>
-  skillUsageRepo: ReturnType<typeof createSkillUsageRepository>
   skillsCuratorService: ReturnType<typeof createSkillsCuratorService>
   toolUsageRepo: ReturnType<typeof createToolUsageRepository>
   /** Bump + poke for a mutation with no host wiring to converge (MCP, an agent's skill save). */
@@ -284,7 +283,6 @@ export function createDomainServicesPhase({
     miniAppService,
     agentsService,
     lspManager,
-    skillUsageRepo,
     skillsCuratorService,
     toolUsageRepo,
     announceCapabilityChange,

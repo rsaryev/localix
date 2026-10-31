@@ -59,12 +59,6 @@ export interface SkillUsageRepository {
     at?: string,
   ): Promise<void>
   list(userId: string, projectId: string): Promise<SkillUsageRecord[]>
-  get(
-    userId: string,
-    projectId: string,
-    skillName: string,
-    scope: SkillScope,
-  ): Promise<SkillUsageRecord | null>
   setPinned(
     userId: string,
     projectId: string,
@@ -192,18 +186,6 @@ export function createSkillUsageRepository(db: Kysely<AppDatabase>): SkillUsageR
         .where('project_id', '=', projectId)
         .execute()
       return (rows as Row[]).map(toRecord)
-    },
-
-    async get(userId, projectId, skillName, scope) {
-      const row = await db
-        .selectFrom('skill_usage')
-        .selectAll()
-        .where('user_id', '=', userId)
-        .where('project_id', '=', projectId)
-        .where('skill_name', '=', skillName)
-        .where('scope', '=', scope)
-        .executeTakeFirst()
-      return row ? toRecord(row as Row) : null
     },
 
     async setPinned(userId, projectId, skillName, scope, pinned) {
