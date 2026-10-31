@@ -164,11 +164,7 @@ export function createDrainOperations(
                     stopRenewal()
                     if (!(await leases.ack(next.userId, sessionId, bandIds, starting)))
                       throw new Error('Agent ticket lost its lease')
-                    deadLetter.delivered(bandIds)
-                    for (const id of bandIds) q.remove(id)
-                    leases.releaseDrainBand(sessionId, bandIds)
-                    leases.resetDrainRetry(sessionId)
-                    publishQueue(next.userId, sessionId)
+                    retireAcknowledgedBand()
                   },
                 },
                 { repo, run, streamRegistry, now, store },
