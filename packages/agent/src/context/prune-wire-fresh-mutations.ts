@@ -3,7 +3,7 @@ import { textEncoderByteLength } from '../utils/hash'
 import { DEFAULT_MAX_BYTES } from '../utils/truncate'
 import { carriesMarker, ELISION_MARKER } from './compression-markers'
 import { elidedPointer } from './pointers'
-import { ALL_MUTATE_TOOLS } from './tool-classes'
+import { MUTATE_TOOLS } from './tool-classes'
 
 /**
  * Bound a fresh, successfully-applied mutation's recoverable payload before the
@@ -30,7 +30,7 @@ export function boundFreshMutationArgs(
       if (
         tc.type !== 'tool_call' ||
         !successfulToolCallIds.has(tc.id) ||
-        !ALL_MUTATE_TOOLS.has(tc.name) ||
+        !MUTATE_TOOLS.has(tc.name) ||
         !tc.arguments ||
         typeof tc.arguments !== 'object'
       ) {
@@ -41,7 +41,7 @@ export function boundFreshMutationArgs(
 
       const candidates: Array<{ field: string; text: string; bytes: number; order: number }> = []
       let order = 0
-      for (const field of ['content', 'patch', 'old_string', 'new_string'] as const) {
+      for (const field of ['content', 'old_string', 'new_string'] as const) {
         const value = args[field]
         if (typeof value === 'string' && !carriesMarker(value, ELISION_MARKER)) {
           candidates.push({

@@ -9,7 +9,7 @@ import { READ_RESULT_TOOLS } from './tool-classes'
 
 /**
  * The heavy, recoverable string payloads a mutation tool call carries in its ARGS:
- * the `write`/`edit` content, the `apply_patch` body, an `edit`'s edits array, a `write`'s
+ * the `write`/`edit` content, an `edit`'s edits array, a `write`'s
  * files array, or the historical single-edit shape (`old_string`/`new_string`). Returns the input
  * field names + texts so they can be measured and elided (the resulting file state
  * is on disk — re-readable).
@@ -32,7 +32,6 @@ export function heavyMutateInputs(item: ToolBackedItem): Array<{ field: string; 
       out.push({ field, text: v })
   }
   if (name === 'Write' || name === 'Edit') pushString('content')
-  if (name === 'apply_patch' || name === 'patch') pushString('patch')
   // A batched call carries its payload as an array: `edit`'s `edits`, `write`'s `files`.
   const pushArray = (field: 'edits' | 'files') => {
     const v = input[field]

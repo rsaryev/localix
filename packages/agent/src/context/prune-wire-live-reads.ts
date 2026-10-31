@@ -9,7 +9,7 @@ import {
 } from './live-reads'
 import { inputFilePaths, normalizePathKey } from './path-key'
 import { mutationInputPaths } from '../agents/mutation-paths'
-import { ALL_MUTATE_TOOLS, READ_RESULT_TOOLS } from './tool-classes'
+import { MUTATE_TOOLS, READ_RESULT_TOOLS } from './tool-classes'
 
 const liveReadByteLengthCache = new WeakMap<ToolResult, number>()
 
@@ -17,7 +17,7 @@ const liveReadByteLengthCache = new WeakMap<ToolResult, number>()
  * The file a wire tool call observes or changes, as a normalized key. Wire calls
  * carry raw `arguments` (the item-level `targets.ts` resolver needs items), so this
  * is the same idea at the wire granularity: a `path`/`file_path` argument, the per-entry
- * paths of a batched `edit`/`write`, or the file headers of an `apply_patch` body.
+ * paths of a batched `edit`/`write`.
  */
 function wireTargets(args: unknown): string[] {
   if (!args || typeof args !== 'object') return []
@@ -26,13 +26,6 @@ function wireTargets(args: unknown): string[] {
   // file of a batched read (`reads`).
   const named = [...mutationInputPaths(a), ...inputFilePaths(a)]
   if (named.length) return [...new Set(named.map(normalizePathKey))]
-  const patch = a.patch
-  if (typeof patch === 'string') {
-    const out: string[] = []
-    for (const m of patch.matchAll(/^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm))
-      out.push(normalizePathKey(m[1].trim()))
-    return out
-  }
   return []
 }
 
@@ -45,7 +38,7 @@ function wireTargets(args: unknown): string[] {
  * failing patch, all but one were still the live copy.
  *
  * A superseded read stays elidable: its bytes are stale, and the newer observation
- * (or `apply_patch`'s post-edit echo) already carries the current state. A read whose
+ * already carries the current state. A read whose
  * result is at or below `minChars` never supersedes — a few lines of the file cannot
  * stand in for the full copy the model is working from.
  *
@@ -88,7 +81,7 @@ export function liveReadCallIds(
       order += 1
       const keys = wireTargets(tc.arguments)
       if (keys.length === 0) continue
-      if (ALL_MUTATE_TOOLS.has(tc.name)) {
+      if (MUTATE_TOOLS.has(tc.name)) {
         // A mutation whose result ERRORED never reached disk — the earlier read is still
         // the live copy, and must not be marked stale ("the file has CHANGED") or lose
         // its live-read protection. Same rule as `failedToolCallIds` for mutate args.

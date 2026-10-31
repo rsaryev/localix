@@ -16,12 +16,6 @@ const readResultTools = new Set(pagedReadResultTools)
 
 const mutateTools = new Set(['Write', 'Edit'])
 
-// Generic patch-applier names. Localix no longer ships a patch tool, but saved sessions still
-// hold historical `apply_patch` items, so they keep their class.
-const patchTools = new Set(['apply_patch', 'patch'])
-
-const allMutateTools = new Set([...mutateTools, ...patchTools])
-
 const nonidempotentTools = new Set(['Bash'])
 
 /**
@@ -42,22 +36,14 @@ export const PAGED_READ_RESULT_TOOLS: ReadonlySet<string> = pagedReadResultTools
 /** Mutation tools that carry their heavy, recoverable payload in a single string arg. */
 export const MUTATE_TOOLS: ReadonlySet<string> = mutateTools
 
-/** Patch-style mutation tools whose payload is a unified-diff/patch body. */
-export const PATCH_TOOLS: ReadonlySet<string> = patchTools
-
-/** All mutation tools (single-arg writers + patch appliers). */
-export const ALL_MUTATE_TOOLS: ReadonlySet<string> = allMutateTools
-
 /** Side-effecting tools whose observations never supersede and are never superseded. */
 export const NONIDEMPOTENT_TOOLS: ReadonlySet<string> = nonidempotentTools
 
 export interface ContextToolClassRegistration {
   /** Tool names whose results are recoverable observations (join READ_RESULT_TOOLS). */
   readResult?: readonly string[]
-  /** Single-string-arg mutation tools (join MUTATE_TOOLS and ALL_MUTATE_TOOLS). */
+  /** Single-string-arg mutation tools (join MUTATE_TOOLS). */
   mutate?: readonly string[]
-  /** Patch-body mutation tools (join PATCH_TOOLS and ALL_MUTATE_TOOLS). */
-  patch?: readonly string[]
   /** Side-effecting tools that never supersede / are never superseded. */
   nonidempotent?: readonly string[]
 }
@@ -69,13 +55,6 @@ export interface ContextToolClassRegistration {
  */
 export function registerContextToolClasses(reg: ContextToolClassRegistration): void {
   for (const name of reg.readResult ?? []) readResultTools.add(name)
-  for (const name of reg.mutate ?? []) {
-    mutateTools.add(name)
-    allMutateTools.add(name)
-  }
-  for (const name of reg.patch ?? []) {
-    patchTools.add(name)
-    allMutateTools.add(name)
-  }
+  for (const name of reg.mutate ?? []) mutateTools.add(name)
   for (const name of reg.nonidempotent ?? []) nonidempotentTools.add(name)
 }

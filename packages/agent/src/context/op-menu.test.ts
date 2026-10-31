@@ -11,12 +11,6 @@ describe('heavyMutateInputs', () => {
     ])
   })
 
-  it('extracts an apply_patch / patch body', () => {
-    expect(heavyMutateInputs(namedTool('apply_patch', { patch: '@@ body @@' }))).toEqual([
-      { field: 'patch', text: '@@ body @@' },
-    ])
-  })
-
   it('extracts the edits array (JSON) and the single-edit shorthand', () => {
     const edits = [{ old_string: 'a', new_string: 'b' }]
     expect(heavyMutateInputs(namedTool('Edit', { path: 'f.ts', edits }))).toEqual([
@@ -55,11 +49,11 @@ describe('heavyMutateInputs', () => {
   })
 
   it('does NOT elide a completed file_change with a FAILED hunk (unapplied → not on disk)', () => {
-    // The patch body must stay verbatim: a failed hunk was never written, so it
+    // The content must stay verbatim: a failed hunk was never written, so it
     // can't be recovered by re-reading and would be lost if elided to a pointer.
     const item = namedTool(
-      'apply_patch',
-      { patch: '@@ body @@' },
+      'Edit',
+      { path: 'f.ts', content: '@@ body @@' },
       {
         status: 'completed',
         changes: [{ path: 'f.ts', kind: 'modify', failed: true }],
@@ -70,14 +64,14 @@ describe('heavyMutateInputs', () => {
 
   it('still elides a completed file_change whose hunks all applied', () => {
     const item = namedTool(
-      'apply_patch',
-      { patch: '@@ body @@' },
+      'Edit',
+      { path: 'f.ts', content: '@@ body @@' },
       {
         status: 'completed',
         changes: [{ path: 'f.ts', kind: 'modify' }],
       },
     )
-    expect(heavyMutateInputs(item)).toEqual([{ field: 'patch', text: '@@ body @@' }])
+    expect(heavyMutateInputs(item)).toEqual([{ field: 'content', text: '@@ body @@' }])
   })
 })
 

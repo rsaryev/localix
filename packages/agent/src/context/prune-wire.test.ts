@@ -737,24 +737,6 @@ describe('pruneWireMessages — live-read protection', () => {
     expect(String(readResult?.content)).toBe(body('old')) // live-read protected, verbatim
   })
 
-  it('an apply_patch of the file supersedes the read, via the patch body headers', () => {
-    const msgs = wire(
-      [
-        { id: 'a', name: 'Read', args: { path: 'src/a.ts' } },
-        {
-          id: 'p',
-          name: 'apply_patch',
-          args: { patch: '*** Begin Patch\n*** Update File: src/a.ts\n@@\n-x\n+y\n*** End Patch' },
-        },
-      ],
-      [
-        { id: 'a', name: 'Read', content: body('old') },
-        { id: 'p', name: 'apply_patch', content: 'Applied 1 of 1 files' },
-      ],
-    )
-    expect(elidedIds(msgs).has('a')).toBe(true)
-  })
-
   it('a short re-read of a few lines does not supersede the full read', () => {
     // A few lines cannot stand in for the whole file — treating them as an observation
     // would elide the only full copy the model is working from.

@@ -26,21 +26,14 @@ describe('heavyMutateInputs — the tool→field mapping', () => {
     ).toEqual([{ field: 'content', text: 'whole new body' }])
   })
 
-  // Kills: `if (name === 'apply_patch' || name === 'patch') pushString('patch')` → `name !== 'patch'`.
-  it('extracts the body of the `patch` tool (the apply_patch alias)', () => {
-    expect(heavyMutateInputs(namedTool('patch', { patch: '@@ body @@' }))).toEqual([
-      { field: 'patch', text: '@@ body @@' },
-    ])
-  })
-
-  // The mapping is by NAME: an apply_patch does not get its unrelated string args scooped
+  // The mapping is by NAME: an `Edit` does not get its unrelated string args scooped
   // up as recoverable payload (they would be pointered, promising a recovery that the
   // `ToolOutput` handle does not serve for them).
   // Kills: `if (name === 'Write' || ...)` → `name !== 'Write'`.
   it('takes ONLY the named field of the named tool', () => {
     expect(
-      heavyMutateInputs(namedTool('apply_patch', { patch: '@@ body @@', content: 'unrelated' })),
-    ).toEqual([{ field: 'patch', text: '@@ body @@' }])
+      heavyMutateInputs(namedTool('Edit', { path: 'f.ts', content: 'body', patch: 'unrelated' })),
+    ).toEqual([{ field: 'content', text: 'body' }])
   })
 
   // Kills: `if (!input || typeof input !== 'object') return []` → `&&` (which reads

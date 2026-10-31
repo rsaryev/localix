@@ -224,14 +224,11 @@ export async function loadEnabledMiniApps(opts: LoadMiniAppsOptions): Promise<Lo
 
   // Tell the context machinery which mini app tools classify their own results, so compression
   // treats them right without the core naming any of them.
-  const classes: Record<'readResult' | 'mutate' | 'patch' | 'nonidempotent', string[]> = {
-    readResult: [],
-    mutate: [],
-    patch: [],
-    nonidempotent: [],
-  }
-  for (const tool of result.tools) if (tool.contextClass) classes[tool.contextClass].push(tool.name)
-  registerContextToolClasses(classes)
+  registerContextToolClasses({
+    readResult: result.tools
+      .filter((tool) => tool.contextClass === 'readResult')
+      .map((tool) => tool.name),
+  })
 
   if (opts.logger?.info && timings.length > 0)
     opts.logger.info('mini apps loaded', {

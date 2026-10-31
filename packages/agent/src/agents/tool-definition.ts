@@ -221,12 +221,11 @@ export interface AgentTool<TInput = unknown, TDetails = unknown> {
    * Optional VBC context-class hint. The host registers this generically (instead
    * of hardcoding tool names in core — same idiom as {@link background}) so context
    * compression treats the tool right: 'readResult' = result is a recoverable
-   * observation (elided near-losslessly); 'mutate' / 'patch' = single-arg / patch-body
-   * writer; 'nonidempotent' = side effect that never supersedes. Lets extension tools
-   * classify themselves without core knowing their names.
+   * observation (elided near-losslessly). Lets extension tools classify themselves without
+   * core knowing their names.
    * Omit for plain foreground tools.
    */
-  contextClass?: 'readResult' | 'mutate' | 'patch' | 'nonidempotent'
+  contextClass?: 'readResult'
   /**
    * Which run SHAPES may carry this tool — declared by the tool, read by the host's ledger.
    *

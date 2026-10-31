@@ -1,7 +1,7 @@
 import type { ToolCall } from '../types'
 import { carriesMarker, ELISION_MARKER } from './compression-markers'
 import { elidedPointer } from './pointers'
-import { ALL_MUTATE_TOOLS, NONIDEMPOTENT_TOOLS } from './tool-classes'
+import { MUTATE_TOOLS, NONIDEMPOTENT_TOOLS } from './tool-classes'
 import {
   truncateMiddle,
   MIDDLE_TRUNCATE_THRESHOLD,
@@ -41,11 +41,11 @@ export function elideToolCallArgs(
     return undefined
   }
 
-  if (!ALL_MUTATE_TOOLS.has(tc.name)) return undefined
+  if (!MUTATE_TOOLS.has(tc.name)) return undefined
   // Elide EVERY heavy recoverable field, not just the first hit — an `edit` call
   // can carry both old_string and new_string above the threshold.
   let next: Record<string, unknown> | undefined
-  for (const field of ['content', 'patch', 'old_string', 'new_string'] as const) {
+  for (const field of ['content', 'old_string', 'new_string'] as const) {
     const v = a[field]
     if (typeof v === 'string' && v.length > minChars && !carriesMarker(v, ELISION_MARKER)) {
       next = {

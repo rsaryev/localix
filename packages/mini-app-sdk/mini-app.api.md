@@ -7141,7 +7141,7 @@ export interface AgentTool<TInput = unknown, TDetails = unknown> {
     behaviorHints?: AgentToolBehaviorHints;
     background?: boolean;
     promoteAfterMs?: number;
-    contextClass?: 'mutate' | 'nonidempotent' | 'patch' | 'readResult';
+    contextClass?: 'readResult';
     exposure?: ToolExposure;
     standalone?: boolean;
     presentation?: AgentToolPresentation;
