@@ -48,8 +48,6 @@ export function createPluginConditions(
   const application = (name: string): InboxOrigin => ({ kind: 'application', label: label(name) })
   // Every row lands on the Plugins shelf of the Store, where a plugin is reloaded, configured or
   // turned off. A manifest name has no `@marketplace`, so it cannot name one plugin's page.
-  const openPlugin = (_name: string) =>
-    [recoveryAction('open-store:plugin', 'Open plugins')] as const
   const openPlugins = () => [recoveryAction('open-store:plugin', 'Open plugins')] as const
 
   return {
@@ -63,7 +61,7 @@ export function createPluginConditions(
         title: `Could not load the ${label(outcome.name)} plugin`,
         body: outcome.error,
         origin: application(outcome.name),
-        actions: openPlugin(outcome.name),
+        actions: openPlugins(),
       })
     },
 
@@ -95,7 +93,7 @@ export function createPluginConditions(
         title: `The ${label(pluginName)} monitor “${monitorName}” stopped`,
         body: detail,
         origin: application(pluginName),
-        actions: openPlugin(pluginName),
+        actions: openPlugins(),
       })
     },
   }
