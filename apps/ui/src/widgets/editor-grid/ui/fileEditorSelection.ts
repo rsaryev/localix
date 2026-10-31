@@ -47,11 +47,6 @@ export function nativeFileViewerKind(pathOrName: string): NativeFileViewerKind |
   return null
 }
 
-/** Formats for which the built-in file surface is a first-class viewer. */
-export function hasNativeFileViewer(pathOrName: string): boolean {
-  return nativeFileViewerKind(pathOrName) !== null
-}
-
 /**
  * Resolve an editor without hiding a meaningful collision from the user.
  * `null` means the Open with chooser must be rendered.

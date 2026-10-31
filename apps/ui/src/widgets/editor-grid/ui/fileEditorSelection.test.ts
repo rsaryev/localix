@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { BUILTIN_EDITOR_CHOICE } from '@/shared/contrib/fileEditorChoice'
 
-import { hasNativeFileViewer, initialFileEditorSelection } from './fileEditorSelection'
+import { initialFileEditorSelection, nativeFileViewerKind } from './fileEditorSelection'
 
 describe('file editor selection', () => {
   test('opens one contributed editor directly when core has no native viewer', () => {
@@ -10,12 +10,12 @@ describe('file editor selection', () => {
   })
 
   test('offers Open with when a mini app and the native image viewer both match', () => {
-    expect(hasNativeFileViewer('cover.PNG')).toBe(true)
+    expect(nativeFileViewerKind('cover.PNG')).toBe('image')
     expect(initialFileEditorSelection(['image-mini-app:editor'], null, true)).toBeNull()
   })
 
   test('offers Open with when Reader and the native text editor both match', () => {
-    expect(hasNativeFileViewer('manual.markdown')).toBe(true)
+    expect(nativeFileViewerKind('manual.markdown')).toBe('text')
     expect(initialFileEditorSelection(['example:text-view'], null, true)).toBeNull()
   })
 
@@ -77,7 +77,7 @@ describe('an open that asks for the code editor', () => {
   test('gets it without being asked to choose', () => {
     // `.scene.json` ends in `json`, which the built-in text surface also claims — so this file
     // hit the "Open with" chooser rather than opening. An explicit request answers it.
-    expect(hasNativeFileViewer('example.scene.json')).toBe(true)
+    expect(nativeFileViewerKind('example.scene.json')).toBe('text')
     expect(initialFileEditorSelection(['example:scene-file'], null, true)).toBeNull()
     expect(initialFileEditorSelection(['example:scene-file'], null, true, true)).toBe(
       BUILTIN_EDITOR_CHOICE,
