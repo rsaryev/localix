@@ -104,7 +104,11 @@ export function miniAppListing(
         ]
       : [],
     ...(entry.job ? { job: { action: entry.installed ? 'update' : 'install', ...entry.job } } : {}),
-    ...(entry.incompatible ? { incompatible: 'Needs a newer Localix' } : {}),
+    ...(entry.incompatible
+      ? { incompatible: 'Needs a newer Localix' }
+      : entry.nameTaken
+        ? { incompatible: entry.nameTaken }
+        : {}),
     ...(entry.revoked ? { revoked: entry.revoked } : {}),
     ...(entry.installed && context.configurable ? { configurable: true } : {}),
     ...(entry.signature ? { signature: entry.signature } : {}),

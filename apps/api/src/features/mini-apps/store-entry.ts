@@ -56,18 +56,22 @@ export interface MiniAppStoreEntry {
   incompatible?: boolean
   /** The installed copy's marketplace took it back, and why: it does not run. */
   revoked?: string
+  /** Another app here holds its name, and what to do: it cannot be installed until that one goes. */
+  nameTaken?: string
   job?: MiniAppJob
 }
 
 /**
  * The store row for `offer`, given the manifest of this very app installed (`holdsOffer`), whether
- * the offer may update that copy, and its job in flight.
+ * the offer may update that copy, its job in flight, and why another app's hold on its name keeps it
+ * from installing.
  */
 export function storeEntry(
   offer: Offer,
   installed: Record<string, unknown> | null | undefined,
   updatable: boolean,
   job: MiniAppJob | undefined,
+  nameTaken: string | null = null,
 ): MiniAppStoreEntry {
   const installedVersion = typeof installed?.version === 'string' ? installed.version : undefined
   const { tags, featured, installByDefault, suggestFor, opens, surfaces, commands } = offer.store
@@ -95,6 +99,7 @@ export function storeEntry(
     installed: installed ? (installedVersion ? { version: installedVersion } : {}) : null,
     update: Boolean(installed && offer.version && updatable),
     ...(isIncompatible(offer) ? { incompatible: true } : {}),
+    ...(nameTaken ? { nameTaken } : {}),
     ...(job ? { job } : {}),
   }
 }

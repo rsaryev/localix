@@ -28,6 +28,8 @@ export const miniAppStoreEntrySchema = z.object({
   installed: z.object({ version: z.string().optional() }).nullable(),
   update: z.boolean(),
   incompatible: z.boolean().optional(),
+  /** Another app here holds its name, and what to do about it (`store.ts`, `nameConflict`). */
+  nameTaken: z.string().optional(),
   job: z
     .object({
       phase: jobPhaseSchema,
