@@ -132,7 +132,6 @@ export function createMiniAppStore(deps: {
       holds ? await readManifest(join(installRoot, offer.name)) : null,
       await isUpdatable(offer, installRoot, holds),
       jobFor.get(offer.name) === offer.id ? jobs.get(offer.name) : undefined,
-      holds ? null : await nameConflict(offer),
     )
   }
 

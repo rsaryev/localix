@@ -1,9 +1,8 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { generateKeyPairSync } from 'node:crypto'
 import { join } from 'node:path'
-import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 import { publicKeyOf } from '@localixai/mini-app-sdk/marketplace-signature'
-import { tempDirPerTest, writeTree } from '@localixai/testing'
+import { tempDirPerTest } from '@localixai/testing'
 
 import {
   hostedMiniAppMarketplace,
@@ -11,7 +10,6 @@ import {
   type MarketplaceEntry,
 } from '../../testing/mini-app-marketplace'
 import type { MiniAppMarketplaceSource } from './marketplaces'
-import { MINI_APPS_SUBDIR } from './paths'
 import { createMiniAppStore } from './store'
 import type { MiniAppConfigField } from './contracts'
 import { createMiniAppStoreProvider } from './store-provider'
@@ -532,23 +530,6 @@ describe('the mini apps in the Store', () => {
     ])
     // Nothing to install: it is already here, and no marketplace has it.
     await expect(provider.plan('bitcoin-price', 'user', actor)).rejects.toThrow()
-  })
-
-  test('an offer whose name a mini app of the person’s holds says so instead of offering Get', async () => {
-    const { offer, provider } = setup()
-    offer('atlas')
-    writeTree(join(root(), 'home', MINI_APPS_SUBDIR, 'atlas'), {
-      [MINI_APP_MANIFEST_FILE]: JSON.stringify({ name: 'atlas', version: '2.0.0' }),
-      '.localix-install.json': JSON.stringify({
-        kind: 'localix-local-install',
-        source: '/src/atlas',
-      }),
-    })
-    const { listings } = await provider.listings(actor)
-    expect(listings.find((listing) => listing.ref.id === 'atlas@localix')).toMatchObject({
-      installs: [],
-      incompatible: 'A mini app of yours is already called "atlas"; rename or remove it first',
-    })
   })
 
   // Its marketplace took it back: it is no longer offered, but it is still here, and it is still

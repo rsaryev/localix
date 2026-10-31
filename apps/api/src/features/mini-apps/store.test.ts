@@ -115,13 +115,10 @@ describe('the mini app store', () => {
     await store.settled()
 
     const entries = (await store.list()).entries
-    // Its row says why before anyone presses Get, in the words the refusal uses.
     expect(entries.find((entry) => entry.id === 'notes@ada')).toMatchObject({
       installed: null,
       update: false,
-      nameTaken: '"notes" from localix is installed; remove it to install the one from ada',
     })
-    expect(entries.find((entry) => entry.id === 'notes@localix')?.nameTaken).toBeUndefined()
     await expect(store.install('notes@ada', { acceptUnverified: true })).rejects.toThrow(
       '"notes" from localix is installed; remove it to install the one from ada',
     )
@@ -158,11 +155,7 @@ describe('the mini app store', () => {
     })
 
     const atlas = (await store.list()).entries.find((entry) => entry.id === 'atlas@localix')
-    expect(atlas).toMatchObject({
-      installed: null,
-      update: false,
-      nameTaken: 'A mini app of yours is already called "atlas"; rename or remove it first',
-    })
+    expect(atlas).toMatchObject({ installed: null, update: false })
     expect(await store.updateInstalled()).toEqual([])
     await expect(store.install('atlas@localix')).rejects.toThrow(
       /of yours is already called "atlas"/,
