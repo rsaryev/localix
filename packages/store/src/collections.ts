@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { listingRefSchema, packageKindSchema, type ListingRef } from './contract'
+import { isRecord } from './curation'
 
 /** What Discover shows together (`docs/internals/store.md`, "Discover as built"). */
 
@@ -35,8 +36,6 @@ export const editorialSchema = z.object({
 })
 export type Editorial = z.infer<typeof editorialSchema>
 
-const isRecord = (raw: unknown): raw is Record<string, unknown> =>
-  typeof raw === 'object' && raw !== null && !Array.isArray(raw)
 const text = (raw: unknown, max: number) =>
   typeof raw === 'string' && raw.length > 0 && raw.length <= max ? raw : undefined
 /** The most items one row holds. */

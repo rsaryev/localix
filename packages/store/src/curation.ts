@@ -29,7 +29,7 @@ const looseWords = (raw: unknown): string[] =>
         .slice(0, 20)
     : []
 
-const isRecord = (raw: unknown): raw is Record<string, unknown> =>
+export const isRecord = (raw: unknown): raw is Record<string, unknown> =>
   typeof raw === 'object' && raw !== null && !Array.isArray(raw)
 
 /** A source's `suggestFor`, read leniently: what is not a word is dropped; nothing is undefined. */
