@@ -23,7 +23,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { CONTROL_FOCUS_VISIBLE } from '@localixai/mini-app-sdk/ui/classes'
 import { TreeGuide } from './SessionTreeGuide'
-import { focusOnMount } from './focusOnMount'
+import { focusOnMount } from '@/shared/lib/focusOnMount'
 
 // Tree indentation (px). Base matches the row's normal left padding; the step
 // is small and the depth is capped so deep fork chains stay readable. See the

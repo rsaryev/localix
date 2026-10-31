@@ -5,7 +5,7 @@ import { Button } from '@localixai/kit/button'
 import { Input } from '@localixai/kit/input'
 import { Kbd } from '@localixai/kit/kbd'
 import type { PendingRequestSecretInteraction } from '../../model/agent-runtime'
-import { focusOnMount } from '../focusOnMount'
+import { focusOnMount } from '@/shared/lib/focusOnMount'
 import { HitlInteractionFrame } from './HitlInteractionFrame'
 import type { HitlFrameChrome } from './HitlInteractionFrame'
 

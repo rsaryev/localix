@@ -11,7 +11,7 @@ import {
 } from '../model/messageSearch'
 import { subscribeUiOverlay } from '@/shared/lib/uiOverlayBus'
 import { MESSAGE_SEARCH_OVERLAY_ID } from './MessageSearch.surface'
-import { focusOnMount } from './focusOnMount'
+import { focusOnMount } from '@/shared/lib/focusOnMount'
 import { FindWidgetCount, FindWidgetInput, FindWidgetSurface } from '@localixai/kit/find-widget'
 
 interface MessageSearchProps {

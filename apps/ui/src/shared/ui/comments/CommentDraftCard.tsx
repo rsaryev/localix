@@ -7,9 +7,7 @@ import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { matchesChord, withChordHint } from '@/shared/lib/keybindings'
 import { AttachmentTray } from '@/shared/ui/attachments/AttachmentTray'
 import type { CommentDraft } from './useCommentDraft'
-
-/** Ref for a field that takes the keyboard when it appears (the one thing `autoFocus` did). */
-export const focusOnMount = (element: HTMLTextAreaElement | null) => element?.focus()
+import { focusOnMount } from '@/shared/lib/focusOnMount'
 
 /**
  * Writing one review comment: what it points at, what it carries, what it says, and the two
