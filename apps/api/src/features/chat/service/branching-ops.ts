@@ -187,9 +187,9 @@ export async function editMessage(
     // tree as a sibling branch). Drop the leaf-ward path from the live view so
     // the UI swaps to the freshly forked branch.
     const oldBranchLeaf = await repo.descendToLeaf(sessionId, messageId)
+    const shared = new Set(historyIds)
     for (const id of walkPathToRoot(parentById, oldBranchLeaf)) {
-      if (parentId && historyIds.includes(id)) continue // keep shared ancestors
-      if (id === parentId) continue
+      if (shared.has(id)) continue // keep shared ancestors, the new parent among them
       publishMessageRemoved(streamRegistry, userId, sessionId, id)
     }
 
