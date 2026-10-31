@@ -162,3 +162,25 @@ test('restore puts the originals back when nothing wrapped the tracker', () => {
   expect(window.fetch).toBe(original)
   expect(XMLHttpRequest.prototype.send).toBe(originalSend)
 })
+
+test('an XHR whose send throws is not left in flight', () => {
+  const proto = XMLHttpRequest.prototype
+  const originalOpen = proto.open
+  const originalSend = proto.send
+  const failure = new Error('InvalidStateError')
+  proto.open = function () {} as typeof proto.open
+  proto.send = function () {
+    throw failure
+  } as typeof proto.send
+  const tracker = installInflightTracker(window, clock)
+  try {
+    const xhr = new XMLHttpRequest()
+    xhr.open('GET', '/api/page/2')
+    expect(() => xhr.send()).toThrow(failure)
+    expect(tracker.pending()).toBe(false)
+  } finally {
+    tracker.restore()
+    proto.open = originalOpen
+    proto.send = originalSend
+  }
+})

@@ -34,15 +34,16 @@ export function installInflightTracker(
       return false
     }
   }
-  const track = (url: string, finished: Promise<unknown>): void => {
+  /** Count a request from now; the returned function ends it. A no-op for what is not counted. */
+  const track = (url: string): (() => void) => {
     try {
-      if (!own(url)) return
+      if (!own(url)) return () => {}
       const id = ++seq
       started.set(id, clock())
-      const done = () => void started.delete(id)
-      finished.then(done, done)
+      return () => void started.delete(id)
     } catch {
       // watching must never reach the page
+      return () => {}
     }
   }
 
@@ -54,8 +55,15 @@ export function installInflightTracker(
       input: RequestInfo | URL,
       init?: RequestInit,
     ) {
-      const result = nativeFetch.call(this, input, init)
-      track(input instanceof Request ? input.url : String(input), result)
+      const end = track(input instanceof Request ? input.url : String(input))
+      let result: ReturnType<typeof nativeFetch>
+      try {
+        result = nativeFetch.call(this, input, init)
+      } catch (error) {
+        end()
+        throw error
+      }
+      result.then(end, end)
       return result
     } as typeof win.fetch
   }
@@ -75,11 +83,15 @@ export function installInflightTracker(
       this: XMLHttpRequest,
       body?: Document | XMLHttpRequestBodyInit | null,
     ) {
-      track(
-        urls.get(this) ?? '',
-        new Promise((resolve) => this.addEventListener('loadend', resolve, { once: true })),
-      )
-      return nativeSend.call(this, body)
+      const end = track(urls.get(this) ?? '')
+      this.addEventListener('loadend', end, { once: true })
+      try {
+        return nativeSend.call(this, body)
+      } catch (error) {
+        // A send that throws never reaches loadend.
+        end()
+        throw error
+      }
     }
   }
 
