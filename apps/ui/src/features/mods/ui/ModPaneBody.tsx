@@ -81,11 +81,7 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
     <div className="flex h-full min-h-0 flex-col">
       <PanelHeader
         tone="content"
-        title={
-          <span className="truncate text-xs font-medium text-foreground">
-            {pane.title ?? pane.id}
-          </span>
-        }
+        title={<span className="truncate text-xs font-medium text-foreground">{name}</span>}
         summary={
           <span className="truncate text-2xs text-text-faint" title={pane.cwd ?? undefined}>
             {[pane.plugin, projectOf(pane.cwd)].filter(Boolean).join(' · ')}
@@ -106,7 +102,7 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
       <div
         ref={body}
         role="region"
-        aria-label={pane.title ?? pane.id}
+        aria-label={name}
         tabIndex={-1}
         // The workbench pane's gutters (`visual-system.md`), on the pane's own ground.
         className="min-h-0 flex-1 overflow-y-auto px-4 py-3 text-sm outline-none @2xl:px-6"
