@@ -238,8 +238,14 @@ function keyCodeOf(key: string): number {
   if (key in KEY_CODES) return KEY_CODES[key]
   return key.length === 1 ? key.toUpperCase().charCodeAt(0) : 0
 }
-function makeKeyEvent(type: string, init: KeyboardEventInit, code: number): KeyboardEvent {
-  const ev = new KeyboardEvent(type, init)
+function makeKeyEvent(
+  el: Element,
+  type: string,
+  init: KeyboardEventInit,
+  code: number,
+): KeyboardEvent {
+  // The target's own realm: a frame's handlers check `instanceof` against its constructors.
+  const ev = new (realmOf(el).KeyboardEvent)(type, init)
   // keyCode/which are read-only on the prototype; override so legacy handlers see them.
   try {
     Object.defineProperty(ev, 'keyCode', { get: () => code })
@@ -260,18 +266,18 @@ const TABBABLE =
 function isRendered(el: HTMLElement): boolean {
   for (let node: HTMLElement | null = el; node; node = node.parentElement) {
     if (node.hidden || node.inert) return false
-    const style = getComputedStyle(node)
+    const style = realmOf(node).getComputedStyle(node)
     if (style.display === 'none' || style.visibility === 'hidden') return false
   }
   return true
 }
 
-function tabOrder(scope?: Element): HTMLElement[] {
-  const candidates = [...(scope ?? document).querySelectorAll<HTMLElement>(TABBABLE)].filter(
+function tabOrder(doc: Document, scope?: Element): HTMLElement[] {
+  const candidates = [...(scope ?? doc).querySelectorAll<HTMLElement>(TABBABLE)].filter(
     (el) =>
       el.tabIndex >= 0 &&
       !(el as HTMLButtonElement).disabled &&
-      !(el instanceof HTMLInputElement && el.type === 'hidden') &&
+      !(el instanceof realmOf(el).HTMLInputElement && el.type === 'hidden') &&
       isRendered(el),
   )
   const positive = candidates
@@ -280,22 +286,23 @@ function tabOrder(scope?: Element): HTMLElement[] {
   return [...positive, ...candidates.filter((el) => el.tabIndex === 0)]
 }
 
-function moveFocus(backwards: boolean, scope?: Element): void {
-  const order = tabOrder(scope)
-  const at = order.indexOf(document.activeElement as HTMLElement)
+/** In the document of the element that took the key: a frame has its own focus and tab order. */
+function moveFocus(doc: Document, backwards: boolean, scope?: Element): void {
+  const order = tabOrder(doc, scope)
+  const at = order.indexOf(doc.activeElement as HTMLElement)
   const next = at < 0 ? (backwards ? order.at(-1) : order[0]) : order[at + (backwards ? -1 : 1)]
   // Past either end focus leaves the document, which reads as BODY — as with a real key.
   if (next) next.focus()
-  else (document.activeElement as HTMLElement | null)?.blur?.()
+  else (doc.activeElement as HTMLElement | null)?.blur?.()
 }
 
 /** `scope` keeps Tab's sequential navigation inside a host's panel (see `ActuateDeps.root`). */
 export function pressKey(el: Element, chord: string, scope?: Element): void {
   const init = keyInit(chord)
   const code = keyCodeOf(init.key)
-  const proceed = el.dispatchEvent(makeKeyEvent('keydown', init, code))
-  if (proceed && init.key === 'Tab') moveFocus(Boolean(init.shiftKey), scope)
-  el.dispatchEvent(makeKeyEvent('keyup', init, code))
+  const proceed = el.dispatchEvent(makeKeyEvent(el, 'keydown', init, code))
+  if (proceed && init.key === 'Tab') moveFocus(el.ownerDocument, Boolean(init.shiftKey), scope)
+  el.dispatchEvent(makeKeyEvent(el, 'keyup', init, code))
   // Enter inside a form field: synthetic key events don't submit, so do it explicitly.
   if (init.key === 'Enter') {
     const form = (el as HTMLInputElement).form

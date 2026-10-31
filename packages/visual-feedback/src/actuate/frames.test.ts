@@ -10,6 +10,7 @@ import { GlobalRegistrator } from '@happy-dom/global-registrator'
 import { runCommand, installConsoleCapture, type ActuateDeps } from './index'
 import { buildSnapshot, createRefRegistry } from '../snapshot/index'
 import { ownerFrame } from '../core/frames'
+import { pressKey } from './input'
 
 function makeDeps(): ActuateDeps {
   return {
@@ -215,5 +216,22 @@ describe('same-origin frames', () => {
     } finally {
       delete (window as { frameElement?: unknown }).frameElement
     }
+  })
+
+  test("Tab pressed in a frame moves focus inside that frame, with the frame realm's key event", () => {
+    document.body.innerHTML = '<button id="top">Top</button>'
+    const frame = addFrame(
+      '<button id="one">One</button><button id="two">Two</button>',
+      [0, 0, 600, 400],
+    )
+    const doc = frame.contentDocument!
+    const seen: unknown[] = []
+    const one = doc.getElementById('one')!
+    one.addEventListener('keydown', (event) => seen.push(event.constructor))
+    one.focus()
+    pressKey(one, 'Tab')
+    expect(doc.activeElement?.id).toBe('two')
+    expect(document.activeElement?.id).not.toBe('top')
+    expect(seen).toEqual([(frame.contentWindow as unknown as typeof globalThis).KeyboardEvent])
   })
 })
