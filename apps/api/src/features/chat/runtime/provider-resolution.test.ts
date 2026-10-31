@@ -389,3 +389,73 @@ describe('resolveLanguageModel — the route rule', () => {
     expect(required).toEqual(['live'])
   })
 })
+
+describe('which provider owns a model', () => {
+  const key = { id: 'key', enabled: true, priority: 0, apiKey: 'k', authType: 'api-key' }
+  const depsOver = (
+    connections: Array<{ id: string; providerId: string }>,
+    catalog: unknown,
+    created: unknown[],
+  ) =>
+    ({
+      providerConnectionsService: {
+        listConnections: async () => ({ connections }),
+        requireConnection: async (_user: string, id: string) =>
+          connections.find((connection) => connection.id === id),
+        ensureFreshKeys: async (_user: string, connection: object) => ({
+          ...connection,
+          keys: [key],
+        }),
+        credentialStoreFor: async () => ({}),
+      },
+      catalogService: { getCatalog: async () => catalog },
+      languageModelFactory: {
+        create: (ref: unknown) => {
+          created.push(ref)
+          return { ref }
+        },
+      },
+    }) as never
+
+  test('a live model the catalog does not list runs on the provider its id names, unprefixed', async () => {
+    const created: unknown[] = []
+    const resolved = await resolveLanguageModel({
+      deps: depsOver(
+        [
+          { id: 'other', providerId: 'q' },
+          { id: 'mine', providerId: 'p' },
+        ],
+        { providers: [{ id: 'p' }, { id: 'q' }], models: [] },
+        created,
+      ),
+      userId: 'u',
+      modelId: 'p/fresh-model',
+      preferredConnectionId: 'other',
+    })
+    expect(resolved?.providerConnectionId).toBe('mine')
+    expect(created).toEqual([{ providerId: 'p', modelId: 'fresh-model' }])
+  })
+
+  test('an explicit provider does not take a model the catalog lists under another provider', async () => {
+    const created: unknown[] = []
+    const resolved = await resolveLanguageModel({
+      deps: depsOver(
+        [
+          { id: 'direct', providerId: 'openai' },
+          { id: 'proxy', providerId: 'openrouter' },
+        ],
+        {
+          providers: [{ id: 'openai' }, { id: 'openrouter' }],
+          models: [{ id: 'openai/gpt-x', providerId: 'openrouter' }],
+        },
+        created,
+      ),
+      userId: 'u',
+      modelId: 'openai/gpt-x',
+      providerId: 'openai',
+      preferredConnectionId: 'direct',
+    })
+    expect(resolved).toBeNull()
+    expect(created).toEqual([])
+  })
+})
