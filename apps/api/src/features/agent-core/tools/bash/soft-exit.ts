@@ -14,6 +14,8 @@
  *   failures to stdout with exit 1, and those MUST stay errors.
  */
 
+import { isTerminationSignalExit } from '../../../../lib/process-exit'
+
 const NO_FINDINGS_COMMANDS = new Set(['rg', 'grep', 'egrep', 'fgrep', 'zgrep', 'diff', 'cmp'])
 
 /** Compound/pipeline syntax — exit code no longer attributable to the leading command. */
@@ -37,3 +39,14 @@ export function isNoFindingsExit(command: string, exitCode: number): boolean {
 /** The model-facing status note for a soft exit-1 — names the convention so the model doesn't re-run "the failure". */
 export const NO_FINDINGS_NOTE =
   '[exit 1 — grep/diff status convention (no matches, or differences present), not a failure]'
+
+/**
+ * A non-zero exit that is a real failure. A stop signal (SIGTERM from a killed dev server,
+ * ^C) means the process was TOLD to stop, and a grep/diff-family exit 1 is a findings status:
+ * neither fails the call nor halts a multi-command run.
+ */
+export function isFailedExit(command: string, exitCode: number): boolean {
+  return (
+    exitCode !== 0 && !isTerminationSignalExit(exitCode) && !isNoFindingsExit(command, exitCode)
+  )
+}

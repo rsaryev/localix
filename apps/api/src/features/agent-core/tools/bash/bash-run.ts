@@ -14,8 +14,8 @@ import type {
 import { modelFacingOutput, spillFullOutput, SPILL_MIN_BYTES, truncate } from './bash-output'
 import type { BashToolInput, BashJobStatus, BashToolDetails } from './bash-types'
 import { isTerminationSignalExit } from '../../../../lib/process-exit'
-import { isNoFindingsExit, NO_FINDINGS_NOTE } from './soft-exit'
-import { promoteTimedOutCommand } from './bash-promote'
+import { isFailedExit, isNoFindingsExit, NO_FINDINGS_NOTE } from './soft-exit'
+import { joinCapture, promoteTimedOutCommand } from './bash-promote'
 import type { BashRunContext } from './bash-run-context'
 
 export { resolveCwd, type BashRunContext } from './bash-run-context'
@@ -88,7 +88,7 @@ export async function runForegroundCommand(
     }
 
     const timedOut = result.exitCode === 124
-    const combined = (result.stdout + (result.stderr ? '\n' + result.stderr : '')).trimEnd()
+    const combined = joinCapture(result)
     const output = truncate(combined)
     // Each stream on its own when there is stderr: a Claude Code PostToolUse hook reads Bash's
     // `stdout` and `stderr` apart (`ext/cc-tool-responses.ts`).
@@ -135,7 +135,7 @@ export async function runForegroundCommand(
     // loop's consecutive-tool-errors stop.
     const terminated = isTerminationSignalExit(result.exitCode)
     const softNoFindings = !terminated && isNoFindingsExit(command, result.exitCode)
-    const isError = result.exitCode !== 0 && !terminated && !softNoFindings
+    const isError = isFailedExit(command, result.exitCode)
     const jobStatus: BashJobStatus = isError ? 'failed' : 'completed'
     const finalOutput = isError
       ? output + `\n[exit ${result.exitCode}]`

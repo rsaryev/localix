@@ -15,7 +15,8 @@ import {
 } from './bash-output'
 import type { BashToolInput, BashToolDetails } from './bash-types'
 import { isTerminationSignalExit } from '../../../../lib/process-exit'
-import { isNoFindingsExit } from './soft-exit'
+import { isFailedExit } from './soft-exit'
+import { joinCapture } from './bash-promote'
 
 type Updater = AgentToolUpdateCallback<BashToolDetails>
 type Ctx = AgentToolExecutionContext
@@ -124,7 +125,7 @@ export async function runBatchCommands(
         pathPrefix: ctx.pluginBinDirs,
       })
       exitCode = r.exitCode
-      combined = (r.stdout + (r.stderr ? '\n' + r.stderr : '')).trimEnd()
+      combined = joinCapture(r)
       if (r.stdout.trim()) stdoutParts.push(r.stdout.trimEnd())
       if (r.stderr?.trim()) stderrParts.push(r.stderr.trimEnd())
     } catch (err) {
@@ -149,13 +150,7 @@ export async function runBatchCommands(
       output: uiBlocks(),
       isStreaming: i < cmds.length - 1,
     })
-    if (
-      exitCode !== 0 &&
-      !isTerminationSignalExit(exitCode) &&
-      !isNoFindingsExit(cmds[i], exitCode) &&
-      !keepGoing
-    )
-      break
+    if (isFailedExit(cmds[i], exitCode) && !keepGoing) break
   }
   unregister?.()
 
@@ -164,10 +159,7 @@ export async function runBatchCommands(
   // A stop-signal exit is not a failure (see statusOf), so it neither flags the
   // result as an error nor halts a multi-command run. Same for a grep/diff-family
   // exit 1 — a findings status, not a failure (soft-exit.ts).
-  const failed = (r: { command: string; exitCode: number }) =>
-    r.exitCode !== 0 &&
-    !isTerminationSignalExit(r.exitCode) &&
-    !isNoFindingsExit(r.command, r.exitCode)
+  const failed = (r: { command: string; exitCode: number }) => isFailedExit(r.command, r.exitCode)
   const firstFail = results.find(failed)
   const stoppedEarly = remaining > 0 && !aborted && !budgetSpent
   // `keep_going` means the model EXPECTS some commands to fail and asked to run the

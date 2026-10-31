@@ -51,7 +51,7 @@ export function refuseAtJobCap(
 }
 
 /** Foreground capture, joined the way the ordinary result path joins it. */
-export function joinCapture(capture: { stdout: string; stderr: string }): string {
+export function joinCapture(capture: { stdout: string; stderr?: string }): string {
   return (capture.stdout + (capture.stderr ? '\n' + capture.stderr : '')).trimEnd()
 }
 
