@@ -2,6 +2,7 @@ import { type ExecutionEnvironment, resolveToolCwd } from '../environment'
 import type { SpawnTerminalJob } from '../terminal/terminal-job'
 import type { BashWaitHost } from './bash-until'
 import type { BashToolInput } from './bash-types'
+import type { SettleWindow } from './bash-background-settle'
 
 /** Shared closure context every bash run path needs (resolved once per tool build). */
 export interface BashRunContext {
@@ -24,7 +25,7 @@ export interface BashRunContext {
   /** Host for `until` waits (see {@link BashToolOptions.waitHost}). */
   waitHost?: BashWaitHost
   /** Background settle window (see {@link BashToolOptions.backgroundSettle}). */
-  backgroundSettle?: BackgroundSettleWindow
+  backgroundSettle?: SettleWindow
   /** Shell files run before each command (see {@link BashToolOptions.envScripts}). */
   envScripts?: string[]
 }
@@ -51,13 +52,6 @@ export function withEnvScripts(ctx: BashRunContext, command: string): string {
 export function withPluginPath(dirs: string[] | undefined, command: string): string {
   if (!dirs?.length || process.platform === 'win32') return command
   return `export PATH="$PATH":${dirs.map(quote).join(':')}\n${command}`
-}
-
-/** How long a background spawn watches its early output before the call returns. */
-export interface BackgroundSettleWindow {
-  minMs: number
-  maxMs: number
-  quietMs: number
 }
 
 /**

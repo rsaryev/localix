@@ -14,7 +14,7 @@ import type {
 } from '@localixai/agent/agents'
 
 import { renderBackgroundStartResult } from './bash-background-result'
-import { awaitBackgroundSettle } from './bash-background-settle'
+import { awaitBackgroundSettle, type SettleWindow } from './bash-background-settle'
 import {
   createBoundedOutput,
   modelFacingOutput,
@@ -24,14 +24,14 @@ import {
 import { childBgProc, ptyBgProc, type BgProc, type BackgroundInputPayload } from './bash-process'
 import { classifyBgExit, type BashToolInput, type BashToolDetails } from './bash-types'
 import type { BashRunContext } from './bash-run'
-import { withPluginPath, type BackgroundSettleWindow } from './bash-run-context'
+import { withPluginPath } from './bash-run-context'
 
 const BACKGROUND_STREAM_THROTTLE_MS = 120
 // Before returning from a background spawn, briefly watch its output so the model
 // sees the early lines that matter (e.g. a dev server's "Local: http://localhost:XXXX",
 // a compile error, an immediate crash) in the SAME turn — instead of moving on blind
 // and wasting tool calls hunting for the port / status. The job keeps running after.
-const BACKGROUND_SETTLE: BackgroundSettleWindow = { minMs: 2_000, maxMs: 3_000, quietMs: 350 }
+const BACKGROUND_SETTLE: SettleWindow = { minMs: 2_000, maxMs: 3_000, quietMs: 350 }
 
 type Updater = AgentToolUpdateCallback<BashToolDetails>
 type Ctx = AgentToolExecutionContext
