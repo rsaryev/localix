@@ -25,28 +25,6 @@ export function createRuntimeQueries(db: Kysely<AppDatabase>) {
       return row ? { userId: row.user_id, runtimeStatus: row.runtime_status ?? 'idle' } : null
     },
 
-    /** Parent id + kind of a session — drives the sub-agent depth guard. */
-    async getSessionParent(id: string): Promise<{
-      parentSessionId: string | null
-      sessionKind: SessionRecord['sessionKind']
-    } | null> {
-      const row = await db
-        .selectFrom('agent_sessions')
-        .select(['parent_session_id', 'session_kind'])
-        .where('id', '=', id)
-        .executeTakeFirst()
-      return row
-        ? {
-            parentSessionId: row.parent_session_id ?? null,
-            sessionKind: row.session_kind ?? 'chat',
-          }
-        : null
-    },
-
-    /**
-     * Mark every session still flagged 'running' as 'stopped'. Called once at
-     * boot to reconcile orphaned runtime state (no live run survives a restart).
-     */
     /**
      * Reclassify sessions left `running` by a dead process, so the UI stops showing ghost
      * sub-agents/jobs with an inert Stop button.

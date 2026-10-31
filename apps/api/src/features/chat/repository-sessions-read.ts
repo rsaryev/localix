@@ -53,11 +53,6 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
     },
 
     /**
-     * Narrow roster for global search. Search only needs identity, scope, and
-     * topology; keep wide runtime/session JSON, message counts, loops, and queue
-     * overlays off a path that runs on every palette keystroke.
-     */
-    /**
      * Rows for the session search index, narrowed to one project or unnarrowed.
      *
      * `null` and `undefined` both mean "every project" now. They used to differ — null selected
@@ -138,10 +133,7 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
 
     ...createChatProjectionQueries(db),
 
-    /** Per-session message counts for one user, keyed by session id. Used to stamp
-     *  `SessionSummary.messageCount` on the list without loading every body — child
-     *  sessions (threads) are never message-loaded client-side, so this is the only
-     *  way the UI can show a thread's size. */
+    /** Each of one user's sessions' last message preview, keyed by session id. */
     lastMessagesByUser: (userId: string) => lastMessagesByUser(db, userId),
 
     async getSession(userId: string, id: string): Promise<SessionRecord | null> {
@@ -233,18 +225,6 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
         ORDER BY ancestry.depth ASC
       `.execute(db)
       return result.rows.map(mapSession)
-    },
-
-    /** O(1) transcript boundary used to give each autonomous continuation a
-     * distinct durable delivery identity without loading the session history. */
-    async getCurrentLeafId(userId: string, id: string): Promise<string | null> {
-      const row = await db
-        .selectFrom('agent_sessions')
-        .select('leaf_id')
-        .where('user_id', '=', userId)
-        .where('id', '=', id)
-        .executeTakeFirst()
-      return row?.leaf_id ?? null
     },
 
     /**
