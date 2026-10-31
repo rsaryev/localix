@@ -36,8 +36,6 @@ export interface LoopInput extends Omit<
   'model' | 'credential' | 'credentialStore' | 'promptCacheIdleMs' | 'promptCacheRetention'
 > {
   session: ModelSession
-  /** Reports a tool whose schema had to be shortened for the model. */
-  onSchemaCompacted?: (toolName: string, diagnostic: unknown) => void
   /** How long a stopped tool may wind down before its call is closed as cancelled (default 2 s). */
   stopGraceMs?: number
 }
@@ -49,7 +47,7 @@ export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentR
   const tools = new Map<string, RunTool>(dispatchTools.map((tool) => [tool.name, toRunTool(tool)]))
   // A tool offered under a model name is called by it; the run knows it by its own (`naming.ts`).
   const naming = createToolNaming(dispatchTools)
-  const roster = createToolRoster(input.tools, tools, input.onSchemaCompacted, naming)
+  const roster = createToolRoster(input.tools, tools, naming)
   const env: CallEnvironment = {
     tools,
     naming,

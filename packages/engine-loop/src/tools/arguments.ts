@@ -10,6 +10,7 @@
 import type { z } from 'zod'
 
 import { coerceToSchema, type JsonSchema } from './coerce'
+import { messageOf } from './results'
 
 export type ParsedArguments = { ok: true; value: unknown } | { ok: false; message: string }
 
@@ -51,7 +52,7 @@ export function parseToolArguments(input: {
   try {
     prepared = input.prepare ? input.prepare(unwrapped) : unwrapped
   } catch (error) {
-    return { ok: false, message: error instanceof Error ? error.message : String(error) }
+    return { ok: false, message: messageOf(error) }
   }
   const direct = input.schema.safeParse(prepared)
   if (direct.success) return { ok: true, value: direct.data }

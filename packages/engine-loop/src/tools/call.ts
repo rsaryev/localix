@@ -27,11 +27,10 @@ import {
   applyAfterPatch,
   errorResult,
   markAborted,
+  messageOf,
   modelParts,
   textOf,
 } from './results'
-
-export { abortedResult, errorResult } from './results'
 
 export interface ToolCallRequest {
   id: string
@@ -58,7 +57,7 @@ export interface CallEnvironment {
   /** How long a stopped tool may wind down before its call is closed; defaults to `STOP_GRACE_MS`. */
   stopGraceMs?: number
   /** A call may name a tool as the model knows it; it is resolved under the tool's own name. */
-  naming?: Pick<ToolNaming, 'internal'>
+  naming: Pick<ToolNaming, 'internal'>
 }
 
 /** How a call ended: the result, and how the gate allowed it when it did so explicitly. */
@@ -82,7 +81,7 @@ export type AdmittedCall =
   | { kind: 'settled'; call: ToolCallRequest; outcome: CallOutcome }
 
 export function resolveCall(env: CallEnvironment, requested: ToolCallRequest): ResolvedCall {
-  const name = env.naming?.internal(requested.name) ?? requested.name
+  const name = env.naming.internal(requested.name)
   const call = name === requested.name ? requested : { ...requested, name }
   const runTool = env.tools.get(call.name)
   if (!runTool)
@@ -116,8 +115,11 @@ export async function admitCall(
   try {
     return await admitParsed(env, resolved, signal)
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    return { kind: 'settled', call: resolved.call, outcome: { result: errorResult(message) } }
+    return {
+      kind: 'settled',
+      call: resolved.call,
+      outcome: { result: errorResult(messageOf(error)) },
+    }
   }
 }
 
@@ -201,15 +203,15 @@ export async function executeCall(
   env: CallEnvironment,
   admitted: Extract<AdmittedCall, { kind: 'ready' }>,
   signal: AbortSignal,
-  emit?: EmitEvent,
+  emit: EmitEvent,
 ): Promise<CallOutcome> {
   const { call, runTool, args, gate } = admitted
   const tool = runTool.tool
   const progress = createProgressPump(async (details) => {
-    await emit?.({ type: 'tool_execution_update', toolCallId: call.id, details })
+    await emit({ type: 'tool_execution_update', toolCallId: call.id, details })
   })
   const base = env.context
-  const context = emit && base ? withHumanInLoopEvents(base, call, signal, emit) : base
+  const context = base ? withHumanInLoopEvents(base, call, signal, emit) : base
 
   let result: AgentToolResult
   try {
@@ -240,7 +242,7 @@ export async function executeCall(
       )
       finished = applyAfterPatch(finished, patch)
     } catch (error) {
-      finished = errorResult(error instanceof Error ? error.message : String(error))
+      finished = errorResult(messageOf(error))
     }
   }
   // A call the run was stopped during ended because of the stop, whatever the tool made of it

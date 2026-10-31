@@ -23,9 +23,8 @@ export interface ToolRoster {
 export function createToolRoster(
   modelTools: readonly AgentTool[],
   dispatch: ReadonlyMap<string, RunTool>,
-  onCompacted?: (toolName: string, diagnostic: unknown) => void,
   /** The name each tool is declared under: its model name when it has one. */
-  naming?: Pick<ToolNaming, 'wire'>,
+  naming: Pick<ToolNaming, 'wire'>,
 ): ToolRoster {
   const declared = new Map<string, ModelToolDeclaration>()
   let snapshot: ModelToolDeclaration[] | undefined
@@ -33,9 +32,8 @@ export function createToolRoster(
   const addDeclaration = (tool: AgentTool) => {
     const full = dispatch.get(tool.name)?.jsonSchema ?? {}
     const prepared = prepareModelToolSchema(full as Record<string, unknown>)
-    if (prepared.diagnostic) onCompacted?.(tool.name, prepared.diagnostic)
     declared.set(tool.name, {
-      name: naming?.wire(tool.name) ?? tool.name,
+      name: naming.wire(tool.name),
       description: tool.description,
       inputSchema: prepared.schema,
     })

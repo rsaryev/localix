@@ -22,7 +22,7 @@ export async function streamTurn(
   session: ModelSession,
   request: ModelTurnRequest,
   emit: EmitEvent,
-  naming?: Pick<ToolNaming, 'delta' | 'inbound'>,
+  naming: Pick<ToolNaming, 'delta' | 'inbound'>,
 ): Promise<StreamedTurn> {
   const turn = session.turn(request)
   await emit({
@@ -38,13 +38,13 @@ export async function streamTurn(
   try {
     for await (const delta of turn) {
       // oxlint-disable-next-line react-doctor/async-await-in-loop -- deltas must reach the bounded stream in order, and each push applies backpressure
-      await emit({ type: 'message_update', delta: naming ? naming.delta(delta) : delta })
+      await emit({ type: 'message_update', delta: naming.delta(delta) })
     }
   } catch {
     // A session that breaks its contract mid-stream still settles `message`; that is what counts.
   }
   const settled = await turn.message
-  const message = naming ? naming.inbound(settled) : settled
+  const message = naming.inbound(settled)
   await emit({ type: 'message_end', message })
   const failure = turn.failure
   return failure ? { message, failure } : { message }

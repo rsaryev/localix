@@ -9,9 +9,9 @@
  * order whenever the batch drains — around an exclusive call, and at the end.
  */
 import type { CallEnvironment, CallOutcome, ResolvedCall, ToolCallRequest } from './call'
-import { abortedResult, admitCall, errorResult, executeCall, resolveCall } from './call'
+import { admitCall, executeCall, resolveCall } from './call'
 import type { EmitEvent } from '../run-handle'
-import { DEFERRED_TEXT, messageWaits } from './results'
+import { abortedResult, DEFERRED_TEXT, errorResult, messageWaits } from './results'
 
 export interface SettledCall {
   call: ToolCallRequest
@@ -103,7 +103,7 @@ async function finish(emit: EmitEvent, call: ToolCallRequest, outcome: CallOutco
   })
 }
 
-export async function runToolBatch(input: BatchInput): Promise<SettledCall[]> {
+export async function runToolBatch(input: BatchInput): Promise<void> {
   const { env, calls, signal, emit } = input
   const outcomes: Promise<SettledCall>[] = []
   const settled: SettledCall[] = []
@@ -171,7 +171,6 @@ export async function runToolBatch(input: BatchInput): Promise<SettledCall[]> {
     outcomes.push(Promise.resolve({ call: later, outcome }))
   }
   await drain()
-  return settled
 }
 
 /**
@@ -182,8 +181,7 @@ export async function refuseTruncatedCalls(
   calls: readonly ToolCallRequest[],
   emit: EmitEvent,
   onSettled: BatchInput['onSettled'],
-): Promise<SettledCall[]> {
-  const settled: SettledCall[] = []
+): Promise<void> {
   for (const call of calls) {
     const outcome: CallOutcome = {
       result: errorResult(
@@ -193,7 +191,5 @@ export async function refuseTruncatedCalls(
     await announce(emit, call)
     await finish(emit, call, outcome)
     await onSettled({ call, outcome })
-    settled.push({ call, outcome })
   }
-  return settled
 }

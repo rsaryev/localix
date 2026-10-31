@@ -5,6 +5,11 @@
 import type { TextContent, ImageContent, FileContent } from '@localixai/agent'
 import type { AfterToolCallResult, AgentToolResult } from '@localixai/agent/agents'
 
+/** What a thrown value says: an Error's message, anything else as text. */
+export function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
 export function errorResult(message: string): AgentToolResult {
   return { content: message, isError: true }
 }
