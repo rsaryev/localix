@@ -33,6 +33,7 @@ function recordingRegistry(sink: Element[]): RefRegistry {
     findByIdentity: () => null,
     refOf: () => null,
     isEmpty: () => false,
+    size: () => 0,
   }
 }
 
