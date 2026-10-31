@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 import type { Delivery } from './contracts'
 import { createChangeFeed } from './feed'
+import { recordChanges } from './record'
 import { createFeedTestbed } from './testing'
 
 const refs = {
@@ -40,12 +41,12 @@ describe('delivery through the feed', () => {
       { kind: 'projector' },
     )
     await db.transaction().execute(async (trx) => {
-      await feed.record(trx, {
+      await recordChanges(trx, 'test', {
         entity: 'message',
         op: 'upserted',
         ref: { id: 'm1', chatId: 'c1' },
       })
-      await feed.record(trx, note('n1'))
+      await recordChanges(trx, 'test', note('n1'))
     })
     await feed.settle()
     expect(seen).toEqual([{ entity: 'message', op: 'upserted', ref: { id: 'm1', chatId: 'c1' } }])
@@ -60,7 +61,7 @@ describe('delivery through the feed', () => {
       { chat: 'ignore', message: (d) => void messages.push(d), note: 'ignore' },
       { kind: 'projector' },
     )
-    await feed.record(db, { entity: 'chat', op: 'deleted', ref: { id: 'c1' } })
+    await recordChanges(db, 'test', { entity: 'chat', op: 'deleted', ref: { id: 'c1' } })
     await feed.settle()
     expect(messages).toEqual([
       {

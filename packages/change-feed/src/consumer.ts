@@ -24,8 +24,6 @@ import { plannedDeliveries, type NoticeRow, type PlannedDelivery } from './deliv
 import type { ChangeFeedTables } from './tables'
 import { realTimers, type ConsumerTimers } from './timers'
 
-export type { ConsumerTimers } from './timers'
-
 const PAGE = 100
 /** A burst of writes wakes a consumer once, this long after the first. */
 const WAKE_DELAY_MS = 50

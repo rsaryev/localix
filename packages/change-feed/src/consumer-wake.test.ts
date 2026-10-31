@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
-import type { ConsumerTimers } from './consumer'
+import type { ConsumerTimers } from './timers'
 import { createChangeFeed } from './feed'
 import { createTestDatabase } from './testing'
 

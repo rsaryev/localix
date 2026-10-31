@@ -4,11 +4,11 @@
  * registry is one stream, a mini app's is another.
  *
  * Producers do not hold a feed: they call `recordChanges` (`record.ts`) in their own transaction
- * and the stream's signal wakes the feed. `record` and `publish` here are the same call for a
- * holder of the feed (tests, a mini app host).
+ * and the stream's signal wakes the feed. `publish` announces a change no owner transaction holds
+ * (files).
  */
 import type { Kysely } from 'kysely'
-import { startConsumer, type ChangeConsumer, type ConsumerTimers } from './consumer'
+import { startConsumer, type ChangeConsumer } from './consumer'
 import { headOf } from './cursor'
 import type {
   Cascades,
@@ -20,7 +20,8 @@ import type {
   RefSchemas,
 } from './contracts'
 import { onRecorded, recordChanges } from './record'
-import { feedTables, type ChangeFeedTables, type ChangeFeedWriter } from './tables'
+import { feedTables, type ChangeFeedTables } from './tables'
+import type { ConsumerTimers } from './timers'
 
 /** Notices every consumer has read are kept this long before they go. */
 const RETENTION_MS = 24 * 60 * 60_000
@@ -64,14 +65,6 @@ function feedOver<R extends RefSchemas, C extends Cascades<R>>(
   })
 
   return {
-    stream,
-
-    /** Record changes in the caller's transaction. Never throws; the caller's write stands. */
-    record: <DB extends ChangeFeedTables>(
-      trx: ChangeFeedWriter<DB>,
-      changes: Change<R> | readonly Change<R>[],
-    ) => recordChanges<R, DB>(trx, stream, changes),
-
     /** Announce changes with no transaction of the owner's to join (files). Fire-and-forget. */
     publish(changes: Change<R> | readonly Change<R>[]): void {
       void recordChanges<R, ChangeFeedTables>(db, stream, changes)
