@@ -10,14 +10,31 @@ afterAll(async () => {
   await teardown()
 })
 
-test('only a click or a typed value with a usable rect is shown to the person', () => {
+test('a steps batch (how every click and typing arrives) with a usable rect is shown', () => {
   const rect = { x: 10, y: 20, width: 100, height: 30 }
-  expect(highlightRect('click', { rect })).toEqual(rect)
-  expect(highlightRect('type', { rect })).toEqual(rect)
+  expect(highlightRect('steps', { rect })).toEqual(rect)
   expect(highlightRect('snapshot', { rect })).toBeNull()
-  expect(highlightRect('click', {})).toBeNull()
-  expect(highlightRect('click', { rect: { x: 0, y: 0, width: 0, height: 0 } })).toBeNull()
-  expect(highlightRect('click', { rect: { x: 'a' } })).toBeNull()
+  expect(highlightRect('steps', {})).toBeNull()
+  expect(highlightRect('steps', { rect: { x: 0, y: 0, width: 0, height: 0 } })).toBeNull()
+  expect(highlightRect('steps', { rect: { x: 'a' } })).toBeNull()
+})
+
+test('the box stays at its last opacity until it is removed, so it never flashes back', () => {
+  const calls: unknown[][] = []
+  const run = (script: string) => {
+    const original = Element.prototype.animate
+    Element.prototype.animate = function (...args: unknown[]) {
+      calls.push(args)
+      return {} as Animation
+    } as typeof Element.prototype.animate
+    try {
+      new Function(script)()
+    } finally {
+      Element.prototype.animate = original
+    }
+  }
+  run(highlightScript({ x: 1, y: 2, width: 30, height: 30 }))
+  expect(calls[0]?.[1]).toMatchObject({ fill: 'forwards' })
 })
 
 test('the script draws one inert box over the target and removes it', () => {

@@ -6,8 +6,12 @@ export interface ViewportRect {
   height: number
 }
 
-/** Actions after which the person is shown what was targeted. */
-const SHOWN = new Set(['click', 'type'])
+/**
+ * The action after which the person is shown what was targeted. Clicks and typing reach the page
+ * only as steps of a batch (from the agent or from a goal run), whose result carries the rect of
+ * the last one.
+ */
+const SHOWN = new Set(['steps'])
 
 /** How long the box stays; short, so it never outlives the next command's look at the page. */
 const HIGHLIGHT_MS = 700
@@ -45,7 +49,7 @@ export function highlightScript(rect: ViewportRect): string {
     background: 'rgba(59,130,246,0.14)', boxShadow: '0 0 0 3px rgba(59,130,246,0.25)' })
   ;(document.body || document.documentElement).appendChild(box)
   const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
-  if (!still && box.animate) box.animate([{ opacity: 1 }, { opacity: 1, offset: 0.6 }, { opacity: 0 }], { duration: ${HIGHLIGHT_MS}, easing: 'ease-out' })
+  if (!still && box.animate) box.animate([{ opacity: 1 }, { opacity: 1, offset: 0.6 }, { opacity: 0 }], { duration: ${HIGHLIGHT_MS}, easing: 'ease-out', fill: 'forwards' })
   setTimeout(() => box.remove(), ${HIGHLIGHT_MS})
 } catch (e) {} })()`
 }
