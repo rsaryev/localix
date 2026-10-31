@@ -12,6 +12,16 @@ export function providerOffersChat(provider: Pick<CatalogProvider, 'modelCount'>
   return provider.modelCount > 0
 }
 
+/** Whether a model id carries the `<providerId>/` namespace. */
+export function hasProviderPrefix(modelId: string, providerId: string): boolean {
+  return modelId.startsWith(`${providerId}/`)
+}
+
+/** The provider-native model id: the id without its `<providerId>/` namespace, if it has one. */
+export function nativeModelId(modelId: string, providerId: string): string {
+  return hasProviderPrefix(modelId, providerId) ? modelId.slice(providerId.length + 1) : modelId
+}
+
 /** Minimal connection identity needed to resolve a provider-scoped model id. */
 export interface CatalogModelConnection {
   id: string
@@ -30,16 +40,10 @@ export function findCatalogModel<T extends Pick<CatalogModel, 'id' | 'providerId
 ): T | undefined {
   if (!modelId) return undefined
   const inferredProviderId =
-    providerId ?? models.find((model) => modelId.startsWith(`${model.providerId}/`))?.providerId
+    providerId ?? models.find((model) => hasProviderPrefix(modelId, model.providerId))?.providerId
   const matches = models.filter((model) => {
     if (inferredProviderId && model.providerId !== inferredProviderId) return false
-    const nativeModelId = modelId.startsWith(`${model.providerId}/`)
-      ? modelId.slice(model.providerId.length + 1)
-      : modelId
-    const candidateId = model.id.startsWith(`${model.providerId}/`)
-      ? model.id.slice(model.providerId.length + 1)
-      : model.id
-    return candidateId === nativeModelId
+    return nativeModelId(model.id, model.providerId) === nativeModelId(modelId, model.providerId)
   })
   return matches.length === 1 ? matches[0] : undefined
 }

@@ -1,5 +1,10 @@
 import type { RuntimeCredential } from '@localixai/agent/runtime'
-import { findCatalogModel, routeReadiness } from '@localixai/agent/catalog'
+import {
+  findCatalogModel,
+  nativeModelId,
+  providerOwnsModel,
+  routeReadiness,
+} from '@localixai/agent/catalog'
 
 import { firstEnabledKey } from './provider-keys'
 import type { RunnerDeps } from './agent-runner-types'
@@ -7,19 +12,6 @@ import type { createUserProfileRepository } from '../../user/repository'
 import { DEFAULT_REASONING_EFFORT, type ReasoningEffort } from '@localixai/agent'
 
 type Catalog = Awaited<ReturnType<RunnerDeps['catalogService']['getCatalog']>>
-
-/**
- * Strip the `"<providerId>/"` namespace from a full catalog model id, leaving the
- * runtime-native model id the adapter expects. No-op when the id isn't namespaced.
- */
-export function stripProviderPrefix(modelId: string, providerId: string): string {
-  return hasProviderPrefix(modelId, providerId) ? modelId.slice(providerId.length + 1) : modelId
-}
-
-/** Whether a catalog model id carries the `"<providerId>/"` namespace. */
-export function hasProviderPrefix(modelId: string, providerId: string): boolean {
-  return modelId.startsWith(`${providerId}/`)
-}
 
 /** A connection can serve a run while one of its keys is enabled (a listing without keys: yes). */
 function usableConnection(connection: { keys?: unknown }): boolean {
@@ -37,28 +29,6 @@ function servesLanguageModel(
   const model = catalog ? findCatalogModel(catalog.models, providerId, modelId) : undefined
   const modalities = model?.outputModalities
   return !modalities || modalities.includes('text') || modalities.includes('decisions')
-}
-
-/**
- * Verify a model selection belongs to the connection's provider. Exact catalog
- * metadata wins; live models (not present in the static catalog) must use their
- * `<providerId>/...` namespace. An unknown bare id has no durable owner and is
- * rejected instead of being guessed from an ephemeral connection id.
- */
-export function providerOwnsModel(
-  providerId: string,
-  modelId: string,
-  catalog?: Pick<Catalog, 'models'>,
-): boolean {
-  const catalogOwners = new Set(catalog?.models.map((model) => model.providerId) ?? [])
-  const knownOwners = [...catalogOwners].filter((owner) =>
-    findCatalogModel(catalog?.models ?? [], owner, modelId),
-  )
-  if (knownOwners.length > 0) {
-    return knownOwners.includes(providerId)
-  }
-  if (!modelId.includes('/')) return false
-  return hasProviderPrefix(modelId, providerId)
 }
 
 /**
@@ -120,11 +90,11 @@ export async function resolveConnectionModel(params: {
     const catalog = params.catalog ?? (await params.deps.catalogService.getCatalog())
     const entry = catalog.providers.find((p) => p.id === connection.providerId)
     if (!entry) return null
-    if (!providerOwnsModel(entry.id, params.modelId, catalog)) return null
+    if (!providerOwnsModel(catalog.models, entry.id, params.modelId)) return null
     if (!servesLanguageModel(entry.id, params.modelId, catalog)) return null
     const key = firstEnabledKey(connection.keys)
     if (!key) return null
-    const rawModelId = stripProviderPrefix(params.modelId, entry.id)
+    const rawModelId = nativeModelId(params.modelId, entry.id)
     const credentialStore = await params.deps.providerConnectionsService.credentialStoreFor(
       params.userId,
       connection.id,
@@ -194,7 +164,10 @@ export async function resolveLanguageModel(params: {
     .catch(() => ({ connections: [] as Array<{ id: string; providerId: string; keys?: unknown }> }))
   const catalog =
     params.catalog ?? (await params.deps.catalogService.getCatalog().catch(() => undefined))
-  if (params.providerId !== undefined && !providerOwnsModel(params.providerId, modelId, catalog))
+  if (
+    params.providerId !== undefined &&
+    !providerOwnsModel(catalog?.models ?? [], params.providerId, modelId)
+  )
     return null
 
   // The provider and the account are decided by THE route rule (`routeReadiness`, C7): the stored

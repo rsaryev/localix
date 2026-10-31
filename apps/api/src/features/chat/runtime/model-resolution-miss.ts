@@ -1,8 +1,7 @@
 import type { ModelUnavailableReason } from '@localixai/agent/agents'
 import type { CatalogModel, CatalogProvider } from '@localixai/agent/catalog'
-import { findCatalogModel } from '@localixai/agent/catalog'
+import { catalogOwners, owningProviders } from '@localixai/agent/catalog'
 
-import { hasProviderPrefix } from './model-resolution'
 import { firstEnabledKey } from './provider-keys'
 
 /**
@@ -42,13 +41,7 @@ export function diagnoseModelMiss(input: {
   preferredConnectionId?: string | null
 }): ModelMiss {
   const { modelId, catalog, connections } = input
-  const owners = catalog
-    ? [...new Set(catalog.models.map((model) => model.providerId))].filter((providerId) =>
-        findCatalogModel(catalog.models, providerId, modelId),
-      )
-    : []
-
-  if (catalog && owners.length === 0) {
+  if (catalog && catalogOwners(catalog.models, modelId).size === 0) {
     return {
       reason: 'model_not_in_catalog',
       message: `Model "${modelId}" is no longer available. Choose another model.`,
@@ -56,12 +49,7 @@ export function diagnoseModelMiss(input: {
   }
 
   // Without a catalog, a namespaced id still names its provider.
-  const candidates =
-    owners.length > 0
-      ? owners
-      : [...new Set(connections.map((connection) => connection.providerId))].filter((providerId) =>
-          hasProviderPrefix(modelId, providerId),
-        )
+  const candidates = [...owningProviders(catalog?.models ?? [], connections, modelId)]
   const preferred = connections.find((connection) => connection.id === input.preferredConnectionId)
   const ordered =
     preferred && candidates.includes(preferred.providerId)

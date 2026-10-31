@@ -110,7 +110,7 @@ the exceptions in prose.
 | C4  | Every consumer has tests for a duplicate, a gap with reconcile, and a parent deletion.      | Enforced with a baseline (0)         |
 | C5  | A follow-up in another feature runs in a consumer, unless it is a documented command.       | Planned, with a baseline             |
 | C6  | Clients learn of changes from the relay; a write does not patch another surface's store.    | Enforced with a baseline (0)         |
-| C7  | Whether a route can run is decided once, by `routeReadiness` in `@localixai/agent/catalog`. | Enforced with a baseline (1)         |
+| C7  | Whether a route can run is decided once, by `routeReadiness` in `@localixai/agent/catalog`. | Enforced with a baseline (0)         |
 
 ### Durable turn queue
 

@@ -1,4 +1,4 @@
-import { findCatalogModel, type CatalogModelConnection } from './model-lookup'
+import { findCatalogModel, hasProviderPrefix, type CatalogModelConnection } from './model-lookup'
 import type { CatalogModel } from './types'
 
 /**
@@ -31,10 +31,8 @@ export interface StoredRoute {
   providerConnectionId?: string | null
 }
 
-const prefixedBy = (modelId: string, providerId: string) => modelId.startsWith(`${providerId}/`)
-
 /** The providers the catalog lists the model under. */
-function catalogOwners(
+export function catalogOwners(
   catalog: readonly Pick<CatalogModel, 'id' | 'providerId'>[],
   modelId: string,
 ): Set<string> {
@@ -46,7 +44,7 @@ function catalogOwners(
  * The provider a model belongs to when the stored connection cannot say: its catalog owner, or
  * for a live model the catalog does not list, the connected provider its id is namespaced by.
  */
-function owningProviders(
+export function owningProviders(
   catalog: readonly Pick<CatalogModel, 'id' | 'providerId'>[],
   connections: readonly RouteConnection[],
   modelId: string,
@@ -54,8 +52,23 @@ function owningProviders(
   const listed = catalogOwners(catalog, modelId)
   if (listed.size > 0) return listed
   return new Set(
-    connections.map((c) => c.providerId).filter((providerId) => prefixedBy(modelId, providerId)),
+    connections
+      .map((c) => c.providerId)
+      .filter((providerId) => hasProviderPrefix(modelId, providerId)),
   )
+}
+
+/**
+ * Whether a provider owns the model: one the catalog lists it under, or for a live model the
+ * catalog does not list, the provider its id is namespaced by. A bare id nobody lists has no owner.
+ */
+export function providerOwnsModel(
+  catalog: readonly Pick<CatalogModel, 'id' | 'providerId'>[],
+  providerId: string,
+  modelId: string,
+): boolean {
+  const listed = catalogOwners(catalog, modelId)
+  return listed.size > 0 ? listed.has(providerId) : hasProviderPrefix(modelId, providerId)
 }
 
 export function routeReadiness(
@@ -66,20 +79,16 @@ export function routeReadiness(
   const modelId = route.modelId
   if (!modelId) return { status: 'no-model' }
   const usable = connections.filter((connection) => connection.usable !== false)
-  const listed = catalogOwners(catalog, modelId)
 
   // The account it last ran on, while it still exists, has a key and owns the model.
   const preferred = usable.find((connection) => connection.id === route.providerConnectionId)
-  if (preferred) {
-    const owns =
-      listed.size > 0 ? listed.has(preferred.providerId) : prefixedBy(modelId, preferred.providerId)
-    if (owns)
-      return {
-        status: 'ready',
-        providerId: preferred.providerId,
-        connectionId: preferred.id,
-        rebound: false,
-      }
+  if (preferred && providerOwnsModel(catalog, preferred.providerId, modelId)) {
+    return {
+      status: 'ready',
+      providerId: preferred.providerId,
+      connectionId: preferred.id,
+      rebound: false,
+    }
   }
 
   const owners = owningProviders(catalog, connections, modelId)

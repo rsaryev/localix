@@ -87,10 +87,6 @@ const EXEMPTIONS: Exemptions = {
     reason:
       'Sniffs whether an argument string looks like a file path vs a URL. No root, nothing to contain.',
   },
-  [exemptionKey('src/features/chat/runtime/model-resolution.ts', 'sep-template')]: {
-    reason:
-      'Owns the MODEL-ID namespace check (`hasProviderPrefix`: `anthropic/…`). It compares catalog identifiers; it never resolves or accesses a filesystem path. Other model code calls it instead of repeating the idiom.',
-  },
   [exemptionKey('src/features/capabilities/cleanup.ts', 'sep-template')]: {
     reason:
       'Matches an MCP server’s per-tool rule actions (`mcp:<server>/<tool>`) when the server is removed. It compares rule identifiers only; no filesystem path is resolved or accessed.',

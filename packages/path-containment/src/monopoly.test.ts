@@ -76,14 +76,10 @@ const IDIOMS = {
  * DO go through the owner.
  */
 const EXEMPTIONS: Record<string, string> = {
-  'apps/api/src/features/chat/runtime/model-resolution.ts::sep-template':
-    'Owns the namespaced MODEL ID check (`hasProviderPrefix`) other model code calls. Not a path.',
   'apps/api/src/features/capabilities/cleanup.ts::sep-template':
     'Matches an MCP rule name `mcp:<server>/<tool>` of a removed server. Not a path.',
-  'packages/agent/src/catalog/route-readiness.ts::sep-template':
-    'Tests the `<providerId>/` namespace of a MODEL ID to find its owner. Not a path.',
   'packages/agent/src/catalog/model-lookup.ts::sep-template':
-    'Matches namespaced MODEL IDs against provider ids during catalog lookup. Not a path.',
+    'Owns the `<providerId>/` namespace of a MODEL ID (`hasProviderPrefix`) every catalog and model resolution caller uses. Not a path.',
   'apps/ui/src/entities/chat/ui/useTranscriptJumps.ts::sep-template':
     'Matches a `localix://resource/chat/message/<session>` URI against the namespace this materializer owns. A URI namespace, not a filesystem path — routing it through the owner would apply path semantics (`..` resolution, separator normalisation) to an opaque identifier.',
   // ── other non-path prefixes ──
