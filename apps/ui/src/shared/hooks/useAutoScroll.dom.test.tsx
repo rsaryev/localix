@@ -62,7 +62,7 @@ afterEach(() => {
 
 describe('atBottom — the one predicate behind both the button and following', () => {
   test('a viewport that cannot scroll is at the bottom, whatever scrollTop says', async () => {
-    const { atBottom } = await import('./useAutoScroll')
+    const { atBottom } = await import('./autoScrollGeometry')
     // The reported case: a short session. Nothing to scroll ⇒ no button, ever.
     expect(atBottom({ scrollHeight: 300, clientHeight: 300, scrollTop: 0 })).toBe(true)
     expect(atBottom({ scrollHeight: 120, clientHeight: 900, scrollTop: 0 })).toBe(true)
@@ -77,7 +77,7 @@ describe('atBottom — the one predicate behind both the button and following', 
   })
 
   test('a scrollable viewport away from the tail is NOT at the bottom', async () => {
-    const { atBottom } = await import('./useAutoScroll')
+    const { atBottom } = await import('./autoScrollGeometry')
     expect(atBottom({ scrollHeight: 2_000, clientHeight: 500, scrollTop: 0 })).toBe(false)
     // Inside the near-bottom band still counts as following.
     expect(atBottom({ scrollHeight: 2_000, clientHeight: 500, scrollTop: 1_460 })).toBe(true)

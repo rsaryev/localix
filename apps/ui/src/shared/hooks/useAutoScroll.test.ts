@@ -6,7 +6,7 @@ import {
   isNearBottom,
   needsBottomScroll,
   shouldScheduleBottomReapply,
-} from './useAutoScroll'
+} from './autoScrollGeometry'
 
 describe('bottomScrollTop', () => {
   it('captures the clamped browser landing position from one geometry snapshot', () => {

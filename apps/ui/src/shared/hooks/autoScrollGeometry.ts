@@ -62,7 +62,7 @@ export function contentChangeAction(
   // the 80px near-bottom band; scheduling `syncPinnedState` here would re-pin on
   // the very next frame and yank their wheel/selection back to the live tail.
   if (!pinned) return 'none'
-  if (pinned && !blocked) return 'scroll-now'
+  if (!blocked) return 'scroll-now'
   return framePending ? 'none' : 'schedule-frame'
 }
 

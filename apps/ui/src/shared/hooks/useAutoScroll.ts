@@ -14,15 +14,12 @@ import { useAutoScrollSessionRestore } from './useAutoScrollSessionRestore'
 import { useAutoScrollContentObserver } from './useAutoScrollContentObserver'
 import { useAutoScrollUserInput } from './useAutoScrollUserInput'
 
-export {
-  atBottom,
-  bottomScrollTop,
-  contentChangeAction,
-  isNearBottom,
-  needsBottomScroll,
-  shouldScheduleBottomReapply,
-  type ScrollGeometry,
-} from './autoScrollGeometry'
+/**
+ * How long the scroll event a programmatic scroll causes is still taken as ours: browsers
+ * dispatch it asynchronously. A smooth scroll animates over many frames, so it gets longer.
+ */
+const SCROLL_GUARD_MS = 600
+const SMOOTH_SCROLL_GUARD_MS = 1500
 
 export function useAutoScroll<T extends HTMLElement>(sessionId?: string | null, isOpen = true) {
   const scrollRef = useRef<T | null>(null)
@@ -68,7 +65,7 @@ export function useAutoScroll<T extends HTMLElement>(sessionId?: string | null, 
     })
   }, [])
 
-  const markProgrammaticScroll = useCallback((node: HTMLElement, windowMs = 600) => {
+  const markProgrammaticScroll = useCallback((node: HTMLElement, windowMs = SCROLL_GUARD_MS) => {
     const top = bottomScrollTop(node.scrollHeight, node.clientHeight)
     autoScrollTargetRef.current = {
       top,
@@ -200,7 +197,10 @@ export function useAutoScroll<T extends HTMLElement>(sessionId?: string | null, 
       saveCurrentSession(scrollNode)
       if (!isUsableScrollViewport(scrollNode)) return
 
-      const top = markProgrammaticScroll(scrollNode, behavior === 'smooth' ? 1500 : 600)
+      const top = markProgrammaticScroll(
+        scrollNode,
+        behavior === 'smooth' ? SMOOTH_SCROLL_GUARD_MS : SCROLL_GUARD_MS,
+      )
       if (needsBottomScroll(scrollNode.scrollTop, top)) scrollNode.scrollTo({ top, behavior })
 
       // One rAF re-apply: callers often scroll the same tick they append content —
