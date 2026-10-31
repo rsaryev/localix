@@ -24,7 +24,7 @@ export interface MessageReactionIo {
 }
 
 /** The reactions a message would have after the person marks it with `emoji`; null when unchanged. */
-export function withReaction(
+function withReaction(
   payload: StoredMessagePayload,
   emoji: string,
   at: string,
@@ -35,7 +35,7 @@ export function withReaction(
 }
 
 /** The reactions a message would have after the person takes `emoji` back; null when unchanged. */
-export function withoutReaction(
+function withoutReaction(
   payload: StoredMessagePayload,
   emoji: string,
 ): StoredMessagePayload['reactions'] | null {

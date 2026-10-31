@@ -23,7 +23,6 @@ import { handleAgentEvent, type TurnEventContext } from '../event-handlers'
 import { persistNow } from '../event-handlers-flush'
 import { buildRuntimeToolContext } from '../runtime-execution'
 import { wireRunSteering } from '../steering-wiring'
-import { indexToolPresentation } from '../tool-assembly'
 import { settleRunStream } from './stream-settle'
 import type { RunInputs } from './context'
 import { promptCacheRetentionFor } from '../catalog-agent'
@@ -34,6 +33,7 @@ import type { RunPrompt } from './prompt'
 import type { RunToolset } from './tools'
 import type { ResolvedTurn } from './turn'
 import { describeToolActions } from '../tool-action-descriptors'
+import { indexToolPresentation } from '../tool-namespace'
 
 /**
  * Hard ceiling on per-turn output tokens, independent of a model's (sometimes huge) declared

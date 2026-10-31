@@ -106,8 +106,6 @@ export interface AssembledRunTools {
   mcpInventory: McpInventoryEntry[]
 }
 
-export { claimSecondaryTools, indexToolPresentation } from './tool-namespace'
-
 /** The tools whose start is stored at once (`handleToolExecutionStart`): every declared writer. */
 export function recordMutatingTools(tools: readonly AgentTool[], into: Set<string>): void {
   for (const t of tools) if (t.mutates) into.add(t.name)

@@ -6,12 +6,12 @@ import { envInt } from '../../../../lib/env'
  * turn ends. The count resets each time the agent calls a tool, and
  * `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP` raises the cap.
  */
-export const DEFAULT_STOP_HOOK_BLOCK_CAP = 8
+const DEFAULT_STOP_HOOK_BLOCK_CAP = 8
 
 type EnvSource = Record<string, string | undefined>
 
 /** The cap in force: `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP` when it is a positive integer. */
-export function stopHookBlockCap(env: EnvSource = process.env): number {
+function stopHookBlockCap(env: EnvSource = process.env): number {
   return envInt('CLAUDE_CODE_STOP_HOOK_BLOCK_CAP', DEFAULT_STOP_HOOK_BLOCK_CAP, env)
 }
 

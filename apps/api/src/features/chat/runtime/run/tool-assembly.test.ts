@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import type { AgentTool } from '@localixai/agent/agents'
 import { validateToolRegistry } from '@localixai/agent/agents'
 import { z } from 'zod'
-import { claimSecondaryTools, indexToolPresentation, recordMutatingTools } from './tool-assembly'
+import { recordMutatingTools } from './tool-assembly'
 import {
   MAX_SESSION_ACTIVATED_TOOLS,
   mergeActivatedTools,
@@ -13,6 +13,7 @@ import {
   buildDeferredEntry,
   createActivateToolsTool,
 } from '../../../agent-core/tools/activate-tools/activate-tools'
+import { claimSecondaryTools, indexToolPresentation } from './tool-namespace'
 
 const tool = (name: string, description = name): AgentTool =>
   ({

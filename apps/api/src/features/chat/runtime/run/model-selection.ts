@@ -76,12 +76,6 @@ export async function resolveRunModel(args: {
 export type ResolvedRunModel = Awaited<ReturnType<typeof resolveRunModel>>
 
 /**
- * Project a provider-agnostic resolution back onto durable session state.
- *
- * Rebinds the route of the session's agent: the recovered connection belongs to the model
- * that just resolved.
- */
-/**
  * Record a recovered connection — but only when this conversation owns the model it serves.
  *
  * The run used to write the whole resolved route back, which froze an INHERITED route into
@@ -103,11 +97,13 @@ export async function persistReboundConnection(
   session: SessionRecord,
   providerConnectionId: string,
 ): Promise<void> {
-  const agent = agentRoute(session)
-  if (!agent) throw new AgentRunError('AGENT_UNAVAILABLE', 'The session has no agent.')
   await repo.updateSessionAgentRoute(userId, session.id, { providerConnectionId })
 }
 
+/**
+ * Project a provider-agnostic resolution back onto the session in memory: the recovered
+ * connection belongs to the model that just resolved.
+ */
 export function rebindResolvedProvider(
   session: SessionRecord,
   providerConnectionId: string,

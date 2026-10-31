@@ -33,16 +33,12 @@ const FLAG_FILE = path.join(localixHome(), 'wire-dump.on')
 const seqBySession = new Map<string, number>()
 
 let flagCache = { at: 0, on: false }
-function flagFileOn(): boolean {
+export function wireDumpEnabled(): boolean {
   const now = Date.now()
   if (now - flagCache.at > 2000) {
     flagCache = { at: now, on: existsSync(FLAG_FILE) }
   }
   return flagCache.on
-}
-
-export function wireDumpEnabled(): boolean {
-  return flagFileOn()
 }
 
 /** Best-effort role extraction across the wire message shapes. */

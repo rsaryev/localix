@@ -24,6 +24,7 @@ import { releaseChildSurfaces, type ChildSurfaceDeps } from './child-surfaces'
 import { createModelContextRepository } from '../../model-context-repository'
 import { createForkPort } from '../fork/fork-port'
 import type { ForkLiveRun } from '../fork/fork-port'
+import { sleep } from '@localixai/agent/backoff'
 
 /**
  * The longest a delegation call watches its child before returning "running".
@@ -36,13 +37,6 @@ import type { ForkLiveRun } from '../fork/fork-port'
  * when the child's first output shows it is running (`delegation-first-sign.ts`).
  */
 const DELEGATION_SETTLE_MS = 1_200
-
-/** The window's clock: a timer that stops when the call no longer needs it. */
-const timerDelay = (ms: number, signal: AbortSignal): Promise<void> =>
-  new Promise((resolve) => {
-    const timer = setTimeout(resolve, ms)
-    signal.addEventListener('abort', () => (clearTimeout(timer), resolve()), { once: true })
-  })
 
 /** Everything the delegate host needs from the run being assembled. */
 export interface TaskDelegationOptionsInput {
@@ -246,7 +240,7 @@ export function buildTaskDelegationOptions(
       // for a wake to learn that nothing was ever going to arrive. A child still active when
       // the window closes reads as `running`, so the call stays non-blocking.
       const window = new AbortController()
-      const delay = input.settleDelay ?? timerDelay
+      const delay = input.settleDelay ?? sleep
       const early = await Promise.race([
         earlyExit,
         firstSign.seen.then(() => null),

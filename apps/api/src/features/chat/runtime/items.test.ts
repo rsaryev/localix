@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { indexToolPresentation } from './run/tool-assembly'
 import { isTranscriptItemHidden } from '../item-format'
 
 import {
@@ -379,6 +378,7 @@ describe('buildToolItem', () => {
 })
 
 import type { ToolBackedItem } from '@localixai/agent/agents'
+import { indexToolPresentation } from './run/tool-namespace'
 
 describe('createItemAccumulator', () => {
   const verb = () => 'Running'

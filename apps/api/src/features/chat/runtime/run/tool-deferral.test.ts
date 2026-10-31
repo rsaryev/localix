@@ -12,7 +12,8 @@ import type { CcHooksRuntime } from '../../../cc-hooks'
 import type { SessionRecord } from '../../repository'
 import type { RunEnv } from './types'
 import type { buildRunToolRegistry } from './runtime-tools'
-import { assembleRunTools, claimSecondaryTools } from './tool-assembly'
+import { assembleRunTools } from './tool-assembly'
+import { claimSecondaryTools } from './tool-namespace'
 
 /**
  * A built-in has ONE name — Claude Code's capitalized spelling (`Read`, `Bash`, `ToolSearch`) — and

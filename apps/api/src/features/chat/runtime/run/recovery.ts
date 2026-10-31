@@ -15,10 +15,9 @@
  *
  * Every attempt returns whether a run was scheduled; false lets the failure finalize normally.
  */
-import { sleep } from '@localixai/agent/backoff'
 import type { CheckpointReason } from '@localixai/agent'
 
-import { backoffMs } from '@localixai/agent/backoff'
+import { backoffMs, sleep } from '@localixai/agent/backoff'
 import type { SessionRecord } from '../../repository'
 import type { RuntimeState } from '../agent-runner-state'
 import { LocalContextBudgetExceededError } from '../context-budget'
