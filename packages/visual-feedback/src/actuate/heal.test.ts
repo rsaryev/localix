@@ -12,8 +12,15 @@ import { GlobalRegistrator } from '@happy-dom/global-registrator'
 import { runCommand, installConsoleCapture, type ActuateDeps } from './index'
 import { buildSnapshot, createRefRegistry } from '../snapshot/index'
 
+// A covered click waits a moment for the cover to go: on a clock that never sleeps here.
 function makeDeps(): ActuateDeps {
-  return { reg: createRefRegistry(), console: installConsoleCapture(), prevTree: { value: '' } }
+  let t = 0
+  return {
+    reg: createRefRegistry(),
+    console: installConsoleCapture(),
+    prevTree: { value: '' },
+    clock: { now: () => t, sleep: async (ms) => void (t += ms) },
+  }
 }
 
 describe('self-healing click', () => {

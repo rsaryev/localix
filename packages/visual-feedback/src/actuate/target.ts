@@ -11,6 +11,8 @@ import type { ActuateDeps, ActuateResult } from './types'
 import { getElementSummary, getSemanticRole } from '../core/identify'
 import { stateForDiff } from './diff'
 import { frameDocument, inOverlayFrame, isFrame } from '../core/frames'
+import { occludedBy } from './input'
+import { nativeSleep, now } from './settle'
 
 /* ------------------------------- targeting -------------------------------- */
 
@@ -163,22 +165,73 @@ export function findCloseControl(blocker: Element): Element | null {
   return null
 }
 
-/** Describe a click blocked by an overlay: what covers it, its close control, fresh refs. */
+/** How long a click waits for a cover to go (a loading veil, a closing banner), and how often it looks. */
+const COVER_WAIT_MS = 1000
+const COVER_POLL_MS = 100
+
+/**
+ * What still covers `el` after a moment: a person waits out a veil that is gone a second later
+ * instead of giving up on the click. Null when nothing covers it (any more).
+ */
+export async function lastingCover(el: Element, deps: ActuateDeps): Promise<Element | null> {
+  const clock = deps.clock ?? { now, sleep: nativeSleep }
+  const started = clock.now()
+  let blocker = occludedBy(el)
+  while (blocker && clock.now() - started < COVER_WAIT_MS) {
+    await clock.sleep(COVER_POLL_MS)
+    blocker = occludedBy(el)
+  }
+  return blocker
+}
+
+/** The layer a cover belongs to: its highest ancestor that does not hold the target. */
+function coverLayer(blocker: Element, target: Element): Element {
+  const body = blocker.ownerDocument.body
+  let layer = blocker
+  while (
+    layer.parentElement &&
+    layer.parentElement !== body &&
+    !layer.parentElement.contains(target)
+  )
+    layer = layer.parentElement
+  return layer
+}
+
+/** How many of a cover's controls an error names. */
+const COVER_CONTROLS = 5
+
+/** Describe a click blocked by an overlay: what covers it, the controls on it, fresh refs. */
 export function interceptedClickResult(
   target: Element,
   blocker: Element,
   deps: ActuateDeps,
 ): ActuateResult {
+  // The snapshot first, so the controls are named by the refs the agent receives with it.
+  const snapshot = buildSnapshot(deps.reg, { root: deps.root })
+  const layer = coverLayer(blocker, target)
+  const onCover = (snapshot.elements ?? [])
+    .filter((entry) => {
+      const el = deps.reg.get(entry.ref)
+      return el !== null && layer.contains(el)
+    })
+    .slice(0, COVER_CONTROLS)
+  const controls = onCover.length
+    ? ` On it: ${onCover.map((e) => `${e.name ? `${e.role} "${e.name}"` : e.role} [${e.ref}]`).join(', ')}.`
+    : ''
+  // The close control is named apart only when the list above does not already hold it.
   const closer = findCloseControl(blocker)
-  const closeNote = closer ? ` Its close control: ${getElementSummary(closer)}.` : ''
+  const closeNote =
+    closer && !onCover.some((entry) => deps.reg.get(entry.ref) === closer)
+      ? ` Its close control: ${getElementSummary(closer)}.`
+      : ''
   // A frame the actuator cannot enter hides what it shows: say so, or the agent hunts for it.
   const reach =
     isFrame(blocker) && !frameDocument(blocker) ? ' It is a cross-origin frame, not reachable.' : ''
   return {
     ok: false,
     errorCode: 'intercepted',
-    error: `${getElementSummary(target)} is covered by ${getElementSummary(blocker)} (${getSemanticRole(blocker) ?? blocker.tagName.toLowerCase()}).${closeNote}${reach}`,
-    result: { action: 'click', snapshot: buildSnapshot(deps.reg, { root: deps.root }) },
+    error: `${getElementSummary(target)} is covered by ${getElementSummary(blocker)} (${getSemanticRole(blocker) ?? blocker.tagName.toLowerCase()}).${controls}${closeNote}${reach}`,
+    result: { action: 'click', snapshot },
   }
 }
 

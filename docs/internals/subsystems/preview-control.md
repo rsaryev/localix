@@ -111,14 +111,14 @@ terminal output. A URL, and a full-screen app entering or leaving the alternate 
 
 ### Recovery invariants
 
-| Failure or ambiguity        | Mechanism                                                                                            | Result                                                                        |
-| --------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Stale ref                   | The ref registry retries once by saved selector, then unique role and accessible name                | Success includes a heal note and fresh tree; failure includes the fresh tree  |
-| Covered click target        | Center-point hit testing identifies the covering element and searches its dialog for a close control | The `intercepted` error names the blocker, its close control and a fresh tree |
-| Asynchronous page change    | Drive actions wait two animation frames and up to 400 ms for root animations                         | The default result contains a settled change diff                             |
-| Page reload                 | A same-origin `sessionStorage` marker detects prior agent activity in the old probe realm            | The first new command reports that old refs are invalid                       |
-| Handler or resource failure | The probe attaches action-time errors and newly failed subresources                                  | The agent receives the failure beside the triggering action                   |
-| Native page dialog          | The probe replaces `alert`, `confirm`, and `prompt` with non-blocking recorded stubs                 | The bridge stays responsive and the action reports the dialog                 |
+| Failure or ambiguity        | Mechanism                                                                                                                                             | Result                                                                                                                   |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Stale ref                   | The ref registry retries once by saved selector, then unique role and accessible name                                                                 | Success includes a heal note and fresh tree; failure includes the fresh tree                                             |
+| Covered click target        | Center-point hit testing waits up to a second for a cover to go (a loading veil), then identifies the covering element, its layer and a close control | The `intercepted` error names the blocker, the controls on its layer with their refs, its close control and a fresh tree |
+| Asynchronous page change    | Drive actions wait two animation frames and up to 400 ms for root animations                                                                          | The default result contains a settled change diff                                                                        |
+| Page reload                 | A same-origin `sessionStorage` marker detects prior agent activity in the old probe realm                                                             | The first new command reports that old refs are invalid                                                                  |
+| Handler or resource failure | The probe attaches action-time errors and newly failed subresources                                                                                   | The agent receives the failure beside the triggering action                                                              |
+| Native page dialog          | The probe replaces `alert`, `confirm`, and `prompt` with non-blocking recorded stubs                                                                  | The bridge stays responsive and the action reports the dialog                                                            |
 
 Drive actions return a compact change diff by default. `snapshot_after: true` returns the full fresh
 tree when the next action needs new refs. A self-healed action returns a tree regardless of that

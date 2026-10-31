@@ -12,12 +12,15 @@ import { buildSnapshot, createRefRegistry } from '../snapshot/index'
 import { ownerFrame } from '../core/frames'
 import { pressKey } from './input'
 
+// A covered click waits a moment for the cover to go: on a clock that never sleeps here.
 function makeDeps(): ActuateDeps {
+  let t = 0
   return {
     reg: createRefRegistry(),
     console: installConsoleCapture(),
     prevTree: { value: '' },
     settle: async () => {},
+    clock: { now: () => t, sleep: async (ms) => void (t += ms) },
   }
 }
 

@@ -20,7 +20,6 @@ import { buildSnapshot } from '../snapshot/index'
 import { rasterizeElement } from '../rasterize/index'
 import {
   centerPoint,
-  occludedBy,
   dispatchMouse,
   dispatchPointer,
   synthClick,
@@ -58,6 +57,7 @@ import {
   resolveWithHeal,
   healFailResult,
   interceptedClickResult,
+  lastingCover,
   withHeal,
   snapAfter,
 } from './target'
@@ -225,7 +225,7 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
       if (isHealFail(t)) return healFailResult('click', t)
       const target = t.el
       target.scrollIntoView({ block: 'center' })
-      const blocker = occludedBy(target)
+      const blocker = await lastingCover(target, deps)
       if (blocker) {
         return interceptedClickResult(target, blocker, deps)
       }
