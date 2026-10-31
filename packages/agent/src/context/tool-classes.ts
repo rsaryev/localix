@@ -11,7 +11,7 @@
  * — app-specific tool names must never be hardcoded here.
  */
 
-const pagedReadResultTools = new Set(['Read', 'lsp', 'Search', 'grep', 'ls', 'list'])
+const pagedReadResultTools = new Set(['Read', 'Search'])
 const readResultTools = new Set(pagedReadResultTools)
 
 const mutateTools = new Set(['Write', 'Edit'])
@@ -22,11 +22,11 @@ const patchTools = new Set(['apply_patch', 'patch'])
 
 const allMutateTools = new Set([...mutateTools, ...patchTools])
 
-const nonidempotentTools = new Set(['Bash', 'terminal', 'shell'])
+const nonidempotentTools = new Set(['Bash'])
 
 /**
  * Tools whose RESULT is a recoverable observation — re-readable from disk/source,
- * so old results can be elided near-losslessly. `bash`/`terminal` are deliberately
+ * so old results can be elided near-losslessly. `Bash` is deliberately
  * excluded: their output can't be safely reproduced.
  */
 export const READ_RESULT_TOOLS: ReadonlySet<string> = readResultTools

@@ -3,8 +3,8 @@ import { defaultResolveTarget } from './targets'
 import { namedTool } from './_test-helpers'
 
 describe('defaultResolveTarget — class mapping', () => {
-  test('read/lsp/search/grep map to "read"', () => {
-    for (const name of ['Read', 'lsp', 'Search', 'grep']) {
+  test('read/search map to "read"', () => {
+    for (const name of ['Read', 'Search']) {
       const t = defaultResolveTarget(namedTool(name, { path: 'src/x.ts' }))
       expect(t?.class).toBe('read')
     }
