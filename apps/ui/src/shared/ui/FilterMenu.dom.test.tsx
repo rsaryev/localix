@@ -15,7 +15,7 @@ afterAll(async () => {
 
 describe('FilterMenu — every narrowing behind one trigger', () => {
   test('a dimension is a submenu whose hint is its answer; a choice is a radio row', async () => {
-    const { FilterMenu, filterFacetEntry, activeFacetCount } = await import('./FilterMenu')
+    const { FilterMenu } = await import('./FilterMenu')
     const changes: string[] = []
     const level: FilterFacet = {
       id: 'level',
@@ -40,14 +40,6 @@ describe('FilterMenu — every narrowing behind one trigger', () => {
       onChange: (value) => changes.push(`time:${value}`),
     }
 
-    // The model, without a DOM: the hint is the current answer, the rows are `selected` picks
-    // that keep the menu open, and only a facet off its "all" value counts as active.
-    const entry = filterFacetEntry(level)
-    expect(entry.hint).toBe('Errors')
-    expect(entry.items.map((row) => 'selected' in row && row.selected)).toEqual([false, true])
-    expect(entry.items.every((row) => 'keepOpen' in row && row.keepOpen)).toBe(true)
-    expect(activeFacetCount([level, time])).toBe(1)
-
     const { act } = await import('react')
     const { createRoot } = await import('react-dom/client')
     const host = document.createElement('div')
@@ -69,6 +61,28 @@ describe('FilterMenu — every narrowing behind one trigger', () => {
         'TimeAny time',
         'Clear filters',
       ])
+      // The submenu's rows are radio picks with the current answer checked; a pick steps back out
+      // to the menu, which stays open.
+      await act(async () => {
+        rows[0]!.focus()
+        rows[0]!.dispatchEvent(
+          new window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+        )
+        await settle()
+      })
+      const picks = () => [...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')]
+      expect(picks().map((row) => [row.textContent, row.getAttribute('aria-checked')])).toEqual([
+        ['All levels', 'false'],
+        ['Errors', 'true'],
+      ])
+      await act(async () => {
+        picks()[0]!.click()
+        await settle()
+      })
+      expect(changes).toEqual(['level:all'])
+      expect(picks()).toHaveLength(0)
+      expect(document.querySelectorAll('[role="menuitem"]')).toHaveLength(3)
+      changes.length = 0
       // Clearing resets only the facets that narrow, each to its own "all".
       await act(async () => {
         rows[2]!.click()

@@ -46,7 +46,7 @@ export interface FilterFacet<V extends string = string> {
 }
 
 /** A facet as one submenu row of the filter menu. */
-export function filterFacetEntry<V extends string>(facet: FilterFacet<V>): MenuSubmenuEntry {
+function filterFacetEntry<V extends string>(facet: FilterFacet<V>): MenuSubmenuEntry {
   const current = facet.options.find((option) => option.value === facet.value)
   return {
     id: facet.id,
@@ -69,7 +69,7 @@ export function filterFacetEntry<V extends string>(facet: FilterFacet<V>): MenuS
 }
 
 /** How many facets narrow the list right now. */
-export function activeFacetCount(facets: readonly FilterFacet<string>[]): number {
+function activeFacetCount(facets: readonly FilterFacet<string>[]): number {
   return facets.filter((facet) => facet.value !== facet.allValue).length
 }
 
