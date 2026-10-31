@@ -125,10 +125,8 @@ pub(crate) async fn updater_check(app: AppHandle) -> Result<UpdateStatus, String
             *app.state::<PendingUpdate>().0.lock().unwrap() = None;
             report_check_success();
             Ok(UpdateStatus {
-                available: false,
                 current_version: current,
-                latest_version: None,
-                notes: None,
+                ..Default::default()
             })
         }
         Err(e) => {
