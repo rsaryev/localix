@@ -38,13 +38,9 @@ export function usePlanOwnerId(sessionId: string | null): string | null {
   })
 }
 
-/** The owner's versions, newest first; `undefined` while they were never loaded. */
-export function usePlans(ownerId: string | null): readonly SessionPlan[] | undefined {
-  return useChatStore((state) => findSessionInState(state, ownerId)?.plans)
-}
-
+/** The owner's versions, newest first; empty while they were never loaded. */
 export function usePlanList(ownerId: string | null): readonly SessionPlan[] {
-  return usePlans(ownerId) ?? EMPTY
+  return useChatStore((state) => findSessionInState(state, ownerId)?.plans) ?? EMPTY
 }
 
 /** Replace the owner's versions with a list the server answered — the frame's own reducer. */
