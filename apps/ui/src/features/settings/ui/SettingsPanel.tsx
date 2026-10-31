@@ -93,7 +93,7 @@ export function SettingsPanel({
       const name = dir.split('/').pop() ?? 'New project'
       const proj = await backendClient.createProject(name, dir)
       // The 'projects' topic brings the new project into the list.
-      onTabChange?.({ kind: 'project', id: proj.id })
+      onTabChange({ kind: 'project', id: proj.id })
     } catch (error) {
       toast.error('Could not add the project folder', {
         description: errorMessage(error, '') || undefined,
@@ -122,7 +122,7 @@ export function SettingsPanel({
         <ProjectScopeSelect
           projects={projects}
           activeId={activeProjId}
-          onSelect={(id) => onTabChange?.({ kind: 'project', id })}
+          onSelect={(id) => onTabChange({ kind: 'project', id })}
           onCreate={() => {
             void addProject()
           }}
@@ -133,7 +133,7 @@ export function SettingsPanel({
           projects={projects}
           activeId={activeProjId}
           picker={picker}
-          onClose={() => onTabChange?.('preferences')}
+          onClose={() => onTabChange('preferences')}
         />
       )
     }
