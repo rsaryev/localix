@@ -1,11 +1,10 @@
 import { autoReveal } from '@/shared/lib/inspectorBus'
 import { useChatStore } from '@/entities/chat/model/store'
-import { openPolicy } from '@/shared/lib/workspaceOf'
+import { openPolicy, workspaceOf } from '@/shared/lib/workspaceOf'
 import { usePreviewStore } from './previewStore'
 import type { PreviewEntry } from './preview'
 import { previewHostKey, usePreviewHosts } from './previewHosts'
 import { navigateReopenedNativePage } from './nativePageNavigation'
-import { workspaceOf } from '@/shared/lib/workspaceOf'
 
 /**
  * Record an opened preview and reveal its tab — from EITHER the `preview.updated` stream frame or

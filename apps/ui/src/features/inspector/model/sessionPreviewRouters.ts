@@ -1,3 +1,4 @@
+// The previews' side of the session stream: what a preview frame does to the Browser.
 import type { AgentStreamEvent } from '@/shared/api/contracts'
 import { previewControlBus } from '@/shared/lib/previewControlBus'
 import type { SessionPreviews } from '@/shared/lib/sessionPreviews'
@@ -10,7 +11,6 @@ import { previewHostKey, usePreviewHosts } from './previewHosts'
 import { usePreviewStore } from './previewStore'
 import { revealPreview } from './revealPreview'
 
-/** The previews' side of the session stream: what a preview frame does to the Browser. */
 /**
  * Agent-driven preview control: relay the `browser` command to the open
  * PreviewTab via the bus (not the store — it's a transient request). The tab runs
