@@ -9,7 +9,7 @@ import { sendChatMessage } from '@/entities/chat/model/sendChatMessage'
 import { useChatStore } from '@/entities/chat/model/store'
 import { activeConversationDraft } from '@/entities/chat/model/conversationStartStrategy'
 import { appendPromptHistory } from '@/entities/chat/model/persistence'
-import type { AgentOptions, SessionRuntime } from '@/entities/chat/model/agent-runtime'
+import type { SessionRuntime } from '@/entities/chat/model/agent-runtime'
 import type { PendingAttachment } from '@/shared/lib/attachment-policy'
 import type { MessageBinding } from '@/shared/api/contracts'
 
@@ -21,7 +21,6 @@ export interface SendMessageDeps {
   clearAttachments: (ids?: readonly string[]) => void
   activeSessionId: string | null
   agentRuntime: SessionRuntime
-  agentOpts: AgentOptions
   forkSession: () => void
   forceScrollToBottom: () => void
   /** Stamp the URL with the session a fresh-chat send actually landed in, so the
@@ -124,7 +123,6 @@ export function useSendMessage({
   clearAttachments,
   activeSessionId,
   agentRuntime,
-  agentOpts,
   forkSession,
   forceScrollToBottom,
   goToSession,
@@ -200,12 +198,7 @@ export function useSendMessage({
       // the user typed. agentRuntime.sendMessage already toasts and cleans state.
       clearAttachments(submittedAttachmentIds)
       void agentRuntime
-        .sendMessage(
-          text,
-          agentOpts,
-          messageBindings.length > 0 ? messageBindings : undefined,
-          isInternal,
-        )
+        .sendMessage(text, messageBindings.length > 0 ? messageBindings : undefined, isInternal)
         .catch(() => {
           // `activeSessionId` is this composer's own chat (non-null on this path).
           if (!isInternal) restoreFailedSendDraft(activeSessionId, text, messageBindings)
@@ -220,7 +213,6 @@ export function useSendMessage({
       clearAttachments,
       activeSessionId,
       agentRuntime,
-      agentOpts,
       forkSession,
       forceScrollToBottom,
       goToSession,

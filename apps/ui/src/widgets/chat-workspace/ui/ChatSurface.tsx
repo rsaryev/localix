@@ -6,7 +6,7 @@ import { ArrowDown } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { PulsingDot } from '@localixai/kit/pulsing-dot'
-import { useSessionRuntime, type AgentOptions } from '@/entities/chat/model/agent-runtime'
+import { useSessionRuntime } from '@/entities/chat/model/agent-runtime'
 import { logCurrentChatMessages, useSessionById, useChatStore } from '@/entities/chat/model/store'
 import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { useJobTerminal } from '@/entities/chat/model/useJobTerminal'
@@ -224,11 +224,6 @@ export function ChatSurface({ sessionId, isFocused, isVisible, resolvedTheme }: 
     clearAttachments()
   }, [sessionId, clearAttachments])
 
-  const agentOpts = useMemo<AgentOptions>(
-    () => ({ model, reasoningEffort }),
-    [model, reasoningEffort],
-  )
-
   const {
     lastSuccessfulUsage,
     latestContextAttempt,
@@ -259,7 +254,6 @@ export function ChatSurface({ sessionId, isFocused, isVisible, resolvedTheme }: 
       reloadWorkspace: () => void reloadWorkspace(),
       setPrompt,
       agentRuntime,
-      agentOpts,
     })
 
   // Composer-based editing: clicking Edit on a past user message loads
@@ -280,7 +274,6 @@ export function ChatSurface({ sessionId, isFocused, isVisible, resolvedTheme }: 
     clearAttachments,
     activeSessionId,
     agentRuntime,
-    agentOpts,
     forkSession,
     forceScrollToBottom,
     goToSession: nav.goToSession,

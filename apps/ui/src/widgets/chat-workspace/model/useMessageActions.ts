@@ -6,7 +6,7 @@ import { useLatestRef } from '@/shared/lib/useLatestRef'
 import { backendClient } from '@/shared/api/client'
 import { useChatStore } from '@/entities/chat/model/store'
 import { useForkSession } from '@/entities/chat/model/useForkSession'
-import type { SessionRuntime, AgentOptions } from '@/entities/chat/model/agent-runtime'
+import type { SessionRuntime } from '@/entities/chat/model/agent-runtime'
 import { findSessionInState } from '@/entities/chat/model/findSession'
 import { applyServerSession } from '@/entities/chat/model/sessionSync'
 
@@ -26,7 +26,6 @@ export interface MessageActionsDeps {
   reloadWorkspace: () => void
   setPrompt: Dispatch<SetStateAction<string>>
   agentRuntime: SessionRuntime
-  agentOpts: AgentOptions
 }
 
 export interface MessageActions {
@@ -53,14 +52,10 @@ export function useMessageActions({
   reloadWorkspace,
   setPrompt,
   agentRuntime,
-  agentOpts,
 }: MessageActionsDeps): MessageActions {
   const forkSession = useForkSession(activeSessionId, goToSession)
 
-  const regenerate = useCallback(
-    () => void agentRuntime.regenerate(agentOpts),
-    [agentRuntime, agentOpts],
-  )
+  const regenerate = useCallback(() => void agentRuntime.regenerate(), [agentRuntime])
 
   // Every message card receives this, so its identity is part of each card's memo. Bound to
   // `reloadWorkspace`/`setPrompt` it changed on every streamed frame and re-rendered every visible

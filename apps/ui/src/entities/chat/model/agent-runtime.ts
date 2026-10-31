@@ -10,7 +10,6 @@ import type {
   PendingRequestSecretInteraction,
   UiPendingHitlInteraction as PendingHitlInteraction,
 } from '@/shared/api/contracts'
-import type { ReasoningEffort } from './reasoning'
 import { useChatStore } from './store'
 import { findSessionInState } from './findSession'
 import { patchSessionById } from './sessionListHelpers'
@@ -20,11 +19,6 @@ import { applyServerSession } from './sessionSync'
 
 // The data plane (one realtime subscription for every session) lives in chatEventStream.ts.
 export { useChatEventStream } from './chatEventStream'
-
-export interface AgentOptions {
-  model: string
-  reasoningEffort: ReasoningEffort
-}
 
 // Pending-interaction types are owned by shared/api/contracts (the UI shape of
 // the API HITL contract); re-exported here to keep existing call sites stable.
@@ -47,13 +41,12 @@ export interface SessionRuntime {
   dismissInteraction: (requestId: string) => void
   sendMessage: (
     prompt: string,
-    opts: AgentOptions,
     bindings?: MessageBinding[],
     /** Hide the user turn (machine-composed prompt, e.g. the analysis wizard). */
     isInternal?: boolean,
   ) => Promise<void>
   stopGeneration: () => void
-  regenerate: (opts: AgentOptions) => Promise<void>
+  regenerate: () => Promise<void>
 }
 
 /**
@@ -169,12 +162,7 @@ export function useSessionRuntime(sessionId: string | null): SessionRuntime {
   )
 
   const sendMessage = useCallback(
-    async (
-      prompt: string,
-      _opts: AgentOptions,
-      bindings?: MessageBinding[],
-      isInternal?: boolean,
-    ) => {
+    async (prompt: string, bindings?: MessageBinding[], isInternal?: boolean) => {
       if (!sessionId) return
       // The one shared send path (instant optimistic paint + failure cleanup +
       // toast) — the mini-app-panel bridge routes through the same helper.
@@ -186,10 +174,7 @@ export function useSessionRuntime(sessionId: string | null): SessionRuntime {
     [sessionId],
   )
 
-  // SessionRuntime advertises AgentOptions for forward-compat, but the impl takes
-  // none: the backend re-runs with the session's own model/effort (same as
-  // sendMessage, which likewise ignores its opts). A 0-arg fn satisfies the
-  // 1-arg interface type, so callers still pass opts harmlessly.
+  // No model or effort: the backend re-runs with the session's own, as it does for a send.
   const regenerate = useCallback(async () => {
     if (!sessionId || sessionRunning(sessionId)) return
     const state = useChatStore.getState()
