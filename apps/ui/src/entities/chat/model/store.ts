@@ -31,11 +31,6 @@ import {
   retainSessionActivity,
 } from '@localixai/mini-app-sdk/ui/session-activity'
 
-// Single source lives in sessionActionsSlice (a session-lifecycle concern, used
-// there on session open); re-exported here so consumers keep importing it from
-// the store barrel.
-export { logCurrentChatMessages } from './sessionActionsSlice'
-
 import { createProjectActions } from './projectActionsSlice'
 import { createSessionActions } from './sessionActionsSlice'
 import { createOptimisticSendActions, type OptimisticSendActions } from './optimisticSendSlice'

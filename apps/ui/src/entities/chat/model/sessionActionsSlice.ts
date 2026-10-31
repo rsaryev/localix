@@ -22,8 +22,6 @@ import {
 } from './conversationStartStrategy'
 import { applyServerSession } from './sessionSync'
 
-export { logCurrentChatMessages } from './sessionBodyActivation'
-
 export interface SessionActionsDeps {
   customSet: CustomSet
   get: () => ChatStore
