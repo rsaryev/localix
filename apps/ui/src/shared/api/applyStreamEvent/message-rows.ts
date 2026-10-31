@@ -50,7 +50,7 @@ export const messageRowReducers: StreamReducers<
     if (event.sessionId !== session.id) return session
     const message = toUiMessage(event.message)
     const previousMessage = session.messages.find((existing) => existing.id === message.id)
-    const exists = session.messages.some((existing) => existing.id === message.id)
+    const exists = previousMessage !== undefined
     // The composer paints optimistic placeholder rows on Enter (your message +
     // the assistant's "working" skeleton) so the send has no dead air. The real
     // echo takes the placeholder's slot instead of appending beside it. User
