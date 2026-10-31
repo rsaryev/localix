@@ -1,4 +1,4 @@
-import { backoffMs } from '@localixai/agent/backoff'
+import { retryUntilDone } from '../lib/retry-until-done'
 import { userHome } from '../lib/env'
 import { errorMessage } from '../lib/errors'
 import type { IdleTask } from '../lib/idle-tasks'
@@ -68,17 +68,11 @@ export function armPluginUpdateTimers(deps: {
         log: (event, detail) => logger.warn({ event, ...detail }),
       })
     : null
-  const retry = { baseMs: 5 * 60_000, maxMs: 6 * 60 * 60 * 1000 }
-  let attempt = 0
-  const installRecommended = async (): Promise<void> => {
-    if (!pass) return
-    const outcome = await pass.run().catch((error) => {
-      logger.warn({ event: 'plugins.recommended_failed', error: errorMessage(error) })
-      return 'retry' as const
-    })
-    if (outcome === 'done' || deps.signal.aborted) return
-    setTimeout(() => void installRecommended(), backoffMs(attempt++, retry)).unref?.()
-  }
+  const recommendedFailed = (error: unknown) =>
+    logger.warn({ event: 'plugins.recommended_failed', error: errorMessage(error) })
+  const installRecommended = pass
+    ? retryUntilDone({ run: () => pass.run(), onError: recommendedFailed, signal: deps.signal })
+    : async () => {}
 
   return {
     recommendedTask: { name: 'recommended_plugins', run: installRecommended },
