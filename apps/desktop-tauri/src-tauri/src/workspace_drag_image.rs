@@ -55,11 +55,9 @@ pub(crate) fn install(
         NSPoint::new(88.0, bounds.size.height - 30.0),
         NSSize::new((bounds.size.width - 112.0).max(1.0), 22.0),
     ));
+    let text = if dark { 0.85 } else { 0.12 };
     label.setTextColor(Some(&NSColor::colorWithSRGBRed_green_blue_alpha(
-        if dark { 0.85 } else { 0.12 },
-        if dark { 0.85 } else { 0.12 },
-        if dark { 0.85 } else { 0.12 },
-        1.0,
+        text, text, text, 1.0,
     )));
     label.setAutoresizingMask(
         NSAutoresizingMaskOptions::ViewWidthSizable | NSAutoresizingMaskOptions::ViewMinYMargin,
