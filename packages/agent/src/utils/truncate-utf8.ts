@@ -1,24 +1,10 @@
-// UTF-8 sizes of JavaScript strings, and cutting a string to a byte budget from its end, without a
-// Node-only dependency.
+// Cutting a string to a UTF-8 byte budget from its end, without a Node-only dependency. Sizes
+// come from `textEncoderByteLength` in ./hash.
 
-interface ByteCounter {
-  byteLength(content: string, encoding: 'utf8'): number
-}
-
-const nodeBuffer = (globalThis as { Buffer?: ByteCounter }).Buffer
-const encoder = new TextEncoder()
 const REPLACEMENT = String.fromCharCode(0xfffd)
 
 const isHighSurrogate = (unit: number) => unit >= 0xd800 && unit <= 0xdbff
 const isLowSurrogate = (unit: number) => unit >= 0xdc00 && unit <= 0xdfff
-
-/**
- * UTF-8 byte length of a string: Buffer's count where there is one, the encoder's otherwise. Both
- * count an unpaired surrogate as the three bytes of the U+FFFD it is encoded as.
- */
-export function utf8ByteLength(content: string): number {
-  return nodeBuffer ? nodeBuffer.byteLength(content, 'utf8') : encoder.encode(content).length
-}
 
 /** Bytes of the one UTF-16 unit `unit` when it is not half of a surrogate pair. */
 const singleUnitBytes = (unit: number) => (unit < 0x80 ? 1 : unit < 0x800 ? 2 : 3)

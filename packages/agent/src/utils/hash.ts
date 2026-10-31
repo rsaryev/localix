@@ -38,7 +38,10 @@ interface RuntimeBuffer {
 const runtimeBuffer = (globalThis as { Buffer?: RuntimeBuffer }).Buffer
 const sharedTextEncoder = new TextEncoder()
 
-/** UTF-8 byte length of a string — Buffer.byteLength when available, TextEncoder otherwise. */
+/**
+ * UTF-8 byte length of a string — Buffer.byteLength when available, TextEncoder otherwise. Both
+ * count an unpaired surrogate as the three bytes of the U+FFFD it is encoded as.
+ */
 export function textEncoderByteLength(value: string): number {
   if (runtimeBuffer) return runtimeBuffer.byteLength(value, 'utf8')
   return sharedTextEncoder.encode(value).byteLength

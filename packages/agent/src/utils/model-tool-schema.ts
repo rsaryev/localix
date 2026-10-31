@@ -1,3 +1,5 @@
+import { textEncoderByteLength } from './hash'
+
 export const DEFAULT_MODEL_TOOL_SCHEMA_BYTE_BUDGET = 32 * 1024
 const MIN_MODEL_TOOL_SCHEMA_BYTE_BUDGET = 64
 
@@ -19,7 +21,7 @@ export interface PreparedModelToolSchema {
 }
 
 function jsonBytes(value: unknown): number {
-  return new TextEncoder().encode(JSON.stringify(value)).byteLength
+  return textEncoderByteLength(JSON.stringify(value))
 }
 
 function cloneSchema(schema: Record<string, unknown>): Record<string, unknown> {

@@ -13,7 +13,8 @@
  * (unpaired surrogates in that partial line become U+FFFD). Anything kept whole is unchanged.
  */
 
-import { truncateStringToBytesFromEnd, utf8ByteLength } from './truncate-utf8'
+import { textEncoderByteLength } from './hash'
+import { truncateStringToBytesFromEnd } from './truncate-utf8'
 
 export const DEFAULT_MAX_LINES = 2000
 export const DEFAULT_MAX_BYTES = 50 * 1024
@@ -80,7 +81,7 @@ function measure(content: string, options: TruncationOptions): Measured {
   return {
     content,
     totalLines: lineCount(content),
-    totalBytes: utf8ByteLength(content),
+    totalBytes: textEncoderByteLength(content),
     maxLines: options.maxLines ?? DEFAULT_MAX_LINES,
     maxBytes: options.maxBytes ?? DEFAULT_MAX_BYTES,
   }
@@ -104,7 +105,7 @@ function result(
     totalLines: input.totalLines,
     totalBytes: input.totalBytes,
     outputLines: kept === null ? input.totalLines : kept.length,
-    outputBytes: kept === null ? input.totalBytes : utf8ByteLength(content),
+    outputBytes: kept === null ? input.totalBytes : textEncoderByteLength(content),
     lastLinePartial: flags.lastLinePartial ?? false,
     firstLineExceedsLimit: flags.firstLineExceedsLimit ?? false,
     maxLines: input.maxLines,
@@ -124,7 +125,7 @@ export function truncateHead(content: string, options: TruncationOptions = {}): 
 
   const firstBreak = content.indexOf('\n')
   const firstLine = firstBreak === -1 ? content : content.slice(0, firstBreak)
-  if (utf8ByteLength(firstLine) > input.maxBytes) {
+  if (textEncoderByteLength(firstLine) > input.maxBytes) {
     return result(input, [], 'bytes', { firstLineExceedsLimit: true })
   }
 
@@ -136,7 +137,7 @@ export function truncateHead(content: string, options: TruncationOptions = {}): 
     const end = content.indexOf('\n', start)
     const line = content.slice(start, end === -1 ? content.length : end)
     // Every line after the first also brings the newline before it.
-    const cost = utf8ByteLength(line) + (kept.length === 0 ? 0 : 1)
+    const cost = textEncoderByteLength(line) + (kept.length === 0 ? 0 : 1)
     if (bytes + cost > input.maxBytes) return result(input, kept, 'bytes')
     kept.push(line)
     bytes += cost
@@ -162,13 +163,13 @@ export function truncateTail(content: string, options: TruncationOptions = {}): 
   for (let left = input.totalLines; left > 0 && kept.length < input.maxLines; left--) {
     const start = end === 0 ? 0 : content.lastIndexOf('\n', end - 1) + 1
     const line = content.slice(start, end)
-    const cost = utf8ByteLength(line) + (kept.length === 0 ? 0 : 1)
+    const cost = textEncoderByteLength(line) + (kept.length === 0 ? 0 : 1)
     if (bytes + cost > input.maxBytes) {
       if (kept.length === 0) {
         // A last line too large on its own: surface its end rather than nothing.
         const tail = truncateStringToBytesFromEnd(line, input.maxBytes)
         kept.push(tail)
-        bytes = utf8ByteLength(tail)
+        bytes = textEncoderByteLength(tail)
         partial = true
       }
       const by = kept.length >= input.maxLines && bytes <= input.maxBytes ? 'lines' : 'bytes'
