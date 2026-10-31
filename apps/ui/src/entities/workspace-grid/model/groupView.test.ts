@@ -5,7 +5,6 @@ import {
   adjacentGroupId,
   focusedFilePath,
   focusedVisibleTabId,
-  openFilePaths,
   leafHasVisibleTab,
 } from './groupView'
 import { makeLeaf, insertSplit, leafIds } from './tree'
@@ -281,79 +280,5 @@ describe('focusedFilePath', () => {
     // Raw activeTab is still fA (session A), but B is active → resolves to fB.
     expect(focusedVisibleTabId(state({ activeScope: 'B' }))).toBe('fB')
     expect(focusedVisibleTabId(state({ activeScope: 'Z', warmScopes: ['Z'] }))).toBeNull()
-  })
-})
-
-describe('openFilePaths (open editor tabs → completion context)', () => {
-  const fileAt = (id: string, scope: string, path: string): WorkItem => ({
-    kind: 'file',
-    id,
-    title: path,
-    scope,
-    payload: { path },
-  })
-
-  test('returns open file-tab paths for the scope, in tab order across groups', () => {
-    const root = insertSplit(
-      makeLeaf('g1', ['fa', 'fb'], 'fa'),
-      'g1',
-      'down',
-      makeLeaf('g2', ['fc'], 'fc'),
-      [0.5, 0.5],
-    )
-    const reg = items(
-      fileAt('fa', 'A', 'a.ts'),
-      fileAt('fb', 'A', 'b.ts'),
-      fileAt('fc', 'A', 'c.ts'),
-    )
-    expect(openFilePaths({ root, items: reg }, 'A')).toEqual(['a.ts', 'b.ts', 'c.ts'])
-  })
-
-  test('excludes a background session’s open files (scope filter)', () => {
-    const leaf = makeLeaf('g1', ['fa', 'fb'], 'fa')
-    const reg = items(fileAt('fa', 'A', 'a.ts'), fileAt('fb', 'B', 'b.ts'))
-    expect(openFilePaths({ root: leaf, items: reg }, 'A')).toEqual(['a.ts'])
-  })
-
-  test('ignores non-file tabs (chat / terminal / diff)', () => {
-    const leaf = makeLeaf('g1', ['fa', 'chat', 'term', 'diff'], 'fa')
-    const reg = items(
-      fileAt('fa', 'A', 'a.ts'),
-      { kind: 'chat', id: 'chat', title: 'Chat', scope: 'A' },
-      { kind: 'terminal', id: 'term', title: 'T', scope: 'A' },
-      { kind: 'diff', id: 'diff', title: 'd', scope: 'A', payload: { path: 'd.ts' } },
-    )
-    expect(openFilePaths({ root: leaf, items: reg }, 'A')).toEqual(['a.ts'])
-  })
-
-  test('skips a file tab without a resolved payload.path', () => {
-    const leaf = makeLeaf('g1', ['fa', 'nop'], 'fa')
-    const reg = items(fileAt('fa', 'A', 'a.ts'), {
-      kind: 'file',
-      id: 'nop',
-      title: 'n',
-      scope: 'A',
-    })
-    expect(openFilePaths({ root: leaf, items: reg }, 'A')).toEqual(['a.ts'])
-  })
-
-  test('dedups the same path opened in two split groups', () => {
-    const root = insertSplit(
-      makeLeaf('g1', ['fa'], 'fa'),
-      'g1',
-      'down',
-      makeLeaf('g2', ['fa2'], 'fa2'),
-      [0.5, 0.5],
-    )
-    const reg = items(fileAt('fa', 'A', 'a.ts'), fileAt('fa2', 'A', 'a.ts'))
-    expect(openFilePaths({ root, items: reg }, 'A')).toEqual(['a.ts'])
-  })
-
-  test('legacy scope-less file tab stays visible (treated as global)', () => {
-    const leaf = makeLeaf('g1', ['fa'], 'fa')
-    const reg = {
-      fa: { kind: 'file', id: 'fa', title: 'a.ts', payload: { path: 'a.ts' } } as WorkItem,
-    }
-    expect(openFilePaths({ root: leaf, items: reg }, 'A')).toEqual(['a.ts'])
   })
 })

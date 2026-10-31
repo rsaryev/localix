@@ -175,35 +175,3 @@ export function focusedFilePath(state: FocusedFileState): string | null {
   if (item && isPathBacked(item.kind)) return (item.payload?.path as string | undefined) ?? null
   return null
 }
-
-/** State slice `openFilePaths` needs — the split tree + item registry. A GridStore
- *  (and `FocusedFileState`) satisfies it. */
-export interface OpenFilesState {
-  root: GridNode
-  items: Record<string, WorkItem>
-}
-
-/**
- * Absolute paths of every OPEN file tab (`kind: 'file'`) whose scope is VISIBLE in
- * `scope` — the files the user currently has open in this session. Deduped, in
- * grid tab order (group by group). Scope-filtered exactly like `focusedFilePath`
- * so a background session's open files never leak into another session's context.
- * A file tab without a resolved `payload.path` is skipped. Powers the inline-
- * completion open-editors context (read by `useFileLsp`).
- */
-export function openFilePaths(state: OpenFilesState, scope: ScopeId): string[] {
-  const paths: string[] = []
-  const seen = new Set<string>()
-  for (const leaf of leaves(state.root)) {
-    for (const id of leaf.tabs) {
-      const item = state.items[id]
-      if (item?.kind !== 'file') continue
-      if (!isVisibleInScope(item.scope, scope)) continue
-      const path = item.payload?.path as string | undefined
-      if (!path || seen.has(path)) continue
-      seen.add(path)
-      paths.push(path)
-    }
-  }
-  return paths
-}
