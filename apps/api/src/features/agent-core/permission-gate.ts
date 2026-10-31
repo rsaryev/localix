@@ -199,7 +199,7 @@ export function createPermissionGate(opts: PermissionGateOptions): PermissionGat
     // "nobody answered" is not "the user said no", and a model that conflates them either
     // abandons work over an empty room or re-asks after a real refusal.
     if (!approved) {
-      const timedOut = typeof outcome === 'object' && outcome.via === 'timeout'
+      const timedOut = outcome.via === 'timeout'
       return {
         block: true,
         refusal: 'human',
@@ -213,7 +213,7 @@ export function createPermissionGate(opts: PermissionGateOptions): PermissionGat
     }
     // A session-wide grant auto-approves without a card — say so, both to the
     // model (accurate note) and to the UI (gate provenance on the tool item).
-    if (typeof outcome === 'object' && outcome.via === 'session-grant') {
+    if (outcome.via === 'session-grant') {
       return {
         note: `[Auto-approved: the user previously granted session-wide approval for this tool.]`,
         provenance: { decision: 'session-grant' },
