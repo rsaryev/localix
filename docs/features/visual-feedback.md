@@ -31,14 +31,20 @@ attachment or a model run._
 The same in-page probe serves the agent's `Browser` tool, so the agent works in the preview you are
 looking at. It starts no separate browser, and nothing is installed in your app.
 
-| Agent action          | What it returns                                                                               | Boundary                                                                           |
-| --------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `snapshot`            | The page as a compact indented text tree whose elements carry `eN` refs, capped at 800 nodes. | A reload invalidates refs; the agent takes a fresh snapshot.                       |
-| `steps`               | One ordered batch of `click`, `hover`, `type`, `press` and `scroll`, validated whole first.   | Events are synthesized, so controls that demand a trusted gesture can reject them. |
-| Any drive action      | A short diff of what changed, with the full tree on request (`snapshot_after`).               | Settling waits two animation frames, plus up to 400 ms for root animations.        |
-| `take_screenshot`     | The page, or one element by ref, rendered in the page.                                        | A DOM re-render of the viewport, not compositor pixels; capture can fail.          |
-| `console`, `evaluate` | Console output and errors, and a page-side expression result.                                 | Native dialogs are stubbed: `confirm` returns true and `prompt` returns null.      |
-| `viewport`            | The frame resized to a named CSS size, checked against the page's real size.                  | Layout only; no device pixel ratio, touch or user agent.                           |
+| Agent action          | What it returns                                                                                    | Boundary                                                                                    |
+| --------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `snapshot`            | The page as a compact indented text tree whose elements carry `eN` refs, capped at 800 nodes.      | A reload invalidates refs; the agent takes a fresh snapshot.                                |
+| `wait` step           | Holds a batch until text or a selector appears, or goes away (`gone`), then says how long it took. | Polls in the page for `timeout_ms`, default 10 s, at most 15 s; on timeout the batch stops. |
+| `steps`               | One ordered batch of `click`, `hover`, `type`, `press` and `scroll`, validated whole first.        | Events are synthesized, so controls that demand a trusted gesture can reject them.          |
+| Any drive action      | A short diff of what changed, with the full tree on request (`snapshot_after`).                    | Settling waits two animation frames, plus up to 400 ms for root animations.                 |
+| `take_screenshot`     | The page, or one element by ref, rendered in the page.                                             | A DOM re-render of the viewport, not compositor pixels; capture can fail.                   |
+| `console`, `evaluate` | Console output and errors, and a page-side expression result.                                      | Native dialogs are stubbed: `confirm` returns true and `prompt` returns null.               |
+| `viewport`            | The frame resized to a named CSS size, checked against the page's real size.                       | Layout only; no device pixel ratio, touch or user agent.                                    |
+
+A page that renders late is read after it rendered: put a `wait` step before the `snapshot` step.
+The page polls every 100 ms on a native timer, so a preview in a hidden tab still answers. A batch
+made only of `wait`, `snapshot` and `console` steps only looks at the page, so it needs no extra
+confirmation.
 
 A ref that goes stale heals itself: the probe retries by its saved selector, then by role and
 accessible name, and says so in the result. A click that a dialog covers returns an `intercepted`

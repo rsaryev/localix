@@ -25,6 +25,7 @@ import { RELOAD_NOTICE, snapshotContent } from './browser-format'
 import { openPreviewAndSnapshot } from './browser-open'
 import { formatReply } from './browser-reply'
 import { createViewportMemory } from './browser-viewport'
+import { relayTimeoutMs } from './browser-wait'
 import { runGoal, type GoalDeps } from './browser-goal'
 
 /**
@@ -188,11 +189,19 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
     // their failure is the call's failure: photographing a page whose setup did not happen
     // returns a picture of the wrong thing, which is worse than an error.
     if (input.action === TAKE_SCREENSHOT && input.steps?.length) {
-      const setup = await deps.send(buildPreviewCommand({ ...input, action: 'steps' }))
+      const setupTimeout = relayTimeoutMs(input)
+      const setup = await deps.send(
+        buildPreviewCommand({ ...input, action: 'steps' }),
+        setupTimeout === undefined ? undefined : { timeoutMs: setupTimeout },
+      )
       if ('error' in setup) return relayFailure('steps', setup)
     }
 
-    const outcome = await deps.send(buildPreviewCommand(input))
+    const timeoutMs = relayTimeoutMs(input)
+    const outcome = await deps.send(
+      buildPreviewCommand(input),
+      timeoutMs === undefined ? undefined : { timeoutMs },
+    )
     if ('error' in outcome) return relayFailure(input.action as PreviewAction, outcome)
     return {
       reloaded: outcome.result.reloaded,

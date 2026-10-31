@@ -30,7 +30,11 @@ export const INTERACTIONS = ['click', 'type', 'press', 'scroll', 'hover'] as con
 // observe in one call (e.g. click a toggle then snapshot the new page, or evaluate the
 // resulting `data-theme`). The probe dispatcher already runs each step generically — this
 // enum is the only gate; a trailing `snapshot` step returns the fresh tree.
-export const STEP_ACTIONS = [...INTERACTIONS, 'snapshot', 'evaluate', 'console'] as const
+// `wait` holds the batch until text or an element appears (or goes); it only observes.
+export const STEP_ACTIONS = [...INTERACTIONS, 'snapshot', 'evaluate', 'console', 'wait'] as const
+
+/** Steps that only look: a batch made of nothing else is a view (`classifyBrowserCall`). */
+export const OBSERVING_STEPS: ReadonlySet<string> = new Set(['snapshot', 'console', 'wait'])
 
 export type BrowserAction = (typeof ACTIONS)[number]
 

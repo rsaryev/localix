@@ -68,6 +68,25 @@ describe('browser classify judges what will run', () => {
     [{ action: 'console' }, { effect: 'view' }],
     [{ action: 'evaluate', expression: '1' }, { effect: 'external' }],
     [{ action: 'steps', steps: [{ action: 'click', ref: 'e1' }] }, { effect: 'external' }],
+    // Waiting only looks: a batch of nothing but observing steps is a view.
+    [{ action: 'steps', steps: [{ action: 'wait', text: 'Saved' }] }, { effect: 'view' }],
+    [
+      {
+        action: 'steps',
+        steps: [{ action: 'wait', selector: '.x', gone: true }, { action: 'snapshot' }],
+      },
+      { effect: 'view' },
+    ],
+    [
+      {
+        action: 'steps',
+        steps: [
+          { action: 'click', ref: 'e1' },
+          { action: 'wait', text: 'Saved' },
+        ],
+      },
+      { effect: 'external' },
+    ],
     [{ action: 'history', history_operation: 'list' }, { effect: 'read' }],
     [{ action: 'history', history_operation: 'search' }, { effect: 'read' }],
     [{ action: 'history', history_operation: 'open' }, { effect: 'view' }],
@@ -128,6 +147,28 @@ const OPEN_OK: OpenPreviewCoreResult = {
   autoServed: false,
   content: 'Opened preview: http://localhost:5173/',
 }
+
+describe('browser wait', () => {
+  test('relays the wait with room to finish, and shows what the page did', async () => {
+    const opts: unknown[] = []
+    const tool = createBrowserTool({
+      async send(_command, o) {
+        opts.push(o)
+        return { ok: true, result: { action: 'steps', note: '"Saved" appeared after 1.2s' } }
+      },
+      async openPreview() {
+        return OPEN_OK
+      },
+      closePreview() {},
+    })
+    const result = await tool.execute('w1', {
+      action: 'steps',
+      steps: [{ action: 'wait', text: 'Saved', timeout_ms: 12_000 }],
+    })
+    expect(result.content).toContain('"Saved" appeared after 1.2s')
+    expect(opts).toEqual([{ timeoutMs: 22_000 + 12_000 }])
+  })
+})
 
 function toolWith(outcome: PreviewSendOutcome) {
   const sent: PreviewCommand[] = []

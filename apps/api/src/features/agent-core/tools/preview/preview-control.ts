@@ -31,7 +31,16 @@ export type BrowserHistoryOperation = 'list' | 'search' | 'open' | 'remove' | 'c
  *  `snapshot`/`evaluate`/`console`, so a batch can act THEN observe in one call (a
  *  trailing `snapshot` returns the fresh tree). */
 export interface PreviewStep {
-  action: 'click' | 'type' | 'press' | 'scroll' | 'hover' | 'snapshot' | 'evaluate' | 'console'
+  action:
+    | 'click'
+    | 'type'
+    | 'press'
+    | 'scroll'
+    | 'hover'
+    | 'snapshot'
+    | 'evaluate'
+    | 'console'
+    | 'wait'
   ref?: string
   selector?: string
   text?: string
@@ -41,6 +50,10 @@ export interface PreviewStep {
   amount?: number
   /** `evaluate` step: the JS expression to run in the page. */
   expression?: string
+  /** `wait` step: hold until the text/selector is gone instead of present. */
+  gone?: boolean
+  /** `wait` step: the longest wait in ms (the page caps it at 15 s). */
+  timeoutMs?: number
 }
 
 /** One command the agent issues against the preview. Only `action`-relevant fields are read. */

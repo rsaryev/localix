@@ -10,7 +10,7 @@
  */
 
 /** performance.now() when available (monotonic), else Date.now(). */
-function now(): number {
+export function now(): number {
   return typeof performance !== 'undefined' && typeof performance.now === 'function'
     ? performance.now()
     : Date.now()
@@ -22,6 +22,11 @@ function now(): number {
 // `Browser` tool round-trip.
 const nativeSetTimeout: (cb: () => void, ms: number) => unknown =
   typeof setTimeout === 'function' ? setTimeout.bind(globalThis) : () => undefined
+
+/** Sleep on the native timer: unlike rAF it keeps firing in a hidden tab. */
+export function nativeSleep(ms: number): Promise<void> {
+  return new Promise<void>((resolve) => nativeSetTimeout(resolve, ms))
+}
 
 /** How long one settle frame waits for rAF before the native fallback resolves it. */
 const FRAME_FALLBACK_MS = 50

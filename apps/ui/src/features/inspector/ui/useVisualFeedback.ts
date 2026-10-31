@@ -12,6 +12,7 @@ import type {
   VfRect,
 } from '@localixai/visual-feedback/protocol'
 import { VF_BRIDGE_KEY, VF_PROTOCOL_VERSION } from '@localixai/visual-feedback/protocol'
+import { commandWindow } from './commandWindow'
 import { clearProbeProblem, reportProbeProblem } from './visualFeedbackProblem'
 
 import type { VfCommandReply, VisualFeedbackBridge } from './visualFeedbackBridge'
@@ -256,7 +257,7 @@ export function useVisualFeedback(
               errorCode: 'failed',
             })
           }
-        }, 10_000)
+        }, commandWindow(command).ms)
         pendingCommandsRef.current.set(commandId, (reply) => {
           clearTimeout(timer)
           resolve(reply)

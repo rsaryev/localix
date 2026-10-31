@@ -34,6 +34,9 @@ export interface ActuateDeps {
   /** Set by `steps` for its members: wait only for the commit, skip the diff. The batch
    *  settles and diffs once at its end (see `steps-settle.test.ts` for why). */
   inBatch?: boolean
+  /** The clock `wait` polls by. Injectable so tests never sleep; defaults to the monotonic
+   *  clock and the NATIVE timer (rAF is paused in a hidden tab). */
+  clock?: { now(): number; sleep(ms: number): Promise<void> }
 }
 
 export interface ActuateResult {

@@ -43,6 +43,8 @@ const stepSchema = z
     direction: z.enum(['up', 'down', 'left', 'right']).optional(),
     amount: z.number().optional(),
     expression: z.string().optional(),
+    gone: z.boolean().optional().describe('wait: until text/selector is gone.'),
+    timeout_ms: z.number().optional().describe('wait: limit, default 10000, max 15000.'),
     // Models put this on a step at least as often as on the call; it means the same thing.
     snapshot_after: z.boolean().optional().describe('Same as the call-level flag.'),
   })
@@ -83,7 +85,9 @@ export const advertisedObject = z.object({
   steps: z
     .array(stepSchema)
     .optional()
-    .describe('Ordered actions by ref or selector; stop on error. End with snapshot to observe.'),
+    .describe(
+      'Ordered actions by ref or selector; stop on error. wait: text or selector to appear, for late content. End with snapshot to observe.',
+    ),
   expression: z
     .string()
     .optional()
@@ -210,6 +214,11 @@ function missingStepField(step: Step): string | null {
   // `press`/`scroll` may legitimately target the page (no ref/selector).
   if (step.action === 'press' && !step.key && !step.keys?.length)
     return 'a "press" step needs a "key" (e.g. "Enter") or "keys" (e.g. ["ArrowUp","ArrowRight"]).'
+  if (step.action === 'wait') {
+    if (!step.text && !step.selector)
+      return 'a "wait" step needs "text" or a CSS "selector" to wait for (gone:true waits for it to disappear).'
+    if (step.text && step.selector) return 'a "wait" step takes "text" or "selector", not both.'
+  }
   if (step.action === 'evaluate' && !step.expression?.trim())
     return 'an "evaluate" step needs an "expression" — a JS expression to run in the page.'
   return null
@@ -271,9 +280,10 @@ export function buildPreviewCommand(input: ResolvedInput): PreviewCommand {
     ...(snapshotAfter ? { snapshotAfter: true } : {}),
     ...(input.steps?.length
       ? {
-          steps: input.steps.map(({ snapshot_after: _batch, ...s }) => ({
+          steps: input.steps.map(({ snapshot_after: _batch, timeout_ms, ...s }) => ({
             ...s,
             ref: normalizeRef(s.ref),
+            ...(timeout_ms !== undefined ? { timeoutMs: timeout_ms } : {}),
           })),
         }
       : {}),

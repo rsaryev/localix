@@ -93,13 +93,23 @@ export type VfCommandAction =
   | 'console'
   | 'steps'
   | 'evaluate'
+  | 'wait'
 
 /** One step inside a `steps` batch: the page-mutating interactions PLUS the read
  *  actions `snapshot`/`evaluate`/`console`, so a batch can act THEN observe in one call
  *  (e.g. `[{click…},{snapshot}]` or `[{click…},{evaluate 'data-theme'}]`). The
  *  dispatcher runs each step generically; a trailing `snapshot` returns the fresh tree. */
 export interface VfStep {
-  action: 'click' | 'type' | 'press' | 'scroll' | 'hover' | 'snapshot' | 'evaluate' | 'console'
+  action:
+    | 'click'
+    | 'type'
+    | 'press'
+    | 'scroll'
+    | 'hover'
+    | 'snapshot'
+    | 'evaluate'
+    | 'console'
+    | 'wait'
   ref?: string
   selector?: string
   text?: string
@@ -109,6 +119,10 @@ export interface VfStep {
   amount?: number
   /** `evaluate` step: the JS expression to run in the page (its value is surfaced). */
   expression?: string
+  /** `wait` step: hold until this is GONE instead of present. */
+  gone?: boolean
+  /** `wait` step: the longest wait in ms (default 10 s, capped at 15 s). */
+  timeoutMs?: number
 }
 
 /** A single agent command. Only the fields relevant to `action` are read. */
@@ -150,6 +164,10 @@ export interface VfCommand {
    *  Promise) is serialized back. Reads exact runtime state the a11y snapshot can't
    *  expose — e.g. `window.board`, `document.querySelector('#score').textContent`. */
   expression?: string
+  /** `wait` (a step): hold until `text` or `selector` is gone instead of present. */
+  gone?: boolean
+  /** `wait` (a step): the longest wait in ms. */
+  timeoutMs?: number
 }
 
 /** Size/shape stats for a snapshot — lets the agent reason about payload cost. */
@@ -302,3 +320,4 @@ export type VfProbeMessage =
   /** A commented element was clicked while commenting: the host opens that comment. */
   | { type: 'open-mark'; id: string; rect: VfRect }
   | { type: 'error'; message: string }
+export { DEFAULT_WAIT_MS, MAX_WAIT_MS, commandWaitMs, waitLimitMs } from './wait'

@@ -8,6 +8,8 @@ import {
   inferAction,
   missingFieldMessage,
 } from './browser-input'
+import { relayTimeoutMs } from './browser-wait'
+import { browserInputSchemaFor } from './browser-input-variants'
 
 describe('viewport contract', () => {
   test('preserves exact dimensions, target identity and fill reset', () => {
@@ -186,5 +188,66 @@ describe('goal is offered only with a decision model', () => {
     }
     expect(browserDescription(false)).not.toContain('goal')
     expect(browserDescription(true)).toContain('prefer goal')
+  })
+})
+
+describe('wait step', () => {
+  const parse = (step: Record<string, unknown>) =>
+    browserInputSchema.safeParse({ action: 'steps', steps: [{ action: 'wait', ...step }] })
+
+  test('is offered in every contract a run can get, with or without images and goal', () => {
+    for (const images of [true, false])
+      for (const goal of [true, false]) {
+        const schema = browserInputSchemaFor({ images, goal })
+        expect(
+          schema.safeParse({ action: 'steps', steps: [{ action: 'wait', text: 'Saved' }] }).success,
+        ).toBe(true)
+      }
+  })
+
+  test('takes text or a selector, gone, and a limit in timeout_ms', () => {
+    expect(parse({ text: 'Results' }).success).toBe(true)
+    expect(parse({ selector: '.hits', gone: true, timeout_ms: 5000 }).success).toBe(true)
+    expect(parse({ text: 'x', timeout_ms: 'soon' }).success).toBe(false)
+  })
+
+  test('reaches the relay as timeoutMs, without keys it was not given', () => {
+    const input = parse({ selector: '.hits', gone: true, timeout_ms: 5000 })
+    if (!input.success) throw new Error('rejected')
+    expect(buildPreviewCommand({ ...input.data, action: 'steps' }).steps).toEqual([
+      { action: 'wait', selector: '.hits', gone: true, timeoutMs: 5000 },
+    ])
+    const bare = parse({ text: 'Results' })
+    if (!bare.success) throw new Error('rejected')
+    expect(buildPreviewCommand({ ...bare.data, action: 'steps' }).steps).toEqual([
+      { action: 'wait', text: 'Results' },
+    ])
+  })
+
+  test('is refused before anything runs when it names nothing, or two things', () => {
+    const check = (step: Record<string, unknown>) =>
+      missingFieldMessage({ action: 'steps', steps: [{ action: 'wait', ...step }] as never })
+    expect(check({})).toContain('"wait" step needs')
+    expect(check({ text: 'a', selector: 'b' })).toContain('not both')
+    expect(check({ text: 'a' })).toBeNull()
+  })
+
+  test('a call that waits is given the time it asks for, on top of the usual relay window', () => {
+    const wait = (timeout_ms?: number) =>
+      relayTimeoutMs({ action: 'steps', steps: [{ action: 'wait', text: 'x', timeout_ms }] })
+    expect(relayTimeoutMs({ action: 'steps', steps: [{ action: 'click', ref: 'e1' }] })).toBe(
+      undefined,
+    )
+    expect(wait()).toBe(22_000 + 10_000)
+    expect(wait(99_999)).toBe(22_000 + 15_000)
+    expect(
+      relayTimeoutMs({
+        action: 'steps',
+        steps: [
+          { action: 'wait', text: 'a', timeout_ms: 3000 },
+          { action: 'wait', text: 'b', timeout_ms: 4000 },
+        ],
+      }),
+    ).toBe(22_000 + 7000)
   })
 })

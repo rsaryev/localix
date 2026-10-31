@@ -158,6 +158,12 @@ Interactions are step shapes inside `steps`, not top-level actions:
 | `type`           | Target and `text`         | —                                                                   | Replaces the field value and emits input events |
 | `press`          | `key` or non-empty `keys` | Target; otherwise the element focused when each key is sent         | Keys run in the supplied order; Tab moves focus |
 | `scroll`         | None                      | Target, direction defaults to down, amount defaults to 80% viewport | A target scrolls into view                      |
+| `wait`           | `text` or `selector`      | `gone: true`; `timeout_ms` defaults to 10000, capped at 15000       | Observes only; a timeout fails the step         |
+
+A call with `wait` steps is relayed with the usual window plus their limits, and the hosts keep
+their own answer window open as long: 10 s plus the waits for the iframe, and for a native WebView's
+polling of the page bridge. A batch of only `wait`, `snapshot` and `console` steps is classified
+`view`; any other step makes it `external`.
 
 Interactions use the step shape inside `steps`; execution accepts the same vocabulary as the schema.
 Old flat interactions are refused with a replacement one-step batch. Unknown fields such as `title`,

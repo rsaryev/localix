@@ -1,5 +1,5 @@
 import type { CallClass } from '@localixai/agent/agents'
-import { OBSERVING_ACTIONS } from './browser-actions'
+import { OBSERVING_ACTIONS, OBSERVING_STEPS } from './browser-actions'
 import { inferAction, type BrowserInput } from './browser-input'
 
 /**
@@ -26,7 +26,10 @@ const PRUNE_HISTORY: CallClass = { effect: 'host', irreversible: true }
 
 export function classifyBrowserCall(input: unknown): CallClass {
   const call = (input ?? {}) as BrowserInput
-  if (Array.isArray(call.steps) && call.steps.length > 0) return DRIVE
+  if (Array.isArray(call.steps) && call.steps.length > 0)
+    // A batch of nothing but looking (wait, snapshot, console) changes nothing; one step that
+    // acts, or one this file does not know, makes the whole batch a drive.
+    return call.steps.every((step) => OBSERVING_STEPS.has(step?.action)) ? VIEW : DRIVE
   const action = inferAction(call)
   if (action === 'history') {
     const operation = call.history_operation

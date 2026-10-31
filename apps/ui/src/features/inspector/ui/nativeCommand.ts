@@ -1,4 +1,5 @@
 import { pollAttempts } from '@/shared/lib/pollAttempts'
+import { commandWindow, NATIVE_POLL_MS } from './commandWindow'
 import { decodeEvalResult } from './nativeProbe'
 
 type Invoke = (command: string, args?: Record<string, unknown>) => Promise<unknown>
@@ -36,8 +37,9 @@ export async function runInPage(
   })
   let outcome: PageOutcome | 'replaced' | null = null
   // A command answers in tens of milliseconds; polling every 100 ms added up to that to every
-  // browser action (and to each step of a goal run). Ten seconds in all, as before.
-  await pollAttempts(400, 25, async () => {
+  // browser action (and to each step of a goal run). Ten seconds in all, plus the time a `wait`
+  // step may spend.
+  await pollAttempts(commandWindow(command).attempts, NATIVE_POLL_MS, async () => {
     const raw = decodeEvalResult(
       await invoke('browser_eval', {
         tabId,

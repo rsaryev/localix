@@ -30,6 +30,7 @@ import { stepNote, failedStep } from './batch-report'
 import { postAction } from './post-action'
 import { performScroll } from './scroll'
 import { performPress } from './press'
+import { performWait } from './wait'
 import { serializeEvalResult, compileEvalExpression } from './evaluate'
 
 // The console ring buffer + interaction synthesis + interactive-tree diffing live
@@ -264,6 +265,9 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
         },
       }
     }
+
+    case 'wait':
+      return performWait(cmd, deps)
 
     case 'steps': {
       // Run an ordered batch of interactions in one call. Each step runs WITHOUT its

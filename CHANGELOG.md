@@ -4,6 +4,13 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+### Added
+
+- **Browser waits for late content**: the agent can now wait in the page until text or an element
+  appears, or goes away, for up to 15 seconds, then read it, instead of reading a half-loaded page
+  and guessing. It works in the preview and in native browser tabs, even when the tab is in the
+  background, and it says how long the wait took or that the page may still be working.
+
 ### Changed
 
 - **Install confirmation in the Store**: the sheet that asks before installing from a community
