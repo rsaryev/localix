@@ -12,7 +12,7 @@ import type { CapabilitySourceRepository } from '../capabilities/source-reposito
 import { recordCoreChanges } from '../changes/core-entities'
 import { isDefaultProject } from '../projects/default-project'
 import { buildMiniAppCatalog, type MiniAppCatalog } from './catalog'
-import type { InvokeMiniAppUiActionRequest, MiniAppViewSpec } from './contracts-contributions'
+import type { InvokeMiniAppUiActionRequest } from './contracts-contributions'
 import type { MiniAppCommandSpec, MiniAppRecord } from './contracts'
 import { createMiniAppInspections } from './inspection-snapshots'
 import { miniAppInstallRoot } from './discovery'
@@ -199,12 +199,6 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
 
     ...writes,
 
-    async listViews(userId: string, opts?: { projectId?: string | null }) {
-      const projectId = opts?.projectId ?? ''
-      const { catalog } = await catalogFor(userId, projectId)
-      return { views: listViewsFromCatalog(catalog, projectId) as MiniAppViewSpec[] }
-    },
-
     async getViewHtml(
       userId: string,
       input: { app: string; viewId: string; projectId?: string | null },
@@ -223,19 +217,6 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
 
     invokeUiAction: (userId: string, input: InvokeMiniAppUiActionRequest) =>
       invokeMiniAppUiAction(scope, userId, input),
-
-    async listCommands(userId: string, opts?: { projectId?: string | null }) {
-      const { catalog } = await catalogFor(userId, opts?.projectId ?? '')
-      return { commands: commandSpecs(catalog) }
-    },
-
-    /** The enabled mini app command a `/<app>:<name>` names, with its app's folder and settings. */
-    async findCommand(userId: string, projectId: string, app: string, name: string) {
-      const { catalog } = await catalogFor(userId, projectId)
-      const entry = catalog.enabled.find(({ app: candidate }) => candidate.name === app)
-      const command = entry?.app.commands.find((candidate) => candidate.name === name)
-      return entry && command ? { app: entry.app, command } : null
-    },
 
     resolveArgOptions: (userId: string, input: MiniAppArgOptionsInput) =>
       resolveMiniAppArgOptions(scope, userId, input),
