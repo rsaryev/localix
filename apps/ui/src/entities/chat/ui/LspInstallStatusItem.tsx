@@ -6,7 +6,7 @@ import type { LspServerState } from '@/shared/api/contracts'
 /** One status-bar line for the language servers being installed, or why one could not be. */
 function lspInstallLine(
   servers: LspServerState[],
-): { text: string; announce: string; title: string } | null {
+): { text: string; announce: string; title: string; working: boolean } | null {
   const installing = [
     ...new Set(servers.filter((s) => s.status === 'installing').map((s) => s.serverName)),
   ]
@@ -15,6 +15,7 @@ function lspInstallLine(
     const progress =
       installing.length === 1 ? servers.find((s) => s.status === 'installing')?.progress : undefined
     return {
+      working: true,
       announce: `Installing ${names}`,
       text:
         progress === undefined
@@ -30,18 +31,21 @@ function lspInstallLine(
   switch (unavailable.reason) {
     case 'needs-toolchain':
       return {
+        working: false,
         announce: `${name} needs ${detail}`,
         text: `${name} needs ${detail}`,
         title: `The ${name} language server is built with ${detail}. Install ${detail} to get code intelligence for these files.`,
       }
     case 'offline':
       return {
+        working: false,
         announce: `${name} offline`,
         text: `${name} offline`,
         title: `Could not download the ${name} language server: ${detail}. It is tried again on the next edit.`,
       }
     case 'failed':
       return {
+        working: false,
         announce: `${name} not installed`,
         text: `${name} not installed`,
         title: `Could not install the ${name} language server: ${detail}. It is tried again later.`,
@@ -57,7 +61,7 @@ function lspInstallLine(
 export function LspInstallStatusItem({ servers }: { servers: LspServerState[] }) {
   const line = lspInstallLine(servers)
   if (!line) return null
-  const working = servers.some((s) => s.status === 'installing')
+  const { working } = line
   return (
     <WorkbenchStatusItem
       title={line.title}
