@@ -30,7 +30,6 @@ export async function runHookHttp(options: HookHttpOptions): Promise<HookHttpRes
   let timedOut = false
   const abort = () => controller.abort()
   options.signal?.addEventListener('abort', abort, { once: true })
-  if (options.signal?.aborted) abort()
   const timer = setTimeout(() => {
     timedOut = true
     controller.abort()

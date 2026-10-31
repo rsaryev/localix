@@ -34,10 +34,6 @@ export function runHookOperation<T>(options: {
     }, options.timeoutMs)
     timer.unref?.()
     options.signal?.addEventListener('abort', abort, { once: true })
-    if (options.signal?.aborted) {
-      abort()
-      return
-    }
     try {
       // Attach both continuations immediately: late rejections remain observed after settlement.
       Promise.resolve(options.run(controller.signal)).then(

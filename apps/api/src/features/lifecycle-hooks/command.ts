@@ -110,7 +110,6 @@ export function runHookCommand(options: HookCommandOptions): Promise<HookCommand
       resolve({ code, stdout, stderr, timedOut, aborted })
     }
     options.signal?.addEventListener('abort', abort, { once: true })
-    if (options.signal?.aborted) abort()
 
     const decodeOut = createStreamTextDecoder()
     const decodeErr = createStreamTextDecoder()
