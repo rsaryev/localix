@@ -24,10 +24,10 @@ import { childEnv } from '../../lib/login-shell-env'
  */
 
 /**
- * The contract, as zod — the single source of truth for both TS types (`z.infer`)
- * and runtime validation at the process boundary. A subprocess can't give us
- * compile-time safety across stdin/stdout, so the schema IS the guarantee: it
- * validates the request we send and the options we read back.
+ * What comes back across the process boundary is a zod contract — the single source
+ * of truth for its TS type (`z.infer`) and its runtime validation: a subprocess can't
+ * give us compile-time safety across stdout, so the schema IS the guarantee. The
+ * request we send is a plain type, checked where it is built.
  */
 
 /** One NORMALIZED option (route response shape + the parsed result type). */
@@ -39,15 +39,14 @@ export const argOptionSchema = z.object({
 export type ArgOption = z.infer<typeof argOptionSchema>
 
 /** The JSON request handed to the script on stdin. */
-export const argOptionsRequestSchema = z.object({
-  query: z.string(),
-  cwd: z.string(),
-  sessionId: z.string().optional(),
-  argName: z.string(),
-  command: z.string(),
-  config: z.record(z.string(), z.unknown()).optional(),
-})
-export type ArgOptionsRequest = z.infer<typeof argOptionsRequestSchema>
+export interface ArgOptionsRequest {
+  query: string
+  cwd: string
+  sessionId?: string
+  argName: string
+  command: string
+  config?: Record<string, unknown>
+}
 
 /**
  * What a script MAY emit per element — deliberately lenient (a bare string, or an
@@ -64,9 +63,9 @@ const argOptionInputSchema = z.union([
 ])
 
 /** Max time the options script may run before it's killed. */
-export const ARG_OPTIONS_TIMEOUT_MS = 8_000
+const ARG_OPTIONS_TIMEOUT_MS = 8_000
 /** Max stdout bytes captured (the process is killed past this). */
-export const ARG_OPTIONS_MAX_BYTES = 256 * 1024
+const ARG_OPTIONS_MAX_BYTES = 256 * 1024
 /** Max options returned to the composer. */
 export const ARG_OPTIONS_MAX_ITEMS = 200
 
