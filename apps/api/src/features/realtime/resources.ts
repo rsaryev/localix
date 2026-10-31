@@ -38,3 +38,12 @@ export type ResourceChangedEvent = {
   type: 'resources.changed'
   resources: RealtimeResource[]
 }
+
+/** Poke a user's clients: these read models changed, so each re-reads its own. */
+export function publishResourcesChanged(
+  registry: { publish(userId: string, sessionId: string, event: ResourceChangedEvent): void },
+  userId: string,
+  resources: RealtimeResource[],
+): void {
+  registry.publish(userId, '', { type: 'resources.changed', resources })
+}

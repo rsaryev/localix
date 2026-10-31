@@ -19,6 +19,7 @@ import { mcpClientManager } from '../features/mcp/client-manager'
 import { startMcpChannels } from './mcp-channels'
 import type { InfraPhase } from './infra'
 import type { MiniAppHostRefs } from './mini-app-host-refs'
+import { publishResourcesChanged } from '../features/realtime/resources'
 
 export function bindChatHostRefs({
   hostRefs,
@@ -72,10 +73,9 @@ export function bindChatHostRefs({
   // Capability owners notify the same resource channel as every other shared read model.
   // The authoritative snapshot carries its revision; mini app hosts announce only after settling.
   hostRefs.publishCapabilityChange = () =>
-    chatService.streamRegistry.publish(env.LOCALIX_DEFAULT_USER_ID, '', {
-      type: 'resources.changed',
-      resources: ['capabilities'],
-    })
+    publishResourcesChanged(chatService.streamRegistry, env.LOCALIX_DEFAULT_USER_ID, [
+      'capabilities',
+    ])
   // Fulfill the backend host's settle hook: after a mini app toggle's re-wire CONVERGES,
   // release any toggle request waiting to answer with a settled snapshot, then tell
   // every firehose client to refetch. Waiters first — the request that started the

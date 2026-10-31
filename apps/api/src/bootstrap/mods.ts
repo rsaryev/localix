@@ -22,7 +22,7 @@ import { loadEnabledPlugins } from '../features/plugins/loader'
 import { discoverFilesystemSkills } from '../features/agent-core/skill-discovery'
 import { SLASH_COMMANDS } from '../features/chat/slash-catalog'
 import type { ProviderConnectionsService } from '../features/provider-connections/service'
-import type { RealtimeResource } from '../features/realtime/resources'
+import { publishResourcesChanged, type RealtimeResource } from '../features/realtime/resources'
 import type { BootstrapServiceRefs } from './chat-service-deps'
 import { localixCommands } from './mods-commands'
 import { createModCompletion } from './mods-model'
@@ -93,11 +93,10 @@ export function createModsPhase(input: {
     providerConnectionsService: deps.providerConnectionsService,
     languageModelFactory: deps.languageModelFactory,
   })
-  const publish = (userId: string, resources: RealtimeResource[]) =>
-    deps.chat()?.streamRegistry.publish(userId || defaultUserId, '', {
-      type: 'resources.changed',
-      resources,
-    })
+  const publish = (userId: string, resources: RealtimeResource[]) => {
+    const chat = deps.chat()
+    if (chat) publishResourcesChanged(chat.streamRegistry, userId || defaultUserId, resources)
+  }
   const pokes = createThrottle(PANES_POKE_MS)
   const notice = (userId: string, sessionId: string, message: string, hookEvent: string) =>
     deps.chat()?.streamRegistry.publish(userId, sessionId, {

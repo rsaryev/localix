@@ -1,6 +1,7 @@
 import type { LocalModelsService } from '../features/local-models/service'
 import type { SemanticService } from '../features/embeddings/service'
 import { startStatusPokes } from '../features/realtime/status-pokes'
+import { publishResourcesChanged } from '../features/realtime/resources'
 
 /**
  * Local models, semantic search and the Store poke their client topics as their status moves (a
@@ -39,10 +40,11 @@ export function startModelStatusPokes(deps: {
       },
     ],
     (resources) =>
-      deps.chatService.streamRegistry.publish(deps.env.LOCALIX_DEFAULT_USER_ID, '', {
-        type: 'resources.changed',
+      publishResourcesChanged(
+        deps.chatService.streamRegistry,
+        deps.env.LOCALIX_DEFAULT_USER_ID,
         resources,
-      }),
+      ),
   )
   // The meaning model getting ready (or parked) changes what a recommendation can find; the
   // answers that moved poke their own topic.

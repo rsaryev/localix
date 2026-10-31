@@ -8,6 +8,7 @@ import type { InfraPhase } from './infra'
 import type { MiniAppHostsPhase } from './mini-app-hosts'
 import { startAfterListen } from './post-listen'
 import { invalidateStoreOn } from './store'
+import { publishResourcesChanged } from '../features/realtime/resources'
 
 export interface StartPostListenInput
   extends
@@ -64,10 +65,7 @@ export function createStartPostListen(input: StartPostListenInput) {
           subagentRows: chatService.subagentRowsLive,
           statusLine: chatService.statusLine,
           publish: invalidateStoreOn(storeService, (userId, resources) =>
-            chatService.streamRegistry.publish(userId, '', {
-              type: 'resources.changed',
-              resources,
-            }),
+            publishResourcesChanged(chatService.streamRegistry, userId, resources),
           ),
         },
       },

@@ -17,6 +17,7 @@ import {
   type SubagentRowsComputed,
   type Timers,
 } from './subagent-rows-live'
+import { publishResourcesChanged } from '../../realtime/resources'
 
 /** The most rows one refresh hands the command — far more than the panel shows at once. */
 const MAX_TASKS = 20
@@ -117,11 +118,7 @@ export function createSubagentRows(deps: SubagentRowsDeps) {
   const live = createSubagentRowsLive({
     compute,
     watched: (userId, ids) => ids.some((id) => deps.streamRegistry.hasWatchers(userId, id)),
-    publish: (userId) =>
-      deps.streamRegistry.publish(userId, '', {
-        type: 'resources.changed',
-        resources: ['subagent-rows'],
-      }),
+    publish: (userId) => publishResourcesChanged(deps.streamRegistry, userId, ['subagent-rows']),
     locate: async (userId, id) => {
       const session = await deps.getSession(userId, id)
       return session ? [session.parentSessionId, session.rootSessionId] : []
