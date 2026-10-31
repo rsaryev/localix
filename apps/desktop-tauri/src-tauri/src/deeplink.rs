@@ -188,11 +188,15 @@ fn open_arg_path(arg: &std::ffi::OsStr, cwd: &std::path::Path) -> Option<std::pa
 /// never break out of the string literal (injection-safe).
 fn eval_deep_link<R: tauri::Runtime>(app: &AppHandle<R>, url: &str) {
     if let Some(w) = crate::workspace_windows::active_view(app) {
-        let arg = serde_json::to_string(url).unwrap_or_else(|_| "\"\"".into());
-        let _ = w.eval(format!(
-            "window.__localixDeepLink && window.__localixDeepLink({arg})"
-        ));
+        let _ = w.eval(deep_link_script(url));
     }
+}
+
+/// The script that hands one URL to the UI handler. The URL is JSON-encoded so it can never
+/// break out of the string literal.
+fn deep_link_script(url: &str) -> String {
+    let arg = serde_json::to_string(url).expect("a string serializes");
+    format!("window.__localixDeepLink && window.__localixDeepLink({arg})")
 }
 
 /// Forward a native-menu command id into the webview by calling the UI's
@@ -246,10 +250,7 @@ pub(crate) fn deep_link_ready(app: AppHandle, caller: tauri::Webview) {
     crate::workspace_windows::reveal(&app, caller.label());
     let state = app.state::<DeepLinks>();
     state.flush(|url| {
-        let arg = serde_json::to_string(url).expect("deep link serializes");
-        let _ = caller.eval(format!(
-            "window.__localixDeepLink && window.__localixDeepLink({arg})"
-        ));
+        let _ = caller.eval(deep_link_script(url));
     });
     flush_startup_log();
     setup_tray_after_ready(&app);
@@ -257,10 +258,10 @@ pub(crate) fn deep_link_ready(app: AppHandle, caller: tauri::Webview) {
 
 #[cfg(test)]
 mod tests {
+    use super::{deep_link_script, open_path_deep_link, DeepLinks};
     use super::{
         is_embedded_navigation_url, is_external_url, is_internal_url, is_loopback, open_arg_path,
     };
-    use super::{open_path_deep_link, DeepLinks};
     use std::ffi::OsStr;
 
     fn url(value: &str) -> tauri::Url {
@@ -307,6 +308,14 @@ mod tests {
                 &std::env::temp_dir()
             ),
             None
+        );
+    }
+
+    #[test]
+    fn a_deep_link_script_quotes_the_url_as_a_json_string() {
+        assert_eq!(
+            deep_link_script("localix://x?a=\"b\"&c=\\d"),
+            r#"window.__localixDeepLink && window.__localixDeepLink("localix://x?a=\"b\"&c=\\d")"#
         );
     }
 
