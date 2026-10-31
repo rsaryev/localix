@@ -81,6 +81,19 @@ export function actionContent(r: PreviewCommandResult): string {
   return lines.join('\n') + actionWarnings(r)
 }
 
+/**
+ * A `read` reply: the window under a header that says where it sits in the whole, and, while
+ * text is left, how to read on. The footer names the next offset so the model never counts.
+ */
+export function readContent(read: { text: string; offset: number; total: number }): string {
+  if (read.total === 0) return 'The page has no visible text.'
+  if (!read.text)
+    return `The offset is past the end: the page's text is ${read.total} characters long.`
+  const end = read.offset + read.text.length
+  const more = end < read.total ? `\n... more: read again with offset ${end}` : ''
+  return `Full text (characters ${read.offset}-${end} of ${read.total})\n${read.text}${more}`
+}
+
 /** A console reply: one `[level] text` row per entry. */
 export function consoleContent(entries: Array<{ level: string; text: string }>): string {
   return entries.length

@@ -81,6 +81,15 @@ describe('mini app view host', () => {
     }
   })
 
+  test('back, forward and reload are refused: they would move the Localix window itself', async () => {
+    const { runMiniAppViewCommand } = await import('./miniAppViewHost')
+    for (const action of ['back', 'forward', 'reload'] as const) {
+      const reply = await runMiniAppViewCommand('focus-timer', { action }, here)
+      expect(reply).toMatchObject({ ok: false, errorCode: 'bad_request' })
+      expect(reply.error).toContain('has no page history')
+    }
+  })
+
   test('an unknown mini app names the views this window does have', async () => {
     const cleanup = await withView()
     try {

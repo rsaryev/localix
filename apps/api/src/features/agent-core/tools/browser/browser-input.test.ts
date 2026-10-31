@@ -7,6 +7,7 @@ import {
   browserInputSchema,
   inferAction,
   missingFieldMessage,
+  MISSING_ACTION_MESSAGE,
 } from './browser-input'
 import { relayTimeoutMs } from './browser-wait'
 import { browserInputSchemaFor } from './browser-input-variants'
@@ -283,5 +284,38 @@ describe('wait step', () => {
         ],
       }),
     ).toBe(22_000 + 7000)
+  })
+})
+
+describe('read and navigation actions', () => {
+  const offered = ['read', 'back', 'forward', 'reload'] as const
+
+  test('are offered in every contract a run can get, with or without images and goal', () => {
+    for (const images of [true, false])
+      for (const goal of [true, false])
+        for (const action of offered)
+          expect(browserInputSchemaFor({ images, goal }).safeParse({ action }).success).toBe(true)
+  })
+
+  test('read takes a whole, non-negative offset and reaches the relay with it', () => {
+    const input = browserInputSchema.parse({ action: 'read', offset: 8000, preview_id: 't' })
+    expect(buildPreviewCommand({ ...input, action: 'read' })).toEqual({
+      action: 'read',
+      previewId: 't',
+      offset: 8000,
+    })
+    expect(buildPreviewCommand({ action: 'read' })).toEqual({ action: 'read' })
+    for (const offset of [-1, 1.5, '8000'])
+      expect(browserInputSchema.safeParse({ action: 'read', offset }).success).toBe(false)
+  })
+
+  test('offset belongs to read alone', () => {
+    const refused = browserInputSchema.safeParse({ action: 'snapshot', offset: 10 })
+    expect(refused.success).toBe(false)
+    expect(JSON.stringify(refused.error?.issues)).toContain('offset is only for read')
+  })
+
+  test('the missing-action hint names them', () => {
+    for (const name of offered) expect(MISSING_ACTION_MESSAGE).toContain(name)
   })
 })

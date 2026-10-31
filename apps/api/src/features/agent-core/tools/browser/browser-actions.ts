@@ -14,10 +14,15 @@ export const ACTIONS = [
   'open',
   'close',
   'snapshot',
+  'read',
   TAKE_SCREENSHOT,
   'console',
   'evaluate',
   'history',
+  // The tab moves in its own history; each one changes the page, so each is a drive.
+  'back',
+  'forward',
+  'reload',
   'steps',
   // The decision model drives the tab toward a stated sub-goal (`browser-goal.ts`).
   'goal',
@@ -50,6 +55,8 @@ export type BrowserAction = (typeof ACTIONS)[number]
 export const OBSERVING_ACTIONS: ReadonlySet<BrowserAction> = new Set<BrowserAction>([
   'viewport',
   'snapshot',
+  // The page's text in windows: it observes and changes nothing.
+  'read',
   TAKE_SCREENSHOT,
   'console',
   // Re-points the preview pane at a URL and runs nothing; the snapshot actions have nothing to

@@ -95,6 +95,10 @@ export type VfCommandAction =
   | 'steps'
   | 'evaluate'
   | 'wait'
+  | 'read'
+  | 'back'
+  | 'forward'
+  | 'reload'
 
 /** One step inside a `steps` batch: the page-mutating interactions PLUS the read
  *  actions `snapshot`/`evaluate`/`console`, so a batch can act THEN observe in one call
@@ -170,6 +174,8 @@ export interface VfCommand {
   gone?: boolean
   /** `wait` (a step): the longest wait in ms. */
   timeoutMs?: number
+  /** `read`: the character to start the window at (default 0). */
+  offset?: number
 }
 
 /** Size/shape stats for a snapshot — lets the agent reason about payload cost. */
@@ -251,6 +257,8 @@ export interface VfCommandResult {
   viewport?: { width: number; height: number }
   /** `evaluate`: the serialized result of the page-realm expression (string/JSON, capped). */
   value?: string
+  /** `read`: one window of the page's text, and where it sits in the whole. */
+  read?: { text: string; offset: number; total: number }
   /**
    * The page navigated/reloaded between the agent's PREVIOUS command and this one
    * (e.g. a dev-server file-watch auto-reload, or a `location.reload()`), so the DOM

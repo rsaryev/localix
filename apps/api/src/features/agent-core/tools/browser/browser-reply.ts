@@ -10,6 +10,7 @@ import type { PreviewCommandResult } from '../preview/preview-control'
 import {
   actionContent,
   consoleContent,
+  readContent,
   screenshotFailureContent,
   snapshotContent,
 } from './browser-format'
@@ -47,6 +48,22 @@ export async function formatReply(
         },
         supersedeKey: 'browser',
       }
+
+    case 'read': {
+      if (!r.read)
+        return {
+          content: 'The page did not return its text.',
+          isError: true,
+          details: { action: 'read', previewId: r.previewId },
+        }
+      // Only the newest window matters: reading on replaces the one before, and a snapshot is
+      // a different view of the page that a read must not push out of context.
+      return {
+        content: readContent(r.read),
+        details: { action: 'read', previewId: r.previewId },
+        supersedeKey: 'browser:read',
+      }
+    }
 
     case 'console': {
       const entries = r.console ?? []
@@ -112,6 +129,9 @@ export async function formatReply(
       }
     }
 
+    case 'back':
+    case 'forward':
+    case 'reload':
     case 'click':
     case 'hover':
     case 'press':

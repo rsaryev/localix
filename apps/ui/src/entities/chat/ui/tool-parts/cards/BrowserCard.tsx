@@ -26,6 +26,10 @@ const ACTION_VERB = {
   console: 'Console',
   steps: 'Steps',
   evaluate: 'Evaluate',
+  read: 'Read',
+  back: 'Back',
+  forward: 'Forward',
+  reload: 'Reload',
   history: 'History',
   goal: 'Goal',
 } satisfies Record<BrowserAction, string>

@@ -82,6 +82,12 @@ export const advertisedObject = z.object({
     .describe('open: local file; serves its folder with assets. No server needed.'),
   ref: z.string().optional().describe('take_screenshot: snapshot ref.'),
   snapshot_after: z.boolean().optional().describe('steps/evaluate: include fresh tree.'),
+  offset: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe('read: start character; the reply says the next one.'),
   steps: z
     .array(stepSchema)
     .optional()
@@ -153,6 +159,12 @@ export function refineBrowserInput<T extends z.ZodObject>(object: T) {
         path: ['values'],
         message: 'values is only for goal.',
       })
+    if (input.offset !== undefined && action !== 'read')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['offset'],
+        message: 'offset is only for read.',
+      })
     if (input.background !== undefined && action !== 'open')
       ctx.addIssue({
         code: 'custom',
@@ -199,7 +211,7 @@ export function inferAction(input: BrowserInput): BrowserInput['action'] {
 }
 
 export const MISSING_ACTION_MESSAGE =
-  'browser needs an "action" (one of: open, close, viewport, snapshot, take_screenshot, console, evaluate, steps, goal, history — interactions go inside steps, e.g. {"action":"steps","steps":[{"action":"click","ref":"e3"}]}). Set it explicitly.'
+  'browser needs an "action" (one of: open, close, viewport, snapshot, read, take_screenshot, console, evaluate, back, forward, reload, steps, goal, history — interactions go inside steps, e.g. {"action":"steps","steps":[{"action":"click","ref":"e3"}]}). Set it explicitly.'
 
 type Step = NonNullable<BrowserInput['steps']>[number]
 
@@ -293,6 +305,7 @@ export function buildPreviewCommand(input: ResolvedInput): PreviewCommand {
         }
       : {}),
     ...(input.expression != null ? { expression: input.expression } : {}),
+    ...(input.offset !== undefined ? { offset: input.offset } : {}),
     ...(input.history_operation ? { historyOperation: input.history_operation } : {}),
     ...(input.history_query ? { historyQuery: input.history_query } : {}),
     ...(input.history_urls ? { historyUrls: input.history_urls } : {}),
@@ -305,4 +318,4 @@ export function buildPreviewCommand(input: ResolvedInput): PreviewCommand {
  * holds this tool. This says how the tool behaves.
  */
 export const BROWSER_DESCRIPTION =
-  'Drive Browser tabs in the desktop app (relay-only); reuse preview_id from open or Browser context. Multi-step page work (a form, a search, a date picker): prefer goal — a decision model clicks and types only your values toward it, fast; then verify the page it returns. steps: single precise actions. Local files: open file_path (serves its folder); never start a server for static files. Leave viewport unset unless checking a width, then reset with null. history: shared visits. Errors and auto-dismissed dialogs during an action are attached; a reload invalidates refs: re-snapshot.'
+  'Drive Browser tabs in the desktop app (relay-only); reuse preview_id from open or Browser context. Multi-step page work (a form, a search, a date picker): prefer goal — a decision model clicks and types only your values toward it, fast; then verify the page it returns. steps: single precise actions. Local files: open file_path (serves its folder); never start a server for static files. Leave viewport unset unless checking a width, then reset with null. history: shared visits. read: page text in windows; back, forward, reload move the tab. Errors and auto-dismissed dialogs during an action are attached; a reload invalidates refs: re-snapshot.'

@@ -6,6 +6,7 @@
 import type { VfCommandErrorCode, VfCommandResult } from '../protocol/index'
 import type { RefRegistry } from '../snapshot/index'
 import type { ConsoleCapture } from './console-capture'
+import type { PageNavigation } from './navigate'
 
 /* ------------------------------- dispatcher ------------------------------- */
 
@@ -37,6 +38,8 @@ export interface ActuateDeps {
   /** The clock `wait` polls by. Injectable so tests never sleep; defaults to the monotonic
    *  clock and the NATIVE timer (rAF is paused in a hidden tab). */
   clock?: { now(): number; sleep(ms: number): Promise<void> }
+  /** The page's history, which `back`/`forward`/`reload` use. Injectable so tests stay put. */
+  nav?: PageNavigation
 }
 
 export interface ActuateResult {

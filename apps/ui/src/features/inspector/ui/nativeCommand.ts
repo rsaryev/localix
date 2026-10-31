@@ -14,8 +14,19 @@ export interface PageOutcome {
 /** What `take` reads when the document holding the command is gone: the page navigated. */
 const REPLACED = '__localixReplaced'
 
-/** Actions that can make the page navigate (a link, a submitted form, a key that follows one). */
-const DRIVE = new Set(['click', 'hover', 'press', 'scroll', 'select', 'steps', 'type'])
+/** Actions that can make the page navigate (a link, a submitted form, a key, the history). */
+const DRIVE = new Set([
+  'click',
+  'hover',
+  'press',
+  'scroll',
+  'select',
+  'steps',
+  'type',
+  'back',
+  'forward',
+  'reload',
+])
 export const drivesPage = (action: string): boolean => DRIVE.has(action)
 
 /** How long a finished action waits for a navigation it started to replace the document. */

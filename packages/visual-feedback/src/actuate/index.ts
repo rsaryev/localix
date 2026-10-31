@@ -31,6 +31,8 @@ import { postAction } from './post-action'
 import { performScroll } from './scroll'
 import { performPress } from './press'
 import { performWait } from './wait'
+import { performRead } from './read'
+import { performNavigate } from './navigate'
 import { performSelect } from './select'
 import { serializeEvalResult, compileEvalExpression } from './evaluate'
 
@@ -272,6 +274,14 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
 
     case 'wait':
       return performWait(cmd, deps)
+
+    case 'read':
+      return performRead(cmd, deps)
+
+    case 'back':
+    case 'forward':
+    case 'reload':
+      return performNavigate(cmd.action, deps)
 
     case 'steps': {
       // Run an ordered batch of interactions in one call. Each step runs WITHOUT its

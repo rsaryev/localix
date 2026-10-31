@@ -24,6 +24,10 @@ export type PreviewAction =
   | 'console'
   | 'steps'
   | 'evaluate'
+  | 'read'
+  | 'back'
+  | 'forward'
+  | 'reload'
   | 'history'
 
 export type BrowserHistoryOperation = 'list' | 'search' | 'open' | 'remove' | 'clear'
@@ -88,6 +92,8 @@ export interface PreviewCommand {
   steps?: PreviewStep[]
   /** `evaluate`: a JS expression run in the page realm; its (awaited) value is returned. */
   expression?: string
+  /** `read`: the character to start the window of page text at (default 0). */
+  offset?: number
   /** App Browser history, not website DOM state. */
   historyOperation?: BrowserHistoryOperation
   historyQuery?: string
@@ -150,6 +156,8 @@ export interface PreviewCommandResult {
   image?: PreviewImage
   /** `evaluate`: the serialized result of the page-realm expression. */
   value?: string
+  /** `read`: one window of the page's visible text and where it sits in the whole. */
+  read?: { text: string; offset: number; total: number }
   /** The page reloaded/navigated between the agent's previous command and this one
    *  (DOM reset, prior refs invalid) — the tool prepends an explicit notice. */
   reloaded?: boolean

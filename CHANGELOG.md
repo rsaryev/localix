@@ -6,6 +6,10 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ### Added
 
+- **Browser reads long pages and moves through history**: the agent can now read a page's text in
+  windows of about 8,000 characters, told where each window sits and where to continue, instead of
+  writing a script. It can also go back, go forward and reload a tab, and in a native browser tab it
+  gets the page it lands on.
 - **Browser safety nets on real sites**: when the agent drives a page in a native browser tab, a
   dialog the page opens during the action (alert, confirm, prompt) is cancelled instead of freezing
   the agent, and its text is reported back; your own dialogs while you browse are untouched. Failed

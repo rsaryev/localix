@@ -17,9 +17,10 @@ import type { ActuateResult, EmbeddedActuator } from '@localixai/visual-feedback
  * through the embedded actuator scoped to that panel, reading the mini app's own error buffer as
  * its console; NAME the result after the view rather than the window around it.
  *
- * Two commands are refused, each for a reason the page case does not have: `evaluate` would run
+ * Some commands are refused, each for a reason the page case does not have: `evaluate` would run
  * in the Localix window itself, with everything the app can reach, not in a page the mini app owns;
- * `viewport` would resize a pane the person arranged. Everything else is the browser's own
+ * `viewport` would resize a pane the person arranged; `back`, `forward` and `reload` would move
+ * the Localix window itself, which is the one page a view has. Everything else is the browser's own
  * vocabulary, so the agent drives the mini app it built exactly as it drives a web page.
  */
 
@@ -58,6 +59,12 @@ export function refusal(command: PreviewCommand): MiniAppViewReply | null {
       ok: false,
       errorCode: 'bad_request',
       error: 'A mini app view fills the workbench pane it is open in; it has no viewport to set.',
+    }
+  if (command.action === 'back' || command.action === 'forward' || command.action === 'reload')
+    return {
+      ok: false,
+      errorCode: 'bad_request',
+      error: `${command.action} is not available on a mini app view: it has no page history, and the page around it is the Localix app. Open the view again, or use its own controls.`,
     }
   return null
 }

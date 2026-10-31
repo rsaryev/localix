@@ -31,22 +31,28 @@ attachment or a model run._
 The same in-page probe serves the agent's `Browser` tool, so the agent works in the preview you are
 looking at. It starts no separate browser, and nothing is installed in your app.
 
-| Agent action          | What it returns                                                                                       | Boundary                                                                                                               |
-| --------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `snapshot`            | The page as a compact indented text tree whose elements carry `eN` refs, capped at 800 nodes.         | A reload invalidates refs; the agent takes a fresh snapshot.                                                           |
-| `wait` step           | Holds a batch until text or a selector appears, or goes away (`gone`), then says how long it took.    | Polls in the page for `timeout_ms`, default 10 s, at most 15 s; on timeout the batch stops.                            |
-| `select` step         | Picks a dropdown option by value or visible label; the snapshot lists up to 50 enabled options.       | Native `<select>` only; sets the value, fires `input` and `change`, and reports an option already chosen as unchanged. |
-| `steps`               | One ordered batch of `click`, `hover`, `type`, `select`, `press` and `scroll`, validated whole first. | Events are synthesized, so controls that demand a trusted gesture can reject them.                                     |
-| Any drive action      | A short diff of what changed, with the full tree on request (`snapshot_after`).                       | Settling waits two animation frames, plus up to 400 ms for root animations.                                            |
-| `take_screenshot`     | The page, or one element by ref, rendered in the page.                                                | A DOM re-render of the viewport, not compositor pixels; capture can fail.                                              |
-| `console`, `evaluate` | Console output and errors, and a page-side expression result.                                         | Preview dialogs are stubbed: `confirm` returns true, `prompt` null. Native tabs: see below.                            |
-| `viewport`            | The frame resized to a named CSS size, checked against the page's real size.                          | Layout only; no device pixel ratio, touch or user agent.                                                               |
+| Agent action                | What it returns                                                                                       | Boundary                                                                                                               |
+| --------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `snapshot`                  | The page as a compact indented text tree whose elements carry `eN` refs, capped at 800 nodes.         | A reload invalidates refs; the agent takes a fresh snapshot.                                                           |
+| `read`                      | The page's visible text with whitespace collapsed, 8,000 characters at a time from `offset`.          | Says `characters a-b of N` and the next `offset`; only the newest `read` stays in the agent's context.                 |
+| `back`, `forward`, `reload` | Move the tab through its own history, or reload it, and return the page they land on.                 | Native tabs answer with the new page; in a frame the next command does. Refs from the old page are invalid.            |
+| `wait` step                 | Holds a batch until text or a selector appears, or goes away (`gone`), then says how long it took.    | Polls in the page for `timeout_ms`, default 10 s, at most 15 s; on timeout the batch stops.                            |
+| `select` step               | Picks a dropdown option by value or visible label; the snapshot lists up to 50 enabled options.       | Native `<select>` only; sets the value, fires `input` and `change`, and reports an option already chosen as unchanged. |
+| `steps`                     | One ordered batch of `click`, `hover`, `type`, `select`, `press` and `scroll`, validated whole first. | Events are synthesized, so controls that demand a trusted gesture can reject them.                                     |
+| Any drive action            | A short diff of what changed, with the full tree on request (`snapshot_after`).                       | Settling waits two animation frames, plus up to 400 ms for root animations.                                            |
+| `take_screenshot`           | The page, or one element by ref, rendered in the page.                                                | A DOM re-render of the viewport, not compositor pixels; capture can fail.                                              |
+| `console`, `evaluate`       | Console output and errors, and a page-side expression result.                                         | Preview dialogs are stubbed: `confirm` returns true, `prompt` null. Native tabs: see below.                            |
+| `viewport`                  | The frame resized to a named CSS size, checked against the page's real size.                          | Layout only; no device pixel ratio, touch or user agent.                                                               |
 
 A native browser tab is also the person's own browsing, so its dialogs are left alone, except while
 an agent command runs in it: then `alert`, `confirm` and `prompt` are cancelled (`confirm` returns
 false, `prompt` null; nothing is ever accepted) and their text comes back with the action. A
 stylesheet, script or image that failed to load is listed in the next snapshot, and a link click or
 form submit that will replace the page is noticed before the new page commits.
+
+A long page is read in windows instead of through `evaluate`: `read` returns the text from `offset`
+and ends with the offset to continue from. Going back, forward or reloading changes the page, so
+unlike `read` they are confirmed like any other action that drives it.
 
 A page that renders late is read after it rendered: put a `wait` step before the `snapshot` step.
 The page polls every 100 ms on a native timer, so a preview in a hidden tab still answers. A batch

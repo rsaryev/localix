@@ -16,7 +16,7 @@ import type { OpenPreviewCoreInput, OpenPreviewCoreResult } from '../preview/ope
 
 describe('browser model contract', () => {
   test('says how the tool behaves within a bounded description', () => {
-    expect(textEncoderByteLength(BROWSER_DESCRIPTION)).toBeLessThan(600)
+    expect(textEncoderByteLength(BROWSER_DESCRIPTION)).toBeLessThan(660)
     for (const phrase of ['relay-only', 'preview_id', 'dialogs', 're-snapshot', 'file_path']) {
       expect(BROWSER_DESCRIPTION).toContain(phrase)
     }
@@ -66,6 +66,12 @@ describe('browser classify judges what will run', () => {
     [{ action: 'take_screenshot' }, { effect: 'view' }],
     [{ action: 'take_screenshot', steps: [] }, { effect: 'view' }],
     [{ action: 'console' }, { effect: 'view' }],
+    // Reading the text only looks; moving through the history changes the page.
+    [{ action: 'read' }, { effect: 'view' }],
+    [{ action: 'read', offset: 8000 }, { effect: 'view' }],
+    [{ action: 'back' }, { effect: 'external' }],
+    [{ action: 'forward' }, { effect: 'external' }],
+    [{ action: 'reload' }, { effect: 'external' }],
     [{ action: 'evaluate', expression: '1' }, { effect: 'external' }],
     [{ action: 'steps', steps: [{ action: 'click', ref: 'e1' }] }, { effect: 'external' }],
     // Choosing an option changes the page: a drive, never a look.
@@ -944,5 +950,95 @@ describe('browser action="open" and close', () => {
     expect(result.content).toContain('2 browser tabs')
     expect(closed).toEqual([['tab-a', 'tab-b']])
     expect(h.sends).toEqual([])
+  })
+})
+
+describe('browser read', () => {
+  const text = 'Alpha beta gamma. '.repeat(10)
+  const readTool = (read: { text: string; offset: number; total: number }) =>
+    toolWith({ ok: true, result: { action: 'read', read } })
+
+  test('relays the offset and shows the window under a header that says where it sits', async () => {
+    const { tool, sent } = readTool({ text: text.slice(0, 40), offset: 0, total: 180 })
+    const result = await tool.execute('r1', { action: 'read', preview_id: 'tab-1' })
+    expect(sent).toEqual([{ action: 'read', previewId: 'tab-1' }])
+    expect(result.content).toStartWith('Full text (characters 0-40 of 180)\n')
+    expect(result.content).toContain(text.slice(0, 40))
+  })
+
+  test('tells how to read on while text is left, and stops saying so at the end', async () => {
+    const more = readTool({ text: text.slice(40, 80), offset: 40, total: 180 })
+    const middle = await more.tool.execute('r2', { action: 'read', offset: 40 })
+    expect(more.sent).toEqual([{ action: 'read', offset: 40 }])
+    expect(middle.content).toContain('Full text (characters 40-80 of 180)')
+    expect(middle.content).toContain('... more: read again with offset 80')
+
+    const last = await readTool({ text: text.slice(140), offset: 140, total: 180 }).tool.execute(
+      'r3',
+      { action: 'read', offset: 140 },
+    )
+    expect(last.content).toContain('characters 140-180 of 180')
+    expect(last.content).not.toContain('more:')
+  })
+
+  test('an empty page and an offset past the end are said in words', async () => {
+    const empty = await readTool({ text: '', offset: 0, total: 0 }).tool.execute('r4', {
+      action: 'read',
+    })
+    expect(empty.content).toContain('no visible text')
+    const past = await readTool({ text: '', offset: 180, total: 180 }).tool.execute('r5', {
+      action: 'read',
+      offset: 9999,
+    })
+    expect(past.content).toContain('past the end')
+    expect(past.content).toContain('180')
+  })
+
+  test('only the newest read stays in context, apart from snapshots', async () => {
+    const { tool } = readTool({ text: 'x', offset: 0, total: 1 })
+    const result = await tool.execute('r6', { action: 'read' })
+    expect(result.supersedeKey).toBe('browser:read')
+  })
+})
+
+describe('browser back, forward, reload', () => {
+  test.each(['back', 'forward', 'reload'] as const)(
+    '%s is relayed and its note shown',
+    async (action) => {
+      const { tool, sent } = toolWith({
+        ok: true,
+        result: { action, note: `${action} requested` },
+      })
+      const result = await tool.execute('n1', { action, preview_id: 'tab-1' })
+      expect(sent).toEqual([{ action, previewId: 'tab-1' }])
+      expect(result.content).toContain(`${action} requested`)
+    },
+  )
+
+  test('the page it lands on replaces older snapshots in context', async () => {
+    const snapshot = {
+      url: 'https://example.com/',
+      title: 'Home',
+      tree: 'main',
+      stats: { nodes: 3, interactive: 0 },
+    }
+    const { tool } = toolWith({
+      ok: true,
+      result: { action: 'back', note: 'went back', snapshot: snapshot as never },
+    })
+    const result = await tool.execute('n2', { action: 'back' })
+    expect(result.content).toContain('Page now')
+    expect(result.supersedeKey).toBe('browser')
+  })
+
+  test('the history running out is the call failing, in the page words', async () => {
+    const { tool } = toolWith({
+      ok: false,
+      errorCode: 'failed',
+      error: "There is no earlier page in this tab's history to go back to.",
+    })
+    const result = await tool.execute('n3', { action: 'back' })
+    expect(result.isError).toBe(true)
+    expect(result.content).toContain('no earlier page')
   })
 })

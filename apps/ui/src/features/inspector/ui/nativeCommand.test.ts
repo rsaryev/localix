@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { navigatedAfter, navigatedResult, runInPage } from './nativeCommand'
+import { drivesPage, navigatedAfter, navigatedResult, runInPage } from './nativeCommand'
 
 /** A fake shell whose page answers `take` and the bridge check from scripted states. */
 function shell(page: {
@@ -68,4 +68,17 @@ test('a navigated result names the new address and carries its page instead of a
   expect(result.note).toStartWith(
     'clicked link "Next" — the page navigated to https://example.com/2',
   )
+})
+
+test.each(['back', 'forward', 'reload'])(
+  '%s is followed to the document it leads to, and read does not wait for one',
+  async (action) => {
+    const page = shell({ takes: [], loading: [true, true], bridge: [true, false] })
+    expect(await navigatedAfter(page.invoke, 'tab-1234', action)).toBe(true)
+    expect(drivesPage(action)).toBe(true)
+  },
+)
+
+test('reading the page text is a read: it never waits for a navigation', () => {
+  expect(drivesPage('read')).toBe(false)
 })
