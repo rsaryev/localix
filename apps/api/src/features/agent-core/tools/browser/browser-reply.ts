@@ -56,12 +56,12 @@ export async function formatReply(
           isError: true,
           details: { action: 'read', previewId: r.previewId },
         }
-      // Only the newest window matters: reading on replaces the one before, and a snapshot is
-      // a different view of the page that a read must not push out of context.
+      // Reading the same window again replaces it; the windows of an article at other offsets
+      // stay (a model that read on still needs the part before), as does any snapshot.
       return {
         content: readContent(r.read),
         details: { action: 'read', previewId: r.previewId },
-        supersedeKey: 'browser:read',
+        supersedeKey: `browser:read:${r.previewId ?? ''}:${r.read.offset}`,
       }
     }
 

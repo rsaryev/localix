@@ -1039,10 +1039,17 @@ describe('browser read', () => {
     expect(past.content).toContain('180')
   })
 
-  test('only the newest read stays in context, apart from snapshots', async () => {
-    const { tool } = readTool({ text: 'x', offset: 0, total: 1 })
-    const result = await tool.execute('r6', { action: 'read' })
-    expect(result.supersedeKey).toBe('browser:read')
+  test('re-reading a window replaces it, but the windows of an article before stay in context', async () => {
+    const key = async (offset: number) =>
+      (
+        await readTool({ text: 'x', offset, total: 20000 }).tool.execute(`r${offset}`, {
+          action: 'read',
+          offset,
+        })
+      ).supersedeKey
+    expect(await key(0)).toBe(await key(0))
+    expect(await key(0)).not.toBe(await key(8000))
+    expect(String(await key(0))).toMatch(/^browser:read/)
   })
 })
 
