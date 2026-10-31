@@ -52,11 +52,11 @@ export interface KeybindingsEditor {
  */
 export function useKeybindingsEditor(): KeybindingsEditor {
   const storedOverrides = useSettingsStore((s) => s.settings.uiSettings?.keybindings)
-  const uiSettings = useSettingsStore((s) => s.settings.uiSettings)
+  const keymapPreset = useSettingsStore((s) => s.settings.uiSettings?.keymapPreset)
   const update = useSettingsStore((s) => s.update)
   const overrides = useMemo(
-    () => resolvePresetOverrides(storedOverrides, uiSettings?.keymapPreset),
-    [storedOverrides, uiSettings?.keymapPreset],
+    () => resolvePresetOverrides(storedOverrides, keymapPreset),
+    [storedOverrides, keymapPreset],
   )
 
   const resolved = useMemo(() => resolveBindings(overrides), [overrides])
@@ -100,8 +100,8 @@ export function useKeybindingsEditor(): KeybindingsEditor {
   )
 
   const activePreset = useMemo(
-    () => detectActivePreset(overrides, uiSettings?.keymapPreset),
-    [overrides, uiSettings?.keymapPreset],
+    () => detectActivePreset(overrides, keymapPreset),
+    [overrides, keymapPreset],
   )
   const applyPreset = useCallback(
     (presetId: string) => {
