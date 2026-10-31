@@ -22,8 +22,7 @@ export function loopOfTrigger(trigger: TriggerRecord): SessionLoop {
   const payload = trigger.payload as Partial<LoopPayload>
   // Re-validated rather than trusted: a handoff was written by a model's reply, and one that no
   // longer parses must leave the next round inheriting NOTHING rather than a malformed object.
-  const handoff =
-    payload.handoff === undefined ? null : readLoopHandoff(JSON.stringify(payload.handoff))
+  const handoff = payload.handoff === undefined ? null : readLoopHandoff(payload.handoff)
   const delay = trigger.spec.delaySeconds
   return {
     id: trigger.id,

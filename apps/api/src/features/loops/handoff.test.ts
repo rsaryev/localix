@@ -20,23 +20,24 @@ describe("handoffFromFinalText — the round's final reply is its report", () =>
 
 describe('readLoopHandoff — a stored row is re-validated, never trusted', () => {
   test('reads a well-formed row', () => {
-    expect(readLoopHandoff('{"summary":"Fixed the parser"}')).toEqual({
+    expect(readLoopHandoff({ summary: 'Fixed the parser' })).toEqual({
       summary: 'Fixed the parser',
     })
   })
 
   test('a row from the retired structured shape still yields its summary', () => {
-    expect(
-      readLoopHandoff('{"status":"continue","summary":"half done","evidence":["e1"]}'),
-    ).toEqual({
-      summary: 'half done',
-    })
+    expect(readLoopHandoff({ status: 'continue', summary: 'half done', evidence: ['e1'] })).toEqual(
+      {
+        summary: 'half done',
+      },
+    )
   })
 
   test('no summary, no handoff', () => {
-    expect(readLoopHandoff('{"status":"done"}')).toBeUndefined()
-    expect(readLoopHandoff('not json')).toBeUndefined()
-    expect(readLoopHandoff('42')).toBeUndefined()
+    expect(readLoopHandoff({ status: 'done' })).toBeUndefined()
+    expect(readLoopHandoff('not a handoff')).toBeUndefined()
+    expect(readLoopHandoff(42)).toBeUndefined()
+    expect(readLoopHandoff(null)).toBeUndefined()
   })
 })
 

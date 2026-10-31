@@ -37,17 +37,11 @@ export function renderInheritedHandoff(handoff: LoopHandoff, round: number): str
 }
 
 /**
- * Re-read a STORED handoff row. It is re-validated rather than trusted so a row that no
- * longer parses leaves the loop inheriting NOTHING instead of feeding a malformed object into
- * the next round's prompt.
+ * Re-read a STORED handoff (the parsed `handoff` of a loop's payload). It is re-validated
+ * rather than trusted so one that is not a handoff leaves the loop inheriting NOTHING instead of
+ * feeding a malformed object into the next round's prompt.
  */
-export function readLoopHandoff(raw: string): LoopHandoff | undefined {
-  let value: unknown
-  try {
-    value = JSON.parse(raw.trim())
-  } catch {
-    return undefined
-  }
+export function readLoopHandoff(value: unknown): LoopHandoff | undefined {
   if (typeof value !== 'object' || value === null) return undefined
   return handoffFromFinalText((value as { summary?: unknown }).summary as string | undefined)
 }
