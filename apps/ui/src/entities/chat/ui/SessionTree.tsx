@@ -6,7 +6,7 @@ import { branchView, BRANCH_PREVIEW } from '../model/branchDisclosure'
 import { sortSessionsList, type SortMode } from '../model/useSidebarSessions'
 import { sidebarChildren, sidebarSessionPath } from '../model/sidebarSessionTree'
 
-export interface SessionTreeOptions {
+interface SessionTreeOptions {
   activeSessionId: string | null
   sortMode: SortMode
   normalizedSearch: string

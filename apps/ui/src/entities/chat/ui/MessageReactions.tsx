@@ -22,7 +22,7 @@ export interface MessageReaction {
   at: string
 }
 
-export const USER_REF = 'user'
+const USER_REF = 'user'
 
 /** Who is behind a mark, in words, for the chip's tooltip. */
 function authorLabel(from: string): string {

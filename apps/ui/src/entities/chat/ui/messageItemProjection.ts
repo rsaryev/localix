@@ -1,7 +1,7 @@
 import { isReasoningItem, type AgentItem } from '@localixai/agent/agents/items'
 import { isTranscriptItemHidden } from '@localixai/api/item-format'
 
-export type MessageDisplayItem =
+type MessageDisplayItem =
   | { kind: 'item'; item: AgentItem; index: number }
   | { kind: 'reasoning'; key: string; text: string; lastIndex: number }
 

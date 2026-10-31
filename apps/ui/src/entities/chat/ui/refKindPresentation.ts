@@ -39,7 +39,7 @@ import { selectRefLabelValues } from './refLabelSelector'
 import { ringMessage } from './messageRing'
 import { capabilityUiUri, parseCapabilityResourceUri } from '@localixai/mini-app-sdk/navigation'
 
-export const REF_KIND_ICONS: Record<ContextRefKind, LucideIcon> = {
+const REF_KIND_ICONS: Record<ContextRefKind, LucideIcon> = {
   file: File,
   folder: Folder,
   session: MessagesSquare,
@@ -65,7 +65,7 @@ export function refIcon(ref: Pick<ContextRef, 'kind' | 'uri'>): LucideIcon {
   return refKindIcon(ref.kind)
 }
 
-export interface RefOpenContext {
+interface RefOpenContext {
   /** The session whose transcript hosts the pill (scopes call/terminal targets). */
   sessionId: string | null
   /** Router navigation (pills can't use hooks per-kind — the component passes it in). */
@@ -93,7 +93,7 @@ function scrollToToolCall(sessionId: string, toolCallId: string): void {
  * map; every action reuses an existing open route (editor, chat route, terminal
  * pane, transcript scroll).
  */
-export const REF_OPEN_ACTIONS: Record<
+const REF_OPEN_ACTIONS: Record<
   ContextRefKind,
   (ref: ContextRef, ctx: RefOpenContext) => (() => void) | null
 > = {

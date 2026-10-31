@@ -35,7 +35,7 @@ export interface MessageContextActionsProps {
  * Keep the message in the agent's view. Menu-only on purpose: it is a rare, deliberate act, and
  * the hover row is for what people do to the message in front of them many times a day.
  */
-export interface MessagePinAction {
+interface MessagePinAction {
   pinned: boolean
   onToggle: () => void
 }
