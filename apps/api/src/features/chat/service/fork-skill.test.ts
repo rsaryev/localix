@@ -72,11 +72,6 @@ function makeDeps(parent: SessionRecord) {
   } as unknown as SessionLifecycleCtx
 
   const deps: ForkSkillDeps = {
-    repo: {
-      listMessages: async () => {
-        throw new Error('a fresh fork child cannot have history to hydrate')
-      },
-    } as unknown as ForkSkillDeps['repo'],
     now: () => '2026-02-02 12:00:00',
     requireSession: async (_u, id) => (id === 'parent' ? parent : (inserted ?? parent)),
     runAgent: (async (...args: Parameters<ForkSkillDeps['runAgent']>) => {

@@ -40,7 +40,7 @@ afterEach(async () => {
   closeAll = undefined
 })
 
-async function setup(seed: (db: Kysely<AppDatabase>) => Promise<void>) {
+async function setup(seed: (db: Kysely<AppDatabase>) => Promise<unknown>) {
   const db = createDatabase()
   await migrateToLatest(db)
   await seed(db)
