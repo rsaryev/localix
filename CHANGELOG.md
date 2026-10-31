@@ -70,6 +70,9 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 - **SSH and Docker execution adapters**: the unused groundwork for running a session's tools over
   SSH or in a Docker container is gone, along with its documentation. Sessions run on the local
   machine, as before.
+- **Single `apiKey` on connection updates**: `PATCH /rpc/provider-connections/:id` no longer accepts
+  an `apiKey` field. Add or replace a key through the connection's key routes; creating a connection
+  still takes `apiKey`.
 
 ## v0.1.0-beta.22 — 2026-10-30
 

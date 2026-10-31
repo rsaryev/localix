@@ -42,7 +42,7 @@ export const providerConnectionsApi = {
 
   async updateConnection(
     id: string,
-    patch: { label?: string; apiKey?: string; settings?: Record<string, string> },
+    patch: { label?: string; settings?: Record<string, string> },
   ): Promise<ProviderConnection> {
     return unwrap(
       await client.rpc['provider-connections'][':id'].$patch({

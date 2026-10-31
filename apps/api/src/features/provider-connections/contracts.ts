@@ -69,7 +69,6 @@ export const updateProviderConnectionParamsSchema = z.object({
 
 export const updateProviderConnectionRequestSchema = z.object({
   label: z.string().min(1).optional(),
-  apiKey: z.string().min(1).optional(),
   /** Replaces the connection's settings on every key. */
   settings: z.record(z.string(), z.string().max(500)).optional(),
 })

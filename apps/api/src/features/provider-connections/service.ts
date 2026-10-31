@@ -233,7 +233,6 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
     const keys = hydrated.filter((key): key is ProviderConnectionKeyRecord => key !== null)
     return {
       ...record,
-      apiKey: keys[0]?.apiKey ?? '',
       keys,
     }
   }
@@ -494,26 +493,6 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
           if (credential?.type !== 'api-key' || !credential.key) continue
           await writeCredential(userId, key.id, apiKeyCredential(credential.key, settings))
           await repo.updateKey(userId, id, key.id, { updatedAt })
-        }
-      }
-
-      // Legacy single-key patch: route to the first key so the existing PATCH contract works.
-      if (patch.apiKey !== undefined) {
-        const first = existing.keys[0]
-        if (first) {
-          await writeCredential(userId, first.id, apiKeyCredential(patch.apiKey, settings))
-          await repo.updateKey(userId, id, first.id, { updatedAt })
-        } else {
-          const key = staticKey({
-            connectionId: id,
-            userId,
-            label: 'default',
-            apiKey: patch.apiKey,
-            priority: 0,
-            timestamp: updatedAt,
-          })
-          await repo.insertKey(key)
-          await writeCredential(userId, key.id, apiKeyCredential(patch.apiKey, settings))
         }
       }
 

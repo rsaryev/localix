@@ -13,8 +13,6 @@ export interface ProviderConnectionRecord {
   providerName: string
   label: string
   authType: 'api-key' | 'oauth-pkce'
-  /** Legacy single key (kept as defensive fallback); prefer `keys`. */
-  apiKey: string
   keys: ProviderConnectionKeyRecord[]
   createdAt: string
   updatedAt: string
@@ -43,7 +41,6 @@ export function createProviderConnectionsRepository(db: Kysely<AppDatabase>) {
     providerName: row.provider_name,
     label: row.label,
     authType: row.auth_type,
-    apiKey: '',
     keys,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
