@@ -100,12 +100,12 @@ async function scan(root: string, minFiles: number): Promise<SpawnCall[]> {
   return sources.flatMap((s) => spawnCalls(s.file, s.code))
 }
 
-/**
- * Nothing is blessed today. The PTY spawn (`pty-bun.ts`) is out of reach by construction — it
- * calls `Bun.spawn` through a typed alias — and needs no blessing: a ConPTY child has no
- * console window of its own to hide.
- */
-const EXEMPT: Exemptions = {}
+/** Spawns that need no `windowsHide`, each with why. */
+const EXEMPT: Exemptions = {
+  [exemptionKey('features/terminal/pty-bun.ts', 'Bun.spawn', 'ptyArgv(options)')]: {
+    reason: 'A PTY: a ConPTY child has no console window of its own to hide.',
+  },
+}
 
 describe('every spawn hides its Windows console', () => {
   test('no call site omits windowsHide', async () => {
