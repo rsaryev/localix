@@ -30,17 +30,7 @@ let toolSeq = 0
 const MUTATE_NAMES = new Set(['Write', 'Edit', 'apply_patch', 'patch'])
 const COMMAND_NAMES = new Set(['Bash', 'shell', 'terminal'])
 
-// Map a legacy tool-call state onto an item status (output-available → completed,
-// output-error → failed, input-* → pending) so ported fixtures read the same.
-type LegacyState = 'input-streaming' | 'input-available' | 'output-available' | 'output-error'
-function statusFor(state: LegacyState | undefined): AgentItemStatus {
-  if (state === 'output-error') return 'failed'
-  if (state === 'input-available' || state === 'input-streaming') return 'pending'
-  return 'completed'
-}
-
 export interface ItemOverrides {
-  state?: LegacyState
   status?: AgentItemStatus
   input?: unknown
   resultText?: string
@@ -53,7 +43,7 @@ export interface ItemOverrides {
 /** Build a tool-backed item for `name`, dispatching to the right item type. */
 export function namedTool(name: string, input: unknown, over: ItemOverrides = {}): ToolBackedItem {
   const id = `call-${++toolSeq}`
-  const status = over.status ?? statusFor(over.state)
+  const status = over.status ?? 'completed'
   const base = {
     id,
     toolCallId: id,

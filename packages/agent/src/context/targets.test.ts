@@ -99,16 +99,12 @@ describe('defaultResolveTarget — key normalization', () => {
 
 describe('defaultResolveTarget — non-terminal items', () => {
   test('pending (non-terminal) items return undefined', () => {
-    const t = defaultResolveTarget(
-      namedTool('Read', { path: 'src/x.ts' }, { state: 'input-available' }),
-    )
+    const t = defaultResolveTarget(namedTool('Read', { path: 'src/x.ts' }, { status: 'pending' }))
     expect(t).toBeUndefined()
   })
 
   test('failed items still resolve a target', () => {
-    const t = defaultResolveTarget(
-      namedTool('Edit', { path: 'src/x.ts' }, { state: 'output-error' }),
-    )
+    const t = defaultResolveTarget(namedTool('Edit', { path: 'src/x.ts' }, { status: 'failed' }))
     expect(t).toMatchObject({ class: 'mutate', keys: ['src/x.ts'] })
   })
 
