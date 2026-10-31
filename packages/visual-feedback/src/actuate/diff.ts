@@ -14,22 +14,50 @@
  */
 
 import { buildSnapshot, type RefRegistry } from '../snapshot/index'
+import { MAX_CHANGES, lcsDiff, tellChanges } from './diff-lines'
 
-/** No-op registry for the throwaway snapshot we build only to diff (keeps live refs valid). */
-function nullRegistry(): RefRegistry {
+/**
+ * Registry for the throwaway snapshots we build only to diff: it assigns no ref (keeping the live
+ * ones valid) and records the elements in the order their lines are written, so a line of the
+ * report can later be given the ref of its element.
+ */
+function recordingRegistry(sink: Element[]): RefRegistry {
   return {
     clear() {},
-    put: () => 'e0',
+    put: (el) => {
+      sink.push(el)
+      return 'e0'
+    },
     get: () => null,
     identityOf: () => null,
     findByIdentity: () => null,
+    refOf: () => null,
     isEmpty: () => false,
   }
 }
 
-/** Internal: the interactive-only tree half of `documentChangeSignature` below. */
-function interactiveLines(root?: Element): string {
-  return buildSnapshot(nullRegistry(), { interactiveOnly: true, maxDepth: 30, root }).tree
+/** The element behind a line of the diff baseline; only `interactive` ones can be acted on. */
+export interface LineElement {
+  el: Element
+  interactive: boolean
+}
+
+/** The diff baseline: its text, and per line (same order) the element it describes, if any. */
+export interface DiffState {
+  text: string
+  refs: (LineElement | null)[]
+}
+
+/** The ref every line of a throwaway snapshot carries; comparing lines is then position-free. */
+const DEAD_REF = ' [ref=e0]'
+
+/** Pair each line that carries `DEAD_REF` with the next recorded element. */
+function pair(lines: string[], els: Element[], interactive: boolean): (LineElement | null)[] {
+  let next = 0
+  return lines.map((line) => {
+    const el = line.endsWith(DEAD_REF) ? els[next++] : undefined
+    return el ? { el, interactive } : null
+  })
 }
 
 /**
@@ -76,29 +104,93 @@ function documentStateSignature(root?: Element): string {
 // a game move only changes the score — and the diff called a working move "(no visible change)".
 const SHORT_TEXT = /^- text "[^"]{1,40}"/
 
-/** Internal: the short texts of the page, one snapshot line each. */
-function shortTexts(root?: Element): string {
-  return buildSnapshot(nullRegistry(), { maxDepth: 30, root })
-    .tree.split('\n')
-    .map((line) => line.trim())
-    .filter((line) => SHORT_TEXT.test(line))
-    .join('\n')
+/** The structural + document-state signature used as the diff baseline, with its elements. */
+export function captureState(root?: Element): DiffState {
+  const docLines = documentStateSignature(root).split('\n')
+  const treeEls: Element[] = []
+  const tree = buildSnapshot(recordingRegistry(treeEls), {
+    interactiveOnly: true,
+    maxDepth: 30,
+    root,
+  }).tree.split('\n')
+  const textEls: Element[] = []
+  const all = buildSnapshot(recordingRegistry(textEls), { maxDepth: 30, root }).tree.split('\n')
+  const allPaired = pair(all, textEls, false)
+  const texts = all.flatMap((line, i) =>
+    SHORT_TEXT.test(line.trim()) ? [{ line: line.trim(), ref: allPaired[i]! }] : [],
+  )
+  return {
+    text: [...docLines, ...tree, ...texts.map((t) => t.line)].join('\n'),
+    refs: [...docLines.map(() => null), ...pair(tree, treeEls, true), ...texts.map((t) => t.ref)],
+  }
 }
 
-/** The combined structural + document-state signature used as the diff baseline. */
+/** The text of `captureState`: what an action's report is diffed against. */
 export function stateForDiff(root?: Element): string {
-  return `${documentStateSignature(root)}\n${interactiveLines(root)}\n${shortTexts(root)}`
+  return captureState(root).text
 }
 
-export function diffTrees(prev: string, next: string): string | undefined {
+/** Lines of a baseline, trimmed and without blanks, each with its element. */
+function linesOf(text: string, refs: (LineElement | null)[] = []) {
+  return text.split('\n').flatMap((raw, i) => {
+    const line = raw.trim()
+    return line ? [{ line, ref: refs[i] ?? null }] : []
+  })
+}
+
+/** Pages under this many lines are never read whole just for being shorter than the changes. */
+const SHORT_PAGE = 10
+
+/** What the model is told after an action: the ordered changes, or the page read whole. */
+export type ChangeReport = { kind: 'diff'; text: string } | { kind: 'whole'; text: string }
+
+/** Assigns (or finds) the live ref of an element, or none while no snapshot has run. */
+export type RefFor = (el: Element) => string | undefined
+
+/**
+ * The ordered line diff of the page before and after an action: each change after the unchanged
+ * line above it, `…` over gaps. `whole` when more than `MAX_CHANGES` lines changed, when telling
+ * them would take more than the page, or when the pages are too long to compare.
+ */
+export function changeReport(
+  prev: string,
+  next: DiffState,
+  refFor?: RefFor,
+): ChangeReport | undefined {
   if (!prev) return undefined
-  const a = new Set(prev.split('\n').map((l) => l.trim()))
-  const b = new Set(next.split('\n').map((l) => l.trim()))
-  const added = [...b].flatMap((l) => (l && !a.has(l) ? [`+ ${l.replace(/^- /, '')}`] : []))
-  const removed = [...a].flatMap((l) => (l && !b.has(l) ? [`- ${l.replace(/^- /, '')}`] : []))
-  const out = [...removed, ...added]
-  if (!out.length) return '(no visible change)'
-  return annotateDiff(out.slice(0, 30).join('\n'))
+  const after = linesOf(next.text, next.refs)
+  const before = linesOf(prev)
+  const show = (line: string, ref: LineElement | null) => {
+    const text = line.replace(/^- /, '')
+    if (!text.endsWith(DEAD_REF)) return text
+    const bare = text.slice(0, -DEAD_REF.length)
+    const live = ref?.interactive ? refFor?.(ref.el) : undefined
+    return live ? `${bare} [ref=${live}]` : bare
+  }
+  const whole = (): ChangeReport => ({
+    kind: 'whole',
+    text: after.map((l) => show(l.line, l.ref)).join('\n'),
+  })
+  const lines = lcsDiff(
+    before.map((l) => l.line),
+    after.map((l) => l.line),
+  )
+  if (!lines) return whole()
+  const changed = lines.filter((l) => l.kind !== 'kept').length
+  if (!changed) return { kind: 'diff', text: '(no visible change)' }
+  if (changed > MAX_CHANGES) return whole()
+  const told = tellChanges(lines, (l) => show(l.text, l.kind === 'gone' ? null : after[l.at]!.ref))
+  const text = told.join('\n')
+  const pageSize = after.reduce((sum, l) => sum + l.line.length + 1, 0)
+  // A short page is cheap to tell about whatever changed (and reads without the page's
+  // document-state lines); only past `SHORT_PAGE` lines is the whole page the shorter way.
+  const shorter = after.length >= SHORT_PAGE && text.length > pageSize
+  return shorter ? whole() : { kind: 'diff', text: annotateDiff(text) }
+}
+
+/** The report as plain text for callers that have no snapshot to fall back on. */
+export function diffTrees(prev: string, next: string): string | undefined {
+  return changeReport(prev, { text: next, refs: [] })?.text
 }
 
 const ATTR_FLIP_LINE = /^[+-] (?:html|body)\b/m

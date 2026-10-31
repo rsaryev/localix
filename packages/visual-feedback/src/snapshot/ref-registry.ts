@@ -57,6 +57,8 @@ export interface RefRegistry {
    *  refs. Returns the element, or null when there is no match or it is ambiguous
    *  (never guesses between two equally-matching elements). */
   findByIdentity(identity: RefIdentity): Element | null
+  /** The ref of `el` in the current generation, or null when no snapshot has numbered it. */
+  refOf(el: Element): string | null
   /** No snapshot has run in this document yet (neither generation holds a ref): a ref the
    *  agent names came from a snapshot another renderer of the same page took. */
   isEmpty(): boolean
@@ -107,6 +109,10 @@ export function createRefRegistry(): RefRegistry {
         entry.el = healed
         return healed
       }
+      return null
+    },
+    refOf(el) {
+      for (const [ref, entry] of map) if (entry.el === el) return ref
       return null
     },
     isEmpty() {

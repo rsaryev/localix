@@ -1,9 +1,10 @@
 import type { ActuateDeps } from './types'
 import { settleCommit, settleTransitions } from './settle'
-import { stateForDiff, diffTrees } from './diff'
+import { captureState, changeReport } from './diff'
 import { buildSnapshot } from '../snapshot/index'
 
-async function afterAction(deps: ActuateDeps): Promise<string | undefined> {
+/** What the settled page changed, or that it changed so much that it is to be read whole. */
+async function afterAction(deps: ActuateDeps): Promise<{ diff?: string; whole?: boolean }> {
   // Wait for the page to SETTLE before resampling the document-state signature.
   // Two reasons: (1) framework state commits asynchronously; (2) — the
   // root cause — a CSS `transition` on the restyled property means getComputedStyle
@@ -14,10 +15,16 @@ async function afterAction(deps: ActuateDeps): Promise<string | undefined> {
   // sample (settled is a superset of committed).
   const settle = deps.settle ?? settleTransitions
   await settle()
-  const next = stateForDiff(deps.root)
-  const diff = diffTrees(deps.prevTree.value, next)
-  deps.prevTree.value = next
-  return diff
+  const next = captureState(deps.root)
+  // A live ref for a line's element: the one the model has, else a new one appended to the
+  // registry (valid until the next snapshot). None before a first snapshot, whose refs the
+  // model has not seen.
+  const refFor = (el: Element) =>
+    deps.reg.refOf(el) ?? (deps.reg.isEmpty() ? undefined : deps.reg.put(el))
+  const report = changeReport(deps.prevTree.value, next, refFor)
+  deps.prevTree.value = next.text
+  if (!report) return {}
+  return report.kind === 'whole' ? { whole: true } : { diff: report.text }
 }
 
 /** Cap on error/warn lines attached to one action result, and their per-line length —
@@ -69,11 +76,12 @@ export async function postAction(
     await settleCommit()
     return {}
   }
-  const diff = await afterAction(deps)
+  const { diff, whole } = await afterAction(deps)
   const recentErrors =
     sinceConsoleCursor == null ? undefined : collectRecentErrors(deps, sinceConsoleCursor)
-  const base = snapshotAfter
-    ? { diff, snapshot: buildSnapshot(deps.reg, { root: deps.root }) }
-    : { diff }
+  const base =
+    snapshotAfter || whole
+      ? { diff, snapshot: buildSnapshot(deps.reg, { root: deps.root }) }
+      : { diff }
   return recentErrors ? { ...base, recentErrors } : base
 }

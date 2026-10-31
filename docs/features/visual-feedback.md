@@ -56,6 +56,11 @@ it is working then (its own fetch or XHR requests in flight, a shown `aria-busy`
 bar, a document still parsing), the reply says the page is still loading: read again before acting
 again.
 
+The diff is ordered: each changed line (`-` gone, `+` new) comes after the unchanged line above it,
+with `…` between changes that are apart, so one of several equal lines (a score, a repeated row) is
+told by its place. New or known controls carry their `[ref=eN]`. When more than 30 lines changed, or
+telling them would take more than the page, the reply is the whole page instead.
+
 A long page is read in windows instead of through `evaluate`: `read` returns the text from `offset`
 and ends with the offset to continue from. Going back, forward or reloading changes the page, so
 unlike `read` they are confirmed like any other action that drives it.

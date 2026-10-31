@@ -6,6 +6,10 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ### Added
 
+- **Browser tells what changed in order**: after a click or typing, the agent is shown the lines
+  that changed with the line above each one and a mark between changes that are apart, so one of
+  several identical rows or scores is told by its place, and a control that appeared comes with a
+  reference it can act on. When most of the page changed, it gets the whole page instead.
 - **Browser waits for the page to settle**: after a click or typing, the agent now waits until the
   page has stopped changing, up to 0.7 s, so results that arrive from the network are in what it
   sees instead of a false "no visible change". If the page is still loading (a request of its own in
