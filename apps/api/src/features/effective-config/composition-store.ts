@@ -45,8 +45,3 @@ export function getComposition(
 ): { report: CompositionReport; at: number } | undefined {
   return byLastRun.peek(sessionId)
 }
-
-/** Drop a session's snapshot (session removal). */
-export function forgetComposition(sessionId: string): void {
-  byLastRun.delete(sessionId)
-}

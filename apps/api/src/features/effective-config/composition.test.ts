@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import { describeComposition } from './composition'
-import { forgetComposition, getComposition, recordComposition } from './composition-store'
+import { getComposition, recordComposition } from './composition-store'
 import { TOOL_WRAPPER_CHAIN } from '../chat/runtime/run/tool-wrapper-chain'
 
 const WRAPPERS = TOOL_WRAPPER_CHAIN.map((entry) => entry.label)
@@ -169,8 +169,6 @@ describe('the snapshot store', () => {
 
     const snapshot = getComposition(sessionId)
     expect(snapshot?.report.tools.map((tool) => tool.name)).toContain('ledger_query')
-    forgetComposition(sessionId)
-    expect(getComposition(sessionId)).toBeUndefined()
   })
 
   test('a broken input cannot fail the run that produced it', () => {
@@ -197,6 +195,5 @@ describe('the snapshot store', () => {
     })
 
     expect(getComposition(sessionId)?.report.tools.map((tool) => tool.name)).toEqual(['only_this'])
-    forgetComposition(sessionId)
   })
 })
