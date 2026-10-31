@@ -15,7 +15,7 @@
  * same way — two estimators disagreeing by a few tokens is how an admission check starts
  * refusing requests that fit.
  */
-import type { StageReport } from './port'
+import type { StageReport } from './types'
 import type { HistoryStage, StageContext } from './stage'
 
 export interface PipelineOptions {
@@ -102,12 +102,4 @@ export async function runHistoryStages<M>(
   }
 
   return { messages: current, reports }
-}
-
-/** Total tokens the pipeline saved, for a one-line diagnostic. */
-export function pipelineSavings(reports: readonly StageReport[]): number {
-  const first = reports[0]
-  const last = reports[reports.length - 1]
-  if (!first || !last) return 0
-  return Math.max(0, first.tokensBefore - last.tokensAfter)
 }

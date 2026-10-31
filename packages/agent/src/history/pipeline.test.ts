@@ -3,8 +3,8 @@
  */
 import { describe, expect, test } from 'bun:test'
 
-import { runHistoryStages, pipelineSavings } from './pipeline'
-import { appendStage, mapStage, type HistoryStage, type StageContext } from './stage'
+import { runHistoryStages } from './pipeline'
+import type { HistoryStage, StageContext } from './stage'
 
 type Msg = { id: string; text: string }
 
@@ -20,6 +20,12 @@ const seed: Msg[] = [
   { id: 'b', text: 'bbbb' },
 ]
 
+/** A stage that rewrites each message in place of the old one. */
+const rewrite = (name: string, change: (message: Msg) => Msg): HistoryStage<Msg> => ({
+  name,
+  run: (messages) => ({ messages: messages.map(change) }),
+})
+
 const shrink: HistoryStage<Msg> = {
   name: 'shrink',
   shrinksOnly: true,
@@ -31,8 +37,8 @@ describe('runHistoryStages', () => {
     const result = await runHistoryStages(
       seed,
       [
-        mapStage<Msg>('upper', (m) => ({ ...m, text: m.text.toUpperCase() })),
-        mapStage<Msg>('trim', (m) => ({ ...m, text: m.text.slice(0, 1) })),
+        rewrite('upper', (m) => ({ ...m, text: m.text.toUpperCase() })),
+        rewrite('trim', (m) => ({ ...m, text: m.text.slice(0, 1) })),
       ],
       ctx(),
     )
@@ -91,7 +97,7 @@ describe('runHistoryStages', () => {
   })
 
   test('an unchanged stage reports noop and preserves references', async () => {
-    const result = await runHistoryStages(seed, [mapStage<Msg>('identity', (m) => m)], ctx())
+    const result = await runHistoryStages(seed, [rewrite('identity', (m) => m)], ctx())
     expect(result.reports[0]).toMatchObject({ status: 'noop', changedCount: 0 })
     expect(result.messages[0]).toBe(seed[0])
   })
@@ -114,39 +120,5 @@ describe('runHistoryStages', () => {
     aborted.abort()
     const stageCtx = { ...ctx(), signal: aborted.signal }
     await expect(runHistoryStages(seed, [shrink], stageCtx)).rejects.toThrow()
-  })
-
-  test('savings are the distance between the first and last measurement', async () => {
-    const result = await runHistoryStages(seed, [shrink], ctx())
-    expect(pipelineSavings(result.reports)).toBe(4)
-    expect(pipelineSavings([])).toBe(0)
-  })
-})
-
-describe('stage helpers', () => {
-  test('mapStage preserves the message count — the arity the offset accounting needs', async () => {
-    const result = await runHistoryStages(
-      seed,
-      [mapStage<Msg>('rewrite', (m) => ({ ...m, text: '' }))],
-      ctx(),
-    )
-    expect(result.messages).toHaveLength(seed.length)
-  })
-
-  test('appendStage adds at the end, or nothing at all', async () => {
-    const withTail = await runHistoryStages(
-      seed,
-      [appendStage<Msg>('tail', () => ({ id: 'tail', text: 'runtime' }))],
-      ctx(),
-    )
-    expect(withTail.messages[withTail.messages.length - 1]?.id).toBe('tail')
-
-    const withoutTail = await runHistoryStages(
-      seed,
-      [appendStage<Msg>('tail', () => undefined)],
-      ctx(),
-    )
-    expect(withoutTail.messages).toBe(seed)
-    expect(withoutTail.reports[0]?.status).toBe('noop')
   })
 })

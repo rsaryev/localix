@@ -39,8 +39,6 @@ export {
 export type { TruncationResult, TruncationOptions } from './utils/truncate'
 export { truncateMiddle } from './utils/truncate-middle'
 export type { MiddleTruncationOptions } from './utils/truncate-middle'
-export { extractJsonBlock, jsonCandidates } from './history/extract-json-block'
-export type { ExtractedJson } from './history/extract-json-block'
 export { pruneMessages, itemResultModelText, stripAssetBindings } from './utils/prune-messages'
 export type {
   PruneRule,

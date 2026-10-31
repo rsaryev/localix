@@ -12,12 +12,11 @@
  *     a `failed` report (the fail-safe discipline `output-filters/index.ts` established for
  *     bash output).
  *
- * `mapStage` is how the arity invariant is kept: the per-request wire prune must never
- * change the MESSAGE COUNT, because the admission check measures an offset on the unpruned
- * list and applies it to the pruned one. Element-wise by construction beats a comment
- * asking the next author not to splice.
+ * The per-request wire prune must never change the MESSAGE COUNT, because the admission
+ * check measures an offset on the unpruned list and applies it to the pruned one: rewrite
+ * element-wise rather than splice.
  */
-import type { HistoryDropReason } from './port'
+import type { HistoryDropReason } from './types'
 
 export interface StageContext {
   /** Budget the stage may plan against, in tokens. */
@@ -46,42 +45,4 @@ export interface HistoryStage<M> {
    */
   shrinksOnly?: boolean
   run(messages: readonly M[], ctx: StageContext): StageOutcome<M> | Promise<StageOutcome<M>>
-}
-
-/**
- * A stage that rewrites messages ONE BY ONE. The message count is preserved by
- * construction, so the offset accounting downstream stays sound; return the same reference
- * for "no change" so the pipeline's change count stays honest.
- */
-export function mapStage<M>(
-  name: string,
-  rewrite: (message: M, index: number, ctx: StageContext) => M,
-  options: { advisory?: boolean; shrinksOnly?: boolean } = {},
-): HistoryStage<M> {
-  return {
-    name,
-    ...options,
-    run(messages, ctx) {
-      return { messages: messages.map((message, index) => rewrite(message, index, ctx)) }
-    },
-  }
-}
-
-/**
- * A stage that APPENDS to the end of the list — a runtime-context tail, an ephemeral
- * reminder. Returning `undefined` appends nothing, which is the common case.
- */
-export function appendStage<M>(
-  name: string,
-  build: (messages: readonly M[], ctx: StageContext) => M | undefined,
-  options: { advisory?: boolean } = {},
-): HistoryStage<M> {
-  return {
-    name,
-    ...options,
-    run(messages, ctx) {
-      const extra = build(messages, ctx)
-      return { messages: extra === undefined ? messages : [...messages, extra] }
-    },
-  }
 }
