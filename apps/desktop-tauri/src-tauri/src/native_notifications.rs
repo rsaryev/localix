@@ -7,19 +7,23 @@ use tauri::{AppHandle, Manager};
 /// How long a delivered banner key is remembered. Every workspace receives the same journal row
 /// within moments of each other; ten minutes covers a slow or reconnecting workspace without
 /// suppressing a genuinely new notification that reuses the key much later.
+/// Longest notification key remembered; longer ones are never claimed.
+const MAX_KEY_BYTES: usize = 256;
+/// Most delivered keys remembered at once; the oldest is dropped beyond it.
+const MAX_REMEMBERED: usize = 512;
 const DELIVERED_TTL: Duration = Duration::from_secs(600);
 
 #[derive(Default)]
 pub(crate) struct NativeNotifications(Mutex<HashMap<String, Instant>>);
 fn claim_at(entries: &mut HashMap<String, Instant>, key: &str, now: Instant) -> bool {
-    if key.is_empty() || key.len() > 256 {
+    if key.is_empty() || key.len() > MAX_KEY_BYTES {
         return false;
     }
     entries.retain(|_, when| now.duration_since(*when) < DELIVERED_TTL);
     if entries.contains_key(key) {
         return false;
     }
-    if entries.len() >= 512 {
+    if entries.len() >= MAX_REMEMBERED {
         if let Some(oldest) = entries
             .iter()
             .min_by_key(|(_, when)| *when)
@@ -61,7 +65,7 @@ mod tests {
         for id in 0..1000 {
             claim_at(&mut entries, &id.to_string(), now);
         }
-        assert_eq!(entries.len(), 512);
+        assert_eq!(entries.len(), MAX_REMEMBERED);
         assert!(!claim_at(&mut entries, "", now));
     }
 }
