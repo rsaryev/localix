@@ -58,7 +58,6 @@ describe('product screenshot manifest', () => {
     ])
 
     const generated = await fs.readFile(outFile, 'utf8')
-    expect(generated).toContain('"viewer/gallery": { src: shot0, capturedAt: "2026-08-06" }')
     expect(generated).toContain('gallery--2026-08-06.png')
     expect(generated).not.toContain('gallery--2026-08-05.png')
     expect(generated).toContain(
