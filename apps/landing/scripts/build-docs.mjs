@@ -9,6 +9,7 @@ import matter from 'gray-matter'
 import { extractMarkdownHeadings } from '@localixai/markdown'
 import { SITE_ORIGIN } from '../src/lib/site.ts'
 import { writeFileAtomic } from './atomic-write.mjs'
+import { toPosix } from './posix-path.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '../../..')
@@ -154,7 +155,7 @@ const PENDING_SHOT = `docs${path.sep}assets${path.sep}screenshots${path.sep}`
 export async function validateRelativeDocLinks(pages, sourceRoot) {
   const failures = []
   const pending = new Set()
-  const publicSources = new Set(pages.map((page) => page.sourcePath.split(path.sep).join('/')))
+  const publicSources = new Set(pages.map((page) => toPosix(page.sourcePath)))
   for (const page of pages) {
     const markdown = navigableMarkdown(page.content)
     for (const match of markdown.matchAll(/(!?)\[[^\]]*\]\(([^)]+)\)/g)) {
@@ -170,17 +171,18 @@ export async function validateRelativeDocLinks(pages, sourceRoot) {
         continue
       }
       const target = path.resolve(path.dirname(path.join(sourceRoot, page.sourcePath)), decoded)
+      const rel = path.relative(sourceRoot, target)
       try {
         await fs.access(target)
-        const targetSource = path.relative(sourceRoot, target).split(path.sep).join('/')
+        const targetSource = toPosix(rel)
         if (!isImage && !publicSources.has(targetSource)) {
           failures.push(
             `${page.sourcePath}: ${href} must be an ordinary absolute URL because it is not a public documentation page`,
           )
         }
       } catch {
-        if (path.relative(sourceRoot, target).startsWith(PENDING_SHOT)) {
-          const relativeTarget = path.relative(sourceRoot, target).split(path.sep).join('/')
+        if (rel.startsWith(PENDING_SHOT)) {
+          const relativeTarget = toPosix(rel)
           if (
             !/^docs\/assets\/screenshots\/[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*--(?:\d{4}-\d{2}-\d{2}|placeholder)\.png$/u.test(
               relativeTarget,
@@ -190,7 +192,7 @@ export async function validateRelativeDocLinks(pages, sourceRoot) {
               `${page.sourcePath}: screenshot path must be <feature>/<surface>--YYYY-MM-DD.png (or --placeholder.png): ${href}`,
             )
           } else {
-            pending.add(path.relative(sourceRoot, target))
+            pending.add(rel)
           }
         } else {
           failures.push(`${page.sourcePath}: ${href}`)
@@ -209,14 +211,14 @@ function headingIds(content) {
 }
 
 export function validateDocAnchors(pages) {
-  const byPath = new Map(pages.map((page) => [page.sourcePath.split(path.sep).join('/'), page]))
+  const byPath = new Map(pages.map((page) => [toPosix(page.sourcePath), page]))
   const idsByPath = new Map(
     [...byPath.entries()].map(([sourcePath, page]) => [sourcePath, headingIds(page.content)]),
   )
   const failures = []
 
   for (const page of pages) {
-    const sourcePath = page.sourcePath.split(path.sep).join('/')
+    const sourcePath = toPosix(page.sourcePath)
     for (const match of navigableMarkdown(page.content).matchAll(/!?\[[^\]]*\]\(([^)]+)\)/gu)) {
       const href = match[1].trim().replace(/^<|>$/gu, '')
       const hashIndex = href.indexOf('#')

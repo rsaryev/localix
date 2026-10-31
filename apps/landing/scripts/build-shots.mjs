@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { archiveOnly } from '../../../scripts/screenshots/plan.mjs'
 import { writeFileAtomic } from './atomic-write.mjs'
+import { toPosix } from './posix-path.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '../../..')
@@ -48,7 +49,7 @@ async function walkPngs(dir) {
 }
 
 function importPath(fromFile, assetFile) {
-  const relative = path.relative(path.dirname(fromFile), assetFile).split(path.sep).join('/')
+  const relative = toPosix(path.relative(path.dirname(fromFile), assetFile))
   return relative.startsWith('.') ? relative : `./${relative}`
 }
 
@@ -116,7 +117,7 @@ export async function buildShotManifest({
       key,
       capturedAt: match.groups.date,
       file,
-      repoPath: `docs/assets/screenshots/${relative.split(path.sep).join('/')}`,
+      repoPath: `docs/assets/screenshots/${toPosix(relative)}`,
     })
   }
 
