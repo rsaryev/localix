@@ -9,8 +9,7 @@ import type {
 } from '@localixai/mini-app-sdk/backend'
 
 // Lifecycle + observer hooks: fire-and-forget notifications a mini app can observe
-// (subagent-stop, HITL request/resolved, session-end). Split out of hooks.ts;
-// the historical `./hooks` import surface re-exports these. Each is best-effort —
+// (subagent-stop, HITL request/resolved, session-end). Each is best-effort —
 // per-mini-app isolation + timeout, never throws.
 
 /** Fire an observer-only hook on every declaring mini app (isolation + timeout each). */

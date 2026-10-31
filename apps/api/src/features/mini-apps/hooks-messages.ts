@@ -9,7 +9,6 @@ import {
 } from '@localixai/mini-app-sdk/backend'
 
 // Message hooks: the user-prompt and assistant-reply rewrite/annotate hooks.
-// Split out of hooks.ts; the historical `./hooks` import surface re-exports these.
 
 /**
  * Run every mini app's `onUserMessage` hook against the run's prompt text.

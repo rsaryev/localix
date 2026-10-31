@@ -8,15 +8,12 @@ import { extractReadable } from '../agent-core/tools/web/readable-extract'
 /**
  * Host implementation of `ctx.helpers` — the {@link MiniAppHelpers} contract is
  * OWNED by `@localixai/mini-app-sdk` (mini apps compile against it); this module
- * provides the runtime. The type is re-exported so the historical import surface
- * (native.ts) stays unchanged.
+ * provides the runtime.
  *
  * NOTE on `readJson`: the parsed value is `unknown` ON PURPOSE — the file's
  * contents are whatever happens to be on disk, not the fallback's type. Pass a
  * type guard to get `T` back soundly (see the SDK contract docs).
  */
-export type { MiniAppHelpers } from '@localixai/mini-app-sdk/backend'
-
 /**
  * Implements the two {@link MiniAppHelpers.readJson} overloads.
  *

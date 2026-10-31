@@ -7,9 +7,8 @@ import { isRecord } from '../../lib/record'
 import { HOOK_TIMEOUT_MS, invokeHook, type HookRunOptions } from './hook-invoke'
 
 // Tool-call hooks: the pre/post wrapping that lets mini apps audit, block, or
-// annotate EVERY tool call (built-in, mini app, MCP alike). Split out of hooks.ts
-// so the wrapping logic and its schema-reparse guard stand on their own; the
-// historical `./hooks` import surface re-exports these unchanged.
+// annotate EVERY tool call (built-in, mini app, MCP alike). The wrapping logic and its
+// schema-reparse guard stand on their own.
 
 /**
  * MINI APP HOOK EXECUTION — the runtime side of the SDK's `MiniAppHooks`. The loader collects
