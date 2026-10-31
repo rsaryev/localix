@@ -3,7 +3,7 @@ import { Download, Hammer } from 'lucide-react'
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { Link } from 'react-router'
 import { cn } from '../lib/cn'
-import { DOWNLOADS, resolveDownloads, type DownloadOption } from './downloadOptions'
+import { DOWNLOADS, type DownloadOption } from './downloadOptions'
 import {
   detectDownload,
   readMacChipSignals,
@@ -11,8 +11,6 @@ import {
   type DownloadGuess,
   type PlatformId,
 } from './downloadPlatform'
-
-export { resolveDownloads }
 
 const noSubscription = () => () => {}
 /** The synchronous guess as a string, so the snapshot compares by value and never loops. */
