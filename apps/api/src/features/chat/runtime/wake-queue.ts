@@ -123,7 +123,6 @@ export function createWakeQueue(ctx: WakeQueueContext) {
     leases,
     continuations,
     publishQueue,
-    cancelAgentTurns: agentTurns.cancel,
     holdsOf,
     holdUntil,
   })
@@ -154,7 +153,6 @@ export function createWakeQueue(ctx: WakeQueueContext) {
     leases,
     deadLetter,
     scheduleDrain,
-    queues,
     onError,
   })
 

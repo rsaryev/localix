@@ -7,7 +7,6 @@ import type { DeadLetter } from './dead-letter'
 import type { PendingTurn } from './entry'
 import type { HeldEntries } from './holds'
 import type { LeaseOperations } from './leases'
-import type { AgentTurnFilter } from './agent-turns'
 
 export interface DrainOptions {
   ownsDrainLease?: boolean
@@ -25,7 +24,6 @@ export interface DrainDependencies extends Pick<
   leases: LeaseOperations
   continuations: ContinuationOperations
   publishQueue: (userId: string, sessionId: string) => void
-  cancelAgentTurns: (userId: string, sessionId: string, filter: AgentTurnFilter) => Promise<void>
   /** What may not open a turn yet (`holds.ts`). */
   holdsOf: (sessionId: string) => HeldEntries
   /** Drain `sessionId` again at `atMs`, when its earliest held entry is released by age. */

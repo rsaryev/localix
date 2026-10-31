@@ -1,6 +1,5 @@
 import type { QueuePromoteResult } from '../../contracts'
 import type { DeadLetter } from './dead-letter'
-import type { PendingTurn } from './entry'
 import { holdLeases, type LeaseOperations, type WakeQueueSharedState } from './leases'
 
 interface PromoteDependencies {
@@ -10,13 +9,12 @@ interface PromoteDependencies {
     sessionId: string,
     options?: { ownsDrainLease?: boolean; preferredItemId?: string; preclaimedItemId?: string },
   ) => void
-  queues: Map<string, { list: () => { id: string; value: PendingTurn }[] }>
   onError: (error: unknown) => void
 }
 
 export const createPromoteOperations = (
   shared: WakeQueueSharedState,
-  { leases, deadLetter, scheduleDrain, queues, onError }: PromoteDependencies,
+  { leases, deadLetter, scheduleDrain, onError }: PromoteDependencies,
 ) => {
   const { drainingSessions } = shared
 
@@ -56,7 +54,7 @@ export const createPromoteOperations = (
       // The borrowed drain may have finished while the durable store initialized.
       if (existingDrain && (!drainingSessions.has(sessionId) || !shared.activeRuns.has(sessionId)))
         return { promoted: false, reason: 'leased' }
-      const item = queues
+      const item = shared.queues
         .get(sessionId)
         ?.list()
         .find((candidate) => candidate.id === itemId)
