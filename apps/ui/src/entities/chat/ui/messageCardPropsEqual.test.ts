@@ -24,6 +24,18 @@ describe('messageCardPropsEqual', () => {
     expect(messageCardPropsEqual(prev, next)).toBe(true)
   })
 
+  // A continuation row's segments are regrouped on every streaming frame: the same messages in a
+  // new array must not re-render its card; a segment that changed must.
+  test('rebuilt segments holding the same messages are equal; a changed segment is not', () => {
+    const first = { id: 'a1' }
+    const second = { id: 'a2' }
+    const base = { message, onEdit, segments: [first, second] }
+    expect(messageCardPropsEqual(base, { ...base, segments: [first, second] })).toBe(true)
+    expect(messageCardPropsEqual(base, { ...base, segments: [first, { id: 'a2' }] })).toBe(false)
+    expect(messageCardPropsEqual(base, { ...base, segments: [first] })).toBe(false)
+    expect(messageCardPropsEqual(base, { ...base, segments: undefined })).toBe(false)
+  })
+
   test('a changed position, wake source or any other prop re-renders', () => {
     const base = {
       message,

@@ -1,10 +1,11 @@
 import type { MessagePosition } from '../model/messageGroups'
 
 /**
- * `memo` equality for `MessageCard`: identity for every prop, except the two `MessageList` builds
- * fresh in its JSX on every render — `position` (an object spread) and `segmentWakeSources` (a
- * `.map`). With plain identity those two changed on every commit, so a streaming reply re-rendered
- * every visible card on every frame, not just the one being written. They are compared by value.
+ * `memo` equality for `MessageCard`: identity for every prop, except the ones `MessageList` builds
+ * fresh on every render — `position` (an object spread), `segmentWakeSources` (a `.map`) and a
+ * continuation row's `segments` (regrouped whenever the transcript changes). With plain identity
+ * they changed on every commit, so a streaming reply re-rendered every visible card on every frame,
+ * not just the one being written. They are compared by value: the lists item by item.
  */
 export function messageCardPropsEqual(
   prev: Readonly<Record<string, unknown>>,
@@ -20,7 +21,7 @@ export function messageCardPropsEqual(
         return false
       continue
     }
-    if (key === 'segmentWakeSources') {
+    if (key === 'segmentWakeSources' || key === 'segments') {
       if (!sameItems(a as readonly unknown[] | undefined, b as readonly unknown[] | undefined))
         return false
       continue
