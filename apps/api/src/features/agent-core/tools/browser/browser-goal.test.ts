@@ -267,6 +267,30 @@ describe('the goal action', () => {
     expect(typed.content).not.toContain('Values never typed')
   })
 
+  // Both booking sessions sent every goal without values; "change the destination to Bangkok" then
+  // had nothing to type, and the run scrolled until it looped. The result now says why.
+  test('a goal that stalls without values says the model could not type', async () => {
+    const tab = page()
+    const model = scripted([{ operation: 'SCROLL_UP' }])
+    const result = await runGoal(
+      { send: tab.send, decide: model.decide, sleep: async () => {} },
+      { goal: 'Change the destination to Bangkok', values: [], previewId: 'tab-1' },
+    )
+    expect(result.content).toContain('No values were given')
+    expect(result.content).toContain('values')
+  })
+
+  test('a goal that is done without values says nothing about typing', async () => {
+    const tab = page()
+    const model = scripted([{ operation: 'CLICK', click_target: 'e2' }, { operation: 'DONE' }])
+    const result = await runGoal(
+      { send: tab.send, decide: model.decide, sleep: async () => {} },
+      { goal: 'Search', values: [], previewId: 'tab-1' },
+    )
+    expect(result.content).toContain('judged the goal done')
+    expect(result.content).not.toContain('No values were given')
+  })
+
   test('streams each step as it is taken', async () => {
     const tab = page()
     const model = scripted([

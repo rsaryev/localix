@@ -238,6 +238,12 @@ export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result>
     const unused = input.values.filter((value) => !typed.has(value))
     if (unused.length)
       lines.push(`Values never typed: ${unused.map((value) => JSON.stringify(value)).join(', ')}`)
+    // Without values the decision model is offered no typing at all: a goal that needed a field
+    // filled can only click and scroll until it loops, which reads like a page that resists.
+    if (!input.values.length && history.at(-1)?.operation !== 'DONE')
+      lines.push(
+        'No values were given, so the decision model could click and scroll but not type: a field to fill needs its text in values (values: ["the text"]).',
+      )
     const page =
       'error' in final
         ? `The final page could not be read: ${final.error}`
