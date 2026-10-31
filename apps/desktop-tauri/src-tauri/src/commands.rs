@@ -100,6 +100,21 @@ fn has_app_bundle() -> bool {
         )
 }
 
+/// Build and show one notification through the Tauri plugin.
+fn show_plugin_notification(
+    app: &AppHandle,
+    title: String,
+    body: Option<String>,
+) -> tauri_plugin_notification::Result<()> {
+    use tauri_plugin_notification::NotificationExt;
+
+    let mut builder = app.notification().builder().title(title);
+    if let Some(body) = body {
+        builder = builder.body(body);
+    }
+    builder.show()
+}
+
 /// Show a native OS notification for a notable event (pending HITL request, a
 /// finished run). Invoked from the UI via `invoke('notify', …)` — the Tauri
 /// replacement for the old Electrobun `POST /desktop/notify` route (the API is a
@@ -116,8 +131,6 @@ pub(crate) fn notify(
     condition: Option<String>,
     event_key: Option<String>,
 ) {
-    use tauri_plugin_notification::NotificationExt;
-
     let focused = crate::workspace_windows::views(&app)
         .iter()
         .any(|view| view.window().is_focused().unwrap_or(false));
@@ -137,11 +150,7 @@ pub(crate) fn notify(
     // process is a real .app bundle. See `has_app_bundle`.
     #[cfg(target_os = "macos")]
     if !has_app_bundle() {
-        let mut builder = app.notification().builder().title(title);
-        if let Some(body) = body {
-            builder = builder.body(body);
-        }
-        if let Err(e) = builder.show() {
+        if let Err(e) = show_plugin_notification(&app, title, body) {
             logln(format!("notify (unbundled) failed: {e}"));
         }
         return;
@@ -164,11 +173,7 @@ pub(crate) fn notify(
                 Err(e) => {
                     logln(format!("notification permission request failed: {e}"));
                     if tauri::is_dev() {
-                        let mut builder = app.notification().builder().title(title);
-                        if let Some(body) = body {
-                            builder = builder.body(body);
-                        }
-                        if let Err(fallback_error) = builder.show() {
+                        if let Err(fallback_error) = show_plugin_notification(&app, title, body) {
                             logln(format!("notification fallback failed: {fallback_error}"));
                         }
                     }
@@ -179,11 +184,7 @@ pub(crate) fn notify(
 
     #[cfg(not(target_os = "macos"))]
     {
-        let mut builder = app.notification().builder().title(title);
-        if let Some(body) = body {
-            builder = builder.body(body);
-        }
-        if let Err(e) = builder.show() {
+        if let Err(e) = show_plugin_notification(&app, title, body) {
             logln(format!("notify failed: {e}"));
         }
     }
