@@ -80,7 +80,7 @@ interface PreviewStore extends PreviewMaps {
   /** Switch the session's active tab. */
   setActivePreview: (sessionId: string, previewId: string) => void
   /** Re-point the session's active static preview at a freshly re-served URL (bumps version). */
-  repointActivePreview: (sessionId: string, url: string, previewId: string) => void
+  repointActivePreview: (sessionId: string, url: string) => void
   /** Permanently remove a deleted session's strip, persisted tabs included. */
   discardSessionPreview: (sessionId: string) => void
   /** Open a page the person browsed to as a new tab of the session's Browser. */
@@ -145,7 +145,7 @@ export const usePreviewStore = create<PreviewStore>((set, get) => ({
       const previewBySession = activatePreview(s, workspaceOf(session), previewId)
       return previewBySession ? { previewBySession } : {}
     }),
-  repointActivePreview: (session, url, _previewId) =>
+  repointActivePreview: (session, url) =>
     set((s) => {
       const sessionId = workspaceOf(session)
       const cur = s.previewBySession[sessionId]

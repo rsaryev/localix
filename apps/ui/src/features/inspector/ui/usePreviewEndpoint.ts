@@ -105,7 +105,7 @@ export function usePreviewEndpoint({
         // version, so the next effect run resolves the new key and settles there).
         if (isAutoServed && answer.url !== url) {
           if (sessionId) {
-            usePreviewStore.getState().repointActivePreview(sessionId, answer.url, answer.previewId)
+            usePreviewStore.getState().repointActivePreview(sessionId, answer.url)
           }
           return
         }
