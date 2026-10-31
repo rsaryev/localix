@@ -79,7 +79,6 @@ pub(crate) fn hide(app: &AppHandle, label: &str) {
                     }
                     data.active = Some(selected.clone());
                     drop(data);
-                    let handle = handle.clone();
                     keep_hidden(handle.clone(), labels.clone(), 0);
                     crate::workspace_session::save_in_background(&handle);
                 }
