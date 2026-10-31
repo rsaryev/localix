@@ -22,7 +22,7 @@ import { isFileChangeItem, isToolBackedItem, type ToolBackedItem } from '../agen
 import { textEncoderByteLength } from '../utils/hash'
 import { itemResultModelText } from '../utils/prune-messages'
 import { normalizePathKey } from './path-key'
-import { defaultResolveTarget, type ResolveTarget } from './targets'
+import { defaultResolveTarget } from './targets'
 
 export interface LiveReadOptions {
   /** How many live reads survive, most recent first. 0 disables. Default 6. */
@@ -36,7 +36,6 @@ export interface LiveReadOptions {
    * (mirrors `PruneWireOptions.minElideChars`).
    */
   minChars?: number
-  resolveTarget?: ResolveTarget
 }
 
 /** Default live-read count shared by both context-compression layers. */
@@ -114,7 +113,6 @@ export function classifyReads(
   const maxLiveReads = resolveMaxLiveReads(opts.maxLiveReads)
   const budgetBytes = resolveLiveReadBudgetBytes(opts.budgetBytes)
   const minChars = opts.minChars ?? 400
-  const resolve = opts.resolveTarget ?? defaultResolveTarget
 
   type ReadRef = { id: string; keys: string[]; order: number; chars: number; bytes: number }
   const allReads: ReadRef[] = []
@@ -127,7 +125,7 @@ export function classifyReads(
     for (const item of m.items ?? []) {
       if (!isToolBackedItem(item)) continue
       order += 1
-      const target = resolve(item as ToolBackedItem)
+      const target = defaultResolveTarget(item as ToolBackedItem)
       if (!target || target.keys.length === 0) continue
 
       if (target.class === 'mutate') {

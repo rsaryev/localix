@@ -12,7 +12,7 @@
 import type { ChatMessage } from '../chat'
 import { isToolBackedItem } from '../agents/items'
 import { extractEntities, entityKey } from './entities'
-import { resolveTarget, type ResolveTarget } from './targets'
+import { defaultResolveTarget } from './targets'
 
 export interface DepGraph {
   depScore(i: number): number
@@ -24,8 +24,6 @@ export interface DepGraphOptions {
   recencyHalfLife?: number
   /** Weight multiplier for high-precision (tool-target) entities. Default 2. */
   preciseEntityWeight?: number
-  /** App-specific tool→target override. */
-  resolveTarget?: ResolveTarget
 }
 
 interface Observation {
@@ -80,7 +78,7 @@ export function buildDepGraph(messages: ChatMessage[], opts: DepGraphOptions = {
   for (let i = 0; i < N; i++) {
     for (const item of messages[i].items ?? []) {
       if (!isToolBackedItem(item)) continue
-      const t = resolveTarget(item, opts.resolveTarget)
+      const t = defaultResolveTarget(item)
       if (!t || (t.class !== 'read' && t.class !== 'mutate') || t.keys.length === 0) continue
       observations.push({ msg: i, cls: t.class, ok: item.status === 'completed', keys: t.keys })
     }

@@ -17,7 +17,6 @@ import {
 import { allocate } from './allocator'
 import { estimateChatMessageTokens } from './tokens'
 import { quantizeBoundaryStart } from './boundary'
-import type { ResolveTarget } from './targets'
 import { classifyReads, type LiveReadOptions, type ReadFate } from './live-reads'
 
 export interface CompressionPlan {
@@ -68,7 +67,6 @@ export interface PlanOptions {
    */
   boundaryQuantum?: number
   weights?: ValueWeights
-  resolveTarget?: ResolveTarget
   opMenu?: OpMenuOptions
   /** Bounds on which read results survive compression untouched. See `live-reads.ts`. */
   liveReads?: LiveReadOptions
@@ -99,7 +97,6 @@ export function planContextCompression(
 
   const graph = buildDepGraph(messages, {
     recencyHalfLife: weights.recencyHalfLife,
-    resolveTarget: opts.resolveTarget,
   })
   const values = scoreMessages(messages, graph, weights)
 
@@ -113,7 +110,6 @@ export function planContextCompression(
   const { live: protectedItemIds, fates: readFates } = classifyReads(messages, {
     ...(liveBudgetBytes ? { budgetBytes: liveBudgetBytes } : {}),
     ...opts.liveReads,
-    resolveTarget: opts.resolveTarget,
   })
   const menus: Operation[][] = messages.map((m, i) =>
     operationMenu(m, graph.supersededScore(i) >= supThreshold, {

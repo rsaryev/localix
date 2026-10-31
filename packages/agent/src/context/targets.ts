@@ -19,7 +19,6 @@
 import {
   isCommandItem,
   isFileChangeItem,
-  isMcpCallItem,
   isToolCallItem,
   type ToolBackedItem,
 } from '../agents/items'
@@ -34,8 +33,6 @@ export interface ToolTarget {
   /** Normalized identity keys (lowercased paths, or a query string). */
   keys: string[]
 }
-
-export type ResolveTarget = (item: ToolBackedItem) => ToolTarget | undefined
 
 // Shared single source of truth — see path-key.ts (kept as a local alias so the
 // call sites below read naturally).
@@ -88,18 +85,6 @@ export function defaultResolveTarget(item: ToolBackedItem): ToolTarget | undefin
       }
       return undefined
     }
-    return { class: 'none', keys: [] }
-  }
-  if (isMcpCallItem(item)) {
-    return { class: 'none', keys: [] }
   }
   return { class: 'none', keys: [] }
-}
-
-/** Resolve an item's target, preferring an app-supplied override resolver. */
-export function resolveTarget(
-  item: ToolBackedItem,
-  override?: ResolveTarget,
-): ToolTarget | undefined {
-  return override?.(item) ?? defaultResolveTarget(item)
 }

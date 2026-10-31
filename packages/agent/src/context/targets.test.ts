@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { defaultResolveTarget, resolveTarget } from './targets'
+import { defaultResolveTarget } from './targets'
 import { namedTool } from './_test-helpers'
 
 describe('defaultResolveTarget — class mapping', () => {
@@ -43,6 +43,20 @@ describe('defaultResolveTarget — class mapping', () => {
   test('unknown tool maps to "none"', () => {
     const t = defaultResolveTarget(namedTool('weird_unknown_tool', { foo: 1 }))
     expect(t).toMatchObject({ class: 'none', keys: [] })
+  })
+
+  test('an MCP call maps to "none"', () => {
+    const t = defaultResolveTarget({
+      id: 'm1',
+      type: 'mcp_call',
+      status: 'completed',
+      toolCallId: 'm1',
+      name: 'mcp__db__query',
+      server: 'db',
+      tool: 'query',
+      input: { path: 'src/x.ts' },
+    })
+    expect(t).toEqual({ class: 'none', keys: [] })
   })
 })
 
@@ -101,20 +115,6 @@ describe('defaultResolveTarget — non-terminal items', () => {
   test('edit without a path returns undefined', () => {
     const t = defaultResolveTarget(namedTool('Edit', { content: 'no path' }))
     expect(t).toBeUndefined()
-  })
-})
-
-describe('resolveTarget — override', () => {
-  test('prefers an app-supplied override resolver', () => {
-    const override = () => ({ class: 'read' as const, keys: ['custom'] })
-    const t = resolveTarget(namedTool('Bash', { command: 'ls' }), override)
-    expect(t).toMatchObject({ class: 'read', keys: ['custom'] })
-  })
-
-  test('falls back to default when override returns undefined', () => {
-    const override = () => undefined
-    const t = resolveTarget(namedTool('Read', { path: 'src/x.ts' }), override)
-    expect(t?.class).toBe('read')
   })
 })
 

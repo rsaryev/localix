@@ -82,11 +82,7 @@ export function pointerOnlyBody(text: string): string {
   const close = text.indexOf(']')
   if (close < 0) return text
   const clause = text.slice(0, close + 1)
-  return carriesMarker(clause, ELISION_MARKER) ||
-    carriesMarker(clause, MIDDLE_TRUNCATE_MARKER) ||
-    carriesMarker(clause, CRUSH_MARKER)
-    ? clause
-    : text
+  return isCompressedContent(clause) ? clause : text
 }
 
 export function truncateMiddle(s: string, locator?: string, recoveryToolAvailable = true): string {
