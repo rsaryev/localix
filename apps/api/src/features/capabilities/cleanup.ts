@@ -21,7 +21,7 @@ import type { ConsumerHandlers } from '@localixai/change-feed'
 
 import type { AppDatabase } from '../../db'
 import type { CoreCascades, CoreRefs } from '../changes/core-entities'
-import { ACTION_PREFIX } from './resolve'
+import { actionFor } from './resolve'
 import { createCapabilityRuleRepository } from './rule-repository'
 
 export interface CapabilityCleanupPorts {
@@ -52,7 +52,7 @@ export function createCapabilityCleanup(ports: CapabilityCleanupPorts) {
 
   /** Drop the name's switches from every agent's list (each write bumps the revision). */
   async function clearSwitches(kind: 'plugin' | 'mini-app' | 'mcp', name: string): Promise<void> {
-    const action = `${ACTION_PREFIX[kind]}${name}`
+    const action = actionFor(kind, name)
     const named = (rule: { action: string; resource: string }) =>
       rule.resource === '*' &&
       (rule.action === action || (kind === 'mcp' && rule.action.startsWith(`${action}/`)))
@@ -90,7 +90,7 @@ export function createCapabilityCleanup(ports: CapabilityCleanupPorts) {
     const names = (rule: { action: string; resource: string }) =>
       [...gone].some(
         (id) =>
-          rule.action === `${ACTION_PREFIX.agent}${id}` ||
+          rule.action === actionFor('agent', id) ||
           (rule.action.startsWith('invocation:') && rule.resource === id),
       )
     for (const id of gone) {
@@ -111,7 +111,7 @@ export function createCapabilityCleanup(ports: CapabilityCleanupPorts) {
           eb(
             'action',
             'in',
-            [...gone].map((id) => `${ACTION_PREFIX.agent}${id}`),
+            [...gone].map((id) => actionFor('agent', id)),
           ),
           eb.and([eb('action', 'like', 'invocation:%'), eb('resource', 'in', [...gone])]),
         ]),
