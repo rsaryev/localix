@@ -20,7 +20,8 @@ export const PINNED_ADDRESS: Readonly<Record<string, string>> = {
 
 /** Where a model may live when its provider names no address: inside the provider's cloud. */
 const CLOUD_HOSTS = ['.amazonaws.com', '.api.aws', '.azure.com']
-const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]'])
+/** Hosts a plain-http address may name: this machine. */
+export const LOOPBACK: ReadonlySet<string> = new Set(['localhost', '127.0.0.1', '[::1]'])
 
 /** The address as a URL, its variables standing in as a placeholder label; undefined when unreadable. */
 function parse(address: string): URL | undefined {

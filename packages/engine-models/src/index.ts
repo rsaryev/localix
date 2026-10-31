@@ -4,30 +4,10 @@
  *
  * Knows providers, wire formats and prices; knows nothing about turns, tools or the host.
  */
-export { createAuth, type AuthOptions } from './auth/auth'
-export {
-  createModelCatalog,
-  type CatalogEntry,
-  type ModelCatalog,
-  type ModelCatalogOptions,
-} from './catalog/catalog'
-export { OAUTH_LOGINS, type ProviderFamily, type Route } from './catalog/families'
-export { reasoningLevels } from './catalog/model-facts'
-export {
-  normalize,
-  type CatalogDocument,
-  type ServedModel,
-  type ServedProvider,
-} from './catalog/normalize'
+export { createAuth } from './auth/auth'
+export { createModelCatalog } from './catalog/catalog'
+export { OAUTH_LOGINS } from './catalog/families'
 export { createLanguageModelFactory, LanguageModelCompletionError } from './language-models'
-export {
-  assertServable,
-  openSession,
-  PreflightRejection,
-  reasoningFor,
-  resolveEntry,
-  type ModelAccessOptions,
-  type OpenSessionInput,
-} from './model-access'
-export { DEFAULT_RETRY_POLICY, type RetryPolicy } from './retry'
-export { DEFAULT_SILENCE, StreamIdleTimeoutError, type SilenceDeadline } from './session'
+export { openSession, PreflightRejection, type ModelAccessOptions } from './model-access'
+export type { RetryPolicy } from './retry'
+export { StreamIdleTimeoutError, type SilenceDeadline } from './session'

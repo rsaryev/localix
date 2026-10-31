@@ -13,7 +13,7 @@ import type { CatalogModel, ModelCost } from '@localixai/agent/catalog'
 import type { Model } from '@opencode-ai/models'
 
 import { modelAddressAllowed, providerAddress } from './addresses'
-import { DECISION_FAMILIES, routeOf, wireOf, type Route } from './families'
+import { apiOf, DECISION_FAMILIES, routeOf, type Route } from './families'
 import { contextWindowOf, costOf, reasoningLevels } from './model-facts'
 import { settingsOf, type ProviderSetting } from './settings'
 
@@ -61,7 +61,7 @@ export interface ServedProvider {
 export type CatalogDocument = Record<string, ServedProvider>
 
 export const CODEX_PROVIDER_ID = 'openai-codex'
-export const CODEX_BASE_URL = 'https://chatgpt.com/backend-api/codex'
+const CODEX_BASE_URL = 'https://chatgpt.com/backend-api/codex'
 /** What a ChatGPT plan reaches through Codex; the rest of OpenAI's list needs an API account. */
 const CODEX_MODELS = [
   'gpt-5.3-codex-spark',
@@ -274,7 +274,7 @@ export function listedModel(
     supportsTools: model.tools,
     supportsReasoning: model.reasons,
     reasoningEfforts: model.reasons ? [...model.reasoning] : ['off'],
-    api: kind === 'decision' ? 'decisions' : wireOf(model.route),
+    api: apiOf(model.route, kind),
     supportsAttachment: model.attachment,
     inputModalities: [...model.input],
     outputModalities: [...model.output],

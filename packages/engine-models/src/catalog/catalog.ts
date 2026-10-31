@@ -19,7 +19,7 @@ import type {
 } from '@localixai/agent/runtime'
 import { LOCAL_PROVIDER_ID } from '@localixai/agent/runtime'
 
-import { OAUTH_LOGINS, wireOf, type OAuthLogin, type Route } from './families'
+import { apiOf, OAUTH_LOGINS, type OAuthLogin, type Route } from './families'
 import { listedProvider, localProvider } from './listing'
 import {
   DOCUMENT_SCHEMA,
@@ -111,7 +111,7 @@ export function createModelCatalog(options: ModelCatalogOptions = {}) {
   const load = async () => {
     state = await restore()
     if (state) return
-    const document = normalize((await loadSnapshot()).providers)
+    const document = normalize(await loadSnapshot())
     state = { fetchedAt: 0, digest: digestOf(document), document }
     await persist()
   }
@@ -266,7 +266,7 @@ export function createModelCatalog(options: ModelCatalogOptions = {}) {
           local: provider.id === LOCAL_PROVIDER_ID,
         },
         route: model.route,
-        model: { ...model, kind, api: kind === 'decision' ? 'decisions' : wireOf(model.route) },
+        model: { ...model, kind, api: apiOf(model.route, kind) },
       }
     },
   }

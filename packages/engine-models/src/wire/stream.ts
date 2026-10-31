@@ -237,11 +237,6 @@ export class ResponseAssembler {
     }
   }
 
-  /** Whether the stream reported a finish part (its absence is a connection cut short). */
-  get finished(): boolean {
-    return this.finish !== undefined
-  }
-
   /** The finish reason, when the stream reported one. */
   get finishReason(): LanguageModelV4FinishReason | undefined {
     return this.finish?.reason

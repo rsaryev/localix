@@ -47,7 +47,7 @@ export interface WireProfile {
   cachePoints?: 'anthropic' | 'bedrock'
 }
 
-export interface RequestContext {
+interface RequestContext {
   sessionId: string
   /** What keys the provider's prompt cache instead of the session, when the host named one. */
   promptCacheKey?: string

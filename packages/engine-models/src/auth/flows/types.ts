@@ -2,7 +2,7 @@ import type { RuntimeAuthInteraction, RuntimeOAuthCredential } from '@localixai/
 
 import type { ProviderAccess } from '../../providers/connect'
 
-export interface FlowContext {
+interface FlowContext {
   interaction: RuntimeAuthInteraction
   /** Signal of the whole sign-in; never undefined inside a flow. */
   signal: AbortSignal

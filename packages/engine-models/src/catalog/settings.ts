@@ -11,6 +11,8 @@
  */
 import { isSecretSettingName } from '@localixai/agent/catalog'
 
+import { LOOPBACK } from './addresses'
+
 export interface ProviderSetting {
   /** The variable models.dev names, which the connection stores it under. */
   name: string
@@ -22,7 +24,6 @@ export interface ProviderSetting {
 
 const TEMPLATE = /\$\{([A-Z0-9_]+)\}/g
 const LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i
-const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]'])
 
 /** What a person is asked for, by variable. The clouds read the first five themselves. */
 const KNOWN: Readonly<Record<string, Omit<ProviderSetting, 'name'>>> = {

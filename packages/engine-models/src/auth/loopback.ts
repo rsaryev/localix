@@ -27,7 +27,7 @@ export async function generatePkce(): Promise<{ verifier: string; challenge: str
   return { verifier, challenge: base64url(new Uint8Array(hash)) }
 }
 
-export interface CallbackServerOptions<T> {
+interface CallbackServerOptions<T> {
   /** Named on the page the browser lands on, e.g. `OpenAI`. */
   providerName: string
   host: string

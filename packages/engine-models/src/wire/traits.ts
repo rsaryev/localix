@@ -21,8 +21,8 @@ export function wireTraits(entry: CatalogEntry): Traits {
     images: entry.model.input.includes('image'),
     ...(family === 'openai-compatible' ? { compatible: true } : {}),
   }
-  if (family === 'anthropic' || family === 'vertex-anthropic') traits.toolCallIds = 'anthropic'
-  else if (family === 'bedrock') traits.toolCallIds = 'anthropic'
+  if (family === 'anthropic' || family === 'vertex-anthropic' || family === 'bedrock')
+    traits.toolCallIds = 'anthropic'
   else if (family === 'openai-compatible' && isMistral(entry)) traits.toolCallIds = 'mistral'
   // Claude reads only the cache breakpoints it is given, on Bedrock as everywhere: there they
   // are Bedrock's own cache points. Through the gateway, Anthropic's breakpoints pass through.

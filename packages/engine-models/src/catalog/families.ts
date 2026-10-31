@@ -87,6 +87,11 @@ export function routeOf(
   }
 }
 
+/** The API a model answers on: `decisions` for a decision model, else the wire its route uses. */
+export function apiOf(route: Route, kind: string): string {
+  return kind === 'decision' ? 'decisions' : wireOf(route)
+}
+
 /** The wire a model is served over, as the catalog detail panel names it. */
 export function wireOf(route: Route): string {
   switch (route.family) {

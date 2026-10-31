@@ -57,9 +57,9 @@ export interface SilenceDeadline {
   betweenPartsMs: number
 }
 
-export const DEFAULT_SILENCE: SilenceDeadline = { firstPartMs: 300_000, betweenPartsMs: 120_000 }
+const DEFAULT_SILENCE: SilenceDeadline = { firstPartMs: 300_000, betweenPartsMs: 120_000 }
 
-export interface SessionOptions {
+interface SessionOptions {
   sessionId: string
   /** The prompt-cache key when it is not the session id (`AgentRuntimeRunInput`). */
   promptCacheKey?: string
@@ -143,8 +143,9 @@ export function createModelSession(bound: BoundModel, options: SessionOptions): 
       bound.origin,
     )
     const started = performance.now()
-    let assembler = new ResponseAssembler(bound.origin)
-    let partial = new PartialUsage(call.prompt, call.tools)
+    // Each attempt starts both afresh (the retry loop below); a closure reads the current pair.
+    let assembler: ResponseAssembler
+    let partial: PartialUsage
     let firstPartAt: number | undefined
     let firstToolAt: number | undefined
     let readMs = 0
