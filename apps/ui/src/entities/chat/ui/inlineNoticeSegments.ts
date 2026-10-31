@@ -47,14 +47,14 @@ export function inlineNoticeSegments(message: Message, isStreaming = false): Inl
   const groupedBoundaries: typeof boundaries = []
   for (let index = 0; index < boundaries.length;) {
     const first = boundaries[index]!
-    let end = index + 1
-    while (end < boundaries.length && boundaries[end]!.index === first.index) end += 1
-    const run = boundaries.slice(index, end)
+    let runEnd = index + 1
+    while (runEnd < boundaries.length && boundaries[runEnd]!.index === first.index) runEnd += 1
+    const run = boundaries.slice(index, runEnd)
     const originals = new Map(run.map((boundary) => [boundary.notice.id, boundary]))
     for (const notice of coalesceSystemMessages(run.map((boundary) => boundary.notice))) {
       groupedBoundaries.push({ ...originals.get(notice.id)!, notice })
     }
-    index = end
+    index = runEnd
   }
   for (const boundary of groupedBoundaries) {
     if (isSystemActivity(boundary.notice)) {
