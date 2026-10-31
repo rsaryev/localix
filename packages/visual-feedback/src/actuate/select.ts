@@ -45,6 +45,7 @@ export async function performSelect(
   const select = t.el
   if (!(select instanceof realmOf(select).HTMLSelectElement))
     return fail('failed', 'not a dropdown')
+  if (select.disabled) return fail('failed', 'the dropdown is disabled')
 
   const options = enabledOptions(select)
   const chosen = findOption(options, cmd.text)
@@ -55,12 +56,16 @@ export async function performSelect(
 
   const summary = getElementSummary(select)
   const label = chosen.label || chosen.value
-  const unchanged = select.selectedIndex === chosen.index
+  const option = select.options[chosen.index]
+  // A multiple dropdown keeps what else is chosen: the pick is added, and "already chosen" is
+  // that option's own state. A single one is decided by its selected index.
+  const unchanged = select.multiple ? option.selected : select.selectedIndex === chosen.index
   if (!unchanged) {
     select.focus?.()
-    setNativeSelectValue(select, chosen.value)
+    // `value =` on a multiple list would drop every other choice.
+    if (!select.multiple) setNativeSelectValue(select, chosen.value)
     // Duplicate values leave the first match selected; the option itself decides.
-    if (select.selectedIndex !== chosen.index) select.options[chosen.index].selected = true
+    if (select.multiple || select.selectedIndex !== chosen.index) option.selected = true
     select.dispatchEvent(new (realmOf(select).Event)('input', { bubbles: true }))
     select.dispatchEvent(new (realmOf(select).Event)('change', { bubbles: true }))
   }

@@ -94,6 +94,27 @@ describe('select step', () => {
     expect(r.error).toContain('no such option: de')
   })
 
+  test('a multiple dropdown adds the option and keeps the others chosen', async () => {
+    document.body.innerHTML = `<select id="c" multiple aria-label="Tags">
+      <option value="a" selected>Alpha</option><option value="b">Beta</option><option value="c">Gamma</option></select>`
+    const sel = document.querySelector('#c') as HTMLSelectElement
+    const r = await select({ text: 'Gamma' })
+    expect(r.ok).toBe(true)
+    expect(Array.from(sel.selectedOptions).map((o) => o.value)).toEqual(['a', 'c'])
+    // Alpha is chosen already, though it is not the first-listed selectedIndex of the pick.
+    const again = await select({ text: 'Alpha' })
+    expect(again.result?.note).toContain('already')
+  })
+
+  test('a disabled dropdown cannot be picked from', async () => {
+    ;(document.querySelector('#c') as HTMLSelectElement).disabled = true
+    const r = await select({ text: 'fr' })
+    expect(r.ok).toBe(false)
+    expect(r.error).toContain('disabled')
+    expect(value()).toBe('us')
+    expect(events).toEqual([])
+  })
+
   test('a field that is not a dropdown is named as such', async () => {
     const d = deps()
     const tree = buildSnapshot(d.reg).tree
