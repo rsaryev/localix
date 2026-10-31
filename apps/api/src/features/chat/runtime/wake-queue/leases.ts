@@ -100,6 +100,11 @@ interface LeaseDependencies {
   armDrainRetry?: (fire: () => void, ms: number) => ReturnType<typeof setTimeout>
 }
 
+/** Startup recovery tries once, then once after each of these pauses. */
+const STARTUP_RECOVERY_BACKOFF_MS = [25, 100]
+/** A failed drain is retried after each of these pauses, then left for the next wake. */
+const DRAIN_RETRY_BACKOFF_MS = [25, 100, 500]
+
 export const createLeaseOperations = (
   shared: WakeQueueSharedState,
   { now, store, scheduleDrain, leaseMs = 60_000, armDrainRetry = setTimeout }: LeaseDependencies,
@@ -186,7 +191,7 @@ export const createLeaseOperations = (
   const ready = store
     ? (async () => {
         let lastError: unknown
-        for (let attempt = 0; attempt < 3; attempt += 1) {
+        for (let attempt = 0; attempt <= STARTUP_RECOVERY_BACKOFF_MS.length; attempt += 1) {
           if (shared.closed) return
           try {
             await store.recoverExpired(now())
@@ -194,8 +199,9 @@ export const createLeaseOperations = (
             return
           } catch (error) {
             lastError = error
-            if (attempt < 2) {
-              await new Promise<void>((resolve) => setTimeout(resolve, [25, 100][attempt]))
+            const backoff = STARTUP_RECOVERY_BACKOFF_MS[attempt]
+            if (backoff !== undefined) {
+              await new Promise<void>((resolve) => setTimeout(resolve, backoff))
               if (shared.closed) return
             }
           }
@@ -266,15 +272,13 @@ export const createLeaseOperations = (
   const scheduleDrainRetry = (sessionId: string): void => {
     if (shared.closed || shared.drainRetryTimers.has(sessionId)) return
     const attempt = shared.drainRetryAttempts.get(sessionId) ?? 0
-    if (attempt >= 3) return
+    const backoff = DRAIN_RETRY_BACKOFF_MS[attempt]
+    if (backoff === undefined) return
     shared.drainRetryAttempts.set(sessionId, attempt + 1)
-    const timer = armDrainRetry(
-      () => {
-        shared.drainRetryTimers.delete(sessionId)
-        scheduleDrain(sessionId)
-      },
-      [25, 100, 500][attempt] ?? 500,
-    )
+    const timer = armDrainRetry(() => {
+      shared.drainRetryTimers.delete(sessionId)
+      scheduleDrain(sessionId)
+    }, backoff)
     timer.unref?.()
     shared.drainRetryTimers.set(sessionId, timer)
   }
