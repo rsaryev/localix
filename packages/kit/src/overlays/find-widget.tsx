@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { cn, CONTROL_FOCUS_WITHIN } from '@localixai/mini-app-sdk/ui/classes'
-import { FLOATING_SURFACE } from '../layout/workbench-toolbar'
+import { FLOATING_SURFACE } from './popover-surface'
 
 type FindWidgetSurfaceProps = Omit<React.ComponentPropsWithoutRef<'div'>, 'aria-label'> & {
   /** Names the search scope, for example “Find in terminal”. */
