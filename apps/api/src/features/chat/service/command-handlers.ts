@@ -140,7 +140,6 @@ export async function handleUnresolvedSlashCommand(
   ctx: Pick<CommandHandlerContext, 'insertDirectReply' | 'now'>,
   userId: string,
   sessionId: string,
-  _session: SessionRecord,
   prompt: string,
 ): Promise<MessageMutationResponse | null> {
   const invocation = parseSlashInvocation(prompt)

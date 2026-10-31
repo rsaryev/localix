@@ -6,14 +6,13 @@ import { isDelegationParent } from '../../agent-core/delegation-policy'
 import { GENERAL_PURPOSE_TYPE } from '../../agent-core/tools/agent/agent-type'
 import { awaitAgentService } from '../runtime/agent-service-binding'
 import { childExecutionContext } from '../runtime/execution-context'
-import type { createChatRepository, SessionRecord } from '../repository'
+import type { SessionRecord } from '../repository'
 import * as sessionLifecycle from './session-lifecycle'
 import type { SessionLifecycleCtx } from './session-lifecycle-contracts'
 import type { RunAgentFn } from './run-agent'
 import type { ScopedCcHooks } from '../runtime/run-contract'
 
 export interface ForkSkillDeps {
-  repo: ReturnType<typeof createChatRepository>
   now: () => string
   requireSession: (userId: string, id: string) => Promise<SessionRecord>
   runAgent: RunAgentFn

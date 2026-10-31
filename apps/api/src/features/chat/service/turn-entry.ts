@@ -158,7 +158,6 @@ export async function sendMessage(
       turnCommandCtx,
       userId,
       sessionId,
-      session,
       prompt,
     )
     if (unresolvedSlash) return unresolvedSlash

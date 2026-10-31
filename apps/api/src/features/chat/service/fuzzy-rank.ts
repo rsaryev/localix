@@ -19,9 +19,9 @@ function pathFields(path: string) {
 /**
  * Rank project-relative paths against a query, returning every match sorted
  * best-first (shorter path breaks ties). An empty query keeps the input order
- * but sorted shortest-first (a useful "before you type" default). Unlike
- * `rankFiles`, this does NOT cap — the caller paginates — so a UI can report the
- * total match count alongside a page of results.
+ * but sorted shortest-first (a useful "before you type" default). It does not
+ * cap — the caller paginates — so a UI can report the total match count alongside
+ * a page of results.
  */
 export function rankPaths(paths: string[], query: string): string[] {
   const q = query.replace(/\s+/g, '').toLowerCase()
@@ -33,12 +33,4 @@ export function rankPaths(paths: string[], query: string): string[] {
       compare: (left, right) => left.length - right.length || left.localeCompare(right),
     },
   ).map((result) => result.item)
-}
-
-/**
- * Rank project-relative file paths against a query for the go-to-file palette.
- * Thin cap over {@link rankPaths}.
- */
-export function rankFiles(paths: string[], query: string, limit: number): string[] {
-  return rankPaths(paths, query).slice(0, limit)
 }

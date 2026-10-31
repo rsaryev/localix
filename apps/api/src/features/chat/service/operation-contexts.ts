@@ -189,7 +189,6 @@ export function createOperationContexts(
     loadSessionPluginMcpServers,
     // CC `context: fork` — run the skill in a child session, as the invoking agent.
     spawnForkSkill: createSpawnForkSkill({
-      repo,
       now,
       requireSession,
       runAgent,

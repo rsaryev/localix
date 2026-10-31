@@ -17,7 +17,6 @@ async function reply(prompt: string) {
     },
     'u',
     's',
-    {} as never,
     prompt,
   )
   return replies[0]

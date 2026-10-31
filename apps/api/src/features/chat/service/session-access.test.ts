@@ -7,7 +7,6 @@ import {
   toSourceRuntime,
 } from './session-access'
 import { ApiError } from '../../../lib/errors'
-import { BUSY_STOP_FIRST } from './command-handlers-context'
 import type { SessionRecord } from '../repository'
 import type { PersistedMessage } from '../contracts'
 import type { AgentItem, ToolCallItem } from '@localixai/agent/agents'
@@ -94,7 +93,7 @@ describe('assertSessionNotBusy', () => {
     const runner = { isRunning: () => false, isBusy: () => true }
     let thrown: unknown
     try {
-      assertSessionNotBusy(runner, 's1', BUSY_STOP_FIRST)
+      assertSessionNotBusy(runner, 's1', 'Session is busy — stop the current run first')
     } catch (err) {
       thrown = err
     }

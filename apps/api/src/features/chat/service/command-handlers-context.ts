@@ -39,12 +39,6 @@ import type { RecapService } from '../recap/service'
 export type DirectReply = (text: string) => Promise<MessageMutationResponse>
 
 /**
- * Shared busy-guard message for the command handlers that mutate context or
- * start a run — they all reject mid-run with the same "stop first" wording.
- */
-export const BUSY_STOP_FIRST = 'Session is busy — stop the current run first'
-
-/**
  * Everything the slash-command handlers need from the createChatService
  * closure — repos, services, and the shared sendMessage helpers. The lock
  * (withSessionMutationLock) stays in sendMessage; handlers run inside it.
@@ -108,19 +102,17 @@ export interface CommandHandlerContext {
     opts?: RunAgentOptions,
   ) => Promise<MessageMutationResponse>
   gatherSessionSkills: (userId: string, session: SessionRecord) => Promise<SkillRecord[]>
-  /** One shared settings seam for slash invocation and `/skills` listing. */
-  /**
-   * Skill visibility for a scope. Takes the project because visibility is a scope fact — the
-   * global-only read this replaces gave a project session the wrong answer.
-   */
-  /**
-   * Skill visibility for a scope. Takes the names it is deciding about: a verdict is per
-   * capability, so a map can only be built for a roster someone has already discovered.
-   */
   /** The agent's permission rules a typed skill's commands meet; absent, none are checked. */
   loadSkillCommandRules?: (userId: string, agentId: string) => Promise<PermissionRule[]>
   /** `disableSkillShellExecution` for a skill or command about to render (`skill-render.ts`). */
   skillShellDisabled?: SkillShellPolicy
+  /**
+   * Skill visibility for a scope: one shared settings seam for slash invocation and `/skills`
+   * listing. Takes the project because visibility is a scope fact — the global-only read this
+   * replaces gave a project session the wrong answer — and the names it is deciding about: a
+   * verdict is per capability, so a map can only be built for a roster someone has already
+   * discovered.
+   */
   loadSkillOverrides: (
     userId: string,
     projectId: string | null,
