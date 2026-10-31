@@ -69,7 +69,10 @@ pub(crate) fn install(
         NSImageView::alloc(mtm),
         NSRect::new(
             NSPoint::new(0.0, 0.0),
-            NSSize::new(bounds.size.width, (bounds.size.height - 36.0).max(1.0)),
+            NSSize::new(
+                bounds.size.width,
+                (bounds.size.height - crate::workspace_drag_snapshot::PREVIEW_HEADER).max(1.0),
+            ),
         ),
     );
     image.setImageScaling(NSImageScaling::ScaleProportionallyUpOrDown);

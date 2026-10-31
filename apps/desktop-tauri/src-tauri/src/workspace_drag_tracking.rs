@@ -1,4 +1,5 @@
 //! Native tracking stays live while WebKit's drag session runs its tracking run loop.
+use crate::workspace_drag_snapshot::PREVIEW_HEADER;
 use crate::workspace_drag_state::{target, Key, Rect, Target};
 use objc2::rc::Retained;
 use objc2::Message;
@@ -67,25 +68,16 @@ pub(crate) fn start(
                 || source.isZoomed(),
         }
     });
-    if let Some(rect) = snapshot_rect {
-        let (size, grabbed) =
-            crate::workspace_drag_snapshot::preview_geometry(rect, anchor, 36.0, screen);
-        let mut frame = window.frame();
-        frame.size = NSSize::new(size[0], size[1]);
-        window.setFrame_display(frame, false);
-        anchor = grabbed;
-    } else {
-        let (size, grabbed) = crate::workspace_drag_snapshot::preview_geometry(
-            [0.0, 36.0, 900.0, 564.0],
-            [anchor[0], 0.0],
-            36.0,
-            screen,
-        );
-        let mut frame = window.frame();
-        frame.size = NSSize::new(size[0], size[1]);
-        window.setFrame_display(frame, false);
-        anchor = grabbed;
-    }
+    let (pane, grab) = match snapshot_rect {
+        Some(pane) => (pane, anchor),
+        None => ([0.0, PREVIEW_HEADER, 900.0, 564.0], [anchor[0], 0.0]),
+    };
+    let (size, grabbed) =
+        crate::workspace_drag_snapshot::preview_geometry(pane, grab, PREVIEW_HEADER, screen);
+    let mut frame = window.frame();
+    frame.size = NSSize::new(size[0], size[1]);
+    window.setFrame_display(frame, false);
+    anchor = grabbed;
     let presentation = Arc::new(Mutex::new(Presentation {
         anchor,
         last_origin: None,
