@@ -87,6 +87,7 @@ export type VfCommandAction =
   | 'screenshot'
   | 'click'
   | 'type'
+  | 'select'
   | 'press'
   | 'scroll'
   | 'hover'
@@ -103,6 +104,7 @@ export interface VfStep {
   action:
     | 'click'
     | 'type'
+    | 'select'
     | 'press'
     | 'scroll'
     | 'hover'
@@ -132,7 +134,7 @@ export interface VfCommand {
   ref?: string
   /** Target by CSS selector (fallback / first interaction before a snapshot). */
   selector?: string
-  /** `type`: literal text to insert into the focused/targeted field. */
+  /** `type`: literal text to insert into the focused/targeted field. `select`: the option's value or label. */
   text?: string
   /** `press`: a key name or chord, e.g. `Enter`, `Tab`, `Ctrl+a`, `Escape`. */
   key?: string

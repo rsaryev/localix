@@ -15,7 +15,7 @@ export interface PageOutcome {
 const REPLACED = '__localixReplaced'
 
 /** Actions that can make the page navigate (a link, a submitted form, a key that follows one). */
-const DRIVE = new Set(['click', 'hover', 'press', 'scroll', 'steps', 'type'])
+const DRIVE = new Set(['click', 'hover', 'press', 'scroll', 'select', 'steps', 'type'])
 export const drivesPage = (action: string): boolean => DRIVE.has(action)
 
 /** How long a finished action waits for a navigation it started to replace the document. */

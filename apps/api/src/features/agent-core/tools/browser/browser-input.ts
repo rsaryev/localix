@@ -37,7 +37,7 @@ const stepSchema = z
     action: z.enum(STEP_ACTIONS),
     ref: z.string().optional(),
     selector: z.string().optional(),
-    text: z.string().optional(),
+    text: z.string().optional().describe('type: the text. select: option value or label.'),
     key: z.string().optional(),
     keys: z.array(z.string()).optional(),
     direction: z.enum(['up', 'down', 'left', 'right']).optional(),
@@ -86,7 +86,7 @@ export const advertisedObject = z.object({
     .array(stepSchema)
     .optional()
     .describe(
-      'Ordered actions by ref or selector; stop on error. wait: text or selector to appear, for late content. End with snapshot to observe.',
+      'Ordered actions by ref or selector; stop on error. select: a dropdown option (listed in the snapshot) by value or label. wait: text or selector to appear, for late content. End with snapshot to observe.',
     ),
   expression: z
     .string()
@@ -206,7 +206,10 @@ type Step = NonNullable<BrowserInput['steps']>[number]
 /** What one step is missing, in the words its own action would use; null when complete. */
 function missingStepField(step: Step): string | null {
   if (
-    (step.action === 'click' || step.action === 'type' || step.action === 'hover') &&
+    (step.action === 'click' ||
+      step.action === 'type' ||
+      step.action === 'select' ||
+      step.action === 'hover') &&
     !normalizeRef(step.ref) &&
     !step.selector
   )
@@ -214,6 +217,8 @@ function missingStepField(step: Step): string | null {
   // `press`/`scroll` may legitimately target the page (no ref/selector).
   if (step.action === 'press' && !step.key && !step.keys?.length)
     return 'a "press" step needs a "key" (e.g. "Enter") or "keys" (e.g. ["ArrowUp","ArrowRight"]).'
+  if (step.action === 'select' && step.text == null)
+    return 'a "select" step needs "text": the option\'s value or visible label, as the snapshot lists them.'
   if (step.action === 'wait') {
     if (!step.text && !step.selector)
       return 'a "wait" step needs "text" or a CSS "selector" to wait for (gone:true waits for it to disappear).'

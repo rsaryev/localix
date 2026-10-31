@@ -6,6 +6,10 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ### Added
 
+- **Browser picks dropdown options**: the agent can now choose an option of a form dropdown by its
+  value or its visible label, and the page sees a real change. The page snapshot lists each
+  dropdown's options (up to 50), and picking one that is already chosen is reported as unchanged. It
+  works in the preview and in native browser tabs.
 - **Browser waits for late content**: the agent can now wait in the page until text or an element
   appears, or goes away, for up to 15 seconds, then read it, instead of reading a half-loaded page
   and guessing. It works in the preview and in native browser tabs, even when the tab is in the

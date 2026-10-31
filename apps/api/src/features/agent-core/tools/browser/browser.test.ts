@@ -68,6 +68,14 @@ describe('browser classify judges what will run', () => {
     [{ action: 'console' }, { effect: 'view' }],
     [{ action: 'evaluate', expression: '1' }, { effect: 'external' }],
     [{ action: 'steps', steps: [{ action: 'click', ref: 'e1' }] }, { effect: 'external' }],
+    // Choosing an option changes the page: a drive, never a look.
+    [
+      {
+        action: 'steps',
+        steps: [{ action: 'select', ref: 'e1', text: 'fr' }, { action: 'snapshot' }],
+      },
+      { effect: 'external' },
+    ],
     // Waiting only looks: a batch of nothing but observing steps is a view.
     [{ action: 'steps', steps: [{ action: 'wait', text: 'Saved' }] }, { effect: 'view' }],
     [
@@ -589,6 +597,26 @@ describe('browser tool', () => {
     expect(() => tool.prepareArguments?.({ action: 'type', ref: 'e3', text: 'Ada' })).toThrow(
       '{"action":"steps","steps":[{"action":"type","ref":"e3","text":"Ada"}]}',
     )
+  })
+
+  it('a flat select is refused with the steps call that replaces it, like any interaction', () => {
+    const { tool } = toolWith(snapshotResult)
+    expect(() => tool.prepareArguments?.({ action: 'select', ref: 'e3', text: 'France' })).toThrow(
+      '{"action":"steps","steps":[{"action":"select","ref":"e3","text":"France"}]}',
+    )
+  })
+
+  it('relays a select step and shows its note', async () => {
+    const { tool, sent } = toolWith({
+      ok: true,
+      result: { action: 'steps', note: 'selected "France" in select "Country"' },
+    })
+    const res = await tool.execute('sel', {
+      action: 'steps',
+      steps: [{ action: 'select', ref: 'e3', text: 'France' }],
+    })
+    expect(sent[0].steps).toEqual([{ action: 'select', ref: 'e3', text: 'France' }])
+    expect(res.content).toContain('selected "France"')
   })
 
   it('normalizes ref forms the model copies from the tree ("[e3]", "ref=e3", "[ref=e3]") to "e3"', async () => {

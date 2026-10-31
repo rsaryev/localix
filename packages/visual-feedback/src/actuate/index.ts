@@ -31,6 +31,7 @@ import { postAction } from './post-action'
 import { performScroll } from './scroll'
 import { performPress } from './press'
 import { performWait } from './wait'
+import { performSelect } from './select'
 import { serializeEvalResult, compileEvalExpression } from './evaluate'
 
 // The console ring buffer + interaction synthesis + interactive-tree diffing live
@@ -253,6 +254,9 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
         },
       }
     }
+
+    case 'select':
+      return performSelect(cmd, deps, consoleCursor)
 
     case 'press': {
       const pressed = performPress(cmd, deps)

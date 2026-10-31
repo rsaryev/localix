@@ -17,6 +17,7 @@ export type PreviewAction =
   | 'screenshot'
   | 'click'
   | 'type'
+  | 'select'
   | 'press'
   | 'scroll'
   | 'hover'
@@ -34,6 +35,7 @@ export interface PreviewStep {
   action:
     | 'click'
     | 'type'
+    | 'select'
     | 'press'
     | 'scroll'
     | 'hover'

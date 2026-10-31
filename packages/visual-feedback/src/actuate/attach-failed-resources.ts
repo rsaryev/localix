@@ -19,6 +19,7 @@ import type { VfCommandAction, VfCommandResult } from '../protocol/index'
 const DRIVE_ACTIONS: ReadonlySet<VfCommandAction> = new Set<VfCommandAction>([
   'click',
   'type',
+  'select',
   'press',
   'scroll',
   'hover',

@@ -7,7 +7,7 @@
 export const TAKE_SCREENSHOT = 'take_screenshot'
 
 // The top-level actions the schema offers, and the ONLY ones execute accepts. Interactions
-// (click/type/press/scroll/hover) are not here: they are step shapes inside `steps`, so the
+// (click/type/select/press/scroll/hover) are not here: they are step shapes inside `steps`, so the
 // schema carries that vocabulary once instead of twice.
 export const ACTIONS = [
   'viewport',
@@ -24,7 +24,7 @@ export const ACTIONS = [
 ] as const
 
 /** The interactions, which exist only as steps. */
-export const INTERACTIONS = ['click', 'type', 'press', 'scroll', 'hover'] as const
+export const INTERACTIONS = ['click', 'type', 'select', 'press', 'scroll', 'hover'] as const
 
 // Interactions PLUS the read actions snapshot/evaluate/console, so a batch can act THEN
 // observe in one call (e.g. click a toggle then snapshot the new page, or evaluate the

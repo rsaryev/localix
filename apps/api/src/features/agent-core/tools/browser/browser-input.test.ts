@@ -191,6 +191,40 @@ describe('goal is offered only with a decision model', () => {
   })
 })
 
+describe('select step', () => {
+  const parse = (step: Record<string, unknown>) =>
+    browserInputSchema.safeParse({ action: 'steps', steps: [{ action: 'select', ...step }] })
+
+  test('is offered in every contract a run can get, with or without images and goal', () => {
+    for (const images of [true, false])
+      for (const goal of [true, false]) {
+        const schema = browserInputSchemaFor({ images, goal })
+        expect(
+          schema.safeParse({
+            action: 'steps',
+            steps: [{ action: 'select', ref: 'e3', text: 'France' }],
+          }).success,
+        ).toBe(true)
+      }
+  })
+
+  test('reaches the relay with its ref normalised and the option in text', () => {
+    const input = parse({ ref: '[ref=e3]', text: 'fr' })
+    if (!input.success) throw new Error('rejected')
+    expect(buildPreviewCommand({ ...input.data, action: 'steps' }).steps).toEqual([
+      { action: 'select', ref: 'e3', text: 'fr' },
+    ])
+  })
+
+  test('is refused before anything runs without a target or without the option', () => {
+    const check = (step: Record<string, unknown>) =>
+      missingFieldMessage({ action: 'steps', steps: [{ action: 'select', ...step }] as never })
+    expect(check({ text: 'fr' })).toContain('"select" step needs a target')
+    expect(check({ ref: 'e3' })).toContain('"select" step needs "text"')
+    expect(check({ selector: '#country', text: 'fr' })).toBeNull()
+  })
+})
+
 describe('wait step', () => {
   const parse = (step: Record<string, unknown>) =>
     browserInputSchema.safeParse({ action: 'steps', steps: [{ action: 'wait', ...step }] })

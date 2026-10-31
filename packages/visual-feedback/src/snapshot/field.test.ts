@@ -37,6 +37,24 @@ describe('field labels', () => {
     expect(tree).toContain('"Cabin" = "Business"')
   })
 
+  it('a select lists its enabled options so the choice can be made without opening it', () => {
+    const { tree } = snapshotOf(
+      '<label for="c">Country</label><select id="c"><option value="fr">France</option><option value="us" selected>United States</option><option value="de" disabled>Germany</option><option>Spain</option></select>',
+    )
+    expect(tree).toContain(
+      '"Country" = "United States" options: "France" (fr), "United States" (us), "Spain" [ref=',
+    )
+    expect(tree).not.toContain('Germany')
+  })
+
+  it('a select with more than fifty options lists fifty and says how many are left', () => {
+    const options = Array.from({ length: 60 }, (_, i) => `<option>Item ${i}</option>`).join('')
+    const { tree } = snapshotOf(`<select aria-label="Big">${options}</select>`)
+    expect(tree).toContain('"Item 49"')
+    expect(tree).not.toContain('"Item 50"')
+    expect(tree).toContain('… 10 more')
+  })
+
   it('a checkbox keeps its state instead of a value', () => {
     const { tree } = snapshotOf('<label>Direct only <input type="checkbox" checked></label>')
     expect(tree).toContain('checkbox "Direct only" [checked] [ref=')

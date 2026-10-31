@@ -23,7 +23,7 @@ import {
   stateSuffix,
   shouldEmit,
 } from './classify'
-import { fieldValue, isEditable, isField } from './field'
+import { fieldValue, isEditable, isField, optionsSuffix } from './field'
 
 // The per-mount `eN` ref registry lives in its own leaf; re-exported here so the
 // snapshot module's public surface is unchanged.
@@ -120,7 +120,7 @@ function walk(el: Element, depth: number, ctx: WalkCtx): void {
     const value = isField(el) ? fieldValue(el) : ''
     const states = stateSuffix(el)
     ctx.lines.push(
-      `${'  '.repeat(Math.min(depth, ctx.maxDepth))}- ${label}${value ? ` = "${value}"` : ''}${states} [ref=${ref}]`,
+      `${'  '.repeat(Math.min(depth, ctx.maxDepth))}- ${label}${value ? ` = "${value}"` : ''}${states}${optionsSuffix(el)} [ref=${ref}]`,
     )
     if (interactive) {
       const stateList = states ? states.slice(2, -1).split(', ') : []

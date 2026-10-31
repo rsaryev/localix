@@ -124,3 +124,40 @@ export function extraStates(el: Element): string[] {
     states.push('readonly')
   return states
 }
+
+/** Options a snapshot line offers: at most this many, so a country list does not flood it. */
+export const MAX_SELECT_OPTIONS = 50
+
+/** One option as a person reads it: its visible label (the `label` attribute wins) and value. */
+export interface SelectOption {
+  value: string
+  label: string
+  index: number
+}
+
+/** The options of a native dropdown a person could pick: enabled ones, with label and value. */
+export function enabledOptions(select: HTMLSelectElement): SelectOption[] {
+  const found: SelectOption[] = []
+  Array.from(select.options ?? []).forEach((option, index) => {
+    if (option.disabled || option.parentElement?.closest('optgroup[disabled]')) return
+    const label = collapse(option.getAttribute('label') ?? option.textContent ?? '')
+    found.push({ value: option.value, label, index })
+  })
+  return found
+}
+
+/**
+ * ` options: "France" (fr), "Spain"` for a dropdown, '' for anything else. The value is shown
+ * only when it differs from the label; past {@link MAX_SELECT_OPTIONS} the rest are counted.
+ */
+export function optionsSuffix(el: Element): string {
+  if (tagOf(el) !== 'select') return ''
+  const all = enabledOptions(el as HTMLSelectElement)
+  if (!all.length) return ''
+  const shown = all.slice(0, MAX_SELECT_OPTIONS).map((o) => {
+    const label = `"${clip(o.label, 60)}"`
+    return o.value && o.value !== o.label ? `${label} (${clip(o.value, 40)})` : label
+  })
+  if (all.length > MAX_SELECT_OPTIONS) shown.push(`… ${all.length - MAX_SELECT_OPTIONS} more`)
+  return ` options: ${shown.join(', ')}`
+}

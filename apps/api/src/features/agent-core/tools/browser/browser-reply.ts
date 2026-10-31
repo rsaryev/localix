@@ -118,6 +118,7 @@ export async function formatReply(
     case 'scroll':
     case 'steps':
     case 'type':
+    case 'select':
       // A snapshotAfter result carries the page board → supersede stale ones too.
       return {
         content: actionContent(r),
