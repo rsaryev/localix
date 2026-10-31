@@ -1,10 +1,11 @@
 import type { AgentTool } from '@localixai/agent/agents'
 import { errorMessage } from '../../lib/errors'
 import type { McpServerRecord } from './repository'
-import { buildToolForServer, filterToolDefs, type McpClientLike, type McpToolDef } from './mcp-wire'
 import { capMcpErrorMessage, resolveMcpResultMaxChars } from './mcp-result'
 import type { AcquiredConnection, ConnectionPool } from './mcp-connection-pool'
 import type { McpLogger } from './client-manager-types'
+import { buildToolForServer, filterToolDefs } from './mcp-tools'
+import type { McpClientLike, McpToolDef } from './mcp-client-contracts'
 
 const descriptorClient: McpClientLike = {
   async listTools() {

@@ -1,8 +1,8 @@
 import { errorMessage } from '../../lib/errors'
 import { mcpConnectionKey } from './mcp-connection-key'
 import { serverStatusKey, type GatherState, type McpServerOutcome } from './mcp-gather'
-import { filterToolDefs } from './mcp-wire'
 import type { McpServerRecord } from './repository'
+import { filterToolDefs } from './mcp-tools'
 
 /**
  * `/mcp reconnect`: drop the server's live client (any cwd), connect again now and record the

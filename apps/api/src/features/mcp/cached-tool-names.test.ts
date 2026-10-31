@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 
 import { createMcpClientManager } from './client-manager'
-import type { McpClientLike } from './mcp-wire'
 import type { McpServerRecord } from './repository'
+import type { McpClientLike } from './mcp-client-contracts'
 
 /**
  * The anti-drift suite.

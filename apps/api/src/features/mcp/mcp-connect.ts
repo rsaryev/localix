@@ -10,8 +10,7 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 
 import type { McpServerRecord } from './repository'
 import { mcpLaunch } from './mcp-settings-env'
-import { resolveConnectTimeoutMs } from './mcp-tools'
-import { serverEnv } from './mcp-timeouts'
+import { resolveConnectTimeoutMs, serverEnv } from './mcp-timeouts'
 import { mcpOAuthSession, silentAuthProvider } from './oauth/runtime'
 import { remoteRequest } from './mcp-remote-request'
 import { createElicitingClient } from './mcp-elicitation'
@@ -40,15 +39,6 @@ export class McpAuthenticationRequiredError extends Error {
 
 export function isMcpAuthenticationRequiredError(error: unknown): boolean {
   return error instanceof UnauthorizedError || error instanceof McpAuthenticationRequiredError
-}
-
-/**
- * Expand a server's config for connecting from `cwd`. Applies `${VAR}` /
- * `${VAR:-default}` expansion and exposes `CLAUDE_PROJECT_DIR` (= the session
- * project root) to the expansion so a config can reference it without a default.
- */
-function expandedConfig(server: McpServerRecord, cwd: string): Record<string, unknown> {
-  return mcpLaunch(server, cwd).config
 }
 
 /**
@@ -119,7 +109,7 @@ export async function connectClient(server: McpServerRecord, cwd: string): Promi
   const deadline = Date.now() + resolveConnectTimeoutMs(serverEnv(server))
 
   if (server.transport === 'ws') {
-    const config = expandedConfig(server, cwd)
+    const config = mcpLaunch(server, cwd).config
     const url = config.url as string | undefined
     if (!url) throw new Error('ws server has no url')
     // The configured (expanded) headers go with the upgrade request. OAuth and `headersHelper`
@@ -130,7 +120,7 @@ export async function connectClient(server: McpServerRecord, cwd: string): Promi
   }
 
   if (server.transport === 'http') {
-    const config = expandedConfig(server, cwd)
+    const config = mcpLaunch(server, cwd).config
     const url = config.url as string | undefined
     if (!url) throw new Error('http server has no url')
     // The static headers with a headersHelper's over them, and the fetch that re-runs the helper

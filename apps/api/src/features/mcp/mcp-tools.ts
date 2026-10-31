@@ -4,15 +4,6 @@ import { type AgentTool, type CallClass, mcpInputSchema } from '@localixai/agent
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
 
 import type { McpClientLike, McpToolDef, McpToolAnnotations } from './mcp-client-contracts'
-export type {
-  McpGatherResult,
-  McpToolAnnotations,
-  McpResourceDef,
-  McpResourceTemplateDef,
-  McpResourceContent,
-  McpToolDef,
-  McpClientLike,
-} from './mcp-client-contracts'
 
 import type { McpServerRecord } from './repository'
 import { createCallDeadline, withElicitationRoute } from './mcp-elicitation'
@@ -23,13 +14,6 @@ import {
   resolveMcpResultMaxChars,
 } from './mcp-result'
 
-export {
-  DEFAULT_TIMEOUT_MS,
-  DEFAULT_TOOL_TIMEOUT_MS,
-  resolveConnectTimeoutMs,
-  resolveToolIdleTimeoutMs,
-  resolveToolTimeoutMs,
-} from './mcp-timeouts'
 import { resolveToolIdleTimeoutMs, resolveToolTimeoutMs, serverEnv } from './mcp-timeouts'
 
 /** MCP tool descriptions can be huge (multi-KB); cap what reaches the model. */

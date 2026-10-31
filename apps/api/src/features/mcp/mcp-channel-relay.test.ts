@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
 import { createMcpClientManager } from './client-manager'
-import type { McpClientLike } from './mcp-wire'
 import {
   CHANNEL_NOTIFICATION,
   type ChannelBinding,
@@ -14,6 +13,7 @@ import {
   type PermissionPrompt,
 } from './mcp-channel-permissions'
 import type { McpServerRecord } from './repository'
+import type { McpClientLike } from './mcp-client-contracts'
 
 const record = (id: string, config: Record<string, unknown> = {}): McpServerRecord => ({
   id,

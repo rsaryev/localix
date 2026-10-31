@@ -2,7 +2,8 @@ import type { McpJsonSchema } from '@localixai/agent/agents'
 import { textEncoderByteLength } from '@localixai/agent'
 import { errorMessage } from '../../lib/errors'
 import type { McpClientLike, McpToolDef } from './mcp-client-contracts'
-import { resolveConnectTimeoutMs, readMaxResultChars } from './mcp-tools'
+import { readMaxResultChars } from './mcp-tools'
+import { resolveConnectTimeoutMs } from './mcp-timeouts'
 
 /**
  * Most tools one server may contribute, and the largest input schema one of them may carry.

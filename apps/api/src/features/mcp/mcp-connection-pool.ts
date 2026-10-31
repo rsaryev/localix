@@ -4,7 +4,6 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 import { errorMessage } from '../../lib/errors'
 import type { McpServerRecord } from './repository'
-import { isMcpAuthenticationRequiredError, type McpClientLike } from './mcp-wire'
 import { listToolDefs, withDiscoveryRetry } from './mcp-tool-discovery'
 import { listPromptDefs } from './mcp-prompts'
 import { mcpConnectionKey as keyFor } from './mcp-connection-key'
@@ -12,6 +11,8 @@ import type { McpConnectionObserver } from '../notifications/conditions/mcp'
 import type { ToolMetadataStore } from './mcp-tool-metadata-store'
 import type { CacheEntry, ClientConnection, McpLogger } from './client-manager-types'
 import type { ChannelRouter } from './mcp-channels'
+import { isMcpAuthenticationRequiredError } from './mcp-connect'
+import type { McpClientLike } from './mcp-client-contracts'
 
 /** CC caps server instructions at 2KB before they reach the model. */
 const MCP_INSTRUCTIONS_MAX_CHARS = 2_000

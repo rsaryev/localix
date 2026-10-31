@@ -4,12 +4,12 @@ import {
   mcpClientManager,
   type McpGatherResult,
 } from '../../../mcp/client-manager'
-import type { McpClientLike } from '../../../mcp/mcp-wire'
 import type { McpServerRecord } from '../../../mcp/repository'
 import { UNDECIDED, type AvailabilityReader } from '../../../capabilities/availability'
 import type { SessionRecord } from '../../repository'
 import { resolveMcpTools } from './mcp-tools'
 import type { RunEnv } from './types'
+import type { McpClientLike } from '../../../mcp/mcp-client-contracts'
 
 const empty: McpGatherResult = {
   tools: [],

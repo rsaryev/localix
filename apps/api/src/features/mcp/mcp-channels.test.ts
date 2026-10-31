@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
 import { createMcpClientManager } from './client-manager'
-import type { McpClientLike } from './mcp-wire'
 import {
   CHANNEL_NOTIFICATION,
   channelEvent,
@@ -9,6 +8,7 @@ import {
   type ChannelDelivery,
 } from './mcp-channels'
 import type { McpServerRecord } from './repository'
+import type { McpClientLike } from './mcp-client-contracts'
 
 const server = (id: string, name: string): McpServerRecord => ({
   id,

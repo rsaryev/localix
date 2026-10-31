@@ -1,12 +1,12 @@
 import type { McpServerRecord } from './repository'
-import {
-  resolveConnectTimeoutMs,
-  type McpResourceContent,
-  type McpResourceDef,
-  type McpResourceTemplateDef,
-} from './mcp-wire'
 import { collectResourcePages } from './mcp-resource-pages'
 import type { ConnectionPool } from './mcp-connection-pool'
+import { resolveConnectTimeoutMs } from './mcp-timeouts'
+import type {
+  McpResourceContent,
+  McpResourceDef,
+  McpResourceTemplateDef,
+} from './mcp-client-contracts'
 
 type Acquire = Pick<ConnectionPool, 'acquire'>
 

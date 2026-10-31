@@ -1,13 +1,13 @@
 import { describe, expect, test } from 'bun:test'
 
 import { createMcpClientManager } from './client-manager'
-import { filterToolDefs, type McpClientLike } from './mcp-wire'
-import { MCP_DESCRIPTION_MAX_CHARS } from './mcp-tools'
+import { MCP_DESCRIPTION_MAX_CHARS, filterToolDefs } from './mcp-tools'
 import { mapCallResult } from './mcp-result'
 import { McpAuthenticationRequiredError } from './mcp-connect'
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
 import { classifyMcpTool, isTransportError } from './mcp-tools'
 import type { McpServerRecord } from './repository'
+import type { McpClientLike } from './mcp-client-contracts'
 
 function makeServer(overrides: Partial<McpServerRecord> = {}): McpServerRecord {
   return {

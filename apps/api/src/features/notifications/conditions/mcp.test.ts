@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it } from 'bun:test'
 import { localixUiUri } from '@localixai/mini-app-sdk/navigation'
 
 import { createMcpClientManager } from '../../mcp/client-manager'
-import type { McpClientLike } from '../../mcp/mcp-wire'
 import { McpAuthenticationRequiredError } from '../../mcp/mcp-connect'
 import type { McpServerRecord } from '../../mcp/repository'
 import { createMcpConditions } from './mcp'
@@ -12,6 +11,7 @@ import {
   TEST_USER as U,
   type TestJournal,
 } from './testing/test-journal'
+import type { McpClientLike } from '../../mcp/mcp-client-contracts'
 
 const journals: TestJournal[] = []
 afterEach(async () => {

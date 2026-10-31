@@ -3,7 +3,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 
-import { buildToolForServer, resolveToolTimeoutMs } from './mcp-tools'
+import { buildToolForServer } from './mcp-tools'
+import { resolveToolTimeoutMs } from './mcp-timeouts'
 import type { McpServerRecord } from './repository'
 
 /**

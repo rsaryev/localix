@@ -1,7 +1,6 @@
 import { join } from 'node:path'
 import { stableStringify } from '@localixai/agent'
 import { localixHome } from '../../lib/env'
-import type { McpToolDef } from './mcp-wire'
 import {
   MAX_PERSISTED_TOOL_LISTS,
   readToolMetadataCache,
@@ -9,6 +8,7 @@ import {
   type ToolMetadataEntry,
 } from './mcp-tool-metadata-cache'
 import type { McpLogger } from './client-manager-types'
+import type { McpToolDef } from './mcp-client-contracts'
 
 export interface ToolMetadataStore {
   get(key: string): ToolMetadataEntry | undefined

@@ -1,7 +1,7 @@
 import type { McpServerRecord } from './repository'
-import type { McpClientLike, McpToolDef } from './mcp-wire'
 import type { McpPromptDef } from './mcp-prompts'
 import type { ToolMetadataEntry } from './mcp-tool-metadata-cache'
+import type { McpClientLike, McpToolDef } from './mcp-client-contracts'
 
 export type McpLogger = { warn(msg: string, meta?: unknown): void }
 

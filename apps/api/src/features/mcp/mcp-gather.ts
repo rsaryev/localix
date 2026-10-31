@@ -1,15 +1,6 @@
 import type { AgentTool } from '@localixai/agent/agents'
 import { errorMessage } from '../../lib/errors'
 import type { McpServerRecord } from './repository'
-import {
-  buildToolForServer,
-  DEFAULT_CONNECT_BUDGET_MS,
-  disambiguate,
-  filterToolDefs,
-  TIMED_OUT,
-  withConnectBudget,
-  type McpGatherResult,
-} from './mcp-wire'
 import { mcpConnectionKey as keyFor } from './mcp-connection-key'
 import { buildCachedToolForServer } from './mcp-cached-tool'
 import type { ConnectionPool } from './mcp-connection-pool'
@@ -23,6 +14,9 @@ import {
   type RequiredMcpServerFailure,
   type ToolListSource,
 } from './client-manager-types'
+import { DEFAULT_CONNECT_BUDGET_MS, TIMED_OUT, withConnectBudget } from './mcp-connect'
+import { buildToolForServer, disambiguate, filterToolDefs } from './mcp-tools'
+import type { McpGatherResult } from './mcp-client-contracts'
 
 export interface GatherState {
   pool: ConnectionPool

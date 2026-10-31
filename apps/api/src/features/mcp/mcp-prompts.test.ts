@@ -7,8 +7,8 @@ import {
   promptInstruction,
   type McpPromptDef,
 } from './mcp-prompts'
-import type { McpClientLike } from './mcp-wire'
 import type { McpServerRecord } from './repository'
+import type { McpClientLike } from './mcp-client-contracts'
 
 const review: McpPromptDef = {
   name: 'code-review',

@@ -1,14 +1,5 @@
 import { errorMessage } from '../../lib/errors'
 import type { McpServerRecord } from './repository'
-import {
-  connectClient,
-  disambiguate,
-  filterToolDefs,
-  isMcpAuthenticationRequiredError,
-  modelVisibleToolDefs,
-  namespacedName,
-  resolveConnectTimeoutMs,
-} from './mcp-wire'
 import { mcpConnectionKey as keyFor } from './mcp-connection-key'
 import type { McpConnectionObserver } from '../notifications/conditions/mcp'
 import { createToolMetadataStore } from './mcp-tool-metadata-store'
@@ -36,10 +27,12 @@ import type {
   McpLogger,
   McpProbeResult,
 } from './client-manager-types'
+import { connectClient, isMcpAuthenticationRequiredError } from './mcp-connect'
+import { disambiguate, filterToolDefs, modelVisibleToolDefs, namespacedName } from './mcp-tools'
+import { resolveConnectTimeoutMs } from './mcp-timeouts'
 
-// Re-export the MCP wire surface (helpers + types) so the historical
-// `./client-manager` import path stays stable for service.ts and the tests.
-export type { McpGatherResult } from './mcp-wire'
+// What the chat runtime reads from the manager (a gather's result, the required-servers failure).
+export type { McpGatherResult } from './mcp-client-contracts'
 export {
   RequiredMcpServersError,
   type McpClientManagerOptions,
