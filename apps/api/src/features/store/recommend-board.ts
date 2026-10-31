@@ -192,5 +192,3 @@ export function createRecommendationBoard(deps: {
     },
   }
 }
-
-export type RecommendationBoard = ReturnType<typeof createRecommendationBoard>
