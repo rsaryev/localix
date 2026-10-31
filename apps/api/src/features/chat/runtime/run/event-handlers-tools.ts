@@ -9,14 +9,9 @@ import { recordToolUse } from '../../../tools/usage-recorder'
 import { finalizeTiming, setItemsPayload } from './turn-state'
 import { settleToolTiming } from './tool-timing'
 import { persistToolResultMedia } from './tool-result-media'
-import {
-  flushOrPublish,
-  persistNow,
-  publishSessionTiming,
-  type EventOf,
-  type TurnEventContext,
-} from './event-handlers'
+import type { EventOf, TurnEventContext } from './event-handlers'
 import { hostPolicy } from '../../policy/session-policy'
+import { flushOrPublish, persistNow, publishSessionTiming } from './event-handlers-flush'
 
 /**
  * At most one `child_session.activity` frame per child session per this window.

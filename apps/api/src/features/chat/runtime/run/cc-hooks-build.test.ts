@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-
-import { instructionFilesForHooks } from './cc-hooks-build'
+import { instructionFilesForHooks } from './cc-hooks-build-helpers'
 
 describe('InstructionsLoaded', () => {
   test('reports every instruction file but an AGENTS.md read directly', () => {

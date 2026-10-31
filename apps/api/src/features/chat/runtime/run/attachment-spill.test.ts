@@ -4,17 +4,12 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import type { MessageAttachment } from '@localixai/agent'
 
-import {
-  ATTACHMENT_SPILL_CONCURRENCY,
-  spillMessageAttachments,
-  attachmentsDirRel,
-  MAX_INLINE_LINES,
-  SPILL_PREVIEW_LINES,
-  TEXT_PREVIEW_BYTES,
-  MAX_PATH_IMAGE_BYTES,
-} from './attachment-spill'
+import { spillMessageAttachments } from './attachment-spill'
 import { createReadTool } from '../../../agent-core/tools/file/read'
 import { createMediaStore } from '../../../media/store'
+import { attachmentsDirRel, MAX_INLINE_LINES } from './attachment-spill-plan'
+import { SPILL_PREVIEW_LINES, TEXT_PREVIEW_BYTES } from './attachment-manifests'
+import { MAX_PATH_IMAGE_BYTES } from './attachment-path'
 
 async function cwd() {
   return mkdtemp(path.join(tmpdir(), 'spill-test-'))
@@ -421,11 +416,6 @@ test('counts a huge line set while retaining only the bounded preview', async ()
   expect(out.text).toContain('line-49')
   expect(out.text).not.toContain('line-50\n')
   expect(out.text.length).toBeLessThan(2_000)
-})
-
-test('exports a conservative spill concurrency budget', () => {
-  expect(ATTACHMENT_SPILL_CONCURRENCY).toBeGreaterThan(0)
-  expect(ATTACHMENT_SPILL_CONCURRENCY).toBeLessThanOrEqual(8)
 })
 
 /**

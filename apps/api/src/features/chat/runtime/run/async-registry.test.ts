@@ -3,8 +3,9 @@ import { describe, expect, test } from 'bun:test'
 import { createMemoryWorkRepository } from '../../../work/testing/memory-repository'
 import { createWorkRegistry } from '../../../work/registry'
 import { testWork } from '../../../../testing/work-fixture'
-import { createRunAsyncRegistry, describeToolActions } from './async-registry'
+import { createRunAsyncRegistry } from './async-registry'
 import { createRuntimeState, forgetSessionRuntimeState } from '../agent-runner-state'
+import { describeToolActions } from './tool-action-descriptors'
 
 test('describeToolActions strips callbacks and retains generic action presentation', () => {
   const descriptors = describeToolActions('tc-stream', {

@@ -27,11 +27,7 @@ import {
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { SessionRecord } from '../../repository'
 import { applyHookSessionTitle } from '../hook-session-title'
-import {
-  createAgentHookRunner,
-  createMcpHookCaller,
-  createPromptHookEvaluator,
-} from './cc-hook-evaluators'
+import { createAgentHookRunner, createPromptHookEvaluator } from './cc-hook-evaluators'
 import type { RunCatalog, RunEnv, RunParams } from './types'
 import { ccPermissionMode, ccSessionEnvFilesOf, ccSubagentOf } from './cc-hook-session-facts'
 import { claudeCodeHome } from '../../../cc-settings/config-dir'
@@ -51,10 +47,9 @@ import {
   instructionFilesForHooks,
   isUserInstructionFile,
 } from './cc-hooks-build-helpers'
-
-export { instructionFilesForHooks } from './cc-hooks-build-helpers'
 import type { PermissionMode } from '../../../../contracts/permission-modes'
 import type { ScopedCcHooks } from '../run-contract'
+import { createMcpHookCaller } from './mcp-hook-caller'
 
 export interface BuildRunCcHooksInput {
   signal?: AbortSignal

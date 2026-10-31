@@ -18,10 +18,10 @@ import { BUDGET_DECISION_TOKEN_KIND, contextWindowDiagnostics } from '../../cont
 import { continuedRun, failedRun, type RunExecutionOutcome } from '../../run-outcome'
 import { attemptOverflowRecovery, attemptTransientRetry } from '../recovery'
 import { classifyRunError } from '../classify-run-error'
-import { finalizeFailedRun } from '../finalize'
 import { sendChildRunReport } from '../child-run-report'
 import { fireStopFailure } from '../stop-failure'
 import { currentAssistantMessageId, type RunFrame } from './frame'
+import { finalizeFailedRun } from '../finalize-failure'
 
 export async function failRun(frame: RunFrame, error: unknown): Promise<RunExecutionOutcome> {
   const { env, params, userId, session, abort } = frame

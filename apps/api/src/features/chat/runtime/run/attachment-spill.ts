@@ -32,19 +32,9 @@ import {
 } from './attachment-manifests'
 import { materializePathAttachment } from './attachment-path'
 import { attachmentsDirRel, isFileHandoff, planAttachmentSpill } from './attachment-spill-plan'
-export {
-  MAX_INLINE_LINES,
-  attachmentsDirRel,
-  sessionAttachmentsDirRel,
-} from './attachment-spill-plan'
-
-// The manifest vocabulary and the copy-free path handling moved to siblings; these
-// stay re-exported because they are part of this module's long-standing surface.
-export { SPILL_PREVIEW_LINES, TEXT_PREVIEW_BYTES } from './attachment-manifests'
-export { MAX_PATH_IMAGE_BYTES } from './attachment-path'
 
 /** Bound concurrent large writes/document extractions within one message. */
-export const ATTACHMENT_SPILL_CONCURRENCY = 4
+const ATTACHMENT_SPILL_CONCURRENCY = 4
 
 export interface SpillContext {
   /** Resolved session cwd; without it we cannot write a readable copy, so we keep inlining. */

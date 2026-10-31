@@ -20,7 +20,7 @@ import type { CcHooksRuntime } from '../../../cc-hooks'
 import type { ModRunScope } from '../../../mods/run-scope'
 import { runAssistantMessageHooks } from '../../../mini-apps/hooks-messages'
 import { runMemoryProviderRunEnd } from '../../../mini-apps/memory-hooks'
-import { publishSessionTiming, type TurnEventContext } from './event-handlers'
+import type { TurnEventContext } from './event-handlers'
 import type { ResolvedRunModel } from './model-selection'
 import { consoleWarnLogger } from '../plugin-hook-logger'
 import { maybeStartContinuation } from './run-continuations'
@@ -28,7 +28,7 @@ import type { RunParams } from './types'
 import type { RunPolicy } from '../../policy/run-policy'
 import { applyDisplayTexts } from './message-display'
 import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
-export { finalizeFailedRun, rateLimitBackoffMs } from './finalize-failure'
+import { publishSessionTiming } from './event-handlers-flush'
 
 export async function finalizeSuccessfulRun(args: {
   ctx: TurnEventContext

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
-import { rateLimitBackoffMs } from './finalize'
 import { MAX_TRUSTED_RETRY_DELAY_MS, type AgentErrorInfo } from '@localixai/agent/agents'
+import { rateLimitBackoffMs } from './finalize-failure'
 
 const info = (over: Partial<AgentErrorInfo>): AgentErrorInfo => ({
   kind: 'fatal',

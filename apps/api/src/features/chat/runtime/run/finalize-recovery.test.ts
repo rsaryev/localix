@@ -2,9 +2,9 @@ import { describe, expect, spyOn, test } from 'bun:test'
 
 import type { SessionRecord } from '../../repository'
 import { createRouteCooldowns } from '../route-cooldowns'
-import { finalizeFailedRun } from './finalize'
 import { announceEmptyReply } from './finalize-notices'
 import type { RunEnv } from './types'
+import { finalizeFailedRun } from './finalize-failure'
 
 const USER_ID = 'u1'
 const SESSION_ID = 's1'

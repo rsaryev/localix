@@ -17,7 +17,7 @@ import { sharedPromptCacheKey } from '../../prompt-cache-key'
 import { createItemAccumulator } from '../../items'
 import { withMidRunReminders } from '../../mid-run-reminders'
 import { consoleWarnLogger } from '../../plugin-hook-logger'
-import { createRunAsyncRegistry, describeToolActions } from '../async-registry'
+import { createRunAsyncRegistry } from '../async-registry'
 import { ccAfterToolBatch, ccHookStopRule } from '../cc-tool-batch'
 import { handleAgentEvent, type TurnEventContext } from '../event-handlers'
 import { persistNow } from '../event-handlers-flush'
@@ -33,6 +33,7 @@ import type { RunIntake } from './intake'
 import type { RunPrompt } from './prompt'
 import type { RunToolset } from './tools'
 import type { ResolvedTurn } from './turn'
+import { describeToolActions } from '../tool-action-descriptors'
 
 /**
  * Hard ceiling on per-turn output tokens, independent of a model's (sometimes huge) declared

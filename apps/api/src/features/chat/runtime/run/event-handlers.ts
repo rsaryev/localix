@@ -32,18 +32,12 @@ import {
   syncAssistantParts,
   applyAssistantDelta,
 } from './event-assistant-content'
-export { scanAssistantContent, applyAssistantDelta } from './event-assistant-content'
 import { handleHitlRequest, handleHitlResponse } from './event-handlers-hitl'
 import {
   handleToolExecutionStart,
   handleToolExecutionUpdate,
   handleToolExecutionEnd,
 } from './event-handlers-tools'
-
-// Re-export so the historical './event-handlers' import surface (tests +
-// sibling handlers) stays stable after the flush logic + hook context moved out.
-export { flushOrPublish, persistNow, publishSessionTiming } from './event-handlers-flush'
-export type { HookRunOptions } from './run-hook-context'
 
 export type AgentLoopEvent = AgentEvent
 export type EventOf<T extends AgentLoopEvent['type']> = Extract<AgentLoopEvent, { type: T }>

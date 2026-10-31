@@ -15,7 +15,7 @@ import type { SessionRecord } from '../../repository'
 import { consoleWarnLogger } from '../plugin-hook-logger'
 import type { RuntimeState } from '../agent-runner-state'
 import type { RunEnv } from './types'
-import { sessionAttachmentsDirRel } from './attachment-spill'
+import { sessionAttachmentsDirRel } from './attachment-spill-plan'
 
 export interface RunTeardownArgs {
   env: RunEnv

@@ -4,10 +4,8 @@ import type { AssistantMessage } from '@localixai/agent'
 import { toModelMessages } from '@localixai/agent/agents/chat'
 
 import {
-  applyAssistantDelta,
   captureCompletedTurnCheckpoint,
   handleAgentEvent,
-  scanAssistantContent,
   type TurnEventContext,
 } from './event-handlers'
 import { noteChildStreaming, watchFirstSign } from '../../../agent-core/delegation-first-sign'
@@ -16,6 +14,7 @@ import { emptyAssistantPayload } from '../message-envelope'
 import { emptySessionTiming } from '../../session-timing'
 import { buildToolItem } from '../items'
 import { createItemAccumulator } from '../items'
+import { applyAssistantDelta, scanAssistantContent } from './event-assistant-content'
 
 describe('scanAssistantContent', () => {
   test('retains provider part boundaries, order, and signatures', () => {

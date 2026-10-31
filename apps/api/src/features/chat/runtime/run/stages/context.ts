@@ -10,7 +10,6 @@
  */
 import { subagentRunOptions, withSubagentRunOptions } from '../subagent-file-options'
 import { userHome } from '../../../../../lib/env'
-import type { HookRunOptions } from '../event-handlers'
 import { buildRunCcHooks } from '../cc-hooks-build'
 import { createModRunScope, NO_MODS } from '../../../../mods/run-scope'
 import { fireSessionStartHooks } from '../session-start-hooks'
@@ -35,6 +34,7 @@ import { reloadedSkillsNote } from '../cc-reload-skills'
 import type { ModelView } from '../../model-view/view'
 import type { RunFrame } from './frame'
 import type { ResolvedTurn } from './turn'
+import type { HookRunOptions } from '../run-hook-context'
 
 export type RunInputs = Awaited<ReturnType<typeof prepareRunInputs>>
 

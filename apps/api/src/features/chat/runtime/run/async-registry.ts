@@ -7,12 +7,9 @@ import { isToolBackedItem, type AsyncToolRegistry, type ToolAction } from '@loca
 
 import { createOwnedItemUpdater } from './owned-item-updater'
 import type { ExitNotice } from '../exit-notices'
-import type { WorkRecord } from '../../../work/contracts'
 import type { RunAsyncRegistryArgs } from './async-registry-types'
 import { createBackgroundEmitter } from './background-emitter'
 import { describeToolActions } from './tool-action-descriptors'
-
-export { describeToolActions } from './tool-action-descriptors'
 
 export function createRunAsyncRegistry(args: RunAsyncRegistryArgs): AsyncToolRegistry {
   const { env, state, abort, userId, session, assistantMessageId } = args
@@ -24,7 +21,7 @@ export function createRunAsyncRegistry(args: RunAsyncRegistryArgs): AsyncToolReg
   const actionLifecycles = new Map<string, { forgotten: boolean }>()
   /** A `notify` job's exit notice, armed as the job starts (`../exit-notices`). */
   const exitNotices = new Map<string, Promise<ExitNotice | null>>()
-  const armExitNotice = (toolCallId: string, _record: WorkRecord) => {
+  const armExitNotice = (toolCallId: string) => {
     const port = env.deps.exitNotices
     if (!port) return
     exitNotices.set(
@@ -107,7 +104,7 @@ export function createRunAsyncRegistry(args: RunAsyncRegistryArgs): AsyncToolReg
           (isBackgroundStream
             ? `stream → ${pendingInput?.file_path ?? 'job'}${pendingInput?.channel ? ` [${pendingInput.channel}]` : ''}`
             : (pendingInput?.command ?? `${pendingName ?? 'tool'} job`))
-        const record = work.start({
+        work.start({
           owner,
           kind: options?.kind ?? (isBackgroundStream ? 'stream' : 'job'),
           label,
@@ -117,7 +114,7 @@ export function createRunAsyncRegistry(args: RunAsyncRegistryArgs): AsyncToolReg
           // from this same registry's allocator, so adopting it cannot collide.
           ...(options?.jobId ? { displayId: options.jobId } : {}),
         })
-        if (pendingInput?.notify === true || options?.notify) armExitNotice(toolCallId, record)
+        if (pendingInput?.notify === true || options?.notify) armExitNotice(toolCallId)
       }
       return () => {
         actionRegistry.delete(toolCallId)

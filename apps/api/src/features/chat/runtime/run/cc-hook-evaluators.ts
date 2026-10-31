@@ -241,5 +241,3 @@ export function createAgentHookRunner(input: {
     }
   }
 }
-
-export { createMcpHookCaller } from './mcp-hook-caller'
