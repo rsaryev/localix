@@ -13,8 +13,7 @@ import type { CcHookEvent, CcHookSource } from './contracts'
 export interface CcHookHandler {
   source: CcHookSource
   /**
-   * Handler type (CC `type`). Absent ⇒ `command` (back-compat with pre-prompt-hook
-   * registries):
+   * Handler type (CC `type`). Absent ⇒ `command` (CC's default):
    *   - `command`  — spawn a shell hook (stdin JSON / exit-code / stdout protocol);
    *   - `prompt`   — one non-streaming aux-LLM evaluation returning `{ok,reason}`;
    *   - `http`     — POST the input JSON to {@link httpUrl}, fold the response body;

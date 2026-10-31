@@ -27,7 +27,7 @@ export function useEditorGridCommands({
   const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), [])
   // Editor-grid keyboard surface: ⌘J maximizes/restores the focused group, ⌘`
   // opens a terminal group, ⌘⌥←/→ cycle the focused
-  // group's tabs. Reopen-last-closed isn't tracked yet — no-op for now.
+  // group's tabs.
   const toggleMaximizeFocused = useCallback(() => {
     const s = useGridStore.getState()
     s.maximizeGroup(s.maximizedGroup ? null : s.activeGroup)

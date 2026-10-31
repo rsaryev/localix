@@ -58,8 +58,7 @@ export function toUiMessage(message: PersistedMessage): Message {
     providerMeta: (message.payload as { providerMeta?: Message['providerMeta'] }).providerMeta,
     commandOrigin: (message.payload as { commandOrigin?: Message['commandOrigin'] }).commandOrigin,
     // Provenance of an autonomous wake — the payload's opaque `origin` tag narrowed to
-    // the domain WakeSource union (loop/mini app/external/bg-job/bg-monitor/hook, plus `sleep`
-    // which no longer has a producer but is still stamped on older stored turns). The
+    // the domain WakeSource union (loop/mini app/external/bg-job/bg-monitor/hook). The
     // card only renders known sources, so a non-WakeSource origin (e.g. `delegate`) is inert.
     wakeSource: (message.payload as { origin?: Message['wakeSource'] }).origin,
     createdAt: message.createdAt,

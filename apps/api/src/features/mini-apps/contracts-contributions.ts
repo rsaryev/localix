@@ -34,8 +34,7 @@ export const MINI_APP_VIEW_ICON_RE = /^[a-z][a-z0-9-]{0,39}$/i
  * TAB in the editor grid. There is deliberately no `surface` choice: `panels`
  * (inspector) and rail-mounted views were the same iframe reached through three
  * different placements, which meant three registries, three tab kinds and three
- * doc paragraphs for one capability. A manifest `panels` array is still READ —
- * promoted into this shape before parse — so ported mini apps keep working.
+ * doc paragraphs for one capability.
  *
  * Pure manifest DATA; the HTML is read only while the mini app is enabled.
  * `icon` is an optional Lucide name the host maps to a glyph (unknown/absent →

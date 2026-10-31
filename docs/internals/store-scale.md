@@ -218,7 +218,7 @@ Where the build differs from the design above, or settles what it left open:
   community marketplace's id is its marketplace name, `claude-community`. A default marketplace
   already registered from the same repository under any name is reused; Localix does not read Claude
   Code's own `known_marketplaces.json` for it. Removals are remembered in `.defaults.json` in the
-  marketplaces root (an earlier `.official.json` still counts for `localix`).
+  marketplaces root.
 - **Sync** runs off the request path: a provider's or a relayed notice's word marks the index dirty
   and a background sync writes it, then pokes `store`; only a first read of an empty index waits. A
   plugin notice now pokes `store`. The sources are fetched again every six hours on the plugin

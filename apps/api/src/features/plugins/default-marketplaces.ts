@@ -20,7 +20,7 @@ import type { MarketplaceSource } from './marketplace-source'
  * Idempotent: one registered already, under its name or any other from the same repository (the
  * person added it, or their Claude Code settings declare it), is reused. Remembered: once the
  * person removes one, it is not added back until they add it themselves (`.defaults.json` in the
- * marketplaces root; an earlier `.official.json` still counts for `localix`). Offline: with
+ * marketplaces root). Offline: with
  * `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` nothing is fetched, and a fetch that fails is tried
  * again at the next start rather than remembered.
  */

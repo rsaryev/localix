@@ -3,7 +3,7 @@
  * row explain?", a leaf subpath (`@localixai/api/wake-provenance`) both transcripts derive
  * from, exactly like the sibling leaves (`item-format`, `slash-catalog`, `context-refs`).
  *
- * The rule: a wake turn (loop / board / sleep / bg-job / bg-monitor / hook /
+ * The rule: a wake turn (loop / bg-job / bg-monitor / hook /
  * external / mini app / sub-agent) is persisted as a HIDDEN (`isInternal`) user message carrying
  * the `WakeSource`, immediately followed by the visible assistant response. The hidden row never
  * renders, so its source is LIFTED onto the id of the next visible ASSISTANT message — that

@@ -18,7 +18,7 @@ export interface ComposerDropzoneDeps {
    * An agent-linkable object dropped on the composer (file-tree row, sessions
    * row, terminal tab, tool-call card, …). ONE callback for every kind — the
    * host routes it to the matching token (link-only `@path` mention, or a
-   * `@session:`/`@terminal:`/`@call:` context-ref). Legacy MIMEs are folded in.
+   * `@session:`/`@terminal:`/`@call:` context-ref).
    */
   onMessageBinding?: (payload: MessageBindingDragPayload) => void
   /** When false, paste/drop attachment capture is disabled with the composer itself. */
