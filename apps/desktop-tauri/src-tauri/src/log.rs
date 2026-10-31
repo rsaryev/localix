@@ -101,11 +101,6 @@ fn json_line(level: &str, source: &str, extra: serde_json::Value, msg: &str) -> 
     line.to_string()
 }
 
-/// Append a line stamped with milliseconds since process start.
-pub(crate) fn logln_at(msg: impl AsRef<str>) {
-    logln(msg);
-}
-
 /// Append a line the PAGE reported (`frontend_log`), tagged `source: "ui"` with its scope.
 pub(crate) fn log_ui(scope: &str, msg: &str) {
     write_raw(&json_line(

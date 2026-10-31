@@ -185,7 +185,7 @@ use crate::deeplink::{
     open_path_args, show_main_window, DeepLinks,
 };
 use crate::frontend_flush::quit_ready;
-use crate::log::{logln, logln_at};
+use crate::log::logln;
 use crate::menu::{
     build_app_menu, set_projects, set_recent_sessions, MenuData, MenuState, QUIT_MENU_ID,
 };
@@ -227,7 +227,7 @@ fn with_updater(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wr
 
 pub fn run() {
     // Anchor the startup clock to the process, not to whichever milestone logs
-    // first. Every `logln_at` below is relative to this.
+    // first. Every `logln` below is relative to this.
     let _ = crate::log::elapsed_ms();
     let builder = tauri::Builder::default();
     #[cfg(target_os = "macos")]
@@ -491,7 +491,7 @@ pub fn run() {
             // Empty in dev, where beforeDevCommand owns API watch + Vite together.
             logln(format!("launch start: v{}", app.package_info().version));
             // Plugin registration + the native menu have already run by here.
-            logln_at("setup entered");
+            logln("setup entered");
             let (init_script, api_launch) = prepare_api(app);
             // The runtime's cold start (about 250 ms to load its code) is the longest thing the
             // launch waits on, and creating the window takes about 100 ms of the main thread. Started
@@ -559,7 +559,7 @@ pub fn run() {
             // from here to the UI's own `shell.paint` is document load + entry
             // chunk parse + first React render — the span that owns most of the
             // launch, and the one to attack next.
-            logln_at("webview created");
+            logln("webview created");
 
             // Restore the persisted webview zoom from the last session.
             restore_zoom(app.handle());

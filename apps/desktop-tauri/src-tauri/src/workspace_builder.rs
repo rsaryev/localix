@@ -2,7 +2,7 @@
 use crate::deeplink::{is_embedded_navigation_url, is_external_url, is_internal_url, is_loopback};
 use crate::prefs::load_theme_is_dark;
 #[cfg(target_os = "macos")]
-use crate::{log::logln_at, window_material};
+use crate::{log::logln, window_material};
 use tauri::{AppHandle, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
 pub(crate) fn build(
@@ -200,11 +200,11 @@ pub(crate) fn build(
             window_material::Appearance::Dark
         };
         match window_material::apply(&main_window.as_ref().window(), initial_appearance) {
-            Ok(()) => logln_at("window material: vibrancy attached"),
-            Err(error) => logln_at(format!("window material: vibrancy failed ({error})")),
+            Ok(()) => logln("window material: vibrancy attached"),
+            Err(error) => logln(format!("window material: vibrancy failed ({error})")),
         }
         if let Err(error) = crate::native_chrome::install(app, &main_window.as_ref().window()) {
-            logln_at(format!("native chrome: {error}"));
+            logln(format!("native chrome: {error}"));
         }
     }
 

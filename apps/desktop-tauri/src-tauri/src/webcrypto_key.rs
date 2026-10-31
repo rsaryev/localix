@@ -47,7 +47,7 @@ pub(crate) fn install<R: tauri::Runtime>(app: &AppHandle<R>) {
             let _ = KEY.set(key);
             delegate::attach();
         }
-        Err(error) => crate::log::logln_at(format!(
+        Err(error) => crate::log::logln(format!(
             "webcrypto key: {error}; WebKit keeps its keychain master key"
         )),
     }
@@ -146,7 +146,7 @@ mod delegate {
     /// `defaultDataStore` when no data-store identifier is set, and the shell sets none).
     pub(super) fn attach() {
         let Some(mtm) = MainThreadMarker::new() else {
-            crate::log::logln_at("webcrypto key: not on the main thread; delegate not attached");
+            crate::log::logln("webcrypto key: not on the main thread; delegate not attached");
             return;
         };
         let store = unsafe { WKWebsiteDataStore::defaultDataStore(mtm) };
