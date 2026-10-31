@@ -102,12 +102,6 @@ export {
 export { SLASH_COMMANDS, BUILTIN_COMMAND_NAMES } from './features/chat/slash-catalog'
 export type { SlashCommandSpec } from './features/chat/slash-catalog'
 
-// The marks an agent may put on a message. One owner: the tool's schema and the picker the
-// person taps are the same six, so a chip a person adds and a chip an agent adds mean the same.
-export {
-  MESSAGE_REACTIONS as AGENT_REACTIONS,
-  type MessageReaction as AgentReaction,
-} from './features/chat/message-reactions'
 // Dependency-free model assignment catalog, importable from any client bundle.
 export {
   AUX_MODEL_TASKS,
