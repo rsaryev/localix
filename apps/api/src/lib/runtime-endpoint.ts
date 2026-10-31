@@ -72,11 +72,15 @@ function processStartToken(pid: number): string | null {
   }
 }
 
+/** A recorded pid worth probing: a positive integer. */
+const isPid = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isInteger(value) && value > 0
+
 function ownerIsLive(owner: Partial<RuntimeOwner>): boolean {
-  if (!Number.isInteger(owner.pid) || (owner.pid as number) <= 0) return false
-  if (!processIsAlive(owner.pid as number)) return false
+  const pid = owner.pid
+  if (!isPid(pid) || !processIsAlive(pid)) return false
   if (owner.startToken == null) return true
-  const current = processStartToken(owner.pid as number)
+  const current = processStartToken(pid)
   return current == null || current === owner.startToken
 }
 
@@ -160,7 +164,7 @@ async function claimCompatibilityOwner(lockFile: string, owner: RuntimeOwner): P
       continue
     }
 
-    if (!Number.isInteger(existing.pid) || (existing.pid as number) <= 0) {
+    if (!isPid(existing.pid)) {
       if (Date.now() < deadline) {
         await Bun.sleep(10)
         continue
@@ -173,7 +177,7 @@ async function claimCompatibilityOwner(lockFile: string, owner: RuntimeOwner): P
       continue
     }
     if (ownerIsLive(existing)) {
-      throw new RuntimeOwnershipHeldError(existing.pid as number, '')
+      throw new RuntimeOwnershipHeldError(existing.pid, '')
     }
     await quarantineStaleOwner(lockFile)
   }
@@ -257,8 +261,7 @@ async function reclaimWedgedHolder(
   identity: RuntimeIdentity,
   owner: Partial<RuntimeOwner>,
 ): Promise<boolean> {
-  const pid =
-    Number.isInteger(owner.pid) && (owner.pid as number) > 0 ? (owner.pid as number) : null
+  const pid = isPid(owner.pid) ? owner.pid : null
   if (pid == null || pid === process.pid) return false
   if (!processIsAlive(pid)) return true
 
@@ -316,8 +319,7 @@ export async function acquireRuntimeOwnership(
     try {
       owner = JSON.parse(await readFile(identity.lockFile, 'utf8')) as Partial<RuntimeOwner>
     } catch {}
-    const ownerPid =
-      Number.isInteger(owner.pid) && (owner.pid as number) > 0 ? (owner.pid as number) : null
+    const ownerPid = isPid(owner.pid) ? owner.pid : null
 
     // SAME-PROCESS RELOAD, not a foreign owner.
     //
@@ -411,8 +413,7 @@ export async function readRuntimeEndpoint(
   try {
     const value = JSON.parse(await readFile(file, 'utf8')) as Partial<RuntimeEndpoint>
     if (
-      !Number.isInteger(value.pid) ||
-      (value.pid as number) <= 0 ||
+      !isPid(value.pid) ||
       typeof value.baseUrl !== 'string' ||
       !/^https?:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?$/.test(value.baseUrl) ||
       typeof value.startedAt !== 'string' ||
@@ -425,8 +426,7 @@ export async function readRuntimeEndpoint(
       (value.listenHost !== undefined &&
         (typeof value.listenHost !== 'string' || value.listenHost.length === 0)) ||
       (value.buildId !== undefined && typeof value.buildId !== 'string') ||
-      (value.shellPid !== undefined &&
-        (!Number.isInteger(value.shellPid) || (value.shellPid as number) <= 0))
+      (value.shellPid !== undefined && !isPid(value.shellPid))
     ) {
       return null
     }
