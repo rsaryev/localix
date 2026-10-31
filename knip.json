@@ -9,7 +9,7 @@
         "*.ts",
         "lib/wait.mjs",
         "cc-parity/run.mjs",
-        "screenshots/{audit,fixture-service,mcp-prompts-server,publish,run,runtime,scripted-provider,seed}.mjs",
+        "screenshots/{audit,fixture-service,mcp-prompts-server,publish,run,runtime,seed}.mjs",
         "screenshots/landing.mjs",
         "screenshots/playwright.config.mjs",
         "screenshots/*.pw.mjs",
