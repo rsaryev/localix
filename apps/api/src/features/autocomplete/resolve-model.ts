@@ -71,7 +71,7 @@ export async function resolveAuxLanguageModel(
   // not pay for a second profile query and route semantics stay one-snapshot.
   const agentSettings = Object.prototype.hasOwnProperty.call(preloaded, 'agentSettings')
     ? (preloaded.agentSettings ?? null)
-    : await deps.readAgentSettings(userId).catch(() => null)
+    : await deps.readAgentSettings(userId)
   if (!isModelRoutingTaskEnabled(agentSettings, taskKey)) return null
   const slot = agentSettings?.modelRouting?.[taskKey]
   const session = await deps.getSessionModel(userId, sessionId).catch(() => null)

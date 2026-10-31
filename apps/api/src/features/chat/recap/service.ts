@@ -82,7 +82,7 @@ export function createRecapService(deps: RecapServiceDeps) {
     try {
       const [session, settings, rows] = await Promise.all([
         repo.getSession(userId, sessionId),
-        readAgentSettings(userId).catch(() => null),
+        readAgentSettings(userId),
         repo.listMessages(userId, sessionId),
       ])
       if (!session) return { status: 'unavailable' }

@@ -149,10 +149,7 @@ export function createInlineCompletionService(deps: InlineCompletionServiceDeps)
       // commit surface must not run Git over a large repository merely because a
       // stale/malicious client still sent the RPC. Reuse this settings snapshot
       // during model resolution so the normal enabled path performs one read.
-      const agentSettings = await withinOperation(
-        () => deps.readAgentSettings(userId).catch(() => null),
-        null,
-      )
+      const agentSettings = await withinOperation(() => deps.readAgentSettings(userId), null)
       if (operation.signal.aborted) return interrupted()
       if (!isModelRoutingTaskEnabled(agentSettings, 'inlineCompletion')) return finish('disabled')
 
