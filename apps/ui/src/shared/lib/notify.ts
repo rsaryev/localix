@@ -2,8 +2,11 @@ import type { ReactNode } from 'react'
 import { recordClientFact } from './notifications/clientFacts'
 import { acknowledgeInline } from './notifications/inlineReport'
 import { transientFeedback } from './notifications/transientFeedback'
-import type { NotificationAction, NotificationSeverity } from './notifications/types'
-import type { NotificationOrigin } from './notifications/types'
+import type {
+  NotificationAction,
+  NotificationOrigin,
+  NotificationSeverity,
+} from './notifications/types'
 import { clearProblemReport, publishProblemReport } from './notifications/problems'
 import type { PublishProblemsOptions } from './notifications/problems'
 import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
@@ -65,13 +68,16 @@ function bodyOf(opts?: NotificationOptions): string | undefined {
   return typeof d === 'string' ? d : undefined
 }
 
+/** An action given as `{ label, onClick }`, not a node drawn in its place. */
+function isOptionAction(value: NotificationOptions['action']): value is NotificationOptionAction {
+  return !!value && typeof value === 'object' && 'label' in value && 'onClick' in value
+}
+
 function actionOf(
   value: NotificationOptions['action'],
   id: 'action' | 'cancel',
 ): NotificationAction | null {
-  if (!value || typeof value !== 'object' || !('label' in value) || !('onClick' in value)) {
-    return null
-  }
+  if (!isOptionAction(value)) return null
   const label = typeof value.label === 'string' ? value.label : undefined
   const onClick = value.onClick
   return label && typeof onClick === 'function'
@@ -101,11 +107,7 @@ function answer(
   message: ToastMessage,
   opts?: NotificationOptions,
 ): ToastId {
-  const action = opts?.action
-  const followUp =
-    action && typeof action === 'object' && 'label' in action && 'onClick' in action
-      ? action
-      : undefined
+  const followUp = isOptionAction(opts?.action) ? opts.action : undefined
   const detail = bodyOf(opts)
   transientFeedback.show(titleOf(message), {
     tone,
