@@ -111,21 +111,6 @@ const FRAME_CHROME = {
   },
 } as const satisfies Record<HitlFrameChrome, { root: string; footer: string }>
 
-/** A warm frame owns global keys only while focused and, when the modal inbox
- * is open, only if that dialog contains this exact frame. */
-/**
- * Whether a HITL surface may answer a global key.
- *
- * Reduced to the frame's own state on purpose. It used to also `querySelector` for an open dialog
- * and check containment, because a frame behind the cross-session inbox must not resolve a request
- * the user cannot see. The focus stack answers that better than the query could: a modal claims the
- * top and stops the key from being offered further down, for every overlay rather than the one
- * selector somebody remembered to write.
- */
-export function hitlFrameOwnsGlobalKeyboard(keyboardActive: boolean): boolean {
-  return keyboardActive
-}
-
 export function HitlInteractionFrame({
   title,
   showHeading = true,
@@ -185,7 +170,7 @@ export function HitlInteractionFrame({
       if (event.metaKey || event.ctrlKey || event.altKey) return
       if (event.key !== 'Enter' && event.key !== 'Escape') return
       if (event.key === 'Enter' && isTypingTarget(document.activeElement)) return
-      if (!hitlFrameOwnsGlobalKeyboard(keyboardActiveRef.current)) return
+      if (!keyboardActiveRef.current) return
       if (event.key === 'Escape') {
         event.preventDefault()
         if (!dismissDisabledRef.current) dismissRef.current()

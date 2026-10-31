@@ -4,7 +4,6 @@ import type { AskToolAnswer, AskToolQuestion } from '@localixai/api/client'
 import { Input } from '@localixai/kit/input'
 import { useFocusEntry } from '@localixai/mini-app-sdk/ui/focus'
 import { isTypingTarget } from '@/shared/lib/keybindings/typingTarget'
-import { hitlFrameOwnsGlobalKeyboard } from './HitlInteractionFrame'
 import { nextEnterAction } from './hitlKeys'
 import { optionValue } from './options'
 
@@ -85,13 +84,7 @@ export function useAskForm({
     active: keyboardActive,
     scope: () => rootRef.current,
     onKeyDown: (event) => {
-      if (
-        !hitlFrameOwnsGlobalKeyboard(keyboardActive) ||
-        !activeQuestion ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.altKey
-      )
+      if (!keyboardActive || !activeQuestion || event.metaKey || event.ctrlKey || event.altKey)
         return
       if (isTypingTarget(document.activeElement)) return
       if (event.key < '1' || event.key > '9') return
