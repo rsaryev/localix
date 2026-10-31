@@ -81,7 +81,7 @@ export function SidebarNav({
   const items = shown.flatMap((group) => group.items)
   const [focused, setFocused] = useState<string | null>(null)
   const rows = useRef(new Map<string, HTMLButtonElement>())
-  const typeahead = useRef(createTypeaheadBuffer())
+  const [typeahead] = useState(() => createTypeaheadBuffer())
 
   if (mode === 'select') {
     const options = items.map((item) => ({
@@ -121,7 +121,7 @@ export function SidebarNav({
     else if (event.key === 'Home') move(0)
     else if (event.key === 'End') move(items.length - 1)
     else if (event.key.length === 1 && /\S/.test(event.key) && !event.metaKey && !event.ctrlKey) {
-      const next = typeahead.current.handleChar(
+      const next = typeahead.handleChar(
         event.key,
         items.map((item) => item.label),
         at,
