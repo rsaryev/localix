@@ -153,8 +153,8 @@
     {
       "files": ["apps/api/src/features/agent-core/tools/web/readable-extract.ts"],
       // The /// <reference> to turndown-vendor.d.ts is load-bearing, not legacy:
-      // packages/tui type-checks apps/api sources through a project that does not pick
-      // vendor.d.ts up from `include`, so dropping it makes `turndown` implicitly `any`.
+      // apps/ui type-checks apps/api sources through a project that does not pick
+      // the .d.ts up from `include`, so dropping it makes `turndown` implicitly `any`.
       "rules": {
         "typescript/triple-slash-reference": "off"
       }
@@ -167,8 +167,6 @@
     "**/.turbo",
     "**/*.d.ts",
     "apps/landing/src/generated",
-    "apps/ui/test-results",
-    "extend",
     "vendor",
     ".agents/skills"
   ]
