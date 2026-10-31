@@ -2,7 +2,7 @@
  * Open-tab auto-link — derive the composer's ambient "this is your working set"
  * links from the editor grid. Active on-screen tabs rank first, followed by the
  * recently used and then the remaining open tabs in the current scope. Every
- * candidate maps through the SAME `workItemToMessageBinding` mapping tab-strip
+ * candidate maps through the SAME `workItemToMessageBindings` mapping tab-strip
  * dragging uses — no parallel tab→ref vocabulary.
  *
  * Pure selectors here; the thin zustand hook lives in `useActiveTabRef.ts`.
@@ -114,21 +114,11 @@ export function tabMessageBindings(
   })
 }
 
-/** Single-token compatibility façade used by tab-strip callers and older tests. */
-export function tabLinkToken(
-  item: WorkItem | undefined,
-  opts: { content?: boolean } = {},
-): { token: string; label?: string } | null {
-  const binding = tabMessageBindings(item, opts)[0]
-  return binding ? { token: binding.target.token, label: binding.target.label } : null
-}
-
 /**
  * The grid's current auto-link candidates: all open tabs in the active scope,
- * ranked by visibility, focus and recency. The single-link compatibility façade
- * still returns the highest-ranked linkable candidate.
+ * ranked by visibility, focus and recency.
  */
-export function tabCandidates(state: FocusedFileState): TabCandidate[] {
+function tabCandidates(state: FocusedFileState): TabCandidate[] {
   // The recency signal is the grid's own per-(scope, group) tab MRU — `scopeActiveTab`,
   // "most-recent FIRST", maintained by `recordScopeActive` and pruned by `dropTabFromScopeActive`.
   // Nothing new is tracked: this reads the order the warm-body lifecycle already keeps, which is also
@@ -201,14 +191,4 @@ export function activeTabLinks(state: FocusedFileState, limit = AUTO_LINK_LIMIT)
     }
   }
   return out
-}
-
-/**
- * The single primary candidate — the façade every existing consumer still uses.
- *
- * Kept so widening to N is opt-in: a caller that wants one link is not forced to learn an array,
- * and the previous behaviour (first linkable, content-bearing) is byte-identical.
- */
-export function activeTabLink(state: FocusedFileState): ActiveTabLink | null {
-  return activeTabLinks(state, 1)[0] ?? null
 }

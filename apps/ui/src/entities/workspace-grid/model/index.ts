@@ -41,6 +41,6 @@ export {
 export { scopeKindOf } from './capabilities'
 export { roleForKind } from './placement'
 export { BASE_DIMS, scaleDims, minWidthOf, minHeightOf, type GridDims } from './dims'
-export { workItemToMessageBinding } from './tabMessageBinding'
+export { workItemToMessageBindings } from './tabMessageBinding'
 
 export { useActiveTabRefs } from './useActiveTabRef'

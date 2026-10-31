@@ -173,24 +173,14 @@ function dedupeBindings(
 }
 
 /**
- * Map an open editor tab to the context-binding draft it links into the composer,
- * so the SAME tab drag that reorders/splits can also be dropped on the chat to reference
- * what you're looking at. Returns null for tabs that aren't linkable (chat/settings/…).
+ * All canonical context facets for a tab, the bindings the SAME tab drag that reorders or splits
+ * carries onto the chat; none for a tab that is not linkable (chat, settings, …).
  *
  * - file / diff  → a `@file:<path>` ref (the buffer/diff's file)
  * - terminal     → a `@terminal:<id>` ref (cwd + recent commands + output tail)
  * - a subsystem-contributed kind supplies an opaque `@resource:localix://resource/<provider>/<id>` token and
  *   its OWN mapping via the workItemKind registry. Reserved core kinds keep the
  *   switch below, so a mini app collision cannot replace their binding behavior.
- */
-export function workItemToMessageBinding(
-  item: WorkItem | undefined,
-): MessageBindingDragPayload | null {
-  return workItemToMessageBindings(item)[0] ?? null
-}
-
-/**
- * All canonical context facets for a tab.
  *
  * Static mappings come from the work-item contribution. A mounted component may
  * publish fresher UI-state facets through the host-injected publisher; `replace`
@@ -214,7 +204,7 @@ export function workItemToMessageBindings(item: WorkItem | undefined): MessageBi
 }
 
 /** The mini app that owns a tab — its contribution's, or a generic mini app view's named owner. */
-export function tabOwnerMiniApp(item: WorkItem): string | undefined {
+function tabOwnerMiniApp(item: WorkItem): string | undefined {
   const owner = activeWorkItemContribution(item.kind)?.miniAppName
   if (owner) return owner
   return item.kind === 'mini-app-view' && typeof item.payload?.miniAppName === 'string'

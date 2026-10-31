@@ -8,7 +8,7 @@ import {
 } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { acceptedDragKind } from '@/entities/chat/ui/prompt-input/dropzoneState'
 import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
-import { workItemToMessageBinding } from '@/entities/workspace-grid/model'
+import { workItemToMessageBindings } from '@/entities/workspace-grid/model'
 
 // A subsystem-contributed tab kind that links as a `@resource:` ref (stands in for the
 // database mini app's `db-console`, which registers the SAME mapping via the registry). Proves
@@ -48,7 +48,7 @@ function fakeDataTransfer() {
 function armTabDrag(item: WorkItem): DataTransfer {
   const dt = fakeDataTransfer()
   dt.setData(WORKSPACE_TAB_DRAG_MIME, item.id)
-  const binding = workItemToMessageBinding(item)
+  const [binding] = workItemToMessageBindings(item)
   if (binding) setMessageBindingDrag(dt, binding)
   return dt
 }

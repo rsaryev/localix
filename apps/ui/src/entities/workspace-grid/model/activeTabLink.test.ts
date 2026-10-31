@@ -1,10 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import {
-  activeTabLink,
   activeTabLinks,
   AUTO_LINK_LIMIT,
   candidateScore,
-  tabLinkToken,
+  tabMessageBindings,
   type TabCandidate,
 } from './activeTabLink'
 import { clearLiveTabMessageContext, publishLiveTabMessageContext } from './liveTabMessageContext'
@@ -35,7 +34,7 @@ const settings = (id: string): WorkItem => ({
   scope: '@global',
 })
 
-const baseState = (over: Partial<Parameters<typeof activeTabLink>[0]> = {}) => ({
+const baseState = (over: Partial<Parameters<typeof activeTabLinks>[0]> = {}) => ({
   root: makeLeaf('g1', ['f1'], 'f1'),
   activeGroup: 'g1',
   items: { f1: file('f1', 'src/a.ts') } as Record<string, WorkItem>,
@@ -44,6 +43,15 @@ const baseState = (over: Partial<Parameters<typeof activeTabLink>[0]> = {}) => (
   scopeActiveTab: {} as ScopeActiveTab,
   ...over,
 })
+
+/** The highest-ranked link alone. */
+const activeTabLink = (state: Parameters<typeof activeTabLinks>[0]) =>
+  activeTabLinks(state, 1)[0] ?? null
+/** A tab's first token and label. */
+const tabLinkToken = (tab: WorkItem | undefined) => {
+  const binding = tabMessageBindings(tab)[0]
+  return binding ? { token: binding.target.token, label: binding.target.label } : null
+}
 
 describe('tabLinkToken', () => {
   test('a file tab mints a CONTENT @file: token (not the link-only @path mention)', () => {

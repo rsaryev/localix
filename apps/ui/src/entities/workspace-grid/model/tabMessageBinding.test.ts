@@ -2,11 +2,14 @@ import { describe, expect, it } from 'bun:test'
 import type { WorkItem } from '@/shared/lib/workItem'
 import { setEnabledMiniAppNames } from '@/shared/contrib/miniAppActivation'
 import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
-import { workItemToMessageBinding, workItemToMessageBindings } from './tabMessageBinding'
+import { workItemToMessageBindings } from './tabMessageBinding'
 import { clearLiveTabMessageContext, publishLiveTabMessageContext } from './liveTabMessageContext'
 import { resourceMessageBindingDraft, snippetMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
 
 const item = (over: Partial<WorkItem>): WorkItem => ({ kind: 'file', id: 'x', title: 'X', ...over })
+/** A tab's first binding, the one a single drop carries. */
+const workItemToMessageBinding = (tab: WorkItem | undefined) =>
+  workItemToMessageBindings(tab)[0] ?? null
 
 describe('workItemToMessageBinding', () => {
   it('maps a file/diff tab to a file ref', () => {
