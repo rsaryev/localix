@@ -1,6 +1,9 @@
 import { useSyncExternalStore } from 'react'
 
 const pending = new Set<string>()
+/** What the hook hands out: replaced only when membership changes, so its identity is stable. */
+let pendingSnapshot: ReadonlySet<string> = new Set()
+const NONE_PENDING: ReadonlySet<string> = new Set()
 const departed = new Set<string>()
 const unaccepted = new Set<string>()
 let receiving = false
@@ -15,11 +18,12 @@ export const workItemTransferState = {
     if (pending.has(id)) return false
     departed.delete(id)
     pending.add(id)
+    pendingSnapshot = new Set(pending)
     publish()
     return true
   },
   finish(id: string, transferred = false) {
-    pending.delete(id)
+    if (pending.delete(id)) pendingSnapshot = new Set(pending)
     if (transferred) departed.add(id)
     publish()
   },
@@ -43,11 +47,9 @@ export const workItemTransferState = {
 }
 
 export function useWorkItemTransferPending(): ReadonlySet<string> {
-  // A primitive snapshot stays stable until membership changes.
-  const key = useSyncExternalStore(
+  return useSyncExternalStore(
     workItemTransferState.subscribe,
-    () => JSON.stringify([...pending]),
-    () => '[]',
+    () => pendingSnapshot,
+    () => NONE_PENDING,
   )
-  return new Set(JSON.parse(key) as string[])
 }
