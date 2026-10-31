@@ -11,7 +11,7 @@
  */
 import { assetBindings, contextContributionModelText, type ChatMessage } from '../chat'
 import { isToolBackedItem, type ToolBackedItem } from '../agents/items'
-import { itemResultModelText } from '../utils/prune-messages'
+import { itemResultModelText } from './result-text'
 import { textEncoderByteLength } from '../utils/hash'
 import type { Message } from '../types'
 import { DEFAULT_IMAGE_TOKENS, type WireSizeSample } from './token-calibration'

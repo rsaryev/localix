@@ -1,9 +1,9 @@
 /**
  * The stage engine: run an ordered list of history stages and report what each one did.
  *
- * It generalizes `utils/prune-messages.ts` from per-MESSAGE rules to whole-HISTORY stages —
- * a boundary cut, a media rehydrate, a budget allocation all see the list — and it borrows
- * the safety triad that `agent-core/tools/bash/output-filters` proved on bash output:
+ * Stages see the whole HISTORY — a boundary cut, a media rehydrate, a budget allocation all
+ * see the list — and the engine borrows the safety triad that
+ * `agent-core/tools/bash/output-filters` proved on bash output:
  *
  *   1. FAIL-SAFE: an advisory stage that throws is skipped, not fatal.
  *   2. NEVER-WORSE: a stage that claims to shrink and does not is discarded.

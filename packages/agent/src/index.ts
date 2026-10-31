@@ -39,13 +39,5 @@ export {
 export type { TruncationResult, TruncationOptions } from './utils/truncate'
 export { truncateMiddle } from './utils/truncate-middle'
 export type { MiddleTruncationOptions } from './utils/truncate-middle'
-export { pruneMessages, itemResultModelText, stripAssetBindings } from './utils/prune-messages'
-export type {
-  PruneRule,
-  PruneRuleContext,
-  PruneOptions,
-  PruneResult,
-  StripAssetBindingsOptions,
-} from './utils/prune-messages'
 export * from './context/index'
 export { projectContinuationItems } from './agents/continuation-items'

@@ -14,7 +14,7 @@ import {
   isToolBackedItem,
   type ToolBackedItem,
 } from '../agents/items'
-import { itemResultModelText } from '../utils/prune-messages'
+import { itemResultModelText } from './result-text'
 import { inputFilePaths, inputQueries, normalizePathKey } from './path-key'
 
 export type EntityKind = 'path' | 'url' | 'symbol'

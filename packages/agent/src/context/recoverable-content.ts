@@ -3,7 +3,7 @@
  * same text can be re-read from disk — a mutation call's args and a read-class call's result.
  */
 import { isFileChangeItem, type ToolBackedItem } from '../agents/items'
-import { itemResultModelText } from '../utils/prune-messages'
+import { itemResultModelText } from './result-text'
 import { carriesMarker, ELISION_MARKER } from './compression-markers'
 import { READ_RESULT_TOOLS } from './tool-classes'
 

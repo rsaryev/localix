@@ -2,8 +2,8 @@
  * Apply a {@link CompressionPlan}'s operations to the messages (verbatim /
  * truncate / oneline / pointer / elide). Pairing-safe: it only rewrites
  * tool-result TEXT (`resultText`) and mutation input ARGS on terminal tool-backed
- * items — `toolCallId`, `name`, `status`, and `type` are untouched — by routing
- * through the shared {@link pruneMessages} pipeline operating on `message.items`.
+ * items — `toolCallId`, `name`, `status`, and `type` are untouched — message by
+ * message over `message.items`.
  */
 import type { ChatMessage } from '../chat'
 import {
@@ -13,7 +13,6 @@ import {
   type TextItem,
   type ToolBackedItem,
 } from '../agents/items'
-import { pruneMessages, itemResultModelText, type PruneRule } from '../utils/prune-messages'
 import { truncateMiddle } from '../utils/truncate-middle'
 import type { CompressionPlan } from './plan'
 import { crushNonRecoverable, CRUSH_MARKER } from './crushers'
@@ -26,6 +25,7 @@ import {
   type Operation,
 } from './op-menu'
 import { elidedPointer, foldedTextMarker, readPointer } from './pointers'
+import { itemResultModelText } from './result-text'
 import { hintClause } from './vocab-hints'
 import type { ReadFate } from './live-reads'
 
@@ -241,36 +241,34 @@ export function applyPlan<T extends ChatMessage>(
     if (toolOp.kind === 'elide') return elided
     return elided !== it ? elided : rewriteItem(it, toolOp, recoveryToolAvailable)
   }
-  const rule: PruneRule = {
-    name: 'vbc-apply',
-    apply(message, ctx) {
-      const op = opByIndex.get(ctx.index)
-      if (!op || op.kind === 'verbatim') return undefined
-      const items = message.items
-      if (!items || items.length === 0) return undefined
-      const transform = (it: AgentItem): AgentItem => {
-        if (isToolBackedItem(it)) {
-          const toolOp = op.kind === 'fold' ? op.stackedOn : op
-          return toolOp ? applyToolOp(it, toolOp) : it
-        }
-        return op.kind === 'fold' && it.type === 'text'
-          ? foldTextItem(it, message.id, recallToolAvailable)
-          : it
+  const rewrite = (message: T, index: number): T => {
+    const op = opByIndex.get(index)
+    if (!op || op.kind === 'verbatim') return message
+    const items = message.items
+    if (!items || items.length === 0) return message
+    const transform = (it: AgentItem): AgentItem => {
+      if (isToolBackedItem(it)) {
+        const toolOp = op.kind === 'fold' ? op.stackedOn : op
+        return toolOp ? applyToolOp(it, toolOp) : it
       }
-      let changed = false
-      const next = items.map((it) => {
-        const r = transform(it)
-        if (r !== it) changed = true
-        return r
-      })
-      return changed ? { items: next } : undefined
-    },
+      return op.kind === 'fold' && it.type === 'text'
+        ? foldTextItem(it, message.id, recallToolAvailable)
+        : it
+    }
+    let changed = false
+    const next = items.map((it) => {
+      const r = transform(it)
+      if (r !== it) changed = true
+      return r
+    })
+    return changed ? { ...message, items: next } : message
   }
-  // The plan already encodes hard-keep as verbatim ops, so disable the pipeline's
-  // own first/tail protection and let the per-index rule decide everything.
-  return pruneMessages(messages, {
-    rules: [rule],
-    protectFirst: false,
-    keepRecentFromIndex: messages.length,
-  }).messages
+  // The plan already encodes hard-keep as verbatim ops, so every index is the plan's to decide.
+  let changed = false
+  const out = messages.map((message, index) => {
+    const next = rewrite(message, index)
+    if (next !== message) changed = true
+    return next
+  })
+  return changed ? out : messages
 }

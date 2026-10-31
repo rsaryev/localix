@@ -41,6 +41,20 @@ describe('applyPlan', () => {
     expect(out[0]).toBe(m) // unchanged reference
   })
 
+  test('a plan that changes nothing returns the same array', () => {
+    const messages = [msg(toolItem('x'.repeat(200))), msg(toolItem('y'))]
+    expect(applyPlan(messages, plan(op('verbatim')))).toBe(messages)
+  })
+
+  test('a changed message is a new object that keeps its other fields', () => {
+    const m = { ...msg(toolItem('a'.repeat(500))), id: 'm1', extra: 1 } as ChatMessage
+    const messages = [m]
+    const out = applyPlan(messages, plan(op('pointer')))
+    expect(out).not.toBe(messages)
+    expect(out[0]).not.toBe(m)
+    expect(out[0]).toMatchObject({ id: 'm1', extra: 1, role: 'assistant' })
+  })
+
   test('pointer replaces the result with a placeholder carrying a recovery handle', () => {
     const item = toolItem('a'.repeat(500))
     const out = applyPlan([msg(item)], plan(op('pointer')))

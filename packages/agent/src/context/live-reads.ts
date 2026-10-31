@@ -20,7 +20,7 @@
 import type { ChatMessage } from '../chat'
 import { isFileChangeItem, isToolBackedItem, type ToolBackedItem } from '../agents/items'
 import { textEncoderByteLength } from '../utils/hash'
-import { itemResultModelText } from '../utils/prune-messages'
+import { itemResultModelText } from './result-text'
 import { normalizePathKey } from './path-key'
 import { defaultResolveTarget } from './targets'
 

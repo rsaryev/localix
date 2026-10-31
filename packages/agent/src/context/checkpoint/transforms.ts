@@ -6,7 +6,7 @@
  */
 import type { ChatMessage } from '../../chat'
 import { isToolBackedItem, type AgentItem, type ToolBackedItem } from '../../agents/items'
-import { itemResultModelText } from '../../utils/prune-messages'
+import { itemResultModelText } from '../result-text'
 import { applyPlan, withItemResultText } from '../apply'
 import type { Operation } from '../op-menu'
 import type { CompressionPlan } from '../plan'

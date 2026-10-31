@@ -18,7 +18,7 @@
  */
 import type { ChatMessage } from '../chat'
 import { isToolBackedItem, type ToolBackedItem } from '../agents/items'
-import { itemResultModelText } from '../utils/prune-messages'
+import { itemResultModelText } from './result-text'
 import { textEncoderByteLength } from '../utils/hash'
 import { estimateChatMessageTokens, estimateItemResultTokens, estimateTextTokens } from './tokens'
 import { carriesMarker, ELISION_MARKER } from './compression-markers'
