@@ -51,9 +51,14 @@ export interface HandoffCommand {
   lenientExit?: boolean
 }
 
+/** What the opener is handed: the URL, or the path. */
+export function handoffTarget(target: Handoff): string {
+  return target.kind === 'url' ? target.url : target.path
+}
+
 /** The single mapping from an intent to a command line, for one platform. */
 export function handoffCommand(platform: OsPlatform, target: Handoff): HandoffCommand {
-  const file = target.kind === 'url' ? target.url : target.path
+  const file = handoffTarget(target)
 
   if (platform === 'darwin') {
     // `open` is an opener for every mode, including `-a`: it asks LaunchServices

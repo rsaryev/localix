@@ -17,7 +17,13 @@
 
 import { spawn as nodeSpawn } from 'node:child_process'
 
-import { currentPlatform, handoffCommand, type Handoff, type OsPlatform } from './command'
+import {
+  currentPlatform,
+  handoffCommand,
+  handoffTarget,
+  type Handoff,
+  type OsPlatform,
+} from './command'
 
 export type HandoffResult = { ok: true } | { ok: false; reason: string }
 
@@ -42,25 +48,19 @@ export interface HandoffOptions {
 
 const DEFAULT_TIMEOUT_MS = 15_000
 
-/**
- * A target that begins with `-` would be read as a FLAG by `open`/`xdg-open`,
- * which is how a hostile file name reaches an opener's option parser. Neither
- * accepts a `--` end-of-options marker, so refusing is the whole defence.
- */
-function targetOf(target: Handoff): string {
-  return target.kind === 'url' ? target.url : target.path
-}
-
 export async function performHandoff(
   target: Handoff,
   options: HandoffOptions = {},
 ): Promise<HandoffResult> {
   const log = options.log ?? (() => {})
-  const raw = targetOf(target)
+  const raw = handoffTarget(target)
   if (raw.trim() === '') {
     log(`os-open: refused an empty ${target.kind} target`)
     return { ok: false, reason: 'There is nothing to open.' }
   }
+  // A target that begins with `-` would be read as a FLAG by `open`/`xdg-open`,
+  // which is how a hostile file name reaches an opener's option parser. Neither
+  // accepts a `--` end-of-options marker, so refusing is the whole defence.
   if (raw.startsWith('-')) {
     log(`os-open: refused a flag-shaped ${target.kind} target`)
     return {
