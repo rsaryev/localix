@@ -24,7 +24,7 @@ import {
   stateSuffix,
   shouldEmit,
 } from './classify'
-import { fieldValue, isEditable, isField, optionsSuffix } from './field'
+import { fieldValue, isEditable, isField, optionsSuffix, wrappedField } from './field'
 
 // The per-mount `eN` ref registry lives in its own leaf; re-exported here so the
 // snapshot module's public surface is unchanged.
@@ -121,12 +121,15 @@ function walk(el: Element, depth: number, ctx: WalkCtx): void {
     // re-resolve them after a re-render — by selector first, then structurally when
     // the selector itself went stale (dynamic classes / shifted position). Bounds
     // the cost of generateSelector's uniqueness checks to a handful of nodes.
+    // A combobox wrapped around its text field is acted on through that field: a click focuses
+    // it and a type fills it, as the person's click and typing would.
+    const acted = wrappedField(el) ?? el
     const ref = ctx.reg.put(
-      el,
+      acted,
       // A selector is the top document's: in a frame it could name a control of the page instead.
       interactive
         ? {
-            selector: ctx.frames ? undefined : generateSelector(el).selector,
+            selector: ctx.frames ? undefined : generateSelector(acted).selector,
             role,
             name,
             ...(ctx.frames ? { framed: true } : {}),

@@ -5,6 +5,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 import { buildSnapshot, createRefRegistry } from './index'
+import { installConsoleCapture, runCommand } from '../actuate/index'
 
 beforeAll(() => GlobalRegistrator.register())
 afterAll(() => GlobalRegistrator.unregister())
@@ -28,6 +29,24 @@ describe('field labels', () => {
     expect(tree).toContain('"Departure"')
     expect(tree).toContain('"Adults"')
     expect(tree).not.toContain('"City"')
+  })
+
+  // A booking site's From and To: a `div role=combobox` around the real input, its label id
+  // pointing at nothing. The line used to be a bare `combobox`, hiding the field and its value.
+  it('a combobox drawn around its text field is named, valued and typed into through that field', async () => {
+    const reg = createRefRegistry()
+    document.body.innerHTML =
+      '<div role="combobox" aria-expanded="false" aria-labelledby="gone"><div>' +
+      '<input id="from" aria-labelledby="gone" placeholder="From" value="Larnaca"></div></div>'
+    const { tree } = buildSnapshot(reg)
+    expect(tree).toContain('combobox "From" = "Larnaca" [collapsed] [ref=')
+    const ref = /\[ref=(e\d+)\]/.exec(tree)![1]
+    const typed = await runCommand(
+      { action: 'type', ref, text: 'Paphos' },
+      { reg, console: installConsoleCapture(), prevTree: { value: '' }, settle: async () => {} },
+    )
+    expect(typed.ok).toBe(true)
+    expect((document.getElementById('from') as HTMLInputElement).value).toBe('Paphos')
   })
 
   it('a select shows its label and the selected option as its value', () => {

@@ -54,6 +54,19 @@ export function isEditable(el: Element): boolean {
   return TEXT_ROLES.has(el.getAttribute('role') ?? '')
 }
 
+/**
+ * A combobox drawn as a wrapper around its one text field (the ARIA 1.1 pattern): that field,
+ * else null. The snapshot names and fills the wrapper through it, since the wrapper is a leaf
+ * of the tree and the field inside would otherwise never be seen.
+ */
+export function wrappedField(el: Element): Element | null {
+  if (el.getAttribute('role') !== 'combobox') return null
+  const tag = tagOf(el)
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || isEditableRoot(el)) return null
+  const fields = Array.from(el.querySelectorAll('input,textarea')).filter(isEditable)
+  return fields.length === 1 ? fields[0]! : null
+}
+
 /** Visible text of a label-ish element, without its own form controls' values. */
 function textOf(el: Element | null): string {
   return el ? collapse(el.textContent ?? '') : ''
@@ -87,6 +100,8 @@ export function fieldLabel(el: Element): string {
       .join(' ')
     if (collapse(own)) return clip(collapse(own))
   }
+  const inner = wrappedField(el)
+  if (inner) return fieldLabel(inner)
   const fallback =
     el.getAttribute('placeholder') ?? el.getAttribute('title') ?? el.getAttribute('name') ?? ''
   return clip(collapse(fallback))
@@ -94,6 +109,8 @@ export function fieldLabel(el: Element): string {
 
 /** A field's current value, or '' — never a password's; checkboxes and radios have state instead. */
 export function fieldValue(el: Element): string {
+  const inner = wrappedField(el)
+  if (inner) return fieldValue(inner)
   const tag = tagOf(el)
   if (tag === 'select') {
     const select = el as HTMLSelectElement
