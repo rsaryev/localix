@@ -36,10 +36,7 @@ export function resolvePinnedSkills(
   }
   const distinct = [...new Set(pinnedNames)]
   const names = opts.preload ? distinct.slice(0, MAX_PRELOADED_SKILLS) : distinct
-  const seen = new Set<string>()
   return names.flatMap((name) => {
-    if (seen.has(name)) return []
-    seen.add(name)
     const skill = byName.get(name)
     if (!skill || (opts.preload && skill.disableModelInvocation)) return []
     try {

@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createChatRepository } from '../chat/repository'
-import { recordAuxCallUsage, recordTitleGenUsage } from '../chat/runtime/usage-normalize'
+import { recordAuxCallUsage } from '../chat/runtime/usage-normalize'
 import { sessionFixture } from '../../testing/session-fixture'
 import { createUsageRepository } from './repository'
 
@@ -60,7 +60,7 @@ describe('auxiliary usage is filed under the session’s real root', () => {
     const base = { usageRepo: repo, userId, sessionId: 'child', modelId: 'test/model', usage }
     const titled = Promise.withResolvers<void>()
     const completed = Promise.withResolvers<void>()
-    recordTitleGenUsage({ ...base, onRecorded: () => titled.resolve() })
+    recordAuxCallUsage({ ...base, kind: 'title', onRecorded: () => titled.resolve() })
     recordAuxCallUsage({ ...base, kind: 'autocomplete', onRecorded: () => completed.resolve() })
     await Promise.all([titled.promise, completed.promise])
 

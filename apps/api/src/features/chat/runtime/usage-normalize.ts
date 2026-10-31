@@ -108,56 +108,18 @@ export function usageEventFields(
   }
 }
 
-/**
- * Record title-generation spend. The happy path runs once, but retries and two
- * concurrent first-turn sends can both reach the model before the conditional
- * title update wins. Every call was billed, so accumulate rather than overwrite;
- * include routing identity so an aux-model change cannot reattribute old spend.
- */
-export function recordTitleGenUsage(args: {
-  usageRepo: UsageRepository
-  userId: string
-  sessionId: string
-  modelId: string
-  providerConnectionId?: string | null
-  providerId?: string | null
-  usage: UsageLike | null | undefined
-  onRecorded?: () => void | Promise<void>
-}): void {
-  if (!args.usage) return
-  const fields = usageEventFields(args.usage)
-  if (!fields.inputTokens && !fields.outputTokens && !fields.totalTokens && !fields.costUsd) return
-  void args.usageRepo
-    .accumulateEvent({
-      messageId: `aux-title:${JSON.stringify([
-        args.sessionId,
-        args.providerConnectionId ?? null,
-        args.modelId,
-      ])}`,
-      // No `rootSessionId`: the ledger reads the session's real root (usage repository).
-      sessionId: args.sessionId,
-      userId: args.userId,
-      providerConnectionId: args.providerConnectionId ?? null,
-      providerId: args.providerId ?? providerIdFromModel(args.modelId),
-      modelId: args.modelId,
-      ...fields,
-      finishReason: 'title',
-    })
-    .then(() => args.onRecorded?.())
-    .catch((err: unknown) => console.warn('[chat-service] failed to record title-gen usage:', err))
-}
-
 /** The auxiliary LLM calls whose spend accumulates onto one stable-keyed ledger
  *  row per (session, kind). The id doubles as the ledger's finish_reason bucket,
  *  so each surfaces in the dashboard's Kind breakdown. Most are high-frequency
  *  (autocomplete per keystroke-idle), so repeated calls share an accumulating row.
- *  Every ledger kind but `title` (its own writer above) and the retired `improve`. */
-export type AuxCallKind = Exclude<(typeof USAGE_AUXILIARY_KINDS)[number], 'title' | 'improve'>
+ *  A title runs once on the happy path, but retries and two concurrent first-turn sends
+ *  can both reach the model before the conditional title update wins; every call was
+ *  billed, so it accumulates like the rest. Every ledger kind but the retired `improve`. */
+export type AuxCallKind = Exclude<(typeof USAGE_AUXILIARY_KINDS)[number], 'improve'>
 
 /**
  * Record an auxiliary LLM call (editor prediction, text-input completion)
- * in the usage ledger. Unlike
- * a title — which fires ~once and so overwrites a stable-keyed row — these
+ * in the usage ledger. Most
  * fire often (autocomplete is per keystroke-idle) and would each warrant a row, so
  * they ACCUMULATE onto one row per (session, kind, routing identity). Including
  * connection + model is essential: otherwise switching an aux model rewrites

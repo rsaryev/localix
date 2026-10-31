@@ -3,7 +3,7 @@ import { resolveDefaultProject } from '../../projects/default-project'
 import type { WakeRequest } from '../contracts'
 import { publishAgentPhase } from '../runtime/session-stream-registry'
 import { publishSessionUsageSnapshot } from '../runtime/session-usage'
-import { recordAuxCallUsage, recordTitleGenUsage } from '../runtime/usage-normalize'
+import { recordAuxCallUsage } from '../runtime/usage-normalize'
 import { createRecapService } from '../recap/service'
 import { createAuxProviderHelpers } from './aux-provider'
 import type { BranchingOpsContext } from './branching-ops'
@@ -81,8 +81,9 @@ export function createOperationContexts(
     // Record every billed titling call. The normal path runs once, while retries
     // or concurrent first turns accumulate under the same routing identity.
     recordUsage: ({ userId, sessionId, modelId, providerConnectionId, providerId, usage }) =>
-      recordTitleGenUsage({
+      recordAuxCallUsage({
         usageRepo,
+        kind: 'title',
         userId,
         sessionId,
         modelId,

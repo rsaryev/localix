@@ -82,7 +82,7 @@ export function createPreviewCommandRegistry(deps: {
 
   return {
     send({ userId, sessionId, command, timeoutMs: perCallTimeoutMs }) {
-      if (!(deps.streamRegistry.hasConnectedClient?.(userId) ?? true))
+      if (!deps.streamRegistry.hasConnectedClient(userId))
         return Promise.resolve({
           ok: false as const,
           errorCode: 'app_disconnected' as const,

@@ -16,6 +16,7 @@ function fakeRegistry(publishError?: Error) {
       published.push({ userId, sessionId, event })
       if (publishError) throw publishError
     },
+    hasConnectedClient: () => true,
   } as unknown as Parameters<typeof createPreviewCommandRegistry>[0]['streamRegistry']
   return { published, streamRegistry }
 }

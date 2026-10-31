@@ -3,7 +3,6 @@ import {
   normalizeUsage,
   providerIdFromModel,
   recordAuxCallUsage,
-  recordTitleGenUsage,
   usageEventFields,
   zeroUsageTotals,
 } from './usage-normalize'
@@ -84,7 +83,7 @@ describe('recordAuxCallUsage', () => {
   })
 })
 
-describe('recordTitleGenUsage', () => {
+describe('recordAuxCallUsage for a title', () => {
   it('accumulates retries per routing identity and separates a changed title model', async () => {
     const events: Array<Record<string, unknown>> = []
     const usageRepo = {
@@ -93,8 +92,9 @@ describe('recordTitleGenUsage', () => {
       },
     }
     const record = (modelId: string, providerConnectionId: string, totalTokens: number) =>
-      recordTitleGenUsage({
+      recordAuxCallUsage({
         usageRepo: usageRepo as never,
+        kind: 'title',
         userId: 'u',
         sessionId: 's',
         modelId,

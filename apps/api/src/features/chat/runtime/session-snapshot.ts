@@ -48,7 +48,6 @@ export interface SessionSnapshotCache<T> {
 interface Entry<T> {
   value: T
   boundaryMarker: string
-  loadedAt: number
 }
 
 export function createSessionSnapshotCache<T>(
@@ -77,7 +76,7 @@ export function createSessionSnapshotCache<T>(
     },
     set(rootSessionId, boundaryMarker, value) {
       if (!enabled) return
-      entries.set(rootSessionId, { value, boundaryMarker, loadedAt: Date.now() })
+      entries.set(rootSessionId, { value, boundaryMarker })
     },
     invalidate(rootSessionId) {
       entries.delete(rootSessionId)

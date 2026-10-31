@@ -7,7 +7,7 @@ import { describe, expect, test, beforeAll, afterAll } from 'bun:test'
 import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createUsageRepository } from './repository'
-import { recordTitleGenUsage } from '../chat/runtime/usage-normalize'
+import { recordAuxCallUsage } from '../chat/runtime/usage-normalize'
 
 const tempDir = join(tmpdir(), `localix-usage-query-tests-${process.pid}`)
 
@@ -186,8 +186,9 @@ describe('usage repository — queryStats groupBy kind', () => {
       { inputTokens: 8, outputTokens: 2, cacheReadTokens: 3, cacheWriteTokens: 1 },
       { inputTokens: 10, outputTokens: 3, cacheReadTokens: 4, cacheWriteTokens: 2 },
     ]) {
-      recordTitleGenUsage({
+      recordAuxCallUsage({
         usageRepo: repo,
+        kind: 'title',
         userId: titleUser,
         sessionId: 'title-retry-session',
         modelId: 'test/title-model',

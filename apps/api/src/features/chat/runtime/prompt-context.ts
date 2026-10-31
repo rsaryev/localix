@@ -157,11 +157,10 @@ export async function prepareRunContext(
   // once, when the load decided to import it; asking again with no trust class would answer
   // for a dropped-in plugin as if it were bundled, and asking with one would re-litigate a
   // question already settled. What is left for the role to say is "not this one".
-  const runAvailability = availabilityOf(resolvedAgent.capabilities)
   const narrowed: LoadedPlugins = narrowLoadedPlugins(
     rawPlugins,
     rawPlugins.loaded
-      .filter((entry) => runAvailability.effectFor('plugin', entry.name) === 'deny')
+      .filter((entry) => scopeAvailability.effectFor('plugin', entry.name) === 'deny')
       .map((entry) => entry.name),
   )
   // What the session's work reached (a subfolder's skills, `paths:` skills) and the agent files.
@@ -181,7 +180,7 @@ export async function prepareRunContext(
   const loadedMiniApps: LoadedMiniApps = narrowLoadedMiniApps(
     rawMiniApps,
     rawMiniApps.loaded
-      .filter((entry) => runAvailability.effectFor('mini-app', entry.name) === 'deny')
+      .filter((entry) => scopeAvailability.effectFor('mini-app', entry.name) === 'deny')
       .map((entry) => entry.name),
   )
 
@@ -234,7 +233,7 @@ export async function prepareRunContext(
     toolDenials: policy.toolDenials,
     // The RUN's own answer, agent scope included — the discovery cache above is the only
     // consumer that has to stop at the scope ceiling.
-    availability: runAvailability,
+    availability: scopeAvailability,
     permissionRules,
     loadedPlugins,
     loadedMiniApps,

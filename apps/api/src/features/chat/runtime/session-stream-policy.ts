@@ -176,9 +176,6 @@ export function isLiveOnlyEvent(type: AgentStreamEvent['type']): boolean {
   return NON_REPLAYABLE_EVENTS.has(type)
 }
 
-/** The live-only set, for the guard that pins it. Reading it is the only way to see the tiers. */
-export const LIVE_ONLY_EVENT_TYPES: ReadonlySet<AgentStreamEvent['type']> = NON_REPLAYABLE_EVENTS
-
 /**
  * Does this frame require the receiving connection to have DECLARED it is watching the publish
  * key (see {@link DeliveryScope})? `false` = roster class, delivered to every connection.
@@ -186,8 +183,3 @@ export const LIVE_ONLY_EVENT_TYPES: ReadonlySet<AgentStreamEvent['type']> = NON_
 export function requiresWatchedSession(type: AgentStreamEvent['type']): boolean {
   return WATCH_GATED_EVENTS.has(type)
 }
-
-/** The roster set, for the guard that pins it — the complement of {@link requiresWatchedSession}. */
-export const ROSTER_EVENT_TYPES: ReadonlySet<AgentStreamEvent['type']> = new Set(
-  EVENT_TYPES.filter((type) => !WATCH_GATED_EVENTS.has(type)),
-)
