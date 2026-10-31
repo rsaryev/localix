@@ -53,10 +53,15 @@ export async function holdsOffer(offer: Offer, installRoot: string): Promise<boo
 }
 
 /**
- * Whether Update all would take this offer: this very app installed (`holdsOffer`), at another
- * version, that this Localix can run. A folder the person made is theirs.
+ * Whether Update all would take this offer: this very app installed (`holdsOffer`, passed in when
+ * the caller already asked), at another version, that this Localix can run. A folder the person
+ * made is theirs.
  */
-export async function isUpdatable(offer: Offer, installRoot: string): Promise<boolean> {
-  if (isIncompatible(offer) || !(await holdsOffer(offer, installRoot))) return false
+export async function isUpdatable(
+  offer: Offer,
+  installRoot: string,
+  holds?: boolean,
+): Promise<boolean> {
+  if (isIncompatible(offer) || !(holds ?? (await holdsOffer(offer, installRoot)))) return false
   return (await readManifest(join(installRoot, offer.name)))?.version !== offer.version
 }
