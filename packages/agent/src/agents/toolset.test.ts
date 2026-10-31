@@ -1,13 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
-import {
-  createToolSet,
-  getAgentTools,
-  isAgentToolAvailable,
-  mergeToolSets,
-  defineAgentTool,
-  validateToolRegistry,
-} from './toolset'
+import { defineAgentTool, isAgentToolAvailable, validateToolRegistry } from './toolset'
 
 describe('defineAgentTool', () => {
   test('is an identity passthrough (returns the same object reference)', () => {
@@ -81,42 +74,5 @@ describe('toolset', () => {
     expect(() => validateToolRegistry([{ ...query, modelName: `m${'x'.repeat(64)}` }])).toThrow(
       'Invalid model name',
     )
-  })
-
-  test('returns an empty tool list for empty or missing sources', () => {
-    expect(getAgentTools(null)).toEqual([])
-    expect(getAgentTools(undefined)).toEqual([])
-    expect(getAgentTools([])).toEqual([])
-  })
-
-  test('flattens nested tool sources and de-duplicates by name', () => {
-    const askA = makeTool()
-    const askB = { ...makeTool(), label: 'Ask override' }
-    const tools = getAgentTools([createToolSet([askA]), mergeToolSets([askB]), null])
-
-    expect(tools).toHaveLength(1)
-    expect(tools[0]?.label).toBe('Ask override')
-  })
-
-  test('warns when the same tool name is registered more than once', () => {
-    const originalWarn = console.warn
-    const warnings: unknown[][] = []
-    console.warn = (...args: unknown[]) => {
-      warnings.push(args)
-    }
-
-    try {
-      const askA = makeTool()
-      const askB = { ...makeTool(), label: 'Ask override' }
-
-      const tools = getAgentTools([askA, mergeToolSets(askB)])
-
-      expect(tools).toHaveLength(1)
-      expect(tools[0]?.label).toBe('Ask override')
-      expect(warnings).toHaveLength(1)
-      expect(String(warnings[0]?.[0])).toContain('Tool "ask" is registered more than once')
-    } finally {
-      console.warn = originalWarn
-    }
   })
 })

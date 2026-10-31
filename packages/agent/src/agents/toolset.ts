@@ -12,35 +12,10 @@ export function isAgentToolAvailable(tool: AgentTool, surface?: ToolSurface): bo
   return required.every((capability) => available.has(capability))
 }
 
-export interface AgentToolSet {
-  readonly tools: readonly AgentTool[]
-}
-
-export type AgentToolSource =
-  | AgentTool
-  | AgentToolSet
-  | readonly AgentToolSource[]
-  | null
-  | undefined
-
 export function defineAgentTool<TInput = unknown, TDetails = unknown>(
   tool: AgentTool<TInput, TDetails>,
 ): AgentTool<TInput, TDetails> {
   return tool
-}
-
-export function createToolSet(tools: readonly AgentToolSource[]): AgentToolSet {
-  return {
-    tools: flattenToolSources(tools),
-  }
-}
-
-export function mergeToolSets(...sets: readonly AgentToolSource[]): AgentToolSet {
-  return createToolSet(sets)
-}
-
-export function getAgentTools(source: AgentToolSource): AgentTool[] {
-  return flattenToolSources([source])
 }
 
 /**
@@ -105,36 +80,3 @@ export function validateToolRegistry(
 
 /** What every provider accepts as a tool name ({@link AgentTool.modelName}). */
 const MODEL_TOOL_NAME = /^[A-Za-z_][A-Za-z0-9_-]{0,63}$/
-
-function flattenToolSources(sources: readonly AgentToolSource[]): AgentTool[] {
-  const tools = new Map<string, AgentTool>()
-
-  const visit = (source: AgentToolSource) => {
-    if (!source) return
-    if (isToolSourceArray(source)) {
-      source.forEach(visit)
-      return
-    }
-    if (isToolSet(source)) {
-      source.tools.forEach(visit)
-      return
-    }
-    if (tools.has(source.name)) {
-      console.warn(
-        `[localixai/agent] Tool "${source.name}" is registered more than once; the last registration wins. Check your tool list for duplicates.`,
-      )
-    }
-    tools.set(source.name, source)
-  }
-
-  sources.forEach(visit)
-  return [...tools.values()]
-}
-
-function isToolSet(source: AgentTool | AgentToolSet): source is AgentToolSet {
-  return Array.isArray((source as AgentToolSet).tools)
-}
-
-function isToolSourceArray(source: AgentToolSource): source is readonly AgentToolSource[] {
-  return Array.isArray(source)
-}

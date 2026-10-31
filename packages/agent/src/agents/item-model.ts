@@ -271,24 +271,3 @@ export type StopReason =
   | 'user_stopped'
   | 'max_turns'
   | 'error'
-
-/** Token/cost rollup for a turn. */
-export interface TurnUsage {
-  inputTokens?: number
-  cachedInputTokens?: number
-  outputTokens?: number
-  costUsd?: number
-}
-
-export type TurnStatus = 'running' | 'completed' | 'failed' | 'aborted'
-
-/** A turn: the ordered items the agent produced plus cross-item summaries. */
-export interface TurnState {
-  id: string
-  status: TurnStatus
-  items: AgentItem[]
-  usage?: TurnUsage
-  /** Aggregated unified diff across all file_change items this turn. */
-  aggregatedDiff?: string
-  stopReason?: StopReason
-}

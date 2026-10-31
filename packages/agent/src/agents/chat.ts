@@ -3,7 +3,7 @@
  *
  * Types (ChatMessage, etc.) live in @localixai/agent — the single source of truth.
  * This module adds utilities that require agent-level dependencies:
- * message-to-wire-format conversion, snapshot application, and cache snapshots.
+ * message-to-wire-format conversion and cache snapshots.
  */
 
 import type { ChatMessage } from '..'
@@ -38,19 +38,7 @@ export interface AgentChatMessage extends ChatMessage {
   status?: ChatStatusPayload
 }
 
-/** Presentation snapshot consumed by chat UIs; unrelated to engine execution. */
-export interface TurnSnapshot {
-  text: string
-  reasoning: string
-  tools: unknown[]
-  dataParts: ChatDataPart[]
-  usage?: ChatUsagePayload
-  status?: ChatStatusPayload
-}
-
 // ---- Message → wire format conversion ------------------------------------------
-
-export { isWireCarriableImage } from './model-attachments'
 
 /**
  * Rebuild the LLM wire from a normalized item list (the canonical successor to
@@ -204,32 +192,6 @@ export function toModelMessages(messages: ChatMessage[]): WireMessage[] {
 }
 
 export { markHistoryCacheAnchor, markForkCacheAnchor } from './cache-anchor'
-
-// ---- Snapshot application ------------------------------------------------------
-
-/**
- * Merge a TurnSnapshot into a partial AgentChatMessage update.
- * Suitable for applying incremental streaming progress or final turn results.
- */
-export function applyTurnSnapshot(
-  message: AgentChatMessage | undefined,
-  snapshot: TurnSnapshot,
-  cacheDiagnostics?: ChatCacheDiagnosticsPayload,
-): Partial<AgentChatMessage> {
-  return {
-    content: snapshot.text || message?.content || '',
-    reasoning: snapshot.reasoning || undefined,
-    dataParts: cacheDiagnostics
-      ? [
-          { type: 'data-cache-diagnostics', data: cacheDiagnostics } as ChatDataPart,
-          ...snapshot.dataParts,
-        ]
-      : snapshot.dataParts,
-    usage: snapshot.usage,
-    cacheDiagnostics,
-    status: snapshot.status,
-  }
-}
 
 // ---- Cache snapshot -------------------------------------------------------------
 

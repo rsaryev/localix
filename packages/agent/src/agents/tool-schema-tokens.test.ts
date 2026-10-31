@@ -3,11 +3,7 @@ import { z } from 'zod'
 import { textEncoderByteLength } from '../utils/hash'
 import { prepareModelToolSchema } from '../utils/model-tool-schema'
 import { zodToJsonSchema } from '../utils/zod-schema'
-import {
-  describeFixedContext,
-  estimateFixedOverheadTokens,
-  estimateToolSchemaTokens,
-} from './tool-schema-tokens'
+import { describeFixedContext, estimateToolSchemaTokens } from './tool-schema-tokens'
 
 describe('estimateToolSchemaTokens', () => {
   test('charges a flat schema allowance per tool on top of name + description', () => {
@@ -46,29 +42,13 @@ describe('estimateToolSchemaTokens', () => {
   })
 })
 
-describe('estimateFixedOverheadTokens', () => {
-  test('adds the system prompt at ~4 UTF-8 bytes per token', () => {
-    expect(estimateFixedOverheadTokens('x'.repeat(400), [])).toBe(100)
-    expect(estimateFixedOverheadTokens(undefined, [{ name: 'ab', description: 'cd' }])).toBe(65)
-  })
-
-  test('prices non-ASCII system text by UTF-8 bytes', () => {
-    expect(estimateFixedOverheadTokens('你好🙂', [])).toBe(3)
-  })
-
-  /**
-   * The loop's max-tokens clamp and the runner's VBC budget both subtract this floor. If
-   * they ever computed it differently, one of them would be lying about what a request costs.
-   */
-  test('is the sum of its two halves', () => {
-    const tools = [{ name: 'Read', description: 'r'.repeat(600) }]
-    expect(estimateFixedOverheadTokens('s'.repeat(1000), tools)).toBe(
-      250 + estimateToolSchemaTokens(tools),
-    )
-  })
-})
-
 describe('describeFixedContext', () => {
+  test('prices the system prompt at ~4 UTF-8 bytes per token', () => {
+    expect(describeFixedContext('x'.repeat(400), []).tokens).toBe(100)
+    expect(describeFixedContext('你好🙂', []).promptTokens).toBe(3)
+    expect(describeFixedContext(undefined, [{ name: 'ab', description: 'cd' }]).tokens).toBe(65)
+  })
+
   test('splits the floor into prompt and tools and names the heaviest schemas first', () => {
     const big = {
       name: 'big',

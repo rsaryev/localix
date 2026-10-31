@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import { toModelMessages, isWireCarriableImage } from './chat'
-import { withToolImages } from './model-attachments'
+import { toModelMessages } from './chat'
+import { isWireCarriableImage, withToolImages } from './model-attachments'
 
 test('MIME eligibility remains case insensitive while wire attachment parts keep exact matching', () => {
   expect(isWireCarriableImage('IMAGE/PNG')).toBe(true)

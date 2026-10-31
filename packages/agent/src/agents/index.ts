@@ -1,8 +1,4 @@
-export {
-  describeFixedContext,
-  estimateToolSchemaTokens,
-  estimateFixedOverheadTokens,
-} from './tool-schema-tokens'
+export { describeFixedContext, estimateToolSchemaTokens } from './tool-schema-tokens'
 export type { FixedContextDescription } from './tool-schema-tokens'
 export { classifyAgentError, coerceToolResult, extractProviderStatus } from './error-classification'
 export type { AgentErrorInfo } from './error-classification'
@@ -23,10 +19,7 @@ export * from './human-in-loop'
 export * from './toolset'
 export {
   applyItemAppend,
-  applyItemEvent,
-  applyTurnEvent,
   diffItemsForAppends,
-  emptyTurn,
   isToolBackedItem,
   isNarrativeItem,
   isTextItem,
@@ -46,10 +39,8 @@ export type { AgentSource } from './sources'
 export type {
   AgentItem,
   AgentItemAppend,
-  AgentItemEvent,
   AgentItemStatus,
   AgentItemType,
-  AgentTurnEvent,
   CommandItem,
   CommandJobStatus,
   FileChange,
@@ -63,9 +54,6 @@ export type {
   ToolBackedItem,
   ToolCallItem,
   ToolImageAttachment,
-  TurnState,
-  TurnStatus,
-  TurnUsage,
 } from './items'
 export { mcpInputSchema } from './mcp-schema'
 export type { McpJsonSchema } from './mcp-schema'
@@ -110,5 +98,5 @@ export { SEALED_PLACEHOLDER } from './tool-definition'
 export type { CallClass, CallEffect } from './call-class'
 export { NON_MUTATING_EFFECTS, classifyByFlag, classifyToolCall } from './call-class'
 // The one place the wire's image-type boundary is defined; the spill decision needs it.
-export { isWireCarriableImage } from './chat'
+export { isWireCarriableImage } from './model-attachments'
 export * from './definition'

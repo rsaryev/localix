@@ -1,15 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import {
   toModelMessages,
-  applyTurnSnapshot,
   createBrowserCacheSnapshot,
   markForkCacheAnchor,
   markHistoryCacheAnchor,
   type AgentChatMessage,
 } from './chat'
 import type { ChatMessage } from '../chat'
-import type { TurnSnapshot } from './chat'
-import type { ChatCacheDiagnosticsPayload, ChatDataPart } from '../chat-stream-types'
 import { normalizeToolCallHistory } from './history-normalizer'
 
 describe('createBrowserCacheSnapshot', () => {
@@ -177,56 +174,6 @@ describe('createBrowserCacheSnapshot', () => {
     expect(createBrowserCacheSnapshot(params).systemPromptHash).toBe(
       createBrowserCacheSnapshot(params).systemPromptHash,
     )
-  })
-})
-
-describe('applyTurnSnapshot', () => {
-  const snap = (over: Partial<TurnSnapshot> = {}): TurnSnapshot =>
-    ({ text: '', reasoning: '', tools: [], dataParts: [], ...over }) as TurnSnapshot
-
-  test('takes content/reasoning/usage/status from the snapshot', () => {
-    const out = applyTurnSnapshot(
-      undefined,
-      snap({
-        text: 'hi',
-        reasoning: 'because',
-        status: { scope: 'agent', phase: 'running', message: 'x' } as TurnSnapshot['status'],
-        usage: { totalTokens: 5 } as TurnSnapshot['usage'],
-      }),
-    )
-    expect(out.content).toBe('hi')
-    expect(out.reasoning).toBe('because')
-    expect(out.usage).toEqual({ totalTokens: 5 } as TurnSnapshot['usage'])
-    expect(out.status).toEqual({
-      scope: 'agent',
-      phase: 'running',
-      message: 'x',
-    } as TurnSnapshot['status'])
-    expect(out.cacheDiagnostics).toBeUndefined()
-  })
-
-  test('empty snapshot text falls back to the prior message content, then to ""', () => {
-    const prior = { content: 'prev' } as AgentChatMessage
-    expect(applyTurnSnapshot(prior, snap({ text: '' })).content).toBe('prev')
-    expect(applyTurnSnapshot(undefined, snap({ text: '' })).content).toBe('')
-  })
-
-  test('empty reasoning becomes undefined (not "")', () => {
-    expect(applyTurnSnapshot(undefined, snap({ reasoning: '' })).reasoning).toBeUndefined()
-  })
-
-  test('without cacheDiagnostics, dataParts pass through unchanged', () => {
-    const parts = [{ type: 'data-status' } as unknown as ChatDataPart]
-    expect(applyTurnSnapshot(undefined, snap({ dataParts: parts })).dataParts).toBe(parts)
-  })
-
-  test('with cacheDiagnostics, a diagnostics part is prepended and the payload is attached', () => {
-    const parts = [{ type: 'data-status' } as unknown as ChatDataPart]
-    const diag = { snapshot: { modelId: 'm' } } as unknown as ChatCacheDiagnosticsPayload
-    const out = applyTurnSnapshot(undefined, snap({ dataParts: parts }), diag)
-    expect(out.dataParts).toHaveLength(2)
-    expect(out.dataParts?.[1]).toBe(parts[0]) // original parts kept after the prepended diagnostics part
-    expect(out.cacheDiagnostics).toBe(diag)
   })
 })
 
