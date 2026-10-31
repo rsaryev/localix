@@ -145,6 +145,24 @@ describe('browser classify judges what will run', () => {
     }
   })
 
+  test('observing-only steps never lower the class of the action that carries them', () => {
+    const looking = [{ action: 'wait', text: 'x' }]
+    for (const call of [
+      { action: 'evaluate', expression: 'document.forms[0].submit()', steps: looking },
+      { action: 'reload', steps: [{ action: 'snapshot' }] },
+      { action: 'back', steps: looking },
+      { action: 'goal', goal: 'buy', steps: [{ action: 'console' }] },
+      { expression: 'document.forms[0].submit()', steps: looking },
+      { action: 'history', history_operation: 'clear', steps: looking },
+    ])
+      expect(classify(call)).not.toEqual({ effect: 'view' })
+    expect(classify({ action: 'history', history_operation: 'clear', steps: looking })).toEqual({
+      effect: 'host',
+      irreversible: true,
+    })
+    expect(classify({ action: 'snapshot', steps: looking })).toEqual({ effect: 'view' })
+  })
+
   test('steps on a history call are judged as the batch, not as the history operation', () => {
     const call = { action: 'history', history_operation: 'list', steps: [{ action: 'click' }] }
     expect(classify(call)).toEqual({ effect: 'external' })

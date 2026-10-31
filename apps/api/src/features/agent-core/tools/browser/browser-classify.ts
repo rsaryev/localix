@@ -26,11 +26,15 @@ const PRUNE_HISTORY: CallClass = { effect: 'host', irreversible: true }
 
 export function classifyBrowserCall(input: unknown): CallClass {
   const call = (input ?? {}) as BrowserInput
-  if (Array.isArray(call.steps) && call.steps.length > 0)
-    // A batch of nothing but looking (wait, snapshot, console) changes nothing; one step that
-    // acts, or one this file does not know, makes the whole batch a drive.
-    return call.steps.every((step) => OBSERVING_STEPS.has(step?.action)) ? VIEW : DRIVE
   const action = inferAction(call)
+  if (Array.isArray(call.steps) && call.steps.length > 0) {
+    // One step that acts, or one this file does not know, makes the whole batch a drive.
+    if (!call.steps.every((step) => OBSERVING_STEPS.has(step?.action))) return DRIVE
+    // A batch of nothing but looking changes nothing, but it is only the call's whole effect
+    // when the call IS the batch. On any other action the prelude does not lower that
+    // action's own class: `evaluate`, `reload` and `goal` keep theirs.
+    if (action === 'steps') return VIEW
+  }
   if (action === 'history') {
     const operation = call.history_operation
     if (operation === 'list' || operation === 'search') return READ
