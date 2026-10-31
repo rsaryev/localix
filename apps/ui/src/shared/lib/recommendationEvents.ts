@@ -1,5 +1,6 @@
 import type { Listing, RecommendEvent, RecommendReason } from '@localixai/store'
 import type { StoreClient } from '@/shared/api/store-client'
+import { recommendationKey } from './recommendationsSeen'
 
 /**
  * What a surface tells the Store about the recommendations it shows (`docs/internals/store.md`,
@@ -14,7 +15,6 @@ type Reporter = Pick<StoreClient, 'recordRecommendationEvents'>
 /** Per client, what was reported shown today: `day|surface|kind:id`. */
 const reported = new WeakMap<Reporter, Set<string>>()
 const today = () => new Date().toISOString().slice(0, 10)
-const keyOf = (ref: Listing['ref']) => `${ref.kind}:${ref.id}`
 
 const eventOf = (
   event: RecommendEvent['event'],
@@ -22,7 +22,7 @@ const eventOf = (
   slot: number,
   reasons: Readonly<Record<string, RecommendReason>>,
 ): RecommendEvent => {
-  const source = reasons[keyOf(listing.ref)]?.source
+  const source = reasons[recommendationKey(listing.ref)]?.source
   return { ref: listing.ref, event, slot, ...(source ? { source } : {}) }
 }
 
@@ -36,7 +36,7 @@ export function reportRecommendationsShown(
   const seen = reported.get(client) ?? new Set<string>()
   reported.set(client, seen)
   const fresh = listings.flatMap((listing, slot) => {
-    const key = `${today()}|${surface}|${keyOf(listing.ref)}`
+    const key = `${today()}|${surface}|${recommendationKey(listing.ref)}`
     if (seen.has(key)) return []
     seen.add(key)
     return [eventOf('shown', listing, slot, reasons)]
