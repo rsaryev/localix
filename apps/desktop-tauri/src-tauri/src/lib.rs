@@ -209,7 +209,6 @@ pub fn run_mini_app() -> bool {
     app_runner::run_if_app()
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 /// Auto-updater: checks the `latest.json` endpoint and verifies the download's minisign signature
 /// before installing. Registered only in a release build (`build.rs`, `localix_updater`), because
 /// its endpoint and public key come from the release overlay (`scripts/build-release-config.mjs`);
