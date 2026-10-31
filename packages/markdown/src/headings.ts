@@ -12,7 +12,7 @@ export interface MarkdownHeading {
   id: string
 }
 
-export function slugifyHeading(text: string): string {
+function slugifyHeading(text: string): string {
   return text
     .toLowerCase()
     .replace(/[`*_~]/g, '')

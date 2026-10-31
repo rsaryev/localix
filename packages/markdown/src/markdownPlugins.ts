@@ -12,7 +12,6 @@ import type { Element as HastElement, Root as HastRoot } from 'hast'
 // blocks (callouts, quote sources, figures) are the same kind of grammar: a callout that only
 // appeared after the run would re-flow the whole message at the moment it settles.
 const remarkPluginsBase = [remarkGfm, remarkAnswerBlocks]
-export { remarkGfm }
 
 // Math is expensive AND rare: the remark-math + KaTeX pipeline (~280KB JS + CSS)
 // is lazy-loaded the first time a message actually contains a `$` delimiter, so
@@ -111,7 +110,7 @@ const sanitizeSchema = {
  * Key every GFM task box by WHERE its item sits in the source — what `MarkdownTaskList` stores a
  * tick under. The box itself is generated with no source position; its list item has one.
  */
-export function rehypeTaskKeys() {
+function rehypeTaskKeys() {
   const isBox = (node: HastElement['children'][number]): node is HastElement =>
     node.type === 'element' && node.tagName === 'input' && node.properties?.type === 'checkbox'
   return (tree: HastRoot) => {
