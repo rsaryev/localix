@@ -1,4 +1,4 @@
-import type { Kysely, Transaction } from 'kysely'
+import type { Kysely } from 'kysely'
 
 import { retrySqliteBusy, type AppDatabase } from '../../../db'
 import { recordSessionChanges } from '../session-changes'
@@ -10,25 +10,6 @@ export interface SessionAgentRef {
   agentId: string
   name: string
   projectId: string
-}
-
-/**
- * Say these chats changed, in the writer's transaction, grouped by owner. Route repair and agent
- * routes ignore `chat.session`, so their own notices never wake them again.
- */
-async function announceSessions(
-  trx: Transaction<AppDatabase>,
-  sessionIds: readonly string[],
-): Promise<void> {
-  if (sessionIds.length === 0) return
-  const rows = await trx
-    .selectFrom('agent_sessions')
-    .select(['id', 'user_id'])
-    .where('id', 'in', [...sessionIds])
-    .execute()
-  const byUser = new Map<string, string[]>()
-  for (const row of rows) byUser.set(row.user_id, [...(byUser.get(row.user_id) ?? []), row.id])
-  for (const [userId, ids] of byUser) await recordSessionChanges(trx, userId, ids)
 }
 
 export function createAgentNamesRepository(db: Kysely<AppDatabase>) {
@@ -58,11 +39,15 @@ export function createAgentNamesRepository(db: Kysely<AppDatabase>) {
             .set({ agent_name: name })
             .where('agent_id', '=', agentId)
             .where('agent_name', '!=', name)
-            .returning('id')
+            .returning(['id', 'user_id'])
             .execute()
-          const sessions = rows.map((row) => row.id)
-          await announceSessions(trx, sessions)
-          return sessions
+          // Said in this transaction, grouped by owner. Route repair and agent routes ignore
+          // `chat.session`, so their own notices never wake them again.
+          const byUser = new Map<string, string[]>()
+          for (const row of rows)
+            byUser.set(row.user_id, [...(byUser.get(row.user_id) ?? []), row.id])
+          for (const [userId, ids] of byUser) await recordSessionChanges(trx, userId, ids)
+          return rows.map((row) => row.id)
         }),
       )
     },
