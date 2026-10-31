@@ -18,9 +18,6 @@ const MAX_CLIENT_BUNDLE = 4 * 1024 * 1024
 /** Where the bundle leaves the module's exports for the frame (`clientFrameRuntime.ts`). */
 const CLIENT_EXPORTS = "Symbol.for('localix.mods.client')"
 
-/** Strictly inside the plugin: the plugin's own folder is no module. */
-const inside = (root: string, path: string) => isPathBelow(root, path)
-
 /** The surface module at `module` (its path under `root`) as one script for the frame. */
 export async function bundleClientModule(root: string, module: string): Promise<string> {
   const entry = join(root, ...module.split('/'))
@@ -48,7 +45,8 @@ export async function bundleClientModule(root: string, module: string): Promise<
         loader: 'js',
       }))
       builder.onLoad({ filter: /.*/, namespace: 'file' }, (args) => {
-        if (!inside(realRoot, realpathSync(args.path)))
+        // Strictly inside the plugin: the plugin's own folder is no module.
+        if (!isPathBelow(realRoot, realpathSync(args.path)))
           throw new ModBuildError(`${args.path}: a surface module reaches outside its plugin`)
         return undefined
       })

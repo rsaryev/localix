@@ -203,12 +203,10 @@ const JSX_CONFIG = {
 /** A `Client` whose module cannot be read off the source: the hooks module does not load. */
 export class ClientModuleError extends Error {}
 
-/** Strictly inside the plugin: the plugin's own folder is no module. */
-const inside = (root: string, path: string) => isPathBelow(root, path)
-
 function isFileInside(root: string, path: string): boolean {
   try {
-    return statSync(path).isFile() && inside(realpathSync(root), realpathSync(path))
+    // Strictly inside the plugin: the plugin's own folder is no module.
+    return statSync(path).isFile() && isPathBelow(realpathSync(root), realpathSync(path))
   } catch {
     return false
   }
@@ -251,7 +249,7 @@ export function readClientModules(input: {
     if (!/^\.\.?\//.test(literal) || !EXTENSIONS.some((ext) => literal.endsWith(ext)))
       throw refuse(literal, `${literal} is not a ./ path to a .tsx, .jsx, .ts, .js or .mjs file`)
     const path = resolve(dirname(file), literal)
-    if (!inside(root, path) || !isFileInside(root, path))
+    if (!isPathBelow(root, path) || !isFileInside(root, path))
       throw refuse(literal, `${literal} names no file inside the plugin`)
     const module = relative(root, path).split(sep).join('/')
     input.found?.add(module)
