@@ -16,6 +16,11 @@ import { setupTerminalInteractions, type TerminalConnectionInput } from './termi
 import { observeHostResize, useTerminalPaneSync } from './useTerminalPaneSync'
 import { closeOwnedPtyIfGone, openTerminalStream, type TerminalStreamLink } from './terminalStream'
 
+/** After a connect, output this soon is the scrollback replay, not live activity. */
+const REPLAY_SETTLE_MS = 500
+/** An attachment this old counts as stable and earns a fresh reconnect budget. */
+const STABLE_ATTACH_MS = 10_000
+
 /**
  * The xterm instance and its server-owned PTY stream: builds the terminal into the host, attaches
  * the WebSocket, reconnects with bounded backoff, tracks hidden-tab attention and closes an owned
@@ -214,7 +219,7 @@ export function useTerminalConnection({
           activitySettledRef.current = false
           setTimeout(() => {
             if (!disposed) activitySettledRef.current = true
-          }, 500)
+          }, REPLAY_SETTLE_MS)
           // A genuinely stable attachment earns a fresh retry budget. Resetting on
           // every open would allow a tight open/close flap to retry forever.
           stableTimer = setTimeout(() => {
@@ -222,7 +227,7 @@ export function useTerminalConnection({
               reconnectAttemptsRef.current = 0
               terminalIncidentRef.current?.recover({ sourceVisible: activeRef.current })
             }
-          }, 10_000)
+          }, STABLE_ATTACH_MS)
         },
         onDrop: handleDrop,
       })
