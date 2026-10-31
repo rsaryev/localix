@@ -594,12 +594,6 @@ pub fn run() {
                     show_main_window(app);
                 }
                 #[cfg(target_os = "macos")]
-                RunEvent::Opened { urls } if crate::instance::handoff::is_secondary(app) => {
-                    for url in urls {
-                        crate::instance::handoff::collect(app, url.to_string());
-                    }
-                }
-                #[cfg(target_os = "macos")]
                 RunEvent::Opened { urls } => {
                     show_main_window(app);
                     for url in urls {

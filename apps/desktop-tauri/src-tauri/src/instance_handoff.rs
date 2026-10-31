@@ -46,12 +46,12 @@ impl Instance {
     }
 }
 
-pub(crate) fn is_secondary(app: &AppHandle) -> bool {
+fn is_secondary(app: &AppHandle) -> bool {
     matches!(app.state::<Instance>().role, Role::Secondary { .. })
 }
 
 /// Keep a URL a second launch received, to forward with the rest.
-pub(crate) fn collect(app: &AppHandle, url: String) {
+fn collect(app: &AppHandle, url: String) {
     app.state::<Instance>().collected.lock().unwrap().push(url);
 }
 
