@@ -1,4 +1,4 @@
-const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
+import { LOOPBACK_HOSTS } from './browserUrl'
 
 /**
  * How an address reads while nobody is editing it: host and path with percent-escapes decoded,

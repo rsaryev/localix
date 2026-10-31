@@ -3,11 +3,13 @@ import { isDesktop } from '@localixai/kit/environment'
 /** The address of the browser's own history list, a tab with no page behind it. */
 export const BROWSER_HISTORY_URL = 'browser://history'
 
+/** The hostnames of this machine, as `URL.hostname` spells them. */
+export const LOOPBACK_HOSTS: ReadonlySet<string> = new Set(['localhost', '127.0.0.1', '[::1]'])
+
 /** A loopback address: a page served from this machine, usually a dev server. */
 export function isLocalBrowserUrl(value: string): boolean {
   try {
-    const host = new URL(value).hostname
-    return host === 'localhost' || host === '127.0.0.1' || host === '[::1]'
+    return LOOPBACK_HOSTS.has(new URL(value).hostname)
   } catch {
     return false
   }
