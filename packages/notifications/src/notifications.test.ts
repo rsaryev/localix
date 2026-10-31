@@ -21,7 +21,6 @@ function context(over: Partial<Parameters<typeof notificationChannels>[1]> = {})
   return {
     now: 1_000,
     focused: false as boolean | 'unknown',
-    sourceVisible: false,
     quiet: false,
     ...over,
   }
@@ -534,7 +533,7 @@ describe('application notification envelope', () => {
     expect([
       ...notificationChannels(
         envelope,
-        { now: envelope.occurredAt, focused: false, sourceVisible: false, quiet: false },
+        { now: envelope.occurredAt, focused: false, quiet: false },
         channels('history', 'toast', 'native', 'terminal'),
       ),
     ]).toEqual(['history', 'toast', 'native', 'terminal'])

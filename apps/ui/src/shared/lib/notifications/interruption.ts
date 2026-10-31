@@ -85,7 +85,6 @@ function interruptFor(entry: NotificationEntry, deps: InterruptionDeps = {}): vo
   const context: NotificationContext = {
     now: Date.now(),
     focused,
-    sourceVisible,
     quiet: false,
     condition: preferences.condition,
   }

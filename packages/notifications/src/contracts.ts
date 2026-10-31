@@ -81,7 +81,7 @@ export type NotificationCategory = 'human-input' | 'agent' | 'terminal' | 'syste
 /** Domain payload: no React callback, Tauri command, terminal escape, or Warp type leaks in. */
 export interface NotificationEvent {
   topic: NotificationTopic
-  /** Absent on events built before categories existed; policy then falls back to the topic. */
+  /** Absent on events built before categories existed; the policy then reads the severity alone. */
   category?: NotificationCategory
   severity: NotificationSeverity
   title: string
@@ -118,8 +118,6 @@ export interface NotificationContext {
   now: number
   /** true/false when a surface knows; unknown delegates focus policy to the transport. */
   focused: boolean | 'unknown'
-  /** Whether the user is already looking at this event's source session. */
-  sourceVisible: boolean
   /** Quiet mode suppresses interruptive channels, never durable history. */
   quiet: boolean
   /** User interruption preference; absent preserves the conservative default. */
