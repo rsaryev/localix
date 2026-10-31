@@ -25,14 +25,25 @@ export function ChipRow({ className, children }: { className?: string; children:
     }
     measure()
     row.addEventListener('scroll', measure, { passive: true })
-    const observer = new ResizeObserver(measure)
-    observer.observe(row)
-    for (const chip of row.children) observer.observe(chip)
+    const sizes = new ResizeObserver(measure)
+    sizes.observe(row)
+    for (const chip of row.children) sizes.observe(chip)
+    // Chips come and go as the composer renders; each is watched for size while it is here,
+    // rather than the whole row being observed again on every render.
+    const chips = new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) if (node instanceof Element) sizes.observe(node)
+        for (const node of record.removedNodes) if (node instanceof Element) sizes.unobserve(node)
+      }
+      measure()
+    })
+    chips.observe(row, { childList: true })
     return () => {
       row.removeEventListener('scroll', measure)
-      observer.disconnect()
+      sizes.disconnect()
+      chips.disconnect()
     }
-  }, [ref, children])
+  }, [ref])
   const mask =
     edges.start || edges.end
       ? `linear-gradient(to right, ${edges.start ? 'transparent' : 'black'}, black ${FADE}, black calc(100% - ${FADE}), ${edges.end ? 'transparent' : 'black'})`
