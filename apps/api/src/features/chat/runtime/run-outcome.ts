@@ -41,6 +41,26 @@ export function failedRun(
   }
 }
 
+/** A queued turn that will never run: removed, cancelled, or with nobody to answer it. */
+export const dismissedRun = (
+  message: string,
+): Extract<RunExecutionOutcome, { status: 'failed' }> => ({
+  status: 'failed',
+  kind: 'dismissed',
+  message,
+  retryable: false,
+  rateLimited: false,
+})
+
+/** A delivery that threw where no run could classify the error. */
+export const fatalRun = (error: unknown): Extract<RunExecutionOutcome, { status: 'failed' }> => ({
+  status: 'failed',
+  kind: 'fatal',
+  message: error instanceof Error ? error.message : String(error),
+  retryable: false,
+  rateLimited: false,
+})
+
 /**
  * One logical completion shared by every continuation segment.
  *

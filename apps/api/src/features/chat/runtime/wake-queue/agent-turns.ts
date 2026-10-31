@@ -4,6 +4,7 @@ import type { AgentTurnSource } from '../conversation-strategy'
 import { ticketOf, type PendingTurn } from './entry'
 import type { createContinuationOperations } from './continuations'
 import { leaseHolder, type createLeaseOperations, type createWakeQueueSharedState } from './leases'
+import { dismissedRun } from '../run-outcome'
 
 export interface AgentTurnFilter {
   conversationId?: string
@@ -48,13 +49,10 @@ export function createAgentTurnOperations(deps: AgentTurnOperationsDeps) {
       if (leaseHolder(deps.shared, sessionId, item.id) === 'drain') continue
       if (deps.store && !(await deps.store.remove(userId, sessionId, item.id))) continue
       queue.remove(item.id)
-      deps.continuations.settleCompletion([item.id], {
-        status: 'failed',
-        kind: 'dismissed',
-        message: 'Pending conversation turn was cancelled.',
-        retryable: false,
-        rateLimited: false,
-      })
+      deps.continuations.settleCompletion(
+        [item.id],
+        dismissedRun('Pending conversation turn was cancelled.'),
+      )
     }
     deps.publishQueue(userId, sessionId)
   }

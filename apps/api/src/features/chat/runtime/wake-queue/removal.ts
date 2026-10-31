@@ -15,6 +15,7 @@ import type { ContinuationOperations } from './continuations'
 import type { PendingTurn } from './entry'
 import { renderBatch } from './kinds'
 import type { LeaseOperations, WakeQueueSharedState } from './leases'
+import { dismissedRun } from '../run-outcome'
 
 interface RemovalDependencies {
   store?: WakeQueueStore<PendingTurn>
@@ -53,7 +54,7 @@ export const createRemovalOperations = (
     for (const entry of band) q?.remove(entry.id)
     continuations.settleCompletion(
       band.map((entry) => entry.id),
-      { status: 'failed', kind: 'dismissed', message, retryable: false, rateLimited: false },
+      dismissedRun(message),
     )
   }
 

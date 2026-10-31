@@ -16,6 +16,7 @@ import type { WakeQueueContext } from './wake-queue-contracts'
 import { createAgentTurnOperations } from './wake-queue/agent-turns'
 import { createSelfWakeBudget } from './wake-queue/self-wake-budget'
 import { createWake } from './wake-queue/wake'
+import { dismissedRun } from './run-outcome'
 
 export type { WakeQueueContext } from './wake-queue-contracts'
 
@@ -184,13 +185,10 @@ export function createWakeQueue(ctx: WakeQueueContext) {
   const forget = async (userId: string, sessionId: string): Promise<void> => {
     await leases.ready
     if (store) await store.forgetSession(userId, sessionId)
-    continuations.settleSessionCompletions(sessionId, {
-      status: 'failed',
-      kind: 'dismissed',
-      message: 'Session was removed before its queued run executed.',
-      retryable: false,
-      rateLimited: false,
-    })
+    continuations.settleSessionCompletions(
+      sessionId,
+      dismissedRun('Session was removed before its queued run executed.'),
+    )
     queues.delete(sessionId)
     clearHold(sessionId)
     selfWakeBudget.forget(sessionId)

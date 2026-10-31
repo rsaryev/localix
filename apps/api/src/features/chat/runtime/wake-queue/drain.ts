@@ -1,6 +1,6 @@
 import type { QueueItem } from '../../../../lib/priority-queue'
 import { dispatchAgentTicket } from './dispatch-agent'
-import type { RunExecutionOutcome } from '../run-outcome'
+import { dismissedRun, fatalRun, type RunExecutionOutcome } from '../run-outcome'
 import type { DrainDependencies, DrainOptions } from './drain-contracts'
 import { deliverBand } from './drain-delivery'
 import { createDrainScheduler } from './drain-scheduler'
@@ -9,16 +9,6 @@ import { holdLeases, type WakeQueueSharedState } from './leases'
 import { selectDrainBand } from './selection'
 
 export type { DrainOptions } from './drain-contracts'
-
-function fatalDrainOutcome(error: unknown): RunExecutionOutcome {
-  return {
-    status: 'failed',
-    kind: 'fatal',
-    message: error instanceof Error ? error.message : String(error),
-    retryable: false,
-    rateLimited: false,
-  }
-}
 
 export function createDrainOperations(
   shared: WakeQueueSharedState,
@@ -120,13 +110,7 @@ export function createDrainOperations(
           if (!latestSession) {
             continuations.settleCompletion(
               q.list().map((queued) => queued.id),
-              {
-                status: 'failed',
-                kind: 'dismissed',
-                message: `Session ${sessionId} was removed before its queued run started.`,
-                retryable: false,
-                rateLimited: false,
-              },
+              dismissedRun(`Session ${sessionId} was removed before its queued run started.`),
             )
             leases.releaseDrainBand(sessionId, bandIds)
             shared.queues.delete(sessionId)
@@ -140,13 +124,10 @@ export function createDrainOperations(
             if (!(await leases.ack(next.userId, sessionId, bandIds)))
               throw new Error('Delivery lost its durable lease')
             retireAcknowledgedBand()
-            continuations.settleCompletion(bandIds, {
-              status: 'failed',
-              kind: 'dismissed',
-              message: 'The session was closed; nothing wakes it again.',
-              retryable: false,
-              rateLimited: false,
-            })
+            continuations.settleCompletion(
+              bandIds,
+              dismissedRun('The session was closed; nothing wakes it again.'),
+            )
             continue
           }
           const ticket = ticketOf(next)
@@ -172,7 +153,7 @@ export function createDrainOperations(
             } catch (error) {
               if (stillQueued()) throw error
               onError(error)
-              outcome = fatalDrainOutcome(error)
+              outcome = fatalRun(error)
             }
             continuations.settleCompletion(bandIds, outcome)
             continue
@@ -196,7 +177,7 @@ export function createDrainOperations(
             leases.releaseDrainBand(sessionId, bandIds)
             onError(error)
             leases.resetDrainRetry(sessionId)
-            continuations.settleCompletion(bandIds, fatalDrainOutcome(error))
+            continuations.settleCompletion(bandIds, fatalRun(error))
             continue
           }
           await leases.release(next.userId, sessionId, bandIds).catch(onError)
@@ -206,7 +187,7 @@ export function createDrainOperations(
           // retryable, so its completion must remain pending. Once the item has
           // left the queue there is no retry owner and the failure is terminal.
           if (!stillQueued()) {
-            continuations.settleCompletion(bandIds, fatalDrainOutcome(error))
+            continuations.settleCompletion(bandIds, fatalRun(error))
           }
           leases.scheduleDrainRetry(sessionId)
           return

@@ -2,7 +2,7 @@ import { agentAuthor } from '../../../../db/author'
 import type { SessionRecord } from '../../repository'
 import { emptyAssistantPayload, toPersistedMessage } from '../message-envelope'
 import { dispatchParams } from '../run-params'
-import type { RunCompletion, RunExecutionOutcome } from '../run-outcome'
+import { dismissedRun, type RunCompletion, type RunExecutionOutcome } from '../run-outcome'
 import type { WakeQueueContext } from '../wake-queue'
 import type { AgentTurnTicket } from '../agent-turn-ticket'
 import type { TurnStart } from '../wake-queue-store-contracts'
@@ -24,13 +24,7 @@ export async function dispatchAgentTicket(
   const agent = session.agent
   if (!agent) {
     await input.consume()
-    return {
-      status: 'failed',
-      kind: 'dismissed',
-      message: 'The session has no agent to answer this turn.',
-      retryable: false,
-      rateLimited: false,
-    }
+    return dismissedRun('The session has no agent to answer this turn.')
   }
   const history = await deps.repo.listMessages(userId, session.id)
   const prior = history.find((message) => message.id === ticket.assistantMessageId)

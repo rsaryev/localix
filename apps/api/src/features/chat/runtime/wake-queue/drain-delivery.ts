@@ -16,7 +16,12 @@ import { turnRecipient } from '../conversation-strategy'
 import { sessionExecutionContext } from '../execution-context'
 import { insertInternalTurn } from '../message-persistence'
 import { mergeIdentity } from '../run-params'
-import { createRunCompletion, type RunExecutionOutcome } from '../run-outcome'
+import {
+  dismissedRun,
+  fatalRun,
+  createRunCompletion,
+  type RunExecutionOutcome,
+} from '../run-outcome'
 import { queueDeliveryMessageIds } from '../wake-queue-repository'
 import type { DrainDependencies } from './drain-contracts'
 import { commandOf, type PendingTurn } from './entry'
@@ -32,14 +37,6 @@ export interface ClaimedBand {
   /** Is any of the band still queued (not yet acknowledged)? */
   stillQueued: () => boolean
 }
-
-const dismissed = (message: string): RunExecutionOutcome => ({
-  status: 'failed',
-  kind: 'dismissed',
-  message,
-  retryable: false,
-  rateLimited: false,
-})
 
 /** 'stop' ends this drain pass (the runtime is shutting down); 'next' selects the next band. */
 export async function deliverBand(
@@ -82,7 +79,7 @@ export async function deliverBand(
     retire()
     continuations.settleCompletion(
       bandIds,
-      dismissed('The session has no agent to answer this delivery.'),
+      dismissedRun('The session has no agent to answer this delivery.'),
     )
     return 'next'
   }
@@ -151,13 +148,7 @@ export async function deliverBand(
   } catch (error) {
     if (claimed.stillQueued()) throw error
     onError(error)
-    outcome = {
-      status: 'failed',
-      kind: 'fatal',
-      message: error instanceof Error ? error.message : String(error),
-      retryable: false,
-      rateLimited: false,
-    }
+    outcome = fatalRun(error)
   }
   if (outcome.status !== 'continued') completion.settle(outcome)
   continuations.settleCompletion(bandIds, outcome)
