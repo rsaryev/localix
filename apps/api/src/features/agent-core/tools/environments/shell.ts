@@ -105,7 +105,7 @@ function findBash(): string {
   // `envString` treats a BLANK var as unset, so `LOCALIX_SHELL=` falls through to
   // the next candidate instead of resolving to '' — the same rule every other
   // Localix var follows (lib/env.ts).
-  const override = envString('LOCALIX_SHELL') ?? envString('LOCALIX_BASH_PATH')
+  const override = envString('LOCALIX_SHELL')
   if (override && isFile(override)) return override
 
   if (process.platform !== 'win32') {

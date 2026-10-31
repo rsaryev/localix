@@ -119,17 +119,16 @@ that key, after `bun run pack`).
 
 ### Agent shell and MCP
 
-| Variable                | Default             | Effect                                                                                         |
-| ----------------------- | ------------------- | ---------------------------------------------------------------------------------------------- |
-| `LOCALIX_SHELL`         | detected            | Existing shell file; wins over the legacy override. Automatic Windows lookup skips WSL `bash`. |
-| `LOCALIX_BASH_PATH`     | detected            | Legacy Bash-path spelling.                                                                     |
-| `MAX_MCP_OUTPUT_TOKENS` | built-in text limit | Converts the positive token value to a character cap at four characters per token.             |
-| `MCP_TIMEOUT`           | `30000`             | MCP connection and `tools/list` timeout in milliseconds.                                       |
-| `MCP_TOOL_TIMEOUT`      | `30000`             | Per-call timeout after a server-specific `timeout` value.                                      |
+| Variable                | Default             | Effect                                                                             |
+| ----------------------- | ------------------- | ---------------------------------------------------------------------------------- |
+| `LOCALIX_SHELL`         | detected            | Existing shell file. Automatic Windows lookup skips WSL `bash`.                    |
+| `MAX_MCP_OUTPUT_TOKENS` | built-in text limit | Converts the positive token value to a character cap at four characters per token. |
+| `MCP_TIMEOUT`           | `30000`             | MCP connection and `tools/list` timeout in milliseconds.                           |
+| `MCP_TOOL_TIMEOUT`      | `30000`             | Per-call timeout after a server-specific `timeout` value.                          |
 
 Blank shell overrides count as unset. A nonblank invalid `LOCALIX_SHELL` falls through to automatic
-shell discovery without trying `LOCALIX_BASH_PATH`. Overrides check file existence, not executable
-permissions or Bash identity. The selected shell is cached until API restart. The
+shell discovery. Overrides check file existence, not executable permissions or Bash identity. The
+selected shell is cached until API restart. The
 [execution-environment guide](../features/execution-environments.md) documents platform fallbacks.
 
 A tool's `anthropic/maxResultSizeChars` annotation takes precedence over `MAX_MCP_OUTPUT_TOKENS`,

@@ -67,6 +67,19 @@ describe('resolveShellConfig', () => {
     expect(resolveShellConfig().shell).toBe(candidate)
   })
 
+  test('no longer reads the retired LOCALIX_BASH_PATH spelling', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'bash-path-'))
+    try {
+      const file = join(dir, 'my-bash')
+      writeFileSync(file, '#!/bin/sh\n')
+      resetShellConfigCache()
+      process.env.LOCALIX_BASH_PATH = file
+      expect(resolveShellConfig().shell).not.toBe(file)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   test('ignores LOCALIX_SHELL when the path does not exist', () => {
     resetShellConfigCache()
     process.env.LOCALIX_SHELL = '/nonexistent/path/to/bash'

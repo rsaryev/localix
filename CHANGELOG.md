@@ -73,6 +73,8 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 - **Single `apiKey` on connection updates**: `PATCH /rpc/provider-connections/:id` no longer accepts
   an `apiKey` field. Add or replace a key through the connection's key routes; creating a connection
   still takes `apiKey`.
+- **`LOCALIX_BASH_PATH`**: the old spelling of `LOCALIX_SHELL` is no longer read. If you set it, use
+  `LOCALIX_SHELL` instead; otherwise Localix finds Bash on its own.
 
 ## v0.1.0-beta.22 — 2026-10-30
 
