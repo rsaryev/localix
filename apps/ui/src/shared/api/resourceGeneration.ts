@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useSyncExternalStore } from 'react'
 import { mutate } from 'swr'
 import type { RealtimeResource } from '@localixai/api/realtime-resources'
 import { resourceSync } from './resourceSync'
@@ -38,10 +38,12 @@ export function subscribeResourceGeneration(
 
 /** Re-render on each change of `resource`; returns the tab-wide generation. */
 export function useResourceGeneration(resource: RealtimeResource): number {
-  return useSyncExternalStore(
-    (listener) => subscribeResourceGeneration(resource, listener),
-    () => resourceGeneration(resource),
+  // Kept per resource, so a re-render does not unsubscribe and subscribe again.
+  const subscribe = useCallback(
+    (listener: () => void) => subscribeResourceGeneration(resource, listener),
+    [resource],
   )
+  return useSyncExternalStore(subscribe, () => resourceGeneration(resource))
 }
 
 const revalidated = new Set<string>()
