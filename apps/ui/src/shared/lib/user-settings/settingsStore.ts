@@ -7,7 +7,7 @@ import { registerQuitFlush } from '@/shared/lib/quitFlush'
 import { createSettingsProblemReport, rawErrorText } from './settingsProblemReport'
 import { subsettingDelta, toProfileWirePatch } from './settingsProfilePatch'
 import { applyProfileRead } from './settingsProfileRead'
-import { currentAgentSettings, loadLocalSettings, saveLocalSettings } from './userSettings'
+import { loadLocalSettings, saveLocalSettings } from './userSettings'
 import type { UserSettings } from './userSettings'
 
 /**
@@ -190,18 +190,14 @@ export const useSettingsStore = create<SettingsState & SettingsActions>((set, ge
 
     update: (patch) => {
       set((state) => {
-        const normalizedPatch =
-          patch.agentSettings === undefined
-            ? patch
-            : { ...patch, agentSettings: currentAgentSettings(patch.agentSettings) }
-        const next = { ...state.settings, ...normalizedPatch }
+        const next = { ...state.settings, ...patch }
         saveLocalSettings(next)
 
         const {
           uiSettings: nextUiSettings,
           agentSettings: nextAgentSettings,
           ...profilePatch
-        } = normalizedPatch
+        } = patch
         if (state._debounceTimer) clearTimeout(state._debounceTimer)
         const timer = setTimeout(() => {
           void flushPending().catch(() => undefined)

@@ -18,6 +18,27 @@ describe('createUserService', () => {
     expect(profile.agentSettings).toBeNull()
   })
 
+  test('serves a stored profile without a retired model-routing task key', async () => {
+    const { db, service } = await createTestService()
+    await db
+      .insertInto('user_profiles')
+      .values({
+        user_id: 'retired-route',
+        ui_settings: null,
+        agent_settings: JSON.stringify({
+          modelRouting: {
+            removedRoute: { modelId: 'retired-model' },
+            inlineCompletion: { enabled: true },
+          },
+        }),
+        updated_at: '2025-01-01T00:00:00.000Z',
+      })
+      .execute()
+
+    const profile = await service.getProfile('retired-route')
+    expect(profile.agentSettings).toEqual({ modelRouting: { inlineCompletion: { enabled: true } } })
+  })
+
   test('normalizes stored settings', async () => {
     const { db, service } = await createTestService()
     await db

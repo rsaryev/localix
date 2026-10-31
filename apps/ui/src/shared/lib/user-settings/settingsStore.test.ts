@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, jest, mock, test } from 'bun:t
 import { installTestLocalStorage, removeTestLocalStorage } from '@localixai/kit/testing/dom'
 
 import type { useSettingsStore as UseSettingsStore } from './settingsStore'
-import { toProfileWirePatch } from './settingsProfilePatch'
 
 /**
  * REGRESSION — a stale `localStorage` blob could overwrite NEWER server `agentSettings`.
@@ -97,60 +96,6 @@ afterEach(() => {
 })
 
 describe('a stale local blob never overwrites newer server agentSettings', () => {
-  test('retired task routes cannot block ordinary chat model selection', async () => {
-    const store = await freshStore({
-      agentSettings: {
-        modelRouting: {
-          removedRoute: { modelId: 'retired-model' },
-          session: { reasoningEffort: 'low' },
-        },
-      },
-    })
-    expect(store.getState().settings.agentSettings.modelRouting).toStrictEqual({
-      session: { reasoningEffort: 'low' },
-    })
-
-    getUserProfile.mockImplementation(async () => ({ agentSettings: null, name: null }))
-    await store.getState().loadFromBackend()
-    const base = store.getState().settings.agentSettings
-    store.getState().update({
-      agentSettings: {
-        ...base,
-        modelRouting: {
-          ...base.modelRouting,
-          session: { reasoningEffort: 'high' },
-        },
-      },
-    })
-    await store.getState().flush()
-
-    expect(updateUserProfile.mock.calls.at(-1)?.[0]?.agentSettingsPatch).toStrictEqual({
-      modelRouting: { session: { reasoningEffort: 'high' } },
-    })
-    expect(store.getState().settings.agentSettings.modelRouting).toStrictEqual({
-      session: { reasoningEffort: 'high' },
-    })
-
-    // A pending retry created before this release is sanitized at the wire boundary too.
-    const poisoned = {
-      modelRouting: {
-        removedRoute: { modelId: 'retired-model' },
-        session: { reasoningEffort: 'high' as const },
-      },
-    }
-    expect(toProfileWirePatch({}, {}, poisoned).agentSettingsPatch).toStrictEqual({
-      modelRouting: { session: { reasoningEffort: 'high' } },
-    })
-    const retiredOnly = { modelRouting: { removedRoute: { modelId: 'retired' } } }
-    expect(
-      toProfileWirePatch(
-        {},
-        {},
-        retiredOnly as unknown as Parameters<typeof toProfileWirePatch>[2],
-      ),
-    ).toStrictEqual({})
-  })
-
   test('THE BUG: an edit in flight when the server load lands must not flush the stale base', async () => {
     // Local cache is STALE: it knows `gitBlame`, and nothing else.
     const store = await freshStore({ agentSettings: { gitBlame: { enabled: true } } })

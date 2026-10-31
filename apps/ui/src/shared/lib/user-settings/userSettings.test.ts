@@ -16,10 +16,9 @@ beforeEach(() => {
 })
 afterEach(() => removeTestLocalStorage())
 
-test('retired personal data is removed from memory and cache without losing settings', () => {
-  const cacheKey = 'localix_user_settings_v2'
+test('retired personal data is dropped from the loaded settings without losing settings', () => {
   localStorage.setItem(
-    cacheKey,
+    'localix_user_settings_v2',
     JSON.stringify({
       displayName: 'Old name',
       primaryRole: 'developer',
@@ -33,5 +32,4 @@ test('retired personal data is removed from memory and cache without losing sett
   )
   const expected = { uiSettings: { fontSize: 'lg' as const }, agentSettings: { maxTurns: 25 } }
   expect(loadLocalSettings()).toEqual(expected)
-  expect(JSON.parse(localStorage.getItem(cacheKey)!)).toEqual(expected)
 })

@@ -1,5 +1,4 @@
 import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
-import { isModelRoutingTaskKey } from '@localixai/api/model-task-catalog'
 import type { UiSettings, AgentSettings } from '@/shared/api/contracts'
 
 /**
@@ -25,28 +24,10 @@ export const DEFAULT_SETTINGS: UserSettings = {
 
 const LS_KEY = 'localix_user_settings_v2'
 
-/** Project cached settings onto the current task catalog. Retired task routes have no owner. */
-export function currentAgentSettings(settings: AgentSettings): AgentSettings {
-  const routes = settings.modelRouting
-  if (!routes || typeof routes !== 'object' || Array.isArray(routes)) return settings
-  return {
-    ...settings,
-    modelRouting: Object.fromEntries(
-      Object.entries(routes).filter(([key]) => isModelRoutingTaskKey(key)),
-    ) as AgentSettings['modelRouting'],
-  }
-}
-
 export function loadLocalSettings(): UserSettings {
   const stored = loadJSON<Partial<UserSettings>>(LS_KEY)
   if (!stored) return { ...DEFAULT_SETTINGS }
-  const settings = {
-    uiSettings: stored.uiSettings ?? {},
-    agentSettings: currentAgentSettings(stored.agentSettings ?? {}),
-  }
-  // Remove retired personal fields from the cache as well as the in-memory settings.
-  saveLocalSettings(settings)
-  return settings
+  return { uiSettings: stored.uiSettings ?? {}, agentSettings: stored.agentSettings ?? {} }
 }
 
 export function saveLocalSettings(s: UserSettings): void {

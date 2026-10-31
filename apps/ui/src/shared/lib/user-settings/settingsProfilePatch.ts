@@ -2,7 +2,6 @@ import { stableStringify } from '@localixai/agent'
 import type { backendClient } from '@/shared/api/client'
 import type { UiSettingsPatch, AgentSettingsPatch } from '@/shared/api/contracts'
 import type { UserSettings } from './userSettings'
-import { currentAgentSettings } from './userSettings'
 
 /**
  * THE PATCH ALGEBRA — pure translation between the store's settings shape and the profile wire.
@@ -46,21 +45,7 @@ export function toProfileWirePatch(
 ): ProfileWirePatch {
   const apiPatch: ProfileWirePatch = {}
   if (Object.keys(uiSettingsPatch).length > 0) apiPatch.uiSettingsPatch = uiSettingsPatch
-  if (Object.keys(agentSettingsPatch).length > 0) {
-    let currentPatch = agentSettingsPatch
-    const routes = agentSettingsPatch.modelRouting
-    if (routes && typeof routes === 'object') {
-      const modelRouting = currentAgentSettings({ modelRouting: routes }).modelRouting ?? {}
-      currentPatch = { ...agentSettingsPatch, modelRouting }
-      // A patch containing only retired routes is a no-op, not an instruction to clear
-      // every current route on the server. An explicit empty object still clears them.
-      if (Object.keys(routes).length > 0 && Object.keys(modelRouting).length === 0) {
-        const { modelRouting: _retiredRoutes, ...rest } = currentPatch
-        currentPatch = rest
-      }
-    }
-    if (Object.keys(currentPatch).length > 0) apiPatch.agentSettingsPatch = currentPatch
-  }
+  if (Object.keys(agentSettingsPatch).length > 0) apiPatch.agentSettingsPatch = agentSettingsPatch
   return apiPatch
 }
 
