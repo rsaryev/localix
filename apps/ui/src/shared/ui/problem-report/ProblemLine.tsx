@@ -36,9 +36,7 @@ function ProblemAction({ children, onClick }: { children: ReactNode; onClick: ()
 }
 
 /** The primary step first — it is the one a person scans for — then the rest in declared order. */
-export function orderedRecoveries(
-  actions: readonly ProblemRecovery[] | undefined,
-): ProblemRecovery[] {
+function orderedRecoveries(actions: readonly ProblemRecovery[] | undefined): ProblemRecovery[] {
   return [...(actions ?? [])].sort((a, b) => Number(!!b.primary) - Number(!!a.primary))
 }
 

@@ -10,12 +10,15 @@ import {
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
-import { statusItemMenuEntries } from '@/shared/ui/status-item-menu'
-import { StatusItemBody } from '@localixai/kit/workbench-statusbar'
+import { statusItemMenuEntries } from './status-item-menu'
 import { chromeAction, chromeActionActive } from '@localixai/kit/chrome-action'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@localixai/kit/tooltip'
 import { useChordHint } from '@localixai/kit/keybindings'
-import { WorkbenchStatusButton, WorkbenchStatusItem } from '@localixai/kit/workbench-statusbar'
+import {
+  StatusItemBody,
+  WorkbenchStatusButton,
+  WorkbenchStatusItem,
+} from '@localixai/kit/workbench-statusbar'
 
 /**
  * The one control every contributed status item becomes.
