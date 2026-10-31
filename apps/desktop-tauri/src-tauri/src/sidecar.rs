@@ -534,14 +534,7 @@ fn spawn_runtime(
         }
         let will_retry = attempt < READY_ATTEMPTS;
         retrying.store(will_retry, Ordering::Release);
-        let stuck = take_for_pid(
-            &mut timeout_handle.state::<ApiSidecar>().child.lock().unwrap(),
-            child_pid,
-            |managed| managed.pid,
-        );
-        if let Some(managed) = stuck {
-            end_process(managed);
-        }
+        end_attempt(&timeout_handle.state::<ApiSidecar>(), child_pid);
         if !will_retry {
             report_error(&timeout_handle, timeout_message(&timeout_handle));
             return;
@@ -742,15 +735,21 @@ fn watch_health(app: tauri::AppHandle, pid: u32, port: u16) {
                  (about {}s): treating it as hung and restarting",
                 BEAT.as_secs() * u64::from(STRIKES)
             ));
-            let hung = take_for_pid(&mut sidecar.child.lock().unwrap(), pid, |managed| {
-                managed.pid
-            });
-            if let Some(managed) = hung {
-                end_process(managed);
-            }
+            end_attempt(&sidecar, pid);
             return;
         }
     });
+}
+
+/// End the attempt with this pid, if it is still the recorded one. The lock is released before
+/// the process is killed.
+fn end_attempt(sidecar: &ApiSidecar, pid: u32) {
+    let stale = take_for_pid(&mut sidecar.child.lock().unwrap(), pid, |managed| {
+        managed.pid
+    });
+    if let Some(managed) = stale {
+        end_process(managed);
+    }
 }
 
 fn should_report_termination(
