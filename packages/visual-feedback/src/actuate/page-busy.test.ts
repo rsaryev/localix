@@ -27,13 +27,29 @@ test('a request of the page in flight makes it busy', () => {
   expect(isPageBusy(fetching)).toBe(true)
 })
 
-test('a shown aria-busy region or progress bar makes it busy', () => {
-  document.body.innerHTML = '<ul aria-busy="true"></ul>'
-  laidOut(document.querySelector('ul')!)
+test('a busy page body or main region, or an indeterminate progress bar, makes it busy', () => {
+  document.body.innerHTML = '<main aria-busy="true"></main>'
+  laidOut(document.querySelector('main')!)
   expect(isPageBusy(idle)).toBe(true)
   document.body.innerHTML = '<div role="progressbar"></div>'
   laidOut(document.querySelector('div')!)
   expect(isPageBusy(idle)).toBe(true)
+  document.body.innerHTML = '<progress></progress>'
+  laidOut(document.querySelector('progress')!)
+  expect(isPageBusy(idle)).toBe(true)
+})
+
+test('a measured progress bar or a busy widget is page content, not a page still loading', () => {
+  // A media player, an upload row, a wizard step and a refreshing list say nothing about the page.
+  for (const html of [
+    '<progress value="30" max="100"></progress>',
+    '<div role="progressbar" aria-valuenow="2" aria-valuemax="5"></div>',
+    '<ul aria-busy="true"></ul>',
+  ]) {
+    document.body.innerHTML = html
+    laidOut(document.body.firstElementChild!)
+    expect(isPageBusy(idle)).toBe(false)
+  }
 })
 
 test('a progress bar nobody can see (hidden, zero size, scrolled away) is not busy', () => {
