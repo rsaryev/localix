@@ -13,6 +13,7 @@ import { backendClient } from '@/shared/api/client'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { WorkItemVisibilityProvider } from '@localixai/mini-app-sdk/ui/visibility'
 import { WorkItemFocusProvider } from '@localixai/kit/work-item-focus'
+import { lazyNamed } from '@/shared/lib/lazyNamed'
 
 const StatsPanel = lazy(() => import('./StatsPanel').then((m) => ({ default: m.StatsPanel })))
 const GlobalSearchTab = lazy(() =>
@@ -21,9 +22,7 @@ const GlobalSearchTab = lazy(() =>
 const TerminalPane = lazy(() =>
   import('@/features/terminal/ui/TerminalPane').then((m) => ({ default: m.TerminalPane })),
 )
-const DiffWorkItemBody = lazy(() =>
-  import('./DiffWorkItemBody').then((module) => ({ default: module.DiffWorkItemBody })),
-)
+const DiffWorkItemBody = lazyNamed(() => import('./DiffWorkItemBody'), 'DiffWorkItemBody')
 // The live change view pulls Monaco — keep it out of the boot chunk (the code editor's own tab
 // is `FileWorkItemBody`'s).
 const LiveFileChangeTab = lazy(() =>

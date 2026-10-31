@@ -1,11 +1,10 @@
-import { lazy, Suspense, type ComponentProps, type ReactNode } from 'react'
+import { Suspense, type ComponentProps, type ReactNode } from 'react'
 
 import { Drawer, DrawerBody, DrawerContent, DrawerTitle } from '@localixai/kit/drawer'
 import { LoadingHint } from '@localixai/kit/empty-hint'
+import { lazyNamed } from '@/shared/lib/lazyNamed'
 
-const ModelBrowser = lazy(() =>
-  import('./ModelBrowser').then((module) => ({ default: module.ModelBrowser })),
-)
+const ModelBrowser = lazyNamed(() => import('./ModelBrowser'), 'ModelBrowser')
 
 /**
  * The drawer the model picker lives in, wherever it is opened from.

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
 import { KeyRound } from 'lucide-react'
 
 import type { MiniAppUiHost, UiAnchorNode } from '@localixai/mini-app-sdk/ui'
@@ -6,10 +6,9 @@ import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import type { WorkItem } from '@/shared/lib/workItem'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { vaultKeyFromResourceUri } from './model/vaultResource'
+import { lazyNamed } from '@/shared/lib/lazyNamed'
 
-const VaultWorkspaceLazy = lazy(() =>
-  import('./ui/VaultWorkspace').then((module) => ({ default: module.VaultWorkspace })),
-)
+const VaultWorkspaceLazy = lazyNamed(() => import('./ui/VaultWorkspace'), 'VaultWorkspace')
 
 function VaultWorkspaceBody({ item }: { item: WorkItem }) {
   const selectedKey =

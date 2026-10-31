@@ -6,11 +6,11 @@ import {
   useWorkItemVisible,
 } from '@localixai/mini-app-sdk/ui/visibility'
 import { DataSourceTabs, type DataSource } from '@/shared/ui/DataSourceTabs'
+import { lazyNamed } from '@/shared/lib/lazyNamed'
 
-const LocalixStats = lazy(() =>
-  import('@/features/stats/ui/LocalixStatsPanel').then((module) => ({
-    default: module.LocalixStatsPanel,
-  })),
+const LocalixStats = lazyNamed(
+  () => import('@/features/stats/ui/LocalixStatsPanel'),
+  'LocalixStatsPanel',
 )
 const AgentStats = lazy(() => import('@/features/external-agents/ui/ExternalStatsPanel'))
 

@@ -7,7 +7,7 @@
  * it. The request comes from the server's attention roster rather than from a stream frame, so it
  * is still here after a reload; a payload this client cannot render falls back to "Open chat".
  */
-import { lazy, Suspense, useMemo, useRef, useState } from 'react'
+import { Suspense, useMemo, useRef, useState } from 'react'
 import { ArrowUpRight } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { DialogContent, DialogHeader, DialogTitle } from '@localixai/kit/dialog'
@@ -18,11 +18,11 @@ import { fromHitlRequest } from '@/entities/chat/model/hitlInteraction'
 import { ApiError, backendClient } from '@/shared/api/client'
 import { toast } from '@/shared/lib/notify'
 import type { AttentionBodyProps } from './types'
+import { lazyNamed } from '@/shared/lib/lazyNamed'
 
-const ChatInteractionOverlay = lazy(() =>
-  import('../hitl/ChatInteractionOverlay').then((module) => ({
-    default: module.ChatInteractionOverlay,
-  })),
+const ChatInteractionOverlay = lazyNamed(
+  () => import('../hitl/ChatInteractionOverlay'),
+  'ChatInteractionOverlay',
 )
 
 export function HitlAttentionBody({

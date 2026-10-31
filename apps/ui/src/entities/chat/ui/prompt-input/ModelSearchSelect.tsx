@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@localixai/kit/button'
 import { ChevronUp } from 'lucide-react'
 import { findCatalogModelForConnection, type CatalogModel } from '@localixai/agent/catalog'
@@ -8,6 +8,7 @@ import type { ReasoningEffort } from '../../model/reasoning'
 import type { SessionAgentRoute } from '@/shared/api/contracts'
 import { modelTriggerLabel } from './modelTriggerLabel'
 import { subscribeModelPicker, type ModelPickerRequest } from '@/shared/lib/modelPickerBus'
+import { lazyNamed } from '@/shared/lib/lazyNamed'
 
 // The trigger is present in every composer, while Vaul + the model-routing
 // browser are interaction-only. Keep the whole modal graph out of startup and
@@ -20,9 +21,7 @@ const loadModelPickerDrawer = async () => {
   ])
   return drawer
 }
-const ModelPickerDrawer = lazy(() =>
-  loadModelPickerDrawer().then((module) => ({ default: module.ModelPickerDrawer })),
-)
+const ModelPickerDrawer = lazyNamed(() => loadModelPickerDrawer(), 'ModelPickerDrawer')
 
 interface ModelSearchSelectProps {
   models: CatalogModel[]

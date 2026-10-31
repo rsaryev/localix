@@ -1,10 +1,9 @@
-import { lazy, Suspense, type ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
 
 import type { PromptInputProps } from './promptInputProps'
+import { lazyNamed } from '@/shared/lib/lazyNamed'
 
-const ComposerQueuePanel = lazy(() =>
-  import('./ComposerQueuePanel').then((module) => ({ default: module.ComposerQueuePanel })),
-)
+const ComposerQueuePanel = lazyNamed(() => import('./ComposerQueuePanel'), 'ComposerQueuePanel')
 
 /**
  * The queue docks beside send/stop: a pill in a toolbar that is always there, so it can come

@@ -1,13 +1,12 @@
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
 import { Blocks } from 'lucide-react'
 import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { ModPaneTabs } from './model/ModPaneTabs'
 import { MOD_PANE_KIND } from './model/paneTabs'
+import { lazyNamed } from '@/shared/lib/lazyNamed'
 
-const ModsAbovePromptLazy = lazy(() =>
-  import('./ui/ModsAbovePrompt').then((module) => ({ default: module.ModsAbovePrompt })),
-)
+const ModsAbovePromptLazy = lazyNamed(() => import('./ui/ModsAbovePrompt'), 'ModsAbovePrompt')
 
 /** The band above the prompt box: loads with the composer, draws only when a mod does. */
 function ModsAbovePromptSlot(props: {
@@ -21,9 +20,7 @@ function ModsAbovePromptSlot(props: {
   )
 }
 
-const ModsStatusFooterLazy = lazy(() =>
-  import('./ui/ModsStatusFooter').then((module) => ({ default: module.ModsStatusFooter })),
-)
+const ModsStatusFooterLazy = lazyNamed(() => import('./ui/ModsStatusFooter'), 'ModsStatusFooter')
 
 /**
  * The status lines under the prompt box. It loads with the composer; it draws only while a source
@@ -40,9 +37,7 @@ function ModsStatusFooterSlot(props: {
   )
 }
 
-const ModPaneBodyLazy = lazy(() =>
-  import('./ui/ModPaneBody').then((module) => ({ default: module.ModPaneBody })),
-)
+const ModPaneBodyLazy = lazyNamed(() => import('./ui/ModPaneBody'), 'ModPaneBody')
 
 function ModPaneContent(props: {
   item: { id: string; title: string; payload?: Record<string, unknown> }

@@ -1,4 +1,4 @@
-import { lazy, Suspense, type ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import type { ChatUsagePayload } from '@localixai/agent'
 import { StatusTipStrip } from './StatusTipStrip'
 import { SpendAlertStrip } from './SpendAlertStrip'
@@ -10,15 +10,14 @@ import { PlanStrip } from '../plan/PlanStrip'
 import { ResumeStrip } from '../resume/ResumeStrip'
 import type { SessionLoopSummary } from '@/shared/api/contracts'
 import type { useStreamTip } from '../../model/streamTips'
+import { lazyNamed } from '@/shared/lib/lazyNamed'
 
 /**
  * The schedules strip renders only when a session HAS loops, which a fresh launch rarely does, so
  * it loads the first time it has something to show. (The queue lives in the context row above the
  * composer now: `ComposerQueuePanel`.)
  */
-const SchedulesPanel = lazy(() =>
-  import('./SchedulesPanel').then((module) => ({ default: module.SchedulesPanel })),
-)
+const SchedulesPanel = lazyNamed(() => import('./SchedulesPanel'), 'SchedulesPanel')
 
 interface ComposerHeaderStripsProps {
   tip: ReturnType<typeof useStreamTip>['tip']

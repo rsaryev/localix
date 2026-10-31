@@ -1,12 +1,4 @@
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useSyncExternalStore,
-  Suspense,
-  lazy,
-} from 'react'
+import { useState, useEffect, useCallback, useMemo, useSyncExternalStore, Suspense } from 'react'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { useLocation } from 'react-router'
 import { useShallow } from 'zustand/react/shallow'
@@ -74,53 +66,40 @@ import {
   type RuntimeStatus,
 } from '@/shared/lib/runtimeReady'
 import { WorkspaceConnectionStatus } from './WorkspaceConnectionStatus'
+import { lazyNamed } from '@/shared/lib/lazyNamed'
 
 // The Files rail is closed on the common chat startup path. Its tree, search,
 // drag/drop, source-control decoration, and mutation graph should be paid for
 // only when the user opens Explorer.
-const FileTreeSidebar = lazy(() =>
-  import('@/features/inspector/ui/FileTreeSidebar').then((module) => ({
-    default: module.FileTreeSidebar,
-  })),
+const FileTreeSidebar = lazyNamed(
+  () => import('@/features/inspector/ui/FileTreeSidebar'),
+  'FileTreeSidebar',
 )
 
 // Search and switcher dialogs are interaction-only surfaces. Load each one on
 // first open, then keep it mounted so closing animations and reopen latency stay
 // identical to an eager surface after that first interaction.
-const CommandPalette = lazy(() =>
-  import('@/features/inspector/ui/CommandPalette').then((module) => ({
-    default: module.CommandPalette,
-  })),
+const CommandPalette = lazyNamed(
+  () => import('@/features/inspector/ui/CommandPalette'),
+  'CommandPalette',
 )
-const GlobalSearchPalette = lazy(() =>
-  import('@/features/search/ui/GlobalSearchPalette').then((module) => ({
-    default: module.GlobalSearchPalette,
-  })),
+const GlobalSearchPalette = lazyNamed(
+  () => import('@/features/search/ui/GlobalSearchPalette'),
+  'GlobalSearchPalette',
 )
-const QuickOpen = lazy(() =>
-  import('@/features/inspector/ui/QuickOpen').then((module) => ({
-    default: module.QuickOpen,
-  })),
+const QuickOpen = lazyNamed(() => import('@/features/inspector/ui/QuickOpen'), 'QuickOpen')
+const GoToSymbol = lazyNamed(() => import('@/features/inspector/ui/GoToSymbol'), 'GoToSymbol')
+const WorkspaceSymbols = lazyNamed(
+  () => import('@/features/inspector/ui/WorkspaceSymbols'),
+  'WorkspaceSymbols',
 )
-const GoToSymbol = lazy(() =>
-  import('@/features/inspector/ui/GoToSymbol').then((module) => ({
-    default: module.GoToSymbol,
-  })),
+const SessionSwitcher = lazyNamed(
+  () => import('@/entities/chat/ui/SessionSwitcher'),
+  'SessionSwitcher',
 )
-const WorkspaceSymbols = lazy(() =>
-  import('@/features/inspector/ui/WorkspaceSymbols').then((module) => ({
-    default: module.WorkspaceSymbols,
-  })),
-)
-const SessionSwitcher = lazy(() =>
-  import('@/entities/chat/ui/SessionSwitcher').then((module) => ({
-    default: module.SessionSwitcher,
-  })),
-)
-const ProjectSwitcher = lazy(() =>
-  import('@/entities/chat/ui/ProjectSwitcher').then((module) => ({
-    default: module.ProjectSwitcher,
-  })),
+const ProjectSwitcher = lazyNamed(
+  () => import('@/entities/chat/ui/ProjectSwitcher'),
+  'ProjectSwitcher',
 )
 
 // BEFORE PAINT, and deliberately so — this pair is the one startup sequence that

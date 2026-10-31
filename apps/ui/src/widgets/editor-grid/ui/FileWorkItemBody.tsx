@@ -5,12 +5,13 @@ import { useFileEditorsFor } from '@/shared/contrib/useFileEditorsFor'
 import { loadFileEditor } from '@/features/inspector/model/fileEditorLoader'
 import { ContributedFileBody } from './FileEditorPicker'
 import { nativeFileViewerKind } from './fileEditorSelection'
+import { lazyNamed } from '@/shared/lib/lazyNamed'
 
 const MediaFileTab = lazy(() =>
   import('@/features/inspector/ui/MediaFileTab').then((m) => ({ default: m.MediaFileTab })),
 )
 // The code editor pulls Monaco — keep it out of the boot chunk; it loads on the first file open.
-const FileTab = lazy(() => loadFileEditor().then((module) => ({ default: module.FileTab })))
+const FileTab = lazyNamed(() => loadFileEditor(), 'FileTab')
 
 const p = <T,>(item: WorkItem, key: string): T | undefined => item.payload?.[key] as T | undefined
 

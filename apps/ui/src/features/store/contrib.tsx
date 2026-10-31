@@ -1,14 +1,13 @@
-import { lazy, Suspense, useMemo } from 'react'
+import { Suspense, useMemo } from 'react'
 import { Store } from 'lucide-react'
 
 import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import type { WorkItem } from '@/shared/lib/workItem'
 import { STORE_KIND, type StoreTarget } from '@/shared/lib/openStore'
+import { lazyNamed } from '@/shared/lib/lazyNamed'
 
-const StorePageLazy = lazy(() =>
-  import('./ui/StorePage').then((module) => ({ default: module.StorePage })),
-)
+const StorePageLazy = lazyNamed(() => import('./ui/StorePage'), 'StorePage')
 
 const record = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === 'object' ? (value as Record<string, unknown>) : null

@@ -1,8 +1,8 @@
 import type { MiniAppUiHost, UiAnchorContribution } from '@localixai/mini-app-sdk/ui'
 import { parseLocalixResourceUri } from '@localixai/mini-app-sdk/ui'
-import { lazy } from 'react'
 import { ClipboardList } from 'lucide-react'
 import { PLAN_WORK_KIND } from '@/entities/chat/model/plans'
+import { lazyNamed } from '@/shared/lib/lazyNamed'
 
 export const chatResourceAnchor: UiAnchorContribution = {
   id: 'chat-resources',
@@ -26,9 +26,7 @@ export const chatResourceAnchor: UiAnchorContribution = {
 }
 
 /** Loaded when a plan tab first renders: most sessions never present a plan. */
-const PlanView = lazy(() =>
-  import('@/entities/chat/ui/plan/PlanView').then((module) => ({ default: module.PlanView })),
-)
+const PlanView = lazyNamed(() => import('@/entities/chat/ui/plan/PlanView'), 'PlanView')
 
 export function registerUi(host: MiniAppUiHost): void {
   host.anchors.register(chatResourceAnchor)
