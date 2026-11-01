@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo, useSyncExternalStore, Suspense } from 'react'
-import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { useLocation } from 'react-router'
 import { useShallow } from 'zustand/react/shallow'
 
@@ -19,6 +18,7 @@ import { subscribeUiOverlay } from '@/shared/lib/uiOverlayBus'
 import { SOURCES_OVERLAY_ID } from '@/entities/chat/ui/sources/Sources.surface'
 import { answerSourcesOfMessage } from '@/entities/chat/model/sessionSources'
 import { findSessionInState } from '@/entities/chat/model/findSession'
+import { useDeleteSessionAction } from '../model/useDeleteSessionAction'
 import { useWorkspace } from '@/entities/chat/model/useWorkspace'
 import { toast } from '@/shared/lib/notify'
 import { requireOpenChat } from '@/shared/lib/pageOpenChat'
@@ -165,6 +165,11 @@ export function ChatPage() {
     }),
   )
   const hasHydrated = useHasHydrated()
+  const removeSession = useDeleteSessionAction({
+    activeSessionId,
+    deleteSession,
+    projectOf: (id) => findSessionInState(useChatStore.getState(), id)?.projectId ?? null,
+  })
   const isMobile = useIsMobile()
   const nav = useRoutedNavigation()
   // Page-level navigation (the rail, the shell) acts on the chat this page has open.
@@ -430,20 +435,7 @@ export function ChatPage() {
               else nav.goToSession(id, opts)
               if (isMobile) setSidebarOpen(false)
             }}
-            onDelete={(id) => {
-              const wasActive = id === activeSessionId
-              deleteSession(id)
-                .then(() => {
-                  // Deleting the FOCUSED session lands on the neutral home (a blank
-                  // chat) — never auto-jump into another existing conversation.
-                  if (wasActive) nav.goReplace('/')
-                })
-                .catch((e: unknown) =>
-                  toast.error('Could not delete the conversation', {
-                    description: errorMessage(e, '') || undefined,
-                  }),
-                )
-            }}
+            onDelete={(id) => void removeSession(id)}
             onTogglePin={(id) => {
               void togglePinSession(id)
             }}
