@@ -3,6 +3,7 @@ import { createLspEditCommitter } from './edit-commit'
 import { bufferEditFor } from './edit-routing'
 import { createWorkspaceEditApplicator } from './service-workspace-edit'
 import { createServiceNavigation } from './service-navigation'
+import { createServiceQueries } from './service-queries'
 import { createStatusPublisher } from './service-status'
 
 export type { LspDocumentService, LspServiceDeps } from './service-contract'
@@ -209,35 +210,10 @@ export function createLspDocumentService(deps: LspServiceDeps): LspDocumentServi
       }
     },
 
-    async hover(userId, sessionId, file, position) {
-      const projectRoot = await projectRootAfterSync(userId, sessionId, file)
-      return deps.lspManager.hover(projectRoot, file, position)
-    },
-
-    async completion(userId, sessionId, file, position) {
-      const projectRoot = await projectRootAfterSync(userId, sessionId, file)
-      return deps.lspManager.completion(projectRoot, file, position)
-    },
-
-    async signatureHelp(userId, sessionId, file, position) {
-      const projectRoot = await projectRootAfterSync(userId, sessionId, file)
-      return deps.lspManager.signatureHelp(projectRoot, file, position)
-    },
-
-    async inlayHint(userId, sessionId, file, range) {
-      const projectRoot = await projectRootAfterSync(userId, sessionId, file)
-      return deps.lspManager.inlayHint(projectRoot, file, range)
-    },
-
-    async documentColor(userId, sessionId, file) {
-      const projectRoot = await projectRootAfterSync(userId, sessionId, file)
-      return deps.lspManager.documentColor(projectRoot, file)
-    },
-
-    async documentSymbols(userId, sessionId, file) {
-      const projectRoot = await projectRootAfterSync(userId, sessionId, file)
-      return deps.lspManager.documentSymbols(projectRoot, file)
-    },
+    ...createServiceQueries({
+      getManager: () => deps.lspManager,
+      projectRootAfterSync,
+    }),
 
     ...createServiceNavigation({
       getManager: () => deps.lspManager,
@@ -245,25 +221,10 @@ export function createLspDocumentService(deps: LspServiceDeps): LspDocumentServi
       projectRootAfterSync,
     }),
 
-    async documentHighlight(userId, sessionId, file, position) {
-      const projectRoot = await projectRootAfterSync(userId, sessionId, file)
-      return deps.lspManager.documentHighlight(projectRoot, file, position)
-    },
-
-    async prepareRename(userId, sessionId, file, position) {
-      const projectRoot = await projectRootAfterSync(userId, sessionId, file)
-      return deps.lspManager.prepareRename(projectRoot, file, position)
-    },
-
     async rename(userId, sessionId, file, position, newName) {
       const projectRoot = await projectRootAfterSync(userId, sessionId, file)
       const fileEdits = await deps.lspManager.rename(projectRoot, file, position, newName)
       return applyWorkspaceEdit(userId, sessionId, fileEdits)
-    },
-
-    async codeAction(userId, sessionId, file, range, kinds, trigger) {
-      const projectRoot = await projectRootAfterSync(userId, sessionId, file)
-      return deps.lspManager.codeAction(projectRoot, file, range, kinds, trigger)
     },
 
     async applyCodeAction(userId, sessionId, file, action) {
