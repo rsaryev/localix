@@ -4,7 +4,7 @@ import { access, readFile, readdir } from 'node:fs/promises'
 import { dirname, join, resolve, sep } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { repoRoot } from './lib/paths.mjs'
-import { LOCALIX_MARKETPLACE } from '../packages/store/src/default-sources.ts'
+import { LOCALIX_COMMUNITY, LOCALIX_MARKETPLACE } from '../packages/store/src/default-sources.ts'
 
 const root = repoRoot()
 const requiredFiles = [
@@ -153,13 +153,18 @@ const repositoryFiles = repositoryFilesResult.stdout
   .split('\0')
   .filter((file) => file && existsSync(join(root, file)))
 
-// `localix` and the Localix marketplace (the one source the core trusts by name) are the only
-// repositories in the organisation that a reader can open. Naming the retired ones here to
+// `localix`, the Localix marketplace (the one source the core trusts by name) and the Localix
+// Community list (the untrusted source it reads beside it) are the only repositories in the
+// organisation that a reader can open. Naming the retired ones here to
 // blocklist them would republish the very names the check exists to retire, and would miss the
 // next one; allowlisting the public ones instead needs no such list and fails closed on any name
 // that has not been made public.
 const CANONICAL_REPOSITORY = 'localix'
-const PUBLIC_REPOSITORIES = new Set([CANONICAL_REPOSITORY, LOCALIX_MARKETPLACE.repo.split('/')[1]])
+const PUBLIC_REPOSITORIES = new Set([
+  CANONICAL_REPOSITORY,
+  LOCALIX_MARKETPLACE.repo.split('/')[1],
+  LOCALIX_COMMUNITY.repo.split('/')[1],
+])
 const stalePublicRepositoryReferences = []
 const publicReferenceFiles = repositoryFiles.filter(
   (file) =>
