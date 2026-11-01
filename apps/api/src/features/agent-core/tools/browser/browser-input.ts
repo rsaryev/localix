@@ -23,7 +23,12 @@ const stepSchema = z
     action: z.enum(STEP_ACTIONS),
     ref: z.string().optional(),
     selector: z.string().optional(),
-    text: z.string().optional().describe('type: the text. select: option value or label.'),
+    text: z
+      .string()
+      .optional()
+      .describe(
+        'type: the text (${secret:KEY}: a Vault secret, unseen). select: option value or label.',
+      ),
     key: z.string().optional(),
     keys: z.array(z.string()).optional(),
     direction: z.enum(['up', 'down', 'left', 'right']).optional(),
@@ -62,10 +67,7 @@ export const advertisedObject = z.object({
     // explicitly — inference only covers the single-signal cases.
     .optional(),
   url: z.string().optional().describe("open: page URL, or mini-app:<name> for a mini app's view."),
-  file_path: z
-    .string()
-    .optional()
-    .describe('open: local file; serves its folder with assets. No server needed.'),
+  file_path: z.string().optional().describe('open: local file; its folder is served.'),
   ref: z.string().optional().describe('take_screenshot: snapshot ref.'),
   snapshot_after: z.boolean().optional().describe('steps/evaluate: include fresh tree.'),
   offset: z
@@ -205,4 +207,4 @@ export const MISSING_ACTION_MESSAGE =
  * holds this tool. This says how the tool behaves.
  */
 export const BROWSER_DESCRIPTION =
-  'Drive Browser tabs in the desktop app (relay-only); reuse preview_id from open or Browser context. Multi-step page work (a form, a search, a date picker): prefer goal — a decision model clicks and types only your values toward it; then verify the page it returns. steps: single precise actions. Local files: open file_path. Set viewport only to check a width; null resets. history: shared visits. read: top-document text in windows; back, forward, reload move the tab. Errors and auto-dismissed dialogs during an action are attached; a reload invalidates refs: re-snapshot. Same-origin frames: snapshot, steps only. Credentials: type text ${secret:KEY} (a Vault key) in a type step; the host fills it in and you never see it. Nowhere else.'
+  'Drive Browser tabs in the desktop app (relay-only); reuse preview_id from open or Browser context. Multi-step page work (form, search, date picker): prefer goal — a decision model clicks and types only your values; verify the page it returns. steps: single precise actions. Local files: open file_path. Set viewport only to check a width. history: shared visits. read: top-document text in windows; back, forward, reload move the tab. Errors and auto-dismissed dialogs during an action are attached; a reload invalidates refs: re-snapshot. Same-origin frames: snapshot, steps only.'
