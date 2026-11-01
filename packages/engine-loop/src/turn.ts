@@ -23,6 +23,7 @@ export async function streamTurn(
   request: ModelTurnRequest,
   emit: EmitEvent,
   naming: Pick<ToolNaming, 'delta' | 'inbound'>,
+  options: { dropToolCalls?: boolean } = {},
 ): Promise<StreamedTurn> {
   const turn = session.turn(request)
   await emit({
@@ -38,13 +39,22 @@ export async function streamTurn(
   try {
     for await (const delta of turn) {
       // oxlint-disable-next-line react-doctor/async-await-in-loop -- deltas must reach the bounded stream in order, and each push applies backpressure
+      if (options.dropToolCalls && delta.kind === 'tool_call') continue
       await emit({ type: 'message_update', delta: naming.delta(delta) })
     }
   } catch {
     // A session that breaks its contract mid-stream still settles `message`; that is what counts.
   }
   const settled = await turn.message
-  const message = naming.inbound(settled)
+  const inbound = naming.inbound(settled)
+  // A call in a turn that offered no tools has no result to come: the host never sees it.
+  const message: AssistantMessage = options.dropToolCalls
+    ? {
+        ...inbound,
+        content: inbound.content.filter((part) => part.type !== 'tool_call'),
+        ...(inbound.stopReason === 'tool_use' ? { stopReason: 'end_turn' as const } : {}),
+      }
+    : inbound
   await emit({ type: 'message_end', message })
   const failure = turn.failure
   return failure ? { message, failure } : { message }

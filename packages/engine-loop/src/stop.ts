@@ -12,15 +12,17 @@ export interface TurnBoundaryVerdict {
 /**
  * Decide, after a turn's tools have settled, whether the run ends here.
  *
- * The turn budget goes first: reaching it is not itself abnormal — a final answer on the last
+ * Host rules go first and win a tie with the budget. Reaching it is not itself abnormal — a final answer on the last
  * turn completed naturally — so it stops only when another model request would be needed to
- * read tool results. Host rules follow in their own order, and the first to fire names itself.
+ * read tool results. Host rules run in their own order, and the first to fire names itself.
  */
 export async function judgeTurnBoundary(input: {
   turnsStarted: number
   maxTurns: number | undefined
   hadToolCalls: boolean
   terminated: boolean
+  /** The host's after-batch hook already asked to stop here. */
+  batchStopped?: boolean
   host: AgentRuntimeRunInput['stopWhen']
 }): Promise<TurnBoundaryVerdict> {
   const budgetExhausted =
@@ -28,10 +30,13 @@ export async function judgeTurnBoundary(input: {
     input.turnsStarted >= input.maxTurns &&
     !input.terminated &&
     input.hadToolCalls
-  if (budgetExhausted) return { stop: true, name: 'turnBudget', budgetExhausted }
+  // A host stop wins over the budget: it ends the run with no extra paid turn.
+  if (input.batchStopped) return { stop: false, budgetExhausted: false }
   for (const condition of input.host ?? []) {
     // oxlint-disable-next-line react-doctor/async-await-in-loop -- rules are evaluated in order and the first to fire wins; they never run concurrently
-    if (await condition.shouldStop()) return { stop: true, name: condition.name, budgetExhausted }
+    if (await condition.shouldStop())
+      return { stop: true, name: condition.name, budgetExhausted: false }
   }
+  if (budgetExhausted) return { stop: true, name: 'turnBudget', budgetExhausted }
   return { stop: false, budgetExhausted }
 }

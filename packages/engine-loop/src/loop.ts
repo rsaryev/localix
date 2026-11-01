@@ -22,6 +22,7 @@ import type {
 } from '@localixai/agent/runtime'
 
 import { isConversational, modelMessages, toolCallsOf, toolResultMessage } from './messages'
+import { messageWaits } from './tools/results'
 import type { RunContext } from './run-handle'
 import { judgeTurnBoundary } from './stop'
 import { streamTurn } from './turn'
@@ -194,6 +195,7 @@ export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentR
         hadToolCalls: calls.length > 0,
         terminated,
         host: input.stopWhen,
+        batchStopped: batch?.stop !== undefined,
       })
       budgetExhausted = verdict.budgetExhausted
       const toolResults: AgentToolResult[] = settled.map((entry) => entry.outcome.result)
@@ -216,13 +218,20 @@ export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentR
   // The budget ran out with tool results unread. One more request, offering no tools, lets the
   // model decide from the evidence in view: a run that ends on a bare tool call hands its caller
   // nothing to use. The result still reads as a budget stop (`max_turns`, partial).
-  if (stoppedBy === 'turnBudget' && !signal.aborted && last) {
+  // A message that waits for the model is not answered without it: the run ends as it is.
+  if (
+    stoppedBy === 'turnBudget' &&
+    !signal.aborted &&
+    last &&
+    !(await messageWaits(input.shouldDeferToolCalls))
+  ) {
+    const spent = last
     await append({ role: 'user', content: FINAL_TURN_NOTE, timestamp: Date.now() })
     await startTurn()
     const view = input.contextPolicy
       ? await input.contextPolicy.transform(conversation, signal)
       : conversation
-    last = await streamTurn(
+    const final = await streamTurn(
       input.session,
       {
         systemPrompt: input.systemPrompt,
@@ -234,19 +243,20 @@ export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentR
       },
       emit,
       naming,
+      { dropToolCalls: true },
     )
-    // Offered no tools, the model should call none; a call it makes anyway would have no result.
-    const content = last.message.content.filter((part) => part.type !== 'tool_call')
-    const stopReason = last.message.stopReason === 'tool_use' ? 'end_turn' : last.message.stopReason
-    last = { ...last, message: { ...last.message, content, stopReason } }
-    await append(last.message, false)
-    await emit({
-      type: 'turn_end',
-      turnIndex: turnsStarted - 1,
-      message: last.message,
-      toolResults: [],
-    })
+    const turnIndex = turnsStarted - 1
+    const finalReason = final.message.stopReason
+    // The extra turn is best effort. A person's stop ends the run as aborted, like a stop
+    // anywhere else; a provider failure leaves the budget stop and the answer so far.
+    const failedFinal = finalReason === 'error'
+    if (!failedFinal) {
+      last = final
+      await append(final.message, false)
+    } else last = spent
+    await emit({ type: 'turn_end', turnIndex, message: final.message, toolResults: [] })
     transcript.settled = transcript.messages.length
+    if (finalReason === 'aborted') await end('aborted')
   }
 
   const stopReason = last?.message.stopReason
