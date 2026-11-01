@@ -2,7 +2,6 @@ import { join } from 'node:path'
 
 import { ConflictError, NotFoundError } from '../../lib/domain-errors'
 import { errorMessage } from '../../lib/errors'
-import { installedLocally } from './local-install'
 import { MINI_APPS_SUBDIR } from './paths'
 import {
   ACTIVE_PHASES,
@@ -13,7 +12,8 @@ import {
 } from './store-activity'
 import { storePage, type MiniAppStorePage } from './store-detail'
 import { storeEntry, type MiniAppJob, type MiniAppStoreEntry } from './store-entry'
-import { installedBy, installOffer, readInstallRecord } from './store-install'
+import { nameConflict, replacement } from './store-conflicts'
+import { installOffer, readInstallRecord } from './store-install'
 import { createStoreMediaReader, type StoreMediaKind } from './store-media'
 import { createOfferReader, readManifest, type OfferTrust } from './store-offers'
 import type { MiniAppMarketplaceSource } from './marketplaces'
@@ -155,37 +155,6 @@ export function createMiniAppStore(deps: {
     return offer
   }
 
-  /** Why `offer` may not replace what its name holds now, or null. */
-  async function nameConflict(offer: Offer): Promise<string | null> {
-    const dir = join(installRoot, offer.name)
-    const by = await installedBy(dir)
-    if (by === 'person')
-      return `A mini app of yours is already called "${offer.name}"; rename or remove it first`
-    if (!by || (await holdsOffer(offer, installRoot))) return null
-    const record = await readInstallRecord(dir)
-    const holder = record ? `"${offer.name}" from ${record.marketplace}` : `"${offer.name}"`
-    return `${holder} is installed; remove it to install the one from ${offer.marketplace}`
-  }
-
-  /**
-   * What Get on `offer` puts aside, in the person's words, or null: nothing holds its name, this
-   * very app does, or a folder put here by hand does — its only copy, which nothing replaces.
-   */
-  async function replacement(offer: Offer): Promise<string | null> {
-    const dir = join(installRoot, offer.name)
-    const by = await installedBy(dir)
-    if (!by || (await holdsOffer(offer, installRoot))) return null
-    if (by === 'person') {
-      // Built from a folder elsewhere (`local-install.ts`): that folder keeps the source.
-      return (await installedLocally(dir))
-        ? `Replaces your "${offer.name}", built on this computer; its data stays`
-        : null
-    }
-    const record = await readInstallRecord(dir)
-    const holder = record ? `"${offer.name}" from ${record.marketplace}` : `"${offer.name}"`
-    return `Replaces ${holder}; its data stays`
-  }
-
   const enqueue = (offer: Offer, userId?: string) => {
     setJob(offer, { phase: 'queued' })
     queue = queue.then(() => run(offer, userId)).then(reportIfDrained)
@@ -202,7 +171,8 @@ export function createMiniAppStore(deps: {
     },
 
     /** What Get on `ref` would replace here, said for the person, or null (`replacement`). */
-    replacement: async (ref: string): Promise<string | null> => replacement(await offerFor(ref)),
+    replacement: async (ref: string): Promise<string | null> =>
+      replacement(await offerFor(ref), installRoot),
 
     /** One app's store page: its row, README, screenshots and what it brings. */
     async detail(ref: string): Promise<MiniAppStorePage<MiniAppStoreEntry>> {
@@ -243,8 +213,8 @@ export function createMiniAppStore(deps: {
           'mini_app_incompatible',
           `"${name}" needs a newer Localix (mini app API ${offer.apiVersion}); update Localix first`,
         )
-      const conflict = await nameConflict(offer)
-      if (conflict && !(opts.replace && (await replacement(offer))))
+      const conflict = await nameConflict(offer, installRoot)
+      if (conflict && !(opts.replace && (await replacement(offer, installRoot))))
         throw new ConflictError('mini_app_name_taken', conflict)
       // The marketplace is no longer signed by a key kept for it: someone else may have written it.
       if (offer.signature === 'mismatch')

@@ -11,7 +11,6 @@ import {
 
 import { InvalidRequestError } from '../../lib/domain-errors'
 import type { MiniAppConfigField } from './contracts'
-import type { MiniAppStoreEntry } from './store-entry'
 import type { MarketplacePreview } from './marketplace-preview'
 import type { MiniAppMarketplaceSource } from './marketplaces'
 import { appNameOf, type MiniAppStore } from './store'
@@ -21,9 +20,9 @@ import {
   miniAppComponents,
   miniAppDetail,
   miniAppListing,
-  ownMiniAppEntry,
   type OwnMiniApp,
 } from './store-listing'
+import { ownListing, ownPage, revokedAs } from './store-provider-own'
 
 /** What the provider needs of the mini app service: its store, marketplaces and the person's apps. */
 export interface MiniAppStoreProviderDeps {
@@ -69,10 +68,6 @@ function personOnly(scope: Scope) {
  * holds). An offered app's id is its identity, `<name>@<marketplace>`; an app the person made is
  * its name. Installing, removing and switching act on the app by its name, its folder.
  */
-/** An offer as installed here: the installed build its marketplace took back says so. */
-const revokedAs = (entry: MiniAppStoreEntry, app: { revoked?: string } | undefined) =>
-  app?.revoked ? { ...entry, revoked: app.revoked } : entry
-
 export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): InstallableProvider {
   const byUrl = async () => new Map((await deps.marketplaces.list()).map((it) => [it.url, it]))
 
@@ -96,35 +91,6 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
     })
     return { page, listing }
   }
-
-  // One the person made is on their Yours shelf beside the skills and agents they wrote; one a
-  // marketplace installed and no longer offers stays its marketplace's.
-  const ownListing = (
-    app: OwnMiniApp & { enabled: boolean; config: MiniAppConfigField[] },
-    known: Map<string, MiniAppMarketplaceSource>,
-  ) => {
-    const from = app.installedFrom?.marketplace
-    const marketplace =
-      from && ([...known.values()].find((it) => it.name === from) ?? { name: from, builtIn: false })
-    return {
-      ...miniAppListing(ownMiniAppEntry(app), {
-        ...(marketplace ? { marketplace } : {}),
-        enabled: app.enabled,
-        configurable: app.config.length > 0,
-      }),
-      ...(from ? {} : { authored: 'user' as const }),
-    }
-  }
-  const ownPage = (app: OwnMiniApp) => ({
-    entry: ownMiniAppEntry(app),
-    readme: null,
-    screenshots: [],
-    details: {
-      ...(app.version ? { version: app.version } : {}),
-      author: app.installedFrom?.publisher.name ?? 'You',
-      ...(app.homepage ? { homepage: app.homepage } : {}),
-    },
-  })
 
   // The offers and the person's own apps, as listings: `listings` and what opens a file.
   const listings = async (actor: StoreActor) => {
