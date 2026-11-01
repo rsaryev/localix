@@ -98,8 +98,10 @@ export function profileFor(
         requestHeaders: openaiAffinity(entry, access),
         // The ChatGPT backend refuses a requested output limit.
         ...(entry.provider.id === CODEX_PROVIDER_ID ? { refusesOutputLimit: true } : {}),
-        // OpenAI's own address only: another vendor behind the OpenAI SDK may not know strict schemas.
-        ...(entry.provider.id === 'openai' && !entry.route.baseURL && !access?.baseURL
+        // OpenAI's own address and the ChatGPT backend (checked live); another vendor behind the
+        // OpenAI SDK may not know strict schemas.
+        ...((entry.provider.id === 'openai' && !entry.route.baseURL && !access?.baseURL) ||
+        entry.provider.id === CODEX_PROVIDER_ID
           ? { strictTools: true }
           : {}),
       }

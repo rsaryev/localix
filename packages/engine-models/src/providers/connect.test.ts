@@ -95,9 +95,16 @@ describe('reaching a model', () => {
     ).toBe(false)
     expect(profileFor(entry('openai-codex', { family: 'openai' })).refusesOutputLimit).toBe(true)
     expect(profileFor(entry('openai', { family: 'openai' })).refusesOutputLimit).toBeUndefined()
-    // Strict function calling: OpenAI's own API only, not the ChatGPT backend or other families.
+    // Strict function calling: OpenAI's own API and the ChatGPT backend, not other families.
     expect(profileFor(entry('openai', { family: 'openai' })).strictTools).toBe(true)
-    expect(profileFor(entry('openai-codex', { family: 'openai' })).strictTools).toBeUndefined()
+    expect(
+      profileFor(
+        entry('openai-codex', {
+          family: 'openai',
+          baseURL: 'https://chatgpt.com/backend-api/codex',
+        }),
+      ).strictTools,
+    ).toBe(true)
     expect(profileFor(entry('anthropic', { family: 'anthropic' })).strictTools).toBeUndefined()
     expect(
       profileFor(entry('openai', { family: 'openai' }), { baseURL: 'https://proxy.example/v1' })

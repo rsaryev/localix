@@ -30,8 +30,9 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 - **Browser goals finish with a verdict**: when the decision model's answer cannot be read, it gets
   one more try, and when the action limit is reached the goal ends with a verdict on whether it
   looks done.
-- **Stricter tool calls on OpenAI**: OpenAI models fill in tool arguments under strict schemas where
-  a tool's schema allows it, so malformed tool calls are rarer.
+- **Stricter tool calls on OpenAI**: OpenAI models, through an API key or a ChatGPT Plus/Pro
+  sign-in, fill in tool arguments under strict schemas where a tool's schema allows it, so malformed
+  tool calls are rarer.
 - **Logs hide more credentials**: fine-grained GitHub tokens, temporary AWS key ids, passwords in
   URLs and Authorization and Cookie header values are masked, while ordinary words such as "Bearer
   authentication is required" are left alone.
