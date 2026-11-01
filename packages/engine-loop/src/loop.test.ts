@@ -89,14 +89,64 @@ describe('a run of the loop', () => {
     expect(result).toMatchObject({ terminal: 'completed' })
   })
 
-  test('the turn budget stops a run that would need another request to read its tools', async () => {
+  test('the turn budget gives the model one last turn with no tools, and its text is the answer', async () => {
+    const { run, requests } = start(
+      [call('echo', { text: 'a' }), say('Best reading of what I found.')],
+      { maxTurns: 1 },
+    )
+    const { events, result } = await collect(run)
+    expect(requests).toHaveLength(2)
+    expect(requests[1]!.tools).toEqual([])
+    const note = last(requests[1]!.messages) as { role: string; content: string }
+    expect(note.role).toBe('user')
+    expect(note.content).toContain('out of turns')
+    expect(result).toMatchObject({ terminal: 'completed', stoppedBy: 'turnBudget' })
+    const messages = (result as { messages: AgentMessage[] }).messages
+    expect(messages.map((message) => message.role)).toEqual([
+      'assistant',
+      'tool',
+      'user',
+      'assistant',
+    ])
+    expect(last(events)).toMatchObject({ type: 'agent_end', stopReason: 'max_turns' })
+  })
+
+  test('a model that still calls a tool on the last turn is not run again', async () => {
     const { run, requests } = start([call('echo', { text: 'a' }), call('echo', { text: 'b' })], {
       maxTurns: 1,
     })
     const { events, result } = await collect(run)
-    expect(requests).toHaveLength(1)
+    expect(requests).toHaveLength(2)
+    expect(types(events).filter((type) => type === 'tool_execution_start')).toHaveLength(1)
     expect(result).toMatchObject({ terminal: 'completed', stoppedBy: 'turnBudget' })
-    expect(last(events)).toMatchObject({ type: 'agent_end', stopReason: 'max_turns' })
+  })
+
+  test('the last turn reads the context the policy shapes, and a stripped call leaves a plain end', async () => {
+    const { run, requests } = start([call('echo', { text: 'a' }), call('echo', { text: 'b' })], {
+      maxTurns: 1,
+      contextPolicy: {
+        transform: async (messages) => [
+          ...messages,
+          { role: 'user', content: 'reminder', timestamp: 1 },
+        ],
+      },
+    })
+    const { result } = await collect(run)
+    const final = last((result as { messages: AgentMessage[] }).messages) as {
+      content: { type: string }[]
+      stopReason?: string
+    }
+    expect(last(requests[1]!.messages)).toMatchObject({ content: 'reminder' })
+    expect(final.content.some((part) => part.type === 'tool_call')).toBe(false)
+    expect(final.stopReason).toBe('end_turn')
+  })
+
+  test('a host stop rule ends the run without the last turn', async () => {
+    const { run, requests } = start([call('echo', { text: 'a' }), say('never')], {
+      stopWhen: [{ name: 'enough', shouldStop: () => true }],
+    })
+    await collect(run)
+    expect(requests).toHaveLength(1)
   })
 
   test('a final answer exactly at the budget is a natural end, not max_turns', async () => {

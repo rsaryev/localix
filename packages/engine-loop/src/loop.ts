@@ -40,6 +40,10 @@ export interface LoopInput extends Omit<
   stopGraceMs?: number
 }
 
+/** What the model is told when its turns are spent: decide now, from what it already has. */
+const FINAL_TURN_NOTE =
+  'You are out of turns and have no tools left. Answer now from the evidence already in view: say what you found, what you could not confirm, and your best conclusion.'
+
 export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentRuntimeResult> {
   const { emit, signal, transcript } = run
   const dispatchTools = input.dispatchTools ?? input.tools
@@ -207,6 +211,42 @@ export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentR
     const required = await followUps()
     if (required.length === 0) break
     pending = required
+  }
+
+  // The budget ran out with tool results unread. One more request, offering no tools, lets the
+  // model decide from the evidence in view: a run that ends on a bare tool call hands its caller
+  // nothing to use. The result still reads as a budget stop (`max_turns`, partial).
+  if (stoppedBy === 'turnBudget' && !signal.aborted && last) {
+    await append({ role: 'user', content: FINAL_TURN_NOTE, timestamp: Date.now() })
+    await startTurn()
+    const view = input.contextPolicy
+      ? await input.contextPolicy.transform(conversation, signal)
+      : conversation
+    last = await streamTurn(
+      input.session,
+      {
+        systemPrompt: input.systemPrompt,
+        messages: naming.outbound(modelMessages(view)),
+        tools: [],
+        ...(input.reasoningEffort ? { reasoningEffort: input.reasoningEffort } : {}),
+        ...(input.maxOutputTokens ? { maxOutputTokens: input.maxOutputTokens } : {}),
+        signal,
+      },
+      emit,
+      naming,
+    )
+    // Offered no tools, the model should call none; a call it makes anyway would have no result.
+    const content = last.message.content.filter((part) => part.type !== 'tool_call')
+    const stopReason = last.message.stopReason === 'tool_use' ? 'end_turn' : last.message.stopReason
+    last = { ...last, message: { ...last.message, content, stopReason } }
+    await append(last.message, false)
+    await emit({
+      type: 'turn_end',
+      turnIndex: turnsStarted - 1,
+      message: last.message,
+      toolResults: [],
+    })
+    transcript.settled = transcript.messages.length
   }
 
   const stopReason = last?.message.stopReason
