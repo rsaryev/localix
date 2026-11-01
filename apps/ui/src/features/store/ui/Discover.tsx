@@ -48,12 +48,13 @@ function CollectionCard({ collection, listings }: { collection: Collection; list
       className="@container/collection min-w-0 rounded-xl border border-border-faint bg-card p-4 text-left transition-colors duration-(--dur-fast) hover:bg-surface-hover focus-ring"
     >
       <span className="flex min-w-0 flex-col gap-3">
-        {/* What it holds, as a stack of icons; the words get the card's whole width. */}
-        <span aria-hidden className="flex items-center">
+        {/* What it holds, as a row of icons; the words get the card's whole width. The tiles
+            stand apart on the card itself: a ring in the card's colour to separate overlapping
+            tiles sat outside each tile's inset and read as a stray frame, and on a translucent
+            window or a hovered card it was a different colour from the card behind it. */}
+        <span aria-hidden className="flex items-center gap-1">
           {listings.slice(0, 5).map((listing) => (
-            <span key={keyOf(listing.ref)} className="-ml-2 rounded-xl ring-2 ring-card first:ml-0">
-              <ListingIcon listing={listing} size={40} />
-            </span>
+            <ListingIcon key={keyOf(listing.ref)} listing={listing} size={40} />
           ))}
           <ChevronRight className="ml-auto size-4 shrink-0 text-text-faint" aria-hidden />
         </span>
