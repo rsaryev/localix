@@ -1,4 +1,4 @@
-import { REPOSITORY_URL, SITE_ORIGIN } from './site'
+import { REPOSITORY_URL, SITE_ORIGIN, X_URL } from './site'
 
 const HOME_URL = `${SITE_ORIGIN}/`
 
@@ -32,7 +32,7 @@ export const HOME_STRUCTURED_DATA = {
       screenshot: `${HOME_URL}films/demo.jpg`,
       license: 'https://opensource.org/licenses/MIT',
       isAccessibleForFree: true,
-      sameAs: [REPOSITORY_URL],
+      sameAs: [REPOSITORY_URL, X_URL],
       author: { '@type': 'Organization', name: 'Localix', url: HOME_URL },
     },
     {

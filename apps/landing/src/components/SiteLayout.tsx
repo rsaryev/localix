@@ -4,10 +4,11 @@ import { HOME_SHELL, PAGE_SHELL } from '../lib/shell'
 import { Button } from './Button'
 import { SiteHeader } from './SiteHeader'
 import { HomeNav } from './home/HomeNav'
-import { REPOSITORY_URL } from '../lib/site'
+import { REPOSITORY_URL, X_URL } from '../lib/site'
 
 const FOOTER_LINKS = [
   { label: 'GitHub', href: REPOSITORY_URL },
+  { label: 'X', href: X_URL },
   { label: 'Changelog', href: `${REPOSITORY_URL}/blob/main/CHANGELOG.md` },
   { label: 'Security', href: `${REPOSITORY_URL}/blob/main/SECURITY.md` },
 ]
