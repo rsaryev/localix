@@ -96,36 +96,6 @@
   }
 }
 
-/* The wordmark's X, two strokes that cross: a solid one and an outlined one. The bars are turned
-   about their own centres; the svg's viewport cuts them flat at the cap height. */
-.wordmark {
-  display: inline-flex;
-  align-items: center;
-  text-transform: uppercase;
-}
-.cross-x {
-  display: block;
-  height: 0.7em;
-  width: auto;
-  aspect-ratio: 132 / 120;
-  margin-left: 0.03em;
-}
-.cross-x rect {
-  transform-box: fill-box;
-  transform-origin: center;
-}
-.cross-x-solid {
-  fill: currentColor;
-  transform: rotate(-47.7deg);
-}
-.cross-x-outline {
-  fill: none;
-  stroke: currentColor;
-  /* In the X's own units, so the outline keeps its weight at any size. */
-  stroke-width: 3.2;
-  transform: rotate(47.7deg);
-}
-
 /* Pills: bone on the ground, or a hairline outline. */
 .lx-pill {
   display: inline-flex;

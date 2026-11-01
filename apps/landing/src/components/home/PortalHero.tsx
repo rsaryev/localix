@@ -1,11 +1,10 @@
 import { useRef } from 'react'
-import { releases } from '../../generated/releases'
+import { useReducedMotion } from '@localixai/kit/environment'
+import { LocalixBird } from '@localixai/kit/empty-hint'
 import { DemoFilm } from './DemoFilm'
-import { CrossX } from './Wordmark'
+import { HeroName } from './HeroName'
 import { useScrollProgress } from './motion'
 import './portal.css'
-
-const latest = releases[0]
 
 /**
  * The first screen is a portal. Two panels meet in the middle over the demo film, and the X of the
@@ -21,6 +20,7 @@ const latest = releases[0]
 export function PortalHero({ headline }: { headline: string }) {
   const section = useRef<HTMLElement>(null)
   useScrollProgress(section)
+  const still = useReducedMotion()
   return (
     <section ref={section} id="intro" className="portal" aria-labelledby="hero-title">
       <div className="portal-stage">
@@ -30,14 +30,15 @@ export function PortalHero({ headline }: { headline: string }) {
         <div className="portal-panel portal-panel-left" aria-hidden="true" />
         <div className="portal-panel portal-panel-right" aria-hidden="true" />
         <h1 id="hero-title" className="portal-title">
-          <span className="portal-letters" aria-hidden="true">
-            Locali
+          <span className="portal-bird">
+            <LocalixBird src="/logo.svg" size="text" still={still} cycles={Infinity} />
           </span>
-          <CrossX className="portal-x" />
+          <HeroName />
+          <span className="portal-tagline" aria-hidden="true">
+            {headline}
+          </span>
           <span className="sr-only">Localix, {headline}</span>
         </h1>
-        <p className="portal-meta portal-meta-tl">{headline}</p>
-        {latest && <p className="portal-meta portal-meta-tr">{`v${latest.version}`}</p>}
         <p className="portal-meta portal-meta-bl">Open source, MIT license</p>
       </div>
     </section>

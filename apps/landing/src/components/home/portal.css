@@ -90,6 +90,7 @@
   right: 0;
   z-index: 5;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   margin: 0;
@@ -120,30 +121,55 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-.portal-meta-tl,
-.portal-meta-tr {
-  top: calc(var(--lx-nav) + 1.25rem);
-}
 .portal-meta-bl {
   bottom: 1.4rem;
-}
-.portal-meta-tl,
-.portal-meta-bl {
   left: var(--home-gutter);
 }
-.portal-meta-tr {
-  right: var(--home-gutter);
-  text-align: right;
+
+/* The kit's flying bird in place of the wordmark, 1.5em of the portal title so it grows and fades
+   with it, painted in the landing's ink. */
+.portal-bird {
+  display: block;
+  font-size: 1.5em;
+  --bird-foreground: var(--lx-ink);
 }
 
-/* A phone has room for one line per edge: the release on top, the platform at the bottom. */
+/* LOCALIX under the bird: small, wide and widely tracked, so the bird leads and no letter pair
+   opens a gap the others lack. */
+.portal-name {
+  display: flex;
+  align-items: center;
+  /* In the name's own em: pulls it up under the bird, past the wind stage's empty band. */
+  margin-top: -1.1em;
+  /* Never below 11px, so the name stays legible on a phone's smaller title. */
+  font-size: max(0.23em, 11px);
+  line-height: 1;
+  letter-spacing: 0.5em;
+}
+/* The X with its trail, drawn so the trail can leave it; as tall as the capitals. */
+.portal-name-x {
+  display: block;
+  height: 0.687em;
+  width: auto;
+  margin-left: 0.04em;
+  overflow: visible;
+  fill: currentColor;
+}
+
+/* The headline under the name, in the corner labels' face: it grows and fades with the bird. */
+.portal-tagline {
+  margin-top: 1.6em;
+  color: var(--lx-ink-2);
+  font: 500 clamp(9px, 0.085em, 13px) / 1.4 var(--lx-text);
+  font-stretch: normal;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+/* On a phone the title's width clamp, sized once for a full-width word, leaves the bird tiny; the
+   bird and the name need no such room. */
 @media (max-width: 40rem) {
-  .portal-meta-tl {
-    display: none;
-  }
-  .portal-meta-tr {
-    right: auto;
-    left: var(--home-gutter);
-    text-align: left;
+  .portal-title {
+    font-size: 64px;
   }
 }

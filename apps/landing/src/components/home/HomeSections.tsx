@@ -4,7 +4,6 @@ import { type Release, releases } from '../../generated/releases'
 import { REPOSITORY_URL } from '../../lib/site'
 import { SOURCE_DOCS, usePrimaryDownload } from '../DownloadChooser'
 import { groupByCategory, groupBySection } from '../../pages/docs/docGroups'
-import { Wordmark } from './Wordmark'
 import './sections.css'
 
 const CHANGELOG_URL = `${REPOSITORY_URL}/blob/main/CHANGELOG.md`
@@ -170,9 +169,6 @@ export function Close() {
           ))}
         </nav>
       </footer>
-      <p className="close-mark" aria-hidden="true">
-        <Wordmark />
-      </p>
     </section>
   )
 }
