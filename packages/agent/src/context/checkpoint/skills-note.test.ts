@@ -49,7 +49,7 @@ function checkpointOf(turns: CheckpointEntry[]) {
   const record = planCheckpoint({
     entries,
     reason: 'threshold',
-    targetTokens: 400,
+    targetTokens: 120,
     activeFromIndex: entries.length - 1,
     keepRecentCount: 1,
     keepRecentTokens: 50,
@@ -103,5 +103,74 @@ describe('skills loaded before a checkpoint', () => {
     const after = textOf(projectCheckpoint(later, record, { cardsMessage }))
     expect(after).toContain(before)
     expect(after).not.toContain('zz-newer')
+  })
+
+  test('a skill loaded in the active turn is not called "earlier"', () => {
+    const entries = [
+      user('task'),
+      skillTurn({ name: 'old', status: 'completed' }),
+      user('next'),
+      skillTurn({ name: 'filler', status: 'failed' }),
+      user('active'),
+      skillTurn({ name: 'fresh', status: 'completed' }),
+    ]
+    const record = planCheckpoint({
+      entries,
+      reason: 'threshold',
+      targetTokens: 120,
+      activeFromIndex: 4,
+      keepRecentCount: 1,
+      keepRecentTokens: 50,
+      cardBudgetTokens: 300,
+      flags,
+    })
+    expect(record.evictedThroughId).toBeDefined()
+    expect(record.skills ?? []).not.toContain('fresh')
+    expect(textOf(projectCheckpoint(entries, record, { cardsMessage }))).not.toContain('fresh,')
+  })
+
+  test('a checkpoint that evicted nothing adds no checkpoint message', () => {
+    const entries = [user('task'), skillTurn({ name: 'deploy', status: 'completed' }), user('go')]
+    const record = planCheckpoint({
+      entries,
+      reason: 'threshold',
+      targetTokens: 100000,
+      activeFromIndex: 2,
+      keepRecentCount: 1,
+      keepRecentTokens: 50,
+      cardBudgetTokens: 300,
+      flags,
+    })
+    expect(record.evictedThroughId).toBeUndefined()
+    expect(textOf(projectCheckpoint(entries, record, { cardsMessage }))).not.toContain(
+      'context-checkpoint',
+    )
+  })
+
+  test('a later checkpoint keeps naming skills the previous one recorded', () => {
+    const first = [
+      user('task'),
+      skillTurn({ name: 'old', status: 'completed' }),
+      user('b'),
+      skillTurn({ name: 'filler', status: 'failed' }),
+      user('c'),
+    ]
+    const plan = (entries: CheckpointEntry[], previous?: ReturnType<typeof planCheckpoint>) =>
+      planCheckpoint({
+        entries,
+        previous,
+        reason: 'threshold',
+        targetTokens: 120,
+        activeFromIndex: entries.length - 1,
+        keepRecentCount: 1,
+        keepRecentTokens: 50,
+        cardBudgetTokens: 300,
+        flags,
+      })
+    const one = plan(first)
+    expect(one.skills).toEqual(['old'])
+    const more = [...first, skillTurn({ name: 'filler', status: 'failed' }), user('d')]
+    const two = plan(more, one)
+    expect(two.skills ?? []).toContain('old')
   })
 })

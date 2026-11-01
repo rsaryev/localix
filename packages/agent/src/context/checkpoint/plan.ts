@@ -58,6 +58,7 @@ interface Attempt {
   evictEnd: number
   cards: EpochCard[]
   transforms: Record<string, FrozenTransform>
+  skills: string[]
   total: number
 }
 
@@ -70,7 +71,7 @@ const cardsTokens = (
   recallToolAvailable: boolean,
   skills: readonly string[],
 ) =>
-  cards.length === 0 && skills.length === 0
+  cards.length === 0
     ? 0
     : estimateChatMessageTokens({
         id: '',
@@ -143,8 +144,14 @@ export function planCheckpoint(input: PlanCheckpointInput): ContextCheckpoint {
     }
   }
 
-  // What the model read through the Skill tool before this checkpoint, named once in the cards.
-  const skills = loadedSkills(entries)
+  // Skills named in the cards: those the previous record already froze, plus any loaded in the
+  // messages this checkpoint evicts. Kept messages and the active turn are still in view.
+  const skillsFor = (evictEnd: number): string[] => [
+    ...new Set([
+      ...(previous?.skills ?? []),
+      ...loadedSkills(entries.slice(previousEnd + 1, evictEnd + 1)),
+    ]),
+  ]
 
   const factsFor = (fromId: string, throughId: string) => {
     const from = indexOf.get(fromId)
@@ -160,6 +167,7 @@ export function planCheckpoint(input: PlanCheckpointInput): ContextCheckpoint {
     const cached = attempts.get(evictEnd)
     if (cached) return cached
     const fresh = entries.slice(previousEnd + 1, evictEnd + 1)
+    const skills = skillsFor(evictEnd)
     const cards = fitCards(
       [...(previous?.cards ?? []), ...(fresh.length > 0 ? [renderCard(cardFacts(fresh), 0)] : [])],
       input.cardBudgetTokens,
@@ -223,6 +231,7 @@ export function planCheckpoint(input: PlanCheckpointInput): ContextCheckpoint {
       evictEnd,
       cards,
       transforms: compressed.transforms,
+      skills,
       total: compressed.tokens + cardTokens + pinTokens,
     }
     attempts.set(evictEnd, result)
@@ -258,7 +267,7 @@ export function planCheckpoint(input: PlanCheckpointInput): ContextCheckpoint {
       .flatMap((entry) => (entry.pinned ? [entry.message.id] : [])),
     recoveryToolAvailable: flags.recoveryToolAvailable,
     recallToolAvailable: flags.recallToolAvailable,
-    ...(skills.length > 0 ? { skills } : {}),
+    ...(chosen.skills.length > 0 ? { skills: chosen.skills } : {}),
     tokens: {
       before: tokensOf(entries.map((entry) => entry.message)),
       after: chosen.total,

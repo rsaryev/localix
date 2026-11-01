@@ -114,36 +114,59 @@ function previewOf(value: unknown): unknown {
   return pruned(value, 1, 20, 6)
 }
 
-/** Error-like fields (and where they sit), each whole while the budget lasts; never more than a few. */
-function errorFields(value: unknown): { path: string; text: string }[] {
+/** The most values the error walk looks at, so a pathological result cannot stall the host. */
+const MAX_WALK_NODES = 200_000
+const MAX_WALK_DEPTH = 24
+
+/** A flag that says nothing happened (false, 0, null, empty) is not an error to keep. */
+const hasContent = (v: unknown): boolean =>
+  v !== null &&
+  v !== undefined &&
+  v !== false &&
+  v !== 0 &&
+  v !== '' &&
+  !(Array.isArray(v) && v.length === 0) &&
+  !(isRecord(v) && Object.keys(v).length === 0)
+
+/**
+ * Error-like fields (and where they sit), each whole while the budget lasts. The walk covers the
+ * whole value up to a node cap and `cut` says when it stopped early; empty values are skipped
+ * before the number of kept entries is capped, so flags like `isError: false` never push out a
+ * real error.
+ */
+function errorFields(value: unknown): { errors: { path: string; text: string }[]; cut: boolean } {
   const found: { path: string; text: string }[] = []
+  let nodes = 0
+  let cut = false
   const visit = (v: unknown, path: string, depth: number) => {
-    if (depth > 5) return
+    if (cut || depth > MAX_WALK_DEPTH) return
+    if (++nodes > MAX_WALK_NODES) {
+      cut = true
+      return
+    }
     if (Array.isArray(v)) {
-      v.slice(0, SAMPLE_ITEMS).forEach((item, i) => visit(item, `${path}[${i}]`, depth + 1))
+      v.forEach((item, i) => visit(item, `${path}[${i}]`, depth + 1))
     } else if (isRecord(v)) {
       for (const [key, field] of Object.entries(v)) {
         const at = path === '' ? key : `${path}.${key}`
-        const present = field !== null && field !== undefined && field !== ''
-        if (present && ERROR_KEY.test(key) && typeof field !== 'object')
-          found.push({ path: at, text: String(field) })
-        else if (present && ERROR_KEY.test(key))
-          found.push({ path: at, text: JSON.stringify(field) })
-        else visit(field, at, depth + 1)
+        if (ERROR_KEY.test(key) && hasContent(field)) {
+          const text = typeof field === 'object' ? JSON.stringify(field) : String(field)
+          found.push({ path: at, text })
+        } else visit(field, at, depth + 1)
       }
     }
   }
   visit(value, '', 0)
   let room = ERROR_BYTES
-  const kept: { path: string; text: string }[] = []
+  const errors: { path: string; text: string }[] = []
   for (const entry of found.slice(0, MAX_ERROR_FIELDS)) {
     room -= entry.path.length
     if (room <= 0) break
     const text = entry.text.length <= room ? entry.text : `${entry.text.slice(0, room)}…[cut]`
     room -= text.length
-    kept.push({ path: entry.path, text })
+    errors.push({ path: entry.path, text })
   }
-  return kept
+  return { errors, cut }
 }
 
 export interface JsonDigest {
@@ -168,11 +191,14 @@ export function jsonDigest(text: string): JsonDigest | undefined {
     return undefined
   }
   const bytes = textEncoderByteLength(text)
-  const errors = errorFields(value)
+  const { errors, cut } = errorFields(value)
   const body = {
     shape: boundedShape(value),
     preview: previewOf(value),
     ...(errors.length > 0 ? { errors } : {}),
+    ...(cut
+      ? { errorScan: `cut after ${MAX_WALK_NODES} values: errors past that point may be missing` }
+      : {}),
   }
   if (size(body) + ENVELOPE_BYTES >= bytes) return undefined
   return {

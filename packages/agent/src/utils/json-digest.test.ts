@@ -47,4 +47,27 @@ describe('jsonDigest', () => {
     expect(jsonDigest(JSON.stringify('s'.repeat(50_000)))).toBeUndefined()
     expect(jsonDigest(JSON.stringify([1, 2, 3]))).toBeUndefined()
   })
+
+  test('an error far down a long array is kept', () => {
+    const items = rows(400).map((r, i) =>
+      i === 300 ? { ...r, error: 'disk full on item 300' } : r,
+    )
+    const parsed = JSON.parse(jsonDigest(JSON.stringify({ items }))!.render('/p'))
+    expect(JSON.stringify(parsed.errors)).toContain('disk full on item 300')
+  })
+
+  test('false, zero and empty error flags do not push out a real error', () => {
+    const items = rows(300).map((r, i) =>
+      i < 30 ? { ...r, isError: false } : i === 200 ? { ...r, error: 'real failure' } : r,
+    )
+    const parsed = JSON.parse(jsonDigest(JSON.stringify({ items }))!.render('/p'))
+    expect(JSON.stringify(parsed.errors)).toContain('real failure')
+    expect(JSON.stringify(parsed.errors)).not.toContain('isError')
+  })
+
+  test('a walk cut short on a pathological input says so', () => {
+    const wide = Array.from({ length: 300_000 }, () => ({ a: 1 }))
+    const parsed = JSON.parse(jsonDigest(JSON.stringify(wide))!.render('/p'))
+    expect(parsed.errorScan).toContain('cut')
+  })
 })

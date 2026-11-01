@@ -55,7 +55,7 @@ export function projectCheckpoint<M extends ChatMessage>(
 
   const view: M[] = [shown(0)]
   const skills = checkpoint.skills ?? []
-  if (checkpoint.cards.length > 0 || skills.length > 0) {
+  if (checkpoint.cards.length > 0) {
     view.push(
       options.cardsMessage(renderCardsRegion(checkpoint.cards, flags.recallToolAvailable, skills)),
     )
