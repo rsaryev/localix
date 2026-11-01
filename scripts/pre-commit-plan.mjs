@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 // Hooks must work before packages have been built; reuse the owner's source implementation.
 import { isPathBelow } from '../packages/path-containment/src/index.ts'
@@ -25,8 +25,23 @@ export function readWorkspaces(root) {
   )
 }
 
-/** What a commit of `paths` checks: the tests beside them, and Rust when the shell changed. */
-export function planChecks(paths, exists = existsSync) {
+/**
+ * The desktop shell's script tests. Some read its Rust sources as text, so no test sits beside the
+ * .rs file they check; a shell change runs them all (about a second).
+ */
+function desktopScriptTests() {
+  const dir = 'apps/desktop-tauri/scripts'
+  if (!existsSync(dir)) return []
+  return readdirSync(dir)
+    .filter((name) => name.endsWith('.test.ts'))
+    .map((name) => `${dir}/${name}`)
+}
+
+/**
+ * What a commit of `paths` checks: the tests beside them, and Rust and the desktop script tests
+ * when the shell changed.
+ */
+export function planChecks(paths, exists = existsSync, desktopTests = desktopScriptTests) {
   const tests = new Set()
   for (const path of paths.filter((path) => source.test(path))) {
     if (testFile.test(path)) {
@@ -38,11 +53,10 @@ export function planChecks(paths, exists = existsSync) {
       if (exists(`${stem}${suffix}`)) tests.add(`${stem}${suffix}`)
     }
   }
-  return {
-    tests: [...tests],
-    rust: paths.some(
-      (path) =>
-        isPathBelow('apps/desktop-tauri/src-tauri', path) && /\.(?:rs|toml|lock|json)$/.test(path),
-    ),
-  }
+  const rust = paths.some(
+    (path) =>
+      isPathBelow('apps/desktop-tauri/src-tauri', path) && /\.(?:rs|toml|lock|json)$/.test(path),
+  )
+  if (rust) for (const test of desktopTests()) tests.add(test)
+  return { tests: [...tests], rust }
 }

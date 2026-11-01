@@ -104,6 +104,25 @@ test('selects existing sibling tests and Rust source or dependency changes', () 
   expect(planChecks(['docs/rust.md'], () => false).rust).toBe(false)
 })
 
+test('a change to the desktop shell runs the desktop tests that read its sources', () => {
+  // workspace-runtime.test.ts reads workspace_windows.rs as text, so a Rust split broke it with no
+  // test beside the .rs file to notice; every desktop script test runs, in about a second.
+  const desktop = ['apps/desktop-tauri/scripts/workspace-runtime.test.ts']
+  const plan = planChecks(
+    ['apps/desktop-tauri/src-tauri/src/lib.rs'],
+    () => false,
+    () => desktop,
+  )
+  expect(plan.tests).toEqual(desktop)
+  expect(
+    planChecks(
+      ['apps/api/src/topic.ts'],
+      () => false,
+      () => desktop,
+    ).tests,
+  ).toEqual([])
+})
+
 function typedFixture(content: string) {
   const root = fixture('apps/api/src/bad.test.ts', content)
   writeFileSync(join(root, '.oxfmtrc.json'), JSON.stringify({ semi: false }))
