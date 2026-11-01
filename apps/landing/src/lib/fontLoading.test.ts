@@ -24,7 +24,7 @@ test('landing font policy cannot fall through to a late-swapping kit face', () =
     expect(kit.some((shared) => shared.family === face.family)).toBe(false)
   }
   // The docs' two faces are the kit's own assets at the kit's weights; the homepage's display
-  // and text faces (Syne, Sora) are its own and never named by the kit.
+  // and text faces (Archivo, Sora) are its own and never named by the kit.
   const docsFaces = local.filter((face) => face.family?.startsWith('Localix Landing '))
   expect(docsFaces).toHaveLength(2)
   for (const face of docsFaces) {

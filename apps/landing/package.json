@@ -22,10 +22,10 @@
     "releases:gen": "bun run scripts/build-releases.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/archivo": "^5.3.0",
     "@fontsource-variable/dm-sans": "^5.3.0",
     "@fontsource-variable/inter": "^5.3.0",
     "@fontsource-variable/sora": "^5.3.0",
-    "@fontsource-variable/syne": "^5.3.0",
     "@localixai/kit": "workspace:*",
     "@localixai/markdown": "workspace:*",
     "@localixai/mini-app-sdk": "workspace:*",

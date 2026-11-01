@@ -206,11 +206,12 @@
   }
 }
 .close-mark {
-  margin: 0 0 -0.2em;
+  margin: 0 0 -0.06em;
   color: var(--lx-ink);
-  font: 800 16.4vw / 0.8 var(--lx-mark);
-  letter-spacing: -0.045em;
+  font: 500 17.5vw / 0.8 var(--lx-mark);
+  font-stretch: 125%;
+  letter-spacing: -0.01em;
   text-align: center;
   white-space: nowrap;
-  transform: translateY(14%);
+  transform: translateY(8%);
 }

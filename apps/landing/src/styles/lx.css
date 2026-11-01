@@ -1,7 +1,7 @@
 /* The homepage's own look: neutral blacks, a warm bone ink, and one accent taken from the demo
    film the portal opens on, the amber gold of the page the agent builds in it. The accent marks
-   only what reacts to the pointer, never a filled area or a highlighted phrase. Syne sets only the
-   big LOCALIX marks, DM Sans the headings, Sora all small type.
+   only what reacts to the pointer, never a filled area or a highlighted phrase. Archivo Expanded
+   sets only the big LOCALIX marks, DM Sans the headings, Sora all small type.
 
    Scoped to the homepage (`data-page='home'` on the layout), so the docs keep the product's look. */
 [data-page='home'] {
@@ -13,8 +13,8 @@
   --lx-muted: #706e6a;
   --lx-amber: #e9bb4f;
   --lx-line: rgb(237 231 220 / 0.13);
-  /* Syne is a wordmark face: wide and quirky, it reads badly in a sentence. Only the two big
-     LOCALIX marks use it; every heading is set in the product's own heading face (DM Sans). */
+  /* Archivo Expanded sets only the two big LOCALIX marks; every heading is set in the product's
+     own heading face (DM Sans). */
   --lx-mark: 'Localix Display', 'Localix Landing Heading', Arial, sans-serif;
   --lx-display: 'Localix Landing Heading', Arial, sans-serif;
   --lx-text: 'Localix Text', 'Localix Landing Sans', Arial, sans-serif;
@@ -94,6 +94,36 @@
   .lx-nav-wide {
     display: none;
   }
+}
+
+/* The wordmark's X, two strokes that cross: a solid one and an outlined one. The bars are turned
+   about their own centres; the svg's viewport cuts them flat at the cap height. */
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  text-transform: uppercase;
+}
+.cross-x {
+  display: block;
+  height: 0.7em;
+  width: auto;
+  aspect-ratio: 132 / 120;
+  margin-left: 0.03em;
+}
+.cross-x rect {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.cross-x-solid {
+  fill: currentColor;
+  transform: rotate(-47.7deg);
+}
+.cross-x-outline {
+  fill: none;
+  stroke: currentColor;
+  /* In the X's own units, so the outline keeps its weight at any size. */
+  stroke-width: 3.2;
+  transform: rotate(47.7deg);
 }
 
 /* Pills: bone on the ground, or a hairline outline. */
