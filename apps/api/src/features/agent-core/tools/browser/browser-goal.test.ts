@@ -306,4 +306,65 @@ describe('the goal action', () => {
     expect(updates.map((lines) => lines.length)).toEqual([1, 2, 3])
     expect(updates[1]![1]).toContain('CLICK button "Search" [e2]')
   })
+  test('an answer that names no offered operation gets one repair naming the error and the options', async () => {
+    const tab = page({ snapshotAfter: true })
+    const asked: DecisionAsk[] = []
+    const decide = async (ask: DecisionAsk) => {
+      asked.push(ask)
+      return asked.length === 1 ? answered({ operation: 'FLY' }) : answered({ operation: 'DONE' })
+    }
+    const result = await runGoal({ send: tab.send, decide, sleep: async () => {} }, input)
+    expect(asked).toHaveLength(2)
+    expect(asked[0]!.state.previous_answer_error).toBeUndefined()
+    expect(String(asked[1]!.state.previous_answer_error)).toContain('no offered operation')
+    expect(asked[1]!.state.allowed_operations).toContain('CLICK')
+    expect(result.isError).toBeUndefined()
+    expect(result.content).toContain('the model judged the goal done')
+  })
+
+  test('a second undecodable answer ends with a definitive error, not a third ask', async () => {
+    const tab = page()
+    const asked: DecisionAsk[] = []
+    const decide = async (ask: DecisionAsk) => {
+      asked.push(ask)
+      return answered({ operation: 'FLY' })
+    }
+    const result = await runGoal({ send: tab.send, decide, sleep: async () => {} }, input)
+    expect(asked).toHaveLength(2)
+    expect(result.isError).toBe(true)
+    expect(result.content).toContain('still failed')
+  })
+
+  test('when the action budget runs out one report-only turn gives a verdict', async () => {
+    let n = 0
+    const asked: DecisionAsk[] = []
+    const send = async (command: PreviewCommand): Promise<PreviewSendOutcome> =>
+      command.action === 'snapshot'
+        ? {
+            ok: true,
+            result: {
+              action: 'snapshot',
+              snapshot: {
+                tree: '',
+                stats: { nodes: 1, interactive: 1, chars: 0 },
+                url: 'u',
+                title: 't',
+                elements: [{ ref: 'e1', role: 'button', name: `More ${n}` }],
+              },
+            },
+          }
+        : { ok: true, result: { action: 'steps', diff: `+ ${++n}` } }
+    const decide = async (ask: DecisionAsk) => {
+      asked.push(ask)
+      return ask.state.budget_exhausted
+        ? answered({ operation: 'BLOCKED' })
+        : answered({ operation: 'CLICK', click_target: 'e1' })
+    }
+    const result = await runGoal({ send, decide }, input)
+    const last = asked.at(-1)!
+    expect(Object.keys(last.questions)).toEqual(['operation'])
+    expect(Object.keys(last.questions.operation!.criteria)).toEqual(['DONE', 'BLOCKED'])
+    expect(result.content).toContain('the 20-action limit; final report')
+    expect(result.content).toContain('does not look satisfied')
+  })
 })

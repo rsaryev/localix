@@ -19,6 +19,7 @@ import type {
   PreviewStep,
 } from '../preview/preview-control'
 import { snapshotContent } from './browser-format'
+import { budgetReport, repairAsk, type BudgetDecide } from './browser-goal-report'
 import {
   describeElement,
   goalAsk,
@@ -34,6 +35,7 @@ export const GOAL_MAX_ACTIONS = 20
 /** Below this probability a DONE is reported as unsure. */
 export const GOAL_DONE_CONFIDENCE = 0.6
 export const GOAL_MAX_DECISIONS = 40
+const BUDGET_STOP = `the ${GOAL_MAX_ACTIONS}-action limit`
 /** Fields whose typing brings up options to pick, and how long their options may take. */
 const SUGGESTING_ROLES = new Set(['combobox', 'searchbox'])
 const SUGGESTION_WAIT_MS = 150
@@ -85,16 +87,18 @@ const sameAction = (a: GoalStep | undefined, b: GoalStep) =>
   !!a && a.operation === b.operation && a.ref === b.ref && a.value === b.value
 
 export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result> {
-  if (!deps.decide) return { content: NO_DECISION_MODEL, isError: true }
+  const decide = deps.decide
+  if (!decide) return { content: NO_DECISION_MODEL, isError: true }
   const sleep = deps.sleep ?? ((ms) => new Promise<void>((done) => setTimeout(done, ms)))
   const tab = input.previewId ? { previewId: input.previewId } : {}
   const history: GoalStep[] = []
-  let stopped = `the ${GOAL_MAX_ACTIONS}-action limit`
+  let stopped = BUDGET_STOP
   let model: string | undefined
   // The page as the last action left it: each action asks for its snapshot in the same relay
   // round trip, so a step costs one browser call and one decision, not two calls.
   let latest: PreviewSnapshot | undefined
   let retriedStale = false
+  let undecodable = false
   // The next read is the same visit as the last one (a stale target was looked at again).
   let rereading = false
   const seen = new Map<string, number>()
@@ -131,16 +135,28 @@ export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result>
       values: input.values,
       history,
     })
-    const outcome = await deps.decide(ask, { signal: input.signal })
+    const outcome = await decide(ask, { signal: input.signal })
     if (outcome.status !== 'answered') {
       stopped = `the decision model did not answer (${outcome.status})`
       break
     }
     model = outcome.model
-    const pick = readGoal(outcome.answers, ask, input.values)
+    let pick = readGoal(outcome.answers, ask, input.values)
+    // An answer that does not decode, or names an operation not offered, gets ONE follow-up that
+    // names the error and the allowed operations. A second failure is a definitive error: the
+    // model is not understood, which a retry of the whole run would not change.
     if ('error' in pick) {
-      stopped = pick.error
-      break
+      const again = await decide(repairAsk(ask, pick.error), { signal: input.signal })
+      if (again.status !== 'answered') {
+        stopped = `the decision model did not answer the repair (${again.status})`
+        break
+      }
+      pick = readGoal(again.answers, ask, input.values)
+      if ('error' in pick) {
+        undecodable = true
+        stopped = `${pick.error} It was asked once more with the error and the allowed operations, and still failed.`
+        break
+      }
     }
     const element = snapshot.elements.find((candidate) => candidate.ref === pick.ref)
     const step: GoalStep = {
@@ -218,7 +234,31 @@ export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result>
       break
     }
   }
+  if (stopped === BUDGET_STOP && !input.signal?.aborted) stopped = await report(decide, stopped)
   return finish(stopped)
+
+  /**
+   * The budget is spent: one last turn that may only report. Its verdict joins the stop reason;
+   * a model that cannot give one leaves the reason as it was.
+   */
+  async function report(ask: BudgetDecide, reason: string): Promise<string> {
+    const looked = latest?.elements ? undefined : await deps.send({ action: 'snapshot', ...tab })
+    const snapshot = looked ? ('error' in looked ? undefined : looked.result.snapshot) : latest
+    if (!snapshot?.elements) return reason
+    latest = snapshot
+    const verdict = await budgetReport(
+      ask,
+      {
+        goal: input.goal,
+        page: { url: snapshot.url, title: snapshot.title, text: pageText(snapshot.tree) },
+        elements: snapshot.elements,
+        values: input.values,
+        history,
+      },
+      input.signal,
+    )
+    return verdict ? `${reason}; final report from the evidence in view: ${verdict}` : reason
+  }
 
   function progress() {
     input.onProgress?.(history.map((step, i) => `${i + 1}. ${traceLine(step)}`))
@@ -251,6 +291,7 @@ export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result>
     return {
       content: [header, ...lines, '', page].join('\n'),
       details: { action: 'goal' },
+      ...(undecodable ? { isError: true } : {}),
       supersedeKey: 'browser',
     }
   }
