@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { TerminalClientFrame } from '@localixai/api/client'
-import { useGridStore } from '@/entities/workspace-grid/model'
 import { getTerminalLiveness } from '../api'
 import { workItemTransferState } from '@/shared/lib/workItemTransferState'
 import { terminalTransferReadyKey, workItemTransferReady } from '@/shared/lib/workItemTransferReady'
@@ -14,7 +13,14 @@ import { createTabAttention } from '../model/terminalAttention'
 import { useLatestRef } from '@/shared/lib/useLatestRef'
 import { setupTerminalInteractions, type TerminalConnectionInput } from './terminalSetup'
 import { observeHostResize, useTerminalPaneSync } from './useTerminalPaneSync'
-import { closeOwnedPtyIfGone, openTerminalStream, type TerminalStreamLink } from './terminalStream'
+import {
+  closeOwnedPtyIfGone,
+  closeTerminalLink,
+  hasTerminalExited,
+  openTerminalStream,
+  sendTerminalFrame,
+  type TerminalStreamLink,
+} from './terminalStream'
 
 /** After a connect, output this soon is the scrollback replay, not live activity. */
 const REPLAY_SETTLE_MS = 500
@@ -107,9 +113,7 @@ export function useTerminalConnection({
     const { term, fit, search } = instance
     searchRef.current = search
     termRef.current = term
-    term.options.disableStdin = Boolean(
-      useGridStore.getState().items[paneId]?.payload?.terminalExit,
-    )
+    term.options.disableStdin = hasTerminalExited(paneId)
 
     const interactions = setupTerminalInteractions(term, host, search, {
       isDisposed: () => disposed,
@@ -124,11 +128,7 @@ export function useTerminalConnection({
     const { shell } = interactions
     pasteRef.current = interactions.paste
 
-    const send = (frame: TerminalClientFrame) => {
-      if (useGridStore.getState().items[paneId]?.payload?.terminalExit) return
-      const ws = link.ws
-      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(frame))
-    }
+    const send = (frame: TerminalClientFrame) => sendTerminalFrame(paneId, link, frame)
 
     // Fit + PTY sizing glue lives in the sizer (gating/clamping in terminalResize.ts).
     const sizer = createPtySizer({ term, host, fit, send })
@@ -190,9 +190,7 @@ export function useTerminalConnection({
 
     const resizeObserver = observeHostResize(host, sizer, shell, attention)
 
-    const retained = useGridStore.getState().items[paneId]?.payload?.terminalExit
-      ? terminalOutput(terminalId)
-      : undefined
+    const retained = hasTerminalExited(paneId) ? terminalOutput(terminalId) : undefined
     if (retained !== undefined) {
       term.write(retained)
       workItemTransferReady.success(terminalTransferReadyKey(terminalId))
@@ -250,11 +248,7 @@ export function useTerminalConnection({
       shell.dispose()
       instance.dispose()
       resizeObserver.disconnect()
-      try {
-        link.ws?.close()
-      } catch {
-        /* already closed */
-      }
+      closeTerminalLink(link)
       closeOwnedPtyIfGone(paneId, terminalId, owned)
       term.dispose()
     }

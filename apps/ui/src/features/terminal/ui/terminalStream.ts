@@ -1,5 +1,5 @@
 import type { Terminal } from '@xterm/xterm'
-import type { TerminalServerFrame } from '@localixai/api/client'
+import type { TerminalClientFrame, TerminalServerFrame } from '@localixai/api/client'
 import { terminalTransferReadyKey, workItemTransferReady } from '@/shared/lib/workItemTransferReady'
 import { closeTerminal, getTerminalLiveness, terminalStreamUrl } from '../api'
 import { useGridStore } from '@/entities/workspace-grid/model'
@@ -122,4 +122,29 @@ export function closeOwnedPtyIfGone(paneId: string, terminalId: string, owned: b
     })
   )
     void closeTerminal(terminalId)
+}
+
+/** Whether the pane's terminal already exited (its tab keeps the output but takes no input). */
+export function hasTerminalExited(paneId: string): boolean {
+  return Boolean(useGridStore.getState().items[paneId]?.payload?.terminalExit)
+}
+
+/** Close the stream's socket on teardown; a socket that is already closed is not an error. */
+export function closeTerminalLink(link: TerminalStreamLink): void {
+  try {
+    link.ws?.close()
+  } catch {
+    /* already closed */
+  }
+}
+
+/** Send one frame to the PTY, unless the terminal exited or the socket is not open. */
+export function sendTerminalFrame(
+  paneId: string,
+  link: TerminalStreamLink,
+  frame: TerminalClientFrame,
+): void {
+  if (hasTerminalExited(paneId)) return
+  const ws = link.ws
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(frame))
 }
