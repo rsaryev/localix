@@ -4,6 +4,12 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+## v0.1.0-beta.23 — 2026-11-01
+
+The agent island is back for questions and approvals, and the agent works real web pages far more
+reliably: dropdowns, frames, late content, long pages and booking-style forms. Dialogs now follow
+your window transparency.
+
 ### Added
 
 - **Agent island**: on a Mac, an agent's question or approval can now open at the notch while you
@@ -12,91 +18,61 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
   light also runs along the notch while agents work. It never opens while Localix is the active app.
   Turn it on in Settings → Preferences → Agent island or from its slide in Set up; it is off by
   default.
-- **Browser reads pages inside frames**: the agent now sees and can click or type into the controls
-  of an embedded same-origin frame, such as a cookie banner or an embedded form, and knows when a
-  frame covers the page. A frame from another site is reported as not reachable instead of being
-  missing.
+- **Browser handles real pages**: the agent can now pick a dropdown option by its value or label,
+  wait up to 15 seconds for text or an element to appear or go away, read a long page in windows of
+  about 8,000 characters, go back, forward and reload a tab, and see and use the controls of an
+  embedded same-origin frame such as a cookie banner. All of it works in the preview and in native
+  browser tabs.
+- **Browser sees what changed**: after a click or typing, the agent waits until the page settles (up
+  to 0.7 s), is told when it is still loading, and gets the changed lines in order, each with its
+  place on the page, and a reference for every control that appeared.
 - **See the agent work in a browser tab**: while the agent runs a command in one of your browser
   tabs, the tab shows a small spinner, and after a click or typing a blue box briefly marks the
-  element it targeted. With reduced motion the box appears without fading.
-- **Browser goals stop going in circles**: a multi-step goal now ends when the page returns to the
-  same state a third time, no longer offers to type into fields that already hold a value, shows
-  each step as it happens, and lists any of your values it never typed.
-- **Page previews keep your project private**: previewing a folder no longer serves hidden files
-  such as `.env` or `.git`, only the page files themselves (`/.well-known/` stays available).
-- **Browser tells the agent what you did**: when you close a tab the agent opened, or type a new
-  address into one of its tabs, the agent is told on its next turn, so it stops working on a page
-  you already closed or moved.
-- **Browser tells what changed in order**: after a click or typing, the agent is shown the lines
-  that changed with the line above each one and a mark between changes that are apart, so one of
-  several identical rows or scores is told by its place, and a control that appeared comes with a
-  reference it can act on. When most of the page changed, it gets the whole page instead.
-- **Browser waits for the page to settle**: after a click or typing, the agent now waits until the
-  page has stopped changing, up to 0.7 s, so results that arrive from the network are in what it
-  sees instead of a false "no visible change". If the page is still loading (a request of its own in
-  flight, a busy main region or an indeterminate progress bar), the reply says so.
-- **Browser reads long pages and moves through history**: the agent can now read a page's text in
-  windows of about 8,000 characters, told where each window sits and where to continue, instead of
-  writing a script. It can also go back, go forward and reload a tab, and in a native browser tab it
-  gets the page it lands on.
-- **Browser safety nets on real sites**: when the agent drives a page in a native browser tab, a
-  dialog the page opens during the action (alert, confirm, prompt) is cancelled instead of freezing
-  the agent, and its text is reported back; your own dialogs while you browse are untouched. Failed
-  stylesheets, scripts and images are now listed too, and link clicks and form submits are followed
-  to the new page sooner.
-- **Browser picks dropdown options**: the agent can now choose an option of a form dropdown by its
-  value or its visible label, and the page sees a real change. The page snapshot lists each
-  dropdown's options (up to 50), and picking one that is already chosen is reported as unchanged. It
-  works in the preview and in native browser tabs.
-- **Browser waits for late content**: the agent can now wait in the page until text or an element
-  appears, or goes away, for up to 15 seconds, then read it, instead of reading a half-loaded page
-  and guessing. It works in the preview and in native browser tabs, even when the tab is in the
-  background, and it says how long the wait took or that the page may still be working.
+  element it targeted.
+- **Browser keeps up with you**: when you close a tab the agent opened, or type a new address into
+  one of its tabs, the agent is told on its next turn. A dialog a page opens during the agent's
+  action is cancelled and reported instead of freezing it, while your own dialogs are left alone,
+  and failed stylesheets, scripts and images are listed.
 
 ### Changed
 
+- **Browser goals stop going in circles**: a multi-step goal now ends when the page returns to the
+  same state a third time, no longer offers to type into fields that already hold a value, shows
+  each step as it happens, and lists any of your values it never typed.
 - **Install confirmation in the Store**: the sheet that asks before installing from a community
   source lists its warnings together in one quiet panel, then what the app adds, runs and reaches,
-  each under its own word, instead of a column of centred sentences; a source called "Localix
-  Community" is no longer followed by "· Community".
+  each under its own word.
+- **Page previews keep your project private**: previewing a folder no longer serves hidden files
+  such as `.env` or `.git`, only the page files themselves (`/.well-known/` stays available).
 
 ### Fixed
 
 - **Dialogs follow window transparency**: dialogs, confirmations and drawers, and the dimming behind
-  them, now follow Settings → Preferences → Appearance → Window transparency. At Standard and High
-  the window shows through instead of a flat black or white panel; Off keeps them opaque.
-- **Tab rows that scroll**: when tabs don't fit, as in the Store's categories, the clipped edge now
-  fades out instead of showing a dark band under the scroll arrow on a translucent window.
-- **Store collections**: the icons on a collection card no longer sit in odd frames that touched
-  each other; they stand in a neat row.
-- **Deleting a chat keeps you in its project**: deleting the open chat now opens a blank chat in the
-  same project instead of taking you to the home page.
+  them, now follow Settings → Preferences → Appearance → Window transparency instead of a flat black
+  or white panel; Off keeps them opaque. Scrolling tab rows, such as the Store's categories, fade at
+  the edge instead of showing a dark band, and Store collection icons lost their odd frames.
 - **Browser on booking-style forms**: the agent now sees search fields drawn inside a dropdown box
   with their label and value, waits a moment when a click lands on a loading cover and names the
   buttons of a banner that stays in the way, types into the field a click just focused, and is told
   when a goal could not type because no text was given to it.
+- **Deleting a chat keeps you in its project**: deleting the open chat now opens a blank chat in the
+  same project instead of taking you to the home page.
 - **Update all for plugins**: after **Update all** above the composer updates a plugin, the strip no
-  longer keeps offering the same update as if nothing happened. While the Store reads its sources
-  first, the strip says **Checking for updates…** instead of staying still.
-- **Rust code intelligence**: opening a `.rs` file starts rust-analyzer again when rustup is
-  installed without its rust-analyzer component. Localix used to start rustup's stand-in, which
-  exits at once, and showed no hover, diagnostics or go-to-definition; it now downloads and runs its
-  own rust-analyzer instead.
+  longer offers the same update again, and it says **Checking for updates…** while the Store reads
+  its sources.
 - **Get replaces a mini app by the same name**: in the Store, **Get** on an app whose name one of
   your own mini apps, or the same app from another marketplace, already holds now installs it in
-  that one's place, keeping its data, instead of failing with "already called". Apps Localix
-  installs on its own still leave yours alone.
+  that one's place, keeping its data, instead of failing with "already called".
+- **Rust code intelligence**: opening a `.rs` file starts rust-analyzer again when rustup is
+  installed without its rust-analyzer component; Localix now downloads and runs its own instead of
+  rustup's stand-in, so hover, diagnostics and go-to-definition work.
 
 ### Removed
 
-- **SSH and Docker execution adapters**: the unused groundwork for running a session's tools over
-  SSH or in a Docker container is gone, along with its documentation. Sessions run on the local
-  machine, as before.
-- **Single `apiKey` on connection updates**: `PATCH /rpc/provider-connections/:id` no longer accepts
-  an `apiKey` field. Add or replace a key through the connection's key routes; creating a connection
-  still takes `apiKey`.
-- **`LOCALIX_BASH_PATH`**: the old spelling of `LOCALIX_SHELL` is no longer read. If you set it, use
-  `LOCALIX_SHELL` instead; otherwise Localix finds Bash on its own.
+- **Old groundwork and spellings**: the unused SSH and Docker execution adapters are gone (sessions
+  run on your machine, as before); `PATCH /rpc/provider-connections/:id` no longer accepts `apiKey`
+  (use the connection's key routes); and `LOCALIX_BASH_PATH` is no longer read (use
+  `LOCALIX_SHELL`).
 
 ## v0.1.0-beta.22 — 2026-10-30
 
