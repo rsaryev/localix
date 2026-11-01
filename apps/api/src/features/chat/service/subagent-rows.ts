@@ -17,7 +17,6 @@ import {
   type SubagentRowsComputed,
   type Timers,
 } from './subagent-rows-live'
-import { publishResourcesChanged } from '../../realtime/resources'
 
 /** The most rows one refresh hands the command — far more than the panel shows at once. */
 const MAX_TASKS = 20
@@ -118,7 +117,13 @@ export function createSubagentRows(deps: SubagentRowsDeps) {
   const live = createSubagentRowsLive({
     compute,
     watched: (userId, ids) => ids.some((id) => deps.streamRegistry.hasWatchers(userId, id)),
-    publish: (userId) => publishResourcesChanged(deps.streamRegistry, userId, ['subagent-rows']),
+    // The resources.changed poke written out: chat publishes on its own registry and imports no
+    // value of realtime, which imports chat's stream registry (A6).
+    publish: (userId) =>
+      deps.streamRegistry.publish(userId, '', {
+        type: 'resources.changed',
+        resources: ['subagent-rows'],
+      }),
     locate: async (userId, id) => {
       const session = await deps.getSession(userId, id)
       return session ? [session.parentSessionId, session.rootSessionId] : []
