@@ -3,7 +3,6 @@
  * place the layers are wired together. Routes and tools are thin callers of this.
  */
 
-import { stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import type { TerminalRead } from '@localixai/mini-app-sdk/backend'
 import type { AdapterEnv, ProviderAdapter, SourceRef } from './adapters/types'
@@ -14,6 +13,7 @@ import { buildRoster } from './discovery/roster'
 import { computeStats, type ExternalAgentStats, type StatsQuery } from './discovery/stats'
 import { ManifestRegistry } from './detection/registry'
 import { LiveStore, type LiveEntry } from './live/store'
+import { createLiveReadings } from './live/readings'
 import { CORRELATE_ATTEMPT_DELAYS_MS, correlateOnce } from './live/correlate'
 import { observeToolCall } from './live/observe'
 import { waitForStates, type WaitRequest, type WaitOutcome } from './live/waiters'
@@ -48,6 +48,7 @@ export class AgentSessionsService {
   /** The log each live delegation is tailed from, found once — see `turnSource`. */
   private readonly turnSources = new Map<string, { adapter: ProviderAdapter; ref: SourceRef }>()
   private readonly env: AdapterEnv
+  private readonly readings: ReturnType<typeof createLiveReadings>
   private readonly timers = new Set<ReturnType<typeof setTimeout>>()
   private stopped = false
 
@@ -65,6 +66,13 @@ export class AgentSessionsService {
     this.manifests = new ManifestRegistry(stateDir, log)
     this.live = new LiveStore(this.manifests)
     this.index = new SessionIndex(PROVIDER_ADAPTERS, this.env, stateDir, log)
+    this.readings = createLiveReadings({
+      live: this.live,
+      env: this.env,
+      turnSources: this.turnSources,
+      terminalRead: () => this.terminalRead,
+      findSource: (key) => this.findSource(key),
+    })
     // A closed delegation's log is never read again; keep only the live ones' locations.
     this.live.onChange((entry) => {
       if (entry.closed && entry.nativeSessionId)
@@ -96,22 +104,9 @@ export class AgentSessionsService {
     if (read) this.terminalRead = read
   }
 
-  /**
-   * The delegation's CURRENT screen, read on demand.
-   *
-   * The live store is an observation log — it holds whatever the model last looked at. This takes a
-   * reading instead, which is the difference between "blocked as of four minutes ago" and "blocked".
-   * Returns null when the host gave this load no reader, or when the terminal is not this session's.
-   */
+  /** The delegation's CURRENT screen, read on demand (`live/readings.ts`). */
   async readScreen(key: string, sessionId: string | null): Promise<string | null> {
-    const entry = this.live.byKey(key)
-    if (!entry || !this.terminalRead) return null
-    const screen = await this.terminalRead.screen({ sessionId, terminalId: entry.terminalId })
-    if (!screen) return null
-    // A fresh reading is also an observation: folding it back in means the roster and any waiter
-    // see it too, rather than it being known only to whoever asked.
-    this.live.observeScreen(entry.terminalId, screen.text)
-    return screen.text
+    return this.readings.readScreen(key, sessionId)
   }
 
   async start(): Promise<void> {
@@ -194,7 +189,7 @@ export class AgentSessionsService {
     // state came from whatever the model last happened to screen, so the list moved and the states
     // did not. Bounded by construction — one VT render per live delegation, of panes already in
     // memory, and there are only ever a handful.
-    await this.refreshLiveStates(localixSessionId ?? null)
+    await this.readings.refreshLiveStates(localixSessionId ?? null)
     // Only scan the providers the query actually asks about: filtering by provider should make the
     // request cheaper, not just the result shorter.
     const wanted = query.providers?.length
@@ -228,103 +223,17 @@ export class AgentSessionsService {
     )
   }
 
-  /** Re-read every live delegation of this session, when the host gave this load a reader. */
-  private async refreshLiveStates(sessionId: string | null): Promise<void> {
-    if (!this.terminalRead) return
-    const entries = this.live.list(sessionId ?? undefined)
-    await Promise.all(
-      entries.map((entry) =>
-        this.refreshEntry(sessionId, entry.terminalId)
-          // A pane that vanished between listing and reading is not an error worth failing a
-          // roster over.
-          .catch(() => undefined),
-      ),
-    )
-    await this.refreshTurnStates(entries)
-  }
-
-  /**
-   * One delegation's screen, or its end. Only the model's own `bash close` used to close an entry,
-   * so an agent that exited by itself, or whose pane the user closed, stayed live in the roster and
-   * held every wait on it to its timeout. A retained final screen is the host saying it exited.
-   */
-  private async refreshEntry(sessionId: string | null, terminalId: string): Promise<void> {
-    const read = this.terminalRead
-    if (!read) return
-    const screen = await read.screen({ sessionId, terminalId })
-    if (screen) {
-      this.live.observeScreen(terminalId, screen.text)
-      return
-    }
-    const final = await read.finalScreen({ sessionId, terminalId })
-    if (!final) return
-    this.live.observeScreen(terminalId, final.text)
-    this.live.close(terminalId)
-  }
-
-  /**
-   * Where the screen said nothing, ask the agent's own log.
-   *
-   * Only for entries the manifest degraded (`fallbackReason`) and that have been correlated to a
-   * transcript — for Claude Code that is every non-blocked screen, which is why a wait could settle
-   * on a working delegation. The read is the LAST 64 KB of an append-only file, so it costs the same
-   * whether the session is a minute or a month old.
-   */
-  private async refreshTurnStates(entries: readonly LiveEntry[]): Promise<void> {
-    await Promise.all(entries.map((entry) => this.readTurn(entry)))
-  }
-
   /**
    * One delegation's log, folded back into the live store like a screen reading is.
    *
-   * Public for the same reason `readScreen` is: `wait` needs it per key. A wait evaluates its
-   * condition BEFORE its first poll — the right rule, since a condition that
-   * already holds must not block — so a wait that only read transcripts on its ticks would still
-   * settle instantly on the degraded `idle` this exists to replace.
+   * Public for the same reason `readScreen` is: `wait` needs it per key.
    */
   async readTurn(entry: LiveEntry): Promise<void> {
-    const speaksHere = entry.explain.fallbackReason || entry.explain.authority === 'transcript'
-    if (entry.closed || !speaksHere || !entry.nativeSessionId) return
-    const now = Date.now()
-    const key = linkKeyOf({ provider: entry.provider, nativeSessionId: entry.nativeSessionId })
-    try {
-      const found = await this.turnSource(key)
-      // The ADAPTER decides how its own storage answers — an appending log's last records, a row
-      // that says the session ended, or nothing at all. A provider that cannot answer keeps the
-      // manifest's degraded state with its stated reason, which is the honest outcome.
-      if (!found?.adapter.readTurnState) return
-      // The ref is kept for the life of the delegation, so its modification time is not: a stale
-      // one would age every `working` reading past its evidence window within 90 s of the first.
-      const { mtimeMs } = await stat(found.ref.sourcePath)
-      const ref = { ...found.ref, updatedAtHint: mtimeMs }
-      const state = await found.adapter.readTurnState(ref, this.env, now)
-      if (state) this.live.observeTurn(entry.terminalId, state, now)
-    } catch {
-      // A transcript that cannot be read is simply no evidence; the degraded state stands. Forget
-      // where it was, so a log that moved is looked for again rather than missed for good.
-      this.turnSources.delete(key)
-    }
+    return this.readings.readTurn(entry)
   }
 
-  /**
-   * Where a delegation's log lives, enumerated ONCE. `findSource` lists the provider's whole
-   * history to find one file, and a wait asked it on every tick for every waited key — ~2,000 stats
-   * every 2 s per key to re-find a path that never changes for the life of a session.
-   */
-  private async turnSource(key: string) {
-    const known = this.turnSources.get(key)
-    if (known) return known
-    const found = await this.findSource(key)
-    if (found) this.turnSources.set(key, found)
-    return found
-  }
-
-  /** The waited keys' logs, for the keys that have a live entry at all. */
   private async readTurnsFor(keys: readonly string[]): Promise<void> {
-    const entries = keys
-      .map((key) => this.live.byKey(key))
-      .filter((entry): entry is LiveEntry => entry !== undefined)
-    await Promise.all(entries.map((entry) => this.readTurn(entry)))
+    return this.readings.readTurnsFor(keys)
   }
 
   async explain(key: string): Promise<StateExplain | null> {
@@ -443,7 +352,7 @@ export class AgentSessionsService {
       readScreen: (key, askingSession) => this.readScreen(key, askingSession),
       readEnd: async (key, askingSession) => {
         const entry = this.live.byKey(key)
-        if (entry) await this.refreshEntry(askingSession, entry.terminalId)
+        if (entry) await this.readings.refreshEntry(askingSession, entry.terminalId)
       },
       readTurnsFor: (keys) => this.readTurnsFor(keys),
       timers: () => this.timers,
