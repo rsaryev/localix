@@ -44,7 +44,7 @@ const CARDS: Card[] = [
   },
   {
     title: 'An editor that knows your code',
-    text: 'Files open in the editor behind VS Code, with completion, hover, parameter hints, errors underlined as you type, go to definition and rename across files. Language servers install themselves, for the languages Localix supports, the first time you open one of their files. Predicting your next edit is optional: it is off by default and uses model usage.',
+    text: 'Files open in a full code editor, with completion, hover, parameter hints, errors underlined as you type, go to definition and rename across files. Language servers install themselves, for the languages Localix supports, the first time you open one of their files. Predicting your next edit is optional: it is off by default and uses model usage.',
     capture: {
       name: 'editor',
       alt: 'A TypeScript file in the editor: the language server’s completion list after channel., offering the object’s properties and methods, under the symbol breadcrumb, with the chat beside it',

@@ -1,8 +1,8 @@
 # Edit code in the editor
 
-Files open in a code editor built on the engine behind VS Code, with syntax colors, completion,
-diagnostics, go to definition, rename, formatting and Git markers. It loads the first time you open
-a file, so a chat-only session does not pay for it.
+Files open in a full code editor, with syntax colors, completion, diagnostics, go to definition,
+rename, formatting and Git markers. It loads the first time you open a file, so a chat-only session
+does not pay for it.
 
 **Availability:** Completion, hover, diagnostics and navigation come from a language server that
 Localix installs the first time you open a file of that language. See [Language servers](lsp.md).
