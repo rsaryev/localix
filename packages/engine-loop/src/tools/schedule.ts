@@ -7,11 +7,33 @@
  * exclusive call waits for everything before it and finishes before anything after it is
  * admitted. `tool_execution_end` follows completion order; settled calls are handed on in source
  * order whenever the batch drains — around an exclusive call, and at the end.
+ *
+ * NOT RUN AFTER A FAILURE. The calls of one response were planned together, each assuming the
+ * ones before it worked (edit, then run the tests; write, then publish). So once a call that may
+ * have changed state fails, no later call that has not started runs: each is answered "Not run"
+ * naming the failed call, and the model plans again from that result. Calls already running
+ * finish normally, and every skipped call still has its start and end, so the order of
+ * `onSettled` and the events is unchanged.
+ *
+ * "May have changed state" is the call's class (`classifyToolCall`): anything past `read` and
+ * `view`, with an undeclared tool counting as `external`. A failed read leaves the world as it
+ * was, so later calls lose nothing and still run. A call the PERSON DENIED at the permission gate
+ * counts like a failure: they refused a step the rest was built on, and the model must hear that
+ * before acting further. A stop (abort) is not a failure; it ends the batch its own way. A call
+ * that never reached its tool because its input was invalid also cascades when its tool writes:
+ * the plan is just as broken.
  */
+import { classifyToolCall, NON_MUTATING_EFFECTS } from '@localixai/agent/agents'
 import type { CallEnvironment, CallOutcome, ResolvedCall, ToolCallRequest } from './call'
 import { admitCall, executeCall, resolveCall } from './call'
 import type { EmitEvent } from '../run-handle'
-import { abortedResult, DEFERRED_TEXT, errorResult, messageWaits } from './results'
+import {
+  abortedResult,
+  DEFERRED_TEXT,
+  errorResult,
+  messageWaits,
+  notRunAfterFailure,
+} from './results'
 
 export interface SettledCall {
   call: ToolCallRequest
@@ -84,6 +106,20 @@ function conflicts(a: Claim, b: Claim): boolean {
   return a.paths.some((left) => right.some((path) => overlaps(left, path)))
 }
 
+/** Did this call fail, and could it have changed state? (A denial is a failure here.) */
+function failedWriter(resolved: ResolvedCall, outcome: CallOutcome): boolean {
+  const result = outcome.result
+  if (!result.isError || result.error?.kind === 'aborted') return false
+  const tool = resolved.runTool?.tool
+  if (!tool) return false
+  try {
+    const args = resolved.kind === 'parsed' ? resolved.args : undefined
+    return !NON_MUTATING_EFFECTS.includes(classifyToolCall(tool, args).effect)
+  } catch {
+    return true
+  }
+}
+
 async function announce(emit: EmitEvent, call: ToolCallRequest): Promise<void> {
   await emit({
     type: 'tool_execution_start',
@@ -107,6 +143,11 @@ export async function runToolBatch(input: BatchInput): Promise<void> {
   const { env, calls, signal, emit } = input
   const outcomes: Promise<SettledCall>[] = []
   const settled: SettledCall[] = []
+  /** The first call of this response that failed after possibly changing state. */
+  let failed: string | undefined
+  const notRun = (): CallOutcome => ({
+    result: { content: notRunAfterFailure(failed!), details: {} },
+  })
   let running: { claim: Claim; done: Promise<unknown> }[] = []
 
   // Wait for every admitted call, then hand the outcomes on in source order.
@@ -138,8 +179,15 @@ export async function runToolBatch(input: BatchInput): Promise<void> {
       break
     }
     await announce(emit, call)
+    if (failed) {
+      const outcome = notRun()
+      await finish(emit, call, outcome)
+      outcomes.push(Promise.resolve({ call, outcome }))
+      continue
+    }
     const admitted = await admitCall(env, resolved, signal)
     if (admitted.kind === 'settled') {
+      if (failedWriter(resolved, admitted.outcome)) failed ??= call.name
       await finish(emit, call, admitted.outcome)
       outcomes.push(Promise.resolve({ call, outcome: admitted.outcome }))
     } else {
@@ -148,9 +196,13 @@ export async function runToolBatch(input: BatchInput): Promise<void> {
         .map((entry) => entry.done)
       const done = (async (): Promise<SettledCall> => {
         if (blockers.length > 0) await Promise.allSettled(blockers)
+        // A blocker that failed while this call waited: it has not started, so it does not.
         const outcome: CallOutcome = signal.aborted
           ? { result: abortedResult() }
-          : await executeCall(env, admitted, signal, emit)
+          : failed
+            ? notRun()
+            : await executeCall(env, admitted, signal, emit)
+        if (outcome.result.isError && failedWriter(resolved, outcome)) failed ??= call.name
         await finish(emit, call, outcome)
         return { call, outcome }
       })()

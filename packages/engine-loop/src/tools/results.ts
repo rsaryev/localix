@@ -30,6 +30,10 @@ export function abortedResult(content = 'Operation aborted'): AgentToolResult {
 export const DEFERRED_TEXT =
   'Not run: the user sent a message before this call started. Read it first, then re-issue this call if it still applies.'
 
+/** What a later call of a response gets back when an earlier call that may have changed state failed. */
+export const notRunAfterFailure = (failedCall: string): string =>
+  `Not run: ${failedCall} failed earlier in this response, and this call was planned assuming it worked. Read that result, then re-issue this call if it still applies.`
+
 /** Whether a message waits for the model. A host probe that throws must never fail a call. */
 export async function messageWaits(
   shouldDefer: (() => boolean | Promise<boolean>) | undefined,
