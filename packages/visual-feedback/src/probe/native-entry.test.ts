@@ -1,10 +1,20 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
-// The bridge answers after the page's DOM has been quiet for ~100 ms (real time): poll for it.
-const turns = () => new Promise((r) => setTimeout(r, 5))
+// A command answers on a later turn of the event loop. The bridge is installed with an instant
+// settle and clock, so no answer waits on real time: the page's own settle waits for a quiet DOM.
+const turns = () => new Promise((r) => setImmediate(r))
+let ticks = 0
+const instant = {
+  settle: async () => {},
+  clock: { now: () => (ticks += 1), sleep: async () => {} },
+}
 
-beforeAll(() => GlobalRegistrator.register())
+beforeAll(async () => {
+  GlobalRegistrator.register()
+  const { installNativeBridge } = await import('./native-bridge')
+  installNativeBridge(instant)
+})
 afterAll(async () => {
   delete window.__localixBrowser
   await GlobalRegistrator.unregister()
