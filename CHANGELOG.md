@@ -8,7 +8,9 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 - **Vault secrets in the browser**: the agent can type a stored credential into a page field by
   writing `${secret:KEY}` in a typing step. Localix fills in the value right before it reaches the
-  page, and the agent never sees it in the page, the transcript or the approval card.
+  page, and the agent never sees it in the page, the transcript or the approval card. Until that tab
+  moves to another page, screenshots and page scripts are refused there, so the value cannot show up
+  in an image.
 - **Large tool results arrive as a digest**: a big JSON result from an MCP or built-in tool reaches
   the agent as its size, shape, array lengths, first items and any error fields, with a path to the
   full result on disk, instead of a text cut in the middle.
