@@ -13,7 +13,7 @@ import {
   isTransientNetworkError,
   extractProviderStatus,
   httpStatusToUserMessage,
-  NON_RETRYABLE_LIMIT_MESSAGE,
+  isLimitCappedMessage,
   RETRYABLE_PROVIDER_MESSAGE,
   HTTP_STATUS_SENTENCES,
 } from './error-classification-signals'
@@ -118,7 +118,7 @@ function classifyErrorKind(error: unknown): AgentErrorInfo {
     // A quota/billing cap is terminal even when it arrives as a 429 (OpenAI's
     // "exceeded your current quota") — retrying can't clear it. Otherwise fall back
     // to the message patterns when no status could be parsed (proxy-mangled errors).
-    const limitCapped = NON_RETRYABLE_LIMIT_MESSAGE.test(error.message)
+    const limitCapped = isLimitCappedMessage(error.message)
     const transient =
       !limitCapped &&
       (status >= 500 ||
@@ -211,7 +211,7 @@ function classifyErrorKind(error: unknown): AgentErrorInfo {
   // A quota / usage-limit / plan cap that arrived WITHOUT a parseable status (proxy-
   // flattened, or a mid-stream SSE error payload — how the prolite-plan "usage limit"
   // failures reached us). Terminal, but flagged rate-limited so it isn't an opaque fatal.
-  if (NON_RETRYABLE_LIMIT_MESSAGE.test(msg)) {
+  if (isLimitCappedMessage(msg)) {
     return {
       kind: 'fatal',
       userMessage: `Error: ${msg}`,

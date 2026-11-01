@@ -103,6 +103,11 @@ describe('reaching a model', () => {
       profileFor(entry('openai', { family: 'openai' }), { baseURL: 'https://proxy.example/v1' })
         .strictTools,
     ).toBeUndefined()
+    // A third-party provider that reuses the OpenAI SDK but has its own address stays plain.
+    expect(
+      profileFor(entry('some-vendor', { family: 'openai', baseURL: 'https://vendor.example/v1' }))
+        .strictTools,
+    ).toBeUndefined()
   })
 
   test('every decision model answers through doDecide, whatever name its SDK gives the call', async () => {

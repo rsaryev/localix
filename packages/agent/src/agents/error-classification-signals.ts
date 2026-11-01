@@ -57,6 +57,20 @@ export const NON_RETRYABLE_LIMIT_MESSAGE =
   // are gateway wordings for an exhausted allowance.
   /quota|billing|insufficient[ _-]?(credit|funds|balance)|usage[ _-]?limit|payment|purchase|plan limit|credit balance|out of budget|available balance/i
 
+// A rate limit that states its window ("retry in 12s", "requests per min") is transient even when
+// its prose also names quota or billing (OpenAI's per-minute text points at /account/billing,
+// Gemini's says "Quota exceeded ... 15 per minute").
+const STATED_WINDOW =
+  /retry[ _-]?(in|after)\b|\bper[ _-]?(min(ute)?|second|sec|hour)\b|\b(rpm|tpm)\b|rate limit reached/i
+
+/** True when the message states how long to wait or which per-time window was hit. */
+export const statesRetryWindow = (message: string): boolean => STATED_WINDOW.test(message)
+
+/** True when the message names an exhausted quota / billing / plan, not a limit with a window. */
+export function isLimitCappedMessage(message: string): boolean {
+  return NON_RETRYABLE_LIMIT_MESSAGE.test(message) && !statesRetryWindow(message)
+}
+
 // Transient provider faults stated only in the MESSAGE (no HTTP status attached, or
 // surfaced mid-stream as an SSE error event): Anthropic "Overloaded", generic 5xx
 // phrasings, and a stream that ended before its terminal event (premature end) —
@@ -74,7 +88,7 @@ export const RETRYABLE_PROVIDER_MESSAGE =
 
 /** True when the message names a transient provider fault (and no quota/billing cap). */
 export function isRetryableProviderMessage(message: string): boolean {
-  return !NON_RETRYABLE_LIMIT_MESSAGE.test(message) && RETRYABLE_PROVIDER_MESSAGE.test(message)
+  return !isLimitCappedMessage(message) && RETRYABLE_PROVIDER_MESSAGE.test(message)
 }
 
 // Raw network-fault codes/names (and a tight set of message phrases) that mean a

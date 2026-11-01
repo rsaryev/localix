@@ -98,4 +98,27 @@ describe('strictToolSchema', () => {
     strictToolSchema(input)
     expect(input).toEqual(before)
   })
+
+  test('a schema past OpenAI strict limits stays non-strict instead of failing the request', () => {
+    let deep: Record<string, unknown> = { type: 'string' }
+    for (let i = 0; i < 11; i++) {
+      deep = { type: 'object', properties: { next: deep }, required: ['next'] }
+    }
+    expect(strictToolSchema(deep)).toBeUndefined()
+    const properties = Object.fromEntries(
+      Array.from({ length: 5_001 }, (_, i) => [`p${i}`, { type: 'string' }]),
+    )
+    expect(strictToolSchema({ type: 'object', properties })).toBeUndefined()
+    const values = Array.from({ length: 1_001 }, (_, i) => `v${i}`)
+    expect(
+      strictToolSchema({ type: 'object', properties: { v: { type: 'string', enum: values } } }),
+    ).toBeUndefined()
+    const long = Array.from({ length: 200 }, (_, i) => `${'x'.repeat(80)}${i}`)
+    expect(
+      strictToolSchema({ type: 'object', properties: { v: { type: 'string', enum: long } } }),
+    ).toBeUndefined()
+    expect(
+      strictToolSchema({ type: 'object', properties: { a: { type: 'string' } } }),
+    ).toBeDefined()
+  })
 })

@@ -171,6 +171,18 @@ describe('classifyAgentError', () => {
     expect(info).toMatchObject({ kind: 'fatal', retryable: false, rateLimited: true })
   })
 
+  test('a per-minute rate limit that mentions billing or quota stays a transient 429', () => {
+    for (const text of [
+      'provider 429: Rate limit reached for gpt-4o on requests per min (RPM): Limit 3. You can increase your rate limit by adding a payment method at https://platform.openai.com/account/billing.',
+      'provider 429: Quota exceeded for metric generate_content_free_tier_requests, limit: 15 per minute. Please retry in 12s',
+    ]) {
+      expect(classifyAgentError(named('FetchError', text))).toMatchObject({
+        retryable: true,
+        rateLimited: true,
+      })
+    }
+  })
+
   test('authFailed flags a refused credential, and nothing else', () => {
     expect(classifyAgentError(named('FetchError', 'provider 401: bad key')).authFailed).toBe(true)
     expect(classifyAgentError(new AgentRunError('PROVIDER_AUTH_FAILED', 'm')).authFailed).toBe(true)

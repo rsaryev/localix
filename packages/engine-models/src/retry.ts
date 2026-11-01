@@ -10,7 +10,7 @@
 import { APICallError } from '@ai-sdk/provider'
 import { backoffMs } from '@localixai/agent/backoff'
 import { PROVIDER_HTTP_ERROR_NAME, providerHttpErrorMessage } from '@localixai/agent'
-import { NON_RETRYABLE_LIMIT_MESSAGE, attachProviderResponse } from '@localixai/agent/agents'
+import { attachProviderResponse, statesRetryWindow } from '@localixai/agent/agents'
 
 export interface RetryPolicy {
   maxRetries: number
@@ -61,6 +61,14 @@ function isNetworkFailure(error: Error): boolean {
   return error.cause instanceof Error && isNetworkFailure(error.cause)
 }
 
+// Documented codes for a spent allowance (OpenAI's `insufficient_quota`, `billing_hard_limit_reached`,
+// Codex's `usage_limit_reached`, …) and unmistakable phrasings. A bare "quota" or "billing" is not
+// enough: a per-minute limit's text names both.
+const EXHAUSTED_CODE =
+  /insufficient[_ -]?quota|billing_hard_limit_reached|billing_not_active|usage_limit_reached|usage_not_included|quota_exceeded_permanently/i
+const EXHAUSTED_PHRASE =
+  /exceeded your current quota|credit balance is too low|insufficient[ _-]?(credits?|funds|balance)|out of credits/i
+
 /**
  * A refusal because the quota, balance or plan is spent (OpenAI's `insufficient_quota` 429
  * included). It shares a status with a rate limit but waiting does not lift it, so it is never
@@ -71,14 +79,20 @@ function isExhaustedAllowance(error: unknown): boolean {
   // 5xx that merely mentions billing is still a transient server fault.
   const status = statusOf(error)
   if (status !== undefined && status !== 429) return false
+  // A server that states its window is describing a limit that lifts, whatever else it says.
+  if (statedDelayMs(headersOf(error)) !== undefined) return false
   const streamError = streamErrorOf(error)
-  const text = [
-    APICallError.isInstance(error) ? error.message : streamError?.message,
-    APICallError.isInstance(error) ? error.responseBody : undefined,
-    typeof streamError?.code === 'string' ? streamError.code : undefined,
-    typeof streamError?.type === 'string' ? streamError.type : undefined,
-  ]
-  return text.some((part) => part !== undefined && NON_RETRYABLE_LIMIT_MESSAGE.test(part))
+  const message = APICallError.isInstance(error) ? error.message : streamError?.message
+  const body = APICallError.isInstance(error) ? error.responseBody : undefined
+  const codes = [streamError?.code, streamError?.type].filter(
+    (part): part is string => typeof part === 'string',
+  )
+  const prose = [message, body].filter((part): part is string => part !== undefined)
+  if (prose.some(statesRetryWindow)) return false
+  return (
+    [...codes, ...prose].some((part) => EXHAUSTED_CODE.test(part)) ||
+    prose.some((part) => EXHAUSTED_PHRASE.test(part))
+  )
 }
 
 export function isRetryable(error: unknown): boolean {

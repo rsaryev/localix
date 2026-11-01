@@ -183,6 +183,34 @@ describe('a model session turn', () => {
     }
   })
 
+  test('an ordinary per-minute rate limit is retried even when its text mentions billing or quota', async () => {
+    const openai = new APICallError({
+      message:
+        'Rate limit reached for gpt-4o on requests per min (RPM): Limit 3, Used 3. You can increase your rate limit by adding a payment method to your account at https://platform.openai.com/account/billing.',
+      url: 'https://x',
+      requestBodyValues: {},
+      statusCode: 429,
+      responseBody: '{"error":{"code":"rate_limit_exceeded"}}',
+      isRetryable: true,
+    })
+    const gemini = new APICallError({
+      message:
+        'Quota exceeded for metric generate_content_free_tier_requests, limit: 15 per minute. Please retry in 12s',
+      url: 'https://x',
+      requestBodyValues: {},
+      statusCode: 429,
+      isRetryable: true,
+    })
+    for (const limited of [openai, gemini]) {
+      const { model, calls } = fakeModel([limited, [finish()]])
+      const turn = createModelSession(bind(model), { sessionId: 's', retry: fastRetry }).turn(
+        request(),
+      )
+      expect((await turn.message).stopReason).not.toBe('error')
+      expect(calls).toHaveLength(2)
+    }
+  })
+
   test('a server fault that mentions billing is still retried', async () => {
     const outage = new APICallError({
       message: 'billing service unavailable',
