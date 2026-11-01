@@ -39,6 +39,10 @@ export function asRecord(value: unknown): Record<string, unknown> | undefined {
 export function pretty(value: unknown): string {
   if (typeof value === 'string') return value
   try {
+    // Bun rejects a cycle at once only without indentation: the indented form first spends about
+    // 200 ms (seconds on a cold CI runner) before it throws, which timed tests out. The plain pass
+    // is the cheap check; it throws for everything the indented one would.
+    JSON.stringify(value ?? {})
     return JSON.stringify(value ?? {}, null, 2)
   } catch {
     return String(value)
