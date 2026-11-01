@@ -2,6 +2,7 @@
  * A work repository that keeps rows in this process — for a host where nothing must outlive it
  * (a unit test, an embedded runner). It honours the same contract as the database one: an end
  * only lands on running work, and ids spent stay spent.
+ * `work-repository.contract.ts` holds both to it.
  */
 import type { WorkRecord } from '../contracts'
 import type { WorkRepository } from '../repository'
@@ -11,6 +12,7 @@ export function createMemoryWorkRepository(): WorkRepository & { rows: Map<strin
   return {
     rows,
     async insert(record) {
+      if (rows.has(record.id)) throw new Error(`work record ${record.id} already exists`)
       rows.set(record.id, { ...record })
     },
     async setTerminal(id, terminalId) {
@@ -47,6 +49,7 @@ export function createMemoryWorkRepository(): WorkRepository & { rows: Map<strin
     async listRunning(kinds) {
       return [...rows.values()]
         .filter((row) => row.status === 'running' && kinds.includes(row.kind))
+        .sort((a, b) => a.startedAt.localeCompare(b.startedAt))
         .map((row) => ({ ...row }))
     },
   }
