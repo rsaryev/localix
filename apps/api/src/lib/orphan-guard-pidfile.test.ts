@@ -109,14 +109,17 @@ describe('the guard keeps the pidfile current', () => {
       watchdog: false,
       startToken: async (pid) => `start-${pid}`,
     })
+    // The tracked set belongs to the process: another test in the same run may still hold a group
+    // in it, so this one reads only the line of the group it tracks.
+    const mine = () => readPidfile(file).filter((group) => group.pid === 424242)
     const untrack = trackSpawnedProcess(424242)
-    expect(readPidfile(file)).toEqual([{ pid: 424242, token: null }])
+    expect(mine()).toEqual([{ pid: 424242, token: null }])
     await Promise.resolve() // let the token read settle
     await Promise.resolve()
-    expect(readPidfile(file)).toEqual([{ pid: 424242, token: 'start-424242' }])
+    expect(mine()).toEqual([{ pid: 424242, token: 'start-424242' }])
 
     untrack()
-    expect(readPidfile(file)).toEqual([])
+    expect(mine()).toEqual([])
 
     uninstall()
     expect(existsSync(file)).toBe(false)
