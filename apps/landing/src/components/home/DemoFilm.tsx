@@ -60,9 +60,9 @@ export function DemoFilm({ autoplay }: { autoplay?: boolean }) {
         className="demo-video"
         src={started ? DEMO_SRC : undefined}
         poster={DEMO_POSTER}
-        aria-label="The Store, installing and playing a mini app, then one prompt: the agent builds a phone shop landing page and tests it in the browser, and a Visual Feedback comment removes a label"
-        width={1680}
-        height={982}
+        aria-label="One prompt with a pasted brief: the agent writes a landing page, opens it in the browser itself and tests it at phone, tablet and desktop widths"
+        width={2560}
+        height={1638}
         muted
         loop
         playsInline

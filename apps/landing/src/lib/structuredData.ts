@@ -37,13 +37,13 @@ export const HOME_STRUCTURED_DATA = {
     },
     {
       '@type': 'VideoObject',
-      name: 'Localix demo: a landing page from one prompt',
+      name: 'Localix demo: a landing page built and tested from one prompt',
       description:
-        'The Store, installing and playing a mini app, then one prompt: the agent builds a phone shop landing page and tests it in the browser, and a Visual Feedback comment removes a label.',
+        'One prompt with a pasted brief: the agent writes a landing page, opens it in the browser itself and tests it at phone, tablet and desktop widths.',
       thumbnailUrl: `${HOME_URL}films/demo.jpg`,
       contentUrl: `${HOME_URL}films/demo.mp4`,
-      uploadDate: '2026-10-28',
-      duration: 'PT55S',
+      uploadDate: '2026-11-01',
+      duration: 'PT23S',
       about: { '@id': `${HOME_URL}#app` },
     },
   ],
