@@ -9,7 +9,8 @@ function startsRuntime(source: string): boolean {
 }
 
 test('workspace creation inherits the app initialization script and never starts another backend', () => {
-  const workspace = read('workspace_windows.rs')
+  // The windows module and the macOS opening it re-exports (`workspace_open.rs`) build windows.
+  const workspace = read('workspace_windows.rs') + read('workspace_open.rs')
   expect(workspace).toContain('.init_script')
   expect(workspace).toContain('.clone()')
   expect(workspace).toContain('workspace_builder::build')
