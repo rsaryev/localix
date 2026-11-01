@@ -62,6 +62,15 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ### Fixed
 
+- **Dialogs follow window transparency**: dialogs, confirmations and drawers, and the dimming behind
+  them, now follow Settings → Preferences → Appearance → Window transparency. At Standard and High
+  the window shows through instead of a flat black or white panel; Off keeps them opaque.
+- **Deleting a chat keeps you in its project**: deleting the open chat now opens a blank chat in the
+  same project instead of taking you to the home page.
+- **Browser on booking-style forms**: the agent now sees search fields drawn inside a dropdown box
+  with their label and value, waits a moment when a click lands on a loading cover and names the
+  buttons of a banner that stays in the way, types into the field a click just focused, and is told
+  when a goal could not type because no text was given to it.
 - **Update all for plugins**: after **Update all** above the composer updates a plugin, the strip no
   longer keeps offering the same update as if nothing happened. While the Store reads its sources
   first, the strip says **Checking for updates…** instead of staying still.

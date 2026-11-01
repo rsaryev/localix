@@ -24,6 +24,7 @@
     --control-density: 18%;
     --control-hover-density: 28%;
     --control-focus-density: 44%;
+    --modal-density: 55%;
     --popover-solid: oklch(0.13 0 0);
     --popover: color-mix(in oklch, var(--popover-solid) 45%, transparent);
     --card-solid: oklch(0.155 0 0);
@@ -46,6 +47,7 @@
     --control-density: 26%;
     --control-hover-density: 40%;
     --control-focus-density: 58%;
+    --modal-density: 55%;
     --popover-solid: oklch(1 0 0);
     --popover: color-mix(in oklch, var(--popover-solid) 82%, transparent);
     --card-solid: oklch(1 0 0);
@@ -64,6 +66,13 @@
     --sidebar-coat: calc(
       min(100%, var(--sidebar-density) * var(--coat-scale, 1) + 100% * var(--coat-lift, 0))
     );
+    /* A dialog and the scrim under it follow the same choice. The scrim did not: 60% black under
+       every dialog hid the window at any level, so a dialog read as plain black (or white) even
+       at High. Standard keeps half the scrim, Off keeps all of it and an opaque dialog. */
+    --modal-coat: calc(
+      min(100%, var(--modal-density) * var(--coat-scale, 1) + 100% * var(--coat-lift, 0))
+    );
+    --scrim-strength: min(1, 0.5 * var(--coat-scale, 1) + var(--coat-lift, 0));
     --background: color-mix(in oklch, var(--window-ground) var(--work-coat), transparent);
     /* A card is one step denser than the pane it sits in, at every transparency level: a fixed
        density stayed a near-opaque slab once the pane under it cleared. */
@@ -164,10 +173,10 @@
   }
 
   /* Window transparency, chosen in Preferences (`shared/theme/windowTransparency.ts`). Standard is
-     no attribute at all. `off` lifts both coats to 100% and paints the root, which the macOS rule
-     above clears for the native material, so no wallpaper shows between panes either. Floating
-     panels keep their frost: over an opaque ground it blurs only the app's own content. The OS
-     "Reduce transparency" block below still wins whatever is chosen here. */
+     no attribute at all. `off` lifts the coats to 100% (dialogs included) and paints the root,
+     which the macOS rule above clears for the native material, so no wallpaper shows between
+     panes either. Floating panels keep their frost: over an opaque ground it blurs only the app's
+     own content. The OS "Reduce transparency" block below still wins whatever is chosen here. */
   :root[data-window-transparency='low'] {
     --coat-scale: 0.5;
     --coat-lift: 0.5;
@@ -204,9 +213,25 @@
   }
 
   :root:is([data-theme='dark'], [data-theme='light']) .lx-modal-surface {
-    background-color: color-mix(in oklch, var(--window-ground) 55%, transparent);
+    background-color: color-mix(in oklch, var(--window-ground) var(--modal-coat), transparent);
     -webkit-backdrop-filter: blur(24px) saturate(1.1);
     backdrop-filter: blur(24px) saturate(1.1);
+  }
+
+  :root:is([data-theme='dark'], [data-theme='light']) .lx-scrim {
+    background-color: color-mix(
+      in srgb,
+      var(--scrim-fill) calc(var(--scrim-strength) * 100%),
+      transparent
+    );
+  }
+
+  :root:is([data-theme='dark'], [data-theme='light']) .lx-scrim.lx-scrim-light {
+    background-color: color-mix(
+      in srgb,
+      var(--scrim-fill) calc(var(--scrim-strength) * 50%),
+      transparent
+    );
   }
 
   /* WebKitGTK blurs a backdrop only with GPU compositing, which many Linux machines lack, and it
@@ -243,6 +268,7 @@
       --sidebar: var(--window-ground-sidebar);
       --surface-raised: var(--window-ground-raised);
       --popover: var(--popover-solid);
+      --scrim-strength: 1;
     }
 
     :root:is([data-theme='dark'], [data-theme='light']) :is(.bg-popover, .lx-floating-surface) {
