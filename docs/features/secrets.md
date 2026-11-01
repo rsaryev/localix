@@ -37,13 +37,16 @@ the item before attempting another rotation.
 
 In a browser `type` step the agent can write `${secret:<alias>}` instead of a value, alone or inside
 longer text. Localix looks the alias up in Vault only when it relays that step to the page, so the
-approval prompt and the transcript show the reference, and anything the page returns afterwards
-(snapshot, field values, console, errors) has the value removed. A missing alias stops the step
-before anything is typed. A reference anywhere else in a browser call, such as a selector or an
-`evaluate` expression, is not resolved, and the result says so. Values shorter than twelve
-characters are not removed from page output. After a secret is typed into a tab, that tab refuses
-screenshots and `evaluate` (a screenshot can show the value and a script can disguise it) until it
-moves to another URL; snapshot and read still work.
+approval prompt and the transcript show the reference. Anything the page returns afterwards
+(snapshot, field values, console, errors) has the value removed. Values shorter than twelve
+characters are not removed from page output.
+
+A missing alias stops the step before anything is typed. A reference anywhere else in a browser
+call, such as a selector or an `evaluate` expression, is not resolved, and the result says so.
+
+After a secret is typed into a tab, that tab refuses screenshots and `evaluate` until it moves to
+another URL, because a screenshot can show the value and a script can disguise it. Snapshot and read
+still work.
 
 ## How it works
 
