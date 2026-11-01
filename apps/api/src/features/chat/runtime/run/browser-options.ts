@@ -82,6 +82,16 @@ export function buildBrowserOptions(input: {
             }),
         }
       : {}),
+    // A `${secret:KEY}` typed into a page: the chat runtime's vault read (audited, registered with
+    // the exposure shield) and that shield over whatever the page sends back.
+    ...(deps.resolveSecret && deps.sanitizeToolInput
+      ? {
+          secrets: {
+            resolve: (key: string) => deps.resolveSecret!(userId, key),
+            redact: (value: unknown) => deps.sanitizeToolInput!(userId, value),
+          },
+        }
+      : {}),
     closePreview: (previewIds) => {
       deps.streamRegistry.publish(userId, session.id, {
         type: 'preview.closed',

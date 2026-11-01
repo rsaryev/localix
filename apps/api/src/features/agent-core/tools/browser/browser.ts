@@ -32,6 +32,7 @@ import { formatReply } from './browser-reply'
 import { createViewportMemory } from './browser-viewport'
 import { relayTimeoutMs } from './browser-wait'
 import { runGoal, type GoalDeps } from './browser-goal'
+import { prepareSecretSteps, withUnresolvedNote, type BrowserSecrets } from './browser-secrets'
 
 /**
  * `browser` — lets the agent DRIVE the Browser tabs the user has open, local previews and
@@ -81,6 +82,8 @@ export interface BrowserToolDeps {
   closePreview(previewIds: string[]): void
   /** The decision model the `goal` action asks, bound to this run; absent without one. */
   decide?: GoalDeps['decide']
+  /** The vault for a `${secret:KEY}` in a typed value (see browser-secrets.ts); absent without one. */
+  secrets?: BrowserSecrets
 }
 
 type ToolResult = AgentToolResult<BrowserDetails>
@@ -195,6 +198,15 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
     const missing = missingFieldMessage(input)
     if (missing) return { result: { content: missing, isError: true } }
 
+    // Typed vault references resolve for the relay only; the page's reply is shielded.
+    const prepared = await prepareSecretSteps(input, deps.secrets)
+    if (!prepared.ok) return { result: { content: prepared.error, isError: true } }
+    const outcome = await relayResolved(input, prepared.input)
+    return { ...outcome, result: prepared.shield(outcome.result) }
+  }
+
+  /** `wire` is `input` with its typed references resolved: the only copy that reaches the page. */
+  async function relayResolved(input: ResolvedInput, wire: ResolvedInput): Promise<ActionOutcome> {
     // ACT, THEN LOOK, in one call. A batch that ended in a screenshot arrives here as a
     // screenshot carrying the steps before it (`liftTrailingScreenshot`), because a batch
     // result is text and only the call's own result can be an image. The steps run first and
@@ -203,7 +215,7 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
     if (input.action === TAKE_SCREENSHOT && input.steps?.length) {
       const setupTimeout = relayTimeoutMs(input)
       const setup = await deps.send(
-        buildPreviewCommand({ ...input, action: 'steps' }),
+        buildPreviewCommand({ ...wire, action: 'steps' }),
         setupTimeout === undefined ? undefined : { timeoutMs: setupTimeout },
       )
       if ('error' in setup) return relayFailure('steps', setup)
@@ -211,7 +223,7 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
 
     const timeoutMs = relayTimeoutMs(input)
     const outcome = await deps.send(
-      buildPreviewCommand(input),
+      buildPreviewCommand(wire),
       timeoutMs === undefined ? undefined : { timeoutMs },
     )
     if ('error' in outcome) return relayFailure(input.action as PreviewAction, outcome)
@@ -261,6 +273,7 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
       // to set it explicitly. Both compose; error results keep their own guidance.
       let content = result.content
       if (reloaded) content = `${RELOAD_NOTICE}\n\n${content}`
+      content = withUnresolvedNote(content, { ...rawInput, action })
       if (!rawInput.action && !result.isError) {
         content = `[inferred action="${action}" from the payload — set "action" explicitly next time]\n\n${content}`
       }

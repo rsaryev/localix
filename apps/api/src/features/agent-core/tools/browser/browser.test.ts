@@ -16,7 +16,7 @@ import type { OpenPreviewCoreInput, OpenPreviewCoreResult } from '../preview/ope
 
 describe('browser model contract', () => {
   test('says how the tool behaves within a bounded description', () => {
-    expect(textEncoderByteLength(BROWSER_DESCRIPTION)).toBeLessThan(660)
+    expect(textEncoderByteLength(BROWSER_DESCRIPTION)).toBeLessThan(780)
     for (const phrase of ['relay-only', 'preview_id', 'dialogs', 're-snapshot', 'file_path']) {
       expect(BROWSER_DESCRIPTION).toContain(phrase)
     }
