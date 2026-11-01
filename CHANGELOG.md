@@ -65,6 +65,8 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 - **Dialogs follow window transparency**: dialogs, confirmations and drawers, and the dimming behind
   them, now follow Settings → Preferences → Appearance → Window transparency. At Standard and High
   the window shows through instead of a flat black or white panel; Off keeps them opaque.
+- **Tab rows that scroll**: when tabs don't fit, as in the Store's categories, the clipped edge now
+  fades out instead of showing a dark band under the scroll arrow on a translucent window.
 - **Deleting a chat keeps you in its project**: deleting the open chat now opens a blank chat in the
   same project instead of taking you to the home page.
 - **Browser on booking-style forms**: the agent now sees search fields drawn inside a dropdown box
