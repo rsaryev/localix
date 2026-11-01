@@ -156,6 +156,7 @@ and Settings are drawn with these.
 | A pill that acts: a tag, a category to browse       | `chip` (`ChipButton`)                                | `composer-chip` (the glass pill of the composer)       |
 | A notice above content, with actions                | `workbench-notice-bar` (set `role`; `icon` optional) | A bordered `div` with an icon and two buttons          |
 | Nothing here, or a failure with a retry             | `empty-hint`, `state-notice`                         | A centred `<p>`                                        |
+| The Localix bird in flight (an empty chat)          | `empty-hint` (`LocalixBird`)                         | A masked logo with hand-placed wind lines              |
 | A storefront row of tiles with See all              | `shelf-row` with `tile-card`                         | A full list of item cards (`card-grid`)                |
 | A browsable card that opens a page                  | `item-card` inside `card-grid`                       | A navigable sidebar row                                |
 | The install control of a package                    | `get-button`                                         | A generic `button`                                     |

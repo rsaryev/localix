@@ -73,7 +73,7 @@ apiVersion: 2
 - @localixai/kit/drop-target: DROP_TARGET_FOCUS_GLOW, DROP_TARGET_HINT, DROP_TARGET_INDICATOR, DROP_TARGET_INDICATOR_AFTER_HORIZONTAL, DROP_TARGET_INDICATOR_AFTER_VERTICAL, DROP_TARGET_INDICATOR_BEFORE_HORIZONTAL, DROP_TARGET_INDICATOR_BEFORE_VERTICAL, DROP_TARGET_INSET_ACTIVE, DROP_TARGET_OVERLAY_ACTIVE, DROP_TARGET_SLOT, DROP_TARGET_SURFACE_ACTIVE, DROP_TARGET_TRANSITION
 - @localixai/kit/dropdown-menu: DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger
 - @localixai/kit/embedded-visual-preferences: EMBEDDED_VISUAL_PREFERENCES_CSS
-- @localixai/kit/empty-hint: EmptyHint, LoadingHint
+- @localixai/kit/empty-hint: EmptyHint, LoadingHint, LocalixBird
 - @localixai/kit/environment: IS_MAC, OS_FAMILY, REDUCED_MOTION_QUERY, REVEAL_IN_OS_LABEL, applyPlatformDataset, classifyOsFamily, getDesktopApiPort, getDesktopOAuthPort, hasNativeWindowMaterial, isDesktop, isDesktopRuntime, motionSafeScrollBehavior, prefersReducedMotion, useReducedMotion
 - @localixai/kit/external-anchor: ExternalAnchor
 - @localixai/kit/field: Field
@@ -3690,6 +3690,36 @@ export declare const LoadingHint: (props: {
     children?: React.ReactNode;
     className?: string;
 }) => React.ReactElement | null;
+```
+
+### LocalixBird
+
+```ts
+export declare const LocalixBird: (props: {
+    cycles?: number;
+    lineCount?: number;
+    size?: LocalixBirdSize;
+    src: string;
+    still?: boolean;
+}) => React.ReactElement | null;
+```
+
+### LocalixBirdProps
+
+```ts
+export type LocalixBirdProps = {
+    cycles?: number | undefined;
+    lineCount?: number | undefined;
+    size?: LocalixBirdSize | undefined;
+    src: string;
+    still?: boolean | undefined;
+};
+```
+
+### LocalixBirdSize
+
+```ts
+export type LocalixBirdSize = "md" | "text";
 ```
 
 ## module @localixai/kit/environment

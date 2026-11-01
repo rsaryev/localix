@@ -60,6 +60,7 @@ The full catalog has about a hundred modules; these are the jobs that are most o
 | Metadata that gives way to row actions   | `WorkbenchListRowActions` with `visibility="hover"` and `fallback`             |
 | A table of records                       | `TableGrid` from `@localixai/mini-app-sdk/ui/components`                       |
 | Nothing to show yet / a failure          | `empty-hint` (one line), `state-notice` (centred, with actions)                |
+| A welcome screen that stands for Localix | `empty-hint`: `LocalixBird` with the host's bird artwork as `src`              |
 | Progress, a live dot, a count badge      | `progress-bar`, `pulsing-dot`, `chip`                                          |
 | "Copied", "Nothing to undo" at a control | `action-feedback` (transient, never the journal)                               |
 | A dialog, a confirmation                 | `dialog` (its `size` is the width), `confirm-dialog`                           |

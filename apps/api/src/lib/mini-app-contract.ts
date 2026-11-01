@@ -4,4 +4,4 @@
  * The digest of the mini app contract this Localix implements; a kit staged from the same sources
  * names the same one in its `kit.json`.
  */
-export const MINI_APP_CONTRACT = 'f5fefa1daf80a7ee941bde9b0a78226c6d6d8beb5907d5924e9602c7a13ff638'
+export const MINI_APP_CONTRACT = '3d4d6f56a7ff85b4bf596a6c0419c8b3275f35077bab4a04dd4bf2cab3184f75'

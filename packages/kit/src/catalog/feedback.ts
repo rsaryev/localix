@@ -8,9 +8,10 @@ export const FEEDBACK: readonly KitCatalogEntry[] = [
     specifier: k('empty-hint'),
     category: 'feedback',
     provider: 'kit',
-    exports: ['EmptyHint', 'LoadingHint'],
-    summary: 'A quiet one-line "nothing here yet" or "loading" hint.',
-    use: 'An empty list or a panel still loading.',
+    exports: ['EmptyHint', 'LoadingHint', 'LocalixBird', 'LocalixBirdProps', 'LocalixBirdSize'],
+    summary:
+      'A quiet one-line "nothing here yet" or "loading" hint, and the Localix bird in flight for a screen that stands for Localix itself.',
+    use: 'An empty list or a panel still loading; LocalixBird for a welcome or empty screen such as an empty chat.',
     not: 'A centred placeholder with an icon and an action is StateNotice.',
   },
   {
