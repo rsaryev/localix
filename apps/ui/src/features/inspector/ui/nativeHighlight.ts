@@ -15,6 +15,8 @@ const SHOWN = new Set(['steps'])
 
 /** How long the box stays; short, so it never outlives the next command's look at the page. */
 const HIGHLIGHT_MS = 700
+/** The kit's `--ease-soft` curve, written out: the box is drawn in a page that has no kit tokens. */
+const HIGHLIGHT_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
 /** The rect to show for a finished action, or null when there is nothing worth drawing. */
 export function highlightRect(
@@ -49,7 +51,7 @@ export function highlightScript(rect: ViewportRect): string {
     background: 'rgba(59,130,246,0.14)', boxShadow: '0 0 0 3px rgba(59,130,246,0.25)' })
   ;(document.body || document.documentElement).appendChild(box)
   const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
-  if (!still && box.animate) box.animate([{ opacity: 1 }, { opacity: 1, offset: 0.6 }, { opacity: 0 }], { duration: ${HIGHLIGHT_MS}, easing: 'ease-out', fill: 'forwards' })
+  if (!still && box.animate) box.animate([{ opacity: 1 }, { opacity: 1, offset: 0.6 }, { opacity: 0 }], { duration: ${HIGHLIGHT_MS}, easing: '${HIGHLIGHT_EASE}', fill: 'forwards' })
   setTimeout(() => box.remove(), ${HIGHLIGHT_MS})
 } catch (e) {} })()`
 }
