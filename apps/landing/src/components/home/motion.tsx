@@ -27,3 +27,39 @@ export function useOnScreen(
   }, [ref, margin, observable])
   return observable ? onScreen : fallback
 }
+
+/** Whether the reader asked for less motion; read only in the browser. */
+export const prefersReducedMotion = () =>
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+
+/**
+ * Binds `--p` on the element to how far the page has scrolled through it: 0 when its top meets the
+ * top of the window, 1 when its bottom meets the bottom. It is a position, never a timer, so the
+ * motion plays back when the reader scrolls up. With reduced motion nothing is bound and the CSS
+ * default (the finished state) stands.
+ */
+export function useScrollProgress(ref: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const element = ref.current
+    if (!element || prefersReducedMotion()) return
+    let frame = 0
+    const update = () => {
+      frame = 0
+      const box = element.getBoundingClientRect()
+      const span = box.height - window.innerHeight
+      const p = span > 0 ? Math.min(1, Math.max(0, -box.top / span)) : 1
+      element.style.setProperty('--p', p.toFixed(4))
+    }
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update)
+    }
+    update()
+    window.addEventListener('scroll', schedule, { passive: true })
+    window.addEventListener('resize', schedule)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', schedule)
+      window.removeEventListener('resize', schedule)
+    }
+  }, [ref])
+}

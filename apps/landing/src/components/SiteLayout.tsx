@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router'
 import { HOME_SHELL, PAGE_SHELL } from '../lib/shell'
 import { Button } from './Button'
 import { SiteHeader } from './SiteHeader'
+import { HomeNav } from './home/HomeNav'
 import { REPOSITORY_URL } from '../lib/site'
 
 const FOOTER_LINKS = [
@@ -14,6 +15,8 @@ const FOOTER_LINKS = [
 export function SiteLayout({ children }: { children?: ReactNode }) {
   const location = useLocation()
   const isDocsRoute = location.pathname.startsWith('/docs')
+  // The homepage has its own bar and closes with its own footer (`HomeSections`' `Close`).
+  const isHome = location.pathname === '/'
   const mainRef = useRef<HTMLElement>(null)
   const previousPath = useRef(location.pathname)
 
@@ -36,52 +39,57 @@ export function SiteLayout({ children }: { children?: ReactNode }) {
   }, [location.hash, location.pathname])
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background text-foreground antialiased">
+    <div
+      className="flex min-h-dvh flex-col bg-background text-foreground antialiased"
+      data-page={isHome ? 'home' : undefined}
+    >
       <a
         href="#main-content"
         className="focus-ring fixed left-3 top-3 z-[100] -translate-y-20 rounded-md bg-background px-3 py-2 text-sm font-medium text-foreground shadow-[var(--shadow-soft)] transition-transform focus:translate-y-0"
       >
         Skip to content
       </a>
-      <SiteHeader />
+      {isHome ? <HomeNav /> : <SiteHeader />}
       <main id="main-content" ref={mainRef} tabIndex={-1} className="flex-1 outline-none">
         {children ?? <Outlet />}
       </main>
 
-      <footer
-        className={`site-footer${isDocsRoute ? ' docs-site-footer border-t border-border-subtle' : ''}`}
-      >
-        <div
-          className={`${isDocsRoute ? PAGE_SHELL : HOME_SHELL} flex flex-wrap items-center justify-between gap-4 pt-7 pb-10 text-[0.8125rem] text-text-faint`}
+      {!isHome && (
+        <footer
+          className={`site-footer${isDocsRoute ? ' docs-site-footer border-t border-border-subtle' : ''}`}
         >
-          <p className="m-0">
-            <span className="text-text-soft">Localix</span> is MIT-licensed and open source.
-          </p>
-          <nav aria-label="Footer" className="site-footer-nav flex items-center gap-5">
-            <Link to="/docs" className="hover:text-foreground">
-              Docs
-            </Link>
-            {FOOTER_LINKS.map(({ label, href }) => (
-              <a key={label} href={href} className="hover:text-foreground">
-                {label}
-              </a>
-            ))}
-            {isDocsRoute && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-                  mainRef.current?.focus({ preventScroll: true })
-                  window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' })
-                }}
-              >
-                Back to top
-              </Button>
-            )}
-          </nav>
-        </div>
-      </footer>
+          <div
+            className={`${isDocsRoute ? PAGE_SHELL : HOME_SHELL} flex flex-wrap items-center justify-between gap-4 pt-7 pb-10 text-[0.8125rem] text-text-faint`}
+          >
+            <p className="m-0">
+              <span className="text-text-soft">Localix</span> is MIT-licensed and open source.
+            </p>
+            <nav aria-label="Footer" className="site-footer-nav flex items-center gap-5">
+              <Link to="/docs" className="hover:text-foreground">
+                Docs
+              </Link>
+              {FOOTER_LINKS.map(({ label, href }) => (
+                <a key={label} href={href} className="hover:text-foreground">
+                  {label}
+                </a>
+              ))}
+              {isDocsRoute && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                    mainRef.current?.focus({ preventScroll: true })
+                    window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' })
+                  }}
+                >
+                  Back to top
+                </Button>
+              )}
+            </nav>
+          </div>
+        </footer>
+      )}
     </div>
   )
 }

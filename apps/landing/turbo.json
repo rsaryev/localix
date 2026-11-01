@@ -6,7 +6,7 @@
       "dependsOn": ["^type-check", "@localixai/ui#type-check", "docs:gen"]
     },
     "docs:gen": {
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/docs/**"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/docs/**", "$TURBO_ROOT$/CHANGELOG.md"],
       "outputs": ["src/generated/**", "public/sitemap.xml"]
     },
     "test": {
@@ -19,7 +19,8 @@
         "$TURBO_ROOT$/scripts/test-shards.mjs",
         "$TURBO_ROOT$/scripts/test-all.mjs",
         "$TURBO_ROOT$/packages/testing/src/**",
-        "$TURBO_ROOT$/packages/kit/test-preload.ts"
+        "$TURBO_ROOT$/packages/kit/test-preload.ts",
+        "$TURBO_ROOT$/CHANGELOG.md"
       ],
       "outputs": []
     }

@@ -1,0 +1,212 @@
+/* The statement fold: the page's largest heading after the wordmark, and three plain sentences. */
+.statement {
+  position: relative;
+  display: grid;
+  min-height: 100svh;
+  align-content: center;
+  gap: clamp(22px, 3vw, 36px);
+  padding-block: calc(var(--lx-nav) + 48px) 72px;
+}
+.statement-text {
+  position: relative;
+  z-index: 1;
+  max-width: 14ch;
+  margin: 0;
+  font: 600 clamp(40px, 7vw, 120px) / 0.98 var(--lx-display);
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+.statement-lede {
+  position: relative;
+  z-index: 1;
+  max-width: 38em;
+  margin: 0;
+  color: var(--lx-ink-2);
+  font: 400 clamp(14px, 1.1vw, 16px) / 1.7 var(--lx-text);
+}
+/* The roster: hairline-ruled rows, an accent label, a display name, a count on the right. */
+.roster,
+.dates {
+  padding-block: clamp(80px, 12vw, 160px) 0;
+}
+.roster-list {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--lx-line);
+  list-style: none;
+}
+.roster-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 1fr) minmax(0, 3fr) auto;
+  align-items: baseline;
+  gap: 16px;
+  padding: clamp(16px, 2vw, 24px) 0;
+  border-bottom: 1px solid var(--lx-line);
+  color: var(--lx-ink);
+}
+.roster-label {
+  color: var(--lx-muted);
+  font: 500 10.5px / 1.4 var(--lx-text);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.roster-name {
+  font: 600 clamp(20px, 2.6vw, 36px) / 1.1 var(--lx-display);
+  letter-spacing: -0.035em;
+  transition: transform 300ms var(--lx-ease);
+}
+.roster-count {
+  color: var(--lx-ink-2);
+  font: 400 13px / 1 var(--lx-text);
+  font-variant-numeric: tabular-nums;
+}
+.roster-row:hover .roster-name {
+  transform: translateX(8px);
+}
+.roster-row:hover .roster-count {
+  color: var(--lx-amber);
+}
+
+/* The dates: uppercase headers over a hairline, a display first column, plain metadata. */
+.dates-table {
+  width: 100%;
+  border-collapse: collapse;
+  font: 400 14px / 1.5 var(--lx-text);
+}
+.dates-table thead th {
+  padding: 0 16px 14px 0;
+  border-bottom: 1px solid var(--lx-ink-2);
+  color: var(--lx-muted);
+  font: 500 10.5px / 1 var(--lx-text);
+  letter-spacing: 0.15em;
+  text-align: left;
+  text-transform: uppercase;
+}
+.dates-table tbody th,
+.dates-table td {
+  padding: 18px 16px 18px 0;
+  border-bottom: 1px solid var(--lx-line);
+  vertical-align: baseline;
+  text-align: left;
+}
+.dates-table tbody th {
+  font: 600 clamp(17px, 1.6vw, 22px) / 1.2 var(--lx-display);
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+}
+.dates-table td {
+  color: var(--lx-ink-2);
+}
+.dates-table td:nth-child(2),
+.dates-table td:last-child {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dates-table td:nth-child(3) {
+  max-width: 46ch;
+  color: var(--lx-ink);
+}
+/* On a phone each release is a small two-column grid of its own. */
+@media (max-width: 47.99rem) {
+  .dates-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .dates-table tbody tr {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 16px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--lx-line);
+  }
+  .dates-table tbody th,
+  .dates-table td {
+    padding: 0;
+    border: 0;
+  }
+  .dates-table td:nth-child(2) {
+    text-align: right;
+  }
+  .dates-table td:nth-child(3),
+  .dates-table td:last-child {
+    grid-column: 1 / -1;
+  }
+  .dates-table td:last-child {
+    color: var(--lx-muted);
+    font-size: 12px;
+  }
+}
+
+/* The close: a last word and two buttons, a hairline strip, and the wordmark the page crops. */
+.close {
+  overflow: hidden;
+  scroll-margin-top: var(--lx-nav);
+  padding-top: clamp(100px, 14vw, 200px);
+}
+.close-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  padding-bottom: clamp(48px, 6vw, 80px);
+}
+.close-row h2 {
+  max-width: 16ch;
+  margin: 0;
+  font: 600 clamp(30px, 4.4vw, 64px) / 1.02 var(--lx-display);
+  letter-spacing: -0.035em;
+}
+.close-fine {
+  max-width: 44em;
+  margin: 18px 0 0;
+  color: var(--lx-muted);
+  font: 400 12.5px / 1.6 var(--lx-text);
+}
+.close-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.close-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding-block: 20px;
+  border-top: 1px solid var(--lx-line);
+  color: var(--lx-muted);
+  font: 400 12px / 1.5 var(--lx-text);
+}
+.close-strip p {
+  margin: 0;
+}
+.close-strip p span {
+  color: var(--lx-ink-2);
+}
+.close-strip nav {
+  display: flex;
+  gap: 20px;
+}
+.close-strip a {
+  color: var(--lx-ink-2);
+  font-size: 10.5px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.close-strip a:hover {
+  color: var(--lx-amber);
+}
+.close-mark {
+  margin: 0 0 -0.2em;
+  color: var(--lx-ink);
+  font: 800 16.4vw / 0.8 var(--lx-mark);
+  letter-spacing: -0.045em;
+  text-align: center;
+  white-space: nowrap;
+  transform: translateY(14%);
+}

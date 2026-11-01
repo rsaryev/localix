@@ -94,11 +94,16 @@ const CARDS: Card[] = [
   },
 ]
 
-/** The app, step by step, as on llx.sh: each card held at the top while the next slides over it. */
+/**
+ * The app as a stack of sleeves: as the page scrolls, each card holds near the top and the next
+ * slides over it, a little lower, so the edges of those under it show.
+ */
 export function HomeLoop() {
   return (
     <section className="loop home-shell" aria-labelledby="loop-title">
-      <h2 id="loop-title">One app, the whole loop</h2>
+      <div className="loop-intro">
+        <h2 id="loop-title">Inside the app</h2>
+      </div>
       <div className="loop-stack">
         {CARDS.map((card, index) => (
           <article key={card.title} className="loop-card" style={{ '--n': index } as CSSProperties}>

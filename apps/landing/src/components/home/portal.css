@@ -1,0 +1,158 @@
+/* The portal hero. `--p` is the scroll position through the section (0 to 1), set by
+   `useScrollProgress`; its default of 1 is the open portal, which is what readers without script
+   or with reduced motion get. `html.reveal-ready` (set before paint, only with script and without
+   reduced motion) starts it closed and gives it the height to travel through. */
+.portal {
+  --p: 1;
+  /* The opening finishes before the section does, so the open portal holds for a moment. */
+  --open: min(1, calc(var(--p) / 0.78));
+  position: relative;
+  height: 100svh;
+}
+.reveal-ready .portal {
+  --p: 0;
+  height: 250svh;
+}
+
+.portal-stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--lx-ground);
+}
+
+/* The film, whole and at its own 2560:1638 proportions, framed in the middle of the stage: never
+   cropped or zoomed past its size. It grows the last few percent into place as the panels part. */
+.portal-image {
+  --film-h: calc(100svh - var(--lx-nav) - 150px);
+  position: absolute;
+  top: calc(50% + var(--lx-nav) / 2);
+  left: 50%;
+  z-index: 0;
+  width: min(100% - 2 * var(--home-gutter), var(--film-h) * 2560 / 1638);
+  aspect-ratio: 2560 / 1638;
+  overflow: hidden;
+  border: 1px solid var(--lx-line);
+  border-radius: 14px;
+  transform: translate(-50%, -50%) scale(calc(0.94 + 0.06 * var(--open)));
+  will-change: transform;
+}
+.portal-image .demo-film {
+  border-radius: 0;
+  background: var(--lx-ground-2);
+  box-shadow: none;
+}
+.portal-image .demo-cover {
+  place-items: end center;
+  padding-bottom: 22px;
+  background: none;
+  opacity: calc((var(--open) - 0.85) * 6.67);
+}
+.portal-image .demo-play {
+  min-height: 2.5rem;
+  padding-inline: 1.15rem;
+  border-radius: 999px;
+  box-shadow: none;
+  font: 600 11px / 1 var(--lx-text);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Two solid panels, each a little over half, meeting in the middle: the portal starts closed. */
+.portal-panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 3;
+  width: 51%;
+  background: var(--lx-ground);
+  will-change: transform;
+}
+.portal-panel-left {
+  left: 0;
+  border-right: 1px solid var(--lx-line);
+  transform: translateX(calc(var(--open) * -102%));
+}
+.portal-panel-right {
+  right: 0;
+  border-left: 1px solid var(--lx-line);
+  transform: translateX(calc(var(--open) * 102%));
+}
+
+/* The wordmark: grows while its tracking tightens and its halves travel to opposite edges, the
+   same distance each (the halves differ in width, so a share of their own width would not be
+   symmetric). Syne is wide, so it needs little tightening; the open title still fits the window. */
+.portal-title {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  color: var(--lx-ink);
+  font: 800 clamp(38px, 8.6vw, 200px) / 0.82 var(--lx-mark);
+  letter-spacing: calc(0.035em - 0.075em * var(--open));
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translateY(-50%) scale(calc(1 + 0.14 * var(--open)));
+  /* Gone by the time the portal is open: over the film it would only cover the product. */
+  opacity: calc((0.92 - var(--open)) * 3.4);
+  pointer-events: none;
+  will-change: transform;
+}
+.portal-half {
+  display: inline-block;
+  will-change: transform;
+}
+.portal-half-start {
+  transform: translateX(calc(var(--open) * -11vw));
+}
+.portal-half-end {
+  transform: translateX(calc(var(--open) * 11vw));
+}
+
+/* Corner metadata, pinned to the top (under the header) and bottom edges. */
+.portal-meta {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  white-space: nowrap;
+  color: var(--lx-ink-2);
+  font: 500 10.5px / 1.4 var(--lx-text);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.portal-meta-tl,
+.portal-meta-tr {
+  top: calc(var(--lx-nav) + 1.25rem);
+}
+.portal-meta-bl {
+  bottom: 1.4rem;
+}
+.portal-meta-tl,
+.portal-meta-bl {
+  left: var(--home-gutter);
+}
+.portal-meta-tr {
+  right: var(--home-gutter);
+  text-align: right;
+}
+
+/* A phone has room for one line per edge: the release on top, the platform at the bottom. */
+@media (max-width: 40rem) {
+  .portal-meta-tl {
+    display: none;
+  }
+  .portal-meta-tr {
+    right: auto;
+    left: var(--home-gutter);
+    text-align: left;
+  }
+}

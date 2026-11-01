@@ -19,14 +19,22 @@ function faces(css: string) {
 test('landing font policy cannot fall through to a late-swapping kit face', () => {
   const local = faces(landingFonts)
   const kit = faces(sharedFonts)
-  expect(local).toHaveLength(2)
   for (const face of local) {
     expect(face.display).toBe('optional')
     expect(kit.some((shared) => shared.family === face.family)).toBe(false)
+  }
+  // The docs' two faces are the kit's own assets at the kit's weights; the homepage's display
+  // and text faces (Syne, Sora) are its own and never named by the kit.
+  const docsFaces = local.filter((face) => face.family?.startsWith('Localix Landing '))
+  expect(docsFaces).toHaveLength(2)
+  for (const face of docsFaces) {
     const shared = kit.find((candidate) => candidate.asset === face.asset)
     expect(shared).toBeDefined()
     expect(face.weight).toBe(shared!.weight)
   }
+  expect(local.map((face) => face.family)).toEqual(
+    expect.arrayContaining(['Localix Display', 'Localix Text']),
+  )
   expect(styles).toContain("--font-heading: 'Localix Landing Heading', Arial, sans-serif;")
   expect(styles).toContain("--font-sans: 'Localix Landing Sans', Arial, sans-serif;")
   expect(styles.indexOf("@import './fonts.css'")).toBeGreaterThan(

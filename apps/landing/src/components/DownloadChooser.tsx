@@ -46,7 +46,7 @@ function useDownloadGuess(): DownloadGuess {
   }, [first, refined])
 }
 
-const SOURCE_DOCS = '/docs/getting-started--installation#how-it-works'
+export const SOURCE_DOCS = '/docs/getting-started--installation#how-it-works'
 const actionClasses = 'min-h-11 w-full justify-start gap-3 px-3 py-2 text-sm whitespace-normal'
 
 function DownloadAction({ option }: { option: DownloadOption }) {
@@ -80,6 +80,12 @@ function DownloadAction({ option }: { option: DownloadOption }) {
   )
 }
 
+/** The installer this device can run, or undefined when it is uncertain or has none. */
+export function usePrimaryDownload(downloads: DownloadOption[] = DOWNLOADS) {
+  const guess = useDownloadGuess()
+  return guess.certain ? downloads.find(({ id }) => id === guess.id) : undefined
+}
+
 /** One platform action; uncertain or unsupported devices get the source-build guide. */
 export function DownloadChooser({
   className,
@@ -91,8 +97,7 @@ export function DownloadChooser({
   /** The in-page `#downloads` target; a second chooser on the page passes `null`. */
   id?: string | null
 }) {
-  const guess = useDownloadGuess()
-  const primary = guess.certain ? downloads.find(({ id }) => id === guess.id) : undefined
+  const primary = usePrimaryDownload(downloads)
 
   return (
     <div id={id ?? undefined} className={cn('w-full', className)}>
