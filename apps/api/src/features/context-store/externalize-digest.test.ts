@@ -32,7 +32,7 @@ async function run(toolName: string, content: string) {
     spillDir: dir,
   })
   return hook(
-    { toolCallId: 'call_9', toolName, input: {}, result: { content }, messages: [] },
+    { toolCallId: 'call_9', toolName, input: {}, result: { content } },
     new AbortController().signal,
   )
 }
