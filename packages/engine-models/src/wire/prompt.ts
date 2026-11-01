@@ -18,6 +18,7 @@ import type { ModelTurnRequest } from '@localixai/agent/runtime'
 
 import { attachedFromTools, toolOutput, userParts, type ToolOutputShape } from './media'
 import { decodeProviderState } from './provider-state'
+import { strictToolSchema } from './strict-schema'
 import { toolCallIdMapper, type ToolCallIdFormat } from './tool-call-ids'
 
 /** How one provider family wants its requests shaped. */
@@ -41,6 +42,12 @@ export interface WireProfile {
    * `reasoning_content`, which DeepSeek and Kimi want back within a tool loop.
    */
   compatible?: boolean
+  /**
+   * Send each tool whose schema `strictToolSchema` can express as an OpenAI strict function
+   * (constrained decoding: the arguments always parse). Optional fields come back as `null`,
+   * which the run's argument coercion reads as absent.
+   */
+  strictTools?: boolean
   /** The form of tool-call id the provider insists on, when it insists. */
   toolCallIds?: ToolCallIdFormat
   /** Which explicit breakpoints `cacheBreakpoints` places: Anthropic's (default) or Bedrock's. */
@@ -206,12 +213,17 @@ export function buildCallOptions(
     prompt: buildPrompt(request, profile, origin, context.cacheRetention),
     ...(request.tools.length > 0
       ? {
-          tools: request.tools.map((tool) => ({
-            type: 'function' as const,
-            name: tool.name,
-            description: tool.description,
-            inputSchema: tool.inputSchema as never,
-          })),
+          tools: request.tools.map((tool) => {
+            // Strict only where the conversion is exact; the rest keep their schema as declared.
+            const strict = profile.strictTools ? strictToolSchema(tool.inputSchema) : undefined
+            return {
+              type: 'function' as const,
+              name: tool.name,
+              description: tool.description,
+              inputSchema: (strict ?? tool.inputSchema) as never,
+              ...(strict ? { strict: true } : {}),
+            }
+          }),
           toolChoice: { type: 'auto' as const },
         }
       : {}),

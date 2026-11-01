@@ -77,6 +77,28 @@ describe('arguments a model sent as JSON strings', () => {
     expect(value(schema, { limit: null, flag: 'true' })).toEqual({ flag: true })
   })
 
+  test('a strict-mode call (every field sent, null for absent) comes back as the tool declared', () => {
+    const schema = z.object({
+      path: z.string(),
+      limit: z.number().optional(),
+      edits: z.array(
+        z.discriminatedUnion('op', [
+          z.strictObject({ op: z.literal('rename'), to: z.string(), why: z.string().optional() }),
+          z.strictObject({ op: z.literal('drop') }),
+        ]),
+      ),
+      link: z.string().nullable(),
+    })
+    expect(
+      value(schema, {
+        path: 'a.ts',
+        limit: null,
+        edits: [{ op: 'rename', to: 'b', why: null }, { op: 'drop' }],
+        link: null,
+      }),
+    ).toEqual({ path: 'a.ts', edits: [{ op: 'rename', to: 'b' }, { op: 'drop' }], link: null })
+  })
+
   test("the tool's own preprocessing and defaults apply", () => {
     const schema = z.preprocess(
       (raw) =>

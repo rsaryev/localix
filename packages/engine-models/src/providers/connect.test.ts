@@ -95,6 +95,14 @@ describe('reaching a model', () => {
     ).toBe(false)
     expect(profileFor(entry('openai-codex', { family: 'openai' })).refusesOutputLimit).toBe(true)
     expect(profileFor(entry('openai', { family: 'openai' })).refusesOutputLimit).toBeUndefined()
+    // Strict function calling: OpenAI's own API only, not the ChatGPT backend or other families.
+    expect(profileFor(entry('openai', { family: 'openai' })).strictTools).toBe(true)
+    expect(profileFor(entry('openai-codex', { family: 'openai' })).strictTools).toBeUndefined()
+    expect(profileFor(entry('anthropic', { family: 'anthropic' })).strictTools).toBeUndefined()
+    expect(
+      profileFor(entry('openai', { family: 'openai' }), { baseURL: 'https://proxy.example/v1' })
+        .strictTools,
+    ).toBeUndefined()
   })
 
   test('every decision model answers through doDecide, whatever name its SDK gives the call', async () => {

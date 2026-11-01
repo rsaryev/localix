@@ -96,8 +96,12 @@ export function profileFor(
         temperature,
         requestOptions: openaiOptions(entry),
         requestHeaders: openaiAffinity(entry, access),
-        // The ChatGPT backend refuses a requested output limit.
+        // The ChatGPT backend refuses a requested output limit. It and a user-set address (a proxy
+        // that may not know strict schemas) are left on plain tools.
         ...(entry.provider.id === CODEX_PROVIDER_ID ? { refusesOutputLimit: true } : {}),
+        ...(entry.provider.id !== CODEX_PROVIDER_ID && !access?.baseURL
+          ? { strictTools: true }
+          : {}),
       }
     case 'anthropic':
       return { namespace: 'anthropic', cacheBreakpoints: true, temperature }

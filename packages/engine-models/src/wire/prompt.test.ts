@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import type { AssistantMessage, Message } from '@localixai/agent'
 
 import { IMAGE_OMITTED } from './media'
-import { buildPrompt, type WireProfile } from './prompt'
+import { buildCallOptions, buildPrompt, type WireProfile } from './prompt'
 
 const origin = { api: 'anthropic-messages', provider: 'anthropic', model: 'claude-x' }
 const anthropic: WireProfile = { namespace: 'anthropic', cacheBreakpoints: true, temperature: true }
@@ -256,5 +256,54 @@ describe('provider rules', () => {
     expect(a[0]).toEqual(b[0]!)
     expect(a[0]!.providerOptions).toEqual({ anthropic: { cacheControl: { type: 'ephemeral' } } })
     expect(a[1]).not.toEqual(b[1]!)
+  })
+})
+
+describe('strict function calling', () => {
+  const openai: WireProfile = {
+    namespace: 'openai',
+    cacheBreakpoints: false,
+    temperature: true,
+    strictTools: true,
+  }
+  const request = (inputSchema: Record<string, unknown>) => ({
+    systemPrompt: 's',
+    messages: [],
+    tools: [{ name: 'read', description: 'd', inputSchema }],
+    signal: new AbortController().signal,
+  })
+  const context = { sessionId: 's', reasoningEffort: undefined, idleMs: undefined }
+
+  test('a convertible tool is sent strict, its optional fields required and nullable', () => {
+    const options = buildCallOptions(
+      request({
+        type: 'object',
+        properties: { path: { type: 'string' }, limit: { type: 'integer' } },
+        required: ['path'],
+      }),
+      openai,
+      context,
+    )
+    expect(options.tools).toMatchObject([
+      {
+        name: 'read',
+        strict: true,
+        inputSchema: { required: ['path', 'limit'], additionalProperties: false },
+      },
+    ])
+  })
+
+  test('a tool strict mode cannot express stays as declared, non-strict', () => {
+    const schema = { type: 'object', properties: { id: { type: 'string', default: 'x' } } }
+    const [tool] = buildCallOptions(request(schema), openai, context).tools!
+    expect(tool).not.toHaveProperty('strict')
+    expect(tool).toMatchObject({ inputSchema: schema })
+  })
+
+  test('a provider that did not ask for it gets the schema untouched', () => {
+    const schema = { type: 'object', properties: { a: { type: 'string' } } }
+    const [tool] = buildCallOptions(request(schema), anthropic, context).tools!
+    expect(tool).not.toHaveProperty('strict')
+    expect(tool).toMatchObject({ inputSchema: schema })
   })
 })
