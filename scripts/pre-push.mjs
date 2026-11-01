@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
-// The checks a push runs (see pre-push-plan.mjs): types of what the pushed commits change. The
+// The checks a push runs (see pre-push-plan.mjs): types of what the pushed commits change and the
+// repository guards. The
 // gates run on the working tree, so it must hold exactly what is pushed: uncommitted tracked
 // changes are refused.
 import { spawnSync } from 'node:child_process'
@@ -48,4 +49,4 @@ for (const gate of checks.gates) {
     killSignal: 'SIGKILL',
   })
 }
-console.log('[pre-push] Types checked; CI runs the tests.')
+console.log('[pre-push] Types and repository guards checked; CI runs the tests.')

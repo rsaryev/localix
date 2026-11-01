@@ -18,13 +18,13 @@ never waits on the machine, so the sharded run stays fast and deterministic.
 
 ## Where tests run
 
-| Command                         | Runs                                                                | When                            |
-| ------------------------------- | ------------------------------------------------------------------- | ------------------------------- |
-| `bun test path/to/file.test.ts` | One file, from the repository root or the package.                  | While editing.                  |
-| `.githooks/pre-commit`          | Format, lint and the changed or co-located tests.                   | Every commit.                   |
-| `.githooks/pre-push`            | Source and test types of the packages the pushed commits change.    | Every push.                     |
-| Pull-request CI                 | Types and unit tests, `--affected` against the pull request's base. | Every pull request.             |
-| `main` CI                       | Types and unit tests over the whole tree, on our own runner.        | Before anything reaches `main`. |
+| Command                         | Runs                                                                                                         | When                            |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------- |
+| `bun test path/to/file.test.ts` | One file, from the repository root or the package.                                                           | While editing.                  |
+| `.githooks/pre-commit`          | Format, lint and the changed or co-located tests.                                                            | Every commit.                   |
+| `.githooks/pre-push`            | Source and test types of the packages the pushed commits change, and the repository guards (`check:guards`). | Every push.                     |
+| Pull-request CI                 | Types and unit tests, `--affected` against the pull request's base.                                          | Every pull request.             |
+| `main` CI                       | Types and unit tests over the whole tree, on our own runner.                                                 | Before anything reaches `main`. |
 
 Bun reads `bunfig.toml` only from the directory a run starts in, so every workspace with tests has
 its own and lists `packages/testing/src/preload/index.ts` by its relative path. The preload removes

@@ -1,5 +1,6 @@
 #!/bin/sh
-# Every push checks the types of what it changes; CI runs the tests (scripts/pre-push-plan.mjs).
+# Every push checks the types of what it changes and the repository guards; CI runs the tests
+# (scripts/pre-push-plan.mjs).
 
 set -e
 

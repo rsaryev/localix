@@ -29,6 +29,12 @@ describe('a push checks only what it adds, and never runs the test suite here', 
     expect(pushChecks(update(ZERO, B))).toBeNull()
   })
 
+  test('the repository guards run here, so a rule CI enforces fails before the push', () => {
+    // Architecture rules, file size, test determinism and UI tokens read the whole tree in a few
+    // seconds and never flake; dev reached main 341 commits late once because only CI ran them.
+    expect(pushChecks(update(A, B))?.gates).toContain('check:guards')
+  })
+
   test('the unit and integration suites are left to CI on our runner', () => {
     const gates = pushChecks(update(A, B))?.gates ?? []
     expect(gates).not.toContain('test')

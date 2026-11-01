@@ -120,10 +120,12 @@ edits; stage or stash it before committing.
 
 Before every push, `.githooks/pre-push` runs `type-check` and `check:tests` for the packages the
 pushed commits change and every package that depends on them (Turbo's `--affected` against the
-remote branch, or `origin/main` for a new one), two tasks at a time. `TURBO_FILTER= git push` checks
-the whole tree. The unit tests run in CI on our own runner: pull requests for the packages they
-change, `main` over the whole tree. The gates check the working tree, so commit or stash tracked
-changes before pushing.
+remote branch, or `origin/main` for a new one), two tasks at a time. It then runs `check:guards`,
+the repository guards in `scripts/` (architecture rules, file size, test determinism, UI tokens and
+the rest), over the whole tree in a few seconds, so a rule CI enforces fails before the push.
+`TURBO_FILTER= git push` checks the whole tree. The unit tests run in CI on our own runner: pull
+requests for the packages they change, `main` over the whole tree. The gates check the working tree,
+so commit or stash tracked changes before pushing.
 
 Hooks never pass git's repository variables (`GIT_DIR`, `GIT_INDEX_FILE` and the rest) to the tools
 and tests they start: a test that creates a scratch repository would otherwise act on this one,

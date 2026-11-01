@@ -13,9 +13,10 @@ Localix uses Bun 1.4.4 and Turborepo. [CONTRIBUTING.md](CONTRIBUTING.md) documen
 - For requested commits, stage intended changes and commit. Pre-commit checks formatting, lint,
   changed and co-located tests, and applicable Rust formatting/Clippy; do not duplicate those checks
   manually or bypass failures.
-- Pre-push checks source and test types of the packages the pushed commits change; commit or stash
-  first. The test suite and full builds belong to CI on our runner (`main`); do not run the whole
-  suite locally unless asked. Run optional architecture, documentation, and audit gates when
+- Pre-push checks source and test types of the packages the pushed commits change, and the
+  repository guards (`check:guards`: architecture, file size, test determinism, UI tokens); commit
+  or stash first. The test suite and full builds belong to CI on our runner (`main`); do not run the
+  whole suite locally unless asked. Run optional architecture, documentation, and audit gates when
   relevant or explicitly requested. Report verification accurately; stop servers and browsers you
   started.
 
