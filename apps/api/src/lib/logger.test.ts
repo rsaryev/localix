@@ -163,13 +163,13 @@ describe('captureConsoleDiagnostics', () => {
       { debug: record, info: record, warn: record, error: record },
       target,
     )
-    const error = new Error('OAuth failed for bearer abcdefghijklmno')
+    const error = new Error('OAuth failed for bearer abcdefgh12345678')
     error.stack = 'PRIVATE_STACK_BODY\n' + error.stack
     target.error(error)
     restore()
 
     const line = JSON.stringify(diagnostics)
-    expect(line).not.toContain('abcdefghijklmno')
+    expect(line).not.toContain('abcdefgh12345678')
     expect(line).not.toContain('PRIVATE_STACK_BODY')
     expect(line).toContain('[redacted]')
     expect(line).toContain('OAuth failed')

@@ -15,7 +15,7 @@ describe('shared secret shapes', () => {
     `glpat-${'a'.repeat(20)}`,
     'rk_test_1234567890',
     'eyJabcdefgh.abcdefgh.abcdefgh',
-    'BEARER abcdefghijkl',
+    'BEARER abcdefgh12345678',
     'client_secret: "abcdefgh"',
   ])('keeps detection and replacement consistent for %s', (secret) => {
     const input = `before ${secret} after`
@@ -27,6 +27,51 @@ describe('shared secret shapes', () => {
       expect(redactSecrets(input)).toBe('before [redacted] after')
       expect(hasSecretShape('ordinary text')).toBe(false)
     }
+  })
+
+  test.each([
+    [
+      'github fine-grained',
+      'key github_pat_11ABCDEFG0abcdefghij_klmnopqrstuvwxyz0123 end',
+      'key [redacted] end',
+    ],
+    ['aws temporary id', 'id ASIA1234567890ABCDEF end', 'id [redacted] end'],
+    [
+      'url password',
+      'git clone https://bob:hunter2pw@example.com/repo.git',
+      'git clone https://bob:[redacted]@example.com/repo.git',
+    ],
+    ['basic header', 'Authorization: Basic dXNlcjpwYXNzd29yZA==', 'Authorization: [redacted]'],
+    ['proxy header', 'Proxy-Authorization: Bearer abc.def.ghi', 'Proxy-Authorization: [redacted]'],
+    ['cookie header', 'Cookie: sid=abc123; theme=dark', 'Cookie: [redacted]'],
+    [
+      'json header',
+      '{"Authorization":"Token q9f8d7s6a5","x":1}',
+      '{"Authorization":"[redacted]","x":1}',
+    ],
+    ['bare bearer token', 'sent Bearer 9f8d7s6a5q4w3e2r1t0y now', 'sent [redacted] now'],
+  ])('masks by shape: %s', (_name, input, expected) => {
+    expect(redactSecrets(input)).toBe(expected)
+    expect(hasSecretShape(input)).toBe(true)
+    expect(redactSecrets(expected)).toBe(expected)
+  })
+
+  test.each([
+    'Bearer of bad news',
+    'Bearer authentication is required',
+    'Basic information about the account',
+    'password: required',
+    'Authorization: required',
+    'Authorization: failed',
+    'Authorization failed for this request',
+    'Cookie: none',
+    'see https://example.com:8080/path and ssh://git@host/repo',
+    'https://example.com/a@b',
+    'github_pat_short',
+    'ASIAN markets and ASIA pacific',
+  ])('keeps ordinary text: %s', (input) => {
+    expect(hasSecretShape(input)).toBe(false)
+    expect(redactSecrets(input)).toBe(input)
   })
 
   test.each([

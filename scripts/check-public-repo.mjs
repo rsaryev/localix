@@ -238,6 +238,39 @@ for (const file of repositoryFiles) {
   for (const match of content.matchAll(personalMailbox))
     personalMailboxes.push(`${file}: ${match[0]}`)
 }
+// Provider API keys by shape. Tests and docs carry deliberately fake keys (`AKIA…EXAMPLE`,
+// `ghp_AAAA…`), so they are exempt; first-party source and config never hold a real one.
+const providerKeyShapes = [
+  /\bsk-ant-[A-Za-z0-9_-]{30,}/gu,
+  /\bsk-proj-[A-Za-z0-9_-]{30,}/gu,
+  /\bgh[pousr]_[A-Za-z0-9]{36,}/gu,
+  /\bgithub_pat_[A-Za-z0-9_]{50,}/gu,
+  /\bxox[baprs]-[A-Za-z0-9-]{24,}/gu,
+  /(?<![A-Za-z0-9])(?:AKIA|ASIA)[0-9A-Z]{16}(?![A-Za-z0-9])/gu,
+  /\bAIza[0-9A-Za-z_-]{35}/gu,
+  /-----BEGIN [A-Z ]*PRIVATE KEY-----/gu,
+]
+const fakeKeyMarker = /EXAMPLE|FAKE|DUMMY|PLACEHOLDER|(.)\1{9,}/u
+const providerKeys = []
+for (const file of repositoryFiles) {
+  if (file.startsWith('vendor/') || /(?:\.test\.|\/testing\/|\/fixtures?\/|^docs\/)/u.test(file)) {
+    continue
+  }
+  if (!/\.(?:c|cjs|css|html|js|json|jsx|md|mjs|rs|sh|toml|ts|tsx|txt|ya?ml|zsh)$/u.test(file)) {
+    continue
+  }
+  const content = await readFile(join(root, file), 'utf8')
+  for (const shape of providerKeyShapes) {
+    for (const match of content.matchAll(shape)) {
+      if (!fakeKeyMarker.test(match[0])) providerKeys.push(`${file}: ${match[0].slice(0, 8)}…`)
+    }
+  }
+}
+assert.deepEqual(
+  providerKeys,
+  [],
+  `Public source must not carry provider API keys or private keys:\n${providerKeys.join('\n')}`,
+)
 assert.deepEqual(
   personalHomePaths,
   [],
