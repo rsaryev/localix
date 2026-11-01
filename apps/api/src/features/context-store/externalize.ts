@@ -1,7 +1,9 @@
 import type { AgentRuntimeRunInput } from '@localixai/agent/runtime'
-import { formatSize, textEncoderByteLength } from '@localixai/agent'
+import { formatSize, jsonDigest, textEncoderByteLength } from '@localixai/agent'
 
 import { isIndexSkippedTool } from '../agent-core/context-index-policy'
+import { spillFullOutput } from '../agent-core/tools/bash/bash-output'
+import { TOOL } from '../agent-core/tool-names'
 import type { ContextStore } from './repository'
 
 /**
@@ -24,7 +26,22 @@ import type { ContextStore } from './repository'
  */
 export const EXTERNALIZE_THRESHOLD_BYTES = 20_000
 
+/**
+ * Model-facing bytes past which a JSON result is replaced by a digest. Well above the index
+ * threshold: a result this size is already beyond what the model reads usefully in one piece.
+ */
+export const JSON_DIGEST_THRESHOLD_BYTES = 32_000
+
+/**
+ * Tools whose text the model asked for verbatim (a file's content, a command's own output).
+ * Shell output has its own spill and tail cap. A recovered result (ToolOutput) is already
+ * barred by the index-skip rule.
+ */
+const VERBATIM_TOOLS: ReadonlySet<string> = new Set([TOOL.Read, TOOL.Bash])
+
 export interface ExternalizeOptions {
+  /** Where a digested result's whole text is saved; the bash spill directory by default. */
+  spillDir?: string
   userId: string
   sessionId: string
   /**
@@ -91,9 +108,31 @@ export function buildExternalizeAfterToolCall(
       }
     }
 
+    // A large JSON result (an MCP tool, a snapshot) reaches the model as a digest; its whole text
+    // sits in a file it can read or grep. The pointer below then rides on the digest.
+    let content = result.content
+    let digested = false
+    if (
+      !result.isError &&
+      contentBytes >= JSON_DIGEST_THRESHOLD_BYTES &&
+      !VERBATIM_TOOLS.has(toolName) &&
+      !isIndexSkippedTool(toolName) &&
+      details?.kind !== 'image'
+    ) {
+      const digest = jsonDigest(result.content)
+      const path =
+        digest && (await spillFullOutput(digest.file, toolCallId, options.spillDir, 'json'))
+      if (digest && path) {
+        content = digest.render(path)
+        digested = true
+      }
+    }
+
     // Keep indexing for a later turn that may re-enable ToolOutput, but do
     // not advertise a call the current model cannot make.
-    if (sections === 0 || options.toolOutputAvailable === false) return undefined
+    if (sections === 0 || options.toolOutputAvailable === false) {
+      return digested ? { content } : undefined
+    }
     // Say WHICH part is indexed when chunking dropped the tail. "400 sections of this
     // 5.0 MB output are indexed" reads as full coverage to a model that has no idea 400 is
     // the cap, and a later search over the unindexed tail would report a plain absence.
@@ -103,7 +142,7 @@ export function buildExternalizeAfterToolCall(
         : `${sections} sections of this ${formatSize(textBytes)} output are indexed`
     return {
       content:
-        result.content +
+        content +
         `\n\n[${scope} — ` +
         `ToolOutput(action="search", queries=[…], tool_call_id="${toolCallId}") finds matching sections without replaying it all` +
         `${covered === 'prefix' ? '; ToolOutput action="get" has the whole text' : ''}]`,

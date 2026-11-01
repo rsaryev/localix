@@ -36,6 +36,8 @@ export {
   DEFAULT_MAX_BYTES,
 } from './utils/truncate'
 export type { TruncationResult, TruncationOptions } from './utils/truncate'
+export { jsonDigest } from './utils/json-digest'
+export type { JsonDigest } from './utils/json-digest'
 export { truncateMiddle } from './utils/truncate-middle'
 export type { MiddleTruncationOptions } from './utils/truncate-middle'
 export * from './context/index'

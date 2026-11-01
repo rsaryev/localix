@@ -61,11 +61,12 @@ export async function spillFullOutput(
   output: string,
   key: string,
   dir = spillDir(),
+  ext = 'log',
 ): Promise<string | null> {
   try {
     await mkdir(dir, { recursive: true })
     reaping = reapOldSpills(dir)
-    const file = join(dir, `${safeFileKey(key)}-${Date.now()}.log`)
+    const file = join(dir, `${safeFileKey(key)}-${Date.now()}.${ext}`)
     await writeFile(file, output, 'utf8')
     return file
   } catch {
