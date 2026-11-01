@@ -158,6 +158,47 @@ describe('a model session turn', () => {
     expect(calls).toHaveLength(2)
   })
 
+  test('a quota refusal is attempted once; waiting does not lift an exhausted plan', async () => {
+    const exhausted = new APICallError({
+      message: 'You exceeded your current quota, please check your plan and billing details.',
+      url: 'https://x',
+      requestBodyValues: {},
+      statusCode: 429,
+      responseBody: '{"error":{"code":"insufficient_quota"}}',
+      isRetryable: true,
+    })
+    // The same refusal as a provider reports it inside the stream, a plain object.
+    const streamed = {
+      message: 'You exceeded your current quota',
+      code: 'insufficient_quota',
+      statusCode: 429,
+    }
+    for (const attempt of [exhausted, [{ type: 'error', error: streamed } as const]]) {
+      const { model, calls } = fakeModel([attempt, [finish()]])
+      const turn = createModelSession(bind(model), { sessionId: 's', retry: fastRetry }).turn(
+        request(),
+      )
+      expect((await turn.message).stopReason).toBe('error')
+      expect(calls).toHaveLength(1)
+    }
+  })
+
+  test('a server fault that mentions billing is still retried', async () => {
+    const outage = new APICallError({
+      message: 'billing service unavailable',
+      url: 'https://x',
+      requestBodyValues: {},
+      statusCode: 503,
+      isRetryable: true,
+    })
+    const { model, calls } = fakeModel([outage, [finish()]])
+    const turn = createModelSession(bind(model), { sessionId: 's', retry: fastRetry }).turn(
+      request(),
+    )
+    expect((await turn.message).stopReason).not.toBe('error')
+    expect(calls).toHaveLength(2)
+  })
+
   test('a failure after content is final, and carries the provider facts', async () => {
     const overloaded = new APICallError({
       message: 'overloaded',

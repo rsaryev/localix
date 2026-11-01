@@ -2,6 +2,7 @@ export { describeFixedContext, estimateToolSchemaTokens } from './tool-schema-to
 export type { FixedContextDescription } from './tool-schema-tokens'
 export { classifyAgentError, coerceToolResult, extractProviderStatus } from './error-classification'
 export type { AgentErrorInfo } from './error-classification'
+export { NON_RETRYABLE_LIMIT_MESSAGE } from './error-classification-signals'
 export { presentError, presentErrorInfo } from './error-presentation'
 export type { PresentContext, PresentedError, Recovery } from './error-presentation'
 export {

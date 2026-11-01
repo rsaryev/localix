@@ -10,7 +10,7 @@
 import { APICallError } from '@ai-sdk/provider'
 import { backoffMs } from '@localixai/agent/backoff'
 import { PROVIDER_HTTP_ERROR_NAME, providerHttpErrorMessage } from '@localixai/agent'
-import { attachProviderResponse } from '@localixai/agent/agents'
+import { NON_RETRYABLE_LIMIT_MESSAGE, attachProviderResponse } from '@localixai/agent/agents'
 
 export interface RetryPolicy {
   maxRetries: number
@@ -61,7 +61,28 @@ function isNetworkFailure(error: Error): boolean {
   return error.cause instanceof Error && isNetworkFailure(error.cause)
 }
 
+/**
+ * A refusal because the quota, balance or plan is spent (OpenAI's `insufficient_quota` 429
+ * included). It shares a status with a rate limit but waiting does not lift it, so it is never
+ * resent here; the host classifies it as terminal from the same signal.
+ */
+function isExhaustedAllowance(error: unknown): boolean {
+  // Only a refusal that shares a rate limit's status (or states none, as a streamed one may): a
+  // 5xx that merely mentions billing is still a transient server fault.
+  const status = statusOf(error)
+  if (status !== undefined && status !== 429) return false
+  const streamError = streamErrorOf(error)
+  const text = [
+    APICallError.isInstance(error) ? error.message : streamError?.message,
+    APICallError.isInstance(error) ? error.responseBody : undefined,
+    typeof streamError?.code === 'string' ? streamError.code : undefined,
+    typeof streamError?.type === 'string' ? streamError.type : undefined,
+  ]
+  return text.some((part) => part !== undefined && NON_RETRYABLE_LIMIT_MESSAGE.test(part))
+}
+
 export function isRetryable(error: unknown): boolean {
+  if (isExhaustedAllowance(error)) return false
   if (APICallError.isInstance(error)) {
     const status = error.statusCode
     return error.isRetryable || (status !== undefined && RETRYABLE_STATUS.has(status))
