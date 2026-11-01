@@ -13,7 +13,11 @@
  */
 import type { DecisionAnswer, DecisionAsk } from '@localixai/mini-app-sdk/backend'
 
-import type { PreviewSnapshotElement } from '../preview/preview-control'
+import type {
+  PreviewSnapshot,
+  PreviewSnapshotElement,
+  PreviewStep,
+} from '../preview/preview-control'
 
 export const GOAL_OPERATIONS = [
   'CLICK',
@@ -260,3 +264,23 @@ export function traceLine(step: GoalStep): string {
   const unchanged = step.changed === false ? ' · no visible change' : ''
   return `${step.operation}${target}${value} · ${Math.round(step.probability * 100)}%${unchanged}`
 }
+
+/** The page step each acting operation becomes. */
+export const STEP_OF: Partial<
+  Record<GoalOperation, (ref?: string, value?: string) => PreviewStep>
+> = {
+  CLICK: (ref) => ({ action: 'click', ref }),
+  TYPE_TEXT: (ref, value) => ({ action: 'type', ref, text: value }),
+  PRESS_ENTER: () => ({ action: 'press', key: 'Enter' }),
+  SCROLL_DOWN: () => ({ action: 'scroll', direction: 'down' }),
+  SCROLL_UP: () => ({ action: 'scroll', direction: 'up' }),
+}
+
+/** What the person would call "the same page": address, visible words, controls and their values. */
+export const fingerprint = (snapshot: PreviewSnapshot) =>
+  [snapshot.url, pageText(snapshot.tree), ...(snapshot.elements ?? []).map(describeElement)].join(
+    '\n',
+  )
+
+export const sameAction = (a: GoalStep | undefined, b: GoalStep) =>
+  !!a && a.operation === b.operation && a.ref === b.ref && a.value === b.value

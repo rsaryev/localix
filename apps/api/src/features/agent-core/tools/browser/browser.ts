@@ -2,22 +2,11 @@ import type { z } from 'zod'
 import {
   defineAgentTool,
   type AgentTool,
-  type AgentToolResult,
   type AgentToolUpdateCallback,
 } from '@localixai/agent/agents'
 import { TOOL } from '../../tool-names'
-import type {
-  PreviewAction,
-  PreviewCommand,
-  PreviewConsoleEntry,
-  PreviewSendOutcome,
-  PreviewSnapshot,
-} from '../preview/preview-control'
-import type { OpenPreviewCoreInput, OpenPreviewCoreResult } from '../preview/open-preview'
 import {
   MISSING_ACTION_MESSAGE,
-  TAKE_SCREENSHOT,
-  buildPreviewCommand,
   inferAction,
   missingFieldMessage,
   prepareBrowserArguments,
@@ -26,14 +15,16 @@ import {
 } from './browser-input'
 import { browserDescription, browserInputSchemaFor } from './browser-input-variants'
 import { classifyBrowserCall } from './browser-classify'
-import { RELOAD_NOTICE, snapshotContent } from './browser-format'
+import { RELOAD_NOTICE } from './browser-format'
 import { openPreviewAndSnapshot } from './browser-open'
-import { formatReply } from './browser-reply'
 import { createViewportMemory } from './browser-viewport'
-import { relayTimeoutMs } from './browser-wait'
-import { runGoal, type GoalDeps } from './browser-goal'
-import { TAINT_REFUSAL, createTabTaint } from './browser-taint'
-import { prepareSecretSteps, withUnresolvedNote, type BrowserSecrets } from './browser-secrets'
+import { runGoal } from './browser-goal'
+import { createTabTaint } from './browser-taint'
+import { withUnresolvedNote } from './browser-secrets'
+import { createRelay } from './browser-relay'
+import type { ActionOutcome, BrowserDetails, BrowserToolDeps, ToolResult } from './browser-types'
+
+export type { BrowserDetails, BrowserToolDeps } from './browser-types'
 
 /**
  * `browser` — lets the agent DRIVE the Browser tabs the user has open, local previews and
@@ -47,53 +38,6 @@ import { prepareSecretSteps, withUnresolvedNote, type BrowserSecrets } from './b
  * reply (see browser-reply.ts). Screenshots come back as an image content
  * part for vision models.
  */
-
-/** Uniform UI detail shape across all actions (read by the tool card). The `open`
- *  and `close` actions are tool-only (never relayed to the probe), so they widen the
- *  relay-facing `PreviewAction` here without leaking into the probe protocol. */
-export interface BrowserDetails {
-  errorCode?: string
-  error?: string
-  previewId?: string
-  ready?: boolean
-  viewport?: { width: number; height: number }
-  action: PreviewAction | 'open' | 'close' | 'goal'
-  snapshot?: PreviewSnapshot
-  console?: PreviewConsoleEntry[]
-  rect?: { x: number; y: number; width: number; height: number } | null
-  target?: string
-  diff?: string
-  value?: string
-  /** A running `goal`: the trace so far, streamed after each step. */
-  steps?: string[]
-}
-
-export interface BrowserToolDeps {
-  /** Relay one command to the open preview, bound to this user + session.
-   *  `opts.timeoutMs` bounds a BEST-EFFORT relay (the snapshot folded into an `open`
-   *  result) so it doesn't freeze for the full default window when no probe is
-   *  attached (an unattended/headless run). */
-  send(command: PreviewCommand, opts?: { timeoutMs?: number }): Promise<PreviewSendOutcome>
-  /** Open (or refresh) a preview — delegates to the shared `openPreviewCore`. */
-  openPreview(input: OpenPreviewCoreInput): Promise<OpenPreviewCoreResult>
-  /**
-   * Tell the UI to close these tabs. Tool-only — never relayed to the probe (a plain function
-   * dep; agent-core stays agnostic of the stream registry behind it).
-   */
-  closePreview(previewIds: string[]): void
-  /** The decision model the `goal` action asks, bound to this run; absent without one. */
-  decide?: GoalDeps['decide']
-  /** The vault for a `${secret:KEY}` in a typed value (see browser-secrets.ts); absent without one. */
-  secrets?: BrowserSecrets
-}
-
-type ToolResult = AgentToolResult<BrowserDetails>
-
-/** A finished action, plus whether the probe reported the page reloaded under us. */
-interface ActionOutcome {
-  result: ToolResult
-  reloaded?: boolean
-}
 
 export function createBrowserTool(hostDeps: BrowserToolDeps) {
   // Every relay carries the tab's fixed size (if any), and every open re-decides it.
@@ -109,41 +53,7 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
     },
   }
 
-  /** A relay that failed. A self-healed failure (stale ref / covered target) rides a
-   *  FRESH snapshot back — fold it into the error so the agent retargets in the SAME
-   *  turn instead of spending a call to re-snapshot (the re-snapshot churn trap). */
-  function relayFailure(
-    action: PreviewAction,
-    outcome: Extract<PreviewSendOutcome, { ok: false }>,
-  ): ActionOutcome {
-    const recovered = outcome.result
-    const reloaded = recovered?.reloaded
-    if (recovered?.snapshot) {
-      return {
-        reloaded,
-        result: {
-          content: `${outcome.error}\n\n${snapshotContent(recovered)}`,
-          isError: true,
-          details: { action, snapshot: recovered.snapshot },
-          supersedeKey: 'browser',
-        },
-      }
-    }
-    return {
-      reloaded,
-      result: {
-        content: `${outcome.errorCode && outcome.errorCode !== 'failed' ? `${outcome.errorCode}: ` : ''}${outcome.error}`,
-        isError: true,
-        details: {
-          action,
-          errorCode: outcome.errorCode,
-          error: outcome.error,
-          previewId: recovered?.previewId,
-          viewport: recovered?.viewport,
-        },
-      },
-    }
-  }
+  const relay = createRelay(deps, taint)
 
   /** One resolved action, start to finish (open/close are tool-only; the rest relay). */
   async function runAction(
@@ -202,80 +112,7 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
 
     const missing = missingFieldMessage(input)
     if (missing) return { result: { content: missing, isError: true } }
-
-    // Typed vault references resolve for the relay only; the page's reply is shielded.
-    const prepared = await prepareSecretSteps(input, deps.secrets)
-    if (!prepared.ok) return { result: { content: prepared.error, isError: true } }
-    // A tab that was typed a secret refuses what could expose it (see browser-taint.ts).
-    const evaluating = input.steps?.some((step) => step.action === 'evaluate')
-    if (taint.refuses(input) || (prepared.typedSecret && evaluating))
-      return { result: { content: TAINT_REFUSAL, isError: true } }
-    const outcome = await relayResolved(input, prepared.input, prepared.typedSecret)
-    return { ...outcome, result: prepared.shield(outcome.result) }
-  }
-
-  /** Teach the taint what a finished call showed: the tab's URL, and whether it was typed a secret. */
-  function settle(input: ResolvedInput, result: ToolResult, typed: boolean) {
-    taint.settle(
-      input,
-      { previewId: result.details?.previewId, url: result.details?.snapshot?.url },
-      typed,
-    )
-  }
-
-  /** `wire` is `input` with its typed references resolved: the only copy that reaches the page. */
-  async function relayResolved(
-    input: ResolvedInput,
-    wire: ResolvedInput,
-    typed: boolean,
-  ): Promise<ActionOutcome> {
-    const outcome = await relayWire(input, wire, typed)
-    // The photograph is refused, not the typing: the steps before it already ran.
-    settle(input, outcome.result, typed)
-    return outcome
-  }
-
-  async function relayWire(
-    input: ResolvedInput,
-    wire: ResolvedInput,
-    typed: boolean,
-  ): Promise<ActionOutcome> {
-    // ACT, THEN LOOK, in one call. A batch that ended in a screenshot arrives here as a
-    // screenshot carrying the steps before it (`liftTrailingScreenshot`), because a batch
-    // result is text and only the call's own result can be an image. The steps run first and
-    // their failure is the call's failure: photographing a page whose setup did not happen
-    // returns a picture of the wrong thing, which is worse than an error.
-    if (input.action === TAKE_SCREENSHOT && input.steps?.length) {
-      const setupTimeout = relayTimeoutMs(input)
-      const setup = await deps.send(
-        buildPreviewCommand({ ...wire, action: 'steps' }),
-        setupTimeout === undefined ? undefined : { timeoutMs: setupTimeout },
-      )
-      if ('error' in setup) return relayFailure('steps', setup)
-      if (typed)
-        return {
-          result: {
-            content: `The steps ran and typed the secret. The screenshot was not taken. ${TAINT_REFUSAL}`,
-            isError: true,
-            details: {
-              action: 'steps',
-              previewId: setup.result.previewId,
-              snapshot: setup.result.snapshot,
-            },
-          },
-        }
-    }
-
-    const timeoutMs = relayTimeoutMs(input)
-    const outcome = await deps.send(
-      buildPreviewCommand(wire),
-      timeoutMs === undefined ? undefined : { timeoutMs },
-    )
-    if ('error' in outcome) return relayFailure(input.action as PreviewAction, outcome)
-    return {
-      reloaded: outcome.result.reloaded,
-      result: await formatReply(input, outcome.result, deps),
-    }
+    return relay.secured(input)
   }
 
   const goal = !!deps.decide

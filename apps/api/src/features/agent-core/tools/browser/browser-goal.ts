@@ -16,17 +16,18 @@ import type {
   PreviewCommand,
   PreviewSendOutcome,
   PreviewSnapshot,
-  PreviewStep,
 } from '../preview/preview-control'
 import { snapshotContent } from './browser-format'
 import { budgetReport, repairAsk, type BudgetDecide } from './browser-goal-report'
 import {
+  STEP_OF,
   describeElement,
+  fingerprint,
   goalAsk,
   pageText,
   readGoal,
+  sameAction,
   traceLine,
-  type GoalOperation,
   type GoalStep,
 } from './browser-goal-ask'
 
@@ -68,25 +69,8 @@ export const NO_ELEMENTS =
 
 type Result = AgentToolResult<{ action: 'goal'; error?: string }>
 
-const STEP_OF: Partial<Record<GoalOperation, (ref?: string, value?: string) => PreviewStep>> = {
-  CLICK: (ref) => ({ action: 'click', ref }),
-  TYPE_TEXT: (ref, value) => ({ action: 'type', ref, text: value }),
-  PRESS_ENTER: () => ({ action: 'press', key: 'Enter' }),
-  SCROLL_DOWN: () => ({ action: 'scroll', direction: 'down' }),
-  SCROLL_UP: () => ({ action: 'scroll', direction: 'up' }),
-}
-
 /** A state seen this often is a loop: the third return to it ends the run. */
 export const GOAL_STATE_RETURNS = 3
-
-/** What the person would call "the same page": address, visible words, controls and their values. */
-const fingerprint = (snapshot: PreviewSnapshot) =>
-  [snapshot.url, pageText(snapshot.tree), ...(snapshot.elements ?? []).map(describeElement)].join(
-    '\n',
-  )
-
-const sameAction = (a: GoalStep | undefined, b: GoalStep) =>
-  !!a && a.operation === b.operation && a.ref === b.ref && a.value === b.value
 
 export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result> {
   const rawDecide = deps.decide
