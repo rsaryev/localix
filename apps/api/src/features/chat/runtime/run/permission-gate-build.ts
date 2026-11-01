@@ -17,6 +17,7 @@ import { claudeCodeAllowRules, claudeCodeDenyRules } from '../../../cc-settings/
 import { createConfirmRequester } from './confirm-requester'
 import { ownPlanDirForRun } from '../plan-view'
 import type { RunHookContext } from './run-hook-context'
+import type { UncertainWrites } from '../../../agent-core/tools/uncertain-writes'
 import { createPermissionGate } from '../../../agent-core/permission-gate'
 
 export interface BuildRunPermissionGateOptions extends RunHookContext {
@@ -36,6 +37,8 @@ export interface BuildRunPermissionGateOptions extends RunHookContext {
   defaultCwd: string
   /** Run-scoped refusal memory; the run reads its verdict as a stop condition. */
   refusalTracker?: GateRefusalTracker
+  /** Writes whose outcome is unknown; an identical repeat is asked (`uncertain-writes.ts`). */
+  uncertainWrites?: UncertainWrites
   /**
    * The run's closed-wait ledger (`RunTurnState.hitlWaitedMs`). A permission card is a human
    * wait exactly like an `ask`, but it is raised by the gate, not by a tool, so without this the
@@ -153,6 +156,7 @@ export function buildRunPermissionGate(
     // or when the session is autonomous and nobody watches it (`policy/axes/human.ts`).
     requestConfirm: options.mayConfirm ? requestConfirm : undefined,
     ...(options.refusalTracker ? { refusalTracker: options.refusalTracker } : {}),
+    ...(options.uncertainWrites ? { uncertainWrites: options.uncertainWrites } : {}),
     // CC PermissionDenied: a refusal made without asking anyone; `retry` tells the model it may
     // try the call again (the refusal itself stands).
     ...(ccHooks.hasHooks('PermissionDenied')

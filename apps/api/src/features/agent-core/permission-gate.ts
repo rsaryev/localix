@@ -21,6 +21,7 @@ import {
   type ReviewVerdict,
   type VerdictOptions,
 } from './permission-verdict'
+import type { UncertainWrites } from './tools/uncertain-writes'
 import { confirmSubject } from './permission-confirm-subject'
 import type { GrantOption } from './permission-grant-scope'
 import { UNANSWERED_CALL_TAIL, unansweredRefusal } from './tools/hitl/decision-deadline'
@@ -51,6 +52,8 @@ export interface RequestConfirmArgs {
    * card is withdrawn then, and an answer that comes later approves nothing and records nothing.
    */
   signal?: AbortSignal
+  /** Ask even when a session-wide grant covers the call: this one is not like the others. */
+  fresh?: boolean
 }
 
 /**
@@ -85,7 +88,13 @@ export interface PermissionGateOptions extends VerdictOptions {
   reviewVerdict?: ReviewVerdict
   /** Sees each refusal a permission mode made on its own (`permission-hook-verdicts.ts`). */
   reviewAutomaticDenial?: ReviewAutomaticDenial
+  /** This run's writes whose outcome is unknown; an identical repeat is asked, not allowed. */
+  uncertainWrites?: Pick<UncertainWrites, 'has'>
 }
+
+/** Why a repeat of a write that may have happened is put to the person. */
+const REPEAT_UNCERTAIN_WRITE =
+  'An earlier identical call failed in a way that may have reached the outside, so it may already have taken effect. Check the current state first; approve only if it is still needed.'
 
 interface GateContext {
   toolCallId: string
@@ -135,7 +144,18 @@ export function createPermissionGate(opts: PermissionGateOptions): PermissionGat
     if (judged.ownTree && decision === judged.decision && decision.action === 'allow')
       return undefined
 
-    const { action, message } = decision
+    // A repeat of a write that may already have happened is never waved through (rule, mode or
+    // grant): the person is asked, whatever else was decided. A refusal stays a refusal.
+    const repeat =
+      decision.action !== 'deny' && !!opts.uncertainWrites?.has(ctx.toolName, ctx.input)
+    const { action, message } = repeat
+      ? {
+          action: 'ask' as const,
+          message: decision.message
+            ? `${decision.message} ${REPEAT_UNCERTAIN_WRITE}`
+            : REPEAT_UNCERTAIN_WRITE,
+        }
+      : decision
 
     if (action === 'allow') {
       // Attribute non-default allows so the UI can explain why no confirm was
@@ -188,6 +208,7 @@ export function createPermissionGate(opts: PermissionGateOptions): PermissionGat
         cwd: opts.root,
         sourceTitle: ctx.sourceTitle ?? call.sourceTitle,
         ...(signal ? { signal } : {}),
+        ...(repeat ? { fresh: true } : {}),
       },
       { input: ctx.input },
     )

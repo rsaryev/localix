@@ -96,5 +96,7 @@ export function applyToolWrapperChain(
   const promoted = wrapToolsWithTimeoutPromoter(modded, {
     clockStartsAtGate: !!input.gate?.inChain,
   })
-  return wrapToolsWithStuckRunBreaker(promoted)
+  const guarded = wrapToolsWithStuckRunBreaker(promoted)
+  // Outermost, beside the breaker: records failed writes whose outcome is unknown (`uncertain-writes.ts`).
+  return input.gate ? input.gate.uncertainWrites.wrap(guarded) : guarded
 }

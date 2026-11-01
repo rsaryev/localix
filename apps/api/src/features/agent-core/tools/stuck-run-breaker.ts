@@ -45,7 +45,7 @@ function canonical(value: unknown): string {
     .join(',')}}`
 }
 
-function signatureOf(name: string, input: unknown): string {
+export function signatureOf(name: string, input: unknown): string {
   try {
     return `${name}\u0000${canonical(input)}`
   } catch {

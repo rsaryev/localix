@@ -97,6 +97,7 @@ export async function intakeRunTurn(
   const refusalTracker = createGateRefusalTracker()
   const gate = buildRunPermissionGate({
     refusalTracker,
+    uncertainWrites: toolset.gate.uncertainWrites,
     env,
     userId,
     session,

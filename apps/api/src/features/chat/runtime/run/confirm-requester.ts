@@ -64,7 +64,11 @@ export function createConfirmRequester(
     // The requester is THIS run's session, so a grant one sub-agent was given never approves another (see `session-grants.ts`).
     const requester = session.id
     const granted = grantedScopes(env.state.sessionAutoApprovedTools, targetSessionId, requester)
-    if (!dangerousCall && [...granted].some((scope) => grantCoversCall(scope, confirmArgs))) {
+    if (
+      !confirmArgs.fresh &&
+      !dangerousCall &&
+      [...granted].some((scope) => grantCoversCall(scope, confirmArgs))
+    ) {
       return { approved: true, via: 'session-grant' }
     }
     const sourceTitle =

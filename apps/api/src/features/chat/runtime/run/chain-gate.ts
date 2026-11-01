@@ -5,6 +5,10 @@ import type { PermissionGateFn } from '../../../agent-core/permission-gate'
 import type { PreToolUseVerdictCarrier } from '../../../agent-core/permission-hook-decision'
 import type { ToolClockCarrier } from '../../../agent-core/tools/timeout-promoter'
 import { PermissionGateBlockedError } from '../../../agent-core/tools/tool-error-result'
+import {
+  createUncertainWrites,
+  type UncertainWrites,
+} from '../../../agent-core/tools/uncertain-writes'
 
 /**
  * THE GATE INSIDE THE TOOL-CALL CHAIN, for a run whose Claude Code mods hear `tool.call` or
@@ -30,6 +34,8 @@ import { PermissionGateBlockedError } from '../../../agent-core/tools/tool-error
 export interface ChainGate {
   /** Whether calls meet the gate inside the chain; false leaves it the loop's alone. */
   readonly inChain: boolean
+  /** The run's writes whose outcome is unknown: the chain records them, the gate reads them. */
+  readonly uncertainWrites: UncertainWrites
   /**
    * Hand the chain the run's gate, once intake builds it, and get the loop's `beforeToolCall`:
    * the same gate for every tool the chain does not gate itself (stubs, the activator).
@@ -90,6 +96,7 @@ export function createChainGate(inChain: boolean, options: ChainGateOptions = {}
   }
   return {
     inChain,
+    uncertainWrites: createUncertainWrites(),
     bind(gate) {
       bound = gate
       if (!inChain) return gate
