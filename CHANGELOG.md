@@ -4,6 +4,41 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+### Added
+
+- **Vault secrets in the browser**: the agent can type a stored credential into a page field by
+  writing `${secret:KEY}` in a typing step. Localix fills in the value right before it reaches the
+  page, and the agent never sees it in the page, the transcript or the approval card.
+- **Large tool results arrive as a digest**: a big JSON result from an MCP or built-in tool reaches
+  the agent as its size, shape, array lengths, first items and any error fields, with a path to the
+  full result on disk, instead of a text cut in the middle.
+
+### Changed
+
+- **A failed step stops the rest of the plan**: when an edit, command or other step that changes
+  something fails or you deny it, the later steps the agent planned in the same reply are not run.
+  The agent sees which step failed and decides again.
+- **Asking before repeating an uncertain action**: after a call that changes something outside
+  Localix fails on a network error or timeout, the identical call again asks you first, since the
+  first attempt may already have gone through, and the agent is told to check before retrying.
+- **Agents that run out of turns still answer**: a subagent that reaches its turn limit gives its
+  best answer from what it found instead of stopping with nothing to show.
+- **Skills after a long chat is condensed**: the agent is reminded which skills it had loaded, so it
+  rereads one before relying on it.
+- **Browser goals finish with a verdict**: when the decision model's answer cannot be read, it gets
+  one more try, and when the action limit is reached the goal ends with a verdict on whether it
+  looks done.
+- **Stricter tool calls on OpenAI**: OpenAI models fill in tool arguments under strict schemas where
+  a tool's schema allows it, so malformed tool calls are rarer.
+- **Logs hide more credentials**: fine-grained GitHub tokens, temporary AWS key ids, passwords in
+  URLs and Authorization and Cookie header values are masked, while ordinary words such as "Bearer
+  authentication is required" are left alone.
+
+### Fixed
+
+- **Quota errors show at once**: when a provider refuses a request because your quota, balance or
+  plan is used up, the error appears immediately instead of after several pointless retries.
+
 ## v0.1.0-beta.23 — 2026-11-01
 
 The agent island is back for questions and approvals, and the agent works real web pages far more
