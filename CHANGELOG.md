@@ -67,6 +67,8 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
   the window shows through instead of a flat black or white panel; Off keeps them opaque.
 - **Tab rows that scroll**: when tabs don't fit, as in the Store's categories, the clipped edge now
   fades out instead of showing a dark band under the scroll arrow on a translucent window.
+- **Store collections**: the icons on a collection card no longer sit in odd frames that touched
+  each other; they stand in a neat row.
 - **Deleting a chat keeps you in its project**: deleting the open chat now opens a blank chat in the
   same project instead of taking you to the home page.
 - **Browser on booking-style forms**: the agent now sees search fields drawn inside a dropdown box
