@@ -462,9 +462,11 @@ describe("Claude Code's statusLine: only for a conversation somebody renders", (
   })
 
   test('opening a conversation draws it even before its stream is subscribed', async () => {
+    // No real settings watcher: a late file event for the harness's own write would read as a
+    // settings edit, and an unwatched conversation lets go of its draw on one.
     const { line, published, clock } = harness(
       { type: 'command', command: 'echo opened' },
-      { watched: () => false },
+      { watched: () => false, watchSettings: () => () => {} },
     )
     line.viewed('u1', 'S-1')
     clock.fire()
