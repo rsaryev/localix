@@ -68,6 +68,8 @@ export function resultFromThrow(toolName: string, error: unknown): AgentToolResu
       message,
       userMessage: `The \`${toolName}\` tool failed: ${message}`,
       ...(typeof code === 'string' && code ? { code } : {}),
+      // A card nobody answered: no person was there, nothing ran (`hitl/decision-deadline.ts`).
+      ...(err?.name === 'HumanInLoopTimeoutError' ? { refusal: 'human' as const } : {}),
       retryable: false,
       fatal: false,
     },

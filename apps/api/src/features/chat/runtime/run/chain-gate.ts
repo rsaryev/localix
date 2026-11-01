@@ -84,6 +84,7 @@ export function createChainGate(inChain: boolean, options: ChainGateOptions = {}
   const gated = new Set<string>()
   const pending = new Map<string, Pending>()
   // One decision at a time; a decision taken inside another one is not queued behind it.
+  const uncertainWrites = createUncertainWrites()
   const deciding = new AsyncLocalStorage<true>()
   let queue: Promise<unknown> = Promise.resolve()
   const decide: PermissionGateFn = (ctx, signal) => {
@@ -96,7 +97,7 @@ export function createChainGate(inChain: boolean, options: ChainGateOptions = {}
   }
   return {
     inChain,
-    uncertainWrites: createUncertainWrites(),
+    uncertainWrites,
     bind(gate) {
       bound = gate
       if (!inChain) return gate
@@ -133,12 +134,16 @@ export function createChainGate(inChain: boolean, options: ChainGateOptions = {}
             // The call is decided: from here on it is running, and its budget counts.
             ;(context as ToolClockCarrier | undefined)?.startToolClock?.()
             const approved = options.approvedInput?.(tool, toolCallId)
-            const ran = await tool.execute(
-              toolCallId,
-              approved ? approved.input : input,
-              signal,
-              onUpdate,
-              context,
+            // Recorded under `input`, the very input the gate just checked (a hook may have
+            // rewritten the model's), so a repeat meets the same key (`uncertain-writes.ts`).
+            const ran = await uncertainWrites.guard(tool, input, () =>
+              tool.execute(
+                toolCallId,
+                approved ? approved.input : input,
+                signal,
+                onUpdate,
+                context,
+              ),
             )
             const provenance = ran.gateProvenance ?? verdict?.provenance
             return provenance ? { ...ran, gateProvenance: provenance } : ran

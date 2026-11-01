@@ -4,6 +4,7 @@ import path from 'node:path'
 import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
 
 import { createPermissionGate, type RequestConfirmArgs } from './permission-gate'
+import { unansweredError } from './tools/hitl/decision-deadline'
 import { createUncertainWrites } from './tools/uncertain-writes'
 
 const ROOT = path.join(os.homedir(), 'proj')
@@ -98,6 +99,46 @@ describe('a repeat of a write whose outcome is unknown', () => {
     await call({})
     expect(cards).toHaveLength(0)
     expect(first.content).toBe('to: required')
+  })
+
+  test('a build that ran to an exit code and printed "timed out" is not in doubt', async () => {
+    const failed: AgentToolResult = {
+      content: 'error: test timed out after 5000ms (network mock never replied)\nexit 1',
+      isError: true,
+    }
+    const { call, cards } = run(fixture('Bash', [failed, failed]))
+    const first = await call({ command: 'bun test' })
+    await call({ command: 'bun test' })
+    expect(cards).toHaveLength(0)
+    expect(first.content).not.toContain('may already')
+  })
+
+  test('an approval card nobody answered changed nothing, so a repeat is not asked', async () => {
+    const unanswered: AgentToolResult = {
+      content: 'The card was not answered.',
+      isError: true,
+      error: unansweredError('The card was not answered.'),
+    }
+    const thrown = Object.assign(new Error('no answer'), { name: 'HumanInLoopTimeoutError' })
+    for (const outcome of [unanswered, thrown]) {
+      const { call, cards } = run(fixture('Configure', [outcome]))
+      const first = await call({ key: 'a' })
+      await call({ key: 'a' })
+      expect(cards).toHaveLength(0)
+      expect(first.content).not.toContain('may already')
+    }
+  })
+
+  test('a timeout while the tool ran still counts', async () => {
+    const late: AgentToolResult = {
+      content: 'timed out',
+      isError: true,
+      error: { kind: 'timeout', message: 'timed out', userMessage: 'timed out' },
+    }
+    const { call, cards } = run(fixture('send_email', [late]))
+    await call({ to: 'a' })
+    await call({ to: 'a' })
+    expect(cards).toHaveLength(1)
   })
 
   test('a read is unaffected', async () => {
