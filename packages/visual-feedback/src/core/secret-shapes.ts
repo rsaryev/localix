@@ -48,7 +48,10 @@ function isAuthCredential(text: string): boolean {
     parts.length === 2 &&
     AUTH_SCHEME.test(parts[0] ?? '') &&
     TOKEN_CHARS.test(token) &&
-    !isNotCredential(token)
+    // After a scheme the header's syntax says the token is the credential, so only a placeholder
+    // (masked, `null`) is spared; a token of plain letters is still a token here.
+    !token.includes(REDACTED) &&
+    !isLiteral(token)
   )
 }
 

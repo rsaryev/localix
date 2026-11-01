@@ -43,6 +43,11 @@ describe('shared secret shapes', () => {
     ],
     ['basic header', 'Authorization: Basic dXNlcjpwYXNzd29yZA==', 'Authorization: [redacted]'],
     ['proxy header', 'Proxy-Authorization: Bearer abc.def.ghi', 'Proxy-Authorization: [redacted]'],
+    [
+      'scheme then a token of letters',
+      'Authorization: Bearer abcdefghijklmno',
+      'Authorization: [redacted]',
+    ],
     ['cookie header', 'Cookie: sid=abc123def456; theme=dark', 'Cookie: [redacted]'],
     [
       'json header',
