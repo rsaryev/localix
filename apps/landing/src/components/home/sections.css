@@ -22,7 +22,7 @@
   max-width: 38em;
   margin: 0;
   color: var(--lx-ink-2);
-  font: 400 clamp(14px, 1.1vw, 16px) / 1.7 var(--lx-text);
+  font: 400 clamp(15px, 1.15vw, 18px) / 1.65 var(--lx-text);
 }
 /* The roster: hairline-ruled rows, an accent label, a display name, a count on the right. */
 .roster,
@@ -60,11 +60,13 @@
   font: 400 13px / 1 var(--lx-text);
   font-variant-numeric: tabular-nums;
 }
-.roster-row:hover .roster-name {
-  transform: translateX(8px);
-}
-.roster-row:hover .roster-count {
-  color: var(--lx-amber);
+@media (hover: hover) and (pointer: fine) {
+  .roster-row:hover .roster-name {
+    transform: translateX(8px);
+  }
+  .roster-row:hover .roster-count {
+    color: var(--lx-amber);
+  }
 }
 
 /* The dates: uppercase headers over a hairline, a display first column, plain metadata. */
@@ -198,8 +200,10 @@
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
-.close-strip a:hover {
-  color: var(--lx-amber);
+@media (hover: hover) and (pointer: fine) {
+  .close-strip a:hover {
+    color: var(--lx-amber);
+  }
 }
 .close-mark {
   margin: 0 0 -0.2em;

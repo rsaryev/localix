@@ -13,9 +13,13 @@
   overflow: hidden;
   transition: box-shadow 150ms var(--landing-ease-out);
 }
-.shot-open:hover,
 .shot-open:focus-visible {
   box-shadow: 0 0 0 1px color-mix(in oklch, var(--foreground) 35%, transparent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .shot-open:hover {
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--foreground) 35%, transparent);
+  }
 }
 .shot-open:focus-visible {
   outline: 2px solid var(--foreground);

@@ -24,9 +24,26 @@
   color: var(--lx-ink);
   font-family: var(--lx-text);
 }
+[data-page='home'] {
+  -webkit-tap-highlight-color: transparent;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+}
 [data-page='home'] h2,
 [data-page='home'] h3 {
   font-family: var(--lx-display);
+  text-wrap: balance;
+}
+[data-page='home'] p {
+  text-wrap: pretty;
+}
+[data-page='home'] :is(a, button) {
+  touch-action: manipulation;
+}
+/* One focus ring for the whole page, for keyboards only. */
+[data-page='home'] :is(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--lx-ink);
+  outline-offset: 3px;
 }
 [data-page='home'] ::selection {
   background: var(--lx-ink);
@@ -73,9 +90,6 @@
   text-transform: uppercase;
   transition: color 160ms ease;
 }
-.lx-nav-links > a:not(.lx-pill):hover {
-  color: var(--lx-amber);
-}
 @media (max-width: 30rem) {
   .lx-nav-wide {
     display: none;
@@ -100,11 +114,8 @@
   transition:
     transform 160ms var(--lx-ease),
     background-color 160ms ease,
+    border-color 160ms ease,
     color 160ms ease;
-}
-.lx-pill:hover {
-  background: transparent;
-  color: var(--lx-ink);
 }
 .lx-pill:active {
   transform: scale(0.97);
@@ -114,13 +125,21 @@
   background: transparent;
   color: var(--lx-ink);
 }
-.lx-pill-quiet:hover {
-  border-color: var(--lx-ink);
-}
 .lx-pill-small {
-  min-height: 32px;
-  padding: 0 14px;
+  min-height: 34px;
+  padding: 0 15px;
   font-size: 10.5px;
+}
+/* A finger needs a larger target than the small pill draws: the hit area grows, the pill does not. */
+@media (pointer: coarse) {
+  .lx-pill-small {
+    position: relative;
+  }
+  .lx-pill-small::after {
+    position: absolute;
+    inset: -6px -4px;
+    content: '';
+  }
 }
 
 /* A section's heading, with a short aside (a count, a link) on the right. */
@@ -144,17 +163,33 @@
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
-a.lx-section-aside:hover {
-  color: var(--lx-amber);
-}
 
-/* Entry reveals: once, and only under `reveal-ready`; everyone else sees the finished page. */
+/* Entry reveals: once, and only under `reveal-ready`; everyone else sees the finished page. What
+   enters together is staggered by `--stagger` (set per batch in `HomePage`). */
 .reveal-ready .lx-reveal {
   transition:
-    opacity 800ms var(--lx-ease),
-    transform 800ms var(--lx-ease);
+    opacity 600ms var(--lx-ease),
+    transform 600ms var(--lx-ease);
+  transition-delay: var(--stagger, 0ms);
 }
 .reveal-ready .lx-reveal:not([data-in]) {
   opacity: 0;
-  transform: translateY(18px);
+  transform: translateY(12px);
+}
+
+/* Hover answers a mouse only: on a touch screen it would stick after a tap. The accent marks
+   what the pointer is on. */
+@media (hover: hover) and (pointer: fine) {
+  .lx-nav-links > a:not(.lx-pill):hover,
+  a.lx-section-aside:hover {
+    color: var(--lx-amber);
+  }
+  .lx-pill:hover {
+    background: #fff;
+    border-color: #fff;
+  }
+  .lx-pill-quiet:hover {
+    border-color: var(--lx-ink-2);
+    background: transparent;
+  }
 }

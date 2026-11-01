@@ -77,7 +77,6 @@
 }
 .portal-panel-right {
   right: 0;
-  border-left: 1px solid var(--lx-line);
   transform: translateX(calc(var(--open) * 102%));
 }
 

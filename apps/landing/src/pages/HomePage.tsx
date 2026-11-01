@@ -17,10 +17,15 @@ function useRevealOnce(root: React.RefObject<HTMLElement | null>) {
     if (!element || typeof IntersectionObserver === 'undefined') return
     const observer = new IntersectionObserver(
       (entries) => {
+        // What enters in one batch (a list scrolled into view at once) arrives in turn, 50ms
+        // apart and capped, so a long list never waits.
+        let order = 0
         for (const entry of entries) {
           if (!entry.isIntersecting) continue
-          entry.target.setAttribute('data-in', '')
-          observer.unobserve(entry.target)
+          const target = entry.target as HTMLElement
+          target.style.setProperty('--stagger', `${Math.min(order++, 6) * 50}ms`)
+          target.setAttribute('data-in', '')
+          observer.unobserve(target)
         }
       },
       { rootMargin: '0px 0px -8% 0px' },

@@ -56,8 +56,10 @@
   text-transform: uppercase;
   transition: color 160ms ease;
 }
-.loop-link:hover {
-  color: var(--lx-amber);
+@media (hover: hover) and (pointer: fine) {
+  .loop-link:hover {
+    color: var(--lx-amber);
+  }
 }
 .loop-panel {
   align-self: center;
@@ -75,7 +77,9 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+/* A stuck card taller than the room under the bar would never show its bottom: on a short phone
+   the cards simply scroll. */
+@media (prefers-reduced-motion: reduce), (max-width: 59.99rem) and (max-height: 760px) {
   .loop-card {
     position: relative;
     top: 0;
