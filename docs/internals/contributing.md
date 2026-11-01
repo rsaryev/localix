@@ -176,10 +176,11 @@ compiles the Rust shell itself either way.
 server (`localix-runner.service` as `localix-ci`, `localix-runner@2` and `localix-runner@3` as
 `localix-ci-2` and `localix-ci-3`) each register an ephemeral runner in a fresh Docker container,
 take one job and leave, so no job sees another's files and a run's jobs go in parallel. Each
-container gets 2 cores and 5 GB; they share the Rust, Cargo and tool caches. The image is Ubuntu
-24.04 with Rust, sccache and the webview's libraries; Node and Bun come from the setup actions and
-stay in a cache volume. A pull request from a fork runs on GitHub's `ubuntu-24.04` instead, so code
-from outside never runs on our machine.
+container may use 5 of the server's 6 cores and 5 GB: a hard 2-core cap throttled the test processes
+Turbo starts for all 6 cores into multi-second stalls. They share the Rust, Cargo and tool caches.
+The image is Ubuntu 24.04 with Rust, sccache and the webview's libraries; Node and Bun come from the
+setup actions and stay in a cache volume. A pull request from a fork runs on GitHub's `ubuntu-24.04`
+instead, so code from outside never runs on our machine.
 
 The release stays on GitHub-hosted runners: the Linux leg on `ubuntu-22.04` for an older glibc
 baseline, and the macOS leg on `macos-15`. Workflows grant no default token permissions; each job
