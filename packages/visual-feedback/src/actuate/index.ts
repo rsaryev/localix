@@ -17,7 +17,6 @@ import { getViewportRect } from '../core/geometry'
 import { deepActive } from '../core/frames'
 import { isEditable } from '../snapshot/field'
 import { buildSnapshot } from '../snapshot/index'
-import { rasterizeElement } from '../rasterize/index'
 import {
   centerPoint,
   dispatchMouse,
@@ -35,7 +34,8 @@ import { performWait } from './wait'
 import { performRead } from './read'
 import { performNavigate } from './navigate'
 import { performSelect } from './select'
-import { serializeEvalResult, compileEvalExpression } from './evaluate'
+import { performEvaluateAction } from './evaluate-action'
+import { performScreenshot } from './screenshot'
 
 // The console ring buffer + interaction synthesis + interactive-tree diffing live
 // in sibling leaves; re-export the public console helper so importers of
@@ -51,9 +51,7 @@ import type { ActuateDeps, ActuateResult } from './types'
 import { settleTransitions } from './settle'
 import {
   fail,
-  isFail,
   isHealFail,
-  resolveTarget,
   resolveWithHeal,
   healFailResult,
   interceptedClickResult,
@@ -102,88 +100,11 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
     case 'console':
       return { ok: true, result: { action: 'console', console: deps.console.read() } }
 
-    case 'evaluate': {
-      const expr = cmd.expression
-      if (expr == null || expr.trim() === '')
-        return fail(
-          'bad_request',
-          '`evaluate` requires an `expression` (a JS expression run in the page).',
-        )
-      // Settle BEFORE reading. A prior action (or an earlier step of a `steps` batch) may
-      // have queued an ASYNC framework commit — React's setState→useEffect flips
-      // `data-theme` only a microtask + 2 rAF after the click. Reading synchronously
-      // would return the OLD value, so a post-click `evaluate` gaslights the model into
-      // thinking a WORKING toggle is broken. Settling first (the same
-      // injectable 2-rAF settle the click action + snapshot baseline use) flushes the
-      // commit so the read reflects it. NB: this cannot rescue a SINGLE expression that
-      // both mutates and reads (e.g. `toggleTheme(); getAttr()` — the async commit is
-      // queued DURING the expression, after this settle); steer that to the `steps` path
-      // (click step settles, then an evaluate step reads) — see the tool docstring.
-      const settle = deps.settle ?? settleTransitions
-      await settle()
-      let raw: unknown
-      try {
-        raw = await compileEvalExpression(expr)()
-      } catch (err) {
-        const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
-        return fail('failed', `evaluate threw — ${msg}`)
-      }
-      return { ok: true, result: { action: 'evaluate', value: serializeEvalResult(raw) } }
-    }
+    case 'evaluate':
+      return performEvaluateAction(cmd, deps)
 
-    case 'screenshot': {
-      // Target an element (ref/selector), or the whole page body — or the root — when none given.
-      const pageRoot = deps.root ?? document.body ?? document.documentElement
-      let target: Element
-      if (cmd.ref || cmd.selector) {
-        const t = resolveTarget(cmd, deps.reg, deps.root, { observeOnly: true })
-        if (isFail(t)) return t
-        target = t
-      } else {
-        target = pageRoot
-      }
-      // Centering the target makes a small element's shot readable in context — but
-      // centering the PAGE ROOT just scrolls a tall page to its middle, which changes
-      // what the person watching the preview is looking at and buys nothing (the
-      // rasterizer renders the DOM, not the visible pixels). So the whole-page shot
-      // leaves the scroll position exactly where it was.
-      if (target !== pageRoot && target !== document.documentElement) {
-        target.scrollIntoView?.({ block: 'center', inline: 'center' })
-      }
-      // The host captures the pixels itself: answer where the target is, at once.
-      if (cmd.locateOnly) {
-        // Instantly: a page-wide `scroll-behavior: smooth` would leave the rect mid-flight.
-        if (target !== pageRoot && target !== document.documentElement)
-          target.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'instant' })
-        return {
-          ok: true,
-          result: {
-            action: 'screenshot',
-            rect: getViewportRect(target),
-            target: getElementSummary(target),
-            viewport: { width: window.innerWidth, height: window.innerHeight },
-          },
-        }
-      }
-      // Rasterize IN-PAGE (same origin) — no screen-share permission, works headless.
-      // A whole-view shot is OF the view, so it takes no context margin. The margin makes a small
-      // element readable among its neighbours; around a scoped root (a plugin panel inside the app)
-      // it sent the rasterizer climbing to the app shell for pixels outside the panel, cloning the
-      // whole window — and WebKit's per-image redraw pass made that ~16 s a shot.
-      const image = await rasterizeElement(target, {
-        ...(deps.backdrop ? { backgroundColor: deps.backdrop } : {}),
-        ...(target === pageRoot ? { contextRatio: 0 } : {}),
-      })
-      return {
-        ok: true,
-        result: {
-          action: 'screenshot',
-          rect: getViewportRect(target),
-          target: getElementSummary(target),
-          ...(image ? { image } : { note: 'could not rasterize this element' }),
-        },
-      }
-    }
+    case 'screenshot':
+      return performScreenshot(cmd, deps)
 
     case 'scroll': {
       const scrolled = performScroll(cmd, deps)
