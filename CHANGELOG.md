@@ -4,6 +4,12 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+## v0.1.0-beta.24 — 2026-11-01
+
+The agent is more careful with steps that change things: a failed step stops the rest of its plan,
+and an action that may already have gone through is not repeated without asking. It can sign in to a
+page with a Vault secret it never sees, and big tool results reach it as a digest.
+
 ### Added
 
 - **Vault secrets in the browser**: the agent can type a stored credential into a page field by
@@ -41,6 +47,8 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 - **Quota errors show at once**: when a provider refuses a request because your quota, balance or
   plan is used up, the error appears immediately instead of after several pointless retries.
+- **The empty chat's bird has its red eye back**: the flying bird on an empty chat lost its red eye
+  to the one-colour mask it is painted through; it is drawn again.
 
 ## v0.1.0-beta.23 — 2026-11-01
 
