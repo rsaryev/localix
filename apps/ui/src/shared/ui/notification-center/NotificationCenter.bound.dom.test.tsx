@@ -82,5 +82,8 @@ describe('Event journal is bounded by retention, not by a window', () => {
       host.remove()
       resetNotificationsForTests()
     }
-  })
+    // It mounts the worst case on purpose (~5.4k elements) after loading the center's module graph
+    // cold; well under a second alone, it overran the default 5 s on a CI runner busy with the other
+    // shards and took the next file down with it, mid-unmount.
+  }, 20_000)
 })
