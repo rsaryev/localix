@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, type CSSProperties } from 'react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { useHorizontalWheelScroll } from '../../lib/use-horizontal-wheel-scroll'
 import { DROP_TARGET_INDICATOR_BEFORE_VERTICAL } from '../../lists/drop-target'
-import { useTabOverflow } from './overflow'
+import { overflowFade, useTabOverflow } from './overflow'
 import { useRevealActiveTab, type RevealPadding } from './reveal'
 import { useTabReorder } from './reorder'
 import { useRovingTabs } from './roving'
@@ -93,6 +93,10 @@ export function TabStrip<T extends string = string>({
           data-slot="tab-strip-list"
           role="tablist"
           aria-label={ariaLabel}
+          // Edge fades: whichever side has tabs clipped dissolves, so an overflowing strip reads
+          // as scrollable; a mask, so a translucent window shows through instead of a band.
+          data-fade={edgeFade ? overflowFade(overflow) : undefined}
+          style={edgeFade ? ({ '--fade-x': `${EDGE_FADE_WIDTH}px` } as CSSProperties) : undefined}
           className={cn(
             // overflow-y-hidden is REQUIRED: with only overflow-x set to auto, CSS
             // computes overflow-y to auto as well, which lets the strip scroll
@@ -103,6 +107,7 @@ export function TabStrip<T extends string = string>({
             // springs off the boundary right where the first/last tab lives.
             'flex min-w-0 flex-1 items-center gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
             'h-full',
+            edgeFade && 'lx-fade-x',
             listClassName,
           )}
         >
@@ -134,23 +139,6 @@ export function TabStrip<T extends string = string>({
             {...drag.trailingProps}
           />
         </div>
-        {/* Edge fades: a soft gradient over whichever side has tabs clipped, so an
-            overflowing strip reads as scrollable. pointer-events-none
-            so they never intercept a click on the tabs beneath. */}
-        {edgeFade && overflow.left && (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 z-(--z-raised) bg-gradient-to-r from-background to-transparent"
-            style={{ width: EDGE_FADE_WIDTH }}
-          />
-        )}
-        {edgeFade && overflow.right && (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 right-0 z-(--z-raised) bg-gradient-to-l from-background to-transparent"
-            style={{ width: EDGE_FADE_WIDTH }}
-          />
-        )}
       </div>
       {(actions || (hasOverflowSlot && overflowing)) && (
         <div

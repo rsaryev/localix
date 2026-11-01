@@ -1,10 +1,10 @@
-import { useCallback, useLayoutEffect, useMemo, useRef } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, type CSSProperties } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { useHorizontalWheelScroll } from '../../lib/use-horizontal-wheel-scroll'
 import { motionSafeScrollBehavior } from '../../lib/use-reduced-motion'
 import { Chip } from '../../feedback/chip'
-import { useTabOverflow } from './overflow'
+import { overflowFade, useTabOverflow } from './overflow'
 import { useRevealActiveTab, type RevealPadding } from './reveal'
 import { useRovingTabs } from './roving'
 import { INDICATOR_INSET, SCROLL_AFFORDANCE_WIDTH } from './tab-strip-classes'
@@ -104,9 +104,11 @@ export function TabBar<T extends string>({
           ref={stripRef}
           role="tablist"
           aria-label={ariaLabel}
+          data-fade={overflowFade(overflow)}
+          style={{ '--fade-x': `${SCROLL_AFFORDANCE_WIDTH}px` } as CSSProperties}
           className={cn(
             // See the TabStrip list above for why overscroll-x-contain is required.
-            'relative flex h-full w-full items-stretch gap-0 overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+            'lx-fade-x relative flex h-full w-full items-stretch gap-0 overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
             className,
           )}
         >
@@ -159,7 +161,7 @@ export function TabBar<T extends string>({
             type="button"
             onClick={() => scrollTabs(-1)}
             style={{ width: SCROLL_AFFORDANCE_WIDTH }}
-            className="absolute inset-y-0 left-0 z-(--z-raised) flex items-center justify-start bg-gradient-to-r from-background via-background/90 to-transparent pl-0.5 text-text-soft hover:text-foreground focus-ring"
+            className="absolute inset-y-0 left-0 z-(--z-raised) flex items-center justify-start pl-0.5 text-text-soft hover:text-foreground focus-ring"
             aria-label="Scroll tabs left"
           >
             <ChevronLeft className="size-3.5" aria-hidden="true" />
@@ -170,7 +172,7 @@ export function TabBar<T extends string>({
             type="button"
             onClick={() => scrollTabs(1)}
             style={{ width: SCROLL_AFFORDANCE_WIDTH }}
-            className="absolute inset-y-0 right-0 z-(--z-raised) flex items-center justify-end bg-gradient-to-l from-background via-background/90 to-transparent pr-0.5 text-text-soft hover:text-foreground focus-ring"
+            className="absolute inset-y-0 right-0 z-(--z-raised) flex items-center justify-end pr-0.5 text-text-soft hover:text-foreground focus-ring"
             aria-label="Scroll tabs right"
           >
             <ChevronRight className="size-3.5" aria-hidden="true" />

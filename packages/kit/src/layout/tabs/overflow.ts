@@ -40,6 +40,18 @@ export function computeTabOverflow(m: ScrollMetrics, tolerance = 2): TabOverflow
 
 /** Shallow equality so the hook only re-renders on an actual edge-state flip
  *  (a scroll that doesn't cross either edge boundary is a no-op). */
+/**
+ * Which edges of a scrolling strip fade out (the `.lx-fade-x` mask's `data-fade`): where tabs
+ * are clipped. The tabs dissolve into whatever is behind the strip, so a translucent window shows
+ * through; a band painted in the window's own colour laid its coat twice and read as a dark stripe.
+ */
+export function overflowFade(o: TabOverflowState): 'start' | 'end' | 'both' | undefined {
+  if (o.left && o.right) return 'both'
+  if (o.left) return 'start'
+  if (o.right) return 'end'
+  return undefined
+}
+
 export function tabOverflowEqual(a: TabOverflowState, b: TabOverflowState): boolean {
   return a.left === b.left && a.right === b.right
 }

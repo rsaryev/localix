@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { computeTabOverflow, tabOverflowEqual, NO_OVERFLOW } from './overflow'
+import { computeTabOverflow, overflowFade, tabOverflowEqual, NO_OVERFLOW } from './overflow'
 
 describe('computeTabOverflow', () => {
   test('no overflow when content fits the viewport', () => {
@@ -75,5 +75,16 @@ describe('tabOverflowEqual', () => {
       false,
     )
     expect(tabOverflowEqual({ left: true, right: true }, { left: true, right: false })).toBe(false)
+  })
+})
+
+// The clipped edge dissolves the tabs themselves: a band painted in the window's own colour over
+// a translucent window laid the coat twice and read as a black stripe under the arrow.
+describe('overflowFade', () => {
+  test('fades the edges where tabs are clipped, and none when they fit', () => {
+    expect(overflowFade(NO_OVERFLOW)).toBeUndefined()
+    expect(overflowFade({ left: true, right: false })).toBe('start')
+    expect(overflowFade({ left: false, right: true })).toBe('end')
+    expect(overflowFade({ left: true, right: true })).toBe('both')
   })
 })
