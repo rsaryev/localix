@@ -172,12 +172,14 @@ sources, root manifest, Bun lockfile, Node version, or shared CI setup, over the
 manual run, or a push with no successful run to compare with, always runs everything; a release
 compiles the Rust shell itself either way.
 
-`Checks` and `Website Deploy` run on our own runner, labelled `localix`: a service on the CI server
-(`localix-runner.service`) registers an ephemeral runner in a fresh Docker container, takes one job
-and leaves, so no job sees another's files. The image is Ubuntu 24.04 with Rust, sccache and the
-webview's libraries; Node and Bun come from the setup actions and stay in a cache volume. A pull
-request from a fork runs on GitHub's `ubuntu-24.04` instead, so code from outside never runs on our
-machine.
+`Checks` and `Website Deploy` run on our own runners, labelled `localix`: three services on the CI
+server (`localix-runner.service` as `localix-ci`, `localix-runner@2` and `localix-runner@3` as
+`localix-ci-2` and `localix-ci-3`) each register an ephemeral runner in a fresh Docker container,
+take one job and leave, so no job sees another's files and a run's jobs go in parallel. Each
+container gets 2 cores and 5 GB; they share the Rust, Cargo and tool caches. The image is Ubuntu
+24.04 with Rust, sccache and the webview's libraries; Node and Bun come from the setup actions and
+stay in a cache volume. A pull request from a fork runs on GitHub's `ubuntu-24.04` instead, so code
+from outside never runs on our machine.
 
 The release stays on GitHub-hosted runners: the Linux leg on `ubuntu-22.04` for an older glibc
 baseline, and the macOS leg on `macos-15`. Workflows grant no default token permissions; each job
