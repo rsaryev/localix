@@ -111,23 +111,26 @@ pub(crate) fn load_theme_is_dark<R: tauri::Runtime>(app: &AppHandle<R>) -> Optio
 }
 
 /// Path of the island switch: a file holding `on` once the person has turned the island on.
+#[cfg(target_os = "macos")]
 fn island_file<R: tauri::Runtime>(app: &AppHandle<R>) -> Option<std::path::PathBuf> {
     app.path().app_config_dir().ok().map(|d| d.join("island"))
 }
 
 /// What the island file means. Anything but `on` (a missing or damaged file) is off.
+#[cfg(any(target_os = "macos", test))]
 fn island_switch_is_on(contents: Option<&str>) -> bool {
     contents.is_some_and(|text| text.trim() == "on")
 }
 
-/// Whether the agent island may show. Off until the person turns it on in Settings.
+/// Whether the agent island may show. Off until the person turns it on in Settings. The island is
+/// macOS only, and elsewhere nothing asks.
+#[cfg(target_os = "macos")]
 pub(crate) fn island_enabled<R: tauri::Runtime>(app: &AppHandle<R>) -> bool {
-    cfg!(target_os = "macos")
-        && island_switch_is_on(
-            island_file(app)
-                .and_then(|p| std::fs::read_to_string(p).ok())
-                .as_deref(),
-        )
+    island_switch_is_on(
+        island_file(app)
+            .and_then(|p| std::fs::read_to_string(p).ok())
+            .as_deref(),
+    )
 }
 
 /// Persist the island switch. Off is the default, so turning it off removes the file.

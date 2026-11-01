@@ -76,8 +76,8 @@ pub(crate) struct PreviewScreen {
     pub(crate) expanded: bool,
 }
 
-/// Height of the preview's header strip above the dragged pane.
-#[cfg(any(target_os = "macos", test))]
+/// Height of the preview's header strip above the dragged pane, read by the macOS drag image.
+#[cfg(target_os = "macos")]
 pub(crate) const PREVIEW_HEADER: f64 = 36.0;
 
 #[cfg(any(target_os = "macos", test))]
