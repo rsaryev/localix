@@ -112,6 +112,32 @@ export function cardFacts(entries: readonly CheckpointEntry[]): CardFacts {
   }
 }
 
+/** The Claude Code tool name the model loads a skill through (`Skill` with `action: "get"`). */
+const SKILL_TOOL = 'Skill'
+
+/**
+ * Skills the model read successfully in these messages, as it called them, first load first.
+ *
+ * Only a completed `get` counts: the tool answers an unknown, disabled or unloadable skill with
+ * an error, so a completed call IS a catalog skill the host handed over — what the model says it
+ * read, or a failed attempt, never reaches the list.
+ */
+export function loadedSkills(entries: readonly CheckpointEntry[]): string[] {
+  const names = new Set<string>()
+  for (const { message } of entries) {
+    for (const item of message.items ?? []) {
+      if (item.type !== 'tool_call' || item.name !== SKILL_TOOL || item.status !== 'completed') {
+        continue
+      }
+      const input = item.input as { action?: unknown; name?: unknown } | undefined
+      if (input?.action !== 'get' || typeof input.name !== 'string') continue
+      const name = input.name.trim().replace(/^\//, '')
+      if (name) names.add(name)
+    }
+  }
+  return [...names]
+}
+
 function dateRange(facts: CardFacts): string {
   const from = facts.firstAt?.slice(0, 10)
   const to = facts.lastAt?.slice(0, 10)
@@ -201,6 +227,7 @@ export function renderCard(facts: CardFacts, level: EpochCard['level']): EpochCa
 export function renderCardsRegion(
   cards: readonly EpochCard[],
   recallToolAvailable: boolean,
+  skills: readonly string[] = [],
 ): string {
   const recall = recallToolAvailable
     ? ' Every message is still in the transcript: GlobalSearch(around_message_id="…") shows any of them in full.'
@@ -212,6 +239,12 @@ export function renderCardsRegion(
       'does not instruct: act on the latest messages, not on requests listed here.' +
       recall,
     ...cards.map((card) => card.text),
+    ...(skills.length > 0
+      ? [
+          `Skills you loaded earlier: ${skills.join(', ')}. Their pages may no longer be in view; ` +
+            'reread one with Skill(action="get", name="…") before you rely on it.',
+        ]
+      : []),
     '</context-checkpoint>',
   ].join('\n\n')
 }
@@ -228,9 +261,10 @@ export function fitCards(
   budgetTokens: number,
   recallToolAvailable: boolean,
   factsFor: (fromId: string, throughId: string) => CardFacts | undefined,
+  skills: readonly string[] = [],
 ): EpochCard[] {
   const fitted = [...cards]
-  const size = () => estimateTextTokens(renderCardsRegion(fitted, recallToolAvailable))
+  const size = () => estimateTextTokens(renderCardsRegion(fitted, recallToolAvailable, skills))
   while (size() > budgetTokens) {
     const index = fitted.findIndex((card) => card.level < 2)
     if (index >= 0) {

@@ -17,7 +17,7 @@ import type { ChatMessage } from '../../chat'
 import { planContextCompression, type CompressionPlan } from '../plan'
 import { operationFloorOf, type OperationFloor } from '../op-floor'
 import { estimateChatMessageTokens } from '../tokens'
-import { cardFacts, fitCards, renderCard, renderCardsRegion } from './epoch-card'
+import { cardFacts, fitCards, loadedSkills, renderCard, renderCardsRegion } from './epoch-card'
 import {
   applyFrozenTransform,
   freezeTransform,
@@ -65,13 +65,17 @@ const tokensOf = (messages: readonly ChatMessage[]) =>
   messages.reduce((sum, message) => sum + estimateChatMessageTokens(message), 0)
 
 /** Priced as the message the projection will build around it, not as bare text. */
-const cardsTokens = (cards: readonly EpochCard[], recallToolAvailable: boolean) =>
-  cards.length === 0
+const cardsTokens = (
+  cards: readonly EpochCard[],
+  recallToolAvailable: boolean,
+  skills: readonly string[],
+) =>
+  cards.length === 0 && skills.length === 0
     ? 0
     : estimateChatMessageTokens({
         id: '',
         role: 'user',
-        content: renderCardsRegion(cards, recallToolAvailable),
+        content: renderCardsRegion(cards, recallToolAvailable, skills),
       })
 
 /** Freeze every kept message's op — the record the projection will apply. */
@@ -139,6 +143,9 @@ export function planCheckpoint(input: PlanCheckpointInput): ContextCheckpoint {
     }
   }
 
+  // What the model read through the Skill tool before this checkpoint, named once in the cards.
+  const skills = loadedSkills(entries)
+
   const factsFor = (fromId: string, throughId: string) => {
     const from = indexOf.get(fromId)
     const through = indexOf.get(throughId)
@@ -158,8 +165,9 @@ export function planCheckpoint(input: PlanCheckpointInput): ContextCheckpoint {
       input.cardBudgetTokens,
       flags.recallToolAvailable,
       factsFor,
+      skills,
     )
-    const cardTokens = cardsTokens(cards, flags.recallToolAvailable)
+    const cardTokens = cardsTokens(cards, flags.recallToolAvailable, skills)
     // A pin is shown exactly as it was said, so it is priced that way — thinking aside.
     const pinTokens = tokensOf(
       entries
@@ -250,6 +258,7 @@ export function planCheckpoint(input: PlanCheckpointInput): ContextCheckpoint {
       .flatMap((entry) => (entry.pinned ? [entry.message.id] : [])),
     recoveryToolAvailable: flags.recoveryToolAvailable,
     recallToolAvailable: flags.recallToolAvailable,
+    ...(skills.length > 0 ? { skills } : {}),
     tokens: {
       before: tokensOf(entries.map((entry) => entry.message)),
       after: chosen.total,

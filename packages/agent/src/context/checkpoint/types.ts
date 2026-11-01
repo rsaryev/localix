@@ -95,5 +95,10 @@ export interface ContextCheckpoint {
   /** Frozen with the view: a roster change later must not reword the pointers already shown. */
   recoveryToolAvailable: boolean
   recallToolAvailable: boolean
+  /**
+   * Skills the model loaded successfully before this checkpoint, in first-load order. Frozen, so
+   * the note naming them stays the same bytes on every later request. Absent: none.
+   */
+  skills?: string[]
   tokens: { before: number; after: number; target: number }
 }
