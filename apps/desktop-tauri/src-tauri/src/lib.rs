@@ -137,6 +137,7 @@ mod macos_tabs;
 mod main_queue;
 mod menu;
 mod native_browser;
+mod native_browser_capture;
 #[cfg(target_os = "linux")]
 mod native_browser_gtk;
 mod native_browser_idle;
@@ -176,6 +177,8 @@ mod workspace_drag_tracking;
 mod workspace_lifecycle;
 #[cfg(target_os = "macos")]
 mod workspace_menu;
+#[cfg(target_os = "macos")]
+mod workspace_open;
 #[cfg(all(debug_assertions, target_os = "macos"))]
 mod workspace_probe;
 #[cfg(all(debug_assertions, target_os = "macos"))]

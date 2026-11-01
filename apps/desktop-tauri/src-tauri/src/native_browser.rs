@@ -8,6 +8,7 @@
 use std::sync::{mpsc, Mutex};
 use std::time::Duration;
 
+use crate::native_browser_capture::{capture, BrowserImage, Capture};
 use serde::{Deserialize, Serialize};
 use tauri::menu::{ContextMenu, Menu, MenuItem, PredefinedMenuItem};
 use tauri::webview::{NewWindowResponse, PageLoadEvent, WebviewBuilder};
@@ -752,44 +753,6 @@ pub(crate) async fn browser_release(
     .await
 }
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct BrowserImage {
-    data: String,
-    media_type: &'static str,
-    width: u32,
-    height: u32,
-}
-
-/// What a capture is for, which decides how it is taken and how it is encoded.
-#[derive(Clone, Copy)]
-enum Capture {
-    /// Evidence for the agent: every pending paint included, lossless.
-    Exact,
-    /// The picture that stands in for the live page while app HTML covers its rectangle. It has
-    /// to arrive before the overlay's entrance animation ends, so it takes the frame already on
-    /// screen instead of waiting for the next paint, and ships as JPEG instead of a PNG that is
-    /// several times larger to encode and to carry over IPC.
-    Placeholder,
-    /// One rectangle of the MAIN view (a plugin's workbench panel), in CSS pixels, for the agent.
-    /// Re-rendering the panel's DOM instead (`modern-screenshot`) inlines the computed style of
-    /// every element on the page's one thread: a board with a few thousand nodes froze the whole
-    /// app for minutes. The compositor already holds these pixels. JPEG, as the DOM path sent.
-    // Read only where the native capture exists (macOS); elsewhere the fields are never read.
-    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-    Region {
-        x: f64,
-        y: f64,
-        width: f64,
-        height: f64,
-    },
-}
-
-/// The longest edge a region capture is delivered at, in points: enough to read a board, and a
-/// fraction of a full-resolution window over IPC and in the model's context.
-#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-const REGION_MAX_EDGE: f64 = 1600.0;
-
 /// A WebKit snapshot of a full or regional page. Large pages render offscreen first, so this is
 /// the longest browser wait; it stays under the agent tool's own deadline.
 const SNAPSHOT_TIMEOUT: Duration = Duration::from_secs(12);
@@ -871,105 +834,6 @@ pub(crate) async fn browser_placeholder(
         PLACEHOLDER_TIMEOUT,
     )
     .await
-}
-
-#[cfg(target_os = "macos")]
-async fn capture(view: Webview, kind: Capture, timeout: Duration) -> Result<BrowserImage, String> {
-    use base64::Engine;
-    use objc2::{runtime::AnyObject, AnyThread, MainThreadMarker};
-    use objc2_app_kit::{
-        NSBitmapImageFileType, NSBitmapImageRep, NSImage, NSImageCompressionFactor,
-    };
-    use objc2_foundation::{NSDictionary, NSError, NSNumber, NSString};
-    use objc2_web_kit::{WKSnapshotConfiguration, WKWebView};
-
-    let (tx, rx) = mpsc::channel::<Result<BrowserImage, String>>();
-    view.with_webview(move |platform| {
-        let webview: &WKWebView = unsafe { &*platform.inner().cast() };
-        let configuration = match kind {
-            Capture::Exact => None,
-            Capture::Placeholder => MainThreadMarker::new().map(|mtm| {
-                let configuration = unsafe { WKSnapshotConfiguration::new(mtm) };
-                unsafe { configuration.setAfterScreenUpdates(false) };
-                configuration
-            }),
-            Capture::Region {
-                x,
-                y,
-                width,
-                height,
-            } => MainThreadMarker::new().map(|mtm| {
-                use objc2_core_foundation::{CGPoint, CGRect, CGSize};
-                let configuration = unsafe { WKSnapshotConfiguration::new(mtm) };
-                let rect = CGRect::new(CGPoint::new(x, y), CGSize::new(width, height));
-                let scale = (REGION_MAX_EDGE / width.max(height)).min(1.0);
-                let target = NSNumber::new_f64((width * scale).round());
-                unsafe {
-                    configuration.setRect(rect);
-                    configuration.setSnapshotWidth(Some(&target));
-                }
-                configuration
-            }),
-        };
-        let callback = block2::RcBlock::new(move |image: *mut NSImage, error: *mut NSError| {
-            let result = if !error.is_null() {
-                Err(unsafe { (&*error).localizedDescription().to_string() })
-            } else if image.is_null() {
-                Err("WebKit returned no browser image".to_string())
-            } else {
-                let image = unsafe { &*image };
-                let size = image.size();
-                let (file_type, media_type) = match kind {
-                    Capture::Exact => (NSBitmapImageFileType::PNG, "image/png"),
-                    Capture::Placeholder | Capture::Region { .. } => {
-                        (NSBitmapImageFileType::JPEG, "image/jpeg")
-                    }
-                };
-                image
-                    .TIFFRepresentation()
-                    .ok_or_else(|| "WebKit image has no bitmap representation".to_string())
-                    .and_then(|tiff| {
-                        NSBitmapImageRep::initWithData(NSBitmapImageRep::alloc(), &tiff)
-                            .ok_or_else(|| "Could not decode WebKit image".to_string())
-                    })
-                    .and_then(|bitmap| {
-                        let quality = NSNumber::new_f64(0.75);
-                        let properties = match kind {
-                            Capture::Exact => NSDictionary::<NSString, AnyObject>::new(),
-                            Capture::Placeholder | Capture::Region { .. } => {
-                                NSDictionary::from_slices(
-                                    &[unsafe { NSImageCompressionFactor }],
-                                    &[AsRef::<AnyObject>::as_ref(&*quality)],
-                                )
-                            }
-                        };
-                        unsafe { bitmap.representationUsingType_properties(file_type, &properties) }
-                            .ok_or_else(|| format!("Could not encode WebKit image as {media_type}"))
-                    })
-                    .map(|encoded| BrowserImage {
-                        data: base64::engine::general_purpose::STANDARD.encode(encoded.to_vec()),
-                        media_type,
-                        width: size.width.round() as u32,
-                        height: size.height.round() as u32,
-                    })
-            };
-            let _ = tx.send(result);
-        });
-        unsafe {
-            webview.takeSnapshotWithConfiguration_completionHandler(
-                configuration.as_deref(),
-                &callback,
-            )
-        };
-    })
-    .map_err(|error| error.to_string())?;
-    crate::round_trip::await_reply(rx, timeout, "Browser snapshot timed out").await?
-}
-
-#[cfg(not(target_os = "macos"))]
-async fn capture(view: Webview, kind: Capture, timeout: Duration) -> Result<BrowserImage, String> {
-    let _ = (view, kind, timeout);
-    Err("Native browser screenshots are not yet supported on this platform".into())
 }
 
 /// A result-bearing bridge for a bounded DOM observation or action. The caller
@@ -1069,100 +933,5 @@ pub(crate) fn browser_inject(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{check_script, clip_to_content, css_to_logical, label, page_url};
-
-    #[test]
-    fn scripts_are_capped_at_128_000_bytes() {
-        assert!(check_script(&"a".repeat(128_000)).is_ok());
-        assert_eq!(
-            check_script(&"a".repeat(128_001)),
-            Err("Browser script is too large".to_string())
-        );
-    }
-
-    #[test]
-    fn native_frames_are_clipped_to_current_window_content() {
-        assert_eq!(
-            clip_to_content(-10.0, -20.0, 100.0, 100.0, 800.0, 600.0),
-            Some((0.0, 0.0, 90.0, 80.0))
-        );
-        assert_eq!(
-            clip_to_content(750.0, 550.0, 200.0, 200.0, 800.0, 600.0),
-            Some((750.0, 550.0, 50.0, 50.0))
-        );
-        assert_eq!(
-            clip_to_content(801.0, 0.0, 100.0, 100.0, 800.0, 600.0),
-            None
-        );
-        assert_eq!(
-            clip_to_content(f64::NAN, 0.0, 100.0, 100.0, 800.0, 600.0),
-            None
-        );
-    }
-
-    #[test]
-    fn a_measured_pane_is_framed_at_its_zoomed_size() {
-        assert_eq!(
-            css_to_logical(40.0, 80.0, 400.0, 300.0, 1.25),
-            (50.0, 100.0, 500.0, 375.0)
-        );
-        assert_eq!(
-            css_to_logical(40.0, 80.0, 400.0, 300.0, 1.0),
-            (40.0, 80.0, 400.0, 300.0)
-        );
-        // A corrupt zoom must not collapse or explode the frame.
-        assert_eq!(
-            css_to_logical(1.0, 2.0, 3.0, 4.0, 0.0),
-            (1.0, 2.0, 3.0, 4.0)
-        );
-        assert_eq!(
-            css_to_logical(1.0, 2.0, 3.0, 4.0, f64::NAN),
-            (1.0, 2.0, 3.0, 4.0)
-        );
-    }
-
-    #[test]
-    fn native_tab_ids_are_opaque_and_safe_as_labels() {
-        assert!(label("550e8400-e29b-41d4-a716-446655440000").is_ok());
-        assert!(label("https://example.com").is_err());
-    }
-
-    #[test]
-    fn browser_navigation_rejects_local_and_app_schemes() {
-        assert!(page_url("https://example.com/a").is_ok());
-        assert!(page_url("file:///private/key").is_err());
-        assert!(page_url("tauri://localhost/").is_err());
-    }
-
-    /// On Windows the packaged app is served at http(s)://tauri.localhost; a page there would run
-    /// with the app's origin, which the API and Tauri IPC trust.
-    #[test]
-    fn browser_navigation_rejects_the_packaged_app_origin() {
-        assert!(page_url("http://tauri.localhost/").is_err());
-        assert!(page_url("https://tauri.localhost/").is_err());
-        assert!(page_url("http://TAURI.localhost:8080/index.html").is_err());
-        assert!(page_url("http://tauri.localhost./").is_err());
-        assert!(page_url("https://nottauri.localhost/").is_ok());
-        assert!(super::navigable(&super::Url::parse("about:blank").unwrap()));
-        assert!(super::navigable(
-            &super::Url::parse("https://example.com/").unwrap()
-        ));
-        assert!(!super::navigable(
-            &super::Url::parse("http://tauri.localhost/").unwrap()
-        ));
-        assert!(!super::navigable(
-            &super::Url::parse("https://tauri.localhost/").unwrap()
-        ));
-    }
-
-    /// The tokens sites sniff for must be present, or they serve the page to an unknown browser.
-    #[cfg(target_os = "macos")]
-    #[test]
-    fn pages_introduce_themselves_as_the_installed_safari() {
-        let agent = super::safari_user_agent();
-        assert!(agent.starts_with("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "));
-        assert!(agent.contains("AppleWebKit/605.1.15 (KHTML, like Gecko) Version/"));
-        assert!(agent.ends_with(" Safari/605.1.15"));
-    }
-}
+#[path = "native_browser_tests.rs"]
+mod tests;
