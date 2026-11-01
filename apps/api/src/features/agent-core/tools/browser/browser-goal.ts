@@ -46,6 +46,8 @@ export interface GoalDeps {
   send(command: PreviewCommand): Promise<PreviewSendOutcome>
   /** The decision model for this run; absent when the host has none. */
   decide?: (ask: DecisionAsk, options: { signal?: AbortSignal }) => Promise<DecisionOutcome>
+  /** The exposure shield: every request to the decision model passes through it. */
+  redact?: (value: unknown) => unknown
   /** Test seam. */
   sleep?: (ms: number) => Promise<void>
 }
@@ -87,8 +89,12 @@ const sameAction = (a: GoalStep | undefined, b: GoalStep) =>
   !!a && a.operation === b.operation && a.ref === b.ref && a.value === b.value
 
 export async function runGoal(deps: GoalDeps, input: GoalInput): Promise<Result> {
-  const decide = deps.decide
-  if (!decide) return { content: NO_DECISION_MODEL, isError: true }
+  const rawDecide = deps.decide
+  if (!rawDecide) return { content: NO_DECISION_MODEL, isError: true }
+  // The page's fields and text may echo a typed secret; the provider only sees the shielded ask.
+  const { redact } = deps
+  const decide: typeof rawDecide = (ask, options) =>
+    rawDecide(redact ? (redact(ask) as DecisionAsk) : ask, options)
   const sleep = deps.sleep ?? ((ms) => new Promise<void>((done) => setTimeout(done, ms)))
   const tab = input.previewId ? { previewId: input.previewId } : {}
   const history: GoalStep[] = []

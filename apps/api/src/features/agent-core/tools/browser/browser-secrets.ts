@@ -32,7 +32,12 @@ const UNRESOLVED_NOTE =
   '[A ${secret:KEY} reference outside a "type" step\'s text was not resolved and was sent as written. References work only in typed text.]'
 
 export type PreparedSecrets =
-  | { ok: true; input: ResolvedInput; shield: <T extends AgentToolResult>(result: T) => T }
+  | {
+      ok: true
+      input: ResolvedInput
+      typedSecret: boolean
+      shield: <T extends AgentToolResult>(result: T) => T
+    }
   | { ok: false; error: string }
 
 /** Appends the not-resolved note when a reference sits anywhere but a typing step's text. */
@@ -54,7 +59,7 @@ export async function prepareSecretSteps(
 ): Promise<PreparedSecrets> {
   const steps = input.steps
   const typed = steps?.some((step) => isTyping(step) && hasSecretTokens(step.text!))
-  if (!steps || !typed) return { ok: true, input, shield: (result) => result }
+  if (!steps || !typed) return { ok: true, input, typedSecret: false, shield: (result) => result }
   if (!secrets)
     return {
       ok: false,
@@ -84,6 +89,7 @@ export async function prepareSecretSteps(
   return {
     ok: true,
     input: { ...input, steps: resolved },
+    typedSecret: true,
     shield: (result) => secrets.redact(result) as typeof result,
   }
 }

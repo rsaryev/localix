@@ -32,6 +32,7 @@ import { formatReply } from './browser-reply'
 import { createViewportMemory } from './browser-viewport'
 import { relayTimeoutMs } from './browser-wait'
 import { runGoal, type GoalDeps } from './browser-goal'
+import { TAINT_REFUSAL, createTabTaint } from './browser-taint'
 import { prepareSecretSteps, withUnresolvedNote, type BrowserSecrets } from './browser-secrets'
 
 /**
@@ -97,6 +98,7 @@ interface ActionOutcome {
 export function createBrowserTool(hostDeps: BrowserToolDeps) {
   // Every relay carries the tab's fixed size (if any), and every open re-decides it.
   const viewports = createViewportMemory()
+  const taint = createTabTaint()
   const deps: BrowserToolDeps = {
     ...hostDeps,
     send: (command, opts) => hostDeps.send(viewports.apply(command), opts),
@@ -153,13 +155,16 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
       const missing = missingFieldMessage(input)
       if (missing) return { result: { content: missing, isError: true } }
       return {
-        result: await runGoal(deps, {
-          goal: input.goal!.trim(),
-          values: input.values ?? [],
-          previewId: input.preview_id,
-          signal,
-          onProgress: (steps) => onUpdate?.({ action: 'goal', steps }),
-        }),
+        result: await runGoal(
+          { ...deps, redact: deps.secrets?.redact },
+          {
+            goal: input.goal!.trim(),
+            values: input.values ?? [],
+            previewId: input.preview_id,
+            signal,
+            onProgress: (steps) => onUpdate?.({ action: 'goal', steps }),
+          },
+        ),
       }
     }
     const outcome = await relayAction(input)
@@ -201,12 +206,40 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
     // Typed vault references resolve for the relay only; the page's reply is shielded.
     const prepared = await prepareSecretSteps(input, deps.secrets)
     if (!prepared.ok) return { result: { content: prepared.error, isError: true } }
-    const outcome = await relayResolved(input, prepared.input)
+    // A tab that was typed a secret refuses what could expose it (see browser-taint.ts).
+    const evaluating = input.steps?.some((step) => step.action === 'evaluate')
+    if (taint.refuses(input) || (prepared.typedSecret && evaluating))
+      return { result: { content: TAINT_REFUSAL, isError: true } }
+    const outcome = await relayResolved(input, prepared.input, prepared.typedSecret)
     return { ...outcome, result: prepared.shield(outcome.result) }
   }
 
+  /** Teach the taint what a finished call showed: the tab's URL, and whether it was typed a secret. */
+  function settle(input: ResolvedInput, result: ToolResult, typed: boolean) {
+    taint.settle(
+      input,
+      { previewId: result.details?.previewId, url: result.details?.snapshot?.url },
+      typed,
+    )
+  }
+
   /** `wire` is `input` with its typed references resolved: the only copy that reaches the page. */
-  async function relayResolved(input: ResolvedInput, wire: ResolvedInput): Promise<ActionOutcome> {
+  async function relayResolved(
+    input: ResolvedInput,
+    wire: ResolvedInput,
+    typed: boolean,
+  ): Promise<ActionOutcome> {
+    const outcome = await relayWire(input, wire, typed)
+    // The photograph is refused, not the typing: the steps before it already ran.
+    settle(input, outcome.result, typed)
+    return outcome
+  }
+
+  async function relayWire(
+    input: ResolvedInput,
+    wire: ResolvedInput,
+    typed: boolean,
+  ): Promise<ActionOutcome> {
     // ACT, THEN LOOK, in one call. A batch that ended in a screenshot arrives here as a
     // screenshot carrying the steps before it (`liftTrailingScreenshot`), because a batch
     // result is text and only the call's own result can be an image. The steps run first and
@@ -219,6 +252,18 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
         setupTimeout === undefined ? undefined : { timeoutMs: setupTimeout },
       )
       if ('error' in setup) return relayFailure('steps', setup)
+      if (typed)
+        return {
+          result: {
+            content: `The steps ran and typed the secret. The screenshot was not taken. ${TAINT_REFUSAL}`,
+            isError: true,
+            details: {
+              action: 'steps',
+              previewId: setup.result.previewId,
+              snapshot: setup.result.snapshot,
+            },
+          },
+        }
     }
 
     const timeoutMs = relayTimeoutMs(input)

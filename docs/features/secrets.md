@@ -41,7 +41,9 @@ approval prompt and the transcript show the reference, and anything the page ret
 (snapshot, field values, console, errors) has the value removed. A missing alias stops the step
 before anything is typed. A reference anywhere else in a browser call, such as a selector or an
 `evaluate` expression, is not resolved, and the result says so. Values shorter than twelve
-characters are not removed from page output.
+characters are not removed from page output. After a secret is typed into a tab, that tab refuses
+screenshots and `evaluate` (a screenshot can show the value and a script can disguise it) until it
+moves to another URL; snapshot and read still work.
 
 ## How it works
 
