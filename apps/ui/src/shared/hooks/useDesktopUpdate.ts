@@ -1,9 +1,15 @@
 import { useEffect, useSyncExternalStore } from 'react'
 
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
-import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 import { isDesktopRuntime } from '@localixai/kit/environment'
 import { tauriInvoke, tauriListen } from '@/shared/lib/tauri'
+import {
+  dismissed,
+  dismissUpdateNotice,
+  publish,
+  sharedUpdate,
+  subscribe,
+} from './desktopUpdateStore'
 
 /**
  * Auto-updater state for the desktop shell, sourced from the Tauri `updater_check` command.
@@ -90,43 +96,7 @@ function fromTauri(s: TauriUpdateStatus): DesktopUpdateState {
   }
 }
 
-// ONE state for every reader. Each hook instance used to keep its own copy, so a check run from
-// Settings would have left the rail button silent until its next hourly poll.
-let shared: DesktopUpdateState | null = null
-const listeners = new Set<() => void>()
-function publish(next: DesktopUpdateState | null) {
-  shared = next
-  for (const listener of listeners) listener()
-}
-function subscribe(listener: () => void) {
-  listeners.add(listener)
-  return () => {
-    listeners.delete(listener)
-  }
-}
-
-// The version whose notice the person hid. Remembered across launches, so a dismissed update does
-// not come back on every start; a NEWER version is a different notice and shows again. The rail
-// button and Settings still show an available update: this only quiets the composer strip.
-const DISMISSED_KEY = 'localix.update.dismissed'
-let dismissedVersion: string | null = null
-let dismissedRead = false
-function dismissed(): string | null {
-  if (!dismissedRead && typeof window !== 'undefined') {
-    dismissedVersion = loadString(DISMISSED_KEY)
-    dismissedRead = true
-  }
-  return dismissedVersion
-}
-
-/** Hide the composer notice for `version`, and keep it hidden until a newer one is available. */
-export function dismissUpdateNotice(version: string | null): void {
-  dismissedVersion = version
-  dismissedRead = true
-  // A blocked store keeps it hidden for this launch, which is all that was asked.
-  saveString(DISMISSED_KEY, version)
-  for (const listener of listeners) listener()
-}
+export { dismissUpdateNotice }
 
 /** Whether this window has an updater to ask. False in a browser and in a bridge-less shell. */
 export const hasDesktopUpdater = (): boolean =>
@@ -151,8 +121,9 @@ export async function checkDesktopUpdate(
     const checked = fromTauri((await invoke('updater_check')) as TauriUpdateStatus)
     // A background check must not rewrite an install that is under way: it would flip the strip
     // back to "available" mid-download and invite a second click.
-    const state = shared?.installing
-      ? { ...checked, installing: true, message: shared.message, percent: shared.percent }
+    const current = sharedUpdate()
+    const state = current?.installing
+      ? { ...checked, installing: true, message: current.message, percent: current.percent }
       : checked
     publish(state)
     return { ok: true, state }
@@ -196,14 +167,16 @@ export function reportUpdateProgress(payload: {
     percent !== null
       ? `Downloading update… ${percent}%`
       : `Downloading update… ${Math.round(downloaded / 1_000_000)} MB`
-  if (shared) publish({ ...shared, message, percent })
-  return shared
+  const current = sharedUpdate()
+  if (current) publish({ ...current, message, percent })
+  return sharedUpdate()
 }
 
 async function applyUpdate(): Promise<DesktopUpdateApplyResult> {
   const invoke = tauriInvoke()
   if (!invoke) return NO_BRIDGE
-  if (shared) publish({ ...shared, installing: true, message: 'Starting update…' })
+  const before = sharedUpdate()
+  if (before) publish({ ...before, installing: true, message: 'Starting update…' })
   try {
     // Downloads, installs, and relaunches into the new version (never returns on
     // success). Signature-verified against the configured pubkey natively.
@@ -211,12 +184,13 @@ async function applyUpdate(): Promise<DesktopUpdateApplyResult> {
     return { ok: true }
   } catch (cause) {
     // Back to a clickable "available": nothing was installed, and the person has the reason.
-    if (shared) {
+    const current = sharedUpdate()
+    if (current) {
       publish({
-        ...shared,
+        ...current,
         installing: false,
         percent: null,
-        message: availableMessage(shared.latestVersion),
+        message: availableMessage(current.latestVersion),
       })
     }
     // `updater_install` is `Result<(), String>` on the Rust side: the reason a
@@ -242,11 +216,7 @@ export function useDesktopUpdate({
   /** The clock the return check measures the last answer's age with. */
   now?: () => number
 } = {}): DesktopUpdate {
-  const state = useSyncExternalStore(
-    subscribe,
-    () => shared,
-    () => null,
-  )
+  const state = useSyncExternalStore(subscribe, sharedUpdate, () => null)
   const hiddenVersion = useSyncExternalStore(subscribe, dismissed, () => null)
 
   // Download progress during updater_install arrives as throttled `updater:progress`
