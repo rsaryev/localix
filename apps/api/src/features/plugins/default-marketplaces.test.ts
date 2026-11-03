@@ -9,7 +9,11 @@ import {
   forgetDefaultMarketplaceRemoval,
   rememberDefaultMarketplaceRemoval,
 } from './default-marketplaces'
-import { readKnownMarketplaces, writeKnownMarketplaces } from './marketplace-catalog'
+import {
+  type KnownMarketplace,
+  readKnownMarketplaces,
+  writeKnownMarketplaces,
+} from './marketplace-catalog'
 import type { MarketplaceSource } from './marketplace-source'
 
 const dir = tempDirPerTest('default-marketplaces-')
@@ -89,7 +93,7 @@ describe('the default marketplaces on start', () => {
       },
       installLocation: join(root(), 'localix'),
       autoUpdate: true,
-    } as const
+    } satisfies KnownMarketplace
     await writeKnownMarketplaces(root(), { localix: before })
     const offline = adder(new Error('getaddrinfo ENOTFOUND github.com'))
     expect((await ensure(offline.add)).localix).toEqual({
@@ -111,7 +115,7 @@ describe('the default marketplaces on start', () => {
     const theirs = {
       source: { source: 'github', repo: 'someone/localix-fork' },
       installLocation: join(root(), 'localix'),
-    } as const
+    } satisfies KnownMarketplace
     await writeKnownMarketplaces(root(), { localix: theirs })
     expect((await ensure(adder().add)).localix).toEqual({ status: 'present' })
     expect((await readKnownMarketplaces(root())).localix).toEqual(theirs)
