@@ -36,7 +36,7 @@ describe('when the plugin auto-update pass runs', () => {
     expect(firstPassDelayMs(() => 0.999999)).toBeLessThanOrEqual(10 * 60_000)
   })
 
-  test('then every six hours, until stopped', () => {
+  test('then every hour, until stopped', () => {
     const fake = fakeTimers()
     let runs = 0
     const stop = armPluginAutoUpdate({

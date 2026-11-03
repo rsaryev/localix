@@ -69,10 +69,10 @@ fails keeps the version before. Uninstalling orphans the version the same way.
 **When updates run.** Auto-update is on by default for the official `localix` marketplace and off
 for every other one; the switch on a marketplace's row changes it. Claude Code updates once per
 session, a random delay of up to ten minutes after the first message. Localix keeps running, so the
-pass runs a random one to ten minutes after start and then every six hours: it refreshes each
-marketplace with auto-update on, updates the plugins installed from it on disk, and sweeps orphaned
-versions. A run already under way keeps what it loaded; the next run loads the new version, and
-plugin monitors and mods reload when the update lands.
+pass runs a random one to ten minutes after start and then every hour: it refreshes each marketplace
+with auto-update on, updates the plugins installed from it on disk, and sweeps orphaned versions. A
+run already under way keeps what it loaded; the next run loads the new version, and plugin monitors
+and mods reload when the update lands.
 
 | Environment variable                                                                 | Effect                                            |
 | ------------------------------------------------------------------------------------ | ------------------------------------------------- |
@@ -81,12 +81,13 @@ plugin monitors and mods reload when the update lands.
 
 **Update now** on a plugin's row updates it at once, with its progress on the row; it appears when
 the marketplace's listing resolves to another version. What is available is computed from the
-listings without installing anything: the Store (Plugins) fetches the listings when it opens, and
-every marketplace refresh checks again. An unpinned git entry is compared by its remote commit.
-**Update marketplace** refreshes the listing and updates the plugins installed from it, and names
-any it leaves for you, such as an entry with a `headersHelper`. A marketplace's `autoUpdate` lives
-on its record in `~/.localix/marketplaces/known.json`; one that Claude Code's settings declare under
-`extraKnownMarketplaces` brings its own `autoUpdate` value along (see below).
+listings: the Store (Plugins) fetches the listings when it opens, and every marketplace refresh
+checks again. A newer version found in a marketplace with auto-update on is installed at once, so
+**Update now** is offered only for the other marketplaces. An unpinned git entry is compared by its
+remote commit. **Update marketplace** refreshes the listing and updates the plugins installed from
+it, and names any it leaves for you, such as an entry with a `headersHelper`. A marketplace's
+`autoUpdate` lives on its record in `~/.localix/marketplaces/known.json`; one that Claude Code's
+settings declare under `extraKnownMarketplaces` brings its own `autoUpdate` value along (see below).
 
 ### Claude Code settings
 

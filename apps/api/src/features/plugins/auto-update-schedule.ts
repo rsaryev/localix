@@ -2,10 +2,11 @@
  * WHEN THE PLUGIN AUTO-UPDATE PASS RUNS. Claude Code runs it once per interactive session, a random
  * delay of up to ten minutes after the first message. Localix is a long-running app, so the pass
  * runs a random one to ten minutes after start (spreading the fetches of many installs) and then
- * every six hours, the cadence the mini app catalogs use. What one pass does is
+ * every hour: at six hours a plugin published in the morning reached nobody until evening. A pass
+ * is one listing fetch per auto-update marketplace. What one pass does is
  * `PluginUpdates.autoUpdatePass` (`plugin-updates.ts`).
  */
-export const AUTO_UPDATE_INTERVAL_MS = 6 * 60 * 60 * 1000
+export const AUTO_UPDATE_INTERVAL_MS = 60 * 60 * 1000
 
 const MINUTE = 60_000
 

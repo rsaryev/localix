@@ -13,7 +13,7 @@ import type { PluginService } from '../features/plugins/service-types'
  * The plugin feature's start-up and background work, armed with the other ops timers:
  *
  * - the auto-update pass — plugins from marketplaces with auto-update on take their newer versions
- *   a random one to ten minutes after start, then every six hours
+ *   a random one to ten minutes after start, then every hour
  *   (`features/plugins/auto-update-schedule.ts`);
  * - the idle task that registers the Store's default marketplaces once
  *   (`features/plugins/default-marketplaces.ts`). It waits on the network, so the caller queues it

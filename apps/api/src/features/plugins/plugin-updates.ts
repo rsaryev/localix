@@ -102,7 +102,36 @@ export function createPluginUpdates(deps: {
     return refreshed
   }
 
-  async function check(userId: string, refresh: boolean): Promise<MarketplaceInstall[]> {
+  /**
+   * The ids among `available` from marketplaces that update by themselves, while the switches
+   * Claude Code honours allow it.
+   */
+  function automatic(known: Awaited<ReturnType<typeof readKnownMarketplaces>>): string[] {
+    if (!autoUpdatePassAllowed(deps.env ?? process.env)) return []
+    return available
+      .filter((entry) => {
+        const found = marketplaceRecord(known, entry.marketplace)
+        return found !== undefined && marketplaceAutoUpdate(found[0], found[1])
+      })
+      .map((entry) => entry.id)
+  }
+
+  const inFlight = (id: string) => {
+    const phase = jobs.get(id)?.phase
+    return phase === 'checking' || phase === 'downloading' || phase === 'installing'
+  }
+
+  /**
+   * Compute what is available. A check finds an update the moment someone looks (the plugins
+   * screen refreshes at once) while the pass runs hours apart, so unless the caller installs
+   * them itself (`autoApply: false`, the pass), what a check finds in an auto-update
+   * marketplace is installed right away rather than offered behind an "Update" button.
+   */
+  async function check(
+    userId: string,
+    refresh: boolean,
+    { autoApply = true }: { autoApply?: boolean } = {},
+  ): Promise<MarketplaceInstall[]> {
     const installed = await installs(userId)
     if (refresh) {
       const known = await readKnownMarketplaces(root)
@@ -121,6 +150,10 @@ export function createPluginUpdates(deps: {
     available = found
     lastCheckedAt = now()
     notify()
+    if (autoApply) {
+      const ids = automatic(known).filter((id) => !inFlight(id))
+      if (ids.length) void enqueue(userId, ids)
+    }
     return installed
   }
 
@@ -177,7 +210,7 @@ export function createPluginUpdates(deps: {
         .filter(([name, record]) => marketplaceAutoUpdate(name, record))
         .map(([name]) => name)
       const refreshed = await refreshListings(auto)
-      await check(userId, false)
+      await check(userId, false, { autoApply: false })
       const ids = available
         .filter((entry) => auto.includes(marketplaceRecord(known, entry.marketplace)?.[0] ?? ''))
         .map((entry) => entry.id)

@@ -158,8 +158,8 @@ any. Each is installed once; one you remove is not added back, and one the marke
 later is installed once too. Plugins go to Localix's own folder (`~/.localix/plugins`), not Claude
 Code's. Progress shows in the Event Center's **In progress**. Updates also arrive on their own: mini
 apps a minute after start and then every six hours, plugins from a source with auto-update on (the
-Localix marketplace is) one to ten minutes after start and then every six hours. See
-[Recommended apps](mini-apps.md#recommended-apps).
+Localix marketplace is) one to ten minutes after start, then every hour, and as soon as the Store
+finds a newer one. See [Recommended apps](mini-apps.md#recommended-apps).
 
 ### An app for a file
 

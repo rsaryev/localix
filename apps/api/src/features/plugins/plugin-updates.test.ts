@@ -136,4 +136,15 @@ describe('plugin updates', () => {
     expect(forced.updated).toEqual(['tool@shop'])
     expect(await installedVersion()).toBe('3.0.0')
   })
+
+  // The pass runs hours apart, while opening the plugins screen checks at once: the person saw
+  // "Update" on a plugin from a marketplace that updates by itself, and it stayed old until the
+  // next pass. A check now installs what it finds there; a manual marketplace still only offers it.
+  test('a check that finds a newer version in an auto-update marketplace installs it', async () => {
+    setVersion('4.0.0')
+    await service.updates.status('u1', { refresh: true })
+    await service.updates.idle()
+    expect(await installedVersion()).toBe('4.0.0')
+    expect(service.updates.snapshot().available).toEqual([])
+  })
 })

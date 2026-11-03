@@ -11,6 +11,10 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
   test. The tests now find the mini app kit wherever the folder is.
 - **Updates found sooner**: a new Localix version could stay unnoticed for hours until you clicked
   Check for updates. Localix now looks every half hour, and again when you come back to its window.
+- **Plugins update by themselves when an update is found**: a plugin from the Localix marketplace
+  could show **Update now** for hours, waiting for the six-hourly background pass. A newer version
+  from a marketplace with auto-update on is now installed as soon as Localix finds it, and the
+  background pass runs every hour.
 
 ## v0.1.0-beta.25 — 2026-11-03
 
