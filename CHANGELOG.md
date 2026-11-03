@@ -4,6 +4,14 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+### Fixed
+
+- **Mini apps in folders with Cyrillic or spaces**: checking or rebuilding a mini app whose folder
+  name has Cyrillic letters or a space (`контент план`) failed with "Cannot find module" in every
+  test. The tests now find the mini app kit wherever the folder is.
+- **Updates found sooner**: a new Localix version could stay unnoticed for hours until you clicked
+  Check for updates. Localix now looks every half hour, and again when you come back to its window.
+
 ## v0.1.0-beta.25 — 2026-11-03
 
 A small fix release: mini app items keep their data when one field changes, the mini app authoring

@@ -179,3 +179,47 @@ describe('desktop update check', () => {
     expect(await checkDesktopUpdate()).toEqual({ ok: false, error: 'updater is not configured' })
   })
 })
+
+describe('desktop update check on return', () => {
+  // The hourly timer alone missed a release for hours: a background window's timers are slowed
+  // by the system, and coming back to Localix asked nothing. Coming back now asks, unless the
+  // last answer is fresh.
+  test('asks again when the window comes back after a while, not on every return', async () => {
+    let calls = 0
+    installBridge(async () => {
+      calls += 1
+      return { available: true, currentVersion: '1.2.3', latestVersion: '1.3.0' }
+    })
+    const shell = window as unknown as { __LOCALIX_UPDATER?: boolean; __LOCALIX_DESKTOP?: boolean }
+    shell.__LOCALIX_UPDATER = true
+    shell.__LOCALIX_DESKTOP = true
+    const { act, createElement } = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { useDesktopUpdate } = await import('./useDesktopUpdate')
+    ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
+    let now = Date.now() + 60 * 60 * 1000
+    function Rail() {
+      useDesktopUpdate({ now: () => now })
+      return null
+    }
+    const root = createRoot(document.createElement('div'))
+    await act(async () => root.render(createElement(Rail)))
+    try {
+      await act(async () => void window.dispatchEvent(new Event('focus')))
+      expect(calls).toBe(1)
+
+      now += 60 * 1000
+      await act(async () => void window.dispatchEvent(new Event('focus')))
+      expect(calls).toBe(1)
+
+      now += 10 * 60 * 1000
+      await act(async () => void window.dispatchEvent(new Event('focus')))
+      expect(calls).toBe(2)
+    } finally {
+      await act(async () => root.unmount())
+      delete shell.__LOCALIX_UPDATER
+      delete shell.__LOCALIX_DESKTOP
+    }
+  })
+})

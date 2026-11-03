@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react'
 
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
-import { isDesktop } from '@localixai/kit/environment'
+import { isDesktopRuntime } from '@localixai/kit/environment'
 import { tauriInvoke, tauriListen } from '@/shared/lib/tauri'
 
 /**
@@ -46,11 +46,18 @@ declare global {
 }
 
 /**
- * Ask a few seconds after launch, then once per hour. The check is one small request answered by
- * the shell off the page's thread; the delay only keeps it out of the first paint.
+ * Ask a few seconds after launch, then every half hour, and again when the window comes back to
+ * the front once the last answer is ten minutes old. The timer alone missed a release for hours:
+ * the system slows a background window's timers, and coming back to Localix asked nothing. The
+ * check is one small request answered by the shell off the page's thread; the first delay only
+ * keeps it out of the first paint.
  */
 const FIRST_CHECK_DELAY_MS = 3 * 1000
-const POLL_MS = 60 * 60 * 1000
+const POLL_MS = 30 * 60 * 1000
+const RETURN_CHECK_AFTER_MS = 10 * 60 * 1000
+
+/** When the shell was last asked, on the clock of whoever asked. */
+let lastCheckedAt = Number.NEGATIVE_INFINITY
 
 /** Shape returned by the Tauri `updater_check` Rust command. */
 interface TauriUpdateStatus {
@@ -122,7 +129,8 @@ export function dismissUpdateNotice(version: string | null): void {
 }
 
 /** Whether this window has an updater to ask. False in a browser and in a bridge-less shell. */
-export const hasDesktopUpdater = (): boolean => isDesktop && window.__LOCALIX_UPDATER === true
+export const hasDesktopUpdater = (): boolean =>
+  isDesktopRuntime() && window.__LOCALIX_UPDATER === true
 
 export type DesktopUpdateCheckResult =
   | { ok: true; state: DesktopUpdateState }
@@ -133,9 +141,12 @@ export type DesktopUpdateCheckResult =
 // shell" does not imply "we can call it". Both calls say so rather than acting as if they ran.
 const NO_BRIDGE = { ok: false, error: 'The desktop bridge is unavailable in this window.' } as const
 
-export async function checkDesktopUpdate(): Promise<DesktopUpdateCheckResult> {
+export async function checkDesktopUpdate(
+  now: () => number = Date.now,
+): Promise<DesktopUpdateCheckResult> {
   const invoke = tauriInvoke()
   if (!invoke) return NO_BRIDGE
+  lastCheckedAt = now()
   try {
     const checked = fromTauri((await invoke('updater_check')) as TauriUpdateStatus)
     // A background check must not rewrite an install that is under way: it would flip the strip
@@ -223,7 +234,14 @@ async function applyUpdate(): Promise<DesktopUpdateApplyResult> {
  * download-progress listener. Any other reader passes `poll: false` and sees the same state,
  * rather than starting a second poller.
  */
-export function useDesktopUpdate({ poll = true }: { poll?: boolean } = {}): DesktopUpdate {
+export function useDesktopUpdate({
+  poll = true,
+  now = Date.now,
+}: {
+  poll?: boolean
+  /** The clock the return check measures the last answer's age with. */
+  now?: () => number
+} = {}): DesktopUpdate {
   const state = useSyncExternalStore(
     subscribe,
     () => shared,
@@ -263,14 +281,22 @@ export function useDesktopUpdate({ poll = true }: { poll?: boolean } = {}): Desk
     // background check stays quiet: only a check the person asked for reports its error.
     let interval: number | undefined
     const first = window.setTimeout(() => {
-      void checkDesktopUpdate()
-      interval = window.setInterval(() => void checkDesktopUpdate(), POLL_MS)
+      void checkDesktopUpdate(now)
+      interval = window.setInterval(() => void checkDesktopUpdate(now), POLL_MS)
     }, FIRST_CHECK_DELAY_MS)
+    const onReturn = () => {
+      if (document.visibilityState === 'hidden') return
+      if (now() - lastCheckedAt >= RETURN_CHECK_AFTER_MS) void checkDesktopUpdate(now)
+    }
+    window.addEventListener('focus', onReturn)
+    document.addEventListener('visibilitychange', onReturn)
     return () => {
       window.clearTimeout(first)
       if (interval !== undefined) window.clearInterval(interval)
+      window.removeEventListener('focus', onReturn)
+      document.removeEventListener('visibilitychange', onReturn)
     }
-  }, [poll])
+  }, [poll, now])
 
   return {
     state,
