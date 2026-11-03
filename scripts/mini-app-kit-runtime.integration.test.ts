@@ -13,7 +13,9 @@ import { kitCacheRoot } from './mini-app-kit-cache.mjs'
 const repoRoot = resolve(import.meta.dir, '..')
 const KIT_STAGER = join(import.meta.dir, 'stage-mini-app-kit.mjs')
 const root = mkdtempSync(join(tmpdir(), 'mini-app-kit-runtime-'))
-const kitDir = join(root, 'kit')
+// Under a folder named in Cyrillic with a space, as a person's own project folders are: the
+// preload once turned its module URLs into percent-encoded paths that no file matched.
+const kitDir = join(root, 'контент план', 'kit')
 
 function stage(out: string, env: Record<string, string> = {}) {
   const result = spawnSync(
