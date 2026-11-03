@@ -4,6 +4,12 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+## v0.1.0-beta.25 — 2026-11-03
+
+A small fix release: mini app items keep their data when one field changes, the mini app authoring
+plugin installs again after an upgrade from an old beta, and the `localix` terminal command no
+longer asks you to fix a PATH that is already right.
+
 ### Fixed
 
 - **Mini app data kept on a change**: changing one field of a mini app's item (moving a deal to
@@ -13,6 +19,11 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
   v0.1.0-beta.17 or older kept installing that release's mini-app-authoring plugin, so creating a
   mini app failed with "update Localix" even on the latest release. Localix now reads its own
   marketplace from its current home on start, and reinstalling the plugin brings the current one.
+- **`localix` command status in Settings**: with Localix opened from the Dock, Settings → System
+  kept saying "Add ~/.local/bin to your PATH" even when your terminal already had it, and Reinstall
+  seemed to do nothing. It now checks the PATH your shell actually uses.
+- **Event Center progress ring**: the ring around the bell while background work runs is drawn with
+  a crisp line and no longer touches the bell.
 
 ## v0.1.0-beta.24 — 2026-11-01
 
