@@ -74,6 +74,22 @@ export function defineCollection<T extends { id: string }, S extends z.ZodRawSha
 }
 
 /** The stored file: one object, so a later field (a version, settings) never breaks a reader. */
+/**
+ * What a change of an item may carry: each field of the input, optional and WITHOUT its
+ * `.default()`. zod 4's `partial()` fills a default for a field the change leaves out, so
+ * `update(id, { stage })` reset a defaulted `amount` — on the agent's tools and the PATCH route
+ * alike. A default belongs to creating an item, never to changing one.
+ */
+export function changeSchema<S extends z.ZodRawShape>(input: z.ZodObject<S>) {
+  const shape = Object.fromEntries(
+    Object.entries(input.shape).map(([key, field]) => [
+      key,
+      z.optional(field instanceof z.ZodDefault ? field.unwrap() : field),
+    ]),
+  )
+  return z.object(shape) as unknown as ReturnType<z.ZodObject<S>['partial']>
+}
+
 export const collectionFileSchema = <T>(item: z.ZodType<T>) => z.object({ items: z.array(item) })
 
 /** Open a collection's store and the operations a tool and a route share. */
@@ -83,7 +99,7 @@ export function openCollection<T extends { id: string }, S extends z.ZodRawShape
   now: () => Date = () => new Date(),
 ): Collection<T, S> {
   const fileSchema = collectionFileSchema(spec.item)
-  const patchSchema = spec.input.partial()
+  const patchSchema = changeSchema(spec.input)
   const limit = spec.limit ?? DEFAULT_LIMIT
   const semantic = spec.search && spec.scope !== 'chat' ? ctx.host?.semantic : undefined
 

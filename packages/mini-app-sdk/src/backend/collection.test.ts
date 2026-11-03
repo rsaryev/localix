@@ -131,6 +131,33 @@ describe('a collection', () => {
     expect(await diary.update(id, { amount: 1 })).toBeNull()
   })
 
+  // A CRM's "move the deal" tool sent { stage } and the deal's amount, defaulted in the input
+  // schema, came back 0: zod 4's partial() fills a default for every field the patch left out.
+  test('a change keeps every field it does not name, defaulted ones included', async () => {
+    const dealInput = z.object({
+      title: z.string(),
+      stage: z.enum(['lead', 'won']).default('lead'),
+      amount: z.number().default(0),
+    })
+    const deal = dealInput.extend({ id: z.string() })
+    let deals!: Collection<z.infer<typeof deal>, typeof dealInput.shape>
+    const { request } = serve(fakeContext(), (app) => {
+      deals = app.collection(
+        defineCollection({
+          name: 'deals',
+          item: deal,
+          input: dealInput,
+          create: (input, { id }) => ({ ...input, id }),
+        }),
+      )
+    })
+    const { id } = await deals.add({ title: 'Acme', stage: 'lead', amount: 5000 })
+
+    expect(await deals.update(id, { stage: 'won' })).toMatchObject({ stage: 'won', amount: 5000 })
+    const renamed = await request('PATCH', `/deals/${id}`, { title: 'Acme Corp' })
+    expect(renamed.json.items).toEqual([{ id, title: 'Acme Corp', stage: 'won', amount: 5000 }])
+  })
+
   test('refuses input that breaks its schema with the reason, and stores nothing', async () => {
     const { request } = serve(fakeContext(), (app) => {
       app.collection(entries)

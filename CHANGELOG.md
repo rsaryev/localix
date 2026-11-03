@@ -6,6 +6,9 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ### Fixed
 
+- **Mini app data kept on a change**: changing one field of a mini app's item (moving a deal to
+  another stage, renaming an entry) no longer resets its other fields that have a default value,
+  whether the change comes from the agent or from the app's screen.
 - **Plugins from the Localix marketplace after an upgrade**: a Localix first installed at
   v0.1.0-beta.17 or older kept installing that release's mini-app-authoring plugin, so creating a
   mini app failed with "update Localix" even on the latest release. Localix now reads its own

@@ -1,7 +1,7 @@
 import { Hono, type Context } from 'hono'
 import type { z } from 'zod'
 import type { AgentTool } from '@localixai/agent/agents'
-import { openCollection, type Collection, type CollectionSpec } from './collection'
+import { changeSchema, openCollection, type Collection, type CollectionSpec } from './collection'
 import type { MiniAppContext } from './context'
 import { jsonBody, jsonError, type MiniAppRouteContext } from './http'
 import { createJsonStoreFeed } from './json-store'
@@ -114,7 +114,7 @@ function mountCollection(app: Hono<MiniAppRouteContext>, collection: AnyCollecti
       await collection.add(c.req.valid('json'), where(c))
       return listed(c)
     })
-    .patch(`/${name}/:id`, jsonBody(input.partial()), async (c) => {
+    .patch(`/${name}/:id`, jsonBody(changeSchema(input)), async (c) => {
       const refused = needsChat(c)
       if (refused) return refused
       const changed = await collection.update(c.req.param('id'), c.req.valid('json'), where(c))
