@@ -1,6 +1,8 @@
-import { readdirSync, statSync } from 'node:fs'
+import { mkdtempSync, readdirSync, statSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { untilAppleAnswers } from './apple-retry.mjs'
+import { installStaplerShim } from './apple-staple-shim.mjs'
 import {
   assertUpdaterEmbedded,
   readUpdaterSettings,
@@ -37,6 +39,10 @@ if (notarizeDmg && process.platform === 'darwin') {
     console.error(`[tauri-release] Missing signing/notarization environment: ${missing.join(', ')}`)
     process.exit(1)
   }
+  // Tauri staples the app once and packs it into the DMG whatever Apple answered; this `xcrun`
+  // asks again until the ticket is on the app (apple-staple-shim.mjs).
+  const shim = installStaplerShim(mkdtempSync(join(tmpdir(), 'localix-xcrun-')))
+  commandEnv.PATH = `${shim}:${commandEnv.PATH ?? ''}`
 }
 
 if (releaseBuild) {
