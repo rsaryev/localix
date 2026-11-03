@@ -7,8 +7,9 @@ import { DEFAULT_SOURCES, type DefaultSource } from '@localixai/store'
 import { envFlag } from '../../lib/env'
 import { errorMessage } from '../../lib/errors'
 import { isRecord } from '../../lib/record'
-import { readKnownMarketplaces } from './marketplace-catalog'
-import { sameMarketplaceSource } from './marketplace-source-identity'
+import { readKnownMarketplaces, writeKnownMarketplaces } from './marketplace-catalog'
+import { withMarketplaceMutationLock } from './marketplace-lock'
+import { describeMarketplaceSource, sameMarketplaceSource } from './marketplace-source-identity'
 import type { MarketplaceSource } from './marketplace-source'
 
 /**
@@ -27,6 +28,7 @@ import type { MarketplaceSource } from './marketplace-source'
 export type DefaultMarketplaceOutcome =
   | { status: 'registered' }
   | { status: 'present' }
+  | { status: 'moved'; from: string }
   | { status: 'declined' }
   | { status: 'skipped'; reason: string }
 
@@ -54,6 +56,38 @@ export function defaultMarketplaceOf(
   return DEFAULT_MARKETPLACES.find(
     (found) => found.id === name || (source && sameMarketplaceSource(found.source, source)),
   )
+}
+
+/**
+ * Where a default marketplace lived before. Up to v0.1.0-beta.17 `localix` was the core
+ * repository's own catalog; its plugins have since moved to `LOCALIX_MARKETPLACE`'s repository,
+ * and the core carries none. A profile from then keeps a `localix` record pointing at the core,
+ * whose refresh finds no catalog, so every install fell back to the copy cloned back then and put
+ * that release's plugins back. A record under the default's name that still points at a former
+ * home is re-pointed at the current one; any other source under that name is the person's own and
+ * is left alone.
+ */
+const FORMER_SOURCES: Readonly<Record<string, readonly MarketplaceSource[]>> = {
+  localix: [{ source: 'github', repo: 'rsaryev/localix' }],
+}
+
+const movedFrom = (wanted: DefaultMarketplace, source: MarketplaceSource | undefined) =>
+  source && FORMER_SOURCES[wanted.id]?.some((former) => sameMarketplaceSource(former, source))
+
+/**
+ * Point the record at the default's current source, keeping its folder and the person's
+ * preferences; the fetch that follows replaces the folder. The record is moved first so a fetch
+ * that fails now leaves the next refresh reading the new home, never the old one.
+ */
+async function followMove(root: string, wanted: DefaultMarketplace): Promise<string | null> {
+  return withMarketplaceMutationLock(root, async () => {
+    const known = await readKnownMarketplaces(root)
+    const record = known[wanted.id]
+    if (!record || !movedFrom(wanted, record.source)) return null
+    known[wanted.id] = { ...record, source: wanted.source }
+    await writeKnownMarketplaces(root, known)
+    return describeMarketplaceSource(record.source)
+  })
 }
 
 const STATE_FILE = '.defaults.json'
@@ -103,6 +137,13 @@ export async function ensureDefaultMarketplaces(deps: {
   )
   const removed = await removedByPerson(deps.root)
   for (const wanted of DEFAULT_MARKETPLACES) {
+    const from = await followMove(deps.root, wanted)
+    if (from) {
+      // Offline, the record still moves; the next refresh or install fetches the new catalog.
+      if (!offline) await deps.add(wanted.source).catch(() => {})
+      out[wanted.id] = { status: 'moved', from }
+      continue
+    }
     const known = await readKnownMarketplaces(deps.root)
     const present =
       known[wanted.id] ||

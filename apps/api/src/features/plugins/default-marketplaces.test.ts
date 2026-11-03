@@ -79,6 +79,44 @@ describe('the default marketplaces on start', () => {
     )
   })
 
+  test('Localix’s, still registered from the core repository it moved out of, follows the move', async () => {
+    // A profile from v0.1.0-beta.17 or older: `localix` was the core repository's own catalog.
+    const before = {
+      source: {
+        source: 'github',
+        repo: 'rsaryev/localix',
+        sparsePaths: ['.claude-plugin', 'plugins'],
+      },
+      installLocation: join(root(), 'localix'),
+      autoUpdate: true,
+    } as const
+    await writeKnownMarketplaces(root(), { localix: before })
+    const offline = adder(new Error('getaddrinfo ENOTFOUND github.com'))
+    expect((await ensure(offline.add)).localix).toEqual({
+      status: 'moved',
+      from: 'github:rsaryev/localix',
+    })
+    // Even when the new home cannot be fetched now, the record points there: the next refresh or
+    // install reads the new catalog, never the one the core repository no longer carries.
+    const official = DEFAULT_MARKETPLACES.find((found) => found.id === 'localix')!.source
+    expect((await readKnownMarketplaces(root())).localix).toEqual({ ...before, source: official })
+    expect(offline.calls[0]).toEqual(official)
+
+    const { add, calls } = adder()
+    expect((await ensure(add)).localix).toEqual({ status: 'present' })
+    expect(calls).not.toContainEqual(official)
+  })
+
+  test('a `localix` the person registered from another repository keeps its source', async () => {
+    const theirs = {
+      source: { source: 'github', repo: 'someone/localix-fork' },
+      installLocation: join(root(), 'localix'),
+    } as const
+    await writeKnownMarketplaces(root(), { localix: theirs })
+    expect((await ensure(adder().add)).localix).toEqual({ status: 'present' })
+    expect((await readKnownMarketplaces(root())).localix).toEqual(theirs)
+  })
+
   test('one the person removed is not added back, until they add it themselves', async () => {
     const { add, calls } = adder()
     await rememberDefaultMarketplaceRemoval(root(), 'claude-community')

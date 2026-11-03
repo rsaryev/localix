@@ -4,6 +4,13 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+### Fixed
+
+- **Plugins from the Localix marketplace after an upgrade**: a Localix first installed at
+  v0.1.0-beta.17 or older kept installing that release's mini-app-authoring plugin, so creating a
+  mini app failed with "update Localix" even on the latest release. Localix now reads its own
+  marketplace from its current home on start, and reinstalling the plugin brings the current one.
+
 ## v0.1.0-beta.24 — 2026-11-01
 
 The agent is more careful with steps that change things: a failed step stops the rest of its plan,

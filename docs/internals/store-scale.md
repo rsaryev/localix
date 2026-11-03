@@ -72,6 +72,11 @@ and its `localix-community` plugin marketplace (one repository, `rsaryev/localix
 `community`, not editorial), `anthropics/claude-plugins-official` (`official`, editorial) and
 `anthropics/claude-plugins-community` (`community`, not editorial).
 
+A profile from v0.1.0-beta.17 or older has `localix` registered from the core repository
+(`rsaryev/localix`), which no longer carries plugins. On start such a record is pointed at
+`rsaryev/localix-marketplace` and fetched again, keeping its folder and preferences; a `localix`
+registered from any other source is the person's own and stays as it is.
+
 Localix Community holds no code. Its plugin entries name their authors' repositories, as Anthropic's
 community marketplace does; its mini app marketplace (`docs/extending/mini-app-marketplace.md`)
 links each app to its author's own marketplace. Such an app is read from that marketplace, signed by
