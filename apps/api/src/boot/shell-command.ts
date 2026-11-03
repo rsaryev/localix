@@ -5,6 +5,7 @@ import { resolve } from 'node:path'
 
 import type { Logger } from 'pino'
 
+import { childEnv } from '../lib/login-shell-env'
 import {
   createShellCommandService,
   type ShellCommandService,
@@ -74,7 +75,8 @@ export function createBootShellCommandService(args: {
     home: homedir(),
     cliEntry: cliEntry ?? '',
     bunPath: process.execPath,
-    pathEnv: process.env.PATH ?? '',
+    // The user's shell PATH, not the bare one a Dock/Finder launch starts with.
+    pathEnv: () => childEnv().PATH ?? '',
     available,
   })
 

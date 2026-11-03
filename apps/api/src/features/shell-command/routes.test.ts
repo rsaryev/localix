@@ -18,7 +18,7 @@ function appFor(available = true) {
     home,
     cliEntry: '/app/bin/localix.mjs',
     bunPath: '/usr/bin/bun',
-    pathEnv: '/usr/bin',
+    pathEnv: () => '/usr/bin',
     available,
   })
   const app = new Hono<AppContext>()

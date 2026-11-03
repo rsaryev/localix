@@ -14,7 +14,7 @@ const svc = (over?: Partial<Parameters<typeof createShellCommandService>[0]>) =>
     home: tmpHome,
     cliEntry: '/app/bin/localix.mjs',
     bunPath: '/usr/bin/bun',
-    pathEnv: '/usr/bin',
+    pathEnv: () => '/usr/bin',
     ...over,
   })
 
@@ -61,8 +61,21 @@ describe('shell-command service (posix)', () => {
   })
 
   test('onPath true when the bin dir is already on PATH', async () => {
-    const service = svc({ pathEnv: `/usr/bin:${join(tmpHome, '.local', 'bin')}` })
+    const service = svc({ pathEnv: () => `/usr/bin:${join(tmpHome, '.local', 'bin')}` })
     expect((await service.status()).onPath).toBe(true)
+  })
+
+  test('onPath follows the PATH the app resolves after start (a Dock launch)', async () => {
+    // Launched from the Dock the API starts with the bare launchd PATH and only later
+    // adopts the login shell's; the row must not keep saying "add it to your PATH".
+    let path = '/usr/bin:/bin'
+    const service = svc({ pathEnv: () => path })
+    await service.install()
+    expect((await service.status()).onPath).toBe(false)
+
+    path = `/usr/bin:/bin:${join(tmpHome, '.local', 'bin')}`
+    expect((await service.status()).onPath).toBe(true)
+    expect((await service.install()).onPath).toBe(true)
   })
 
   test('unavailable runtime reports not-installed and refuses install', async () => {

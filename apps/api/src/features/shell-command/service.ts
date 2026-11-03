@@ -31,8 +31,12 @@ export interface ShellCommandStatus {
 }
 
 export interface ShellCommandServiceDeps extends ShellCommandPlanInput {
-  /** The PATH env string to test membership against. */
-  pathEnv: string
+  /**
+   * The PATH to test membership against, read on every status. A Dock launch starts with
+   * the bare launchd PATH and adopts the login shell's only after boot, so a value taken
+   * once at construction would say "add it to your PATH" forever.
+   */
+  pathEnv: () => string
   /** False when the CLI entry / bun couldn't be resolved (e.g. plain web run). */
   available?: boolean
 }
@@ -49,13 +53,12 @@ async function pathExists(p: string): Promise<boolean> {
 export function createShellCommandService(deps: ShellCommandServiceDeps) {
   const available = deps.available ?? true
   const plan = planShellCommand(deps)
-  const onPath = isDirOnPath(plan.binDir, deps.pathEnv, deps.platform)
 
   const baseStatus = (state: ShellCommandState): ShellCommandStatus => ({
     state,
     targetPath: plan.targetPath,
     binDir: plan.binDir,
-    onPath,
+    onPath: isDirOnPath(plan.binDir, deps.pathEnv(), deps.platform),
     available,
   })
 

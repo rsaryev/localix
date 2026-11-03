@@ -76,7 +76,7 @@ describe('removeStaleAppImageLauncher', () => {
       home: cleanRoot,
       cliEntry: '/tmp/.mount_Localix1/resources/cli/localix.mjs',
       bunPath: '/tmp/.mount_Localix1/resources/bun',
-      pathEnv: '',
+      pathEnv: () => '',
       available: false,
     })
     const target = join(cleanRoot, '.local', 'bin', 'localix')
