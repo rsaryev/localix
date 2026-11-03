@@ -130,18 +130,20 @@ export function NotificationCenterLauncher({
                 {activity.active > 0 ? (
                   <span
                     data-activity-ring=""
-                    className="relative flex size-4 items-center justify-center"
+                    className="relative flex size-5 items-center justify-center"
                   >
+                    {/* 20px ring, a 1.8-unit stroke in its 24-unit box = a whole 1.5px line. At 16px
+                        the line was 1.33px: blurred while turning, and the glyph touched it. */}
                     <ContextRing
                       fraction={activity.fraction ?? 0.3}
-                      size={16}
-                      strokeWidth={2}
+                      size={20}
+                      strokeWidth={1.8}
                       className={cn(
                         'absolute inset-0 text-composer-accent',
                         activity.fraction === null && 'animate-spin motion-reduce:animate-none',
                       )}
                     />
-                    <Bell className="size-2.5 shrink-0" strokeWidth={2} />
+                    <Bell className="size-3 shrink-0" strokeWidth={1.75} />
                   </span>
                 ) : (
                   <Bell className="size-3.5 shrink-0" strokeWidth={1.75} />
