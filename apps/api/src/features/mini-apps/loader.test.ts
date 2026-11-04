@@ -264,10 +264,12 @@ describe('loadEnabledMiniApps', () => {
         changed: () => {},
         query: async (_userId, collection, text) => {
           asked.push(`${miniApp}:${collection}:${text}`)
-          return [{ key: 'card-7', score: 0.9 }]
+          return [
+            { key: 'card-7', chunk: 0, excerpt: text, z: 3, gate: 2, cosine: 0.9, scope: null },
+          ]
         },
-        embed: async () => [],
-        rank: async () => [],
+        embed: async () => null,
+        rank: async () => null,
       }),
     })
     const find = loaded.tools.find((t) => t.name === 'seeker_find')!
