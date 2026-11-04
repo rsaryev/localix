@@ -69,3 +69,18 @@ export function createMiniAppSemanticHost(
     rank: (query, candidates, options) => vectors.rank(query, candidates, options),
   }
 }
+
+/**
+ * `host.semantic` for a mini app's per-run load (its agent tools): the same confined index, but a
+ * source it registers is ignored, because the boot load already holds that collection's source and
+ * a per-run registration would swap a live backend's readers for a tool scope's.
+ */
+export function createMiniAppToolSemanticHost(
+  service: SemanticService,
+  miniAppName: string,
+): SemanticIndexHost {
+  return {
+    ...createMiniAppSemanticHost(service, miniAppName),
+    registerSource: () => () => {},
+  }
+}

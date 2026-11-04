@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import type { SemanticSource } from '@localixai/mini-app-sdk/backend'
 import type { SemanticService } from './service'
 import { createOwnedRegistrations } from '../../lib/owned-registrations'
-import { createMiniAppSemanticHost } from './mini-app-host'
+import { createMiniAppSemanticHost, createMiniAppToolSemanticHost } from './mini-app-host'
 
 /** The service's source table with its real refusal of a second holder of a collection. */
 function fakeService() {
@@ -55,5 +55,35 @@ describe('host.semantic registerSource across a mini app reload', () => {
     host.registerSource(filesSource)
     expect(sources.has('files')).toBe(true)
     expect(sources.get('files')).toBe(foreign)
+  })
+})
+
+describe("host.semantic on a mini app's tool load", () => {
+  // The boot load holds each collection's source; a tool's load registering it again would swap
+  // the live backend's readers for a tool scope's (or throw on the service's second holder).
+  test('answers in its own collections and leaves the boot load its sources', async () => {
+    const { service, sources } = fakeService()
+    const asked: string[] = []
+    Object.assign(service, {
+      strategy: () => ({ mode: 'hybrid' }),
+      reader: {
+        query: async (_userId: string, collection: string, text: string) => {
+          asked.push(`${collection}:${text}`)
+          return []
+        },
+      },
+    })
+    createMiniAppSemanticHost(service, 'recall', createOwnedRegistrations()).registerSource({
+      ...(filesSource as object),
+      collection: 'cards',
+    } as never)
+    const tool = createMiniAppToolSemanticHost(service, 'recall')
+
+    expect(() =>
+      tool.registerSource({ ...(filesSource as object), collection: 'cards' } as never),
+    ).not.toThrow()
+    await tool.query('me', 'cards', 'cell energy')
+    expect([...sources.keys()]).toEqual(['mini-app:recall:cards'])
+    expect(asked).toEqual(['mini-app:recall:cards:cell energy'])
   })
 })

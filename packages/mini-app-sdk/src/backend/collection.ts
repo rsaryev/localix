@@ -101,7 +101,8 @@ export function openCollection<T extends { id: string }, S extends z.ZodRawShape
   const fileSchema = collectionFileSchema(spec.item)
   const patchSchema = changeSchema(spec.input)
   const limit = spec.limit ?? DEFAULT_LIMIT
-  const semantic = spec.search && spec.scope !== 'chat' ? ctx.host?.semantic : undefined
+  const semantic =
+    spec.search && spec.scope !== 'chat' ? (ctx.semantic ?? ctx.host?.semantic) : undefined
 
   const folder = async (where: CollectionWhere = {}): Promise<string> => {
     if (spec.scope !== 'chat') return ctx.dataDir

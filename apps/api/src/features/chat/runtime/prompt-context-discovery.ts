@@ -72,6 +72,7 @@ export function loadScopeDiscovery(
       ...(ctx.miniAppSessionStorage ? { sessionStorageFor: ctx.miniAppSessionStorage } : {}),
       ...(ctx.miniAppAgentDirectory ? { agentDirectory: ctx.miniAppAgentDirectory } : {}),
       ...(ctx.miniAppDecisions ? { decisionsFor: ctx.miniAppDecisions } : {}),
+      ...(ctx.miniAppSemantic ? { semanticFor: ctx.miniAppSemantic } : {}),
     })
       // Its own standing condition (`notifications/conditions/mini-apps.ts`).
       .then((loaded) => {

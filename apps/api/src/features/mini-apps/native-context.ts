@@ -47,7 +47,7 @@ export function makeContext(
    * What the per-run load (tools, hooks) carries without a `host`: the boot load already has each
    * in `host`, and both loads hand the mini app the same field on its context.
    */
-  perRun: Pick<MiniAppContext, 'sessionStorage' | 'agents' | 'decisions'> = {},
+  perRun: Pick<MiniAppContext, 'sessionStorage' | 'agents' | 'decisions' | 'semantic'> = {},
 ): MiniAppContext {
   const stateDir = miniAppStateDir(miniAppName, home)
   const dataDir = miniAppDataDir(miniAppName, home)
@@ -106,6 +106,9 @@ export function makeContext(
     ...((host?.decisions ?? perRun.decisions)
       ? { decisions: host?.decisions ?? perRun.decisions }
       : {}),
+    // And for the semantic index: a tool's meaning search found nothing, and its writes never
+    // reached the index, while the app's own screen found the same records.
+    ...((host?.semantic ?? perRun.semantic) ? { semantic: host?.semantic ?? perRun.semantic } : {}),
     runtime: { ...address, webhookUrl: resolveWebhookUrl() },
     host,
   }

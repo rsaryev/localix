@@ -5,6 +5,7 @@ import type { UiNavigationAction } from '../ui/anchors'
 import type { MiniAppHelpers } from './helpers'
 import type { MiniAppOAuth } from './oauth'
 import type { DecisionHost } from './decision'
+import type { SemanticIndexHost } from './semantic'
 import type { MiniAppHostServices } from './host-services'
 import type { TerminalRead } from './terminal-read'
 
@@ -262,6 +263,13 @@ export interface MiniAppContext {
    * `context.session.id`): its owner is checked and its spend recorded there.
    */
   decisions?: DecisionHost
+  /**
+   * The semantic index (see {@link SemanticIndexHost}), confined to this mini app's collections.
+   * Present on every load, like {@link decisions}: a tool's meaning search reads the same index as
+   * a route's, and a tool's write is announced to it. Sources are registered by the boot-time
+   * load; a source a tool's load registers is ignored. Older hosts give it only as `host.semantic`.
+   */
+  semantic?: SemanticIndexHost
   /**
    * Host runtime facts (address + inbound-webhook URL). Use this instead of
    * reconstructing the host's address from env — the host is the authority on

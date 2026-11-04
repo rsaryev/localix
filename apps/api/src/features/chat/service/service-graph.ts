@@ -154,6 +154,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       listRegistryAgents: deps.listRegistryAgents,
       resolveMainAgent: deps.resolveMainAgent,
       ...(deps.decisions ? { decisions: deps.decisions } : {}),
+      ...(deps.semantic ? { semantic: deps.semantic } : {}),
       agentManagement: deps.agentManagement,
       now: deps.now,
     })

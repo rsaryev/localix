@@ -262,4 +262,28 @@ describe('a collection', () => {
     ready = true
     expect(await diary.search('soup')).toEqual([soup])
   })
+
+  // An agent's tool runs in a load with no `host`: its search found nothing and its writes never
+  // reached the index, while the app's screen found the same entries.
+  test("searches by meaning and announces its writes from a tool's load, which has no host", async () => {
+    const changed: string[][] = []
+    const asked: string[] = []
+    const semantic = {
+      registerSource: () => () => {},
+      changed: (_collection: string, keys: readonly string[]) => changed.push([...keys]),
+      query: async (_userId: string, collection: string, text: string) => {
+        asked.push(`${collection}:${text}`)
+        return []
+      },
+    } as unknown as SemanticIndexHost
+    let diary!: Entries
+    serve(fakeContext({ semantic }), (app) => {
+      diary = app.collection(defineCollection({ ...entries, search: (item) => item.title }))
+    })
+    const soup = await diary.add({ title: 'Tomato soup', amount: 180 })
+    await diary.search('soup')
+
+    expect(changed).toEqual([[soup.id]])
+    expect(asked).toEqual(['entries:soup'])
+  })
 })

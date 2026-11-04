@@ -14,6 +14,11 @@ nor overwrite another's, and each is scored against itself alone.
 
 ## Query by meaning
 
+`ctx.semantic` is the index on every load, a route's and a tool's alike (`ctx.host.semantic` is the
+same one, on the boot-time load only). A tool's `query`, `rank` and `embed` read the index the
+routes read, and its `changed` notices reach it; a source a tool's load registers is ignored,
+because the boot-time load already holds it.
+
 `query(userId, collection, text, { scope })` answers with matches carrying `z` and `gate`; a match
 counts when `z >= gate`. `embed` returns raw vectors for clustering or deduplication, and `status()`
 says whether semantic search is ready. Semantic search is always on; until its model is here,
@@ -136,7 +141,8 @@ await host?.changes?.followCoreDeletions('unassign', async (deletion) => {
 
 ## Availability
 
-All three exist on the boot-time backend load, like `watchPath`. Types:
+`ctx.semantic` and `ctx.decisions` exist on every load; register sources and follow the change feed
+from the boot-time backend load, like `watchPath`. Types:
 [`semantic.ts`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/semantic.ts),
 [`decision.ts`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/decision.ts),
 [`changes.ts`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/changes.ts).

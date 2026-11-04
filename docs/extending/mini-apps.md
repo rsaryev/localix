@@ -50,7 +50,7 @@ contract, and the larger ones run to tens of thousands of lines.
 | The chat agent                   | `tools` from `register(ctx)` register with the agent; no glue code                         | [Native module contract](#native-module-contract)                |
 | A turn started by the app        | `ctx.host.wake` with a message and the app's own tools                                     | [Wakes](mini-app-wakes.md)                                       |
 | Decision models                  | `ctx.decisions.decide` or `decide(ctx, …)`: typed questions, spend recorded per chat       | [Semantics](mini-app-semantics.md#ask-a-decision-model)          |
-| Embeddings and semantic search   | `ctx.host.semantic`: index its own items, `query` by meaning, `rank` or `embed` texts      | [Semantics](mini-app-semantics.md)                               |
+| Embeddings and semantic search   | `ctx.semantic`: index its own items, `query` by meaning, `rank` or `embed` texts           | [Semantics](mini-app-semantics.md)                               |
 | Suggestions in its own fields    | `textInputCompletionSurfaces` and `useMiniAppTextInputCompletion`                          | [Workbench UI](mini-app-ui.md#what-you-can-do)                   |
 | Vault secrets                    | `ctx.host.resolveSecret`, `storeSecret` (a free key only) and `bindSecret`                 | [Vault](../features/secrets.md)                                  |
 | Storage per chat and per project | `ctx.dataDir`, `ctx.sessionStorage`, `ctx.host.workspaceScope` and `workspaces`            | [One chat's data](mini-app-ui.md#a-tab-that-belongs-to-one-chat) |

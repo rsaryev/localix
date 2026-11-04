@@ -158,6 +158,20 @@ beforeAll(async () => {
       '}',
     ].join('\n'),
   )
+  await app(
+    'seeker',
+    {},
+    [
+      'export function register(ctx) {',
+      '  return { tools: [{ name: "seeker_find", description: "x", inputSchema: {}, execute: async () => {',
+      '    const semantic = ctx.semantic',
+      '    if (!semantic) return { content: "no semantic index" }',
+      '    const hits = await semantic.query(ctx.userId, "cards", "mitochondria", { limit: 3 })',
+      '    return { content: hits.map((hit) => hit.key).join(",") }',
+      '  } }] }',
+      '}',
+    ].join('\n'),
+  )
   await app('guided', {})
   await fs.writeFile(join(dir, '.localix', 'mini-apps', 'guided', 'guide.md'), '# Guided\n')
 })
@@ -237,6 +251,28 @@ describe('loadEnabledMiniApps', () => {
       session: { id: 'chat-1' },
     } as never)
     expect(result.content).toBe('answered by decider in chat-1')
+  })
+
+  // A tool's load carried no semantic index: `collection.search()` and a meaning search from an
+  // agent's tool found nothing in every chat, while the app's own screen found the same cards.
+  it("hands a tool's load the semantic index, confined to its app", async () => {
+    const asked: string[] = []
+    const loaded = await load(allowing('seeker'), {
+      semanticFor: (miniApp) => ({
+        status: () => ({ ready: true, model: { id: 'm', label: 'm', dimensions: 3 } }),
+        registerSource: () => () => {},
+        changed: () => {},
+        query: async (_userId, collection, text) => {
+          asked.push(`${miniApp}:${collection}:${text}`)
+          return [{ key: 'card-7', score: 0.9 }]
+        },
+        embed: async () => [],
+        rank: async () => [],
+      }),
+    })
+    const find = loaded.tools.find((t) => t.name === 'seeker_find')!
+    expect((await find.execute('c', {})).content).toBe('card-7')
+    expect(asked).toEqual(['seeker:cards:mitochondria'])
   })
 
   it('passes the session cwd to register(ctx)', async () => {

@@ -21,6 +21,7 @@ import { miniAppProblemNotice } from '../../mini-app-problem-notice'
 import { resolveMiniAppSessionDataDir } from '../../../../mini-apps/session-storage'
 import { createMiniAppAgentDirectory } from '../../../../mini-apps/agent-directory'
 import { createMiniAppDecisionHost } from '../../../../decisions/mini-app-host'
+import { createMiniAppToolSemanticHost } from '../../../../embeddings/mini-app-host'
 import { runHumanAssignedHooks } from '../../../../mini-apps/hooks-lifecycle'
 import type { LoadedMiniAppHook } from '../../../../mini-apps/loader-contract'
 import { publishHumanAssignment } from '../human-assignment'
@@ -88,6 +89,12 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
                 if (!(await env.repo.getSession(user, session)))
                   throw new Error('Session not found')
               }),
+          }
+        : {}),
+      // A tool's meaning search, confined to its app: the index the app's routes already read.
+      ...(deps.semantic
+        ? {
+            miniAppSemantic: (app: string) => createMiniAppToolSemanticHost(deps.semantic!, app),
           }
         : {}),
       // The agents a mini app tool may name, behind the same ownership gate: the session is

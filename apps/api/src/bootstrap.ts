@@ -129,6 +129,7 @@ export async function bootstrap(
   const agentModelChoices = agentModelChoicesPort(userService)
   const { chatService } = createChatServicePhase({
     decisionService,
+    semanticService,
     externalAgents: externalAgents.port,
     db,
     work,

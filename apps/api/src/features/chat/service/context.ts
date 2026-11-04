@@ -2,6 +2,7 @@ import type { PermissionMode } from '../../../contracts/permission-modes'
 import type { PermissionRule } from '../../agent-core/permission-engine'
 import type { SkillShellPolicy } from './skill-render'
 import type { DecisionService } from '../../decisions/service'
+import type { SemanticService } from '../../embeddings/service'
 import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'
 import type { Kysely } from 'kysely'
 import type { AgentRuntime, LanguageModelFactory, ScriptSandbox } from '@localixai/agent/runtime'
@@ -201,6 +202,8 @@ export interface ChatServiceDeps {
   store?: StoreAgentPort
   /** The decision model (`features/decisions`): games, the browser's goal check and mini apps. */
   decisions?: DecisionService
+  /** The semantic index (`features/embeddings`): a mini app tool's meaning search. */
+  semantic?: SemanticService
   /**
    * The editor's open-buffer text for a file (possibly unsaved), from the LSP document service.
    * Same forward-holder shape as `monitors`: the service is composed after chat.

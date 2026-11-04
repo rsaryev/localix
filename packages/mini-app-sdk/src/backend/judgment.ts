@@ -85,12 +85,12 @@ export async function decide<K extends string>(
  * model cannot run (downloading, off), the items keep their given order and `by` says so.
  */
 export async function rankByMeaning<T>(
-  ctx: Pick<MiniAppContext, 'host'>,
+  ctx: Pick<MiniAppContext, 'host' | 'semantic'>,
   query: string,
   items: readonly T[],
   text: (item: T) => string,
 ): Promise<{ items: T[]; by: 'model' | 'fallback' }> {
-  const ranking = await ctx.host?.semantic?.rank(
+  const ranking = await (ctx.semantic ?? ctx.host?.semantic)?.rank(
     query,
     items.map((item, index) => ({ key: String(index), text: text(item) })),
     { task: 'similarity' },

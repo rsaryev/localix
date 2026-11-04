@@ -1,5 +1,6 @@
 import type { ChatFeaturePorts } from '../feature-ports'
 import type { DecisionService } from '../../decisions/service'
+import type { SemanticService } from '../../embeddings/service'
 import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'
 import type { AgentRuntime, LanguageModelFactory, ScriptSandbox } from '@localixai/agent/runtime'
 import type { AgentTool } from '@localixai/agent/agents'
@@ -190,6 +191,8 @@ export interface RunnerDeps {
   store?: StoreAgentPort
   /** The decision model (`features/decisions`): games, the browser's goal check and mini apps. */
   decisions?: DecisionService
+  /** The semantic index (`features/embeddings`): a mini app tool's meaning search. */
+  semantic?: SemanticService
   /** The engine's script sandbox (`AgentEngine.scripts`): what `Workflow` scripts run on. */
   scripts?: ScriptSandbox
   /**

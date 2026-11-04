@@ -78,6 +78,11 @@ export interface LoadMiniAppsOptions {
   agentDirectory?: MiniAppHostServices['agents']
   /** The decision model for the per-run load, attributed to each app (the boot load's is in `host`). */
   decisionsFor?: (app: string) => NonNullable<MiniAppHostServices['decisions']>
+  /**
+   * The semantic index for the per-run load, confined to each app (the boot load's is in `host`).
+   * It answers queries and takes change notices; sources stay the boot load's to register.
+   */
+  semanticFor?: (app: string) => NonNullable<MiniAppHostServices['semantic']>
 }
 
 /**
@@ -140,6 +145,7 @@ export async function loadEnabledMiniApps(opts: LoadMiniAppsOptions): Promise<Lo
         sessionStorage: opts.sessionStorageFor?.(app.name),
         agents: opts.agentDirectory,
         decisions: opts.decisionsFor?.(app.name),
+        semantic: opts.semanticFor?.(app.name),
       },
     )
 

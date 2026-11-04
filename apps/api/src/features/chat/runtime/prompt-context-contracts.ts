@@ -57,6 +57,8 @@ export interface PromptContextDeps {
   miniAppAgentDirectory?: LoadMiniAppsOptions['agentDirectory']
   /** The decision model per mini app (`decisions/mini-app-host.ts`); pure, like the storage. */
   miniAppDecisions?: LoadMiniAppsOptions['decisionsFor']
+  /** The semantic index per mini app (`embeddings/mini-app-host.ts`); pure, like the storage. */
+  miniAppSemantic?: LoadMiniAppsOptions['semanticFor']
 }
 
 export interface PreparedRunContext {

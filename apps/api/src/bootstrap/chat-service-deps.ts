@@ -25,6 +25,7 @@ import { createChatVaultPorts } from './chat-vault-ports'
 import { createChatService } from '../features/chat/service'
 import type { MonitorService } from '../features/monitors/service'
 import type { DecisionService } from '../features/decisions/service'
+import type { SemanticService } from '../features/embeddings/service'
 import type { ExitNotices } from '../features/chat/runtime/exit-notices'
 import type { ConfigProposalService } from '../features/config-proposals/service'
 import type { PlanService } from '../features/plans/service'
@@ -111,6 +112,8 @@ export interface ChatServicePhaseInput extends Pick<
   serviceRefs: BootstrapServiceRefs
   /** Decisions, built from infra before chat: games, the browser's goal check and mini apps. */
   decisionService: DecisionService
+  /** The semantic index, built from infra before chat: a mini app tool's meaning search. */
+  semanticService: SemanticService
 }
 
 export interface ChatServicePhase {
@@ -119,6 +122,7 @@ export interface ChatServicePhase {
 
 export function createChatServicePhase({
   decisionService,
+  semanticService,
   externalAgents,
   db,
   work,
@@ -270,6 +274,7 @@ export function createChatServicePhase({
     },
     // Who may be used by a session, and whether this session is a conversation.
     decisions: decisionService,
+    semantic: semanticService,
     resolveSessionAgent: createSessionAgentResolver(agentsService),
     claudeCodeModes: (cwd) => claudeCodeModes({ homeDir: claudeCodeHome(), cwd }),
     loadAgentModelDefaults: agentModelDefaultsPort(agentModelChoicesPort(userService).read),
