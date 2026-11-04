@@ -136,6 +136,8 @@ export const miniAppRecordSchema = z.object({
   hasGuide: z.boolean(),
   /** Where the host serves the icon its manifest names (`app-icon.ts`); absent when it has none. */
   icon: z.string().optional(),
+  /** Where the host serves its own screenshots, for its Store page (`app-store-page.ts`). */
+  screenshots: z.array(z.object({ url: z.string(), caption: z.string().optional() })).optional(),
   ui: miniAppUiDescriptorSchema.optional(),
   config: z.array(miniAppConfigFieldSchema),
 })

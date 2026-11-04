@@ -4,6 +4,7 @@ import { ConflictError, NotFoundError, UnavailableError } from '../../lib/domain
 import { scalarConfig } from '../capabilities/source-repository'
 import { confineToDir } from '../ext/fs-discovery'
 import { readMiniAppIcon } from './app-icon'
+import { readMiniAppScreenshot } from './app-store-page'
 import { parseArgOptions, runArgOptionsScript, type ArgOption } from './arg-options'
 import type { MiniAppCatalog } from './catalog'
 import { resolveMiniAppConfig } from './config'
@@ -129,4 +130,16 @@ export async function readInstalledMiniAppIcon(
   const entry = (await catalogFor(userId, projectId)).catalog.find(input.app, projectId)
   if (!entry) throw new NotFoundError('mini_app_not_found', `No mini app named "${input.app}"`)
   return readMiniAppIcon(entry.app)
+}
+
+/** One of an installed mini app's own screenshots, by its index in the manifest. */
+export async function readInstalledMiniAppScreenshot(
+  { catalogFor }: MiniAppServiceScope,
+  userId: string,
+  input: { app: string; index: number; projectId?: string | null },
+) {
+  const projectId = input.projectId ?? ''
+  const entry = (await catalogFor(userId, projectId)).catalog.find(input.app, projectId)
+  if (!entry) throw new NotFoundError('mini_app_not_found', `No mini app named "${input.app}"`)
+  return readMiniAppScreenshot(entry.app, input.index)
 }

@@ -1,6 +1,7 @@
 import { normalizeMiniAppSurfaces } from '@localixai/mini-app-sdk/manifest'
 
 import { miniAppIconUrl } from './app-icon'
+import { miniAppScreenshots } from './app-store-page'
 import { scalarConfig, type CapabilitySourceRecord } from '../capabilities/source-repository'
 import { resolveMiniAppConfig } from './config'
 import { miniAppOptions } from './config-vault'
@@ -105,6 +106,7 @@ export async function toMiniAppRecord(input: {
     views: app.views.map((view) => view.id),
     hasGuide: app.guide !== undefined,
     ...(miniAppIconUrl(app) ? { icon: miniAppIconUrl(app) } : {}),
+    ...(miniAppScreenshots(app).length ? { screenshots: miniAppScreenshots(app) } : {}),
     ...(ui ? { ui } : {}),
     config: miniAppConfigFields(app, state),
   }

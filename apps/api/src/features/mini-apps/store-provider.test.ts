@@ -618,6 +618,28 @@ describe('the mini apps in the Store', () => {
     expect((await listed()).revoked).toBe('Version 1.0.0 deletes your notes.')
   })
 
+  // A mini app made or kept here showed a bare page: no README, no screenshots, though both sat
+  // in its folder. The author now sees the page others will.
+  test('a mini app the person made shows its README and screenshots on its page', async () => {
+    const { provider, own } = setup()
+    const dir = join(root(), 'recall')
+    writeTree(dir, { 'README.md': '# Recall' })
+    own.push({
+      name: 'recall',
+      version: '0.1.0',
+      description: 'Flashcards.',
+      dir,
+      screenshots: [{ url: '/rpc/mini-apps/recall/screenshot/0?v=0.1.0', caption: 'Today' }],
+      enabled: true,
+      config: [],
+    })
+    const page = await provider.detail('recall', actor)
+    expect(page.readme).toBe('# Recall')
+    expect(page.media).toEqual([
+      { url: '/rpc/mini-apps/recall/screenshot/0?v=0.1.0', caption: 'Today' },
+    ])
+  })
+
   test('a mini app the person published links its page to where it lives', async () => {
     const { provider, own } = setup()
     own.push({

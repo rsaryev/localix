@@ -24,6 +24,7 @@ import { createMiniAppStoreParts } from './service-store'
 import {
   invokeMiniAppUiAction,
   readInstalledMiniAppIcon,
+  readInstalledMiniAppScreenshot,
   resolveMiniAppArgOptions,
   type MiniAppArgOptionsInput,
   type MiniAppServiceScope,
@@ -210,6 +211,11 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
 
     appIcon: (userId: string, input: { app: string; projectId?: string | null }) =>
       readInstalledMiniAppIcon(scope, userId, input),
+
+    appScreenshot: (
+      userId: string,
+      input: { app: string; index: number; projectId?: string | null },
+    ) => readInstalledMiniAppScreenshot(scope, userId, input),
 
     async resolveUiFile(userId: string, input: { app: string; file: string }) {
       const { catalog } = await catalogFor(userId, '')

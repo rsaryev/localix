@@ -51,6 +51,7 @@ export type MiniAppRoutesService = Pick<
   | 'resolveArgOptions'
   | 'resolveUiFile'
   | 'appIcon'
+  | 'appScreenshot'
   | 'getViewHtml'
   | 'invokeUiAction'
   | 'store'
@@ -150,6 +151,21 @@ export function createMiniAppRoutes(service: MiniAppRoutesService) {
       async (c) => {
         const { projectId, v } = c.req.valid('query')
         const file = await service.appIcon(c.get('userId'), { app: c.req.param('app'), projectId })
+        return mediaResponse(file, Boolean(v))
+      },
+    )
+    // An installed mini app's own screenshot, for its Store page (`app-store-page.ts`).
+    .get(
+      '/:app/screenshot/:index',
+      zValidator(
+        'param',
+        z.object({ app: z.string().min(1), index: z.coerce.number().int().min(0) }),
+      ),
+      zValidator('query', z.object({ projectId: z.string().optional(), v: z.string().optional() })),
+      async (c) => {
+        const { app, index } = c.req.valid('param')
+        const { projectId, v } = c.req.valid('query')
+        const file = await service.appScreenshot(c.get('userId'), { app, index, projectId })
         return mediaResponse(file, Boolean(v))
       },
     )

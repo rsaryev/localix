@@ -133,6 +133,10 @@ export interface OwnMiniApp {
   homepage?: string
   surfaces?: string[]
   commands?: string[]
+  /** Its folder here, where its own store page reads its README. */
+  dir?: string
+  /** Its screenshots, served from its folder (`app-store-page.ts`). */
+  screenshots?: { url: string; caption?: string }[]
 }
 
 /**

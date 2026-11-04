@@ -31,6 +31,14 @@ function app(installed: string[]) {
         throw new NotFoundError('mini_app_icon_not_found', `"${app}" has no icon`)
       return { bytes: SVG, type: 'image/svg+xml' }
     },
+    appScreenshot: async (_userId: string, { app, index }: { app: string; index: number }) => {
+      if (app !== 'atlas' || index !== 0)
+        throw new NotFoundError(
+          'mini_app_screenshot_not_found',
+          `"${app}" has no screenshot ${index}`,
+        )
+      return { bytes: PNG, type: 'image/png' }
+    },
     store: {
       list: async () => ({ entries: [entry], problems: [] }),
       detail: async (id: string) => ({
@@ -111,5 +119,15 @@ describe('/rpc/mini-apps/store', () => {
     expect(icon.status).toBe(200)
     expect(icon.headers.get('content-security-policy')).toContain("default-src 'none'")
     expect((await app([]).request('/rpc/mini-apps/notes/icon')).status).toBe(404)
+  })
+
+  // An app made or kept here showed no screenshots on its Store page; they are served from its folder.
+  test('an installed app’s own screenshot is served by its index, and a missing one is a 404', async () => {
+    const shot = await app([]).request('/rpc/mini-apps/atlas/screenshot/0?v=1.0.0')
+    expect(shot.status).toBe(200)
+    expect(shot.headers.get('content-type')).toBe('image/png')
+    expect(new Uint8Array(await shot.arrayBuffer())).toEqual(PNG)
+    expect((await app([]).request('/rpc/mini-apps/atlas/screenshot/3')).status).toBe(404)
+    expect((await app([]).request('/rpc/mini-apps/atlas/screenshot/x')).status).toBe(400)
   })
 })

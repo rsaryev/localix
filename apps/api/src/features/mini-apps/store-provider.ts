@@ -142,7 +142,7 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Inst
         const name = appNameOf(id)
         const app = (await deps.apps.list(actor.userId)).miniApps.find((it) => it.name === name)
         if (!app) throw error
-        return { listing: ownListing(app, await byUrl()), page: ownPage(app) }
+        return { listing: ownListing(app, await byUrl()), page: await ownPage(app) }
       })
       return miniAppDetail(offered.listing, offered.page)
     },

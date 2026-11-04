@@ -1,6 +1,7 @@
 import type { MiniAppConfigField } from './contracts'
 import type { MiniAppMarketplaceSource } from './marketplaces'
 import type { MiniAppStoreEntry } from './store-entry'
+import { readMiniAppReadme } from './app-store-page'
 import { miniAppListing, ownMiniAppEntry, type OwnMiniApp } from './store-listing'
 
 /** An offer as installed here: the installed build its marketplace took back says so. */
@@ -25,10 +26,13 @@ export const ownListing = (
     ...(from ? {} : { authored: 'user' as const }),
   }
 }
-export const ownPage = (app: OwnMiniApp) => ({
+export const ownPage = async (app: OwnMiniApp) => ({
   entry: ownMiniAppEntry(app),
-  readme: null,
-  screenshots: [],
+  // What sits in its folder, so the person sees the page others will once it is published.
+  readme: app.dir
+    ? await readMiniAppReadme({ name: app.name, dir: app.dir, manifest: null })
+    : null,
+  screenshots: app.screenshots ?? [],
   details: {
     ...(app.version ? { version: app.version } : {}),
     author: app.installedFrom?.publisher.name ?? 'You',
