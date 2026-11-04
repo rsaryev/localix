@@ -4,8 +4,21 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+## v0.1.0-beta.26 — 2026-11-04
+
+Mini apps get smarter in the chat: the agent now finds things in them by meaning, and a mini app you
+made shows its README and screenshots in the Store. Updates for Localix and its plugins are also
+found much sooner.
+
 ### Fixed
 
+- **The agent searches mini apps by meaning**: asking the agent to find something in a mini app ("my
+  cards about planets") came back empty unless the exact words matched, because its tools had no
+  access to the meaning index. They now search by meaning, as the app's own screen does, and what
+  the agent adds is found by meaning at once.
+- **Your own mini apps in the Store**: the page of a mini app made or installed on this computer
+  showed only its description. It now shows the app's README and screenshots, as others will see
+  them once it is published.
 - **Mini apps in folders with Cyrillic or spaces**: checking or rebuilding a mini app whose folder
   name has Cyrillic letters or a space (`контент план`) failed with "Cannot find module" in every
   test. The tests now find the mini app kit wherever the folder is.
