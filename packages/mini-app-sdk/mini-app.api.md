@@ -8415,6 +8415,7 @@ export interface MiniAppContext {
     };
     agents?: MiniAppAgentDirectory;
     decisions?: DecisionHost;
+    semantic?: SemanticIndexHost;
     runtime: MiniAppRuntimeInfo;
     host?: MiniAppHostServices;
 }
@@ -10380,7 +10381,7 @@ export declare function providerSegments(provider: string, uri: string): null | 
 ### rankByMeaning
 
 ```ts
-export declare function rankByMeaning<T>(ctx: Pick<MiniAppContext, 'host'>, query: string, items: readonly T[], text: (item: T) => string): Promise<{
+export declare function rankByMeaning<T>(ctx: Pick<MiniAppContext, 'host' | 'semantic'>, query: string, items: readonly T[], text: (item: T) => string): Promise<{
     by: 'fallback' | 'model';
     items: T[];
 }>;
