@@ -1,14 +1,14 @@
 import { Link } from 'react-router'
 import { REPOSITORY_URL } from '../../lib/site'
 
-/** The homepage's bar: the logo, three links and the download. */
+/**
+ * The homepage's bar: three links and the download, on the right. No logo: the page opens on the
+ * flying bird itself, and a second one in the corner only repeats it.
+ */
 export function HomeNav() {
   return (
     <header className="lx-nav">
       <div className="home-shell lx-nav-row">
-        <Link to="/" className="lx-nav-mark focus-ring" aria-label="Localix home">
-          <img src="/logo.svg" alt="" width={30} height={30} />
-        </Link>
         <nav aria-label="Site navigation" className="lx-nav-links">
           <Link to="/docs" className="focus-ring">
             Docs

@@ -126,11 +126,12 @@
   left: var(--home-gutter);
 }
 
-/* The kit's flying bird in place of the wordmark, 1.5em of the portal title so it grows and fades
-   with it, painted in the landing's ink. */
+/* The kit's flying bird in place of the wordmark, 1.1em of the portal title so it grows and fades
+   with it, painted in the landing's ink. At that size the drawn bird is a little over half the
+   name's width: it leads without crowding the name. */
 .portal-bird {
   display: block;
-  font-size: 1.5em;
+  font-size: 1.1em;
   --bird-foreground: var(--lx-ink);
 }
 
@@ -139,8 +140,9 @@
 .portal-name {
   display: flex;
   align-items: center;
-  /* In the name's own em: pulls it up under the bird, past the wind stage's empty band. */
-  margin-top: -1.1em;
+  /* In the name's own em: pulls it up under the bird, past the wind stage's empty band (which
+     shrinks with the bird, so this follows its size). */
+  margin-top: -0.8em;
   /* Never below 11px, so the name stays legible on a phone's smaller title. */
   font-size: max(0.23em, 11px);
   line-height: 1;

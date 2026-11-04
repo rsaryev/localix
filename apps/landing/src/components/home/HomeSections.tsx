@@ -25,42 +25,58 @@ export function Statement() {
   )
 }
 
-/** One row per part of the docs, with how many pages it holds, counted from the docs themselves. */
-function rosterRows() {
-  return groupBySection(docPages).flatMap((section) => {
-    const groups =
-      section.title === 'Features'
-        ? groupByCategory(section.pages)
-        : [{ title: '', pages: section.pages }]
-    return groups.map((group) => ({
-      // Only a category needs its part of the docs beside it; a part with none names itself.
-      label: group.title ? section.title : '',
-      name: group.title || section.title,
-      count: group.pages.length,
-      to: `/docs/${group.pages[0]!.slug}`,
-    }))
-  })
+interface RosterRow {
+  name: string
+  count: number
+  to: string
+}
+
+const rowOf = (name: string, group: { pages: { slug: string }[] }): RosterRow => ({
+  name,
+  count: group.pages.length,
+  to: `/docs/${group.pages[0]!.slug}`,
+})
+
+/**
+ * The docs as three short columns, counted from the docs themselves: the parts before Features
+ * (where to start), Features by category, and the parts after it (building on Localix).
+ */
+function rosterColumns() {
+  const sections = groupBySection(docPages)
+  const at = sections.findIndex((section) => section.title === 'Features')
+  const plain = (list: typeof sections) => list.map((section) => rowOf(section.title, section))
+  const features = at < 0 ? [] : groupByCategory(sections[at]!.pages)
+  return [
+    { title: 'Start', rows: plain(at < 0 ? sections : sections.slice(0, at)) },
+    { title: 'Features', rows: features.map((group) => rowOf(group.title, group)) },
+    { title: 'Extend', rows: at < 0 ? [] : plain(sections.slice(at + 1)) },
+  ].filter((column) => column.rows.length > 0)
 }
 
 export function DocsRoster() {
-  const rows = rosterRows()
   return (
     <section className="roster home-shell" aria-labelledby="roster-title">
       <header className="lx-section-head">
         <h2 id="roster-title">Documentation</h2>
         <p className="lx-section-aside">{pages(docPages.length)}</p>
       </header>
-      <ul className="roster-list">
-        {rows.map((row) => (
-          <li key={`${row.label}-${row.name}`} className="lx-reveal">
-            <Link to={row.to} className="roster-row">
-              <span className="roster-label">{row.label}</span>
-              <span className="roster-name">{row.name}</span>
-              <span className="roster-count">{pages(row.count)}</span>
-            </Link>
-          </li>
+      <div className="roster-columns">
+        {rosterColumns().map((column) => (
+          <div key={column.title} className="roster-column lx-reveal">
+            <h3 className="roster-title">{column.title}</h3>
+            <ul className="roster-list">
+              {column.rows.map((row) => (
+                <li key={row.name}>
+                  <Link to={row.to} className="roster-row">
+                    <span className="roster-name">{row.name}</span>
+                    <span className="roster-count">{pages(row.count)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         ))}
-      </ul>
+      </div>
     </section>
   )
 }
@@ -72,9 +88,22 @@ function changes(release: Release) {
     .join(' · ')
 }
 
-/** The latest releases, read from the changelog when the site is built. */
+/** A changelog date ("2026-11-03") as people read it ("Nov 3, 2026"), the same on every machine. */
+function readableDate(date: string) {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
+/**
+ * The latest releases, read from the changelog when the site is built: a short list, each with its
+ * version and date on the left, what it brings, and how much changed in small type under it.
+ */
 export function ReleaseDates() {
-  const recent = releases.slice(0, 6)
+  const recent = releases.slice(0, 5)
   return (
     <section className="dates home-shell" aria-labelledby="dates-title">
       <header className="lx-section-head">
@@ -88,28 +117,20 @@ export function ReleaseDates() {
           Full changelog →
         </a>
       </header>
-      <table className="dates-table">
-        <thead>
-          <tr>
-            <th scope="col">Release</th>
-            <th scope="col">Date</th>
-            <th scope="col">What it brings</th>
-            <th scope="col">Entries</th>
-          </tr>
-        </thead>
-        <tbody>
-          {recent.map((release) => (
-            <tr key={release.version} className="lx-reveal">
-              <th scope="row">{`v${release.version}`}</th>
-              <td>
-                <time dateTime={release.date}>{release.date}</time>
-              </td>
-              <td>{release.summary}</td>
-              <td>{changes(release)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <ol className="dates-list">
+        {recent.map((release) => (
+          <li key={release.version} className="dates-row lx-reveal">
+            <p className="dates-when">
+              <span className="dates-version">{`v${release.version}`}</span>
+              <time dateTime={release.date}>{readableDate(release.date)}</time>
+            </p>
+            <div>
+              <p className="dates-summary">{release.summary}</p>
+              <p className="dates-changes">{changes(release)}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
     </section>
   )
 }
@@ -138,18 +159,42 @@ function DownloadPill() {
   )
 }
 
-/** The close: a last word, the two ways in, the footer, and the wordmark cropped by the page. */
+/** The first run in three steps, as the getting-started guide walks it. */
+const SETUP_STEPS = [
+  {
+    title: 'Download',
+    text: 'The app for Macs with Apple silicon. On other systems, build it from source.',
+  },
+  {
+    title: 'Connect a model',
+    text: 'In the model picker under the chat, sign in or paste an API key, or pick a model that runs on your computer.',
+  },
+  {
+    title: 'Open a folder',
+    text: 'Add a project folder and say what you want done. The agent works in it, next to you.',
+  },
+]
+
+/** The close: setting up in three steps, the two ways in, and the footer. */
 export function Close() {
   return (
     <section id="download" className="close" aria-labelledby="close-title">
-      <div className="close-row home-shell">
-        <div>
-          <h2 id="close-title">Get Localix</h2>
-          <p className="close-fine">
-            Free and open source under the MIT license. The installer is for Macs with Apple
-            silicon. On other systems, build it from source.
-          </p>
-        </div>
+      <div className="close-body home-shell">
+        <header className="lx-section-head">
+          <h2 id="close-title">Set up Localix</h2>
+          <p className="lx-section-aside">Free · MIT license</p>
+        </header>
+        <ol className="setup-steps">
+          {SETUP_STEPS.map((step, index) => (
+            <li key={step.title} className="setup-step lx-reveal">
+              <span className="setup-step-number" aria-hidden="true">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <h3>{step.title}</h3>
+              <p>{step.text}</p>
+            </li>
+          ))}
+        </ol>
         <div className="close-actions">
           <DownloadPill />
           <a className="lx-pill lx-pill-quiet" href={REPOSITORY_URL}>

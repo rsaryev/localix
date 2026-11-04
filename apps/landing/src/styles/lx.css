@@ -20,6 +20,11 @@
   --lx-text: 'Localix Text', 'Localix Landing Sans', Arial, sans-serif;
   --lx-nav: 58px;
   --lx-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  /* One scale for every section: its heading, a card's heading, and the space between sections.
+     Only the statement and the LOCALIX marks are larger. */
+  --lx-h2-size: clamp(28px, 3vw, 44px);
+  --lx-h3-size: clamp(20px, 1.9vw, 28px);
+  --lx-section-space: clamp(72px, 8vw, 120px);
   background: var(--lx-ground);
   color: var(--lx-ink);
   font-family: var(--lx-text);
@@ -50,32 +55,57 @@
   color: var(--lx-ground);
 }
 
-/* The bar: fixed, translucent, blurred, with a hairline under it. */
+/* The bar: fixed, with no band and no rule under it. What scrolls beneath meets a veil instead, the
+   ground blurred and darkened at the top and fading to nothing a little below the bar, so the page
+   softens away under it rather than stopping at an edge. */
 .lx-nav {
   position: fixed;
   inset: 0 0 auto;
   z-index: 50;
   height: var(--lx-nav);
-  border-bottom: 1px solid var(--lx-line);
-  background: rgb(11 11 11 / 0.62);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+}
+.lx-nav::before {
+  position: absolute;
+  inset: 0 0 -32px;
+  z-index: -1;
+  content: '';
+  pointer-events: none;
+  /* Nearly the ground itself behind the links (no edge shows, since it is the page's own colour), so
+     a large heading passing under them never competes; the fade happens below the bar. */
+  background: linear-gradient(
+    to bottom,
+    rgb(11 11 11 / 0.95),
+    rgb(11 11 11 / 0.9) 60%,
+    rgb(11 11 11 / 0)
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  mask-image: linear-gradient(to bottom, #000 60%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent);
+}
+/* At the top of the page there is nothing under the bar to soften, so the veil appears with the
+   first scroll; a browser without scroll timelines keeps it on from the start. */
+@supports (animation-timeline: scroll()) {
+  .lx-nav::before {
+    animation: lx-nav-veil linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 120px;
+  }
+}
+@keyframes lx-nav-veil {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .lx-nav-row {
   display: flex;
   height: 100%;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
-}
-.lx-nav-mark {
-  display: block;
-  border-radius: 6px;
-}
-.lx-nav-mark img {
-  display: block;
-  width: 30px;
-  height: 30px;
 }
 .lx-nav-links {
   display: flex;
@@ -149,12 +179,12 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 12px 32px;
-  margin-bottom: clamp(28px, 4vw, 48px);
+  margin-bottom: clamp(24px, 3vw, 36px);
 }
 .lx-section-head h2 {
   margin: 0;
-  font: 600 clamp(30px, 4.4vw, 64px) / 1 var(--lx-display);
-  letter-spacing: -0.04em;
+  font: 600 var(--lx-h2-size) / 1.05 var(--lx-display);
+  letter-spacing: -0.03em;
 }
 .lx-section-aside {
   margin: 0;
