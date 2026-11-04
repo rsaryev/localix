@@ -83,11 +83,13 @@ and mods reload when the update lands.
 the marketplace's listing resolves to another version. What is available is computed from the
 listings: the Store (Plugins) fetches the listings when it opens, and every marketplace refresh
 checks again. A newer version found in a marketplace with auto-update on is installed at once, so
-**Update now** is offered only for the other marketplaces. An unpinned git entry is compared by its
-remote commit. **Update marketplace** refreshes the listing and updates the plugins installed from
-it, and names any it leaves for you, such as an entry with a `headersHelper`. A marketplace's
-`autoUpdate` lives on its record in `~/.localix/marketplaces/known.json`; one that Claude Code's
-settings declare under `extraKnownMarketplaces` brings its own `autoUpdate` value along (see below).
+**Update now** is offered only for the other marketplaces.
+
+An unpinned git entry is compared by its remote commit. **Update marketplace** refreshes the listing
+and updates the plugins installed from it, and names any it leaves for you, such as an entry with a
+`headersHelper`. A marketplace's `autoUpdate` lives on its record in
+`~/.localix/marketplaces/known.json`; one that Claude Code's settings declare under
+`extraKnownMarketplaces` brings its own `autoUpdate` value along (see below).
 
 ### Claude Code settings
 
