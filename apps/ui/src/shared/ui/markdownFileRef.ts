@@ -1,5 +1,5 @@
 // Pure helpers for detecting file references in rendered markdown, kept free of
-// heavy imports (react-markdown / katex) so the matching rules stay unit-testable.
+// heavy imports (the renderer / katex) so the matching rules stay unit-testable.
 
 import { parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
 

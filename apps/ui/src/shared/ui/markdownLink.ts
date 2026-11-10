@@ -1,4 +1,4 @@
-import { defaultUrlTransform } from 'react-markdown'
+import { defaultUrlTransform } from 'llx-markdown'
 import { isUiNavigationAction } from '@localixai/mini-app-sdk/ui'
 import { fileHrefToReference, type FileHrefReference } from './markdownFileRef'
 import { isAgentProfileHref } from './markdownAgentRef'
@@ -15,7 +15,7 @@ export type MarkdownLinkTarget =
   | { kind: 'external'; href: string; newTab: boolean }
   /**
    * The renderer's OWN in-app schemes: `mention:` (a file mention chip) and `agent:` (an agent
-   * mention chip). Minted by our remark plugins, never by a model or a page, and consumed by the
+   * mention chip). Minted by our Markdown extensions, never by a model or a page, and consumed by the
    * `a` component — so they must survive the URL transform, which otherwise strips every scheme it
    * has no click route for. Before this kind existed the transform removed them and the chips
    * rendered as plain text, which no test caught.
@@ -81,7 +81,7 @@ export function markdownUrlTransform(url: string, key: string): string | undefin
     )
       return url
     if (target.kind === 'external') {
-      // react-markdown omits tel: from its default allowlist; the exact-scheme
+      // The default allowlist has no tel:; the exact-scheme
       // classifier above is the narrow, explicit exception.
       return defaultUrlTransform(url) || (url.toLowerCase().startsWith('tel:') ? url : undefined)
     }

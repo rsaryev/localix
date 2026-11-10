@@ -8,9 +8,9 @@ beforeAll(() => {
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 })
 
-// The streaming throttle commits on a timer of `interval - elapsed`, and the reveal is paced by
-// animation frames. A clock that jumps a second per read makes every commit due at once, and a
-// frame queue the test pumps replaces the display refresh, so no real time has to pass.
+// The reveal is paced by animation frames, and parsers the renderer loads on first use (HTML)
+// resolve in later turns. A clock that jumps a second per read makes every step due at once, and
+// a frame queue the test pumps replaces the display refresh, so no real time has to pass.
 type Frame = (time: number) => void
 let nowSpy: { mockRestore(): void } | undefined
 let clock = 0
@@ -59,6 +59,56 @@ describe('live Markdown renderer', () => {
       expect(host.querySelector('h1')?.textContent).toBe('Notes')
       expect(host.querySelector('strong')?.textContent).toBe('strong')
       expect(host.querySelector('p[align], b')).toBeNull()
+    } finally {
+      await act(async () => root.unmount())
+    }
+  })
+
+  test('raw HTML is parsed once its parser loads, without the app utility classes', async () => {
+    const { act } = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { default: MarkdownRendererImpl } = await import('./MarkdownRendererImpl')
+    const host = document.createElement('div')
+    const root = createRoot(host)
+    try {
+      await act(async () =>
+        root.render(
+          <MarkdownRendererImpl>
+            {'Press <kbd>Enter</kbd>.\n\n<div class="fixed inset-0 z-50">ordinary content</div>'}
+          </MarkdownRendererImpl>,
+        ),
+      )
+      await act(async () => {
+        await turns()
+      })
+      expect(host.querySelector('kbd')?.textContent).toBe('Enter')
+      expect(host.textContent).toContain('ordinary content')
+      expect(host.querySelector('.fixed, .inset-0, .z-50')).toBeNull()
+    } finally {
+      await act(async () => root.unmount())
+    }
+  })
+
+  test('while streaming, a fence is highlighted code and a growing diagram a pending frame', async () => {
+    const { act } = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { default: MarkdownRendererImpl } = await import('./MarkdownRendererImpl')
+    const host = document.createElement('div')
+    const root = createRoot(host)
+    const reply = '```ts\nconst example = "<script>"\n```\n\n```mermaid\nflowchart LR\n  A --> B'
+    try {
+      await act(async () =>
+        root.render(<MarkdownRendererImpl isStreaming>{reply}</MarkdownRendererImpl>),
+      )
+      for (let pass = 0; pass < 3; pass++)
+        await act(async () => {
+          await turns()
+        })
+      expect(host.querySelector('.sh__token--keyword')).not.toBeNull()
+      expect(host.querySelector('script')).toBeNull()
+      expect(host.textContent).toContain('"<script>"')
+      expect(host.textContent).toContain('Drawing diagram')
+      expect(host.textContent).not.toContain('A --> B')
     } finally {
       await act(async () => root.unmount())
     }

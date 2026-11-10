@@ -123,9 +123,8 @@ changes the item's `[ ]` to `[x]` in the element's Markdown, and undo takes it b
 
 ### One shared dialect
 
-`packages/markdown/src/dialect.ts` owns the callout kinds, container forms, fence languages and
-source-line prefix. The agent prompt, workspace and documentation share that grammar. The API's
-`answer-markdown.ts` re-exports the contract for existing consumers.
+The `llx-markdown` package owns the callout kinds, container forms, fence languages and source-line
+prefix. The agent prompt (`llx-markdown/prompt`), workspace and documentation share that grammar.
 
 `agent-core/prompt/sections/answer-format.ts` renders `# Answer formatting` in the cached prompt
 prefix. It also sets the shape rules: plain prose for a short reply, a heading per thread for a long
@@ -134,12 +133,12 @@ style preferences, which override it.
 
 ### Rendering
 
-`remarkAnswerBlocks` re-labels nodes the Markdown parser already produces. It does not emit raw
+The dialect of `llx-markdown` re-labels nodes its parser already produces. It does not emit raw
 HTML, so the sanitize pipeline gains nothing new to trust. It runs while a reply streams too, so a
 callout does not re-flow the message when the reply settles. A marker still being typed, such as
 `> [!WARN`, is withheld by the streaming stabilizer until its `]` arrives.
 
-Math is typeset while a reply streams. `rehypeMathCached` keeps recently typeset formulas in a
+Math is typeset while a reply streams. `llx-markdown/math` keeps recently typeset formulas in a
 bounded cache, so repeated expressions can reuse their rendered nodes until eviction. The stabilizer
 withholds a formula from its opening `$` until the closing one arrives; a currency amount such as
 `$5` and a shell variable such as `$HOME` are left as text.
@@ -153,11 +152,11 @@ never by a coloured fill, and the note itself is a veil of the foreground over i
 untitled callout prints no kind name, so an English label never sits over a reply in another
 language; assistive technology still announces the kind.
 
-`StreamingDiagram` draws a `mermaid` fence as soon as its closing fence arrives, even while the
-reply keeps streaming. Only the fence still being written, which is always the last one, shows a
-pending frame (`openFenceBody` in `markdown-stream.ts`). `mermaidLook.ts` resolves the app's colour
-tokens into a Mermaid `base` theme, so a diagram matches the palette in use. **Show source** swaps
-the diagram for the transcript's standard code block, highlighted by the Mermaid grammar in
+A `mermaid` fence is drawn as soon as its closing fence arrives, even while the reply keeps
+streaming. Only the fence still being written, which is always the last one, shows a pending frame.
+The diagram's colours come from the app's tokens (`--llx-*` in `apps/ui/src/app/markdown.css`)
+through a Mermaid `base` theme, so a diagram matches the palette in use. **Show source** swaps the
+diagram for the transcript's standard code block, highlighted by the Mermaid grammar in
 `mermaidGrammar.ts`, with **Show diagram** in that block's own toolbar. The renderer runs one
 diagram at a time in Mermaid's `strict` security level and caches each SVG by source and colours.
 
@@ -216,15 +215,9 @@ examples and package entry points.
 
 ## Source of truth
 
-- [The answer dialect](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/dialect.ts)
+- [Shared Markdown](../extending/markdown.md): the `llx-markdown` package owns the dialect, its
+  parsing, steps, tabs, figures, for/against, file trees, callouts, diagrams and cached math.
 - [The prompt section and its gate](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/prompt/sections/answer-format.ts)
-- [Callout, source and figure parsing](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/remarkAnswerBlocks.ts)
-- [Steps, tabs, figures and for/against](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/remarkAnswerContainers.ts)
-- [File trees](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/fileTreeParse.ts)
+- [The workspace renderer](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/MarkdownRendererImpl.tsx)
 - [Tickable checklists](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/MarkdownTaskList.tsx)
-- [Callout rendering](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/MarkdownBlockquote.tsx)
-- [Diagram queue and cache](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/renderMermaid.ts)
-- [Diagram colours from tokens](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/mermaidLook.ts)
-- [Drawing diagrams while a reply streams](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/mermaid/StreamingDiagram.tsx)
-- [Cached math typesetting](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/rehypeMathCached.ts)
-- [The shared bounded cache](https://github.com/rsaryev/localix/blob/main/packages/kit/src/lib/bounded-cache.ts)
+- [The workspace diagram](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/mermaid/MermaidDiagram.tsx)

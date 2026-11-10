@@ -83,7 +83,7 @@ export function SourceTasks({
 
 type MarkdownInputProps = ComponentPropsWithoutRef<'input'> & {
   node?: unknown
-  /** The item's source offset, set by `rehypeTaskKeys` (the box itself has no position). */
+  /** The item's source offset, set by `<Markdown>` on every task box. */
   'data-task-key'?: number | string
 }
 

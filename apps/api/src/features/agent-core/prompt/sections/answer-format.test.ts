@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { CALLOUT_KINDS, DIAGRAM_FENCE_LANGUAGE, DIAGRAM_KINDS } from '../../answer-markdown'
+import { CALLOUT_KINDS, DIAGRAM_FENCE_LANGUAGE, DIAGRAM_KINDS } from 'llx-markdown/prompt'
 import {
   ANSWER_FORMAT_HEADER,
   ANSWER_FORMS_PRINCIPLE,

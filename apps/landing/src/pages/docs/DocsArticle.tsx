@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router'
-import { Markdown } from '@localixai/markdown/react'
+import { DocMarkdown } from './DocMarkdown'
 import { makeMdComponents } from './markdownComponents'
 import { extractDocHeadings } from './extractDocHeadings'
 import type { DocHeading } from './docBootstrap'
@@ -22,9 +22,5 @@ export function DocsArticle({
   useEffect(() => {
     onHeadings(extractDocHeadings(content))
   }, [content, onHeadings])
-  return (
-    <Markdown headingIds components={components}>
-      {content}
-    </Markdown>
-  )
+  return <DocMarkdown components={components}>{content}</DocMarkdown>
 }

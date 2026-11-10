@@ -15,11 +15,17 @@
    (`packages/kit/styles/index.css` owns the order and says why it matters). */
 @import '@localixai/kit/styles.css';
 
+/* Markdown is drawn by `llx-markdown`: its stylesheet, then Localix's tokens and typography over
+   it (`markdown.css`, which the landing's docs share through this file). It sits in the
+   `components` layer, so a Tailwind class on a component of ours (the code block) wins over it. */
+@import 'llx-markdown/styles.css' layer(components);
+@import './markdown.css';
+@import './markdown-forms.css';
+
 /* The kit is a source package outside this Vite root, and Tailwind generates only the utilities
    it finds in scanned sources — without this, every class a kit primitive uses would be missing
    from the app's stylesheet. */
 @source '../../../../packages/kit/src';
-@source '../../../../packages/markdown/src';
 /* The SDK's UI modules are lent to mini apps by this app (`miniAppSharedModules.ts`), so their
    classes are this stylesheet's to emit: a mini app's own build scans only its own sources, and a
    chart whose bar row was `h-44` rendered as labels alone. */
@@ -30,6 +36,5 @@
    adds test-only CSS to every startup. Keep all production app and kit sources in the scan. */
 @source not '../**/*.test.{ts,tsx}';
 @source not '../../../../packages/kit/src/**/*.test.{ts,tsx}';
-@source not '../../../../packages/markdown/src/**/*.test.{ts,tsx}';
 @source not '../../../../packages/mini-app-sdk/src/ui/**/*.test.{ts,tsx}';
 @source not '../../../../packages/kit/src/testing';

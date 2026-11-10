@@ -1,51 +1,35 @@
+import { memo, type ComponentPropsWithoutRef } from 'react'
 import {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ComponentPropsWithoutRef,
-} from 'react'
-import ReactMarkdown, { type Components } from 'react-markdown'
+  Markdown,
+  childrenToText,
+  getLanguage,
+  isCodeBlock,
+  type Extension,
+  type MarkdownComponents,
+} from 'llx-markdown'
 import { ActionSurfaceProvider, useActionSurface } from '@localixai/mini-app-sdk/ui'
 import { ContentActionBlock, ContentLinkActions } from './ContentActionBlock'
-import { rehypeContentActions } from './rehypeContentActions'
+import { contentActions } from './contentActionsExtension'
 import { MarkdownImg } from './MarkdownImage'
-import {
-  loadMathPlugins,
-  mathPluginsReady,
-  remarkPluginsFor,
-  rehypePluginsFor,
-} from '@localixai/markdown/markdownPlugins'
 import { CodeBlock } from './code-block'
-import { closePartialMarkdown, openFenceBody } from '@localixai/markdown/markdown-stream'
-import { hasMathSyntax, hasHtmlSyntax } from '@localixai/markdown/syntax'
-import { escapeLiteralDollars } from '@localixai/markdown/markdown-dollars'
 import { useSmoothedText } from '@/shared/hooks/useSmoothedText'
-import { useStreamingThrottle, STREAM_MARKDOWN_REPARSE_MS } from './useStreamingThrottle'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { inlineCodeToPath, inlineCodeLine } from './markdownFileRef'
 import { classifyMarkdownLink, markdownUrlTransform } from './markdownLink'
 import { MarkdownAgentLink } from './MarkdownAgentLink'
 import { MarkdownAppViewLink } from './MarkdownAppViewLink'
-import { childrenToText, getLanguage, isCodeBlock } from '@localixai/markdown/markdownHelpers'
-import { remarkFileMention, mentionPathFromHref } from './remarkFileMention'
+import { fileMentions, mentionPathFromHref } from './fileMentionExtension'
 import { FileMentionChip } from './FileMentionChip'
 import { ExternalAnchor } from './external-anchor'
-import { MarkdownBlockquote } from '@localixai/markdown/MarkdownBlockquote'
-import { MermaidDiagram } from './mermaid/MermaidDiagram'
-import { GrowingFenceContext, StreamingDiagram } from './mermaid/StreamingDiagram'
-import { DIAGRAM_FENCE_LANGUAGE, TREE_FENCE_LANGUAGE } from '@localixai/markdown/dialect'
-import { AnswerVariant, AnswerVariants } from '@localixai/markdown/AnswerVariants'
+import { DiagramPending, MermaidDiagram } from './mermaid/MermaidDiagram'
 import { FileTree } from './FileTree'
 import { MarkdownInput, SourceTasks } from './MarkdownTaskList'
+import { loadMath } from './markdownStages'
 
 export interface MarkdownRendererProps {
   children: string
-  /** Optional streaming hint from the caller. It only toggles the paced/throttled
-   * rendering path; the final markdown output stays the same either way. */
+  /** The text is still arriving: its unfinished end is completed while it streams. */
   isStreaming?: boolean
   /** Render `@path` tokens as clickable file-mention chips (user messages). */
   linkifyMentions?: boolean
@@ -62,269 +46,29 @@ export interface MarkdownRendererProps {
   rawHtml?: boolean
 }
 
-type CodeProps = ComponentPropsWithoutRef<'code'> & { node?: unknown }
+type MarkdownCodeProps = ComponentPropsWithoutRef<'code'> & { node?: unknown }
 type MarkdownPreProps = ComponentPropsWithoutRef<'pre'> & { node?: unknown }
 type MarkdownLinkProps = ComponentPropsWithoutRef<'a'> & { node?: unknown }
-type MarkdownTableProps = ComponentPropsWithoutRef<'table'> & { node?: unknown }
 
-// While a message streams, the model appends text every ~16ms. Re-parsing the
-// WHOLE accumulated markdown (remark/rehype + syntax highlighting of every
-// nested code block) on each delta is O(text²) over the message. Throttle the
-// re-parse to this cadence during streaming; the final frame is always exact
-// because we bypass the throttle entirely once streaming stops (see below).
-// ~25fps commits read as one continuous flow; the length backoff below still
-// protects long messages from the quadratic re-parse.
-// Parsing only the appended tail was investigated and rejected: in CommonMark a
-// prefix is not stable, so "append-only" is not a property this text has. Three
-// measured counterexamples across a blank-line boundary — a second list item
-// turns the first LOOSE (`<li>a</li>` → `<li><p>a</p></li>`), a later link
-// reference definition turns earlier `[foo]` into an anchor, a later footnote
-// definition rewrites its earlier reference — all mutate output already
-// rendered. (Re-rendering the FULL markdown every flush and morphing the DOM is not
-// a counter-example: React's reconciler already does that for us, and a paragraph
-// buffer only withholds the unfinished tail block.)
-// Client-side reveal cadence. The model's text is already paced server-side, but
-// it still reaches us in clumps (network framing, the throttle below, a cache
-// hit dumping the whole reply at once). A steady prefix reveal makes text flow
-// word-by-word instead of jumping a paragraph per throttle tick. Slightly calmer
-// than the code-stream default (220ms) — this is prose meant to be read.
+// Client-side reveal cadence. The model's text is already paced server-side, but it still reaches
+// us in clumps (network framing, a cache hit dumping the whole reply at once). A steady prefix
+// reveal makes text flow word by word instead of jumping a paragraph at a time. Slightly calmer
+// than the code-stream default (220ms): this is prose meant to be read.
 const TEXT_REVEAL_CATCH_UP_MS = 260
-// A math chunk that failed to load is retried this many times, this far apart (see MarkdownBody).
-const MATH_LOAD_RETRIES = 3
-const MATH_RETRY_MS = 1_500
-// Beyond this size, even core CommonMark parsing can monopolize a frame. Keep the
-// growing body readable as escaped text, then let the user opt into the exact expensive render.
-export const STREAMING_PLAIN_TEXT_THRESHOLD = 128_000
-const STREAMING_PLAIN_TEXT_HEAD = 16_000
-const STREAMING_PLAIN_TEXT_OMISSION = '\n\n… middle content omitted while streaming …\n\n'
 
-export function boundPlainStreamingText(text: string): string {
-  if (text.length <= STREAMING_PLAIN_TEXT_THRESHOLD) return text
-  const tailLength =
-    STREAMING_PLAIN_TEXT_THRESHOLD -
-    STREAMING_PLAIN_TEXT_HEAD -
-    STREAMING_PLAIN_TEXT_OMISSION.length
-  return (
-    text.slice(0, STREAMING_PLAIN_TEXT_HEAD) +
-    STREAMING_PLAIN_TEXT_OMISSION +
-    text.slice(-tailLength)
-  )
-}
+// The renderer keeps every finished block of a streaming reply and parses only the end that
+// changed (`llx-markdown`), so a token costs the same at the end of a long reply as at its start.
+// That is why there is no reparse throttle and no plain-text fallback for long replies here.
 
-export function shouldRenderPlainStreaming(
-  length: number,
-  streaming: boolean | undefined,
-): boolean {
-  return Boolean(streaming) && length >= STREAMING_PLAIN_TEXT_THRESHOLD
-}
-
-export function shouldSmoothStreaming(length: number, streaming: boolean): boolean {
-  return streaming && !shouldRenderPlainStreaming(length, streaming)
-}
-
-export function shouldDeferOversizedMarkdown(
-  length: number,
-  streaming: boolean | undefined,
-  expanded: boolean,
-): boolean {
-  return !streaming && !expanded && length >= STREAMING_PLAIN_TEXT_THRESHOLD
-}
-
-/**
- * Math is typeset while a reply streams too: the typesetter reuses every formula it already set
- * (`rehypeMathCached`), so a tick pays only for an expression it has not seen, and the stream
- * stabilizer withholds one still being typed (`markdown-stream.ts`). Until then a reply showed
- * raw `$…$` source for as long as it streamed and re-flowed when it settled.
- */
-export function shouldActivateMath(hasMath: boolean, mathReady: boolean): boolean {
-  return hasMath && mathReady
-}
-
-export function shouldActivateHtml(hasHtml: boolean, streaming: boolean | undefined): boolean {
-  return hasHtml && !streaming
-}
-
-/**
- * The actual remark/rehype parse. Split out and memoized so that when the
- * throttled text is unchanged between renders (the common case mid-stream),
- * react-markdown does NOT re-parse — `components` is referentially stable
- * (memoized with no deps; file links call the shared inspector bus), so the
- * memo bails cleanly.
- */
-const MarkdownBody = memo(function MarkdownBody({
-  text,
-  components,
-  streaming,
-  linkifyMentions,
-  rawHtml = true,
-}: {
-  text: string
-  components: Components
-  streaming?: boolean
-  linkifyMentions?: boolean
-  rawHtml?: boolean
-}) {
-  const plainStreaming = shouldRenderPlainStreaming(text.length, streaming)
-  const actionSurface = useActionSurface()
-  const [expandedText, setExpandedText] = useState<string | null>(null)
-  const deferFullMarkdown = shouldDeferOversizedMarkdown(
-    text.length,
-    streaming,
-    expandedText === text,
-  )
-  // Mid-stream the text often ends inside a construct (open ``` fence, dangling
-  // `**`, half-typed link) that would flash as raw syntax until the model closes
-  // it — stabilize the tail while streaming; the final frame renders verbatim.
-  const plainDisplay = useMemo(
-    () => (plainStreaming || deferFullMarkdown ? boundPlainStreamingText(text) : text),
-    [plainStreaming, deferFullMarkdown, text],
-  )
-  // Literal dollars (`$5`, `$HOME`) are escaped before remark-math can pair them into a formula
-  // (markdown-dollars.ts). The plain-text path renders this string verbatim, so it is not escaped.
-  const display = useMemo(() => {
-    if (plainStreaming) return plainDisplay
-    return escapeLiteralDollars(streaming ? closePartialMarkdown(text) : plainDisplay)
-  }, [streaming, plainStreaming, text, plainDisplay])
-  // The one fence still being written (StreamingDiagram draws every other diagram at once).
-  const growingFence = useMemo(() => (streaming ? openFenceBody(text) : null), [streaming, text])
-  const hasMath = hasMathSyntax(display)
-  const hasHtml = rawHtml && hasHtmlSyntax(display)
-  // Raw HTML is incomplete while streaming and often appears inside growing HTML
-  // code fences. Keep it inert until settlement, then parse and sanitize together.
-  const htmlActive = shouldActivateHtml(hasHtml, streaming)
-  // Lazy-load the KaTeX pipeline on first math sighting; re-render once it lands.
-  const [mathReady, setMathReady] = useState(() => mathPluginsReady())
-  const [mathAttempt, setMathAttempt] = useState(0)
-  useEffect(() => {
-    if (!hasMath || mathReady || mathAttempt > MATH_LOAD_RETRIES) return
-    let cancelled = false
-    let retry: ReturnType<typeof setTimeout> | undefined
-    loadMathPlugins().then(
-      () => {
-        if (!cancelled) setMathReady(true)
-      },
-      // A failed chunk load is retried by this message itself, a few times, so formulas appear
-      // without a reload once the chunk is reachable again.
-      () => {
-        if (!cancelled) retry = setTimeout(() => setMathAttempt((n) => n + 1), MATH_RETRY_MS)
-      },
-    )
-    return () => {
-      cancelled = true
-      clearTimeout(retry)
-    }
-  }, [hasMath, mathReady, mathAttempt])
-  const mathActive = shouldActivateMath(hasMath, mathReady && mathPluginsReady())
-  const remarkPlugins = useMemo(() => {
-    const plugins = [...remarkPluginsFor(mathActive)]
-    if (linkifyMentions) plugins.push(remarkFileMention)
-    return plugins
-  }, [mathActive, linkifyMentions])
-  const rehypePlugins = useMemo(
-    () =>
-      rehypePluginsFor(
-        htmlActive,
-        mathActive,
-        actionSurface === 'chat.content' && !streaming ? rehypeContentActions(display) : undefined,
-      ),
-    [htmlActive, mathActive, actionSurface, streaming, display],
-  )
-  if (plainStreaming) {
-    return (
-      <div className="markdown-renderer whitespace-pre-wrap break-words" data-streaming="">
-        {plainDisplay}
-      </div>
-    )
-  }
-  if (deferFullMarkdown) {
-    return (
-      <div className="space-y-2">
-        <div className="markdown-renderer whitespace-pre-wrap break-words">{plainDisplay}</div>
-        <button
-          type="button"
-          className="rounded-md border border-border px-2.5 py-1 text-xs text-text-soft hover:bg-surface-hover hover:text-foreground"
-          onClick={() => setExpandedText(text)}
-        >
-          Render complete formatted message (may be slow)
-        </button>
-      </div>
-    )
-  }
-  return (
-    <div className="markdown-renderer" data-streaming={streaming ? '' : undefined}>
-      <ActionSurfaceProvider surface={streaming ? null : actionSurface}>
-        <GrowingFenceContext.Provider value={growingFence}>
-          <ReactMarkdown
-            remarkPlugins={remarkPlugins}
-            rehypePlugins={rehypePlugins}
-            components={components}
-            urlTransform={markdownUrlTransform}
-            skipHtml={!rawHtml}
-          >
-            {display}
-          </ReactMarkdown>
-        </GrowingFenceContext.Provider>
-      </ActionSurfaceProvider>
-    </div>
-  )
-})
-
+/** The fence's code element owns the frame (CodeBlock), so `pre` adds nothing around it. */
 function MarkdownPre({ children: c }: MarkdownPreProps) {
   return c
 }
 
-export function tableRequiresKeyboardScroll(scrollWidth: number, clientWidth: number): boolean {
-  return scrollWidth > clientWidth + 1
-}
-
-function MarkdownTable({ children: c, node: _node, ...tableProps }: MarkdownTableProps) {
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const [scrollable, setScrollable] = useState(false)
-  const label =
-    typeof tableProps['aria-label'] === 'string'
-      ? `${tableProps['aria-label']} scroll area`
-      : 'Scrollable table'
-  const updateScrollable = useCallback(() => {
-    const element = scrollRef.current
-    setScrollable(
-      Boolean(element && tableRequiresKeyboardScroll(element.scrollWidth, element.clientWidth)),
-    )
-  }, [])
-
-  useEffect(() => {
-    updateScrollable()
-    const element = scrollRef.current
-    if (!element || typeof ResizeObserver === 'undefined') return
-
-    const observer = new ResizeObserver(updateScrollable)
-    observer.observe(element)
-    const table = element.querySelector('table')
-    if (table) observer.observe(table)
-    return () => observer.disconnect()
-  }, [updateScrollable])
-
-  return (
-    <div
-      ref={scrollRef}
-      className="lx-markdown-table scrollbar-thin"
-      data-scrollable={scrollable || undefined}
-      role={scrollable ? 'region' : undefined}
-      aria-label={scrollable ? label : undefined}
-      tabIndex={scrollable ? 0 : undefined}
-    >
-      <table {...tableProps}>{c}</table>
-    </div>
-  )
-}
-
-function MarkdownCode({ children: c, className }: CodeProps) {
+function MarkdownCode({ children: c, className }: MarkdownCodeProps) {
   const sessionId = useWorkItemSessionId()
   const code = childrenToText(c)
-  const lang = getLanguage(className)
-  // Settled components only: streaming diagrams use MarkdownStreamingCode.
-  if (lang === DIAGRAM_FENCE_LANGUAGE) return <MermaidDiagram source={code.replace(/\n$/, '')} />
-  if (lang === TREE_FENCE_LANGUAGE) return <FileTree source={code} />
-  if (isCodeBlock(c, className)) return <CodeBlock code={code} language={lang} />
+  if (isCodeBlock(c, className)) return <CodeBlock code={code} language={getLanguage(className)} />
   const filePath = inlineCodeToPath(code)
   // A file reference opens in the chat this markdown belongs to; outside one it stays prose.
   if (filePath && sessionId) {
@@ -348,16 +92,13 @@ function MarkdownCode({ children: c, className }: CodeProps) {
   return <code className={className}>{c}</code>
 }
 
-function MarkdownStreamingCode({ children: c, className }: CodeProps) {
-  const code = childrenToText(c)
-  const lang = getLanguage(className)
-  if (lang === DIAGRAM_FENCE_LANGUAGE) return <StreamingDiagram source={code.replace(/\n$/, '')} />
-  // A tree is cheap to lay out line by line, so it grows with the stream like prose.
-  if (lang === TREE_FENCE_LANGUAGE) return <FileTree source={code} />
-  if (isCodeBlock(c, className)) {
-    return <CodeBlock code={code} language={lang} />
-  }
-  return <MarkdownCode className={className}>{c}</MarkdownCode>
+/**
+ * A ```mermaid fence. The fence a streaming reply still ends inside is incomplete (every token
+ * would be a layout, most of them a syntax error), so it holds its place as a pending frame; every
+ * finished diagram above it is drawn at once.
+ */
+function MarkdownDiagram({ source, growing }: { source: string; growing: boolean }) {
+  return growing ? <DiagramPending /> : <MermaidDiagram source={source} />
 }
 
 function MarkdownLink({ href, children: c }: MarkdownLinkProps) {
@@ -404,29 +145,27 @@ function MarkdownLink({ href, children: c }: MarkdownLinkProps) {
   return <span>{c}</span>
 }
 
-// Note: we deliberately do NOT spread react-markdown's extra props (it
-// injects `node` + a `ref` typed against its bundled @types/react, which
-// conflicts with ours). We pass only the attributes we actually need.
-const BASE_COMPONENTS: Components = {
-  ...({
-    'content-actions': ContentActionBlock,
-    // The `> [!TABS]` container (`remarkAnswerContainers.ts`).
-    'answer-tabs': AnswerVariants,
-    'answer-tab': AnswerVariant,
-  } as Components),
+// The components take only the attributes they use: `<Markdown>` also hands each one `node`, the
+// parsed node it draws, which no DOM element takes.
+const COMPONENTS: MarkdownComponents = {
+  ...({ 'content-actions': ContentActionBlock } as MarkdownComponents),
   pre: MarkdownPre,
   // GFM task boxes: tickable, and stored on the message, inside an agent's reply.
   input: MarkdownInput,
-  blockquote: MarkdownBlockquote,
-  table: MarkdownTable,
   code: MarkdownCode,
   a: MarkdownLink,
   img: MarkdownImg,
+  diagram: MarkdownDiagram,
+  tree: FileTree,
 }
-const STREAMING_COMPONENTS: Components = { ...BASE_COMPONENTS, code: MarkdownStreamingCode }
 
-export function markdownComponentsForStreaming(streaming = false): Components {
-  return streaming ? STREAMING_COMPONENTS : BASE_COMPONENTS
+// Module constants, one list per combination: `<Markdown>` redraws every block when its
+// extension list changes.
+const EXTENSIONS: Record<'none' | 'mentions' | 'actions' | 'both', Extension[]> = {
+  none: [],
+  mentions: [fileMentions],
+  actions: [contentActions],
+  both: [fileMentions, contentActions],
 }
 
 const MarkdownRendererImpl = memo(function MarkdownRendererImpl({
@@ -434,28 +173,33 @@ const MarkdownRendererImpl = memo(function MarkdownRendererImpl({
   isStreaming,
   linkifyMentions,
   onSourceChange,
-  rawHtml,
+  rawHtml = true,
 }: MarkdownRendererProps) {
   const streaming = isStreaming ?? false
-  const smoothStreaming = shouldSmoothStreaming(children.length, streaming)
-  // Steady reveal first (decouples display from arrival bursts), then throttle
-  // the parse. Loaded history renders instantly, while oversized streams skip
-  // the extra animation state updates and follow the transport cadence directly.
-  const paced = useSmoothedText(smoothStreaming ? children : undefined, TEXT_REVEAL_CATCH_UP_MS)
-  const text = useStreamingThrottle(
-    smoothStreaming ? paced : children,
-    streaming,
-    STREAM_MARKDOWN_REPARSE_MS,
-  )
+  const actionSurface = useActionSurface()
+  // Steady reveal first (decouples display from arrival bursts); loaded history renders at once.
+  const paced = useSmoothedText(streaming ? children : undefined, TEXT_REVEAL_CATCH_UP_MS)
+  const text = streaming ? paced : children
+  // Block actions belong to a settled reply in a conversation: a streaming block is still moving.
+  const actions = actionSurface === 'chat.content' && !streaming
 
   const body = (
-    <MarkdownBody
-      text={text}
-      components={markdownComponentsForStreaming(streaming)}
-      streaming={isStreaming}
-      linkifyMentions={linkifyMentions}
-      rawHtml={rawHtml}
-    />
+    <ActionSurfaceProvider surface={streaming ? null : actionSurface}>
+      <Markdown
+        streaming={streaming}
+        components={COMPONENTS}
+        extensions={
+          EXTENSIONS[
+            linkifyMentions ? (actions ? 'both' : 'mentions') : actions ? 'actions' : 'none'
+          ]
+        }
+        html={rawHtml}
+        math={loadMath}
+        urlTransform={markdownUrlTransform}
+      >
+        {text}
+      </Markdown>
+    </ActionSurfaceProvider>
   )
   return onSourceChange ? (
     <SourceTasks source={children} onSourceChange={onSourceChange}>

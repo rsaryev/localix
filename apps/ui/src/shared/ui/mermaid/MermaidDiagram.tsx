@@ -6,8 +6,13 @@ import { useTheme, type ResolvedTheme } from '@/shared/theme/useTheme'
 import { IconButton } from '@localixai/kit/icon-button'
 import { FLOATING_SURFACE } from '@localixai/kit/workbench-toolbar'
 import { CodeBlock } from '@/shared/ui/code-block'
-import { mermaidRenderer, type MermaidRenderer } from '@localixai/markdown/renderMermaid'
-import { resolveMermaidLook, type MermaidLook } from '@localixai/markdown/mermaidLook'
+import {
+  mermaidRendererFor,
+  resolveMermaidLook,
+  type MermaidLook,
+  type MermaidRenderer,
+} from 'llx-markdown/mermaid'
+import { loadMermaid } from '../markdownStages'
 import DiagramViewer from './DiagramViewer'
 import { ContributedActions } from '../ContributedActions'
 import { diagramBounds } from './diagramGeometry'
@@ -42,7 +47,9 @@ let lastLook: { theme: ResolvedTheme; look: MermaidLook } | null = null
 
 /** The theme's look, resolved once and kept: an idempotent cache, not render state. */
 function lookFor(theme: ResolvedTheme): MermaidLook {
-  if (lastLook?.theme !== theme) lastLook = { theme, look: resolveMermaidLook(theme) }
+  // The diagram tokens (`--llx-*`) are the app theme's, set on the root element (markdown.css).
+  if (lastLook?.theme !== theme)
+    lastLook = { theme, look: resolveMermaidLook(document.documentElement) }
   return lastLook.look
 }
 
@@ -65,7 +72,7 @@ function useMermaidLook(): MermaidLook | null {
  */
 export function MermaidDiagram({
   source,
-  renderer = mermaidRenderer,
+  renderer = mermaidRendererFor(loadMermaid),
   embedded = false,
 }: {
   source: string
@@ -173,7 +180,7 @@ export function MermaidDiagram({
         aria-label="Enlarge diagram"
         aria-haspopup="dialog"
         onClick={enlarge}
-        // The SVG comes from Mermaid with `securityLevel: 'strict'` (see renderMermaid.ts).
+        // The SVG comes from Mermaid with `securityLevel: 'strict'` (llx-markdown/mermaid).
         dangerouslySetInnerHTML={{ __html: state.svg }}
       />
       {/* `lx-media-actions` is the transcript's hover-action hook: a coarse pointer has no

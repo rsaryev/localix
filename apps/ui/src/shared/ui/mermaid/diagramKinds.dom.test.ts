@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
-import { DIAGRAM_KINDS } from '@localixai/markdown/dialect'
+import { DIAGRAM_KINDS } from 'llx-markdown/prompt'
 
 let teardown: () => Promise<void>
 const previousGlobals = ['fastdom', 'injected'].map(

@@ -4,7 +4,7 @@ import {
   DIAGRAM_FENCE_LANGUAGE,
   DIAGRAM_KINDS,
   TREE_FENCE_LANGUAGE,
-} from '../../answer-markdown'
+} from 'llx-markdown/prompt'
 import type { RunShape } from '@localixai/agent/agents'
 
 /**
@@ -15,8 +15,8 @@ import type { RunShape } from '@localixai/agent/agents'
  * lists where a table belonged, a warning buried mid-paragraph — and the renderer's callouts
  * and diagrams went unused because nothing told the model they existed.
  *
- * Every construct named here is read from `answer-markdown.ts`, the leaf the UI renderer
- * imports too, so the prompt cannot advertise a marker the transcript would print as raw text.
+ * Every construct named here is read from `llx-markdown/prompt`, the dialect the UI renderer
+ * reads too, so the prompt cannot advertise a marker the transcript would print as raw text.
  *
  * Rendered only where that renderer is what the reader sees: a CHAT shape (a sub-agent's report
  * is read by its parent model, an automation's result is a summary record) with no delivery

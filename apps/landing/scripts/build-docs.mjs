@@ -6,7 +6,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import matter from 'gray-matter'
-import { extractMarkdownHeadings } from '@localixai/markdown'
+import { extractHeadings } from 'llx-markdown'
 import { SITE_ORIGIN } from '../src/lib/site.ts'
 import { writeFileAtomic } from './atomic-write.mjs'
 import { toPosix } from './posix-path.mjs'
@@ -207,7 +207,7 @@ export async function validateRelativeDocLinks(pages, sourceRoot) {
 }
 
 function headingIds(content) {
-  return new Set(extractMarkdownHeadings(content).map((heading) => heading.id))
+  return new Set(extractHeadings(content).map((heading) => heading.id))
 }
 
 export function validateDocAnchors(pages) {
