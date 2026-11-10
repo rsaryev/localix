@@ -8,7 +8,7 @@ import { isItemStreaming, hasItemError, itemErrorMessage } from '../itemHelpers'
 import { baseName, strField, asRecord } from './format'
 import { toolMeta } from './meta'
 import { firstChangedLine } from '@/shared/ui/diff'
-import { useSmoothedText } from '@/shared/hooks/useSmoothedText'
+import { useSmoothText } from 'llx-markdown'
 import { fileChangeSubtitle, lastContent, lastNewString } from './fileChangeFormat'
 import { FileChangeRow } from './FileChangeRow'
 
@@ -44,7 +44,7 @@ export function FileChangeCard({ item }: { item: FileChangeItem }) {
   // Paced reveal: bursty partial-JSON chunks → steady typewriter flow. Drives the
   // live +/- count + code tail in this card's subtitle below (inline only — never
   // an auto-opened workspace tab).
-  const smoothedCode = useSmoothedText(liveTarget)
+  const [smoothedCode] = useSmoothText(liveTarget ?? '', liveTarget !== undefined)
 
   // Partial multi-file change: some files applied, some failed — split so the failed
   // ones render as distinct error rows instead of fake successful changes.

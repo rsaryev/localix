@@ -98,7 +98,7 @@
     "hono": "^4.12.30",
     "kysely": "^0.29.7",
     "linkedom": "^0.18.14",
-    "llx-markdown": "^0.2.0",
+    "llx-markdown": "^0.3.0",
     "picomatch": "^4.0.5",
     "pino": "10.4.0",
     "shell-quote": "^1.12.0",

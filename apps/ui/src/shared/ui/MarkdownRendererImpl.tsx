@@ -12,7 +12,6 @@ import { ContentActionBlock, ContentLinkActions } from './ContentActionBlock'
 import { contentActions } from './contentActionsExtension'
 import { MarkdownImg } from './MarkdownImage'
 import { CodeBlock } from './code-block'
-import { useSmoothedText } from '@/shared/hooks/useSmoothedText'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { inlineCodeToPath, inlineCodeLine } from './markdownFileRef'
@@ -177,9 +176,6 @@ const MarkdownRendererImpl = memo(function MarkdownRendererImpl({
 }: MarkdownRendererProps) {
   const streaming = isStreaming ?? false
   const actionSurface = useActionSurface()
-  // Steady reveal first (decouples display from arrival bursts); loaded history renders at once.
-  const paced = useSmoothedText(streaming ? children : undefined, TEXT_REVEAL_CATCH_UP_MS)
-  const text = streaming ? paced : children
   // Block actions belong to a settled reply in a conversation: a streaming block is still moving.
   const actions = actionSurface === 'chat.content' && !streaming
 
@@ -187,6 +183,7 @@ const MarkdownRendererImpl = memo(function MarkdownRendererImpl({
     <ActionSurfaceProvider surface={streaming ? null : actionSurface}>
       <Markdown
         streaming={streaming}
+        smooth={TEXT_REVEAL_CATCH_UP_MS}
         components={COMPONENTS}
         extensions={
           EXTENSIONS[
@@ -197,7 +194,7 @@ const MarkdownRendererImpl = memo(function MarkdownRendererImpl({
         math={loadMath}
         urlTransform={markdownUrlTransform}
       >
-        {text}
+        {children}
       </Markdown>
     </ActionSurfaceProvider>
   )
