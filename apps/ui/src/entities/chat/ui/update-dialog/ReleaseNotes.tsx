@@ -1,4 +1,4 @@
-import ReactMarkdown, { type Components } from 'react-markdown'
+import { Markdown, type MarkdownComponents } from 'llx-markdown'
 
 const group = ({ children }: { children?: React.ReactNode }) => (
   <h4 className="pt-1 text-2xs font-medium tracking-wide text-text-faint uppercase">{children}</h4>
@@ -7,7 +7,7 @@ const group = ({ children }: { children?: React.ReactNode }) => (
 // The notes are the version's CHANGELOG section: an opening sentence, `### Added / Changed /
 // Fixed` groups and bullets. Drawn at the dialog's own scale rather than as a chat message, and
 // links stay text: the dialog is for deciding about a restart, not for leaving it.
-const components: Components = {
+const components: MarkdownComponents = {
   h1: group,
   h2: group,
   h3: group,
@@ -40,8 +40,14 @@ const components: Components = {
 export function ReleaseNotes({ markdown }: { markdown: string }) {
   return (
     // `wrap-anywhere`: a long URL or identifier breaks rather than widening the dialog.
-    <div className="flex min-w-0 flex-col gap-2 text-xs/relaxed wrap-anywhere text-text-soft">
-      <ReactMarkdown components={components}>{markdown}</ReactMarkdown>
-    </div>
+    // `unstyled`: every element is drawn above, so a chat message's stylesheet stays out of it.
+    <Markdown
+      unstyled
+      html={false}
+      components={components}
+      className="flex min-w-0 flex-col gap-2 text-xs/relaxed wrap-anywhere text-text-soft"
+    >
+      {markdown}
+    </Markdown>
   )
 }

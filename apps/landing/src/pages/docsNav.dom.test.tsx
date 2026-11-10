@@ -15,7 +15,7 @@ afterAll(async () => {
 test('renders Shell fences with Bash highlighting and copies the original source', async () => {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
-  const { Markdown } = await import('@localixai/markdown/react')
+  const { DocMarkdown: Markdown } = await import('./docs/DocMarkdown')
   const { makeMdComponents } = await import('./docs/markdownComponents')
   const host = document.createElement('div')
   document.body.append(host)

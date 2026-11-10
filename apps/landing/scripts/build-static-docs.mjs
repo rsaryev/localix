@@ -3,8 +3,9 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { Markdown } from '@localixai/markdown/react'
-import { hasMathSyntax, loadMathPlugins } from '@localixai/markdown'
+import { html } from 'llx-markdown/html'
+import { math } from 'llx-markdown/math'
+import { DocMarkdown } from '../src/pages/docs/DocMarkdown.tsx'
 import { renderDocsShell } from './render-docs.tsx'
 import { makeMdComponents } from '../src/pages/docs/markdownComponents.tsx'
 import { extractDocHeadings } from '../src/pages/docs/extractDocHeadings.ts'
@@ -48,9 +49,11 @@ export function renderStaticMarkdown(content, page, pages = docPages) {
       React.createElement(tag, { id }, children)
   return renderToStaticMarkup(
     React.createElement(
-      Markdown,
+      DocMarkdown,
       {
-        headingIds: true,
+        // The parsers themselves, not loaders: a prerendered page has no later render to wait for.
+        html,
+        math,
         components: {
           ...makeMdComponents(page.sourcePath ?? 'docs/index.md', () => {}),
           h1: heading('h1'),
@@ -160,7 +163,6 @@ export async function buildStaticDocs({
       throw new Error(`Unsafe documentation slug: ${page.slug}`)
     }
     const content = await loadContent(page.slug)
-    if (hasMathSyntax(content)) await loadMathPlugins()
     await fs.writeFile(
       path.join(docsDir, `${page.slug}.html`),
       renderStaticDocHtml(template, page, renderStaticMarkdown(content, page, pages), content),

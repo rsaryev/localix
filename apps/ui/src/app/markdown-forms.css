@@ -1,4 +1,7 @@
-/* ─── Answer forms: the dialect's structured shapes (`@localixai/api/answer-markdown`) ───
+/* The answer forms over `llx-markdown/styles.css`: steps, tabs, stats, pros/cons, trees and
+   checklists, in the workspace's typography. Tokens and the base rules: `markdown.css`. */
+
+/* ─── Answer forms: the dialect's structured shapes (`llx-markdown/prompt` teaches them) ───
    Steps, tabs, headline figures, the case for and against, file trees and checklists. Each is
    plain Markdown underneath; these rules are what make it read as the shape it is. Nothing here
    is a status except the pros/cons glyphs, so the neutral parts take the text tiers and the
@@ -7,35 +10,35 @@
 /* ─── Steps (`> [!STEPS]` over a list) ───
    A sequence read in order: an open dot per step on a dotted line, the step's title, its
    "when" quieter beneath, then its text. */
-.markdown-renderer .lx-steps-title,
-.markdown-renderer .lx-stats-title,
-.markdown-renderer .lx-tabs-title {
+.llx-markdown .llx-steps-title,
+.llx-markdown .llx-stats-title,
+.llx-markdown .llx-tabs-title {
   margin-bottom: 0.35rem;
   font-weight: 600;
   color: var(--foreground);
 }
-.markdown-renderer .lx-steps-title + .lx-steps,
-.markdown-renderer .lx-stats-title + .lx-stats,
-.markdown-renderer .lx-tabs-title + .lx-tabs {
+.llx-markdown .llx-steps-title + .llx-steps,
+.llx-markdown .llx-stats-title + .llx-stats,
+.llx-markdown .llx-tabs-title + .llx-tabs {
   margin-top: 0;
 }
-.markdown-renderer ol.lx-steps,
-.markdown-renderer ul.lx-steps {
+.llx-markdown ol.llx-steps,
+.llx-markdown ul.llx-steps {
   list-style: none;
   margin: 0.8rem 0;
   padding-left: 0;
 }
-.markdown-renderer .lx-steps > li {
+.llx-markdown .llx-steps > li {
   --step-dot: 0.875rem;
   position: relative;
   margin: 0;
   padding: 0 0 0.9rem 1.75rem;
 }
-.markdown-renderer .lx-steps > li:last-child {
+.llx-markdown .llx-steps > li:last-child {
   padding-bottom: 0;
 }
 /* The dot sits on the first line box, whatever its height. */
-.markdown-renderer .lx-steps > li::before {
+.llx-markdown .llx-steps > li::before {
   content: '';
   position: absolute;
   left: 0;
@@ -46,7 +49,7 @@
   border-radius: 9999px;
 }
 /* The line runs from under this dot to the next one; the last step has none to reach. */
-.markdown-renderer .lx-steps > li:not(:last-child)::after {
+.llx-markdown .llx-steps > li:not(:last-child)::after {
   content: '';
   position: absolute;
   left: calc(var(--step-dot) / 2 - 0.75px);
@@ -54,49 +57,77 @@
   bottom: 0.15rem;
   border-left: 1.5px dotted color-mix(in oklch, var(--foreground) 28%, transparent);
 }
-.markdown-renderer .lx-step-head {
+.llx-markdown .llx-step-head {
   margin: 0;
 }
-.markdown-renderer .lx-step-title {
+.llx-markdown .llx-step-title {
   font-weight: 600;
   color: var(--foreground);
 }
-.markdown-renderer .lx-step-meta {
+.llx-markdown .llx-step-meta {
   display: block;
   margin-top: 0.1rem;
   font-size: 0.85em;
   font-style: italic;
   color: var(--text-faint);
 }
-.markdown-renderer .lx-step-body {
+.llx-markdown .llx-step-body {
   margin: 0.3rem 0 0;
 }
-.markdown-renderer .lx-steps > li > :last-child {
+.llx-markdown .llx-steps > li > :last-child {
   margin-bottom: 0;
 }
 
-/* ─── Tabs (`> [!TABS]` with a heading per variant, see AnswerVariants) ───
-   The variants share one bordered panel; the tab row is the kit's TabBar. */
-.markdown-renderer .lx-tabs {
+/* ─── Tabs (`> [!TABS]` with a heading per variant, `llx-markdown` Tabs) ───
+   The variants share one bordered panel; the tab row takes the measures of the kit's TabBar:
+   the panel-header height, full-height tabs, the soft text tier until a tab is chosen. */
+.llx-markdown .llx-tabs {
   margin: 0.8rem 0;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
 }
-.markdown-renderer .lx-tab-panel {
+.llx-markdown .llx-tab-list {
+  gap: 0;
+  height: var(--panel-header-height);
+  border-bottom-color: var(--border-soft);
+  padding: 0;
+}
+.llx-markdown .llx-tab {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 0.875rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-soft);
+  transition: color 150ms;
+}
+.llx-markdown .llx-tab:hover,
+.llx-markdown .llx-tab[aria-selected='true'] {
+  color: var(--foreground);
+}
+.llx-markdown .llx-tab[aria-selected='true']::after {
+  inset: auto 0 0;
+  border-bottom: 0;
+  height: 2px;
+  border-radius: 9999px;
+  background: var(--foreground);
+}
+.llx-markdown .llx-tab-panel {
   padding: 0.6rem 0.9rem 0.75rem;
 }
-.markdown-renderer .lx-tab-panel > :first-child {
+.llx-markdown .llx-tab-panel > :first-child {
   margin-top: 0;
 }
-.markdown-renderer .lx-tab-panel > :last-child {
+.llx-markdown .llx-tab-panel > :last-child {
   margin-bottom: 0;
 }
 
 /* ─── Headline figures (`> [!STATS]` over `- **value** label`) ───
    A row of figures that wraps: the value large, its label quiet under it. */
-.markdown-renderer ul.lx-stats,
-.markdown-renderer ol.lx-stats {
+.llx-markdown ul.llx-stats,
+.llx-markdown ol.llx-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(8.5rem, 100%), 1fr));
   gap: 0.5rem;
@@ -104,14 +135,14 @@
   padding: 0;
   list-style: none;
 }
-.markdown-renderer .lx-stats > li {
+.llx-markdown .llx-stats > li {
   min-width: 0;
   margin: 0;
   border-radius: 0.75rem;
   background: color-mix(in oklch, var(--foreground) 4%, transparent);
   padding: 0.6rem 0.8rem;
 }
-.markdown-renderer .lx-stat-value {
+.llx-markdown .llx-stat-value {
   display: block;
   font-size: 1.35em;
   font-weight: 600;
@@ -119,7 +150,7 @@
   font-variant-numeric: tabular-nums;
   color: var(--foreground);
 }
-.markdown-renderer .lx-stat-label {
+.llx-markdown .llx-stat-label {
   display: block;
   margin-top: 0.15rem;
   font-size: 0.85em;
@@ -130,13 +161,13 @@
 /* ─── The case for and against (`> [!PROS]` / `> [!CONS]`) ───
    A point per row with its glyph in the status hue — the one status in these forms. Written one
    after the other, the two sit side by side, and stack where the reply is narrow. */
-.markdown-renderer .lx-verdicts {
+.llx-markdown .llx-verdicts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
   gap: 0.5rem;
   margin: 0.8rem 0;
 }
-.markdown-renderer .lx-verdict {
+.llx-markdown .llx-verdict {
   min-width: 0;
   --verdict: var(--status-success);
   margin: 0.8rem 0;
@@ -144,67 +175,98 @@
   background: color-mix(in oklch, var(--foreground) 4%, transparent);
   padding: 0.6rem 0.9rem;
 }
-.markdown-renderer .lx-verdicts > .lx-verdict {
+.llx-markdown .llx-verdicts > .llx-verdict {
   margin: 0;
 }
-.markdown-renderer .lx-verdict[data-verdict='cons'] {
+.llx-markdown .llx-verdict[data-verdict='cons'] {
   --verdict: var(--status-error);
 }
-.markdown-renderer .lx-verdict-title {
+.llx-markdown .llx-verdict-title {
   margin: 0 0 0.3rem;
   font-weight: 600;
   color: var(--foreground);
 }
-.markdown-renderer ul.lx-verdict-list,
-.markdown-renderer ol.lx-verdict-list {
+.llx-markdown ul.llx-verdict-list,
+.llx-markdown ol.llx-verdict-list {
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.markdown-renderer .lx-verdict-list > li {
+.llx-markdown .llx-verdict-list > li {
   position: relative;
   margin: 0.2rem 0;
   padding-left: 1.35rem;
 }
-.markdown-renderer .lx-verdict-list > li::before {
+.llx-markdown .llx-verdict-list > li::before {
   position: absolute;
   left: 0;
   font-weight: 700;
   color: var(--verdict);
 }
-.markdown-renderer .lx-verdict[data-verdict='pros'] .lx-verdict-list > li::before {
+.llx-markdown .llx-verdict[data-verdict='pros'] .llx-verdict-list > li::before {
   content: '✓';
 }
-.markdown-renderer .lx-verdict[data-verdict='cons'] .lx-verdict-list > li::before {
+.llx-markdown .llx-verdict[data-verdict='cons'] .llx-verdict-list > li::before {
   content: '✕';
 }
 
 /* ─── File tree (a ```tree fence, see FileTree) ───
-   The rows are the Files sidebar's (their classes live on the component), on the reply's own
-   ground: a veil behind them only framed what the indent guides already structure. */
-.markdown-renderer .lx-tree {
+   The rows take the Files sidebar's metrics, on the reply's own ground: the interface's text
+   rather than a code column, 12px per level, a chevron column before every folder, and a comment
+   in the faint tier with no `#` before it. */
+.llx-markdown .llx-tree {
   margin: 0.8rem 0;
+  font-family: inherit;
+  font-size: var(--text-xs);
   line-height: normal;
+}
+.llx-markdown .llx-tree-row {
+  height: 1.5rem;
+  gap: 0.375rem;
+  border-radius: var(--radius-sm);
+  padding: 0 0.5rem 0 calc(var(--llx-tree-depth, 0) * 12px + 24px);
+  color: var(--text-soft);
+}
+.llx-markdown .llx-tree-row[data-folder] {
+  padding-left: calc(var(--llx-tree-depth, 0) * 12px + 8px);
+  color: var(--foreground);
+}
+.llx-markdown .llx-tree-row:hover {
+  background-color: transparent;
+}
+.llx-markdown .llx-tree-row[data-folder]:hover {
+  background-color: var(--surface-hover);
+}
+.llx-markdown .llx-tree-chevron {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+.llx-markdown .llx-tree-icon {
+  width: 1rem;
+  height: 1rem;
+}
+.llx-markdown .llx-tree-comment::before {
+  content: none;
 }
 
 /* ─── Checklists (GFM `- [ ] item`, see MarkdownTaskList) ─── */
-.markdown-renderer ul.contains-task-list,
-.markdown-renderer ol.contains-task-list {
+.llx-markdown ul.contains-task-list,
+.llx-markdown ol.contains-task-list {
   padding-left: 0;
   list-style: none;
 }
-.markdown-renderer li.task-list-item {
+.llx-markdown li.task-list-item {
   position: relative;
   padding-left: 1.55rem;
 }
-.markdown-renderer li.task-list-item .lx-task-box {
+.llx-markdown li.task-list-item .lx-task-box {
   /* Anchor to the first line without making loose paragraphs and nested lists flex columns. */
   position: absolute;
   left: 0;
   top: calc((1lh - 1rem) / 2);
   margin: 0;
 }
-.markdown-renderer
+.llx-markdown
   li.task-list-item:has(> .lx-task-box:checked, > p:first-child > .lx-task-box:checked) {
   color: var(--text-faint);
   text-decoration: line-through;

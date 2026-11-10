@@ -30,7 +30,7 @@ test('tree navigation walks visible siblings, folds branches and keeps handled k
   }
   try {
     await act(async () => root.render(<FileTree source={source} />))
-    expect(host.querySelector('[role="tree"]')?.classList.contains('nodrag')).toBe(true)
+    expect(host.querySelector('.nodrag [role="tree"]')).not.toBeNull()
     expect(rows().filter((row) => row.tabIndex === 0)).toHaveLength(1)
     await act(async () => rows()[0]!.focus())
     await press('ArrowDown')

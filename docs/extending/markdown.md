@@ -1,8 +1,8 @@
 # Shared Markdown
 
-The workspace and this documentation use `@localixai/markdown`. The package owns the syntax; each
-host chooses its links, images and reading layout. Mini apps use the host's
-[MarkdownRenderer](ui-kit.md) from the UI kit.
+The workspace and this documentation use the `llx-markdown` package. It owns the syntax; each host
+chooses its links, images and reading layout. Mini apps use the host's [MarkdownRenderer](ui-kit.md)
+from the UI kit.
 
 ## Render Markdown in a mini app
 
@@ -22,31 +22,32 @@ callback, checkboxes outside a conversation message are read-only.
 
 ## Render a standalone document
 
-Inside a workspace host that owns document presentation, use the shared package directly:
+Inside a workspace host that owns document presentation, use the package directly:
 
 ```tsx
-import { Markdown } from '@localixai/markdown/react'
+import { Markdown } from 'llx-markdown'
+import 'llx-markdown/styles.css'
 
 export function Document({ source }: { source: string }) {
   return (
-    <article className="markdown-renderer">
+    <article>
       <Markdown headingIds>{source}</Markdown>
     </article>
   )
 }
 ```
 
-Supply the kit stylesheet and document wrapper styles; this component does not install a theme. Pass
-a `components` map to resolve application links, render images or add a code-copy toolbar. GFM,
-callouts, figures, tabs, file trees, math and diagrams keep the same grammar in every host.
-`headingIds` enables anchors derived from heading text; repeated headings receive distinct ids.
-Changing a heading or the order of duplicates can change its anchor. Build a matching outline with
-`extractMarkdownHeadings` from the package root.
+The package's stylesheet draws every form from `--llx-*` colour tokens; the workspace sets them to
+its theme in `apps/ui/src/app/markdown.css`. Pass a `components` map to resolve application links,
+render images or add a code-copy toolbar. GFM, callouts, figures, tabs, file trees, math and
+diagrams keep the same grammar in every host. `headingIds` enables anchors derived from heading
+text; repeated headings receive distinct ids. Changing a heading or the order of duplicates can
+change its anchor. Build a matching outline with `extractHeadings` from the package root.
 
 > [!NOTE] Host behavior stays local
 >
 > The document renderer does not open workspace files, address agents or save checklist changes. The
-> workspace adds those behaviors to the shared parser.
+> workspace adds those behaviors through the renderer's `components` and `extensions`.
 
 ## Notes and steps
 
@@ -92,25 +93,26 @@ remains Markdown. The tab bar supports the keyboard and labels its panels.
 >
 > #### Parser
 >
-> Import `remarkPluginsFor` and `rehypePluginsFor` when the host already owns a ReactMarkdown
-> renderer, as the workspace does.
+> `llx-markdown` reads Markdown with its own parser. A host that owns a unified pipeline imports
+> `remarkLlx` from `llx-markdown/remark` to get the same forms there.
 >
 > #### Document
 >
-> Import `Markdown` from `@localixai/markdown/react` for a complete document with host component
-> overrides, as the documentation does.
+> Import `Markdown` from `llx-markdown` for a complete document with host components and plugins, as
+> the workspace and the documentation do.
 
 ## Trees and diagrams
 
 A `tree` fence becomes a foldable directory tree. Arrow keys move between visible rows.
 
 ```tree
-packages/markdown/
-├── src/
-│   ├── dialect.ts          # grammar shared with the agent prompt
-│   ├── markdownPlugins.ts  # safe parsing and lazy math
-│   └── react.tsx           # document rendering
-└── README.md
+apps/ui/src/
+├── app/
+│   ├── markdown.css        # the workspace's tokens and typography
+│   └── markdown-forms.css  # steps, tabs, stats, trees, checklists
+└── shared/ui/
+    ├── MarkdownRendererImpl.tsx  # links, mentions, checklists, actions
+    └── markdownStages.ts         # math and diagrams on first use
 ```
 
 A `mermaid` fence draws a diagram using the kit's color tokens. The engine loads on demand. Invalid
@@ -134,8 +136,9 @@ $$
 Prices such as $5 and $10, shell variables such as `$HOME`, and fenced code stay literal. Formulas
 share a bounded KaTeX cache, including when the workspace streams a reply.
 
-Math loads asynchronously on first use. A failed math chunk leaves readable source; a new document
-can retry the load. Rendering a formula is not a synchronous guarantee of the standalone component.
+Math loads asynchronously on first use. Until it arrives, and if its chunk fails to load, formulas
+stay readable as source; a failed load is tried again a few times. Rendering a formula is not a
+synchronous guarantee of the standalone component.
 
 A quote's closing `— Author` line becomes its attribution:
 
@@ -166,16 +169,9 @@ product behavior merely because a Markdown block is present.
 
 ## Source of truth
 
-- [`packages/markdown/README.md`](https://github.com/rsaryev/localix/blob/main/packages/markdown/README.md)
-  — entry points and ownership.
-- [`packages/markdown/src/dialect.ts`](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/dialect.ts)
-  — markers and fences.
-- [`packages/markdown/src/markdownPlugins.ts`](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/markdownPlugins.ts)
-  — parsing and sanitization.
-- [`packages/markdown/src/react.tsx`](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/react.tsx)
-  — document renderer.
+- [The `llx-markdown` dependency](https://github.com/rsaryev/localix/blob/main/apps/ui/package.json)
+  — the package owns entry points, markers, fences, parsing, sanitization and the document renderer.
 - [Plugin host entry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/app/kit/markdown.ts)
   and
   [workspace renderer props](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/MarkdownRendererImpl.tsx).
-- [Heading ids and outline](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/headings.ts).
 - [Answer formatting](../features/answer-formatting.md) — workspace behavior and limits.

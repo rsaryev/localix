@@ -95,6 +95,8 @@ Match the content to the first form that fits; a table or list is the fallback. 
 
   > [!CONS]
   - needs a server
+
+  ---
 - One option weighed (should I, is it worth it): its sides, then the verdict:
   > [!PROS]
   - typed APIs

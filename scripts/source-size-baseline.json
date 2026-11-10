@@ -1,7 +1,7 @@
 {
   "apps/api/src/app.ts": 414,
   "apps/api/src/bootstrap.ts": 350,
-  "apps/api/src/client.ts": 319,
+  "apps/api/src/client.ts": 318,
   "apps/api/src/db/types.ts": 615,
   "apps/api/src/features/agent-core/tools/web/research-backends.ts": 773,
   "apps/api/src/features/agent-core/tools/web/research.ts": 545,
@@ -55,7 +55,6 @@
   "apps/ui/src/shared/ui/code-editor/monaco/providers.ts": 439,
   "apps/ui/src/shared/ui/code-editor/monacoEditor.css": 524,
   "apps/ui/src/shared/ui/comments/text-comment-layer.tsx": 370,
-  "apps/ui/src/shared/ui/MarkdownRendererImpl.tsx": 469,
   "apps/ui/src/widgets/chat-sidebar/ui/ChatSidebar.tsx": 414,
   "apps/ui/src/widgets/chat-workspace/ui/ChatSurface.tsx": 568,
   "apps/ui/src/widgets/editor-grid/ui/GridView.tsx": 301,

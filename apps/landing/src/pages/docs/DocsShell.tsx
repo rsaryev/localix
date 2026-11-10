@@ -42,11 +42,7 @@ export function DocsShell({
           />
           <DocsReadingTools size={size} onSize={setSize} />
         </div>
-        <div
-          id="doc-body"
-          className="markdown-renderer docs-prose"
-          aria-busy={loading || undefined}
-        >
+        <div id="doc-body" className="docs-prose" aria-busy={loading || undefined}>
           {children}
         </div>
         <div className="docs-bottom-bar">

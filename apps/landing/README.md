@@ -60,9 +60,10 @@ reference `https://localix.ai/`.
 
 ## Markdown rendering
 
-The docs client and static build use `@localixai/markdown`, the same grammar as the workspace.
-`src/pages/docs/markdownComponents.tsx` owns repository links, capture resolution and code blocks;
-`docsNav.tsx` owns navigation grouping. Typography and rails stay in the landing stylesheet.
+The docs client and static build use `llx-markdown` through `src/pages/docs/DocMarkdown.tsx`, the
+same grammar as the workspace. `src/pages/docs/markdownComponents.tsx` owns repository links,
+capture resolution and code blocks; `docsNav.tsx` owns navigation grouping. Typography and rails
+stay in the landing stylesheet.
 
 See [Shared Markdown](../../docs/extending/markdown.md) for live examples and package ownership.
 

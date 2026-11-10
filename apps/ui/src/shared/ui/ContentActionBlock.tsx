@@ -1,15 +1,17 @@
 import type { ReactNode } from 'react'
-import type { Element } from 'hast'
+import type { Node } from 'llx-markdown'
 import type { ActionTarget } from '@localixai/mini-app-sdk/ui'
 import { FLOATING_SURFACE } from '@localixai/kit/workbench-toolbar'
 import { ContributedActions } from './ContributedActions'
 
 /** A quiet hover affordance; the original block owns typography and spacing. */
-export function ContentActionBlock({ node, children }: { node?: Element; children?: ReactNode }) {
-  const markdown = String(node?.properties.markdownSource ?? '')
-  const block = node?.properties.blockKind as
-    | Extract<ActionTarget, { kind: 'markdown' }>['block']
-    | 'table'
+export function ContentActionBlock({ node, children }: { node?: Node; children?: ReactNode }) {
+  // What `contentActions` wrote on the wrapper it made around the block.
+  const carried = node?.data?.hProperties as
+    | { markdownSource?: string; blockKind?: string }
+    | undefined
+  const markdown = carried?.markdownSource ?? ''
+  const block = carried?.blockKind as Extract<ActionTarget, { kind: 'markdown' }>['block'] | 'table'
   const target: ActionTarget =
     block === 'table' ? { kind: 'table', markdown } : { kind: 'markdown', markdown, block }
   return (

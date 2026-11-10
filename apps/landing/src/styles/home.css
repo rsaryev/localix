@@ -1,14 +1,14 @@
 html,
 body,
 pre,
-.docs-table-scroll,
+.docs-prose .llx-table,
 aside {
   scrollbar-width: thin;
 }
 html::-webkit-scrollbar,
 body::-webkit-scrollbar,
 pre::-webkit-scrollbar,
-.docs-table-scroll::-webkit-scrollbar,
+.docs-prose .llx-table::-webkit-scrollbar,
 aside::-webkit-scrollbar {
   display: initial;
 }

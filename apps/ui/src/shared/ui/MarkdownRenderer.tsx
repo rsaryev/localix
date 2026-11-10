@@ -1,6 +1,6 @@
 // Re-export of the real renderer. We deliberately do NOT lazy-load it.
 //
-// Lazy-loading split react-markdown + KaTeX + sugar-high into a separate chunk,
+// Lazy-loading split the Markdown renderer + KaTeX + sugar-high into a separate chunk,
 // which kept the empty home screen lean — but it meant the FIRST markdown render
 // showed a raw-text Suspense fallback for a beat and then swapped to parsed
 // markdown (different heading/code-block heights), so the message visibly

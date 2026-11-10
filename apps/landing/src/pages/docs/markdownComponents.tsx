@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { highlightCode } from '@localixai/markdown/highlight'
-import { childrenToText, type Components } from '@localixai/markdown/react'
+import type { MarkdownComponents } from 'llx-markdown'
 import { screenshotAssets } from '../../generated/shots'
 import { Screenshot } from '../../components/Screenshot'
 import { CAPTURE_HEIGHT, CAPTURE_WIDTH } from '../../lib/capture'
@@ -69,27 +68,6 @@ export function makeMdComponents(sourcePath: string, navigate: (to: string) => v
       return <DocImage src={asset.src} alt={alt ?? ''} capture />
     },
     pre: ({ children }: { children?: React.ReactNode }) => <DocCodeBlock>{children}</DocCodeBlock>,
-    table: ({ children, ...props }) => (
-      <div className="docs-table-scroll">
-        <table style={{ textAlign: props.style?.textAlign }}>{children}</table>
-      </div>
-    ),
-    code: ({ className, children }: { className?: string; children?: React.ReactNode }) => {
-      const text = childrenToText(children)
-      const isBlock = /language-/.test(className ?? '') || text.includes('\n')
-      if (!isBlock) return <code>{children}</code>
-      return (
-        <code
-          className={className}
-          dangerouslySetInnerHTML={{
-            __html: highlightCode(
-              text.replace(/\n$/, ''),
-              className?.match(/language-([A-Za-z0-9_-]+)/)?.[1],
-            ),
-          }}
-        />
-      )
-    },
     a: ({ href, children }: { href?: string; children?: React.ReactNode }) => {
       // A markdown link with no destination is not a link. Rendering a bare `<a>` produced an
       // element that is announced as one and goes nowhere; the text is the whole content.
@@ -129,5 +107,5 @@ export function makeMdComponents(sourcePath: string, navigate: (to: string) => v
       }
       return <a href={href}>{children}</a>
     },
-  } satisfies Components
+  } satisfies MarkdownComponents
 }
