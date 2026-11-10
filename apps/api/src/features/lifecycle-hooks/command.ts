@@ -18,6 +18,8 @@ export interface HookCommandOptions {
   env: NodeJS.ProcessEnv
   timeoutMs: number
   maxOutputBytes: number
+  /** Write stderr into `stdout` as it arrives, under the stdout cap; `stderr` stays empty. */
+  mergeStderr?: boolean
   signal?: AbortSignal
 }
 
@@ -27,6 +29,8 @@ export interface HookCommandResult {
   stderr: string
   timedOut: boolean
   aborted: boolean
+  /** Why the process never started (no such program, no shell); absent when it ran. */
+  startError?: string
 }
 
 /**
@@ -54,14 +58,17 @@ export function runHookCommand(options: HookCommandOptions): Promise<HookCommand
   // PATH, so every hook failed to spawn there while the agent's own commands ran through Git Bash.
   // Exec form spawns the executable itself. A target that cannot be resolved or spawned becomes
   // the hook's stderr, the same non-throwing shape any other failed hook produces.
-  const failed = (error: unknown): Promise<HookCommandResult> =>
-    Promise.resolve({
+  const failed = (error: unknown): Promise<HookCommandResult> => {
+    const message = error instanceof Error ? error.message : String(error)
+    return Promise.resolve({
       code: null,
       stdout: '',
-      stderr: error instanceof Error ? error.message : String(error),
+      stderr: message,
       timedOut: false,
       aborted: false,
+      startError: message,
     })
+  }
   let target: HookSpawnTarget
   try {
     target = resolveHookSpawnTarget(options)
@@ -91,6 +98,7 @@ export function runHookCommand(options: HookCommandOptions): Promise<HookCommand
     let timedOut = false
     let aborted = false
     let settled = false
+    let startError: string | undefined
     const killTree = () => killProcessTreeNow(child.pid)
     const abort = () => {
       aborted = true
@@ -107,7 +115,7 @@ export function runHookCommand(options: HookCommandOptions): Promise<HookCommand
       clearTimeout(timer)
       options.signal?.removeEventListener('abort', abort)
       releaseChildPipes(child)
-      resolve({ code, stdout, stderr, timedOut, aborted })
+      resolve({ code, stdout, stderr, timedOut, aborted, ...(startError ? { startError } : {}) })
     }
     options.signal?.addEventListener('abort', abort, { once: true })
 
@@ -119,6 +127,12 @@ export function runHookCommand(options: HookCommandOptions): Promise<HookCommand
       stdout += decodeOut(captured)
     })
     child.stderr.on('data', (data: Buffer) => {
+      if (options.mergeStderr) {
+        const merged = data.subarray(0, Math.max(0, options.maxOutputBytes - stdoutBytes))
+        stdoutBytes += merged.length
+        stdout += decodeErr(merged)
+        return
+      }
       const captured = data.subarray(0, Math.max(0, options.maxOutputBytes - stderrBytes))
       stderrBytes += captured.length
       stderr += decodeErr(captured)
@@ -133,6 +147,7 @@ export function runHookCommand(options: HookCommandOptions): Promise<HookCommand
       ({ code, error }) => {
         // A missing executable (exec form) reports only through the spawn error.
         if (error && !stderr) stderr = error.message
+        if (error && code === null) startError = error.message
         finish(code)
       },
       () => {

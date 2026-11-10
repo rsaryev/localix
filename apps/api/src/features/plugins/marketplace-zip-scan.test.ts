@@ -54,6 +54,16 @@ describe('scanZip', () => {
     expect(summary(zip, small)).toEqual({ entries: 3, totalBytes: 35, largestBytes: 20 })
   })
 
+  it('gives the unix mode an entry was zipped with, and none for an entry from elsewhere', () => {
+    const zip = makeZip([
+      { name: 'link', data: 'target', unixMode: 0o120777 },
+      { name: 'plain', data: 'x' },
+    ])
+    const [link, plain] = scanZip(zip).members
+    expect(link?.unixMode).toBe(0o120777)
+    expect(plain?.unixMode).toBeUndefined()
+  })
+
   it('refuses too many entries, a too-large file, or a too-large total', () => {
     const many = makeZip([1, 2, 3, 4].map((n) => ({ name: `f${n}`, data: 'x' })))
     expect(() => scanZip(many, small)).toThrow('4 entries (limit 3)')

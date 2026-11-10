@@ -30,7 +30,7 @@ in `packages/`, automation in `scripts/`, configuration in `config/`, docs in `d
 
 A **plugin** is the Claude Code format (`.claude-plugin/plugin.json`); a **mini app** is Localix's
 own (`mini-app.json`: screens, backend, agent tools). Neither imports the other, and nothing about
-screens, backends or the mini app SDK is called "plugin". Rules X1–X5:
+screens, backends or the mini app SDK is called "plugin". Rules X1–X7:
 [plugins and mini apps](docs/internals/plugins-and-mini-apps.md).
 
 This repository holds neither. Localix's own plugins and mini apps live in the

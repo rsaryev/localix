@@ -1,7 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "customConditions": [],
+    // Workspace packages build their dist first; the linked kit is read from its src through its
+    // own condition, as in tsconfig.json.
+    "customConditions": ["llx-plugin-source"],
+    "rewriteRelativeImportExtensions": true,
     "incremental": false,
     "target": "ES2022",
     // `lib` must be restated whenever `target` is overridden: tsconfig.base.json sets
@@ -12,7 +15,7 @@
     // that Bun implements at runtime (`Array.prototype.at`, `Object.hasOwn`,
     // `String.replaceAll`, `Error.cause`) error as "does not exist". Keep in sync with
     // tsconfig.json, which carries the same restatement for the type-check gate.
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "rootDir": ".",

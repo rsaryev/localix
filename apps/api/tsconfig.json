@@ -9,12 +9,20 @@
     // A permissive gate in front of a strict one is worse than no gate — it converts a build
     // failure into a surprise. Raise BOTH together, deliberately, or neither.
     "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "rootDir": "../..",
     "outDir": "dist",
     "typeRoots": ["../../node_modules/@types"],
-    "types": ["bun"]
+    "types": ["bun"],
+    // `@rsaryev/llx-plugin` is linked from a sibling checkout and its dist goes stale while the
+    // kit is edited: its own `llx-plugin-source` condition maps every subpath to the src Bun runs
+    // (kit README, "Type-check against the source"). Restated here because `customConditions` is
+    // replaced, not merged, by an extending config. The kit's src imports with `.ts` extensions,
+    // which `rewriteRelativeImportExtensions` accepts, and uses ES2023 (`toSorted`, `findLast`):
+    // `lib` above, kept equal in tsconfig.build.json.
+    "customConditions": ["@localixai/source", "llx-plugin-source"],
+    "rewriteRelativeImportExtensions": true
   },
   "include": ["src/**/*", "migrations/**/*"],
   "exclude": ["src/**/*.test.ts"]

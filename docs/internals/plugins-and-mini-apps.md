@@ -23,18 +23,28 @@ its plugins or mini apps. What the core publishes for them is the mini app SDK a
 
 ## Rules
 
-| Id  | Rule                                                                                                                                                                                                                             |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| X1  | `features/plugins` and `features/mini-apps` never import each other; `packages/claude-plugin` and `packages/mini-app-sdk` never import each other. Machinery both need (pinned downloads, archives, git) lives in a neutral lib. |
-| X2  | A folder is one or the other. A mini app folder holds no `.claude-plugin/`; a plugin folder holds no `.localix-mini-app/`. The loader refuses a folder with both and says why.                                                   |
-| X3  | Each layer has its own records, routes, storage, settings page, slash command and model-facing names. Nothing is "an extension" that could be either.                                                                            |
-| X4  | The core names no mini app. A feature that needs one (a task board) asks for a capability a mini app declares, never for a mini app by name.                                                                                     |
-| X5  | Localix ships no mini app and hosts no marketplace. Every mini app, first-party included, is installed and updated from a marketplace; Localix's own come from the Localix marketplace.                                          |
+| Id  | Rule                                                                                                                                                                                                                                                    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| X1  | `features/plugins` and `features/mini-apps` never import each other; `packages/claude-plugin` and `packages/mini-app-sdk` never import each other. Machinery both need (pinned downloads, archives, git) lives in a neutral lib.                        |
+| X2  | A folder is one or the other. A mini app folder holds no `.claude-plugin/`; a plugin folder holds no `.localix-mini-app/`. The loader refuses a folder with both and says why.                                                                          |
+| X3  | Each layer has its own records, routes, storage, settings page, slash command and model-facing names. Nothing is "an extension" that could be either.                                                                                                   |
+| X4  | The core names no mini app. A feature that needs one (a task board) asks for a capability a mini app declares, never for a mini app by name.                                                                                                            |
+| X5  | Localix ships no mini app and hosts no marketplace. Every mini app, first-party included, is installed and updated from a marketplace; Localix's own come from the Localix marketplace.                                                                 |
+| X6  | No Claude Code plugin semantics outside the kit boundary. How a plugin is read, its variables substituted, a hook's output judged or a frontmatter field honoured comes from `@rsaryev/llx-plugin`; the rest of Localix keeps host glue.                |
+| X7  | The kit only through the boundary. Only `apps/api/src/features/plugins/kit/` imports `@rsaryev/llx-plugin` (tests included); everything else calls its `index.ts`. The UI may import `@rsaryev/llx-plugin/elicitation`, `/layout` and `/mods/elements`. |
 
 `scripts/architecture-rules.test.ts` enforces X1, with a baseline in
 `scripts/architecture-baselines/x1.json` that only shrinks and is now empty: the `localix://`
 address grammar both sides name lives in `packages/uri` (the SDK re-exports it for mini apps). The
 loaders enforce X2.
+
+The same test enforces X6 and X7. X6 looks for the format's markers in code (strings count, comments
+do not): `$ARGUMENTS`, `CLAUDE_SKILL_DIR`, `${CLAUDE_PLUGIN_ROOT}`, `CLAUDE_PLUGIN_DATA`,
+`user_config.`, `hookSpecificOutput`, `permissionDecision`, `disable-model-invocation`,
+`allowed-tools` and `plugin.json`, in `apps/api/src`, `apps/ui/src` and `packages/`, outside the
+boundary, tests and testing helpers. Its baseline, `scripts/architecture-baselines/x6.json`, lists
+the code that still spells them and only shrinks as each piece moves behind the boundary. X7 reads
+every import in `apps/`, `packages/` and `scripts/`, tests included, and its baseline is empty.
 
 ## Plugins
 

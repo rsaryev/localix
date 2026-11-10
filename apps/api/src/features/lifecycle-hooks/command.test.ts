@@ -85,6 +85,27 @@ describe('native hook command transport', () => {
     )
     expect(result.code).not.toBe(0)
     expect(result.stderr).toContain('nonexistent-hook-binary')
+    expect(result.startError).toContain('nonexistent-hook-binary')
+  })
+
+  test('an argument the system refuses is a start error, not a throw', async () => {
+    const result = await runHookCommand(options(process.execPath, { args: ['a\u0000b'] }))
+    expect(result).toMatchObject({ code: null, timedOut: false, aborted: false })
+    expect(result.startError).toContain('null bytes')
+    expect(result.stderr).toBe(result.startError ?? '')
+  })
+
+  test('a process that ran has no start error, whatever its exit', async () => {
+    const result = await runHookCommand(options('printf oops >&2; exit 3'))
+    expect(result.startError).toBeUndefined()
+  })
+
+  test('merged output carries stderr in stdout, under the one stdout cap', async () => {
+    const result = await runHookCommand(
+      options('printf ab; printf cd >&2', { mergeStderr: true, maxOutputBytes: 3 }),
+    )
+    expect(result.stdout).toHaveLength(3)
+    expect(result.stderr).toBe('')
   })
 
   test('invalid limits cannot create an unbounded execution', () => {

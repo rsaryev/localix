@@ -45,6 +45,8 @@ export interface ZipMember {
   dataStart: number
   compressedBytes: number
   bytes: number
+  /** The unix mode the entry was zipped with (`S_IFLNK` marks a link); absent from another system. */
+  unixMode?: number
 }
 
 export interface ZipSummary {
@@ -168,7 +170,9 @@ function memberAt(buf: Buffer, at: number, dir: Directory): { member: ZipMember;
   }
   if (dataStart + compressedBytes > dir.offset)
     throw bad(`Archive entry ${name} runs past the end of the file data`)
-  return { member: { name, method, dataStart, compressedBytes, bytes }, next }
+  const unixMode = buf.readUInt8(at + 5) === 3 ? buf.readUInt32LE(at + 38) >>> 16 : undefined
+  const member: ZipMember = { name, method, dataStart, compressedBytes, bytes }
+  return { member: unixMode === undefined ? member : { ...member, unixMode }, next }
 }
 
 /** Walk the whole central directory, refusing the archive past `limits`. */

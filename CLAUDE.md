@@ -12,5 +12,5 @@ out of the main conversation.
 # Compact instructions
 
 When compacting, keep: the task and the user's decisions, files changed and why, the failing test or
-check and its exact error, rule ids (A1–A8, C1–C7, X1–X5) the change touches, and open items. Drop
+check and its exact error, rule ids (A1–A8, C1–C7, X1–X7) the change touches, and open items. Drop
 passing test output, file contents that can be re-read, and search results already acted on.

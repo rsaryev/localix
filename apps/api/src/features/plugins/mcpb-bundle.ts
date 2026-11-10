@@ -119,6 +119,46 @@ function serverConfig(manifest: Record<string, unknown>): Record<string, unknown
   return rest
 }
 
+/** One bundle, extracted and read: its server named and its variables substituted. */
+export interface OpenedMcpBundle {
+  name: string
+  server: Record<string, unknown>
+  /** The manifest's `user_config` block, by setting name. */
+  userConfig: Record<string, Record<string, unknown>>
+}
+
+/**
+ * Open one bundle a plugin names (a path inside it or an `https://` URL), throwing why it cannot
+ * load. `${user_config.KEY}` becomes what `userConfigRef` names, or stays as written.
+ */
+export async function openMcpBundle(
+  pluginDir: string,
+  ref: string,
+  userConfigRef: (server: string, key: string) => string | undefined = () => undefined,
+): Promise<OpenedMcpBundle> {
+  const root = await extracted(pluginDir, await bundleFile(pluginDir, ref))
+  const manifest = JSON.parse(await fs.readFile(join(root, 'manifest.json'), 'utf8')) as unknown
+  if (!isRecord(manifest) || typeof manifest.name !== 'string')
+    throw new Error('the bundle manifest has no name')
+  const name = manifest.name
+  const config = serverConfig(manifest)
+  if (!config) throw new Error('the bundle manifest declares no server')
+  const declared = isRecord(manifest.user_config) ? manifest.user_config : {}
+  const userConfig = Object.fromEntries(
+    Object.entries(declared).filter((entry): entry is [string, Record<string, unknown>] =>
+      isRecord(entry[1]),
+    ),
+  )
+  const server = substitute(config, (variable) => {
+    if (variable === '__dirname') return root
+    if (variable === 'HOME') return homedir()
+    if (variable === '/' || variable === 'pathSeparator') return '/'
+    if (variable.startsWith('user_config.')) return userConfigRef(name, variable.slice(12))
+    return undefined
+  }) as Record<string, unknown>
+  return { name, server, userConfig }
+}
+
 /** Read every bundle a plugin names, in order; one that cannot load says why. */
 export async function loadMcpBundles(
   pluginDir: string,
@@ -127,16 +167,13 @@ export async function loadMcpBundles(
   const out: McpBundles = { servers: {}, options: {}, required: {}, errors: [] }
   for (const ref of refs) {
     try {
-      const root = await extracted(pluginDir, await bundleFile(pluginDir, ref))
-      const manifest = JSON.parse(await fs.readFile(join(root, 'manifest.json'), 'utf8')) as unknown
-      if (!isRecord(manifest) || typeof manifest.name !== 'string')
-        throw new Error('the bundle manifest has no name')
-      const name = manifest.name
-      const config = serverConfig(manifest)
-      if (!config) throw new Error('the bundle manifest declares no server')
-      const declared = isRecord(manifest.user_config) ? manifest.user_config : {}
-      for (const [key, raw] of Object.entries(declared)) {
-        if (!isRecord(raw)) continue
+      // The plugin's settings resolve the bundle's options (`<server>.<key>`) at connect time.
+      const { name, server, userConfig } = await openMcpBundle(
+        pluginDir,
+        ref,
+        (server, key) => `\${user_config.${server}.${key}}`,
+      )
+      for (const [key, raw] of Object.entries(userConfig)) {
         out.options[`${name}.${key}`] = {
           type: (typeof raw.type === 'string' && OPTION_TYPES.includes(raw.type)
             ? raw.type
@@ -150,18 +187,10 @@ export async function loadMcpBundles(
             : {}),
         }
       }
-      out.required[name] = Object.keys(declared)
-        .filter((key) => isRecord(declared[key]) && declared[key].required === true)
+      out.required[name] = Object.keys(userConfig)
+        .filter((key) => userConfig[key]?.required === true)
         .map((key) => `${name}.${key}`)
-      out.servers[name] = substitute(config, (variable) => {
-        if (variable === '__dirname') return root
-        if (variable === 'HOME') return homedir()
-        if (variable === '/' || variable === 'pathSeparator') return '/'
-        // The plugin's settings resolve the bundle's options (`<server>.<key>`) at connect time.
-        if (variable.startsWith('user_config.'))
-          return `\${user_config.${name}.${variable.slice(12)}}`
-        return undefined
-      }) as Record<string, unknown>
+      out.servers[name] = server
     } catch (error) {
       out.errors.push(`Failed to load MCP bundle ${ref}: ${errorMessage(error)}`)
     }

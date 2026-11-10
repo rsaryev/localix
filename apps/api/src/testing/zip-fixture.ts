@@ -15,6 +15,8 @@ export interface ZipFixtureEntry {
   declaredBytes?: number
   /** Write the sizes as 0xFFFFFFFF with the real values in ZIP64 extra fields. */
   zip64?: boolean
+  /** Zip the entry on unix with this mode (`0o120777` is a symbolic link; its data the target). */
+  unixMode?: number
 }
 
 export interface ZipFixtureOptions {
@@ -58,7 +60,7 @@ export function makeZip(entries: ZipFixtureEntry[], opts: ZipFixtureOptions = {}
     local.writeUInt16LE(extra.length, 28)
     const central = Buffer.alloc(46)
     central.writeUInt32LE(0x02014b50, 0)
-    central.writeUInt16LE(entry.zip64 ? 45 : 20, 4)
+    central.writeUInt16LE((entry.unixMode === undefined ? 0 : 3 << 8) | (entry.zip64 ? 45 : 20), 4)
     central.writeUInt16LE(entry.zip64 ? 45 : 20, 6)
     central.writeUInt16LE(deflate ? 8 : 0, 10)
     central.writeUInt32LE(crc, 16)
@@ -66,6 +68,7 @@ export function makeZip(entries: ZipFixtureEntry[], opts: ZipFixtureOptions = {}
     central.writeUInt32LE(sizeField, 24)
     central.writeUInt16LE(name.length, 28)
     central.writeUInt16LE(extra.length, 30)
+    if (entry.unixMode !== undefined) central.writeUInt32LE((entry.unixMode << 16) >>> 0, 38)
     central.writeUInt32LE(offset, 42)
     locals.push(local, name, extra, data)
     centrals.push(central, name, extra)

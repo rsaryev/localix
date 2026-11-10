@@ -5,12 +5,20 @@
     "type-check": {
       "dependsOn": ["^type-check"],
       "outputs": [],
-      "inputs": ["$TURBO_DEFAULT$"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/node_modules/@rsaryev/llx-plugin/package.json",
+        "$TURBO_ROOT$/node_modules/@rsaryev/llx-plugin/src/**"
+      ]
     },
     "type-check:tests": {
       "dependsOn": ["^type-check"],
       "outputs": [],
-      "inputs": ["$TURBO_DEFAULT$"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/node_modules/@rsaryev/llx-plugin/package.json",
+        "$TURBO_ROOT$/node_modules/@rsaryev/llx-plugin/src/**"
+      ]
     },
     "test": {
       "dependsOn": ["^build"],
@@ -21,7 +29,9 @@
         "$TURBO_ROOT$/scripts/test-shards.mjs",
         "$TURBO_ROOT$/scripts/test-all.mjs",
         "$TURBO_ROOT$/packages/testing/src/**",
-        "$TURBO_ROOT$/packages/kit/test-preload.ts"
+        "$TURBO_ROOT$/packages/kit/test-preload.ts",
+        "$TURBO_ROOT$/node_modules/@rsaryev/llx-plugin/package.json",
+        "$TURBO_ROOT$/node_modules/@rsaryev/llx-plugin/src/**"
       ],
       "outputs": []
     },
@@ -34,7 +44,9 @@
         "$TURBO_ROOT$/scripts/test-shards.mjs",
         "$TURBO_ROOT$/scripts/test-all.mjs",
         "$TURBO_ROOT$/packages/testing/src/**",
-        "$TURBO_ROOT$/packages/kit/test-preload.ts"
+        "$TURBO_ROOT$/packages/kit/test-preload.ts",
+        "$TURBO_ROOT$/node_modules/@rsaryev/llx-plugin/package.json",
+        "$TURBO_ROOT$/node_modules/@rsaryev/llx-plugin/src/**"
       ],
       "outputs": []
     }

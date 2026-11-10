@@ -23,7 +23,9 @@
         "migrations/*.ts",
         "scripts/**/*.ts",
         "src/**/*.test.ts",
-        "src/**/testing/fake-*.ts"
+        "src/**/testing/fake-*.ts",
+        "src/features/plugins/kit/index.ts",
+        "src/features/plugins/kit/testing.ts"
       ],
       "ignoreDependencies": [
         "@parcel/watcher-darwin-arm64",

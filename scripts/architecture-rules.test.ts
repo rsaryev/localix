@@ -8,6 +8,10 @@ import {
 import { loadSources, planted, ratchet, type Rule, type Source } from './architecture/kit'
 import { X1_LAYERS_APART } from './architecture/layer-rules'
 import {
+  X6_PLUGIN_SEMANTICS_IN_THE_KIT,
+  X7_KIT_THROUGH_THE_BOUNDARY,
+} from './architecture/plugin-kit-rules'
+import {
   A1_PACKAGE_CYCLES,
   A2_AGNOSTIC_CORE,
   A3_PROVIDER_SDK_HOME,
@@ -15,7 +19,8 @@ import {
 } from './architecture/package-rules'
 
 /**
- * Architecture rules A1–A7 (`docs/internals/architecture/README.md`), each against the repository
+ * Architecture rules A1–A7 (`docs/internals/architecture/README.md`) and X1, X6, X7
+ * (`docs/internals/plugins-and-mini-apps.md`), each against the repository
  * with its shrinking baseline in `scripts/architecture-baselines/`, and each with a positive
  * control proving it still fires and a negative one proving it does not fire on the allowed shape.
  * The rest of A1 (no package imports apps, `@/` or a plugin) is `scripts/check-architecture.mjs`.
@@ -65,6 +70,20 @@ describe('architecture rules against the repository', () => {
     () => enforce(X1_LAYERS_APART, repo()),
     TIMEOUT,
   )
+  test(
+    'X6 no Claude Code plugin semantics outside the kit boundary',
+    () => enforce(X6_PLUGIN_SEMANTICS_IN_THE_KIT, repo()),
+    TIMEOUT,
+  )
+  test(
+    'X7 the llx-plugin kit only through the boundary',
+    () =>
+      enforce(
+        X7_KIT_THROUGH_THE_BOUNDARY,
+        loadSources(['apps/', 'packages/', 'scripts/'], { tests: true }),
+      ),
+    TIMEOUT,
+  )
 })
 
 const manifest = (name: string, deps: string[]) =>
@@ -98,6 +117,57 @@ describe('positive and negative controls', () => {
     ])
     expect(hits).toHaveLength(3)
     expect(hits.join('\n')).not.toContain('features/chat')
+  })
+
+  test('X6 fires on a format marker outside the boundary, not in it, a test or a comment', () => {
+    const hits = X6_PLUGIN_SEMANTICS_IN_THE_KIT.detect([
+      planted(
+        'apps/api/src/features/chat/expand.ts',
+        "const out = body.replaceAll('$ARGUMENTS', args)",
+      ),
+      planted('packages/x/src/read.ts', "const off = frontmatter['disable-model-invocation']"),
+      planted('apps/ui/src/view.ts', "const dir = env['CLAUDE_PLUGIN_DATA']"),
+      planted('apps/api/src/features/plugins/kit/skills.ts', "body.replaceAll('$ARGUMENTS', a)"),
+      planted('apps/api/src/features/chat/expand.test.ts', "expect(t).toContain('$ARGUMENTS')"),
+      planted('packages/x/src/testing/plugin.ts', "const file = 'plugin.json'"),
+      planted('apps/api/src/features/chat/doc.ts', '// the kit expands $ARGUMENTS\nexport {}'),
+    ])
+    expect(hits).toEqual([
+      'apps/api/src/features/chat/expand.ts spells $ARGUMENTS (skill arguments)',
+      'packages/x/src/read.ts spells disable-model-invocation (frontmatter)',
+      'apps/ui/src/view.ts spells CLAUDE_PLUGIN_DATA (plugin variables)',
+    ])
+  })
+
+  test('X7 fires on the kit imported outside the boundary, UI allowed three subpaths', () => {
+    const hits = X7_KIT_THROUGH_THE_BOUNDARY.detect([
+      planted(
+        'apps/api/src/features/chat/x.ts',
+        "import { HOOK_EVENTS } from '@rsaryev/llx-plugin'",
+      ),
+      planted(
+        'apps/api/src/features/chat/x.test.ts',
+        "import type { Ports } from '@rsaryev/llx-plugin/testing'",
+      ),
+      planted('apps/ui/src/a.ts', "export { readPlugin } from '@rsaryev/llx-plugin/loading'"),
+      planted('packages/x/src/b.ts', "const m = await import('@rsaryev/llx-plugin/hooks')"),
+      planted('apps/api/src/features/plugins/kit/index.ts', "export * from '@rsaryev/llx-plugin'"),
+      planted('apps/api/src/features/plugins/kit/a.test.ts', "import '@rsaryev/llx-plugin/sdk'"),
+      planted('apps/ui/src/c.ts', "import { STANDARD_LAYOUT } from '@rsaryev/llx-plugin/layout'"),
+      planted('apps/ui/src/d.ts', "import type { E } from '@rsaryev/llx-plugin/elicitation'"),
+      planted('apps/ui/src/e.ts', "import { x } from '@rsaryev/llx-plugin-other'"),
+      planted('apps/ui/src/f.ts', "import { Box } from '@rsaryev/llx-plugin/mods/elements'"),
+      planted('apps/api/src/g.ts', "import { Box } from '@rsaryev/llx-plugin/mods/elements'"),
+      planted('apps/ui/src/h.ts', "import { createModHost } from '@rsaryev/llx-plugin/mods'"),
+    ])
+    expect(hits).toEqual([
+      'apps/api/src/features/chat/x.ts imports @rsaryev/llx-plugin',
+      'apps/api/src/features/chat/x.test.ts imports @rsaryev/llx-plugin/testing',
+      'apps/ui/src/a.ts imports @rsaryev/llx-plugin/loading',
+      'packages/x/src/b.ts imports @rsaryev/llx-plugin/hooks',
+      'apps/api/src/g.ts imports @rsaryev/llx-plugin/mods/elements',
+      'apps/ui/src/h.ts imports @rsaryev/llx-plugin/mods',
+    ])
   })
 
   test('A1 fires on a package cycle, not on a chain', () => {
