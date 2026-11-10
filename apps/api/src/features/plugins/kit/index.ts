@@ -91,3 +91,11 @@ export {
   settingsRuleEntries,
   type SettingsRuleEntry,
 } from './settings/permissions'
+export {
+  invokeSkill,
+  invokeTypedSkills,
+  type InvokedSkill,
+  type InvokeSkillOptions,
+  type SkillInvocation,
+  type SkillShellAnswer,
+} from './skills'

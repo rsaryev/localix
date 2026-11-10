@@ -171,3 +171,26 @@ describe('one kit session per chat', () => {
     expect(enabledIn(session)).toEqual({ 'fmt@acme': false })
   })
 })
+
+describe('an asyncRewake wake', () => {
+  // A chat's session may first open outside a run (a typed `/skill`), with no wake to bind: the
+  // wake of the latest run is the one a background hook's exit 2 reaches.
+  test('reaches the wake of the latest run, not only the one the session opened with', () => {
+    let deliver: ((delivered: { wake?: string }) => void) | undefined
+    const { host, chats } = sessions()
+    const openSession = host.kit.openSession.bind(host.kit)
+    host.kit.openSession = (options) => {
+      const session = openSession(options)
+      session.onBackground = (listener) => {
+        deliver = listener as typeof deliver
+        return () => {}
+      }
+      return session
+    }
+    chats.forRun(facts())
+    const woke: string[] = []
+    chats.forRun(facts({ onWake: (text) => woke.push(text) }))
+    deliver?.({ wake: 'tests failed' })
+    expect(woke).toEqual(['tests failed'])
+  })
+})

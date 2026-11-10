@@ -3,17 +3,10 @@ import { recordSkillUse } from '../../agent-core/skill-usage-recorder'
 import { announceSkillInvoked } from '../../agent-core/skill-invocations'
 import { resolveModelAlias } from '../../agent-core/model-alias'
 import { resolveDeclaredReasoningEffort } from '../../../db/types'
+import { invokeTypedSkills } from '../../plugins/kit'
 import { parseSkillCommand } from './slash-commands'
-import { SkillCommandFailedError } from './skill-commands'
-import { renderSkillBody } from './skill-render'
-import { stackedSkills } from './command-handlers-skill-stack'
 import { skillPromptDetails } from '../../agent-core/skill-prompt-details'
-import {
-  skillToolPathVars,
-  substituteToolPathVars,
-  toolOverrideOptions,
-} from './tool-override-options'
-import { authorizeTypedSkillCommands } from './skill-command-authorize'
+import { typedSkillShellAnswer } from './skill-command-authorize'
 import type { SessionRecord } from '../repository'
 import type { SkillRecord } from './skills'
 import { pluginDataDir } from '../../plugins/mcp'
@@ -21,7 +14,6 @@ import { userHome } from '../../../lib/env'
 import type { MessageMutationResponse } from '../contracts'
 import { skillPrompt } from '../../mods/conversation-events'
 import type { CommandHandlerContext } from './command-handlers-context'
-import { errorMessage } from '../../../lib/errors'
 import { filterDisabledSkills } from '../../agent-core/skill-overrides'
 
 /**
@@ -41,12 +33,24 @@ export function findPluginSkill(
   return bare.length === 1 ? bare[0] : undefined
 }
 
+/** The skill's plugin, for a forked child's hooks (`${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`). */
+function pluginOf(skill: SkillRecord) {
+  if (!skill.pluginName || !skill.pluginDir) return undefined
+  return {
+    name: skill.pluginName,
+    root: skill.pluginDir,
+    dataDir: skill.pluginDataDir ?? pluginDataDir(skill.pluginName, userHome()),
+  }
+}
+
 /**
- * Handles user skill slash commands (`/<skill-name>`). Saved skills surface as
- * slash commands; a `/name` that isn't a built-in and matches a stored skill
- * runs the agent with the skill's template. Returns null when the prompt isn't
- * a skill command OR no matching skill exists; the final unresolved-slash gate
- * then reports command-shaped input that no dynamic handler claimed.
+ * Handles user skill slash commands (`/<skill-name>`). Saved skills surface as slash commands; a
+ * `/name` that isn't a built-in and matches a listed skill runs the agent with the skill as the
+ * chat's kit session expands it (Claude Code: `user-invocable`, arguments, `${CLAUDE_*}`, its
+ * `!` commands against the agent's rules, the skills stacked after it, its fork, model and
+ * effort; its frontmatter `hooks` register on the session for the rest of it). Returns null when
+ * the prompt isn't a skill command OR no listed skill has the name; the final unresolved-slash
+ * gate then reports command-shaped input that no dynamic handler claimed.
  */
 export async function handleSkillCommand(
   ctx: CommandHandlerContext,
@@ -67,97 +71,13 @@ export async function handleSkillCommand(
     discoveredSkills.map((s) => s.name),
   )
   const skills = filterDisabledSkills(discoveredSkills, skillOverrides)
-  // Read at most once per command: the stacked skills after the first look here too.
-  let pluginSkills: Promise<SkillRecord[]> | undefined
-  const findSkill = async (name: string) =>
-    skills.find((s) => s.name.toLowerCase() === name) ??
-    findPluginSkill(await (pluginSkills ??= ctx.gatherEnabledPluginSkills(userId, session)), name)
-  const skill = await findSkill(skillCmd.name)
-  if (!skill) {
-    // No matching skill — let the final unresolved-slash gate report it.
-    return null
-  }
-  if (skill.userInvocable === false) {
-    // CC `user-invocable: false` — model-only skill. It exists, so reporting
-    // the final generic "Unknown slash command" is actively misleading.
-    return insertDirectReply(
-      userId,
-      sessionId,
-      prompt,
-      'Skill `/' +
-        skill.name +
-        '` is model-only (`user-invocable: false`) and cannot be run as a slash command.',
-      now(),
-      'error',
-    )
-  }
-  // No busy refusal: a skill command sent while the session works waits in the queue whole
-  // (`run-macro.ts`), like every other slash command.
-  // The session's agent answers the skill: its effort, its fork.
-  const workingDir = await ctx.resolveSessionWorkingDir(userId, session)
-  // A plugin's skill is a plugin component: its `!cmd` lines and its frontmatter `hooks` both get
-  // the plugin's `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}`, as Claude Code gives them.
-  const plugin =
-    skill.pluginName && skill.pluginDir
-      ? {
-          name: skill.pluginName,
-          root: skill.pluginDir,
-          dataDir: skill.pluginDataDir ?? pluginDataDir(skill.pluginName, userHome()),
-        }
-      : undefined
-  const route = sessionRoute(session)
-  // CC rendering: `!cmd` and ```! blocks run (seeing the arguments), `@path` references inline,
-  // then arguments and `${CLAUDE_*}` substitute. SECURITY: commands and @refs only for SKILL.md
-  // files (source='file'): the user's own, and an ENABLED plugin's — Claude Code runs a plugin
-  // skill's commands too. A failed command aborts the invocation before the model is asked.
-  // The agent's rules, which every injected command meets first (`skill-command-authorize.ts`).
-  const rules = await ctx.loadSkillCommandRules?.(userId, route.agentId)
-  const pathVars = skillToolPathVars({
-    projectDir: workingDir,
-    path: skill.path,
-    pluginRoot: plugin?.root,
-    pluginDataDir: plugin?.dataDir,
-  })
-  // `/write-tests /fix-issue 123`: the skills stacked after an inline first one, all taking `123`.
-  const stack = skill.contextFork
-    ? { extra: [], arg: skillCmd.arg }
-    : await stackedSkills(skillCmd.arg, findSkill)
-  const arg = stack.arg
-  const render = async (one: SkillRecord) =>
-    renderSkillBody(one, arg, {
-      // `disableSkillShellExecution`: the commands of a person's, a project's or a plugin's skill
-      // show a placeholder; a built-in plugin's skill is exempt (`bootstrap/skill-shell-policy.ts`).
-      shellDisabled:
-        (await ctx.skillShellDisabled?.({
-          workingDir,
-          ...(one.path ? { skillPath: one.path } : {}),
-        })) === true,
-      ...(rules
-        ? {
-            authorize: authorizeTypedSkillCommands(
-              rules,
-              substituteToolPathVars(one.allowedTools, pathVars),
-              workingDir,
-            ),
-          }
-        : {}),
-      sessionId,
-      workingDir,
-      effort: route.reasoningEffort ?? 'low',
-      ...(plugin
-        ? { env: { CLAUDE_PLUGIN_ROOT: plugin.root, CLAUDE_PLUGIN_DATA: plugin.dataDir } }
-        : {}),
-      dynamic: one.source === 'file',
-    })
-  let expanded: string
-  try {
-    expanded = (await Promise.all([skill, ...stack.extra].map(render))).join('\n\n')
-  } catch (error) {
-    const reason =
-      error instanceof SkillCommandFailedError
-        ? error.message.slice(0, 4000)
-        : `could not be loaded: ${errorMessage(error).slice(0, 500)}`
-    return insertDirectReply(
+  const skill =
+    skills.find((s) => s.name.toLowerCase() === skillCmd.name) ??
+    findPluginSkill(await ctx.gatherEnabledPluginSkills(userId, session), skillCmd.name)
+  // No matching skill — let the final unresolved-slash gate report it.
+  if (!skill) return null
+  const fail = (reason: string) =>
+    insertDirectReply(
       userId,
       sessionId,
       prompt,
@@ -165,7 +85,24 @@ export async function handleSkillCommand(
       now(),
       'error',
     )
-  }
+
+  // No busy refusal: a skill command sent while the session works waits in the queue whole
+  // (`run-macro.ts`), like every other slash command.
+  const workingDir = await ctx.resolveSessionWorkingDir(userId, session)
+  const kitSession = await ctx.chatPluginSession?.(userId, session)
+  if (!kitSession) return fail('skills run in a chat of the plugin host, and this one has none.')
+  const route = sessionRoute(session)
+  // The agent's rules, which every injected command meets first; absent, the kit's own rules.
+  const rules = await ctx.loadSkillCommandRules?.(userId, route.agentId)
+  const typed = await invokeTypedSkills(kitSession, prompt, {
+    signal: AbortSignal.timeout(10 * 60_000),
+    ...(rules ? { shellPermission: typedSkillShellAnswer(rules, workingDir) } : {}),
+  })
+  if (!typed.ok) return fail(typed.message.slice(0, 4000))
+  const [first] = typed.skills
+  if (!first) return fail("this chat's plugin session does not list it.")
+  const expanded = typed.skills.map((one) => one.text).join('\n\n')
+  const arg = skillCmd.arg
   // Claude Code mods' `skill.prompt`: the text the model reads for the skill.
   const instruction = await skillPrompt(
     ctx.deps?.mods,
@@ -193,11 +130,11 @@ export async function handleSkillCommand(
   })
 
   // CC `context: fork` — run the skill in a child session, started as the invoking agent and run
-  // as the agent its `agent:` names (general-purpose when omitted).
-  if (skill.contextFork && spawnForkSkill) {
-    const forkAgent = skill.forkAgent?.trim()
+  // as the agent the expansion names.
+  if (first.fork && spawnForkSkill) {
+    const plugin = pluginOf(skill)
     const childId = await spawnForkSkill(userId, sessionId, instruction, {
-      ...(forkAgent ? { agent: forkAgent } : {}),
+      agent: first.fork.agent,
       title: `/${skill.name}${arg ? ' ' + arg : ''}`,
       // CC skill frontmatter `hooks` — activated for the forked sub-agent run.
       ...(skill.hooks ? { hooks: skill.hooks, ...(plugin ? { hooksPlugin: plugin } : {}) } : {}),
@@ -211,6 +148,9 @@ export async function handleSkillCommand(
     )
   }
 
+  const grants = typed.skills.flatMap((one) => one.grants)
+  const disallowed = typed.skills.flatMap((one) => one.disallowed)
+  const effort = resolveDeclaredReasoningEffort(first.effort)
   return runMacroCommand(
     userId,
     sessionId,
@@ -220,39 +160,16 @@ export async function handleSkillCommand(
     instruction,
     now(),
     {
-      // CC disallowed-tools removes tools; allowed-tools auto-approves them.
-      // ${CLAUDE_PROJECT_DIR} in allowed-tools resolves to the session working dir.
-      ...toolOverrideOptions(
-        {
-          allowedTools: [skill, ...stack.extra].flatMap((s) => s.allowedTools ?? []),
-          disallowedTools: [skill, ...stack.extra].flatMap((s) => s.disallowedTools ?? []),
-        },
-        pathVars,
-      ),
-      // CC skill frontmatter `hooks` — registered for "the rest of the session once the skill is
-      // invoked": from this run on, every later run of the session keeps them. No
-      // Stop→SubagentStop conversion: the skill runs in THIS session's turn.
-      ...(skill.hooks
-        ? {
-            ccScopedHooks: [
-              {
-                raw: skill.hooks,
-                source: 'skill' as const,
-                lifetime: 'session' as const,
-                ...(plugin ? { plugin } : {}),
-              },
-            ],
-          }
-        : {}),
+      // CC disallowed-tools removes tools; allowed-tools auto-approves them (paths filled by the kit).
+      ...(grants.length ? { extraAllowedTools: grants } : {}),
+      ...(disallowed.length ? { extraDisabledTools: disallowed } : {}),
       // CC skill `model:` — "applies for the rest of the current turn"; the next prompt runs on
-      // the session model again. An alias resolves like a command's; `inherit` keeps the model.
-      ...(skill.preferredModel
-        ? { modelId: resolveModelAlias(skill.preferredModel, route.modelId ?? undefined) }
+      // the session model again. An alias resolves to the catalog's model.
+      ...(first.model
+        ? { modelId: resolveModelAlias(first.model, route.modelId ?? undefined) }
         : {}),
       // CC skill `effort:` — the invoking turn's effort; an unknown value keeps the session's.
-      ...(resolveDeclaredReasoningEffort(skill.preferredEffort)
-        ? { reasoningEffort: resolveDeclaredReasoningEffort(skill.preferredEffort) }
-        : {}),
+      ...(effort ? { reasoningEffort: effort } : {}),
       invocation: {
         source: 'slash',
         invocation: {

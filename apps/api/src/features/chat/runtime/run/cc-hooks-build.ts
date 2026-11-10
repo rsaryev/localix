@@ -16,7 +16,12 @@ import { createHookModels } from './cc-hook-evaluators'
 import type { RunCatalog, RunEnv, RunParams } from './types'
 import { ccSubagentOf } from './cc-hook-session-facts'
 import { claudeCodeHome } from '../../../cc-settings/config-dir'
-import { openRunHooks, readClaudeSettingsSync, type ScopedHooksBlock } from '../../../plugins/kit'
+import {
+  openRunHooks,
+  readClaudeSettingsSync,
+  type KitSession,
+  type ScopedHooksBlock,
+} from '../../../plugins/kit'
 import { ccBackgroundWork, ccRunFacts } from './cc-hook-run-facts'
 import { createCcTranscript } from './cc-transcript'
 import { publishAgentPhase } from '../session-stream-registry'
@@ -76,6 +81,8 @@ export interface RunCcHooks {
   ccInitialUserMessage?: string
   /** A SessionStart hook asked to scan the skill folders again. */
   ccReloadSkills?: boolean
+  /** The chat's kit session as this run's turn; absent without a plugin host (a test's runtime). */
+  kitSession?: KitSession
 }
 
 export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunCcHooks> {
@@ -211,6 +218,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
   return {
     ccHooks,
     ccSessionStartContext,
+    kitSession,
     // "used as the first user message of the session, in non-interactive mode" (hooks.md).
     ...(started.initialUserMessage && input.interactive === false
       ? { ccInitialUserMessage: started.initialUserMessage }

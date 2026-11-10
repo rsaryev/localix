@@ -204,14 +204,17 @@ describe('an on-skill-invoke monitor', () => {
         dir: home(),
         pluginName: 'ops',
       }
-      const tool = createSkillTool(null, [skill], {}, '', undefined, (loaded) =>
-        announceSkillInvoked({
-          userId: 'u1',
-          sessionId: 'c1',
-          skillName: loaded.name,
-          ...(loaded.pluginName ? { pluginName: loaded.pluginName } : {}),
-        }),
-      )
+      const tool = createSkillTool(null, [skill], {}, '', undefined, {
+        invokeSkill: async (loaded) => {
+          announceSkillInvoked({
+            userId: 'u1',
+            sessionId: 'c1',
+            skillName: loaded.name,
+            ...(loaded.pluginName ? { pluginName: loaded.pluginName } : {}),
+          })
+          return { ok: true, text: loaded.content }
+        },
+      })
       const out = await tool.execute('t', { action: 'get', name: 'deploy' } as never)
       expect(out.isError).toBeFalsy()
       expect(await Promise.all(started)).toEqual([['ops:deploy-status']])

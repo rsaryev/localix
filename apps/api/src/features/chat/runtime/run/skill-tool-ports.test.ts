@@ -1,20 +1,17 @@
 import { describe, expect, test } from 'bun:test'
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { AgentTool } from '@localixai/agent/agents'
 import { tempDirPerTest } from '@localixai/testing'
 
 import type { PermissionRule } from '../../../agent-core/permission-engine'
+import { verdictOf } from '../../../agent-core/permission-verdict'
 import type { DiscoveredSkill } from '../../../agent-core/skill-discovery'
 import { createSkillTool } from '../../../agent-core/tools/skill'
+import { createChatPluginSessions } from '../../../plugins/kit'
+import { diskPluginHost } from '../../../plugins/kit/testing'
 import type { SessionRecord } from '../../repository'
-import { renderSkillBody } from '../../service/skill-render'
-import { createCcHookSessions } from '../cc-hook-sessions'
-import {
-  authorizeSkillCommands,
-  skillToolPorts,
-  type SkillCommandPolicyRef,
-} from './skill-tool-ports'
+import { skillShellAnswer, skillToolPorts, type SkillCommandPolicyRef } from './skill-tool-ports'
 
 /**
  * The model loading a skill must not get a shell the run's rules withhold. The defect: `get`
@@ -30,6 +27,8 @@ const bash = {
     effect: input.command?.startsWith('git status') ? 'read' : 'external',
   }),
 } as unknown as AgentTool
+const tool = (name: string) =>
+  ({ name, classify: () => ({ effect: 'external' }) }) as unknown as AgentTool
 
 const PLAN: PermissionRule[] = [
   {
@@ -46,107 +45,94 @@ const policy = (rules: PermissionRule[], tools = [bash]): SkillCommandPolicyRef 
 })
 
 describe('a skill’s injected commands meet the run’s rules', () => {
+  const answer = (ref: SkillCommandPolicyRef, command: string, grants: string[] = []) =>
+    skillShellAnswer(ref)({ command, grants })
+
   test('a read-only mode refuses a command that reaches out, and lets a read run', () => {
-    const check = authorizeSkillCommands(policy(PLAN), {})
-    expect(check('git status')).toBeUndefined()
-    expect(check('touch x')).toContain('Plan mode is read-only')
+    expect(answer(policy(PLAN), 'git status')).toBe('allow')
+    expect(answer(policy(PLAN), 'touch x')).toBe('deny')
   })
 
-  test('a command the rules would ask about is refused unless the skill pre-approves it', () => {
-    expect(authorizeSkillCommands(policy(ASK_SHELL), {})('git status')).toContain('allowed-tools')
-    const own = authorizeSkillCommands(policy(ASK_SHELL), { allowedTools: ['Bash(git status)'] })
-    expect(own('git status')).toBeUndefined()
-  })
-
-  // skills.md: a skill can pre-approve its own bundled script with
-  // `allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/render.sh *)` — the model loading it too.
-  test('a skill pre-approves its own script through ${CLAUDE_SKILL_DIR} and plugin paths', () => {
-    const skill = {
-      allowedTools: [
-        'Bash(${CLAUDE_SKILL_DIR}/scripts/render.sh *)',
-        'Bash(${CLAUDE_PLUGIN_ROOT}/bin/tool *)',
-      ],
-      path: '/skills/render-chart/SKILL.md',
-      pluginRoot: '/plugins/charts',
-      pluginName: 'charts',
-    }
-    const check = authorizeSkillCommands(policy(ASK_SHELL), skill)
-    expect(check('/skills/render-chart/scripts/render.sh data.csv')).toBeUndefined()
-    expect(check('/plugins/charts/bin/tool x')).toBeUndefined()
+  test('a command the rules would ask about is allowed only by the skill’s own grants', () => {
+    expect(answer(policy(ASK_SHELL), 'git status')).toBe('ask')
+    expect(answer(policy(ASK_SHELL), 'git status', ['Bash(git status)'])).toBe('allow')
   })
 
   test('nothing runs without the run’s rules or without a shell tool', () => {
-    expect(authorizeSkillCommands({}, {})('git status')).toBeString()
-    expect(authorizeSkillCommands(policy([], []), {})('git status')).toBeString()
-  })
-
-  test('the skill tool’s get refuses the load and runs nothing', async () => {
-    const marker = join(dir(), 'ran')
-    const skill = {
-      name: 'zz-ports-sneaky',
-      description: 'd',
-      content: `Run: !\`touch ${marker}\``,
-      scope: 'global',
-      path: join(dir(), 'zz-ports-sneaky', 'SKILL.md'),
-      dir: join(dir(), 'zz-ports-sneaky'),
-      pluginName: 'zzports',
-    } as DiscoveredSkill
-    const ports = skillToolPorts({
-      userId: 'u',
-      session: { id: 's', agent: null } as unknown as SessionRecord,
-      defaultCwd: dir(),
-      renderSkill: renderSkillBody,
-      commandPolicy: policy(PLAN),
-    })
-    const tool = createSkillTool(null, [skill], {}, '', undefined, () => {}, ports.renderSkill)
-    const got = await tool.execute('t', { action: 'get', name: 'zzports:zz-ports-sneaky' })
-    expect(got.isError).toBe(true)
-    expect(String(got.content)).toContain('Shell command permission check failed for pattern')
-    expect(existsSync(marker)).toBe(false)
+    expect(answer({}, 'git status')).toBe('deny')
+    expect(answer(policy([], []), 'git status')).toBe('deny')
   })
 })
 
-/**
- * A skill's frontmatter `hooks` run as `sh -c` outside the gate on every later turn, so a model
- * that loads a project skill must not register a command hook its run's rules would refuse.
- */
-describe('a model-loaded skill’s frontmatter command hooks meet the run’s rules', () => {
-  const hooked = (command: string) =>
-    ({
-      name: 'zz-hooked',
-      description: 'd',
-      content: 'No commands here.',
-      scope: 'project',
-      path: join(dir(), 'zz-hooked', 'SKILL.md'),
-      dir: join(dir(), 'zz-hooked'),
-      hooks: { UserPromptSubmit: [{ hooks: [{ type: 'command', command }] }] },
-    }) as unknown as DiscoveredSkill
-  const load = (skill: DiscoveredSkill, commandPolicy: SkillCommandPolicyRef) => {
-    const ccHookSessions = createCcHookSessions()
-    const ports = skillToolPorts({
-      userId: 'u',
-      session: { id: 's1', agent: null } as unknown as SessionRecord,
-      defaultCwd: dir(),
-      ccHookSessions,
-      commandPolicy,
+/** A skill folder in the chat's project, as the kit session finds it. */
+function projectSkill(name: string, frontmatter: string, body: string): DiscoveredSkill {
+  const at = join(dir(), 'work', '.claude', 'skills', name)
+  mkdirSync(at, { recursive: true })
+  const path = join(at, 'SKILL.md')
+  writeFileSync(path, `---\nname: ${name}\ndescription: d\n${frontmatter}\n---\n${body}\n`)
+  return { name, description: 'd', content: body, scope: 'project', path, dir: at }
+}
+
+function loadTool(skill: DiscoveredSkill, commandPolicy: SkillCommandPolicyRef) {
+  mkdirSync(join(dir(), 'work', '.git'), { recursive: true })
+  const kitSession = createChatPluginSessions(diskPluginHost(join(dir(), 'home'))).forRun({
+    chatId: 's',
+    cwd: join(dir(), 'work'),
+    transcriptPath: join(dir(), 's.jsonl'),
+    permissionMode: 'default',
+    trusted: true,
+    layers: [],
+    plugins: [],
+  })
+  const ports = skillToolPorts({
+    userId: 'u',
+    session: { id: 's', agent: null } as unknown as SessionRecord,
+    defaultCwd: join(dir(), 'work'),
+    kitSession,
+    commandPolicy,
+  })
+  return createSkillTool(null, [skill], {}, '', undefined, ports)
+}
+
+describe('the skill tool’s get runs the skill through the chat’s kit session', () => {
+  test('a command the rules refuse refuses the load and runs nothing', async () => {
+    const marker = join(dir(), 'ran')
+    const skill = projectSkill('zz-ports-sneaky', '', `Run: !\`touch ${marker}\``)
+    const got = await loadTool(skill, policy(PLAN)).execute('t', {
+      action: 'get',
+      name: 'zz-ports-sneaky',
     })
-    ports.onSkillLoaded(skill)
-    return ccHookSessions.skillHooks('s1')
-  }
-
-  test('plan mode registers no hook whose command reaches out', () => {
-    expect(load(hooked('touch "$SCRATCH/hook-ran"'), policy(PLAN))).toEqual([])
+    expect(got.isError).toBe(true)
+    expect(existsSync(marker)).toBe(false)
   })
 
-  test('an agent without a shell registers no command hook', () => {
-    expect(load(hooked('git status'), policy([], []))).toEqual([])
+  // skills.md, frontmatter `allowed-tools`: "Tools Claude can use without asking permission during
+  // the turn that invokes this skill", and `disallowed-tools`: "Tools removed from Claude's
+  // available pool while this skill is active". Both hold when Claude itself invokes the skill.
+  test('allowed-tools are pre-approved and disallowed-tools refused for the rest of the run', async () => {
+    const ASK: PermissionRule[] = [{ permission: '*', pattern: '*', action: 'ask' }]
+    const commandPolicy = policy(ASK, ['Bash', 'Write', 'Read'].map(tool))
+    const skill = projectSkill(
+      'ship',
+      'allowed-tools: Bash(git push *)\ndisallowed-tools: Write',
+      'Ship $ARGUMENTS.',
+    )
+    const check = () => verdictOf(commandPolicy.current!)
+    expect(check()('Bash', { command: 'git push origin' }).decision).toBe('ask')
+    const got = await loadTool(skill, commandPolicy).execute('t', {
+      action: 'get',
+      name: 'ship',
+      arguments: 'today',
+    })
+    expect(String(got.content)).toContain('Ship today.')
+    expect(check()('Bash', { command: 'git push origin' }).decision).toBe('allow')
+    expect(check()('Bash', { command: 'rm -rf x' }).decision).toBe('ask')
+    expect(check()('Write', { path: 'a.txt', content: 'x' }).decision).toBe('deny')
   })
 
-  test('a command the rules would ask about is not registered', () => {
-    expect(load(hooked('git status'), policy(ASK_SHELL))).toEqual([])
-  })
-
-  test('a command the rules allow registers for the session', () => {
-    expect(load(hooked('git status'), policy(PLAN))).toHaveLength(1)
+  test('a disable-model-invocation skill is refused to the model', async () => {
+    const skill = projectSkill('deploy', 'disable-model-invocation: true', 'Deploy.')
+    const got = await loadTool(skill, policy(PLAN)).execute('t', { action: 'get', name: 'deploy' })
+    expect(got.isError).toBe(true)
   })
 })

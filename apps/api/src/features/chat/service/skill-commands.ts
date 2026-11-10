@@ -194,3 +194,13 @@ export async function expandSkillContent(
     return vault ? vault.seal(text) : text
   })
 }
+
+/** Which skill or plugin command is about to render, and where the session works: what the policy is read for. */
+export interface SkillShellQuery {
+  workingDir: string
+  /** Absolute path of the `SKILL.md` (or the plugin's folder for a command); a built-in's is exempt. */
+  skillPath?: string
+}
+
+/** Whether `disableSkillShellExecution` applies to that skill, from the host's settings. */
+export type SkillShellPolicy = (query: SkillShellQuery) => Promise<boolean>

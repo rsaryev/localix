@@ -20,6 +20,15 @@ import { ccTranscriptText } from './cc-transcript-lines'
  *
  * Layer rule: run/ may import runtime infrastructure + agent-core, never features/chat/service*.
  */
+/** Where the session's conversation file is: the root session's data folder, `<root id>.jsonl`. */
+export function ccTranscriptPath(
+  session: Pick<SessionRecord, 'id' | 'rootSessionId'>,
+  dataRoot?: string,
+): string {
+  const rootId = session.rootSessionId ?? session.id
+  return join(sessionDataDir(rootId, dataRoot), '.claude-code', `${rootId}.jsonl`)
+}
+
 export function createCcTranscript(input: {
   repo: Pick<ChatRepository, 'listMessages'>
   userId: string
@@ -30,8 +39,8 @@ export function createCcTranscript(input: {
   warn?: (message: string) => void
 }): CcTranscript {
   const rootId = input.session.rootSessionId ?? input.session.id
-  const dir = join(sessionDataDir(rootId, input.dataRoot), '.claude-code')
-  const path = join(dir, `${rootId}.jsonl`)
+  const path = ccTranscriptPath(input.session, input.dataRoot)
+  const dir = dirname(path)
   const agentPath = (agentId: string) => join(dir, 'subagents', `agent-${agentId}.jsonl`)
 
   const write = async (file: string, sessionId: string, agentId?: string) => {

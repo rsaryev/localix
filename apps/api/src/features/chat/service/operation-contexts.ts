@@ -62,6 +62,7 @@ export function createOperationContexts(
     gatherEnabledPluginSkills,
     buildSessionPluginCatalog,
     loadSessionPluginMcpServers,
+    chatPluginSession,
     getSessionDetail,
     publishSession,
     sessionLifecycleCtx,
@@ -187,6 +188,7 @@ export function createOperationContexts(
     resolveSessionWorkingDir,
     buildSessionPluginCatalog,
     loadSessionPluginMcpServers,
+    chatPluginSession,
     // CC `context: fork` — run the skill in a child session, as the invoking agent.
     spawnForkSkill: createSpawnForkSkill({
       now,

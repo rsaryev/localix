@@ -1,6 +1,6 @@
 import type { PermissionMode } from '../../../contracts/permission-modes'
 import type { PermissionRule } from '../../agent-core/permission-engine'
-import type { SkillShellPolicy } from './skill-render'
+import type { SkillShellPolicy } from './skill-commands'
 import type { DecisionService } from '../../decisions/service'
 import type { SemanticService } from '../../embeddings/service'
 import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'

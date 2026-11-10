@@ -61,10 +61,12 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
     gatherEnabledPluginSkills,
     buildSessionPluginCatalog,
     loadSessionPluginMcpServers,
+    chatPluginSession,
   } = createSessionWorkspace({
     projectsRepo,
     pluginRepo,
     pluginHost,
+    ...(deps.pluginSessions ? { pluginSessions: deps.pluginSessions } : {}),
     availabilityFor: (userId, agentId) => readAvailability(deps.db, { userId, agentId }),
     logger: deps.logger,
   })
@@ -178,6 +180,7 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
     gatherEnabledPluginSkills,
     buildSessionPluginCatalog,
     loadSessionPluginMcpServers,
+    chatPluginSession,
     resolveSessionWorkspaceMetadata,
     fileWatchService,
     sessionDetailCtx,

@@ -14,12 +14,23 @@ import { toFileSkillRecord, toPluginSkillRecord, type SkillRecord } from './skil
 import type { SkillDiscoveryLogger } from '../../agent-core/skill-discovery'
 import type { AvailabilityReader } from '../../capabilities/availability'
 import type { CapabilitySourceRepository } from '../../capabilities/source-repository'
-import type { LocalixPluginHost } from '../../plugins/kit'
+import {
+  readClaudeSettingsSync,
+  type ChatPluginSessions,
+  type KitSession,
+  type LocalixPluginHost,
+} from '../../plugins/kit'
+import { kitPluginsOf } from '../../plugins/catalog-kit'
+import { claudeCodeHome } from '../../cc-settings/config-dir'
+import { openChatPluginSession } from '../runtime/run/chat-plugin-session'
+import { ccTranscriptPath } from '../runtime/run/cc-transcript'
 
 export interface SessionWorkspaceDeps {
   projectsRepo: ReturnType<typeof createProjectsRepository>
   pluginRepo: CapabilitySourceRepository
   pluginHost: LocalixPluginHost
+  /** The chats' kit sessions (`createChatPluginSessions`); absent in a host without plugins. */
+  pluginSessions?: ChatPluginSessions
   /**
    * What an AGENT's rules say about its plugins. A PORT because this module owns no
    * storage — the same reason the repositories above are injected — and because the
@@ -44,7 +55,7 @@ const agentOf = (session: SessionRecord): string => session.agent?.agentId || DE
  * chat service so the workspace-rooting + discovery logic lives in one place.
  */
 export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
-  const { projectsRepo, pluginRepo, pluginHost, availabilityFor, logger } = deps
+  const { projectsRepo, pluginRepo, pluginHost, pluginSessions, availabilityFor, logger } = deps
 
   /** Resolves a project's working dir (for filesystem skill discovery). */
   const resolveProjectWorkingDir = projectWorkingDirPort(projectsRepo)
@@ -170,7 +181,35 @@ export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
     return skills.map((skill) => toPluginSkillRecord(skill, projectId))
   }
 
+  /**
+   * The chat's kit session with the facts its next run opens it with (`cc-hooks-build.ts`): its
+   * folder, Claude Code's settings there, the catalog's plugins and the chat's mode. A typed
+   * `/skill` expands in it, so the skill's hooks and `once` keys carry into the run.
+   */
+  const chatPluginSession = async (
+    userId: string,
+    session: SessionRecord,
+  ): Promise<KitSession | undefined> => {
+    if (!pluginSessions) return undefined
+    const [cwd, catalog] = await Promise.all([
+      resolveSessionWorkingDir(userId, session),
+      buildSessionPluginCatalog(userId, session),
+    ])
+    return openChatPluginSession(
+      pluginSessions,
+      {
+        chatId: session.id,
+        cwd,
+        settings: readClaudeSettingsSync({ homeDir: claudeCodeHome(), cwd }),
+        plugins: kitPluginsOf(catalog),
+      },
+      ccTranscriptPath(session),
+      session.permissionMode,
+    )
+  }
+
   return {
+    chatPluginSession,
     resolveProjectWorkingDir,
     resolveSessionWorkingDir,
     gatherSessionSkills,

@@ -264,6 +264,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     ccHooks,
     ccSessionStartContext,
     ...(ccInitialUserMessage ? { ccInitialUserMessage } : {}),
+    ...(built.kitSession ? { kitSession: built.kitSession } : {}),
     mods,
   }
 }

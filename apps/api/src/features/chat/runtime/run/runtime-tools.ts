@@ -36,6 +36,7 @@ import type { RunPolicy } from '../../policy/run-policy'
 import type { WorkflowEntry } from '../../../agent-core/tools/workflow/workflow'
 import type { AgentModelChoice } from '../../../agent-core/agent-model-route'
 import type { SkillCommandPolicyRef } from './skill-tool-ports'
+import type { KitSession } from '../../../plugins/kit'
 import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 
 export interface RuntimeToolWiringContext {
@@ -46,8 +47,6 @@ export interface RuntimeToolWiringContext {
   actionRegistry: RuntimeState['actionRegistry']
   terminalWaits: RuntimeState['terminalWaits']
   executeToolAction: (toolCallId: string, actionName: string, payload?: unknown) => boolean
-  /** Where a skill the model loads registers its hooks for the rest of the session. */
-  ccHookSessions?: RuntimeState['ccHookSessions']
 }
 
 // Small mini app surfaces stay direct. Larger workbench stacks are indexed and
@@ -111,6 +110,8 @@ export function buildRunToolRegistry(
     agentModelChoices?: readonly AgentModelChoice[]
     /** Filled by the run's gate: the rules a skill's injected commands are checked against. */
     skillCommandPolicy?: SkillCommandPolicyRef
+    /** The chat's kit session as this run's turn: a skill the model loads runs through it. */
+    kitSession?: KitSession
   },
 ): RuntimeToolRegistry & { setLedger?: (ledger: ToolLedger) => void } {
   const { deps, work, terminalWaits } = ctx

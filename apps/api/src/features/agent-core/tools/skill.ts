@@ -15,6 +15,7 @@ import {
   skillPermissionResources,
   prepareSkillArguments,
   skillToolInputSchema,
+  type SkillRun,
   type SkillToolPorts,
 } from './skill-call'
 
@@ -22,6 +23,7 @@ export {
   classifySkillCall,
   skillPermissionResources,
   type SkillForkRequest,
+  type SkillRun,
   type SkillToolPorts,
 } from './skill-call'
 
@@ -47,12 +49,9 @@ export {
  *   next run's prompt could omit what the agent had just saved — until an unrelated plugin
  *   or MCP toggle happened to bump the revision. Injected rather than imported: the
  *   announcement (bump + client poke) belongs to the host, not to agent-core.
- * @param onSkillLoaded Host port, called when `get` hands the agent a skill: the skill runs
- *   (a plugin monitor waiting for it starts, see `skill-invocations.ts`; its hooks register).
- * @param renderSkill Host port: the skill's content as the model reads it — its injected commands
- *   run, its arguments and `${CLAUDE_*}` variables substituted — exactly as a `/name` typed by the
- *   person renders it. A throw (a failed command) refuses the load with its message. Absent: the
- *   content as written.
+ * @param ports Host ports: `invokeSkill` runs the skill as Claude Code does when Claude invokes it
+ *   (who may invoke it, its arguments, `${CLAUDE_*}` variables and injected commands, its fork);
+ *   its refusal is the result's error. Absent: the content as written.
  */
 export function createSkillTool(
   workingDir?: string | null,
@@ -60,8 +59,6 @@ export function createSkillTool(
   skillOverrides: SkillOverrides = {},
   projectId = '',
   onSkillsChanged?: () => void,
-  onSkillLoaded?: (skill: DiscoveredSkill) => void,
-  renderSkill?: (skill: DiscoveredSkill, args: string) => Promise<string>,
   ports: SkillToolPorts = {},
 ) {
   const announce = () => {
@@ -120,7 +117,7 @@ export function createSkillTool(
     // get only reads, so it overlaps other reads; save stays a barrier in its turn.
     executionModeFor: (input) =>
       classifySkillCall(input).effect === 'read' ? 'parallel' : 'sequential',
-    async execute(toolCallId, input) {
+    async execute(toolCallId, input, signal) {
       switch (input.action) {
         case 'save': {
           if (!input.name) return { content: 'name is required for action="save".', isError: true }
@@ -154,39 +151,41 @@ export function createSkillTool(
           const skills = await allSkills()
           const skill = findSkillByName(skills, input.name)
           if (!skill) return { content: notFoundMessage(input.name, skills), isError: true }
-          // CC `disable-model-invocation: true`: only the person runs it. "If Claude tries anyway,
-          // Claude Code blocks the call and instructs it not to reproduce the ... steps another way."
-          if (skill.disableModelInvocation && !ports.userNamed?.(skillCallName(skill))) {
-            const called = skillCallName(skill)
-            return {
-              content: `Skill "${called}" can only be run by the user as /${called}. Do not carry out its steps another way; ask the user to run it.`,
-              isError: true,
-            }
-          }
-          let body: string
+          const called = skillCallName(skill)
+          const args = input.arguments ?? ''
+          // Claude Code's refusal (`disable-model-invocation`: "do not reproduce the steps another
+          // way") or the reason a command or the file failed.
+          let run: SkillRun
           try {
-            body = renderSkill ? await renderSkill(skill, input.arguments ?? '') : skill.content
+            run = ports.invokeSkill
+              ? await ports.invokeSkill(skill, {
+                  arguments: args,
+                  named: ports.userNamed?.(called) === true,
+                  ...(signal ? { signal } : {}),
+                })
+              : { ok: true, text: skill.content }
           } catch (error) {
+            run = { ok: false, message: errorMessage(error) }
+          }
+          if (!run.ok) {
             return {
-              content: `Skill "${skillCallName(skill)}" could not be loaded: ${errorMessage(error).slice(0, 4000)}`,
+              content: `Skill "${called}" could not be loaded: ${run.message.slice(0, 4000)}`,
               isError: true,
             }
           }
+          const body = run.text
           // Curator usage telemetry — best-effort, never blocks the get.
           recordSkillUse(skill.name, skill.scope, skill.scope === 'project' ? projectId : '')
-          onSkillLoaded?.(skill)
-          // CC `context: fork`: the rendered skill is a subagent's task, of the type `agent:`
-          // names, in the background unless `background: false`.
-          if (skill.contextFork && ports.forkSkill) {
-            const called = skillCallName(skill)
-            const args = input.arguments?.trim() ?? ''
+          // CC `context: fork`: the expanded skill is a subagent's task, of the type it names.
+          if (run.fork && ports.forkSkill) {
+            const { agent, wait, model, effort } = run.fork
             return ports.forkSkill(toolCallId, {
-              title: `/${called}${args ? ` ${args}` : ''}`.slice(0, 120),
+              title: `/${called}${args.trim() ? ` ${args.trim()}` : ''}`.slice(0, 120),
               task: body,
-              ...(skill.forkAgent ? { agent: skill.forkAgent } : {}),
-              wait: skill.forkBackground === false,
-              ...(skill.preferredModel ? { model: skill.preferredModel } : {}),
-              ...(skill.preferredEffort ? { effort: skill.preferredEffort } : {}),
+              agent,
+              wait,
+              ...(model ? { model } : {}),
+              ...(effort ? { effort } : {}),
             })
           }
           // Progressive loading must retain provenance: bundled scripts,

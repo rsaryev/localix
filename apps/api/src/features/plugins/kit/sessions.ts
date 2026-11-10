@@ -36,7 +36,7 @@ export interface ChatSessionFacts {
   readonly layers: readonly PolicyLayer[]
   /** Every plugin the run's catalog found. */
   readonly plugins: readonly ScopePlugin[]
-  /** An `asyncRewake` hook exited 2: wake the chat with this text (bound when the session opens). */
+  /** An `asyncRewake` hook exited 2: wake the chat with this text (the latest run's wake). */
   readonly onWake?: (text: string) => void
 }
 
@@ -101,11 +101,14 @@ export function createChatPluginSessions(host: LocalixPluginHost) {
       readonly session: PluginSession
     }
   >()
+  // The wake of each chat's latest run: a session may open outside a run (a typed `/skill`).
+  const wakes = new Map<string, (text: string) => void>()
   return {
     /** The chat's session as this run sees it: its folder, mode and directories. */
     forRun(facts: ChatSessionFacts): PluginSession {
       const permissionMode = normalizePermissionMode(facts.permissionMode)
       if (!permissionMode) throw new Error(`Unknown permission mode: ${facts.permissionMode}`)
+      if (facts.onWake) wakes.set(facts.chatId, facts.onWake)
       const held = open.get(facts.chatId)
       const own = sessionOwn(host, facts, held?.own)
       const key = JSON.stringify([
@@ -132,14 +135,15 @@ export function createChatPluginSessions(host: LocalixPluginHost) {
         userConfig: own.userConfig,
         locations: sessionLocations(host, facts.cwd, own.plugins),
       })
-      const { onWake } = facts
-      if (onWake) session.onBackground((delivered) => delivered.wake && onWake(delivered.wake))
+      const { chatId } = facts
+      session.onBackground((delivered) => delivered.wake && wakes.get(chatId)?.(delivered.wake))
       open.set(facts.chatId, { key, own: own.plugins, session })
       return session
     },
     get: (chatId: string): PluginSession | undefined => open.get(chatId)?.session,
     forget(chatId: string): void {
       open.delete(chatId)
+      wakes.delete(chatId)
     },
   }
 }

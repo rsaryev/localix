@@ -15,7 +15,8 @@ import {
 } from '@rsaryev/llx-plugin/testing'
 import { createLocalixPluginHost, type LocalixPluginHost } from './host'
 import { createKitHooksRuntime } from './hooks/runtime'
-import { createChatPluginSessions } from './sessions'
+import { createChatPluginSessions, type ScopePlugin } from './sessions'
+import { readPluginFolder } from './catalog/read-folder'
 import type { CcHooksRuntime } from '../../cc-hooks/runtime-contracts'
 import type { LocalixKitPorts } from './ports/host-ports'
 
@@ -126,4 +127,38 @@ export function hookTestRuntime(
   hooks: HooksSettings,
 ): CcHooksRuntime {
   return createKitHooksRuntime(hookTestSession(homeDir, cwd, hooks), { cwd })
+}
+
+/**
+ * A chat's kit session in the trusted folder `cwd` (its `.claude/skills` and `~/.claude/skills`
+ * under `homeDir`), with the plugins read from `pluginDirs` as user installs the agent selected,
+ * each `<name>@test`.
+ */
+export async function skillTestSession(
+  homeDir: string,
+  cwd: string,
+  pluginDirs: readonly string[] = [],
+): Promise<PluginSession> {
+  const plugins: ScopePlugin[] = []
+  for (const dir of pluginDirs) {
+    const read = await readPluginFolder(dir)
+    if (!read.kit) throw new Error(`${dir} does not load as a plugin`)
+    plugins.push({
+      id: `${read.manifest.name}@test`,
+      root: dir,
+      plugin: read.kit,
+      selected: true,
+      scope: 'user',
+      values: {},
+    })
+  }
+  return createChatPluginSessions(diskPluginHost(homeDir)).forRun({
+    chatId: 'chat-1',
+    cwd,
+    transcriptPath: join(homeDir, 'chat-1.jsonl'),
+    permissionMode: 'default',
+    trusted: true,
+    layers: [],
+    plugins,
+  })
 }

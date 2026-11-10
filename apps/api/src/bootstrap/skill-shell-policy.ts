@@ -4,7 +4,7 @@ import {
   skillShellDisabled,
   type ManagedSettingsSource,
 } from '../features/plugins/kit'
-import type { SkillShellPolicy } from '../features/chat/service/skill-render'
+import type { SkillShellPolicy } from '../features/chat/service/skill-commands'
 
 interface Options {
   /** Where Claude Code's user settings live. */

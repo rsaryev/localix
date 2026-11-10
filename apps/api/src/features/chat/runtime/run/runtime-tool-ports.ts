@@ -165,8 +165,7 @@ export function buildOptionalToolPorts(
       skillOverrides: params.skillOverrides,
       announceCapabilityChange: deps.announceCapabilityChange,
       globalSearch: deps.globalSearch,
-      renderSkill: deps.renderSkill,
-      ccHookSessions: ctx.ccHookSessions,
+      ...(params.kitSession ? { kitSession: params.kitSession } : {}),
       skillCommandPolicy: params.skillCommandPolicy,
       ...(params.latestUserText ? { latestUserText: params.latestUserText } : {}),
       // A `context: fork` skill the agent loads starts a subagent, as `Agent` does.

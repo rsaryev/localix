@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { CallClass } from '@localixai/agent/agents'
+import type { DiscoveredSkill } from '../skill-frontmatter'
 
 /**
  * The `Skill` tool's call contract: its input, the ports a host gives it, and what a call means to
@@ -49,12 +50,31 @@ export interface SkillForkRequest {
   effort?: string
 }
 
+/** A skill as the host ran it: the text the model reads, or why it cannot run. */
+export type SkillRun =
+  | {
+      ok: true
+      text: string
+      /** `context: fork`: the subagent's type, whether the call waits, and its model and effort. */
+      fork?: { agent: string; wait: boolean; model?: string; effort?: string }
+    }
+  | { ok: false; message: string }
+
 export interface SkillToolPorts {
   /**
    * Whether the person's latest message names the skill as a separate `/name` word: Claude Code
    * reads that as permission to run it for that message, a `disable-model-invocation` one too.
    */
   userNamed?: (callName: string) => boolean
+  /**
+   * Runs the skill as Claude Code runs it when Claude invokes it (the chat's kit session,
+   * `skill-tool-ports.ts`): who may invoke it, its arguments, variables and injected commands, its
+   * fork. Absent: the content as written, inline.
+   */
+  invokeSkill?: (
+    skill: DiscoveredSkill,
+    request: { arguments: string; named: boolean; signal?: AbortSignal },
+  ) => Promise<SkillRun>
   /** Runs a `context: fork` skill the agent loads as a subagent; absent: the skill runs inline. */
   forkSkill?: (
     toolCallId: string,
@@ -64,7 +84,7 @@ export interface SkillToolPorts {
 
 /**
  * A `get` may run the skill's injected commands, but each one meets the run's permission rules as
- * a shell call first (the host's `renderSkill`, `skill-tool-ports.ts`), so a read-only mode still
+ * a shell call first (the host's `invokeSkill`, `skill-tool-ports.ts`), so a read-only mode still
  * refuses a command that writes. A `save` writes a SKILL.md directory (`files`). Listing and
  * deleting skills belong to the Store (`store`); an unknown action, those two included, is
  * answered with the widest effect — on the permission path a guess must not open a door.

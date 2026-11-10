@@ -1,240 +1,251 @@
 import { describe, expect, test } from 'bun:test'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { tempDirPerTest } from '@localixai/testing'
 
+import type { PermissionRule } from '../../agent-core/permission-engine'
+import { skillTestSession } from '../../plugins/kit/testing'
 import { handleSkillCommand } from './command-handlers'
 import { handleSkillsControlCommand } from './command-handlers-listings'
 import type { CommandHandlerContext } from './command-handlers-context'
 import type { SessionRecord } from '../repository'
 import type { SkillRecord } from './skills'
 import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
-import { pluginDataDir } from '../../plugins/mcp'
-import { userHome } from '../../../lib/env'
+
+/**
+ * A typed `/name` runs the skill as the chat's kit session expands it (skills.md); Localix's own
+ * list says which names are skills, and the handler turns the expansion into the turn.
+ */
+const dir = tempDirPerTest('typed-skill-')
+const work = () => join(dir(), 'work')
 
 const session: SessionRecord = sessionFixture({
   id: 's1',
   userId: 'u1',
   title: 'test',
-  agent: routedAgent({
-    providerConnectionId: 'p1',
-    modelId: 'model',
-    reasoningEffort: 'low',
-  }),
+  agent: routedAgent({ providerConnectionId: 'p1', modelId: 'gpt-4o', reasoningEffort: 'low' }),
   createdAt: 'now',
   updatedAt: 'now',
   lastMessageAt: 'now',
   rootSessionId: null,
 })
 
-const skill: SkillRecord = {
-  id: 'db:sample-skill',
-  name: 'sample-skill',
-  description: 'Sample skill',
-  content: 'Handle $ARGUMENTS carefully.',
-  tags: [],
-  projectId: '',
-  scope: 'global',
-  source: 'db',
-  updatedAt: 'now',
+/** A skill folder on disk and its row in Localix's list; `plugin` puts it in that plugin. */
+function skill(name: string, frontmatter: string, body: string, plugin?: string): SkillRecord {
+  const base = plugin ? join(dir(), 'plugins', plugin) : join(work(), '.claude')
+  if (plugin) {
+    mkdirSync(join(base, '.claude-plugin'), { recursive: true })
+    writeFileSync(join(base, '.claude-plugin', 'plugin.json'), JSON.stringify({ name: plugin }))
+  }
+  const at = join(base, 'skills', name)
+  mkdirSync(at, { recursive: true })
+  writeFileSync(
+    join(at, 'SKILL.md'),
+    `---\nname: ${name}\ndescription: d\n${frontmatter}\n---\n${body}\n`,
+  )
+  return {
+    id: `file:${name}`,
+    name: plugin ? `${plugin}:${name}` : name,
+    description: 'd',
+    content: body,
+    tags: [],
+    projectId: '',
+    scope: 'project',
+    source: 'file',
+    updatedAt: 'now',
+    path: join(at, 'SKILL.md'),
+    ...(plugin ? { pluginName: plugin, pluginDir: base } : {}),
+  }
 }
 
-describe('handleSkillCommand', () => {
-  test('links /name to a one-run hidden instruction without pinning the session', async () => {
-    const macroCalls: unknown[][] = []
-    const ctx = {
-      repo: { listMessages: async () => [] },
-      runner: { isBusy: () => false, isRunning: () => false },
-      now: () => 'now',
-      gatherSessionSkills: async () => [skill],
-      loadSkillOverrides: async () => ({}),
-      resolveSessionWorkingDir: async () => '/repo',
-      runMacroCommand: async (...args: unknown[]) => {
-        macroCalls.push(args)
-        return { sessionId: 's1', messageId: 'a1' }
-      },
-      insertDirectReply: async () => ({ sessionId: 's1', messageId: 'a1' }),
-    } as unknown as CommandHandlerContext
-
-    const result = await handleSkillCommand(ctx, 'u1', 's1', session, '/sample-skill auth flow')
-
-    expect(result).toEqual({ sessionId: 's1', messageId: 'a1' })
-    expect(macroCalls).toHaveLength(1)
-    expect(macroCalls[0]?.[4]).toBe('/sample-skill auth flow')
-    expect(macroCalls[0]?.[5]).toBe('Handle auth flow carefully.')
-    expect(session.pinnedSkills).toEqual([])
-  })
-
-  test('reports a model-only skill accurately instead of calling it unknown', async () => {
-    const replies: string[] = []
-    const ctx = {
-      repo: {
-        listMessages: async () => {
-          throw new Error('direct replies must not hydrate the transcript')
-        },
-      },
-      runner: { isBusy: () => false, isRunning: () => false },
-      now: () => 'now',
-      gatherSessionSkills: async () => [{ ...skill, userInvocable: false }],
-      loadSkillOverrides: async () => ({}),
-      insertDirectReply: async (...args: unknown[]) => {
-        replies.push(String(args[3]))
-        return { sessionId: 's1', messageId: 'a1' }
-      },
-    } as unknown as CommandHandlerContext
-
-    const result = await handleSkillCommand(ctx, 'u1', 's1', session, '/sample-skill')
-
-    expect(result).toEqual({ sessionId: 's1', messageId: 'a1' })
-    expect(replies).toEqual([
-      'Skill `/sample-skill` is model-only (`user-invocable: false`) and cannot be run as a slash command.',
-    ])
-  })
-
-  test('reports a lazy skill read failure without starting an agent run', async () => {
-    const replies: string[] = []
-    const stale = { ...skill }
-    Object.defineProperty(stale, 'content', {
-      get: () => {
-        throw new Error('SKILL.md changed during read')
-      },
-    })
-    const ctx = {
-      repo: { listMessages: async () => [] },
-      runner: { isBusy: () => false, isRunning: () => false },
-      now: () => 'now',
-      gatherSessionSkills: async () => [stale],
-      loadSkillOverrides: async () => ({}),
-      resolveSessionWorkingDir: async () => '/repo',
-      runMacroCommand: () => {
-        throw new Error('must not run')
-      },
-      insertDirectReply: async (...args: unknown[]) => {
-        replies.push(String(args[3]))
-        return { sessionId: 's1', messageId: 'a1' }
-      },
-    } as unknown as CommandHandlerContext
-
-    expect(await handleSkillCommand(ctx, 'u1', 's1', session, '/sample-skill')).toEqual({
-      sessionId: 's1',
-      messageId: 'a1',
-    })
-    expect(replies[0]).toContain('could not be loaded')
-    expect(replies[0]).toContain('changed during read')
-  })
-
-  test('treats an off skill as unavailable and never starts an agent run', async () => {
-    const ctx = {
-      gatherSessionSkills: async () => [skill],
-      gatherEnabledPluginSkills: async () => [],
-      loadSkillOverrides: async () => ({ 'sample-skill': 'off' as const }),
-      runMacroCommand: () => {
-        throw new Error('must not run')
-      },
-    } as unknown as CommandHandlerContext
-
-    expect(await handleSkillCommand(ctx, 'u1', 's1', session, '/sample-skill')).toBeNull()
-  })
-})
-
-const pluginSkill = (plugin: string, name: string): SkillRecord => ({
-  ...skill,
-  id: `plugin:${plugin}:${name}`,
-  name: `${plugin}:${name}`,
-  content: `Plugin ${plugin} handles $ARGUMENTS.`,
-  source: 'file',
-  pluginName: plugin,
-  pluginDir: `/plugins/${plugin}`,
-})
-
-function pluginCtx(plugins: SkillRecord[], macroCalls: unknown[][]) {
-  return {
+function context(
+  own: SkillRecord[],
+  plugins: SkillRecord[] = [],
+  over: Partial<CommandHandlerContext> = {},
+) {
+  mkdirSync(join(work(), '.git'), { recursive: true })
+  const runs: { instruction: string; opts: Record<string, unknown> }[] = []
+  const forks: Record<string, unknown>[] = []
+  const replies: string[] = []
+  const pluginDirs = [...new Set(plugins.flatMap((one) => one.pluginDir ?? []))]
+  const ctx = {
     repo: { listMessages: async () => [] },
     runner: { isBusy: () => false, isRunning: () => false },
     now: () => 'now',
-    gatherSessionSkills: async () => [skill],
+    gatherSessionSkills: async () => own,
     gatherEnabledPluginSkills: async () => plugins,
     loadSkillOverrides: async () => ({}),
-    resolveSessionWorkingDir: async () => '/repo',
+    resolveSessionWorkingDir: async () => work(),
+    chatPluginSession: () => skillTestSession(join(dir(), 'home'), work(), pluginDirs),
     runMacroCommand: async (...args: unknown[]) => {
-      macroCalls.push(args)
+      runs.push({ instruction: String(args[5]), opts: args[7] as Record<string, unknown> })
       return { sessionId: 's1', messageId: 'a1' }
     },
-    insertDirectReply: async () => ({ sessionId: 's1', messageId: 'a1' }),
+    spawnForkSkill: async (...args: unknown[]) => {
+      forks.push(args[3] as Record<string, unknown>)
+      return 'child-session'
+    },
+    insertDirectReply: async (...args: unknown[]) => {
+      replies.push(String(args[3]))
+      return { sessionId: 's1', messageId: 'r1' }
+    },
+    ...over,
   } as unknown as CommandHandlerContext
+  return { ctx, runs, forks, replies }
 }
 
-describe('plugin skills run as /<plugin>:<skill>', () => {
-  test('the namespaced name runs the plugin skill with its arguments', async () => {
-    const calls: unknown[][] = []
-    const ctx = pluginCtx([pluginSkill('kit', 'review')], calls)
+const typed = (ctx: CommandHandlerContext, prompt: string) =>
+  handleSkillCommand(ctx, 'u1', 's1', session, prompt)
 
-    await handleSkillCommand(ctx, 'u1', 's1', session, '/kit:review the auth flow')
+describe('a typed skill', () => {
+  test('runs one hidden instruction with its arguments, without pinning the session', async () => {
+    const { ctx, runs } = context([skill('sample', '', 'Handle $ARGUMENTS carefully.')])
+    expect(await typed(ctx, '/sample auth flow')).toEqual({ sessionId: 's1', messageId: 'a1' })
+    expect(runs).toHaveLength(1)
+    expect(runs[0]!.instruction).toContain('Handle auth flow carefully.')
+    expect(runs[0]!.opts).toMatchObject({
+      invocation: { invocation: { kind: 'skill', name: 'sample', arguments: 'auth flow' } },
+    })
+    expect(session.pinnedSkills).toEqual([])
+  })
 
-    expect(calls).toHaveLength(1)
-    expect(calls[0]?.[5]).toBe('Plugin kit handles the auth flow.')
-    expect(calls[0]?.[7]).toMatchObject({
-      invocation: {
-        invocation: { kind: 'skill', name: 'kit:review', arguments: 'the auth flow' },
-        presentation: { label: '/kit:review', token: '/kit:review' },
-      },
+  test('a model-only skill is refused with the reason, and no run starts', async () => {
+    const { ctx, runs, replies } = context([skill('helper', 'user-invocable: false', 'Help')])
+    await typed(ctx, '/helper')
+    expect(runs).toEqual([])
+    expect(replies[0]).toStartWith('Skill `/helper`:')
+  })
+
+  test('an off skill is no skill: the final gate reports it', async () => {
+    const { ctx } = context([skill('sample', '', 'x')], [], {
+      loadSkillOverrides: async () => ({ sample: 'off' as const }),
+    })
+    expect(await typed(ctx, '/sample')).toBeNull()
+  })
+
+  // skills.md: `model` and `effort` apply "for the rest of the current turn".
+  test('its model, effort and tool lists run the invoking turn', async () => {
+    const { ctx, runs } = context([
+      skill(
+        'deep',
+        'model: gpt-4o-mini\neffort: max\nallowed-tools: Bash(gh *)\ndisallowed-tools: Write',
+        'Go.',
+      ),
+    ])
+    await typed(ctx, '/deep')
+    expect(runs[0]!.opts).toMatchObject({
+      modelId: 'gpt-4o-mini',
+      reasoningEffort: 'max',
+      extraAllowedTools: ['Bash(gh *)'],
+      extraDisabledTools: ['Write'],
     })
   })
 
-  test('the bare name runs it when one plugin has it, and nothing guesses between two', async () => {
-    const calls: unknown[][] = []
-    const one = pluginCtx([pluginSkill('kit', 'review')], calls)
-    await handleSkillCommand(one, 'u1', 's1', session, '/review now')
-    expect(calls[0]?.[5]).toBe('Plugin kit handles now.')
-
-    const two = pluginCtx([pluginSkill('kit', 'review'), pluginSkill('other', 'review')], calls)
-    expect(await handleSkillCommand(two, 'u1', 's1', session, '/review now')).toBeNull()
-    expect(calls).toHaveLength(1)
-  })
-
-  test("its frontmatter hooks carry the plugin's root and data dir, inline and forked", async () => {
+  // skills.md: "Claude Code starts a new subagent of the type set in the `agent` field".
+  test('context: fork runs the fork as the subagent type it names, with its hooks', async () => {
     const hooks = { PreToolUse: [{ hooks: [{ type: 'command', command: 'x' }] }] }
-    const plugin = {
-      name: 'kit',
-      root: '/plugins/kit',
-      dataDir: pluginDataDir('kit', userHome()),
+    const forked = {
+      ...skill('review', 'context: fork\nagent: reviewer', 'Review.', 'cc'),
+      hooks,
     }
-    const calls: unknown[][] = []
-    await handleSkillCommand(
-      pluginCtx([{ ...pluginSkill('kit', 'review'), hooks }], calls),
-      'u1',
-      's1',
-      session,
-      '/kit:review',
-    )
-    expect(calls[0]?.[7]).toMatchObject({
-      ccScopedHooks: [{ raw: hooks, source: 'skill', plugin }],
+    const { ctx, forks, runs } = context([], [forked])
+    await typed(ctx, '/cc:review')
+    expect(runs).toEqual([])
+    expect(forks[0]).toMatchObject({
+      agent: 'reviewer',
+      hooks,
+      hooksPlugin: { name: 'cc', root: join(dir(), 'plugins', 'cc') },
     })
+  })
 
-    const forks: unknown[] = []
-    const forkCtx = {
-      ...pluginCtx([{ ...pluginSkill('kit', 'review'), hooks, contextFork: true }], calls),
-      spawnForkSkill: async (...args: unknown[]) => {
-        forks.push(args[3])
-        return 'child-session'
-      },
-    } as unknown as CommandHandlerContext
-    await handleSkillCommand(forkCtx, 'u1', 's1', session, '/kit:review')
-    expect(forks[0]).toMatchObject({ hooks, hooksPlugin: plugin })
+  // skills.md: "A failed command aborts the entire skill invocation".
+  test('a failing injected command aborts it before the model is asked', async () => {
+    const { ctx, runs, replies } = context([skill('fail', '', 'ABORT-BODY\n!`exit 3`')])
+    await typed(ctx, '/fail')
+    expect(runs).toEqual([])
+    expect(replies[0]).not.toContain('ABORT-BODY')
+  })
+
+  test('stacked skills all load, each with the trailing arguments and its grants', async () => {
+    const { ctx, runs } = context([
+      skill('write-tests', 'allowed-tools: Bash(bun test *)', 'Write tests for $ARGUMENTS.'),
+      skill('fix-issue', 'allowed-tools: Bash(gh *)', 'Fix issue $ARGUMENTS.'),
+    ])
+    await typed(ctx, '/write-tests /fix-issue 123')
+    expect(runs[0]!.instruction).toContain('Write tests for 123.')
+    expect(runs[0]!.instruction).toContain('Fix issue 123.')
+    expect(runs[0]!.opts.extraAllowedTools).toEqual(['Bash(bun test *)', 'Bash(gh *)'])
+  })
+})
+
+describe('plugin skills run as /<plugin>:<skill>', () => {
+  test('by the namespaced name', async () => {
+    const { ctx, runs } = context(
+      [],
+      [skill('review', '', 'Plugin kit handles $ARGUMENTS.', 'kit')],
+    )
+    await typed(ctx, '/kit:review the auth flow')
+    expect(runs[0]!.instruction).toContain('Plugin kit handles the auth flow.')
+  })
+
+  // The kit's judgment: a plugin's folder skill is `<plugin>:<folder>` and has no bare name; only
+  // a plugin's root SKILL.md answers bare (loading/readers-text.ts, host/session-skill-entries.ts).
+  test('a folder skill answers only to the namespaced name', async () => {
+    const { ctx, runs, replies } = context([], [skill('lint', '', 'Lint.', 'kit')])
+    await typed(ctx, '/lint')
+    expect(runs).toEqual([])
+    expect(replies[0]).toContain('does not list it')
   })
 
   test("the person's own skill keeps its bare name over a plugin's", async () => {
-    const calls: unknown[][] = []
-    const ctx = pluginCtx([pluginSkill('kit', 'sample-skill')], calls)
-    await handleSkillCommand(ctx, 'u1', 's1', session, '/sample-skill x')
-    expect(calls[0]?.[5]).toBe('Handle x carefully.')
+    const { ctx, runs } = context(
+      [skill('sample', '', 'Own $ARGUMENTS.')],
+      [skill('sample', '', 'Plugin $ARGUMENTS.', 'kit')],
+    )
+    await typed(ctx, '/sample x')
+    expect(runs[0]!.instruction).toContain('Own x.')
+  })
+})
+
+// skills.md, "Permission checks on injected commands": a command a deny rule matches aborts, and
+// so does anything but allow unless the skill's `allowed-tools` pre-approve it.
+describe('a typed skill’s injected commands meet the agent’s rules', () => {
+  const RULES: PermissionRule[] = [
+    { permission: 'Bash', pattern: '*', action: 'ask' },
+    { permission: 'Bash', pattern: 'touch *', action: 'deny', message: 'no touching' },
+  ]
+  const rules = { loadSkillCommandRules: async () => RULES }
+
+  test('a denied command aborts the skill and runs nothing', async () => {
+    const marker = join(dir(), 'ran')
+    const { ctx, runs } = context([skill('probe', '', `Go: !\`touch ${marker}\``)], [], rules)
+    await typed(ctx, '/probe')
+    expect(runs).toEqual([])
+    expect(existsSync(marker)).toBe(false)
+  })
+
+  test('a command the rules would ask about runs once allowed-tools pre-approve it', async () => {
+    const asked = context([skill('probe', '', 'Say: !`echo hi`')], [], rules)
+    await typed(asked.ctx, '/probe')
+    expect(asked.runs).toEqual([])
+    const granted = context(
+      [skill('probe', 'allowed-tools: Bash(echo *)', 'Say: !`echo hi`')],
+      [],
+      rules,
+    )
+    await typed(granted.ctx, '/probe')
+    expect(granted.runs[0]!.instruction).toContain('Say: hi')
   })
 })
 
 describe('handleSkillsControlCommand', () => {
   test('does not reveal skills whose override is off', async () => {
     const replies: string[] = []
+    const row = skill('sample', '', 'x')
     await handleSkillsControlCommand(
       {
-        gatherSessionSkills: async () => [skill, { ...skill, name: 'enabled' }],
-        loadSkillOverrides: async () => ({ 'sample-skill': 'off' }),
+        gatherSessionSkills: async () => [row, { ...row, name: 'enabled' }],
+        loadSkillOverrides: async () => ({ sample: 'off' }),
       },
       'u1',
       session,
@@ -243,9 +254,7 @@ describe('handleSkillsControlCommand', () => {
         return { sessionId: 's1', messageId: 'a1' }
       },
     )
-
     expect(replies[0]).toContain('/enabled')
-    expect(replies[0]).not.toContain('/sample-skill')
-    expect(replies[0]).not.toContain('[off]')
+    expect(replies[0]).not.toContain('/sample')
   })
 })

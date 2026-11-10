@@ -26,8 +26,7 @@ import type { createContextStoreRepository } from '../../../context-store/reposi
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { ChatRepository, SessionRecord } from '../../repository'
 import type { SkillOverrides } from '../../../agent-core/skill-overrides'
-import type { RunnerDeps } from '../agent-runner-types'
-import type { CcHookSessions } from '../cc-hook-sessions'
+import type { KitSession } from '../../../plugins/kit'
 import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 import { escapeRegExp } from '../../../../lib/regexp'
 
@@ -49,10 +48,8 @@ export interface DirectToolInstanceDeps {
   announceCapabilityChange?: () => void
   /** The search palette's service; absent in hosts built without global search. */
   globalSearch?: GlobalSearchPort
-  /** Renders a skill the model loads as a typed `/name` renders it (see `skill-tool-ports.ts`). */
-  renderSkill?: RunnerDeps['renderSkill']
-  /** Where a loaded skill's hooks are kept for the rest of the session. */
-  ccHookSessions?: CcHookSessions
+  /** The chat's kit session: a skill the model loads runs through it (`skill-tool-ports.ts`). */
+  kitSession?: KitSession
   /** The run's permission inputs, which every command a loaded skill injects must pass. */
   skillCommandPolicy?: SkillCommandPolicyRef
   /** Starts a `context: fork` skill's subagent; absent where this run cannot delegate. */
@@ -83,8 +80,7 @@ export function buildDirectToolInstances(
     userId,
     session,
     defaultCwd,
-    renderSkill: deps.renderSkill,
-    ccHookSessions: deps.ccHookSessions,
+    ...(deps.kitSession ? { kitSession: deps.kitSession } : {}),
     commandPolicy: deps.skillCommandPolicy,
   })
   return {
@@ -97,9 +93,8 @@ export function buildDirectToolInstances(
           deps.skillOverrides,
           session.projectId ?? '',
           deps.announceCapabilityChange,
-          skillPorts.onSkillLoaded,
-          skillPorts.renderSkill,
           {
+            ...skillPorts,
             ...(deps.forkSkill ? { forkSkill: deps.forkSkill } : {}),
             userNamed: (name) => namesSkill(deps.latestUserText, name),
           },

@@ -7,7 +7,7 @@ const project = tempDirPerTest('skill-model-view-')
 
 /**
  * The model's view of a skill through the tool, as Claude Code gives it: a plugin skill by its
- * `/<plugin>:<name>`, a `disable-model-invocation` skill refused, and the body rendered.
+ * `/<plugin>:<name>`, and the body as the host ran it.
  */
 const run = (tool: ReturnType<typeof createSkillTool>, input: Record<string, unknown>) =>
   tool.execute('t', input as never)
@@ -40,34 +40,16 @@ describe('skill tool — the model’s view', () => {
     expect(textOf(second)).toContain('# Skill: zzqb:zz-lookup')
   })
 
-  // skills.md: "If Claude tries anyway, Claude Code blocks the call and instructs it not to
-  // reproduce the deploy steps another way"; "Description not in context".
-  test('a disable-model-invocation skill is refused', async () => {
-    const tool = createSkillTool(null, [
-      pluginSkill('zzdm', 'zz-secret', { disableModelInvocation: true }),
-    ])
-    const got = await run(tool, { action: 'get', name: 'zzdm:zz-secret' })
-    expect(got.isError).toBe(true)
-    expect(textOf(got)).not.toContain('zzdm-BODY')
-    expect(textOf(got)).toContain('only be run by the user as /zzdm:zz-secret')
-  })
-
   // skills.md: "When you or Claude invoke a skill, the rendered SKILL.md content enters the
   // conversation"; "Both you and Claude can pass arguments when invoking a skill".
   test('get returns the rendered body, with the arguments it was asked with', async () => {
     const seen: string[] = []
-    const tool = createSkillTool(
-      null,
-      [pluginSkill('zzrn', 'zz-render')],
-      {},
-      '',
-      undefined,
-      undefined,
-      async (skill, args) => {
-        seen.push(args)
-        return `RENDERED ${skill.content} ${args}`
+    const tool = createSkillTool(null, [pluginSkill('zzrn', 'zz-render')], {}, '', undefined, {
+      invokeSkill: async (skill, request) => {
+        seen.push(request.arguments)
+        return { ok: true, text: `RENDERED ${skill.content} ${request.arguments}` }
       },
-    )
+    })
     const got = await run(tool, { action: 'get', name: 'zzrn:zz-render', arguments: 'a b' })
     expect(textOf(got)).toContain('RENDERED zzrn-BODY a b')
     expect(seen).toEqual(['a b'])
@@ -75,24 +57,17 @@ describe('skill tool — the model’s view', () => {
 
   // skills.md: "A failed command aborts the entire skill invocation ... Claude never sees the
   // skill content for that invocation."
-  test('a render that fails refuses the load with its message, and loads nothing', async () => {
-    let loaded = 0
-    const tool = createSkillTool(
-      null,
-      [pluginSkill('zzfl', 'zz-fail')],
-      {},
-      '',
-      undefined,
-      () => loaded++,
-      async () => {
-        throw new Error('Shell command failed for pattern "!`exit 3`": [exit code 3]')
-      },
-    )
+  test('a run that fails refuses the load with its message', async () => {
+    const tool = createSkillTool(null, [pluginSkill('zzfl', 'zz-fail')], {}, '', undefined, {
+      invokeSkill: async () => ({
+        ok: false,
+        message: 'Shell command failed for pattern "!`exit 3`": [exit code 3]',
+      }),
+    })
     const got = await run(tool, { action: 'get', name: 'zzfl:zz-fail' })
     expect(got.isError).toBe(true)
     expect(textOf(got)).toContain('Shell command failed for pattern "!`exit 3`"')
     expect(textOf(got)).not.toContain('zzfl-BODY')
-    expect(loaded).toBe(0)
   })
 
   // The defect: matching a bare name first, over a list sorted by call name, handed `get lookup`

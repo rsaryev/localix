@@ -74,7 +74,6 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       work: runtimeState.work,
       actionRegistry: runtimeState.actionRegistry,
       terminalWaits: runtimeState.terminalWaits,
-      ccHookSessions: runtimeState.ccHookSessions,
       executeToolAction: (toolCallId, actionName, actionPayload) =>
         env.executeToolAction(toolCallId, actionName, actionPayload),
     },
@@ -107,6 +106,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       ccHooks,
       fileMtimes: frame.stores.fileMtimes,
       skillCommandPolicy,
+      ...(inputs.kitSession ? { kitSession: inputs.kitSession } : {}),
       agentModelChoices: turn.globalAgentSettings?.agentModelChoices,
       listWorkflows: () =>
         listEnabledPluginWorkflows({
