@@ -160,20 +160,6 @@
 .llx-markdown li > :is(ul, ol) {
   margin: 0.25rem 0;
 }
-/* GFM task lists (`- [ ]` / `- [x]`): drop the bullet so the checkbox is the
-   marker, and align the box with the text instead of trailing a stray dot. */
-.llx-markdown ul.contains-task-list {
-  list-style: none;
-  padding-left: 0.2rem;
-}
-.llx-markdown li.task-list-item {
-  padding-left: 0;
-}
-.llx-markdown li.task-list-item input[type='checkbox'] {
-  margin-right: 0.45rem;
-  vertical-align: middle;
-  accent-color: var(--foreground);
-}
 /* Section divider (`---`): a thin token-colored rule, not the browser's 3D inset. */
 .llx-markdown hr {
   margin: 1.1rem 0;
