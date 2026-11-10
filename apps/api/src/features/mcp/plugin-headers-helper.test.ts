@@ -3,7 +3,8 @@ import { join } from 'node:path'
 
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
-import { buildMcpRecords } from '../plugins/mcp'
+import { loadManifest } from '../plugins/manifest-load'
+import { pluginMcpRecords } from '../plugins/testing/test-mcp-records'
 import { helperRequestHeaders } from './headers-helper'
 
 /**
@@ -17,24 +18,16 @@ describe("a plugin's headersHelper", () => {
   test('runs from the plugin directory and is told where it is', async () => {
     const root = join(dir(), 'plugin')
     writeTree(root, {
+      '.claude-plugin/plugin.json': JSON.stringify({ name: 'p' }),
+      '.mcp.json': JSON.stringify({
+        mcpServers: {
+          api: { type: 'http', url: 'https://x.example/mcp', headersHelper: 'sh ./bin/auth.sh' },
+        },
+      }),
       'bin/auth.sh': `#!/bin/sh\nprintf '{"X-Root":"%s"}' "$CLAUDE_PLUGIN_ROOT"\n`,
     })
-    const [record] = buildMcpRecords(
-      {
-        dir: root,
-        projectId: null,
-        manifest: { name: 'p', config: {} },
-        entrypoints: {
-          mcpServers: {
-            api: { type: 'http', url: 'https://x.example/mcp', headersHelper: 'sh ./bin/auth.sh' },
-          },
-        },
-      } as never,
-      {},
-      'u',
-      'ts',
-      dir(),
-    )
+    const plugin = await loadManifest(root, 'global', '')
+    const [record] = await pluginMcpRecords(plugin, {}, dir())
     expect(record?.id).toBe('plugin:p:api')
     const got = await helperRequestHeaders(record!, record!.config, dir(), {
       env: { PATH: process.env.PATH },

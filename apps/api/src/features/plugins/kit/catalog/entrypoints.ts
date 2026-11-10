@@ -4,17 +4,14 @@ import type { Plugin } from '@rsaryev/llx-plugin/loading'
 import { readHooksJsonModules, type Monitor } from '@rsaryev/llx-plugin/format'
 import { readJsonFile } from '../../../../lib/json'
 import type { PluginMonitor } from '../../contracts-monitors'
-import { isMcpBundle, loadMcpBundles, type McpBundles } from '../../mcpb-bundle'
 import { readComponents, type PluginCcComponents } from './components'
 
 /** Absolute paths and runtime configs of what a plugin the kit loaded contributes. */
 export interface ResolvedEntrypoints {
   /** Skill root dirs, each holding `<name>/SKILL.md` (or the skill itself, at its root). */
   skillDirs: string[]
-  /** MCP server configs keyed by server name. */
+  /** MCP server configs keyed by server name, the packaged (`.mcpb`) ones among them. */
   mcpServers: Record<string, Record<string, unknown>>
-  /** What the packaged servers declare: their settings, the required ones, load failures. */
-  mcpBundles?: Pick<McpBundles, 'options' | 'required' | 'errors'>
   /** The command files, read as skills too (`plugin-command-skills.ts`). */
   commandFiles: Array<{ file: string; name: string }>
   /** The plugin's hooks, merged by the kit, as one settings block for the cc-hooks pipeline. */
@@ -44,18 +41,6 @@ function skillDirsOf(plugin: Plugin, dir: string): string[] {
   return [...new Set(roots)]
 }
 
-/**
- * The packaged servers (`.mcpb` / `.dxt`) the manifest names, opened by Localix's MCPB reader for
- * the MCP runtime and the settings form (see the kit gap at `NOT_EXTRACTED`, `read-folder.ts`).
- */
-async function bundlesOf(plugin: Plugin, dir: string): Promise<McpBundles | undefined> {
-  const field = plugin.manifest?.mcpServers
-  const refs = (Array.isArray(field) ? field : [field]).filter(
-    (ref): ref is string => typeof ref === 'string' && isMcpBundle(ref),
-  )
-  return refs.length ? loadMcpBundles(dir, refs) : undefined
-}
-
 async function hookModuleOf(dir: string): Promise<string | undefined> {
   const raw = await readJsonFile(join(dir, 'hooks', 'hooks.json'))
   const entry = raw === undefined || raw === null ? undefined : readHooksJsonModules(raw).entry
@@ -63,20 +48,14 @@ async function hookModuleOf(dir: string): Promise<string | undefined> {
 }
 
 export async function entrypointsOf(plugin: Plugin, dir: string): Promise<ResolvedEntrypoints> {
-  const [bundles, hookModule, real] = await Promise.all([
-    bundlesOf(plugin, dir),
+  const [hookModule, real] = await Promise.all([
     hookModuleOf(dir),
     // A command file is read as a skill confined to the plugin's real folder.
     realpath(dir).catch(() => dir),
   ])
-  const mcpServers = {
-    ...(plugin.mcpServers as Record<string, Record<string, unknown>>),
-    ...bundles?.servers,
-  }
   return {
     skillDirs: skillDirsOf(plugin, dir),
-    mcpServers,
-    ...(bundles ? { mcpBundles: bundles } : {}),
+    mcpServers: { ...(plugin.mcpServers as Record<string, Record<string, unknown>>) },
     commandFiles: plugin.commands.flatMap(({ path, name }) =>
       path === undefined ? [] : [{ file: join(real, path), name }],
     ),

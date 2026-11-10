@@ -1,3 +1,4 @@
+import { diskPluginHost } from './kit/testing'
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test'
 import type { AvailabilityReader } from '../capabilities/availability'
 import { promises as fs } from 'node:fs'
@@ -208,6 +209,7 @@ describe('experimental.monitors', () => {
       projectId: '',
       cwd: dir,
       homeDir: dir,
+      pluginHost: diskPluginHost(dir),
     })
     expect(loaded.monitors.map((m) => m.monitor.name)).toEqual(['m'])
   })
@@ -222,6 +224,7 @@ describe('monitor discovery (loader)', () => {
       projectId: '',
       cwd: dir,
       homeDir: dir,
+      pluginHost: diskPluginHost(dir),
     })
     const names = loaded.monitors.map((m) => `${m.pluginName}:${m.monitor.name}`).sort()
     expect(names).toEqual(['always-mon:watch', 'skill-mon:lazy'])
@@ -235,6 +238,7 @@ describe('monitor discovery (loader)', () => {
       projectId: '',
       cwd: dir,
       homeDir: dir,
+      pluginHost: diskPluginHost(dir),
     })
     expect(loaded.monitors.map((m) => m.monitor.name)).toEqual(['f'])
   })
@@ -247,6 +251,7 @@ describe('monitor discovery (loader)', () => {
       projectId: '',
       cwd: dir,
       homeDir: dir,
+      pluginHost: diskPluginHost(dir),
     })
     expect(loaded.monitors).toEqual([])
   })
@@ -265,7 +270,7 @@ describe('monitor discovery (declarative)', () => {
       homeDir: dir,
     }
     const declared = await loadEnabledPluginMonitors(scope)
-    const loaded = await loadEnabledPlugins(scope)
+    const loaded = await loadEnabledPlugins({ ...scope, pluginHost: diskPluginHost(dir) })
     expect(declared).toEqual(loaded.monitors)
     expect(declared.map((m) => `${m.pluginName}:${m.monitor.name}`).sort()).toEqual([
       'always-mon:watch',

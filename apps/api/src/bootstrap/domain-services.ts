@@ -9,7 +9,7 @@ import { createMcpService } from '../features/mcp/service'
 import { installMcpSettingsReader } from '../features/mcp/claude-code-settings'
 import { mcpSettingsReader } from '../features/plugins/kit'
 import { createPluginService } from '../features/plugins/service'
-import { createProcessPluginHost, type ProcessPluginHost } from './plugin-host'
+import type { ProcessPluginHost } from './plugin-host'
 import { createMiniAppService } from '../features/mini-apps/service'
 import { createAgentFoldersPort, createPluginAgentGroups } from './agent-catalog-sources'
 import { createAgentsService } from '../features/agents/service'
@@ -44,6 +44,8 @@ export interface DomainServicesPhaseInput
   extends
     Pick<RegistriesPhase, 'contextProviderRegistry' | 'resourceRefsRegistry'>,
     Pick<InfraPhase, 'notifications'> {
+  /** The one plugin host of the process and its chat sessions (`./plugin-host`). */
+  kit: ProcessPluginHost
   db: ReturnType<typeof createDatabase>
   env: ReturnType<typeof loadEnv>
   logger: ReturnType<typeof createLogger>
@@ -73,6 +75,7 @@ export interface DomainServicesPhase extends ProcessPluginHost {
 }
 
 export function createDomainServicesPhase({
+  kit,
   db,
   env,
   logger,
@@ -191,7 +194,6 @@ export function createDomainServicesPhase({
   // Late-bound: chatService is created below, but a command's arg-options runner needs a
   // session's cwd. Hold a ref, assign it once chatService exists.
   const resolveSessionCwd = sessionCwdOrNull(hostRefs)
-  const kit = createProcessPluginHost()
   const pluginService = createPluginService({
     db,
     capabilityStores,

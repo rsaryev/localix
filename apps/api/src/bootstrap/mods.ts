@@ -1,3 +1,4 @@
+import type { LocalixPluginHost } from '../features/plugins/kit'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
@@ -78,6 +79,7 @@ export function createModsPhase(input: {
     bootRepo: { listMessages(userId: string, sessionId: string): Promise<PersistedMessage[]> }
   }
   hostRefs: MiniAppHostRefs
+  pluginHost: LocalixPluginHost
 }): { modsHost: ModsHost; refreshMods: () => void } {
   const { infra, hostRefs } = input
   const deps = {
@@ -176,6 +178,7 @@ export function createModsPhase(input: {
           projectId: '',
           cwd: scene.cwd,
           homeDir: userHome(),
+          pluginHost: input.pluginHost,
         }).catch(() => null),
       ])
       return localixCommands({

@@ -6,6 +6,7 @@ import type { ChatFeaturePorts } from '../features/chat/feature-ports'
 import { createContextStoreRepository } from '../features/context-store/repository'
 import { createFileWatchService } from '../features/fs-watch/service'
 import { createMcpRepository } from '../features/mcp/repository'
+import type { LocalixPluginHost } from '../features/plugins/kit'
 import type { PluginService } from '../features/plugins/service'
 import type { MiniAppService } from '../features/mini-apps/service'
 import { createProjectsRepository } from '../features/projects/repository'
@@ -22,7 +23,11 @@ import { createUserProfileRepository } from '../features/user/repository'
  */
 export function createChatFeaturePorts(
   db: Kysely<AppDatabase>,
-  services: { pluginService: PluginService; miniAppService: MiniAppService },
+  services: {
+    pluginService: PluginService
+    miniAppService: MiniAppService
+    pluginHost: LocalixPluginHost
+  },
 ): ChatFeaturePorts {
   return {
     usageRepo: createUsageRepository(db),
@@ -31,6 +36,7 @@ export function createChatFeaturePorts(
     mcpRepo: createMcpRepository(db),
     availabilityWriter: createAvailabilityWriter(db),
     pluginRepo: createCapabilitySourceRepository(db, 'plugin'),
+    pluginHost: services.pluginHost,
     miniAppRepo: createCapabilitySourceRepository(db, 'mini-app'),
     contextStore: createContextStoreRepository(db),
     pluginService: services.pluginService,

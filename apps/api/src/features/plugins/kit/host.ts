@@ -1,3 +1,5 @@
+import { AsyncLocalStorage } from 'node:async_hooks'
+import { isDeepStrictEqual } from 'node:util'
 import {
   createPluginHost,
   type HostedPlugin,
@@ -10,7 +12,8 @@ import { createHostPorts, type HostPortsDeps, type LocalixKitPorts } from './por
  * The one plugin host of the app process (`createPluginHost`), built from Localix's ports. Bootstrap
  * makes it where it makes the plugin services; the engines that come up later (MCP clients, the
  * models) are read through the getters of `deps` at call time. The plugins come from the catalog
- * (`./catalog`), which loads each folder and gives the host the result with `setPlugins`.
+ * (`./catalog`): the host holds the user-scope installs (`setUserPlugins`), and each session brings
+ * its project's own (`./sessions`).
  */
 export type PluginHostDeps = Omit<HostPortsDeps, 'pluginRoot' | 'projectDir'>
 
@@ -29,33 +32,51 @@ export interface LocalixPluginHost {
   /** The kit host itself, for the boundary's own modules (sessions, the catalog). */
   readonly kit: PluginHost
   readonly ports: LocalixKitPorts
-  /** Replaces every plugin the host holds; open sessions read the new set at their next use. */
-  setPlugins(plugins: readonly LoadedKitPlugin[]): void
   /**
-   * The plugins one scope's catalog found (a project and folder): the host holds those of every
-   * scope a run has read, the first of an id kept, and changes only when a scope's set does.
+   * The user-scope installs one catalog read. A held one whose id this catalog's project installs
+   * hide (`masked`) stays: another project's sessions still run it. Changes only when the set does.
    */
-  feedScope(scope: string, plugins: readonly LoadedKitPlugin[]): void
+  setUserPlugins(plugins: readonly LoadedKitPlugin[], masked?: ReadonlySet<string>): void
+  /**
+   * Runs `call` with the locations of one session: its project and its own plugins' folders. The
+   * kit resolves a session's components through the host's locations (`host/scope.ts`).
+   */
+  within<T>(place: SessionPlace, call: () => Promise<T>): Promise<T>
   /** Every plugin the host was given, with whether it runs. */
   plugins(): readonly HostedPlugin[]
   /** One more each time the plugins change: a holder of the number sees the change. */
   readonly generation: number
 }
 
-const sameSet = (held: readonly LoadedKitPlugin[] | undefined, given: readonly LoadedKitPlugin[]) =>
-  held?.length === given.length &&
-  held.every(
-    (one, at) =>
-      one.id === given[at]?.id && one.root === given[at]?.root && one.plugin === given[at]?.plugin,
-  )
+/** Where one session runs: its project folder and the folder of each of its own plugins. */
+export interface SessionPlace {
+  readonly projectDir: string
+  readonly roots: ReadonlyMap<string, string>
+}
+
+const sameEntry = (one: LoadedKitPlugin, other: LoadedKitPlugin) =>
+  one.id === other.id && one.root === other.root && isDeepStrictEqual(one.plugin, other.plugin)
+
+/** `given`, each entry the same as a held one replaced by the held object: a re-read keeps identity. */
+export function keepUnchanged(
+  held: readonly LoadedKitPlugin[],
+  given: readonly LoadedKitPlugin[],
+): readonly LoadedKitPlugin[] {
+  return given.map((entry) => held.find((one) => sameEntry(one, entry)) ?? entry)
+}
+
+export const samePlugins = (a: readonly LoadedKitPlugin[], b: readonly LoadedKitPlugin[]) =>
+  a.length === b.length && a.every((one, at) => one === b[at])
 
 export function createLocalixPluginHost(deps: PluginHostDeps): LocalixPluginHost {
+  let held: readonly LoadedKitPlugin[] = []
   let roots = new Map<string, string>()
+  const place = new AsyncLocalStorage<SessionPlace>()
   const ports = createHostPorts({
     ...deps,
-    // A session binds its own project (`hookPorts.locations`); the host's is the home folder.
-    projectDir: () => deps.homeDir,
-    pluginRoot: (id) => roots.get(id) ?? '',
+    // Outside a session's place, the host's project is the home folder.
+    projectDir: () => place.getStore()?.projectDir ?? deps.homeDir,
+    pluginRoot: (id) => place.getStore()?.roots.get(id) ?? roots.get(id) ?? '',
   })
   const kit = createPluginHost({
     plugins: [],
@@ -66,23 +87,20 @@ export function createLocalixPluginHost(deps: PluginHostDeps): LocalixPluginHost
     // A project's portable `.agents/skills` beside its `.claude` ones (`agent-core/skill-scan.ts`).
     extraScopeFolders: ['.agents'],
   })
-  const scopes = new Map<string, readonly LoadedKitPlugin[]>()
-  const setPlugins = (plugins: readonly LoadedKitPlugin[]) => {
-    roots = new Map(plugins.map((entry) => [entry.id, entry.root]))
-    kit.update({ plugins: plugins.map(({ id, plugin }) => ({ id, plugin })) })
-  }
   return {
     kit,
     ports,
-    setPlugins,
-    feedScope(scope, plugins) {
-      if (sameSet(scopes.get(scope), plugins)) return
-      scopes.set(scope, plugins)
-      const byId = new Map<string, LoadedKitPlugin>()
-      for (const entry of [...scopes.values()].flat())
-        if (!byId.has(entry.id)) byId.set(entry.id, entry)
-      setPlugins([...byId.values()])
+    setUserPlugins(plugins, masked = new Set()) {
+      const kept = held.filter(
+        (one) => masked.has(one.id) && !plugins.some((entry) => entry.id === one.id),
+      )
+      const next = keepUnchanged(held, [...plugins, ...kept])
+      if (samePlugins(held, next)) return
+      held = next
+      roots = new Map(next.map((entry) => [entry.id, entry.root]))
+      kit.update({ plugins: next.map(({ id, plugin }) => ({ id, plugin })) })
     },
+    within: (where, call) => place.run(where, call),
     plugins: () => kit.plugins,
     get generation() {
       return kit.generation

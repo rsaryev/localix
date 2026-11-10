@@ -33,6 +33,7 @@ export function loadScopeDiscovery(
     loadEnabledPlugins({
       homeDir: userHome(),
       repo: ctx.pluginRepo,
+      pluginHost: ctx.pluginHost,
       availability: scope.availability,
       userId: scope.userId,
       projectId: scope.projectId,

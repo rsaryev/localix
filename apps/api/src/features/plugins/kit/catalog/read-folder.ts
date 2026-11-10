@@ -6,6 +6,7 @@ import { parsePluginSource, readEntry } from '@rsaryev/llx-plugin/marketplace'
 import { CC_INERT_HOOK_EVENTS, isInertCcHookEvent } from '../../../cc-hooks/contracts'
 import type { DiscoveredPlugin } from '../../discovery-types'
 import { diskFiles } from '../ports/files'
+import { mcpBundleReader } from '../ports/mcp-bundle'
 import { readAgents, readCommands } from './components'
 import { entrypointsOf } from './entrypoints'
 import { localixManifest } from './manifest'
@@ -36,14 +37,6 @@ const entryOf = (raw: unknown) =>
 export const issueLine = ({ message, path }: PluginIssue): string =>
   message.includes(path) ? message : `${message} (${path})`
 
-/**
- * Kit gap: `loadPlugin` decides at load whether a bundled server may start, from `bundleSettings`,
- * while a catalog folder is read once for every scope and Localix keeps a plugin's settings per
- * project; and `McpBundleSetting` carries no title, type or description for the settings form. So
- * the catalog gives the kit no bundle reader, Localix's own (`entrypoints.ts`) reads the bundles,
- * and the kit's "needs an extractor" warning is not the person's to see.
- */
-const NOT_EXTRACTED = /^MCP bundle .* needs an extractor/
 const isError = (found: PluginIssue) => found.severity === 'error'
 
 function empty(
@@ -87,7 +80,7 @@ async function catalogOf(
   loadIssues: readonly PluginIssue[],
   fallbackName: string,
 ): Promise<CatalogPlugin> {
-  const mapped = localixManifest(plugin.name, plugin.manifest, fallbackName)
+  const mapped = localixManifest(plugin.name, plugin.manifest, fallbackName, plugin.mcpBundles)
   const commands = readCommands(plugin)
   const agents = readAgents(plugin)
   const entrypoints = await entrypointsOf(plugin, dir)
@@ -98,16 +91,9 @@ async function catalogOf(
     ...inertHookIssues(plugin),
     // What the format readers found in its skills, commands, agents and output styles.
     ...readCatalog(plugin).issues,
-    ...(entrypoints.mcpBundles?.errors ?? []).map((message): PluginIssue => ({
-      severity: 'error',
-      path: 'mcpServers',
-      message,
-    })),
   ]
-  // A packaged server's options join the plugin's settings (`<server>.<key>`); the plugin's own win.
-  const config = { ...entrypoints.mcpBundles?.options, ...mapped.manifest.config }
   return {
-    manifest: Object.keys(config).length ? { ...mapped.manifest, config } : mapped.manifest,
+    manifest: mapped.manifest,
     ...(plugin.manifest ? { rawManifest: { ...plugin.manifest } } : {}),
     kit: plugin,
     dir,
@@ -139,9 +125,11 @@ export async function readPluginFolder(
   const loaded = await loadPlugin({
     files: disk,
     fallbackName,
+    // A packaged server (`.mcpb`) is unpacked under the plugin; the kit reads what it declares.
+    bundles: mcpBundleReader(dir),
     ...(entry ? { entry } : {}),
   })
-  const issues = loaded.issues.filter((found) => !NOT_EXTRACTED.test(found.message))
+  const issues = loaded.issues
   if (!loaded.plugin) {
     const error = issues.find(isError)
     return empty(dir, entry?.name ?? fallbackName, error ? issueLine(error) : 'Not loaded', issues)

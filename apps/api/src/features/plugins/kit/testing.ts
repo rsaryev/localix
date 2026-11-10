@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { join } from 'node:path'
 import type { EnvFileStore, PluginFiles } from '@rsaryev/llx-plugin'
 import type { PluginStateStore, StagedDirectory } from '@rsaryev/llx-plugin/marketplace'
 import {
@@ -12,6 +13,7 @@ import {
   recordingHttp,
   scriptedRunner,
 } from '@rsaryev/llx-plugin/testing'
+import { createLocalixPluginHost, type LocalixPluginHost } from './host'
 import type { LocalixKitPorts } from './ports/host-ports'
 
 /**
@@ -85,4 +87,18 @@ export function memoryKitPorts(options: MemoryKitOptions = {}): LocalixKitPorts 
       staged,
     },
   }
+}
+
+/** A real plugin host over a home folder on disk, for tests that read plugins from folders. */
+export function diskPluginHost(homeDir: string): LocalixPluginHost {
+  return createLocalixPluginHost({
+    homeDir,
+    environment: () => ({ PATH: process.env.PATH }),
+    pluginsRoot: () => join(homeDir, '.localix/plugins'),
+    scratchDir: () => join(homeDir, 'scratch'),
+    envFilesDir: (sessionId) => join(homeDir, 'sessions', sessionId),
+    managedDirectory: undefined,
+    mcp: () => undefined,
+    models: () => undefined,
+  })
 }

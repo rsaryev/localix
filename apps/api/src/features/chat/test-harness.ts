@@ -1,3 +1,4 @@
+import { diskPluginHost } from '../plugins/kit/testing'
 import type { AgentRuntime, LanguageModel, LanguageModelFactory } from '@localixai/agent/runtime'
 
 import type { CatalogResponse } from '../catalog/contracts'
@@ -165,5 +166,6 @@ export function testChatFeaturePorts(
     miniAppService:
       services.miniAppService ??
       createMiniAppService({ db, capabilityStores, homeDir: userHome(), resolveProjectCwd }),
+    pluginHost: diskPluginHost(userHome()),
   })
 }

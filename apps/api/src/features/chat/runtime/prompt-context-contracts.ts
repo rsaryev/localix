@@ -19,12 +19,14 @@ import type { FrozenSessionContext } from './agent-runner-types'
 import type { RuntimeState } from './agent-runner-state'
 import type { createProjectsRepository } from '../../projects/repository'
 import type { SkillOverrides } from '../../agent-core/skill-overrides'
+import type { LocalixPluginHost } from '../../plugins/kit'
 
 export interface PromptContextDeps {
   /** Where Claude Code's files are read from; the process's home by default (`claudeCodeHome`). */
   claudeHome?: string
   projectsRepo: ReturnType<typeof createProjectsRepository>
   pluginRepo: CapabilitySourceRepository
+  pluginHost: LocalixPluginHost
   /** The `mini-app` rows of `capability_source`: each mini app's stored settings. */
   miniAppRepo: CapabilitySourceRepository
   contextSnapshots: RuntimeState['contextSnapshots']

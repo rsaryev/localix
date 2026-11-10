@@ -3,6 +3,7 @@ import type { CapabilitySourceRepository } from '../capabilities/source-reposito
 import type { FileWatchDeps, createFileWatchService } from '../fs-watch/service'
 import type { ContextStore } from '../context-store/repository'
 import type { McpRepository } from '../mcp/repository'
+import type { LocalixPluginHost } from '../plugins/kit'
 import type { PluginService } from '../plugins/service-types'
 import type { MiniAppService } from '../mini-apps/service'
 import type { createProjectsRepository } from '../projects/repository'
@@ -23,6 +24,8 @@ export interface ChatFeaturePorts {
   availabilityWriter: AvailabilityWriter
   /** Plugin capability sources (`kind: 'plugin'`). */
   pluginRepo: CapabilitySourceRepository
+  /** The process's plugin host: a scope's plugin MCP servers are resolved in a session of it. */
+  pluginHost: LocalixPluginHost
   /** Mini app capability sources (`kind: 'mini-app'`). */
   miniAppRepo: CapabilitySourceRepository
   /** Externalized tool output (`context-store`). */

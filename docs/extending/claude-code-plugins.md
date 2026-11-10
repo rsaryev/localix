@@ -38,8 +38,8 @@ validates a folder that is not installed and ends with Claude Code's verdict lin
 
 A user-scope plugin has one configuration in every project, as Claude Code's `pluginConfigs` does. A
 `sensitive` userConfig value is stored in the [vault](../features/secrets.md), encrypted and bound
-to the plugin; the plugin's settings keep only a reference, and the value reaches its hooks, MCP
-servers and `CLAUDE_PLUGIN_OPTION_<KEY>` when they run.
+to the plugin; the plugin's settings keep only a reference, and the value reaches its hooks (also as
+`CLAUDE_PLUGIN_OPTION_<KEY>`) and its MCP servers' `${user_config.KEY}` when they run.
 
 Localix ships no plugin. It registers the [Store](../features/store.md)'s default marketplaces on
 first start, `localix` (the [Localix marketplace](https://github.com/rsaryev/localix-marketplace)),

@@ -48,7 +48,7 @@ import { createTerminalPorts } from './terminal-ports'
 import { createChatFeaturePorts } from './chat-feature-ports'
 import type { MiniAppService } from '../features/mini-apps/service'
 import type { PluginService } from '../features/plugins/service-types'
-import { readClaudeSettings, settingsModes } from '../features/plugins/kit'
+import { readClaudeSettings, settingsModes, type LocalixPluginHost } from '../features/plugins/kit'
 import type { ModsHost } from '../features/mods/host'
 
 type ChatServiceDeps = Parameters<typeof createChatService>[0]
@@ -100,6 +100,8 @@ export interface ChatServicePhaseInput extends Pick<
   pluginService: PluginService
   /** The host's mini app service: what `/mini-app` reads and changes. */
   miniAppService: MiniAppService
+  /** The process's plugin host (`bootstrap/plugin-host.ts`). */
+  pluginHost: LocalixPluginHost
   agentNotifications: NonNullable<ChatServiceDeps['notifications']>
   logger: ReturnType<typeof createLogger>
   capabilityRegistry: ReturnType<typeof createCapabilityRegistry>
@@ -134,6 +136,7 @@ export function createChatServicePhase({
   providerConnectionsService,
   lspManager,
   pluginSessions,
+  pluginHost,
   mediaStore,
   capabilityRegistry,
   secretsStore,
@@ -191,7 +194,7 @@ export function createChatServicePhase({
       ).permissions,
     // `disableSkillShellExecution`, read from Claude Code's settings for the session's folder.
     skillShellDisabled: createSkillShellPolicy(),
-    ports: createChatFeaturePorts(db, { pluginService, miniAppService }),
+    ports: createChatFeaturePorts(db, { pluginService, miniAppService, pluginHost }),
     announceCapabilityChange,
     catalogService,
     uiLocationCatalog: uiLocationCatalogService,

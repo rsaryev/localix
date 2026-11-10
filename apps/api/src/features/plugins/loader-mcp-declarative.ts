@@ -1,8 +1,8 @@
 import { localixWorkspaceDir } from '../../lib/env'
 import type { McpServerRecord } from '../mcp/repository'
-import { scalarConfig } from '../capabilities/source-repository'
 import { buildPluginCatalog } from './catalog'
-import { resolvePluginConfig } from './config'
+import { catalogMcpServers } from './catalog-kit'
+import type { LocalixPluginHost } from './kit'
 import { pluginLoadBlockReason } from './load-block'
 import type { DeclarativeLoadOptions } from './loader-declarative'
 import { buildMcpRecords } from './mcp'
@@ -14,7 +14,7 @@ import { buildMcpRecords } from './mcp'
  * enable state and the load block stay the trust gate, as in every other load.
  */
 export async function loadEnabledPluginMcpServers(
-  opts: DeclarativeLoadOptions & { now?: () => string },
+  opts: DeclarativeLoadOptions & { pluginHost: LocalixPluginHost; now?: () => string },
 ): Promise<McpServerRecord[]> {
   const cwd = opts.cwd ?? localixWorkspaceDir()
   const catalog = await buildPluginCatalog({
@@ -25,18 +25,12 @@ export async function loadEnabledPluginMcpServers(
     cwd,
     homeDir: opts.homeDir,
   })
+  const servers = await catalogMcpServers(opts.pluginHost, catalog, {
+    cwd,
+    homeDir: opts.homeDir,
+  })
   const at = (opts.now ?? (() => new Date().toISOString()))()
-  return catalog.enabled.flatMap(({ plugin, state }) =>
-    pluginLoadBlockReason(plugin)
-      ? []
-      : buildMcpRecords(
-          plugin,
-          resolvePluginConfig(plugin.manifest, scalarConfig(state?.config)),
-          opts.userId,
-          at,
-          opts.homeDir,
-          undefined,
-          { projectDir: cwd },
-        ),
+  return catalog.enabled.flatMap(({ plugin }) =>
+    pluginLoadBlockReason(plugin) ? [] : buildMcpRecords(plugin, servers, opts.userId, at),
   )
 }

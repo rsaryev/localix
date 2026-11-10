@@ -9,6 +9,7 @@ import { createRegistriesPhase } from './bootstrap/registries'
 import { createExternalAgentsPhase } from './bootstrap/external-agents'
 import { createMiniAppHostsPhase } from './bootstrap/mini-app-hosts'
 import { createDomainServicesPhase } from './bootstrap/domain-services'
+import { createProcessPluginHost } from './bootstrap/plugin-host'
 import { createEnginesPhase } from './bootstrap/engines'
 import { createAgentFacadePhase } from './bootstrap/agent-facade'
 import { createAppServicesPhase } from './bootstrap/app-services'
@@ -96,8 +97,9 @@ export async function bootstrap(
       capabilityRegistry,
       resourceRefsRegistry,
     })
-  // Claude Code mods: built before chat, which runs every turn through them (`bootstrap/mods.ts`).
-  const { modsHost, refreshMods } = createModsPhase({ infra, hostRefs })
+  // The process's one plugin host, then the mods chat runs every turn through (`bootstrap/mods.ts`).
+  const kit = createProcessPluginHost()
+  const { modsHost, refreshMods } = createModsPhase({ infra, hostRefs, pluginHost: kit.pluginHost })
   const {
     projectsService,
     userService,
@@ -112,6 +114,7 @@ export async function bootstrap(
     toolUsageRepo,
     announceCapabilityChange,
   } = createDomainServicesPhase({
+    kit,
     db,
     env,
     logger,
@@ -141,6 +144,7 @@ export async function bootstrap(
     providerConnectionsService,
     lspManager,
     pluginSessions,
+    pluginHost: kit.pluginHost,
     mediaStore,
     capabilityRegistry,
     secretsStore,
@@ -167,7 +171,7 @@ export async function bootstrap(
     warn: (message) => logger.warn({ event: 'storage.prune_failed', message }),
   })
   // The mini app hosts' late-bound references to chat, and the ONE wake delivery `wakes`.
-  const { wakes } = bindChatHostRefs({ hostRefs, chatService, env, logger, notifications, db })
+  const { wakes } = bindChatHostRefs({ hostRefs, chatService, env, logger, notifications, db, kit })
 
   const { auxUsageRepo, startEngines, triggerConditions, triggerEngine } = await createEnginesPhase(
     {

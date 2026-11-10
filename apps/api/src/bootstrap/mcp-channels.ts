@@ -1,3 +1,4 @@
+import type { LocalixPluginHost } from '../features/plugins/kit'
 /**
  * Claude Code channels, composed: where a channel's bindings are kept and how they come back at
  * boot, and the permission relay between a chat's approval cards and its channels.
@@ -78,6 +79,7 @@ export function withChannelPermissionRelay(
 /** The server a kept binding names, when it is still offered and available in its scope. */
 export function channelServerResolver(
   db: Kysely<AppDatabase>,
+  pluginHost: LocalixPluginHost,
   loadPluginServers: typeof loadEnabledPluginMcpServers = loadEnabledPluginMcpServers,
 ): (binding: ChannelBinding) => Promise<McpServerRecord | null> {
   const mcpRepo = createMcpRepository(db)
@@ -95,6 +97,7 @@ export function channelServerResolver(
             projectId: binding.projectId,
             cwd: binding.cwd,
             homeDir: userHome(),
+            pluginHost,
           })
         ).find((record) => record.id === binding.serverId)
       : await mcpRepo.getById(binding.userId, binding.serverId)
@@ -111,6 +114,7 @@ export function channelServerResolver(
  */
 export function startMcpChannels(input: {
   db: Kysely<AppDatabase>
+  pluginHost: LocalixPluginHost
   answer: (userId: string, requestId: string, allow: boolean) => { ok: boolean }
   logger: { warn(message: string, meta?: unknown): void }
 }): Promise<number> {
@@ -120,7 +124,7 @@ export function startMcpChannels(input: {
     ({ userId, hostRequestId, allow }) => input.answer(userId, hostRequestId, allow).ok,
   )
   return mcpClientManager
-    .restoreChannels(store, channelServerResolver(input.db), {
+    .restoreChannels(store, channelServerResolver(input.db, input.pluginHost), {
       warn: (...args) => input.logger.warn(...args),
     })
     .catch((err: unknown) => {

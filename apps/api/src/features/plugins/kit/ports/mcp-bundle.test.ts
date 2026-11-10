@@ -53,11 +53,8 @@ describe('the MCP bundle reader of one plugin', () => {
     expect(opened).toMatchObject({
       name: 'db-server',
       server: { command: 'node', env: { DB_TOKEN: '${user_config.token}', OTHER: '${UNKNOWN}' } },
-      userConfig: {
-        token: { required: true },
-        region: { required: false },
-        verbose: { required: false },
-      },
+      // The bundle's own `user_config` block, as written: the kit reads it into options.
+      userConfig: MANIFEST.user_config,
     })
     expect(JSON.stringify(opened)).toContain(join(root, '.mcpb-cache'))
   })

@@ -4,7 +4,6 @@ import { scalarConfig } from '../capabilities/source-repository'
 import { setPluginConfigRequestSchema } from './contracts'
 import { pluginConfigOptionSchema } from './contracts-config'
 import { resolvePluginConfig, type PluginConfigValues } from './config'
-import { buildPluginOptionEnv } from './mcp'
 import type { PluginManifest } from './contracts'
 
 /**
@@ -12,8 +11,8 @@ import type { PluginManifest } from './contracts'
  *
  * It was filed as a suspected LIE: the theory was that `resolvePluginConfig` copies the
  * `plugins` table's unvalidated parsed-JSON `config` column verbatim, so a stored `null`
- * really reaches `buildPluginOptionEnv`, whose `val !== null` guard would then be LIVE
- * code that the type says is impossible — a type gap at an unchecked boundary.
+ * really reaches the plugin's resolved values, which the type says is impossible — a type gap
+ * at an unchecked boundary.
  *
  * IT IS NOT A LIE. `resolvePluginConfig` has exactly TWO inputs, and BOTH are filtered
  * before it ever sees them. There are three independent barriers, and this file is the
@@ -29,11 +28,7 @@ import type { PluginManifest } from './contracts'
  *   3. DEFAULT `pluginConfigOptionSchema.default` is `z.union([string, number, boolean])
  *              .optional()`. A manifest cannot declare a null default either.
  *
- * CONSEQUENCE, and the reason this file exists rather than a code change: the `val !==
- * null` guard in `buildPluginOptionEnv` is DEAD code, not live code. The suspicion had it
- * exactly backwards. The guard is harmless belt-and-braces at a JSON boundary and is left
- * alone — but its mere presence is what made the type look like it was lying, so the
- * invariant it implies is now CHECKED here instead of being folklore.
+ * The invariant is CHECKED here instead of being folklore.
  *
  * Each barrier below is falsifiable: widen any one of the three and this file goes red.
  */
@@ -101,18 +96,6 @@ describe('PluginConfigValues is honest — every path in filters non-primitives'
       expect(['string', 'number', 'boolean']).toContain(typeof v)
     }
   })
-
-  test('the null-guard in buildPluginOptionEnv is DEAD, and the env map is unaffected by it', () => {
-    // Reachable input (what resolvePluginConfig can actually produce) → every key emitted.
-    expect(buildPluginOptionEnv({ A: 'x', B: 0, C: false })).toStrictEqual({
-      CLAUDE_PLUGIN_OPTION_A: 'x',
-      CLAUDE_PLUGIN_OPTION_B: '0',
-      CLAUDE_PLUGIN_OPTION_C: 'false',
-    })
-    // `0` and `false` are FALSY but perfectly valid config values: pin that the guard is a
-    // null check and never became a truthiness check, which would silently drop them.
-    expect(Object.keys(buildPluginOptionEnv({ B: 0, C: false }))).toHaveLength(2)
-  })
 })
 
 /**
@@ -159,8 +142,6 @@ describe('`multiple: true` is a manifest HINT, not a storage mode', () => {
     })
     const resolved = resolvePluginConfig(manifest, readStored('{"TAGS":"a,b,c"}'))
     expect(resolved).toStrictEqual({ TAGS: 'a,b,c' })
-    // …and it reaches the plugin as one string, for the plugin to split itself.
-    expect(buildPluginOptionEnv(resolved)).toStrictEqual({ CLAUDE_PLUGIN_OPTION_TAGS: 'a,b,c' })
   })
 
   test('multiple:true does NOT unlock array storage — both barriers still refuse one', () => {

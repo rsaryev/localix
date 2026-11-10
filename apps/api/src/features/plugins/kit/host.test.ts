@@ -33,10 +33,10 @@ async function plugin(name: string) {
 }
 
 describe('the plugin host of the app process', () => {
-  test('starts with no plugin and takes the loaded ones with their roots', async () => {
+  test('starts with no plugin and takes the user-scope installs with their roots', async () => {
     const host = createLocalixPluginHost(deps())
     expect(host.plugins()).toEqual([])
-    host.setPlugins([
+    host.setUserPlugins([
       { id: 'fmt@acme', root: '/plugins/fmt', plugin: await plugin('fmt') },
       { id: 'off@acme', root: '/plugins/off', plugin: await plugin('off') },
     ])
@@ -50,22 +50,36 @@ describe('the plugin host of the app process', () => {
     expect(host.ports.host.locations.pluginRoot('fmt@acme')).toBe('/plugins/fmt')
   })
 
-  test('holds the plugins of every scope fed, and changes only when a scope does', async () => {
+  test('a catalog read again with the same plugins changes nothing; a new set replaces the old', async () => {
+    const host = createLocalixPluginHost(deps())
+    host.setUserPlugins([{ id: 'fmt@acme', root: '/plugins/fmt', plugin: await plugin('fmt') }])
+    // Each run's catalog loads a new object with the same data.
+    host.setUserPlugins([{ id: 'fmt@acme', root: '/plugins/fmt', plugin: await plugin('fmt') }])
+    expect(host.generation).toBe(1)
+    host.setUserPlugins([{ id: 'lint@acme', root: '/plugins/lint', plugin: await plugin('lint') }])
+    expect([host.plugins().map(({ id }) => id), host.generation]).toEqual([['lint@acme'], 2])
+  })
+
+  test("a user copy a project install hides in one catalog stays the host's", async () => {
     const host = createLocalixPluginHost(deps())
     const fmt = { id: 'fmt@acme', root: '/plugins/fmt', plugin: await plugin('fmt') }
-    const lint = { id: 'lint@acme', root: '/plugins/lint', plugin: await plugin('lint') }
-    host.feedScope('/work/a', [fmt])
-    host.feedScope('/work/b', [{ ...fmt }, lint])
-    expect([host.plugins().map(({ id }) => id), host.generation]).toEqual([
-      ['fmt@acme', 'lint@acme'],
-      2,
+    host.setUserPlugins([fmt])
+    host.setUserPlugins([], new Set(['fmt@acme']))
+    expect([host.plugins().map(({ id }) => id), host.generation]).toEqual([['fmt@acme'], 1])
+  })
+
+  test("within a session's place, the locations answer its project and its own plugins", async () => {
+    const host = createLocalixPluginHost(deps())
+    host.setUserPlugins([{ id: 'fmt@acme', root: '/plugins/fmt', plugin: await plugin('fmt') }])
+    const { locations } = host.ports.host
+    const place = { projectDir: '/work/app', roots: new Map([['lint', '/work/app/lint']]) }
+    const seen = await host.within(place, async () => [
+      locations.projectDir(),
+      locations.pluginRoot('lint'),
+      locations.pluginRoot('fmt@acme'),
     ])
-    host.feedScope('/work/a', [{ ...fmt }])
-    expect(host.generation).toBe(2)
-    // Uninstalled where both scopes saw it: gone once each has read its catalog again.
-    host.feedScope('/work/a', [])
-    host.feedScope('/work/b', [lint])
-    expect(host.plugins().map(({ id }) => id)).toEqual(['lint@acme'])
+    expect(seen).toEqual(['/work/app', '/work/app/lint', '/plugins/fmt'])
+    expect([locations.projectDir(), locations.pluginRoot('lint')]).toEqual([dir(), ''])
   })
 
   test('reads the MCP engine bootstrap brings up after the host was made', async () => {

@@ -1,3 +1,4 @@
+import { diskPluginHost } from './kit/testing'
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test'
 import { UNDECIDED, type AvailabilityReader } from '../capabilities/availability'
 import { promises as fs } from 'node:fs'
@@ -152,6 +153,7 @@ describe('plugin commands and skills', () => {
       projectId: '',
       cwd: '/',
       homeDir: home,
+      pluginHost: diskPluginHost(home),
     })
     const rooted = loaded.skills.find((s) => s.name === 'rooted')
     expect(rooted).toBeDefined()

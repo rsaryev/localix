@@ -1,3 +1,4 @@
+import { diskPluginHost } from '../features/plugins/kit/testing'
 import { afterEach, describe, expect, test } from 'bun:test'
 
 import { createDatabase } from '../db/connection'
@@ -103,7 +104,7 @@ describe('kept channel bindings at boot', () => {
     const { db, add } = await fixture()
     await add('opted', { channel: true })
     await add('plain', {})
-    const resolve = channelServerResolver(db, async () => [])
+    const resolve = channelServerResolver(db, diskPluginHost('/home'), async () => [])
     expect((await resolve(binding('opted')))?.name).toBe('opted')
     expect(await resolve(binding('plain'))).toBeNull()
     expect(await resolve(binding('missing'))).toBeNull()
@@ -123,7 +124,7 @@ describe('kept channel bindings at boot', () => {
       updatedAt: '',
     }
     const scopes: string[] = []
-    const resolve = channelServerResolver(db, async (opts) => {
+    const resolve = channelServerResolver(db, diskPluginHost('/home'), async (opts) => {
       scopes.push(`${opts.projectId}:${opts.cwd}`)
       return [plugin]
     })

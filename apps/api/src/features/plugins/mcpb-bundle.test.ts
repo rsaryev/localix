@@ -11,7 +11,7 @@ import { tempDirPerTest } from '@localixai/testing'
 import { makeZip } from '../../testing/zip-fixture'
 
 import { loadManifest } from './manifest-load'
-import { buildMcpRecords } from './mcp'
+import { pluginMcpRecords } from './testing/test-mcp-records'
 
 const dir = tempDirPerTest('mcpb-bundle-')
 const realFetch = globalThis.fetch
@@ -83,12 +83,10 @@ describe('a packaged MCP server in a plugin', () => {
       secret: true,
     })
 
-    expect(buildMcpRecords(discovered, {}, 'u', 'ts', dir(), logger)).toEqual([])
-    expect(warnings.at(-1)).toContain(
-      'Bundled MCP server "db-server" was not started: it needs configuration',
-    )
+    expect(await pluginMcpRecords(discovered, {}, dir(), logger)).toEqual([])
+    expect(warnings.at(-1)).toContain('db-server')
 
-    const [record] = buildMcpRecords(discovered, { 'db-server.token': 'abc' }, 'u', 'ts', dir())
+    const [record] = await pluginMcpRecords(discovered, { 'db-server.token': 'abc' }, dir())
     expect((record!.config as { env: Record<string, string> }).env.DB_TOKEN).toBe('abc')
   })
 

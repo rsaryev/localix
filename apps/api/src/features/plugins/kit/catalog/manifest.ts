@@ -1,4 +1,9 @@
-import type { PluginManifest as KitManifest, UserConfigOption } from '@rsaryev/llx-plugin/format'
+import {
+  bundleSettingKey,
+  type PluginManifest as KitManifest,
+  type UserConfigOption,
+} from '@rsaryev/llx-plugin/format'
+import type { Plugin } from '@rsaryev/llx-plugin/loading'
 import { pluginManifestSchema, type PluginManifest } from '../../contracts'
 import { schemaIssue } from '../../contracts-base'
 
@@ -23,10 +28,31 @@ function settingOf(option: UserConfigOption): Record<string, unknown> {
 const settingsOf = (options: Readonly<Record<string, UserConfigOption>>) =>
   Object.fromEntries(Object.entries(options).map(([key, option]) => [key, settingOf(option)]))
 
-/** A channel's options join the plugin's, the plugin's own winning a shared key. */
-function configOf(manifest: KitManifest): Record<string, unknown> | undefined {
+/** A packaged server's settings, keyed `<server>.<key>` among the plugin's. */
+const bundleSettingsOf = (bundles: Plugin['mcpBundles']) =>
+  Object.fromEntries(
+    Object.entries(bundles).flatMap(([server, { userConfig }]) =>
+      Object.entries(userConfig).map(([key, option]) => [
+        bundleSettingKey(server, key),
+        settingOf(option),
+      ]),
+    ),
+  )
+
+/**
+ * A packaged server's and a channel's options join the plugin's, the plugin's own winning a shared
+ * key.
+ */
+function configOf(
+  manifest: KitManifest,
+  bundles: Plugin['mcpBundles'],
+): Record<string, unknown> | undefined {
   const channels = Object.assign({}, ...(manifest.channels ?? []).map((c) => c.userConfig ?? {}))
-  const config = { ...settingsOf(channels), ...settingsOf(manifest.userConfig ?? {}) }
+  const config = {
+    ...bundleSettingsOf(bundles),
+    ...settingsOf(channels),
+    ...settingsOf(manifest.userConfig ?? {}),
+  }
   return Object.keys(config).length ? config : undefined
 }
 
@@ -51,6 +77,7 @@ export function localixManifest(
   name: string,
   kit: KitManifest | undefined,
   fallbackName: string,
+  bundles: Plugin['mcpBundles'] = {},
 ): MappedManifest {
   const fields = kit
     ? {
@@ -66,7 +93,7 @@ export function localixManifest(
         keywords: kit.keywords,
         defaultEnabled: kit.defaultEnabled,
         dependencies: dependenciesOf(kit.dependencies),
-        config: configOf(kit),
+        config: configOf(kit, bundles),
       }
     : { name }
   const parsed = pluginManifestSchema.safeParse(fields)

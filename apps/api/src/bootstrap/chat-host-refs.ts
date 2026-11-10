@@ -18,6 +18,7 @@ import { announceCapabilitiesSettled } from '../features/capabilities/settle'
 import { mcpClientManager } from '../features/mcp/client-manager'
 import { startMcpChannels } from './mcp-channels'
 import type { InfraPhase } from './infra'
+import type { ProcessPluginHost } from './plugin-host'
 import type { MiniAppHostRefs } from './mini-app-host-refs'
 import { publishResourcesChanged } from '../features/realtime/resources'
 
@@ -28,8 +29,10 @@ export function bindChatHostRefs({
   logger,
   notifications,
   db,
+  kit,
 }: Pick<InfraPhase, 'env' | 'logger' | 'notifications' | 'db'> & {
   hostRefs: MiniAppHostRefs
+  kit: ProcessPluginHost
   chatService: ReturnType<typeof createChatService>
 }) {
   // Fulfill the late-bound cwd resolver the mini app arg-options runner uses.
@@ -66,6 +69,7 @@ export function bindChatHostRefs({
   // an approval card settles it through the same path a click takes.
   void startMcpChannels({
     db,
+    pluginHost: kit.pluginHost,
     answer: (userId, requestId, allow) =>
       chatService.interact(requestId, 'respond', { answers: { confirmed: allow } }, userId),
     logger: { warn: (msg, meta) => logger.warn({ event: 'mcp_channel.warn', msg, meta }) },

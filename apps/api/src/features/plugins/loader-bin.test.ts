@@ -1,3 +1,4 @@
+import { diskPluginHost } from './kit/testing'
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test'
 import type { AvailabilityReader } from '../capabilities/availability'
 import { promises as fs } from 'node:fs'
@@ -80,6 +81,7 @@ describe('loadEnabledPlugins binDirs', () => {
       projectId: '',
       cwd: '/',
       homeDir: home,
+      pluginHost: diskPluginHost(home),
     })
     expect(loaded.binDirs).toContain(join(home, '.localix/plugins', 'has-bin', 'bin'))
   })
@@ -92,6 +94,7 @@ describe('loadEnabledPlugins binDirs', () => {
       projectId: '',
       cwd: '/',
       homeDir: home,
+      pluginHost: diskPluginHost(home),
     })
     expect(loaded.binDirs).not.toContain(join(home, '.localix/plugins', 'no-bin', 'bin'))
   })

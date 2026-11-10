@@ -12,8 +12,8 @@ import { tempDirPerTest } from '@localixai/testing'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import { resolvePluginConfig } from './config'
 import { loadManifest } from './manifest-load'
-import { buildMcpRecords } from './mcp'
 import { savePluginConfig } from './service-config'
+import { pluginMcpRecords } from './testing/test-mcp-records'
 
 const dir = tempDirPerTest('config-multiple-')
 
@@ -38,7 +38,7 @@ async function plugin() {
   return loadManifest(dir(), 'global', '')
 }
 
-const argsOf = (records: ReturnType<typeof buildMcpRecords>) =>
+const argsOf = (records: Awaited<ReturnType<typeof pluginMcpRecords>>) =>
   (records[0]!.config as { command: string[] }).command.slice(1)
 
 describe('a multiple userConfig option', () => {
@@ -46,7 +46,7 @@ describe('a multiple userConfig option', () => {
     const found = await plugin()
     const config = resolvePluginConfig(found.manifest, undefined)
     expect(config.roots).toBe('src,docs')
-    expect(argsOf(buildMcpRecords(found, config, 'u', 'ts', dir()))).toEqual(['--roots=src,docs'])
+    expect(argsOf(await pluginMcpRecords(found, {}, dir()))).toEqual(['--roots=src,docs'])
   })
 
   test('saves the list the person entered and substitutes it', async () => {
@@ -68,6 +68,7 @@ describe('a multiple userConfig option', () => {
     })
     const config = resolvePluginConfig(found.manifest, stored as never)
     expect(config.roots).toBe('lib,a,b')
+    expect(argsOf(await pluginMcpRecords(found, stored, dir()))).toEqual(['--roots=lib,a,b'])
     await expect(
       savePluginConfig({ repo, userId: 'u', plugin: found, projectId: '', values: { roots: 5 } }),
     ).rejects.toThrow('"roots" takes a list of strings')

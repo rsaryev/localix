@@ -55,6 +55,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     {
       projectsRepo: env.projectsRepo,
       pluginRepo: env.pluginRepo,
+      pluginHost: env.pluginHost,
       miniAppRepo: env.miniAppRepo,
       contextSnapshots: runtimeState.contextSnapshots,
       promptSnapshots: createSessionPromptSnapshotRepository(deps.db),

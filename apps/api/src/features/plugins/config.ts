@@ -14,15 +14,32 @@ export function resolvePluginConfig(
   manifest: PluginManifest,
   stored: PluginConfigValues | undefined,
 ): PluginConfigValues {
-  const out: PluginConfigValues = {}
+  const out: Record<string, unknown> = {}
   for (const [k, opt] of Object.entries(manifest.config ?? {})) {
     if (opt.default !== undefined) out[k] = opt.default
   }
-  for (const [k, v] of Object.entries(stored ?? {})) out[k] = typed(manifest.config?.[k]?.type, v)
+  Object.assign(out, storedOptionValues(manifest, stored))
   // A `multiple` option's list reads as its items joined with commas (`config-lists.ts`).
   for (const [k, opt] of Object.entries(manifest.config ?? {})) {
     const items = opt.multiple && k in out ? listItems(out[k]) : undefined
     if (items) out[k] = joinedList(items)
+  }
+  return out as PluginConfigValues
+}
+
+/**
+ * The saved values as the plugin kit takes them (`userConfig`): each as its declared type, a
+ * `multiple` option's as its list of strings.
+ */
+export function storedOptionValues(
+  manifest: PluginManifest,
+  stored: PluginConfigValues | undefined,
+): Record<string, string | number | boolean | string[]> {
+  const out: Record<string, string | number | boolean | string[]> = {}
+  for (const [k, v] of Object.entries(stored ?? {})) {
+    const option = manifest.config?.[k]
+    const items = option?.multiple ? listItems(v) : undefined
+    out[k] = items ?? typed(option?.type, v)
   }
   return out
 }
@@ -37,9 +54,4 @@ function typed(type: string | undefined, value: PluginConfigValues[string]) {
   if (type === 'number' && value.trim() !== '' && Number.isFinite(Number(value)))
     return Number(value)
   return value
-}
-
-/** The set of config keys a manifest declares — the only keys allowed to read host env. */
-export function declaredConfigKeys(manifest: PluginManifest): Set<string> {
-  return new Set(Object.keys(manifest.config ?? {}))
 }

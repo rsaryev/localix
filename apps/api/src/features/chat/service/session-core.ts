@@ -32,6 +32,7 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
     usageRepo,
     projectsRepo,
     pluginRepo,
+    pluginHost,
     hitlRegistry,
     streamRegistry,
     previewRegistry,
@@ -63,6 +64,7 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
   } = createSessionWorkspace({
     projectsRepo,
     pluginRepo,
+    pluginHost,
     availabilityFor: (userId, agentId) => readAvailability(deps.db, { userId, agentId }),
     logger: deps.logger,
   })

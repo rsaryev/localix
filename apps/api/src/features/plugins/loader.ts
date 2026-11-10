@@ -8,6 +8,8 @@ import { errorMessage } from '../../lib/errors'
 import { readSkillsFromRoot } from '../agent-core/skill-discovery'
 import { pluginLoadBlockReason } from './load-block'
 import { buildPluginCatalog } from './catalog'
+import { catalogMcpServers, kitPluginsOf } from './catalog-kit'
+import type { LocalixPluginHost } from './kit'
 import { buildLoadedAgent, emptyLoadedPlugins, type LoadedPlugins } from './loader-contract'
 import { resolvePluginConfig } from './config'
 import { recordPluginLoad } from '../notifications/conditions/plugins'
@@ -42,6 +44,8 @@ export async function loadEnabledPlugins(opts: {
   cwd: string
   /** The user's home (see `discoverPlugins`); required, so no caller stages into a home by default. */
   homeDir: string
+  /** The process's plugin host: the kit resolves the plugins' MCP servers in a session of it. */
+  pluginHost: LocalixPluginHost
   now?: () => string
   logger?: {
     warn: (msg: string, meta?: unknown) => void
@@ -61,18 +65,12 @@ export async function loadEnabledPlugins(opts: {
     homeDir: opts.homeDir,
   })
   result.awaitingConsent = catalog.awaitingConsent
-  result.kitPlugins = catalog.all.flatMap(({ plugin, enabled }) =>
-    plugin.kit
-      ? [
-          {
-            id: pluginIdOf(plugin),
-            root: plugin.dir,
-            plugin: plugin.kit,
-            selected: enabled && !pluginLoadBlockReason(plugin),
-          },
-        ]
-      : [],
-  )
+  result.kitPlugins = kitPluginsOf(catalog)
+  const mcp = await catalogMcpServers(opts.pluginHost, catalog, {
+    cwd: opts.cwd || opts.homeDir,
+    homeDir: opts.homeDir,
+    logger: opts.logger,
+  })
 
   for (const { plugin, state } of catalog.enabled) {
     const summary = {
@@ -133,11 +131,7 @@ export async function loadEnabledPlugins(opts: {
     }
 
     // ---- MCP servers ------------------------------------------------------
-    result.mcpServers.push(
-      ...buildMcpRecords(plugin, config, opts.userId, now(), opts.homeDir, opts.logger, {
-        projectDir: opts.cwd || undefined,
-      }),
-    )
+    result.mcpServers.push(...buildMcpRecords(plugin, mcp, opts.userId, now(), opts.logger))
 
     // ---- Custom worker roles (sub-agents — manifest data + CC files) --------
     for (const agent of plugin.agents) {

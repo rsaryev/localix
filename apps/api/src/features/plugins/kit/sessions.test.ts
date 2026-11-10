@@ -31,8 +31,21 @@ async function plugin(name: string): Promise<Plugin> {
   return read
 }
 
-async function scoped(name: string, selected: boolean): Promise<ScopePlugin> {
-  return { id: `${name}@acme`, root: `/plugins/${name}`, plugin: await plugin(name), selected }
+async function scoped(
+  name: string,
+  selected: boolean,
+  over: Partial<ScopePlugin> = {},
+): Promise<ScopePlugin> {
+  const at = over.scope === 'project' ? `/work/app/.localix/plugins/${name}` : `/plugins/${name}`
+  return {
+    id: `${name}@acme`,
+    root: at,
+    plugin: await plugin(name),
+    selected,
+    scope: 'user',
+    values: {},
+    ...over,
+  }
 }
 
 const enabledIn = (session: { plugins: readonly { id: string; enabled: boolean }[] }) =>
@@ -45,7 +58,6 @@ const facts = (over: Partial<ChatSessionFacts> = {}): ChatSessionFacts => ({
   permissionMode: 'default',
   trusted: true,
   layers: [],
-  scope: '/work/app',
   plugins: [],
   ...over,
 })
@@ -87,23 +99,43 @@ describe('one kit session per chat', () => {
     )
   })
 
-  test("the host holds every scope's plugins; a session runs those its agent selected", async () => {
+  test("the host holds the user installs; a project's own run in its sessions only", async () => {
     const { host, chats } = sessions()
-    const app = chats.forRun(facts({ plugins: [await scoped('fmt', true)] }))
-    const other = chats.forRun(
+    const app = chats.forRun(
       facts({
-        chatId: 'chat-2',
-        cwd: '/work/other',
-        scope: '/work/other',
-        plugins: [await scoped('fmt', false), await scoped('lint', true)],
+        plugins: [await scoped('fmt', true), await scoped('lint', true, { scope: 'project' })],
       }),
     )
-    expect(host.plugins().map(({ id }) => id)).toEqual(['fmt@acme', 'lint@acme'])
-    expect(enabledIn(other)).toEqual({ 'fmt@acme': false, 'lint@acme': true })
-    // The first chat's next run names the plugin another scope brought: it is off there.
-    const next = chats.forRun(facts({ plugins: [await scoped('fmt', true)] }))
-    expect(next).not.toBe(app)
-    expect(enabledIn(next)).toEqual({ 'fmt@acme': true, 'lint@acme': false })
+    const other = chats.forRun(
+      facts({ chatId: 'chat-2', cwd: '/work/other', plugins: [await scoped('fmt', false)] }),
+    )
+    expect(host.plugins().map(({ id }) => id)).toEqual(['fmt@acme'])
+    expect(enabledIn(app)).toEqual({ 'fmt@acme': true, 'lint@acme': true })
+    expect(enabledIn(other)).toEqual({ 'fmt@acme': false })
+  })
+
+  test("the host's user installs are the last catalog's", async () => {
+    const { chats } = sessions()
+    chats.forRun(facts({ plugins: [await scoped('fmt', true)] }))
+    const other = chats.forRun(facts({ chatId: 'chat-2', plugins: [await scoped('lint', true)] }))
+    expect(enabledIn(other)).toEqual({ 'lint@acme': true })
+    const later = chats.forRun(facts({ plugins: [await scoped('fmt', true)] }))
+    // Each catalog's user installs replace the host's.
+    expect(enabledIn(later)).toEqual({ 'fmt@acme': true })
+  })
+
+  test("a project's own plugins run from its folder with the values saved for the chat", async () => {
+    const { host, chats } = sessions()
+    const lint = await scoped('lint', true, { scope: 'project', values: { level: 'strict' } })
+    chats.forRun(facts({ plugins: [lint] }))
+    const session = chats.get('chat-1')
+    expect(session?.plugins.map(({ id }) => id)).toEqual(['lint@acme'])
+    expect(host.ports.host.locations.pluginRoot('lint@acme')).toBe('')
+    // Re-read with the same data, the session stays; other values open a new one.
+    chats.forRun(facts({ plugins: [{ ...lint, plugin: await plugin('lint') }] }))
+    expect(chats.get('chat-1')).toBe(session)
+    chats.forRun(facts({ plugins: [{ ...lint, values: { level: 'loose' } }] }))
+    expect(chats.get('chat-1')).not.toBe(session)
   })
 
   test("a change of the agent's selection opens a new session; the same one keeps it", async () => {

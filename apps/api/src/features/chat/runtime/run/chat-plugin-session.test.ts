@@ -28,7 +28,6 @@ function sessions() {
 
 const facts = () => ({
   chatId: 's1',
-  projectId: 'PRJ-1',
   cwd: '/work/app',
   plugins: [],
   settings: readClaudeSettingsSync({ homeDir: dir(), cwd: '/work/app', env: {}, managed: null }),
@@ -56,7 +55,7 @@ describe("a run opens its chat's plugin session", () => {
     const plugin = (await readPluginFolder(root)).kit!
     const selection = (selected: boolean) => ({
       ...facts(),
-      plugins: [{ id: 'fmt@acme', root, plugin, selected }],
+      plugins: [{ id: 'fmt@acme', root, plugin, selected, scope: 'user' as const, values: {} }],
     })
     openChatPluginSession(chats, selection(false), '/data/s1.jsonl', 'default')
     expect(chats.get('s1')?.plugins).toEqual([{ id: 'fmt@acme', name: 'fmt', enabled: false }])

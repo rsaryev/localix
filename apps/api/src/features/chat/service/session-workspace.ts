@@ -14,10 +14,12 @@ import { toFileSkillRecord, toPluginSkillRecord, type SkillRecord } from './skil
 import type { SkillDiscoveryLogger } from '../../agent-core/skill-discovery'
 import type { AvailabilityReader } from '../../capabilities/availability'
 import type { CapabilitySourceRepository } from '../../capabilities/source-repository'
+import type { LocalixPluginHost } from '../../plugins/kit'
 
 export interface SessionWorkspaceDeps {
   projectsRepo: ReturnType<typeof createProjectsRepository>
   pluginRepo: CapabilitySourceRepository
+  pluginHost: LocalixPluginHost
   /**
    * What an AGENT's rules say about its plugins. A PORT because this module owns no
    * storage — the same reason the repositories above are injected — and because the
@@ -42,7 +44,7 @@ const agentOf = (session: SessionRecord): string => session.agent?.agentId || DE
  * chat service so the workspace-rooting + discovery logic lives in one place.
  */
 export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
-  const { projectsRepo, pluginRepo, availabilityFor, logger } = deps
+  const { projectsRepo, pluginRepo, pluginHost, availabilityFor, logger } = deps
 
   /** Resolves a project's working dir (for filesystem skill discovery). */
   const resolveProjectWorkingDir = projectWorkingDirPort(projectsRepo)
@@ -139,6 +141,7 @@ export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
       projectId: session.projectId ?? '',
       cwd,
       homeDir: userHome(),
+      pluginHost,
       logger,
     })
     return loaded.mcpServers

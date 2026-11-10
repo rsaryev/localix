@@ -24,6 +24,7 @@ import type { CapabilitySourceRepository } from '../../../capabilities/source-re
 import type { EnqueueRun } from '../agent-turn-ticket'
 import type { AgentTurnFilter } from '../wake-queue/agent-turns'
 import type { JoinFilter, SteeringReservation } from '../wake-queue/steering'
+import type { LocalixPluginHost } from '../../../plugins/kit'
 
 export type { RunChain, RunParams, RunScope, RunTurn } from '../run-contract'
 
@@ -43,6 +44,7 @@ export interface RunEnv {
   projectsRepo: ReturnType<typeof createProjectsRepository>
   mcpRepo: ReturnType<typeof createMcpRepository>
   pluginRepo: CapabilitySourceRepository
+  pluginHost: LocalixPluginHost
   /** The `mini-app` rows of `capability_source`. */
   miniAppRepo: CapabilitySourceRepository
   /** Durable run rows: one per adapter invocation, swept on the next boot if it never closed. */

@@ -1,3 +1,4 @@
+import { diskPluginHost } from './kit/testing'
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test'
 import { UNDECIDED, type AvailabilityReader } from '../capabilities/availability'
 import { trustFallback } from '../ext/trust'
@@ -67,6 +68,7 @@ const opts = (repo: CapabilitySourceRepository, availability: AvailabilityReader
   projectId: '',
   cwd: dir,
   homeDir: dir,
+  pluginHost: diskPluginHost(dir),
   now: NOW,
 })
 
@@ -89,7 +91,8 @@ beforeAll(async () => {
     userConfig: {
       TOKEN: { type: 'string', title: 'Token', description: 'API token', sensitive: true },
     },
-    mcpServers: { api: { command: 'echo run', env: { TOKEN: '${TOKEN}' } } },
+    // Claude Code's spelling of an option: a bare `${TOKEN}` is an environment variable.
+    mcpServers: { api: { command: 'echo run', env: { TOKEN: '${user_config.TOKEN}' } } },
   })
   await fs.writeFile(
     join(demo, 'skills', 'greet', 'SKILL.md'),

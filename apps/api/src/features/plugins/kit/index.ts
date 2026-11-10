@@ -17,6 +17,7 @@ export {
   type ChatSessionFacts,
   type ScopePlugin,
 } from './sessions'
+export { scopeMcpServers, type McpScope, type ScopeMcpServers } from './mcp-servers'
 export {
   issueLine,
   readPluginFolder,

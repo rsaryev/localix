@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { resolvePluginConfig, declaredConfigKeys } from './config'
+import { resolvePluginConfig } from './config'
 import type { PluginManifest } from './contracts'
 
 const manifest = (config: Record<string, { default?: unknown }>): PluginManifest =>
@@ -36,16 +36,5 @@ describe('resolvePluginConfig', () => {
 
   test('no config + no stored → empty', () => {
     expect(resolvePluginConfig(manifest({}), undefined)).toEqual({})
-  })
-})
-
-describe('declaredConfigKeys', () => {
-  test('returns exactly the declared config keys (env-access gate)', () => {
-    const keys = declaredConfigKeys(manifest({ TOKEN: {}, PATH: { default: '/x' } }))
-    expect([...keys].sort()).toEqual(['PATH', 'TOKEN'])
-    expect(keys.has('UNDECLARED')).toBe(false)
-  })
-  test('no config → empty set', () => {
-    expect(declaredConfigKeys(manifest({})).size).toBe(0)
   })
 })
