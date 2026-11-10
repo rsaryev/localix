@@ -1,4 +1,4 @@
-import { announceSkillInvoked } from '../../../agent-core/skill-invocations'
+import { announceSessionActive } from '../../../agent-core/session-activity'
 import { verdictOf, type VerdictOptions } from '../../../agent-core/permission-verdict'
 import { TOOL } from '../../../agent-core/tool-names'
 import type { SkillEntry, SkillToolPorts } from '../../../agent-core/tools/skill-call'
@@ -83,12 +83,11 @@ export function skillToolPorts(input: {
       if (!invoked.ok) return invoked
       const { text, fork, model, effort } = invoked.skill
       applySkillTurnGrants(commandPolicy, skill.name, invoked.skill, defaultCwd)
-      announceSkillInvoked({
+      // The session recorded the skill: a plugin monitor waiting for it starts now.
+      announceSessionActive({
         userId,
-        sessionId: session.rootSessionId ?? session.id,
-        skillName: skill.ownName,
-        ...(skill.pluginName ? { pluginName: skill.pluginName } : {}),
-        ...(defaultCwd ? { cwd: defaultCwd } : {}),
+        chatId: session.rootSessionId ?? session.id,
+        sessionId: session.id,
       })
       return {
         ok: true,

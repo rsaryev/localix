@@ -159,8 +159,8 @@ describe('a plugin folder read by the kit', () => {
     expect(Object.keys(entry.lspServers)).toEqual(['go'])
     expect(found.provides.lspServers).toEqual(['go'])
     expect(entry.monitors).toEqual([
-      { name: 'tail', command: 'tail -f log', description: 'Log', when: 'always' },
-      { name: 'w', command: 'watch', description: 'W', when: 'on-skill-invoke:deploy' },
+      { name: 'tail', command: 'tail -f log', description: 'Log' },
+      { name: 'w', command: 'watch', description: 'W' },
     ])
     expect(entry.components?.outputStyles).toEqual([
       {

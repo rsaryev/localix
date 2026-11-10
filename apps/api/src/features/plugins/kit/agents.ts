@@ -58,6 +58,12 @@ export interface ScopeAgents {
    * by its bare name when one plugin alone has it, or an `@agent-<name>` mention.
    */
   readonly resolve: (reference: string) => AgentReference
+  /**
+   * The agent the main conversation runs as (`session.selectAgent`): the `agent` of the scope's
+   * settings, else the default `agent` of the enabled plugin loaded last; null for none, or for a
+   * name no agent of the scope has.
+   */
+  readonly main: ScopeAgent | null
 }
 
 /** A plugin's agent's plugin, as the session runs it: its id, manifest name and install scope. */
@@ -113,6 +119,14 @@ function lookup(catalog: AgentCatalog, of: (agent: CatalogAgent) => ScopeAgent) 
   }
 }
 
+/** The session's choice as a scope agent; a refused choice (an unknown name) is none. */
+function mainAgentOf(
+  choice: ReturnType<PluginSession['selectAgent']>,
+  of: (agent: CatalogAgent) => ScopeAgent,
+): ScopeAgent | null {
+  return choice.ok && choice.agent ? of(choice.agent) : null
+}
+
 /** A scope's catalog read from its session: the folders read again, then resolved by the kit. */
 export async function sessionAgents(
   session: PluginSession,
@@ -149,6 +163,7 @@ export async function sessionAgents(
     issues: [...reload.issues, ...resolved.issues],
     watch: reload.watch,
     resolve: lookup(catalog, of),
+    main: mainAgentOf(session.selectAgent({}, overrides), of),
   }
 }
 

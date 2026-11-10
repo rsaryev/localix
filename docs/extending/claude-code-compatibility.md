@@ -56,7 +56,8 @@ Where Localix has no equivalent, the feature is not offered:
   [Agents](../features/agents.md#what-your-own-agent-files-can-set) describes: Localix has no
   accept-edits, auto or dont-ask mode, so only `default` and `plan` change a child.
 - **Agent built-ins.** Localix has no `human` agent: describe yourself in `CLAUDE.md`. The model and
-  effort of an agent are your choice in Localix, not the file's `model` and `effort`.
+  effort of an agent are your choice in Localix; the file's `model` applies when you chose none, its
+  `effort` does not.
 - **Slash commands.** Commands that sign in to an Anthropic account, configure the terminal, use
   Claude Code's cloud, or are bundled skills (`/review`, `/security-review`, `/simplify` …) are
   answered with why they do not apply, and with the Localix equivalent where there is one; see

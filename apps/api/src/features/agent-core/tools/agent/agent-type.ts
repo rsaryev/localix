@@ -6,10 +6,9 @@ import { agentChoiceRoute, type AgentModelChoice, type AgentRoute } from '../../
  * WHO A DELEGATED TASK GOES TO, as Claude Code's Agent tool runs it: `agent: "<name>"` names one
  * agent of the catalog (a `.claude/agents` file, a plugin's `<plugin>:<name>`, `Explore`, `Plan`),
  * and the child is a fresh run of THAT agent, started by its own id. Its prompt, tool ceiling,
- * model and memory come from its definition when the child runs (`stages/context.ts`); at creation
- * the child takes the rest of its frontmatter: `model` and `effort` (an alias resolves against the
- * chat's provider, as a workflow agent's does; `inherit` keeps the chat's model), `skills`
- * preloaded, `maxTurns`, `background` (never held by `wait`) and `isolation: worktree` (a git
+ * and memory come from its definition when the child runs (`stages/context.ts`); at creation the
+ * child takes the rest of its frontmatter: `model` when the person chose no model for the agent (an
+ * alias resolves against the chat's provider; `inherit` keeps the chat's model), `skills` preloaded, `maxTurns`, `background` (never held by `wait`) and `isolation: worktree` (a git
  * worktree of the chat's repository, kept for the child's life). The `permissionMode` the kit
  * resolved for the agent rides onto the child, which the run weighs against the conversation's;
  * its `hooks` and `mcpServers` apply when the child runs (the kit drops a plugin's).
@@ -39,6 +38,8 @@ export interface AgentLaunchPorts {
   allowedAgentTypes?: readonly string[]
   /** A fresh worktree of the chat's repository, for `isolation: worktree`. */
   isolate?: (name: string) => Promise<AgentWorktree>
+  /** The route an agent file's `model` gives a child the person chose no model for. */
+  subagentRoute?: (model: string | undefined) => AgentRoute
 }
 
 /** Who runs a task: the route to create, and the definition it runs as when it is not the delegator. */
@@ -138,9 +139,10 @@ export interface ChildCall {
 
 /**
  * The route, skills and folder a child is created with. The route is the person's choice for the
- * agent, if they made one, else nothing, which leaves the child on its session's model and effort
- * (`agent-model-route.ts`). Neither the agent's file nor the call has a say; `isolation` from the
- * call isolates a child the file does not.
+ * agent, if they made one; a model they did not choose is the agent file's `model`, as the kit
+ * resolves it (`subagentRoute`), else none, which leaves the child on its session's model and
+ * effort (`agent-model-route.ts`). The call has no say; `isolation` from the call isolates a child
+ * the file does not.
  */
 export async function prepareAgentChild(
   who: string,
@@ -149,7 +151,10 @@ export async function prepareAgentChild(
   call: ChildCall,
 ): Promise<AgentChild> {
   const notes: string[] = []
-  const chosen: AgentRoute = call.agentId ? agentChoiceRoute(ports?.choices, call.agentId) : {}
+  const choice: AgentRoute = call.agentId ? agentChoiceRoute(ports?.choices, call.agentId) : {}
+  // The person's model for the agent, else its file's `model` (`plugins/kit/spawn.ts`).
+  const fromFile = type && !choice.modelId ? (ports?.subagentRoute?.(type.model) ?? {}) : {}
+  const chosen: AgentRoute = { ...fromFile, ...choice }
   const provenance: AgentChild['provenance'] = {}
   let worktree: AgentChild['worktree']
   // The mode the agent asks for; the run weighs it against the conversation's (`plugins/kit/spawn.ts`).

@@ -9,6 +9,8 @@ export interface TestPlugin {
   plugin: string
   enabled: boolean
   agents: readonly { name: string; description?: string; prompt?: string }[]
+  /** Its default `settings.json`. */
+  settings?: Readonly<Record<string, unknown>>
 }
 
 const agentFile = (agent: TestPlugin['agents'][number]) =>
@@ -48,9 +50,12 @@ export function testAgentScopes(opts: {
           writeTestPlugin(
             join(opts.root, 'plugins', test.plugin),
             test.plugin,
-            Object.fromEntries(
-              test.agents.map((agent) => [`agents/${agent.name}.md`, agentFile(agent)]),
-            ),
+            {
+              ...Object.fromEntries(
+                test.agents.map((agent) => [`agents/${agent.name}.md`, agentFile(agent)]),
+              ),
+              ...(test.settings ? { 'settings.json': JSON.stringify(test.settings) } : {}),
+            },
             test.enabled,
           ),
         ),

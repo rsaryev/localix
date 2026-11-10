@@ -8,7 +8,6 @@ import {
   observePluginConditions,
 } from '../features/notifications/conditions/plugins'
 import { setSessionActivityListener } from '../features/agent-core/session-activity'
-import { setSkillInvocationListener } from '../features/agent-core/skill-invocations'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { readAvailability } from '../features/capabilities/availability'
 import { runIdleTasks, type IdleTask } from '../lib/idle-tasks'
@@ -46,6 +45,7 @@ export interface OpsTimersPhaseInput
       | 'miniAppService'
       | 'agentsService'
       | 'resolveProjectCwd'
+      | 'pluginSessions'
     > {
   chatService: ReturnType<typeof createChatService>
   maintainStorage: StorageMaintenance
@@ -80,6 +80,7 @@ export function createOpsTimersPhase({
   notifications,
   miniAppConditions,
   storeService,
+  pluginSessions,
 }: OpsTimersPhaseInput): OpsTimersPhase {
   const warnMiniAppOnce = warnOnce(logger, MINI_APP_WARNINGS)
   // What is wrong with a Claude Code plugin (its load, its monitors), as Event Center conditions.
@@ -115,55 +116,40 @@ export function createOpsTimersPhase({
   })
   hostRefs.channelHost = channelHost
 
-  // Plugin background monitors (CC `monitors`, experimental): long-running commands
-  // from enabled plugins whose stdout lines surface to the model as notifications,
-  // through the one wake delivery. A line wakes ONLY the sessions the plugin armed the
-  // monitor for (its `monitors` host service): each line used to wake every root chat of
-  // the user, because nothing named the conversation a watcher was for. A line nobody
-  // armed reaches nobody and is logged as undelivered. A BUSY armed session is woken too —
-  // the wake queue holds it, and one monitor's lines waiting together are one turn. A session
-  // that can no longer take a wake (deleted, not a chat) is disarmed on its first miss, so
-  // the miss is logged once rather than per line. Provenance 'external' reuses the existing
-  // wake source (documented as "another agent, CI, a monitor").
+  // Plugin background monitors (CC `monitors`, experimental): each belongs to a chat, as to a
+  // session in Claude Code. The chat's kit session says which to start (`kit/monitors.ts`) when it
+  // opens or runs a turn and after it ran a skill; their stdout lines wake that chat, through the
+  // one wake delivery. A BUSY chat is woken too — the wake queue holds it, and one monitor's lines
+  // waiting together are one turn. A chat that can no longer take a wake (deleted, not a chat)
+  // ends on its first miss, so its monitors stop. Provenance 'external' reuses the existing wake
+  // source (documented as "another agent, CI, a monitor").
   const monitorHost = createPluginMonitorHost({
-    homeDir: userHome(),
-    repo: createCapabilitySourceRepository(db, 'plugin'),
-    availabilityFor: (userId) => readAvailability(db, { userId, agentId: DEFAULT_AGENT_ID }),
-    userId: channelUserId,
+    sessionOf: (...args) => pluginSessions.get(...args),
     deliver: (note) => {
       const coalesce = `monitor:${note.pluginName}/${note.monitorName}`
-      const content = `[${coalesce}] ${note.line}`
-      for (const sessionId of note.sessionIds)
-        hostRefs.wakes!.send(
-          { userId: channelUserId, sessionId, content, source: 'external', coalesce },
-          `plugin monitor ${note.pluginName}/${note.monitorName}`,
-          (outcome) => {
-            if (outcome.status === 'missed') monitorHost.disarmSession(sessionId)
-          },
-        )
+      hostRefs.wakes!.send(
+        {
+          userId: note.userId,
+          sessionId: note.chatId,
+          content: `[${coalesce}] ${note.line}`,
+          source: 'external',
+          coalesce,
+        },
+        `plugin monitor ${note.pluginName}/${note.monitorName}`,
+        (outcome) => {
+          if (outcome.status === 'missed') void monitorHost.endChat(note.chatId)
+        },
+      )
     },
-    unaddressed: (note) =>
-      hostRefs.wakes!.unaddressed(
-        `plugin monitor ${note.pluginName}/${note.monitorName} (armed for no session)`,
-        'external',
-      ),
     conditions: pluginConditions,
     logger: {
       info: (msg) => logger.info({ event: 'plugin_monitor.info', msg }),
       warn: (msg, meta) => logger.warn({ event: 'plugin_monitor.warn', msg, meta }),
     },
   })
-  hostRefs.monitorHost = monitorHost
-  // A skill that ran in a chat starts the plugin monitors waiting for it (`on-skill-invoke`).
-  setSkillInvocationListener((invocation) =>
-    monitorHost
-      .skillInvoked(invocation)
-      .catch((error) => logger.warn({ event: 'plugin_monitor.warn', msg: errorMessage(error) })),
-  )
-  // A chat that runs hears the plugins' `always` monitors, from its own working directory.
   setSessionActivityListener((activity) =>
     monitorHost
-      .sessionActive(activity)
+      .sessionMoved(activity)
       .catch((error) => logger.warn({ event: 'plugin_monitor.warn', msg: errorMessage(error) })),
   )
 
@@ -222,11 +208,10 @@ export function createOpsTimersPhase({
     // scheduler (`lib/idle-tasks.ts`, which names the stall this prevents), one job at a time.
     // None of them is read by a first request: owed reports are already 30 s past their live
     // path (`recover-delegation.ts`), canonical session usage reads the messages rather than
-    // the ledger the reconcile repairs, and a plugin bridge or monitor starting a second later
+    // the ledger the reconcile repairs, and a plugin bridge starting a second later
     // is invisible — while `signal` (shutdown) keeps a host from starting after its stop.
     const idleTasks: IdleTask[] = [
       { name: 'mini_app_channels', run: () => channelHost.start() },
-      { name: 'plugin_monitors', run: () => monitorHost.start() },
       // Agent files are read where Claude Code keeps them; the watcher keeps their ids current.
       createAgentFilesTask({
         db,

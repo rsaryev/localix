@@ -161,13 +161,12 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
   }
   // `omitClaudeMd` (and the built-in Explore and Plan): no workspace instruction files.
   const contextFiles = contextFilesFor(context.contextFiles, asType?.subagent ?? null)
-  // The `agent` setting, in Claude Code's order: the person's files, then the plugin's own.
+  // The `agent` setting, else an enabled plugin's default `agent`, as the kit chooses it.
   const run = { agentId, host: turn.policy.host.kind }
   const chosen =
     asType || agentId !== DEFAULT_AGENT_ID || run.host !== 'chat'
       ? null
-      : ((await deps.resolveMainAgent?.(userId, session.projectId ?? null, defaultCwd ?? null)) ??
-        loadedPlugins.mainAgent)
+      : ((await deps.resolveMainAgent?.(userId, session.projectId ?? null)) ?? null)
   const main = applyMainAgent(asType ?? context, chosen, run)
   frame.teardown.miniAppHooks = loadedMiniApps.hooks
   frame.teardown.defaultCwd = defaultCwd

@@ -186,14 +186,10 @@ export interface RunnerDeps {
    */
   editorBufferText?: (userId: string, file: string) => string | undefined
   /**
-   * The agent the `agent` setting names for a folder (Claude Code's settings files, then the
-   * agents' catalog): the main thread runs as it. Null: none named, or it is not available.
+   * The agent the main thread runs as in a project: the `agent` of Claude Code's settings, else an
+   * enabled plugin's default `agent` (the agents' catalog). Null: none, or it is not available.
    */
-  resolveMainAgent?: (
-    userId: string,
-    projectId: string | null,
-    cwd: string | null,
-  ) => Promise<LoadedPluginAgent | null>
+  resolveMainAgent?: (userId: string, projectId: string | null) => Promise<LoadedPluginAgent | null>
   /** Complete scope-aware registry roster for prompt context, including disabled entries. */
   listRegistryAgents?: (
     userId: string,

@@ -44,8 +44,6 @@ export function narrowLoadedPlugins(
     ),
     binDirs: loaded.binDirs.filter((dir) => !deniedBinDirs.has(dir)),
     outputStyles: loaded.outputStyles.filter((entry) => !denied.has(entry.pluginName)),
-    mainAgent:
-      loaded.mainAgent && denied.has(loaded.mainAgent.pluginName) ? null : loaded.mainAgent,
     // The summary drives the prompt's plugin section and the diagnostics row, so a plugin
     // this agent cannot reach must not be announced to it as available.
     loaded: loaded.loaded.filter((summary) => !denied.has(summary.name)),

@@ -1,4 +1,5 @@
 import type { createMiniAppChannelHost } from '../features/mini-apps/channel-host'
+import type { PluginMonitorHost } from '../features/plugins/monitor-host'
 import type { createChatService } from '../features/chat/service'
 import type { SemanticService } from '../features/embeddings/service'
 import type { StoreService } from '../features/store/service'
@@ -20,6 +21,7 @@ export interface StartPostListenInput
   chatService: ReturnType<typeof createChatService>
   storeService: StoreService
   channelHost: ReturnType<typeof createMiniAppChannelHost>
+  pluginMonitors: Pick<PluginMonitorHost, 'endChat'>
   /** The hosts, engines and timers, in the order they start; `signal` is the shutdown. */
   start: (signal?: AbortSignal) => void
 }
@@ -64,6 +66,7 @@ export function createStartPostListen(input: StartPostListenInput) {
           },
           subagentRows: chatService.subagentRowsLive,
           statusLine: chatService.statusLine,
+          pluginMonitors: input.pluginMonitors,
           publish: invalidateStoreOn(storeService, (userId, resources) =>
             publishResourcesChanged(chatService.streamRegistry, userId, resources),
           ),

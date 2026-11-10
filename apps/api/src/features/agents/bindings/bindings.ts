@@ -41,6 +41,8 @@ export interface BoundAgent {
 export interface AgentSnapshot {
   /** The one lookup of an agent by what a person or model typed (`catalog/compose.ts`). */
   readonly resolve: (reference: string) => ResolvedAgent
+  /** The agent the main conversation runs as (`catalog/compose.ts`), or none. */
+  readonly main: CatalogAgent | null
   agents: readonly BoundAgent[]
   /** The agents folders the catalog read, to watch for changes. */
   watch: readonly string[]
@@ -177,6 +179,7 @@ export function createAgentBindings(deps: BindingDeps) {
     if (plan.missing.length > 0) waiting.push(now())
     return {
       resolve: catalog.resolve,
+      main: catalog.main,
       agents: [
         ...catalog.found.map((agent, index) => bound(agent, plan.ids.get(found[index]!)!)),
         ...catalog.builtins.map((agent) => bound(agent, builtinAgentId(agent.name))),

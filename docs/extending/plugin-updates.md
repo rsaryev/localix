@@ -71,8 +71,8 @@ for every other one; the switch on a marketplace's row changes it. Claude Code u
 session, a random delay of up to ten minutes after the first message. Localix keeps running, so the
 pass runs a random one to ten minutes after start and then every hour: it refreshes each marketplace
 with auto-update on, updates the plugins installed from it on disk, and sweeps orphaned versions. A
-run already under way keeps what it loaded; the next run loads the new version, and plugin monitors
-and mods reload when the update lands.
+run already under way keeps what it loaded; the next run loads the new version, mods reload when the
+update lands, and a chat's plugin monitors keep running until the chat ends.
 
 | Environment variable                                                                 | Effect                                            |
 | ------------------------------------------------------------------------------------ | ------------------------------------------------- |

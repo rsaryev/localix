@@ -320,6 +320,7 @@ export async function bootstrap(
     notifications,
     miniAppConditions,
     storeService,
+    pluginSessions,
   })
   const startPostListen = createStartPostListen({
     infra,
@@ -331,6 +332,7 @@ export async function bootstrap(
     agentsService,
     backendHost,
     channelHost,
+    pluginMonitors: monitorHost,
     triggerConditions,
     triggerEngine,
     start: (...args) => {

@@ -1,117 +1,85 @@
-import { childEnv } from '../../lib/login-shell-env'
-import { localixWorkspaceDir } from '../../lib/env'
 import { withTimeout } from '../../lib/timeout'
-import { createDebouncer } from '../../lib/debounce'
+import { errorMessage } from '../../lib/errors'
 
-import type { LoadedPluginMonitor } from './loader'
-import { loadEnabledPluginMonitors } from './loader-declarative'
-import { isAlwaysMonitor, monitorSkillTrigger } from './contracts-monitors'
-import { createMonitorArms } from './monitor-arms'
-import { monitorWaitsForSkill } from './monitor-skill-trigger'
+import { monitorsToLaunch, type MonitorLaunch } from './kit'
 import {
   MAX_LINES_PER_WINDOW,
   createRateGate,
   defaultSpawn,
   pumpLines,
-  substituteCommand,
   type MonitorProc,
 } from './monitor-stream'
 
-export type { MonitorNotification, MonitorProc, MonitorSpawner } from './monitor-stream'
+export type { MonitorProc, MonitorSpawner } from './monitor-stream'
 export type {
-  MonitorArmInput,
-  MonitorArmOutcome,
-  MonitorHostOptions,
+  ChatSessionMoved,
+  MonitorNotification,
   PluginMonitorHost,
+  PluginMonitorHostOptions,
 } from './monitor-host-types'
-import type { MonitorHostOptions, PluginMonitorHost } from './monitor-host-types'
+import type {
+  ChatSessionMoved,
+  PluginMonitorHost,
+  PluginMonitorHostOptions,
+} from './monitor-host-types'
 
 /**
- * Process-wide host for plugin background MONITORS — long-running commands whose
- * every stdout line is delivered to the model as a notification (Claude Code
- * `monitors`, experimental). Mirrors the CHANNEL host: monitors live for the process
- * lifetime, are (re)started for every ENABLED plugin's `when:"always"` monitor, and
- * are torn down on plugin-state change / shutdown. Enablement is the trust gate — a
- * monitor runs UNSANDBOXED at hook trust level, so only enabled plugins spawn one.
+ * The host of plugin background MONITORS (Claude Code `monitors`, experimental): long-running
+ * commands whose every stdout line reaches the model as a notification. A monitor belongs to a
+ * chat, as it belongs to a session in Claude Code: the chat's kit session decides which to start
+ * and when (`kit/monitors.ts`: its `always` ones when it opens, an `on-skill-invoke` one once its
+ * skill ran, each once, none of a plugin the agent did not select), this host spawns them in the
+ * session's folder with the environment the kit gave, sends their lines to the chat, and stops
+ * them when the chat ends. A plugin turned off meanwhile keeps its running monitors until then,
+ * as Claude Code does.
  *
- * Delivery seam: the host does not know how a line reaches the model — it calls the
- * injected {@link MonitorHostOptions.deliver}. Boot wiring binds that to the shared
- * `wakeSession` wake primitive (the same one /loop, sleep, the background-job monitor
- * and cc-hooks asyncRewake use). A per-monitor rate cap (see monitor-stream) keeps a
- * chatty stream from flooding the seam.
- *
- * Targeting: a line goes to the sessions the monitor was ARMED for (`arm`, which the
- * plugin reaches through its `monitors` host service) and to no other — see
- * monitor-arms.ts for the broadcast this replaced. A line with no armed session is
- * handed to {@link MonitorHostOptions.unaddressed} once per silent stretch.
- *
- * An `on-skill-invoke:<skill>` monitor starts the first time its skill runs in a chat, armed
- * for it (`skillInvoked`), then runs like an `always` one until its plugin goes away.
+ * Delivery seam: the host does not know how a line reaches the model; it calls the injected
+ * {@link PluginMonitorHostOptions.deliver}, which boot wiring binds to the shared wake primitive.
+ * A per-monitor rate cap (monitor-stream) keeps a chatty stream from flooding it.
  */
 
-const REFRESH_DEBOUNCE_MS = 500
 const MONITOR_STOP_GRACE_MS = 3_000
 
 interface RunningMonitor {
   key: string
-  armKey: string
   proc: MonitorProc
   controller: AbortController
   done: Promise<void>
 }
 
-export function createPluginMonitorHost(options: MonitorHostOptions): PluginMonitorHost {
-  const { repo, userId, availabilityFor, deliver, logger } = options
+export function createPluginMonitorHost(options: PluginMonitorHostOptions): PluginMonitorHost {
+  const { deliver, logger } = options
   const spawn = options.spawn ?? defaultSpawn
   const now = options.now ?? (() => Date.now())
-  const cwd = options.cwd ?? localixWorkspaceDir()
-  let monitors: RunningMonitor[] = []
-  /** Every `<plugin>:<monitor>` the latest load declared, lazy ones included. */
-  let declaredKeys = new Set<string>()
-  // A plugin backend may arm while its own register() runs at boot, before the idle start has
-  // read anything — an empty set then would refuse a monitor the plugin does declare.
-  let declaredRead = false
-  let declared: LoadedPluginMonitor[] = []
-  /** The lazy monitors a skill has started (they run from then on), and the chat cwd they run in. */
-  const triggered = new Set<string>()
-  const triggeredIn = new Map<string, string>()
-  const arms = createMonitorArms()
-  /** The working directories of the chats that ran, other than the host's own. */
-  const chatCwds = new Set<string>()
-  const chatArmKey = (m: LoadedPluginMonitor, at: string) =>
-    `${m.pluginName}:${m.monitor.name}${at === cwd ? '' : `@${at}`}`
-  const refreshDebouncer = createDebouncer(REFRESH_DEBOUNCE_MS)
+  /** The running monitors of each chat, by `<plugin id>:<monitor>`. */
+  const chats = new Map<string, Map<string, RunningMonitor>>()
   let lifecycle: Promise<void> = Promise.resolve()
 
-  /** Start `m` in `at`; its lines go to the sessions armed under `armKey`. */
-  function startMonitor(m: LoadedPluginMonitor, at: string = cwd, armKey?: string): RunningMonitor {
-    const key = `${m.pluginName}:${m.monitor.name}`
-    const armedAs = armKey ?? key
+  const enqueue = (task: () => Promise<void>): Promise<void> => {
+    lifecycle = lifecycle.catch(() => undefined).then(task)
+    return lifecycle
+  }
+
+  function startMonitor(launch: MonitorLaunch, moved: ChatSessionMoved): RunningMonitor {
+    const { pluginName, name } = launch
+    const key = `${pluginName}:${name}`
     const controller = new AbortController()
-    // The `${CLAUDE_*}` placeholders stay in the command; `env` below supplies their values.
-    const command = substituteCommand(m.monitor.command, m)
-    const env = childEnv({
-      CLAUDE_PROJECT_DIR: at,
-      CLAUDE_PLUGIN_ROOT: m.pluginRoot,
-      CLAUDE_PLUGIN_DATA: m.dataDir,
-    })
-    const proc = spawn(command, { cwd: at, env: env as Record<string, string | undefined> })
+    const proc = spawn(launch.command, { cwd: launch.cwd, env: { ...launch.env } })
     const gate = createRateGate(now, () =>
       logger?.warn(`monitor "${key}" exceeded ${MAX_LINES_PER_WINDOW} lines/s — dropping excess`),
     )
     const done = pumpLines(proc, controller.signal, (line) => {
       if (controller.signal.aborted || !gate(line)) return
-      const note = {
-        pluginName: m.pluginName,
-        monitorName: m.monitor.name,
-        description: m.monitor.description,
+      const { userId, chatId } = moved
+      deliver({
+        userId,
+        chatId,
+        pluginName,
+        monitorName: name,
+        description: launch.description,
         line,
-      }
-      const sessionIds = arms.sessionsFor(armedAs)
-      if (sessionIds.length > 0) deliver({ ...note, sessionIds })
-      else if (arms.firstUnaddressed(armedAs)) options.unaddressed?.(note)
+      })
     })
-      .catch(() => undefined)
       // Output ending without a stop is the monitor dying — it was silent, so a watcher that
       // exited on its first line looked exactly like one with nothing to say.
       .then(async () => {
@@ -120,21 +88,21 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
         if (controller.signal.aborted) return
         logger?.warn(`monitor "${key}" stopped`, { exitCode: code })
         options.conditions?.monitorStopped(
-          m.pluginName,
-          m.monitor.name,
+          pluginName,
+          name,
           code === null ? 'Its command ended.' : `Its command exited with code ${code}.`,
         )
       })
     logger?.info?.(`monitor started: ${key}`)
-    options.conditions?.monitorStarted(m.pluginName, m.monitor.name)
-    return { key, armKey: armedAs, proc, controller, done }
+    options.conditions?.monitorStarted(pluginName, name)
+    return { key, proc, controller, done }
   }
 
-  async function stopRunning(stopping: RunningMonitor[]): Promise<void> {
-    for (const r of stopping) {
-      r.controller.abort()
+  async function stopRunning(stopping: readonly RunningMonitor[]): Promise<void> {
+    for (const running of stopping) {
+      running.controller.abort()
       try {
-        r.proc.kill()
+        running.proc.kill()
       } catch {
         /* already gone */
       }
@@ -145,129 +113,39 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
     ).catch(() => {})
   }
 
-  async function stopAll(): Promise<void> {
-    const stopping = monitors
-    monitors = []
-    await stopRunning(stopping)
-  }
-
-  // Declarative-only: reading monitors must not import and `register()` every enabled plugin.
-  async function readDeclared(): Promise<LoadedPluginMonitor[]> {
-    declared = await loadEnabledPluginMonitors({
-      repo,
-      availability: await availabilityFor(userId),
-      userId,
-      projectId: '',
-      cwd,
-      homeDir: options.homeDir,
-    })
-    declaredKeys = new Set(declared.map((m) => `${m.pluginName}:${m.monitor.name}`))
-    for (const key of triggered) if (!declaredKeys.has(key)) triggered.delete(key)
-    declaredRead = true
-    return declared
-  }
-
-  async function startAll(): Promise<void> {
-    const declared = await readDeclared()
-    const started: RunningMonitor[] = []
-    try {
-      for (const m of declared) {
-        const key = `${m.pluginName}:${m.monitor.name}`
-        if (isAlwaysMonitor(m.monitor) || triggered.has(key)) {
-          started.push(startMonitor(m, triggeredIn.get(key)))
-        } else {
-          logger?.info?.(
-            `monitor "${m.pluginName}:${m.monitor.name}" waits for skill "${monitorSkillTrigger(m.monitor)}"`,
-          )
-        }
+  async function launch(moved: ChatSessionMoved): Promise<void> {
+    const session = options.sessionOf(moved.sessionId)
+    if (!session) return
+    const { launches, problems } = await monitorsToLaunch(session)
+    for (const problem of problems) logger?.warn(`plugin monitor not started: ${problem}`)
+    const running = chats.get(moved.chatId) ?? new Map<string, RunningMonitor>()
+    chats.set(moved.chatId, running)
+    for (const one of launches) {
+      const id = `${one.pluginId}:${one.name}`
+      if (running.has(id)) continue
+      try {
+        running.set(id, startMonitor(one, moved))
+      } catch (error) {
+        logger?.warn(`monitor "${one.pluginName}:${one.name}" did not start`, errorMessage(error))
+        options.conditions?.monitorStopped(
+          one.pluginName,
+          one.name,
+          `Its command did not start: ${errorMessage(error)}`,
+        )
       }
-      // Each chat's working directory runs its own `always` monitors (`sessionActive`).
-      for (const at of chatCwds)
-        for (const m of declared)
-          if (isAlwaysMonitor(m.monitor)) started.push(startMonitor(m, at, chatArmKey(m, at)))
-    } catch (err) {
-      // Startup is transactional: a later spawn failure must not orphan earlier processes.
-      await stopRunning(started)
-      throw err
     }
-    monitors = started
   }
 
-  async function restart(): Promise<void> {
-    await stopAll()
-    await startAll()
-  }
-
-  function enqueue(task: () => Promise<void>): Promise<void> {
-    lifecycle = lifecycle.catch(() => undefined).then(task)
-    return lifecycle
+  async function end(chatId: string): Promise<void> {
+    const running = chats.get(chatId)
+    chats.delete(chatId)
+    if (running) await stopRunning([...running.values()])
   }
 
   return {
-    // A skill may have started a monitor before the boot start; a start replaces what runs.
-    start: () => enqueue(restart),
-    refresh() {
-      refreshDebouncer.schedule(() => void enqueue(restart))
-    },
-    stop: () => {
-      refreshDebouncer.cancel()
-      triggered.clear()
-      triggeredIn.clear()
-      chatCwds.clear()
-      return enqueue(stopAll)
-    },
-    running: () => monitors.map((r) => r.key),
-    async arm(input) {
-      if (input.userId !== userId)
-        return { status: 'refused', reason: 'plugin monitors run for the workspace user only' }
-      // A start or refresh in flight decides what is declared; judge against its result.
-      await lifecycle.catch(() => undefined)
-      if (!declaredRead) await readDeclared().catch(() => undefined)
-      const key = `${input.pluginName}:${input.monitorName}`
-      if (!declaredKeys.has(key))
-        return {
-          status: 'refused',
-          reason: `"${input.monitorName}" is not a monitor this plugin declares`,
-        }
-      arms.arm(key, input.sessionId)
-      return { status: 'armed' }
-    },
-    disarm(input) {
-      if (input.userId !== userId) return
-      arms.disarm(`${input.pluginName}:${input.monitorName}`, input.sessionId)
-    },
-    disarmSession: (sessionId) => arms.disarmSession(sessionId),
-    async sessionActive(input) {
-      if (input.userId !== userId) return
-      await enqueue(async () => {
-        if (!declaredRead) await readDeclared()
-        const at = input.cwd ?? cwd
-        if (at !== cwd) chatCwds.add(at)
-        for (const m of declared.filter((entry) => isAlwaysMonitor(entry.monitor))) {
-          const armKey = chatArmKey(m, at)
-          arms.arm(armKey, input.sessionId)
-          if (!monitors.some((r) => r.armKey === armKey)) monitors.push(startMonitor(m, at, armKey))
-        }
-      })
-    },
-    async skillInvoked(input) {
-      if (input.userId !== userId) return []
-      let armed: string[] = []
-      await enqueue(async () => {
-        if (!declaredRead) await readDeclared()
-        const waiting = declared.filter(
-          (m) => !isAlwaysMonitor(m.monitor) && monitorWaitsForSkill(m, input),
-        )
-        armed = waiting.map((m) => `${m.pluginName}:${m.monitor.name}`)
-        for (const [i, m] of waiting.entries()) {
-          arms.arm(armed[i], input.sessionId)
-          if (triggered.has(armed[i])) continue
-          triggered.add(armed[i])
-          if (input.cwd) triggeredIn.set(armed[i], input.cwd)
-          monitors.push(startMonitor(m, input.cwd))
-        }
-      })
-      return armed
-    },
+    sessionMoved: (moved) => enqueue(() => launch(moved)),
+    endChat: (chatId) => enqueue(() => end(chatId)),
+    stop: () => enqueue(async () => void (await Promise.all([...chats.keys()].map(end)))),
+    running: (chatId) => [...(chats.get(chatId)?.values() ?? [])].map((r) => r.key),
   }
 }

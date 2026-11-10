@@ -1,12 +1,6 @@
 import { expect, test } from 'bun:test'
 import { settingsFixture } from './testing/settings-fixture'
-import {
-  customizationLocks,
-  mainAgentSetting,
-  outputStyleSetting,
-  settingsModes,
-  skillShellDisabled,
-} from './values'
+import { customizationLocks, outputStyleSetting, settingsModes, skillShellDisabled } from './values'
 
 const read = settingsFixture('kit-settings-values-')
 const perms = (permissions: object) => ({ permissions })
@@ -77,14 +71,15 @@ test('bypassPermissions and auto from a project or local file start the built-in
     }
 })
 
-test('the `agent` and `outputStyle` settings: the higher file wins, a blank one is none', () => {
-  expect(
-    mainAgentSetting(
-      read({ user: { agent: 'reviewer' }, project: { agent: 'auditor' }, trusted: true }),
-    ),
-  ).toBe('auditor')
-  expect(mainAgentSetting(read({ user: { agent: 'reviewer' } }))).toBe('reviewer')
-  expect(mainAgentSetting(read({ user: { agent: '  ' } }))).toBeUndefined()
-  expect(mainAgentSetting(read({}))).toBeUndefined()
+test('the `outputStyle` setting: the higher file wins', () => {
   expect(outputStyleSetting(read({ user: { outputStyle: 'Explanatory' } }))).toBe('Explanatory')
+  expect(
+    outputStyleSetting(
+      read({
+        user: { outputStyle: 'Explanatory' },
+        project: { outputStyle: 'Learning' },
+        trusted: true,
+      }),
+    ),
+  ).toBe('Learning')
 })

@@ -6,7 +6,6 @@ import { buildPluginCatalog } from './catalog'
 import type { AvailabilityReader } from '../capabilities/availability'
 import { pluginLoadBlockReason } from './load-block'
 import { dataDirOfPlugin } from './plugin-data-id'
-import type { LoadedPluginMonitor } from './loader'
 import { scalarConfig, type CapabilitySourceRepository } from '../capabilities/source-repository'
 import { resolvePluginConfig } from './config'
 
@@ -17,15 +16,11 @@ import { resolvePluginConfig } from './config'
  * `loadEnabledPlugins` is the full pipeline: it imports every enabled plugin's native
  * entrypoint and calls `register(ctx)` to collect tools, hooks, channels and backends.
  * That is the right price for a caller that needs those. It is the wrong price for a
- * caller that needs only what discovery already parsed out of `plugin.json` — and the
- * monitor host was paying it, importing ~9 MB of bundled plugin JS and running every
- * `register()` at boot to read a manifest array that, across every bundled plugin,
- * is empty.
+ * caller that needs only what discovery already parsed out of `plugin.json` (the mods host).
  *
  * The enable state remains the trust gate here exactly as in the full loader: a
  * disabled plugin contributes nothing, and a plugin the host refuses to load
- * (`pluginLoadBlockReason`) contributes nothing either — a manifest this host cannot
- * satisfy must not get a monitor spawned on its behalf.
+ * (`pluginLoadBlockReason`) contributes nothing either.
  */
 
 export interface DeclarativeLoadOptions {
@@ -37,38 +32,6 @@ export interface DeclarativeLoadOptions {
   cwd?: string
   /** The user's home (see `discoverPlugins`). */
   homeDir: string
-}
-
-/**
- * The enabled plugins' declared background monitors, with the roots the monitor host
- * substitutes into each command. Same shape and same order the full loader produces,
- * so the host cannot tell which path built its list.
- */
-export async function loadEnabledPluginMonitors(
-  opts: DeclarativeLoadOptions,
-): Promise<LoadedPluginMonitor[]> {
-  const catalog = await buildPluginCatalog({
-    repo: opts.repo,
-    availability: opts.availability,
-    userId: opts.userId,
-    projectId: opts.projectId ?? '',
-    cwd: opts.cwd ?? localixWorkspaceDir(),
-    homeDir: opts.homeDir,
-  })
-
-  const monitors: LoadedPluginMonitor[] = []
-  for (const { plugin } of catalog.enabled) {
-    if (pluginLoadBlockReason(plugin)) continue
-    for (const monitor of plugin.entrypoints.monitors) {
-      monitors.push({
-        pluginName: plugin.manifest.name,
-        pluginRoot: plugin.dir,
-        dataDir: dataDirOfPlugin(plugin, opts.homeDir),
-        monitor,
-      })
-    }
-  }
-  return monitors
 }
 
 /** An enabled plugin's hooks module, as the mods host loads it. */
@@ -85,8 +48,7 @@ export interface LoadedPluginMod {
 }
 
 /**
- * The enabled plugins that are mods. Like monitors, read from discovery without importing plugin
- * code: the mods host builds and imports each module itself.
+ * The enabled plugins that are mods, read from discovery without importing plugin code: the mods host builds and imports each module itself.
  */
 export async function loadEnabledPluginMods(
   opts: DeclarativeLoadOptions,

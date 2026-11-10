@@ -76,18 +76,17 @@ export function createAgentDelegation(deps: DelegationDeps) {
     },
 
     /**
-     * The definition the `agent` setting names, for the main thread to run as. Only an agent that is
-     * on: the default agent and `general-purpose` are what the thread already is.
+     * The definition the main thread runs as: the `agent` setting, else an enabled plugin's default
+     * (`ScopeAgents.main`). Only an agent that is on: the default agent and `general-purpose` are
+     * what the thread already is.
      */
     async resolveMainAgent(
       userId: string,
-      reference: string,
       projectId?: string | null,
     ): Promise<CatalogAgent | null> {
       const snapshot = await deps.snapshot(userId, projectId ?? '')
-      const found = entryOf(snapshot, reference)
-      if (!found || 'ambiguous' in found || found.agent.self || found.id === DEFAULT_AGENT_ID)
-        return null
+      const found = snapshot.agents.find((entry) => entry.agent === snapshot.main)
+      if (!found || found.agent.self || found.id === DEFAULT_AGENT_ID) return null
       const summary = (await deps.summaries(userId, snapshot)).find(
         (candidate) => candidate.record.id === found.id,
       )

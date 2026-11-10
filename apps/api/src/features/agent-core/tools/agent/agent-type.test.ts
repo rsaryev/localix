@@ -117,6 +117,31 @@ test('the model and effort the person chose for an agent are its child’s; with
   expect(plain.calls.create![0]).not.toHaveProperty('modelId')
 })
 
+test.each([
+  [[], { modelId: 'claude-haiku-4-5' }],
+  [[{ agentId: 'cc:reviewer', modelId: 'gpt-6', effort: 'low' }], { modelId: 'gpt-6' }],
+  [
+    [{ agentId: 'cc:reviewer', effort: 'low' }],
+    { modelId: 'claude-haiku-4-5', reasoningEffort: 'low' },
+  ],
+] as const)(
+  'an agent file’s model routes its child only when the person chose none',
+  async (choices, want) => {
+    const typed = {
+      ...CATALOG,
+      'sec:reviewer': { ...CATALOG['sec:reviewer'], type: { ...REVIEWER, model: 'haiku' } },
+    }
+    const subagentRoute = (model: string | undefined) =>
+      model === 'haiku' ? { modelId: 'claude-haiku-4-5', providerConnectionId: null } : {}
+    const { opts, ports, calls } = host(
+      { subagentRoute, choices: [...choices] },
+      typed as Record<string, DelegateResolution>,
+    )
+    await launchAgent('c', request({ agent: 'sec:reviewer' }), opts, undefined, ports)
+    expect(calls.create![0]).toMatchObject(want)
+  },
+)
+
 test('an ambiguous or unknown agent is refused before anything is created', async () => {
   const { opts, ports, calls } = host()
   const ambiguous = await launchAgent('c', request({ agent: 'reviewer' }), opts, undefined, ports)

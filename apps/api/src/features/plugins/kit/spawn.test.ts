@@ -3,6 +3,7 @@ import {
   agentMcpSpecs,
   askedPermissionMode,
   preloadedSkillNames,
+  subagentModelRoute,
   subagentPermissionMode,
 } from './spawn'
 
@@ -16,6 +17,25 @@ describe('what a subagent starts with', () => {
     const load = preloadedSkillNames(names, (name) => skills.get(name))
     expect(load[0]).toBe('s0')
     expect(load).toHaveLength(30)
+  })
+})
+
+// sub-agents.md, "Choose a model": the definition's `model` is an alias, a full id or `inherit`; an
+// alias of the main model's family, and `opus` when that family cannot be told, is the main model.
+describe('the model of a delegated child the person chose none for', () => {
+  const available = ['claude-haiku-4-5', 'claude-sonnet-4-5', 'gpt-6']
+  test.each([
+    [undefined, 'claude-sonnet-4-5', {}],
+    ['inherit', 'claude-sonnet-4-5', {}],
+    ['sonnet', 'claude-sonnet-4-5', {}],
+    ['haiku', 'claude-sonnet-4-5', { modelId: 'claude-haiku-4-5', providerConnectionId: null }],
+    ['haiku', 'gpt-6', { modelId: 'claude-haiku-4-5', providerConnectionId: null }],
+    ['opus', 'gpt-6', {}],
+    ['fable', 'claude-sonnet-4-5', {}],
+    ['gpt-6', 'claude-sonnet-4-5', { modelId: 'gpt-6', providerConnectionId: null }],
+    ['claude-opus-9', 'claude-sonnet-4-5', {}],
+  ])('model %p on %p routes %p', (model, mainModel, route) => {
+    expect(subagentModelRoute(model, { mainModel, available })).toEqual(route)
   })
 })
 

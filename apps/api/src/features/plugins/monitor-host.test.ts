@@ -1,469 +1,202 @@
-import { diskPluginHost } from './kit/testing'
-import { describe, it, expect, beforeAll, afterAll } from 'bun:test'
-import type { AvailabilityReader } from '../capabilities/availability'
-import { promises as fs } from 'node:fs'
+/**
+ * The plugin monitor host: what a chat's kit session hands out (`kit/monitors.ts`) is spawned for
+ * that chat, its lines go to that chat, and it stops when the chat ends (plugins/components.md,
+ * "Monitors": a monitor belongs to its session, and stops when the session ends).
+ */
+import { describe, expect, test } from 'bun:test'
+import { mkdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { tmpdir } from 'node:os'
-import type {
-  CapabilitySourceRecord,
-  CapabilitySourceRepository,
-} from '../capabilities/source-repository'
+import { tempDirPerTest } from '@localixai/testing'
 
-/** Every plugin in these fixtures is switched on; the trust gate is not what is under test. */
-const on = (...names: string[]): AvailabilityReader => ({
-  effectFor: (_kind, name) => (names.includes(name) ? 'allow' : 'deny'),
-})
-/** …and the mirror, for the cases about a plugin the rules switched off. */
-const ALL_OFF: AvailabilityReader = { effectFor: () => 'deny' }
-
-import { loadEnabledPlugins } from './loader'
-import { loadEnabledPluginMonitors } from './loader-declarative'
+import { createChatPluginSessions, invokeSkill, type ScopePlugin } from './kit'
+import { diskPluginHost, writeTestPlugin } from './kit/testing'
 import {
   createPluginMonitorHost,
   type MonitorNotification,
-  type MonitorProc,
   type MonitorSpawner,
+  type PluginMonitorHostOptions,
 } from './monitor-host'
-import { defaultSpawn, substituteCommand } from './monitor-stream'
+import { fakeMonitorSpawner } from './testing/monitor-spawner'
 
-/** In-memory repo (mirrors channel-host.test). */
-function fakeRepo(rows: CapabilitySourceRecord[]): CapabilitySourceRepository {
-  const byKey = new Map<string, CapabilitySourceRecord>(
-    rows.map((r) => [`${r.projectId}:${r.name}`, r]),
-  )
-  return {
-    listForScope: async (_userId, projectId) =>
-      [...byKey.values()].filter((r) => r.projectId === '' || r.projectId === projectId),
-    get: async (_u, projectId, name) => byKey.get(`${projectId}:${name}`) ?? null,
-    upsert: async (_u, projectId, name) => byKey.get(`${projectId}:${name}`)!,
-    patchConfig: async (_u, projectId, name, patch) => {
-      const key = `${projectId}:${name}`
-      const current = byKey.get(key)!
-      const next = { ...current, config: { ...current.config, ...patch } }
-      byKey.set(key, next)
-      return next
+const dir = tempDirPerTest('monitor-host-')
+const signal = new AbortController().signal
+
+const MONITORS = [
+  { name: 'watch', command: 'watch "${CLAUDE_PROJECT_DIR}"', description: 'Watches' },
+  {
+    name: 'deploy-status',
+    command: 'poll-deploy',
+    description: 'Deploy status',
+    when: 'on-skill-invoke:deploy',
+  },
+]
+
+async function opsPlugin(monitors: unknown[] = MONITORS, selected = true): Promise<ScopePlugin> {
+  return writeTestPlugin(
+    join(dir(), 'ops'),
+    'ops',
+    {
+      'skills/deploy/SKILL.md': '---\ndescription: Deploy\n---\nDeploy it.',
+      'monitors/monitors.json': JSON.stringify(monitors),
     },
-    remove: async () => {},
-  }
+    selected,
+  )
 }
 
-function state(name: string): CapabilitySourceRecord {
-  return {
-    id: name,
-    userId: 'u1',
-    projectId: '',
-    name,
-    config: {},
-    source: 'local',
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  }
-}
-
-/** A fake spawner that emits the given lines then closes; records the resolved command. */
-function fakeSpawner(opts: {
-  lines: string[]
-  captured?: string[]
-  capturedEnv?: Record<string, string | undefined>[]
-  killed?: { count: number }
-  keepOpen?: boolean
-}): MonitorSpawner {
-  return (command, o): MonitorProc => {
-    opts.captured?.push(command)
-    opts.capturedEnv?.push(o.env)
-    let exitResolve!: (n: number) => void
-    const exited = new Promise<number>((r) => (exitResolve = r))
-    let streamController: ReadableStreamDefaultController<Uint8Array> | undefined
-    let streamClosed = false
-    const stream = new ReadableStream<Uint8Array>({
-      start(controller) {
-        streamController = controller
-        const enc = new TextEncoder()
-        for (const l of opts.lines) controller.enqueue(enc.encode(l))
-        if (!opts.keepOpen) {
-          controller.close()
-          streamClosed = true
-          exitResolve(0)
-        }
-      },
+/** The chats' kit sessions over one plugin host, as the runtime opens them for a run. */
+function chats(plugins: readonly ScopePlugin[], cwd = join(dir(), 'work')) {
+  mkdirSync(join(cwd, '.git'), { recursive: true })
+  const sessions = createChatPluginSessions(diskPluginHost(join(dir(), 'home')))
+  type Layers = Parameters<typeof sessions.forRun>[0]['layers']
+  const open = (chatId: string, layers: Layers = []) =>
+    sessions.forRun({
+      chatId,
+      cwd,
+      transcriptPath: join(dir(), `${chatId}.jsonl`),
+      permissionMode: 'default',
+      trusted: true,
+      layers,
+      plugins,
     })
-    return {
-      stdout: stream,
-      kill: () => {
-        if (opts.killed) opts.killed.count += 1
-        if (!streamClosed) {
-          streamController?.close()
-          streamClosed = true
-        }
-        exitResolve(0)
-      },
-      exited,
-    }
-  }
+  return { sessions, open, cwd }
 }
 
-/** The one arm most delivery cases need: always-mon's `watch`, for the user's `chat-1`. */
-const ARM_WATCH = {
-  userId: 'u1',
-  sessionId: 'chat-1',
-  pluginName: 'always-mon',
-  monitorName: 'watch',
-} as const
-
-/**
- * Conditions whose `monitorStopped` settles `drained`: a spawner that is not `keepOpen` ends its
- * output after the last line, and the host reports the stop only once every line was handled.
- */
-function drainSignal() {
-  const drained = Promise.withResolvers<void>()
-  return {
-    drained: drained.promise,
-    conditions: { monitorStarted: () => {}, monitorStopped: () => drained.resolve() },
-  }
-}
-
-let dir: string
-
-async function writePlugin(
-  name: string,
-  manifest: Record<string, unknown>,
-  files?: Record<string, string>,
+function hostOver(
+  sessions: ReturnType<typeof chats>['sessions'],
+  options: Partial<PluginMonitorHostOptions> & { spawn: MonitorSpawner },
 ) {
-  const pdir = join(dir, '.localix', 'plugins', name)
-  await fs.mkdir(join(pdir, '.claude-plugin'), { recursive: true })
-  await fs.writeFile(
-    join(pdir, '.claude-plugin', 'plugin.json'),
-    JSON.stringify({ name, version: '1.0.0', ...manifest }),
-  )
-  for (const [rel, content] of Object.entries(files ?? {})) {
-    await fs.mkdir(join(pdir, rel, '..'), { recursive: true })
-    await fs.writeFile(join(pdir, rel), content)
-  }
+  return createPluginMonitorHost({
+    sessionOf: (id) => sessions.get(id),
+    deliver: () => {},
+    ...options,
+  })
 }
 
-beforeAll(async () => {
-  dir = await fs.mkdtemp(join(tmpdir(), 'plugin-monitor-'))
-  await writePlugin('always-mon', {
-    monitors: [{ name: 'watch', command: 'echo hi', description: 'watches', when: 'always' }],
-  })
-  await writePlugin('partial-mon', {
-    monitors: [
-      { name: 'first', description: 'd', command: 'echo first', when: 'always' },
-      { name: 'second', description: 'd', command: 'echo second', when: 'always' },
-    ],
-  })
-  await writePlugin('skill-mon', {
-    monitors: [
-      { name: 'lazy', description: 'd', command: 'echo x', when: 'on-skill-invoke:review' },
-    ],
-  })
-  await writePlugin(
-    'file-mon',
-    {},
-    {
-      'monitors/monitors.json': JSON.stringify([
-        { name: 'f', description: 'd', command: 'echo f' },
-      ]),
-    },
-  )
-  await writePlugin('subst-mon', {
-    monitors: [
-      {
-        name: 's',
-        description: 'd',
-        command: 'run ${CLAUDE_PLUGIN_ROOT} ${CLAUDE_PLUGIN_DATA} ${CLAUDE_PROJECT_DIR}',
-      },
-    ],
-  })
-  await writePlugin(
-    'hook-mon',
-    {
-      userConfig: {
-        TOKEN: { type: 'string', title: 'Token', description: 'A token', sensitive: true },
-        PUBLIC: { type: 'string', title: 'Public', description: 'A public value' },
-      },
-    },
-    {
-      'hooks/hooks.json': JSON.stringify({
-        hooks: {
-          PreCompact: [{ matcher: 'manual', hooks: [{ type: 'command', command: 'echo' }] }],
-        },
-      }),
-    },
-  )
-})
+const moved = (chatId: string, sessionId = chatId) => ({ userId: 'u1', chatId, sessionId })
 
-afterAll(async () => {
-  await fs.rm(dir, { recursive: true, force: true })
-})
-
-describe('experimental.monitors', () => {
-  it('loads the monitors Claude Code reads under experimental', async () => {
-    await writePlugin('experimental-mon', {
-      experimental: { monitors: [{ name: 'm', command: 'echo m', description: 'm' }] },
-    })
-    const loaded = await loadEnabledPlugins({
-      availability: on('experimental-mon'),
-      repo: fakeRepo([state('experimental-mon')]),
-      userId: 'u1',
-      projectId: '',
-      cwd: dir,
-      homeDir: dir,
-      pluginHost: diskPluginHost(dir),
-    })
-    expect(loaded.monitors.map((m) => m.monitor.name)).toEqual(['m'])
-  })
-})
-
-describe('monitor discovery (loader)', () => {
-  it('collects when:always + on-skill-invoke monitors for an ENABLED plugin', async () => {
-    const loaded = await loadEnabledPlugins({
-      availability: on('always-mon', 'skill-mon'),
-      repo: fakeRepo([state('always-mon'), state('skill-mon')]),
-      userId: 'u1',
-      projectId: '',
-      cwd: dir,
-      homeDir: dir,
-      pluginHost: diskPluginHost(dir),
-    })
-    const names = loaded.monitors.map((m) => `${m.pluginName}:${m.monitor.name}`).sort()
-    expect(names).toEqual(['always-mon:watch', 'skill-mon:lazy'])
-  })
-
-  it('reads the default monitors/monitors.json file', async () => {
-    const loaded = await loadEnabledPlugins({
-      availability: on('file-mon'),
-      repo: fakeRepo([state('file-mon')]),
-      userId: 'u1',
-      projectId: '',
-      cwd: dir,
-      homeDir: dir,
-      pluginHost: diskPluginHost(dir),
-    })
-    expect(loaded.monitors.map((m) => m.monitor.name)).toEqual(['f'])
-  })
-
-  it('a plugin the rules switched OFF contributes no monitors', async () => {
-    const loaded = await loadEnabledPlugins({
-      availability: ALL_OFF,
-      repo: fakeRepo([state('always-mon')]),
-      userId: 'u1',
-      projectId: '',
-      cwd: dir,
-      homeDir: dir,
-      pluginHost: diskPluginHost(dir),
-    })
-    expect(loaded.monitors).toEqual([])
-  })
-})
-
-/** A monitor is manifest DATA: the host that spawns them reads them without the full loader. */
-describe('monitor discovery (declarative)', () => {
-  it('returns the same monitors the full loader does', async () => {
-    const repo = fakeRepo([state('always-mon'), state('skill-mon')])
-    const scope = {
-      repo,
-      availability: on('always-mon', 'skill-mon'),
-      userId: 'u1',
-      projectId: '',
-      cwd: dir,
-      homeDir: dir,
-    }
-    const declared = await loadEnabledPluginMonitors(scope)
-    const loaded = await loadEnabledPlugins({ ...scope, pluginHost: diskPluginHost(dir) })
-    expect(declared).toEqual(loaded.monitors)
-    expect(declared.map((m) => `${m.pluginName}:${m.monitor.name}`).sort()).toEqual([
-      'always-mon:watch',
-      'skill-mon:lazy',
-    ])
-  })
-
-  it('honours a rule that switches the plugin off', async () => {
-    expect(
-      await loadEnabledPluginMonitors({
-        availability: ALL_OFF,
-        repo: fakeRepo([state('always-mon')]),
-        userId: 'u1',
-        projectId: '',
-        cwd: dir,
-        homeDir: dir,
-      }),
-    ).toEqual([])
-  })
-})
-
-describe('monitor host lifecycle + delivery', () => {
-  it('stops monitors already spawned when a later spawn fails', async () => {
-    const killed = { count: 0 }
-    const spawnFirst = fakeSpawner({ lines: [], killed, keepOpen: true })
-    let calls = 0
-    const host = createPluginMonitorHost({
-      availabilityFor: async () => on('partial-mon'),
-      repo: fakeRepo([state('partial-mon')]),
-      userId: 'u1',
-      cwd: dir,
-      homeDir: dir,
-      deliver: () => {},
-      spawn: (command, options) => {
-        if (++calls === 2) throw new Error('spawn failed')
-        return spawnFirst(command, options)
-      },
-    })
-
-    const error = await host.start().catch((err: unknown) => err)
-    expect(error).toBeInstanceOf(Error)
-    expect((error as Error).message).toBe('spawn failed')
-    expect(killed.count).toBe(1)
-    expect(host.running()).toEqual([])
-  })
-
-  it('spawns when:always monitors, streams lines to the deliver seam, and stops', async () => {
+describe('the plugin monitor host', () => {
+  test("starts the monitors a chat's session hands out and streams their lines to that chat", async () => {
+    const { sessions, open, cwd } = chats([await opsPlugin()])
     const notes: MonitorNotification[] = []
-    const killed = { count: 0 }
     const third = Promise.withResolvers<void>()
-    const host = createPluginMonitorHost({
-      availabilityFor: async () => on('always-mon'),
-      repo: fakeRepo([state('always-mon')]),
-      userId: 'u1',
-      cwd: dir,
-      homeDir: dir,
-      deliver: (n) => {
-        notes.push(n)
-        if (notes.length >= 3) third.resolve()
+    const spawner = fakeMonitorSpawner({ lines: ['one\n', 'two\nthree\n'], keepOpen: true })
+    const host = hostOver(sessions, {
+      spawn: spawner.spawn,
+      deliver: (note) => {
+        notes.push(note)
+        if (notes.length === 3) third.resolve()
       },
-      spawn: fakeSpawner({ lines: ['one\n', 'two\nthree\n'], killed, keepOpen: true }),
     })
-
-    expect(await host.arm(ARM_WATCH)).toEqual({ status: 'armed' })
-    await host.start()
-    expect(host.running()).toEqual(['always-mon:watch'])
+    open('chat-1')
+    await host.sessionMoved(moved('chat-1'))
+    expect(host.running('chat-1')).toEqual(['ops:watch'])
+    // The path stays a reference the shell expands from the environment.
+    expect(spawner.calls).toEqual([{ command: 'watch "${CLAUDE_PROJECT_DIR}"', cwd }])
+    expect(spawner.envs[0]?.CLAUDE_PROJECT_DIR).toBe(cwd)
     await third.promise
-    expect(notes.map((n) => n.line)).toEqual(['one', 'two', 'three'])
-    expect(notes[0]).toMatchObject({
-      pluginName: 'always-mon',
+    expect(notes.map((note) => note.line)).toEqual(['one', 'two', 'three'])
+    expect(notes[0]).toEqual({
+      userId: 'u1',
+      chatId: 'chat-1',
+      pluginName: 'ops',
       monitorName: 'watch',
-      description: 'watches',
-      sessionIds: ['chat-1'],
+      description: 'Watches',
+      line: 'one',
     })
-
     await host.stop()
-    expect(host.running()).toEqual([])
-    expect(killed.count).toBe(1)
+    expect(host.running('chat-1')).toEqual([])
+    expect(spawner.killed()).toBe(1)
   })
 
-  // Pasting the values into the shell text was command injection (a project folder named
-  // `x$(touch PWNED)`); the placeholders stay and the env carries the values.
-  it('hands the ${CLAUDE_*} values to the shell as env, never in the command text', async () => {
-    const captured: string[] = []
-    const capturedEnv: Record<string, string | undefined>[] = []
-    const host = createPluginMonitorHost({
-      availabilityFor: async () => on('subst-mon'),
-      repo: fakeRepo([state('subst-mon')]),
-      userId: 'u1',
-      cwd: dir,
-      homeDir: dir,
-      deliver: () => {},
-      spawn: fakeSpawner({ lines: [], captured, capturedEnv, keepOpen: true }),
-    })
-    await host.start()
-    await host.stop()
-    expect(captured).toEqual([
-      'run ${CLAUDE_PLUGIN_ROOT} ${CLAUDE_PLUGIN_DATA} ${CLAUDE_PROJECT_DIR}',
-    ])
-    const env = capturedEnv[0]!
-    expect(env.CLAUDE_PLUGIN_ROOT).toBe(join(dir, '.localix', 'plugins', 'subst-mon'))
-    expect(env.CLAUDE_PLUGIN_DATA).toContain('plugin-data')
-    expect(env.CLAUDE_PROJECT_DIR).toBe(dir)
+  test('a plugin the agent did not select starts nothing', async () => {
+    const { sessions, open } = chats([await opsPlugin(MONITORS, false)])
+    const spawner = fakeMonitorSpawner({ keepOpen: true })
+    const host = hostOver(sessions, { spawn: spawner.spawn })
+    open('chat-1')
+    await host.sessionMoved(moved('chat-1'))
+    expect(spawner.calls).toEqual([])
   })
 
-  it('a hostile project dir reaches a real shell as data, not as a command', async () => {
-    const root = await fs.mkdtemp(join(tmpdir(), 'monitor-inject-'))
-    try {
-      // `${IFS}` instead of a space: pasted, it still ran; expanded unquoted, it does not split.
-      const projectDir = join(root, 'x$(touch${IFS}PWNED)')
-      await fs.mkdir(projectDir, { recursive: true })
-      const monitor = {
-        pluginName: 'p',
-        pluginRoot: root,
-        dataDir: join(root, 'data'),
-        monitor: { name: 'm', command: 'printf "%s" ${CLAUDE_PROJECT_DIR}' },
-      } as unknown as Parameters<typeof substituteCommand>[1]
-      const proc = defaultSpawn(substituteCommand(monitor.monitor.command, monitor), {
-        cwd: projectDir,
-        env: { ...process.env, CLAUDE_PROJECT_DIR: projectDir },
-      })
-      const out = await new Response(proc.stdout).text()
-      await proc.exited
-      expect(out).toBe(projectDir)
-      expect(await fs.stat(join(projectDir, 'PWNED')).catch(() => null)).toBeNull()
-    } finally {
-      await fs.rm(root, { recursive: true, force: true })
-    }
-  })
-
-  it('a plugin the rules switched OFF spawns nothing', async () => {
-    const captured: string[] = []
-    const host = createPluginMonitorHost({
-      availabilityFor: async () => ALL_OFF,
-      repo: fakeRepo([state('always-mon')]),
-      userId: 'u1',
-      cwd: dir,
-      homeDir: dir,
-      deliver: () => {},
-      spawn: fakeSpawner({ lines: ['x\n'], captured }),
-    })
-    await host.start()
-    expect(host.running()).toEqual([])
-    expect(captured.length).toBe(0)
+  test('starts an on-skill-invoke monitor once its skill ran in the chat, for that chat', async () => {
+    const { sessions, open } = chats([await opsPlugin()])
+    const spawner = fakeMonitorSpawner({ keepOpen: true })
+    const host = hostOver(sessions, { spawn: spawner.spawn })
+    const session = open('chat-1')
+    await host.sessionMoved(moved('chat-1'))
+    expect(host.running('chat-1')).toEqual(['ops:watch'])
+    expect((await invokeSkill(session, 'ops:deploy', { invoker: 'model', signal })).ok).toBe(true)
+    await host.sessionMoved(moved('chat-1'))
+    expect(host.running('chat-1')).toEqual(['ops:watch', 'ops:deploy-status'])
     await host.stop()
   })
 
-  it('does not spawn an on-skill-invoke monitor before its skill runs', async () => {
-    const captured: string[] = []
-    const host = createPluginMonitorHost({
-      availabilityFor: async () => on('skill-mon'),
-      repo: fakeRepo([state('skill-mon')]),
-      userId: 'u1',
-      cwd: dir,
-      homeDir: dir,
-      deliver: () => {},
-      spawn: fakeSpawner({ lines: [], captured }),
-    })
-    await host.start()
-    expect(host.running()).toEqual([])
-    expect(captured.length).toBe(0)
+  test('a skill a sub-agent ran starts the monitor for its chat', async () => {
+    const { sessions, open } = chats([await opsPlugin()])
+    const spawner = fakeMonitorSpawner({ keepOpen: true })
+    const host = hostOver(sessions, { spawn: spawner.spawn })
+    open('chat-1')
+    await host.sessionMoved(moved('chat-1'))
+    const child = open('child-1')
+    await invokeSkill(child, 'ops:deploy', { invoker: 'model', signal })
+    await host.sessionMoved(moved('chat-1', 'child-1'))
+    // The child's session hands out `watch` too: the chat already runs it.
+    expect(host.running('chat-1')).toEqual(['ops:watch', 'ops:deploy-status'])
+    expect(host.running('child-1')).toEqual([])
     await host.stop()
   })
 
-  it('caps the per-window line rate and truncates long lines', async () => {
-    // Frozen clock → every line lands in the same window (cap = 20).
-    const notes: MonitorNotification[] = []
+  test('a session the chat reopens does not start a monitor the chat already runs', async () => {
+    const { sessions, open } = chats([await opsPlugin()])
+    const spawner = fakeMonitorSpawner({ keepOpen: true })
+    const host = hostOver(sessions, { spawn: spawner.spawn })
+    open('chat-1')
+    await host.sessionMoved(moved('chat-1'))
+    const first = sessions.get('chat-1')
+    // New settings reopen the chat's kit session, with a ledger of its own.
+    open('chat-1', [{ scope: 'user', settings: { env: { CHANGED: '1' } } }])
+    expect(sessions.get('chat-1')).not.toBe(first)
+    await host.sessionMoved(moved('chat-1'))
+    expect(spawner.calls).toHaveLength(1)
+    await host.stop()
+  })
+
+  test("ending a chat stops its monitors and not another chat's", async () => {
+    const { sessions, open } = chats([await opsPlugin()])
+    const spawner = fakeMonitorSpawner({ keepOpen: true })
+    const host = hostOver(sessions, { spawn: spawner.spawn })
+    open('chat-1')
+    open('chat-2')
+    await host.sessionMoved(moved('chat-1'))
+    await host.sessionMoved(moved('chat-2'))
+    await host.endChat('chat-1')
+    expect(host.running('chat-1')).toEqual([])
+    expect(host.running('chat-2')).toEqual(['ops:watch'])
+    expect(spawner.killed()).toBe(1)
+    await host.stop()
+  })
+
+  test('caps the per-window line rate and truncates long lines', async () => {
+    const { sessions, open } = chats([await opsPlugin()])
     const long = 'x'.repeat(5000)
     const lines = Array.from({ length: 30 }, (_, i) => (i === 0 ? `${long}\n` : `line${i}\n`))
-    const { drained, conditions } = drainSignal()
-    const host = createPluginMonitorHost({
-      availabilityFor: async () => on('always-mon'),
-      repo: fakeRepo([state('always-mon')]),
-      userId: 'u1',
-      cwd: dir,
-      homeDir: dir,
-      deliver: (n) => notes.push(n),
+    const notes: MonitorNotification[] = []
+    const drained = Promise.withResolvers<void>()
+    const host = hostOver(sessions, {
+      spawn: fakeMonitorSpawner({ lines }).spawn,
+      deliver: (note) => notes.push(note),
       now: () => 1000,
-      spawn: fakeSpawner({ lines }),
-      conditions,
+      // The output ends after the last line: the stop report means every line was handled.
+      conditions: { monitorStarted: () => {}, monitorStopped: () => drained.resolve() },
     })
-    await host.arm(ARM_WATCH)
-    await host.start()
-    // The output ends after the last line, so the stop report means every line was handled
-    // and any (incorrect) extra delivery has already landed.
-    await drained
-    expect(notes.length).toBe(20)
-    expect(notes[0].line.endsWith('… [truncated]')).toBe(true)
-    expect(notes[0].line.length).toBeLessThan(long.length)
+    open('chat-1')
+    await host.sessionMoved(moved('chat-1'))
+    await drained.promise
+    expect(notes).toHaveLength(20)
+    expect(notes[0]?.line.endsWith('… [truncated]')).toBe(true)
     await host.stop()
   })
 
-  it('reports a monitor that dies as a condition, and not one the host stopped', async () => {
+  test('reports a monitor that dies as a condition, and not one the host stopped', async () => {
     const events: string[] = []
     const died = Promise.withResolvers<void>()
     const conditions = {
@@ -474,100 +207,72 @@ describe('monitor host lifecycle + delivery', () => {
         died.resolve()
       },
     }
-    // Output ends on its own: the command exited.
-    const dying = createPluginMonitorHost({
-      availabilityFor: async () => on('always-mon'),
-      repo: fakeRepo([state('always-mon')]),
-      userId: 'u1',
-      cwd: dir,
-      homeDir: dir,
-      deliver: () => {},
-      spawn: fakeSpawner({ lines: ['last words\n'] }),
+    const { sessions, open } = chats([await opsPlugin()])
+    const dying = hostOver(sessions, {
+      spawn: fakeMonitorSpawner({ lines: ['last words\n'] }).spawn,
       conditions,
     })
-    await dying.start()
+    open('chat-1')
+    await dying.sessionMoved(moved('chat-1'))
     await died.promise
     expect(events).toEqual([
-      'started always-mon/watch',
-      'stopped always-mon/watch: Its command exited with code 0.',
+      'started ops/watch',
+      'stopped ops/watch: Its command exited with code 0.',
     ])
-    await dying.stop()
 
-    // A stop is the host's own doing: no condition.
     events.length = 0
-    const stopped = createPluginMonitorHost({
-      availabilityFor: async () => on('always-mon'),
-      repo: fakeRepo([state('always-mon')]),
-      userId: 'u1',
-      cwd: dir,
-      homeDir: dir,
-      deliver: () => {},
-      spawn: fakeSpawner({ lines: [], keepOpen: true }),
+    const stopped = hostOver(sessions, {
+      spawn: fakeMonitorSpawner({ keepOpen: true }).spawn,
       conditions,
     })
-    await stopped.start()
+    open('chat-2')
+    await stopped.sessionMoved(moved('chat-2'))
     await stopped.stop()
-    expect(events).toEqual(['started always-mon/watch'])
-  })
-})
-
-describe('monitor host targeting — a line wakes only the sessions it was armed for', () => {
-  const host = (
-    notes: MonitorNotification[],
-    unaddressed: string[],
-    lines = ['one\n', 'two\n', 'three\n'],
-    drain?: ReturnType<typeof drainSignal>['conditions'],
-  ) =>
-    createPluginMonitorHost({
-      availabilityFor: async () => on('always-mon'),
-      repo: fakeRepo([state('always-mon')]),
-      userId: 'u1',
-      cwd: dir,
-      homeDir: dir,
-      deliver: (n) => notes.push(n),
-      unaddressed: (n) => unaddressed.push(n.line),
-      now: () => 1000,
-      spawn: fakeSpawner({ lines, keepOpen: !drain }),
-      conditions: drain,
-    })
-
-  it('delivers a line nobody armed to no one, and reports the silence once', async () => {
-    // The old wiring woke every root chat of the user for each of these lines.
-    const notes: MonitorNotification[] = []
-    const unaddressed: string[] = []
-    const { drained, conditions } = drainSignal()
-    const h = host(notes, unaddressed, undefined, conditions)
-    await h.start()
-    await drained
-    expect(notes).toEqual([])
-    expect(unaddressed).toEqual(['one'])
-    await h.stop()
+    expect(events).toEqual(['started ops/watch'])
   })
 
-  it('carries exactly the armed sessions, and drops one that is disarmed', async () => {
-    const notes: MonitorNotification[] = []
-    const { drained, conditions } = drainSignal()
-    const h = host(notes, [], ['one\n'], conditions)
-    await h.arm(ARM_WATCH)
-    await h.arm({ ...ARM_WATCH, sessionId: 'chat-2' })
-    h.disarm({ ...ARM_WATCH, sessionId: 'chat-2' })
-    await h.start()
-    await drained
-    expect(notes.map((n) => n.sessionIds)).toEqual([['chat-1']])
-    await h.stop()
+  test('a monitor whose command cannot start is reported, and the others still start', async () => {
+    const { sessions, open } = chats([
+      await opsPlugin([
+        { name: 'broken', command: 'broken', description: 'Broken' },
+        { name: 'watch', command: 'watch', description: 'Watches' },
+      ]),
+    ])
+    const events: string[] = []
+    const spawner = fakeMonitorSpawner({ keepOpen: true })
+    const host = hostOver(sessions, {
+      spawn: (command, options) => {
+        if (command === 'broken') throw new Error('no shell')
+        return spawner.spawn(command, options)
+      },
+      conditions: {
+        monitorStarted: () => {},
+        monitorStopped: (_plugin, monitor, detail) => events.push(`${monitor}: ${detail}`),
+      },
+    })
+    open('chat-1')
+    await host.sessionMoved(moved('chat-1'))
+    expect(host.running('chat-1')).toEqual(['ops:watch'])
+    expect(events).toEqual(['broken: Its command did not start: no shell'])
+    await host.stop()
   })
 
-  it('refuses a monitor the plugin does not declare, and a user it does not run for', async () => {
-    const h = host([], [])
-    expect(await h.arm({ ...ARM_WATCH, monitorName: 'nope' })).toEqual({
-      status: 'refused',
-      reason: '"nope" is not a monitor this plugin declares',
+  test('a project folder named with $(...) reaches a real shell as data, not as a command', async () => {
+    // `${IFS}` instead of a space: pasted into the command, it still ran.
+    const cwd = join(dir(), 'x$(touch${IFS}PWNED)')
+    const plugin = await opsPlugin([
+      { name: 'where', command: 'printf "%s\\n" "${CLAUDE_PROJECT_DIR}"', description: 'Where' },
+    ])
+    const { sessions, open } = chats([plugin], cwd)
+    const line = Promise.withResolvers<string>()
+    const host = createPluginMonitorHost({
+      sessionOf: (id) => sessions.get(id),
+      deliver: (note) => line.resolve(note.line),
     })
-    expect(await h.arm({ ...ARM_WATCH, pluginName: 'partial-mon', monitorName: 'watch' })).toEqual({
-      status: 'refused',
-      reason: '"watch" is not a monitor this plugin declares',
-    })
-    expect((await h.arm({ ...ARM_WATCH, userId: 'intruder' })).status).toBe('refused')
-    await h.stop()
+    open('chat-1')
+    await host.sessionMoved(moved('chat-1'))
+    expect(await line.promise).toBe(cwd)
+    await host.stop()
+    expect(() => statSync(join(cwd, 'PWNED'))).toThrow()
   })
 })

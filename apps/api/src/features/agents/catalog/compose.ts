@@ -34,6 +34,8 @@ export interface ComposedCatalog {
    * kit does not know, by its exact name.
    */
   readonly resolve: (reference: string) => ResolvedAgent
+  /** The agent the main conversation runs as, as the kit chose it (`ScopeAgents.main`). */
+  readonly main: CatalogAgent | null
 }
 
 /**
@@ -69,5 +71,6 @@ export function composeCatalog(scope: ScopeCatalog, projectId: string): Composed
       if (found) return 'agent' in found ? { agent: own(found.agent) } : found
       return reference.trim() === LOCALIX_AGENT.fullName ? { agent: LOCALIX_AGENT } : null
     },
+    main: scope.agents.main ? own(scope.agents.main) : null,
   }
 }

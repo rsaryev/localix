@@ -108,6 +108,8 @@ export function buildRunToolRegistry(
     listWorkflows?: () => Promise<WorkflowEntry[]>
     /** The model and effort the person chose per agent: a child's route, else its session's. */
     agentModelChoices?: readonly AgentModelChoice[]
+    /** The run's model: a child whose agent file names its family or `inherit` stays on it. */
+    mainModelId?: string
     /** Filled by the run's gate: the rules a skill's injected commands are checked against. */
     skillCommandPolicy?: SkillCommandPolicyRef
     /** The chat's kit session as this run's turn: a skill the model loads runs through it. */
@@ -139,13 +141,12 @@ export function buildRunToolRegistry(
     })
     deps.lspManager.setPluginServers(defaultCwd, pluginLspDefs)
   }
-  // The plugins' `always` monitors reach this chat, from its working directory.
-  if (loadedPlugins.monitors.length)
-    announceSessionActive({
-      userId,
-      sessionId: session.rootSessionId ?? session.id,
-      cwd: defaultCwd,
-    })
+  // The chat's kit session opened or ran a turn: its plugin monitors due now start for the chat.
+  announceSessionActive({
+    userId,
+    chatId: session.rootSessionId ?? session.id,
+    sessionId: session.id,
+  })
 
   const jobsHost = {
     deps,

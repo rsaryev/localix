@@ -6,6 +6,7 @@ import {
 } from '../../../agent-core/tools/workflow/hook-worktree'
 import { createAgentWorktree } from '../../../agent-core/tools/workflow/worktree'
 import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
+import { subagentModelRoute, type SubagentModelContext } from '../../../plugins/kit'
 import { runAsPluginAgent } from './plugin-main-agent'
 
 /**
@@ -25,8 +26,12 @@ export function agentLaunchPorts(input: {
   worktreeHook?: WorktreeHook
   /** `tools: Agent(a, b)` of the agent the run is: the only types it may delegate to. */
   allowedAgentTypes?: readonly string[]
+  /** The run's model and the models its providers offer: what an agent file's `model` routes to. */
+  models?: SubagentModelContext
 }): AgentLaunchPorts {
+  const { models } = input
   return {
+    ...(models ? { subagentRoute: (model) => subagentModelRoute(model, models) } : {}),
     ...(input.allowedAgentTypes ? { allowedAgentTypes: input.allowedAgentTypes } : {}),
     ...(input.choices ? { choices: input.choices } : {}),
     isolate: async (name) => {

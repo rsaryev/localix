@@ -30,6 +30,7 @@ function scope(
         const found = agents.find((one) => one.fullName === reference)
         return found ? { agent: found } : null
       },
+      main: null,
     },
     plugins: [],
     projectReadable: true,

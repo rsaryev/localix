@@ -19,6 +19,7 @@ export {
 } from './sessions'
 export { scopeMcpServers, type McpScope, type ScopeMcpServers } from './mcp-servers'
 export { sessionLspServers, type PluginLspServer, type SessionLspServers } from './lsp-servers'
+export { monitorsToLaunch, type MonitorLaunch, type MonitorLaunches } from './monitors'
 export {
   scopeAgents,
   type AgentReference,
@@ -43,7 +44,9 @@ export {
   agentMemory,
   askedPermissionMode,
   preloadedSkillNames,
+  subagentModelRoute,
   subagentPermissionMode,
+  type SubagentModelContext,
   type AgentMcpSpecs,
   type AgentMemory,
   type AgentMemoryContext,
@@ -84,7 +87,6 @@ export { mcpSettingsReader } from './settings/mcp'
 export { settingsCommandLine, type SettingsCommandLine } from './settings/hooks'
 export {
   customizationLocks,
-  mainAgentSetting,
   outputStyleSetting,
   settingsModes,
   skillShellDisabled,

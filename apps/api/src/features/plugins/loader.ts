@@ -20,7 +20,7 @@ import {
   appendPluginRuntimeDeclarations,
 } from './loader-runtime-declarations'
 
-export type { LoadedPluginMonitor, LoadedPlugins } from './loader-contract'
+export type { LoadedPlugins } from './loader-contract'
 
 /**
  * Plugin loader — turns enabled, discovered plugins into things the agent runtime
@@ -177,7 +177,7 @@ export async function loadEnabledPlugins(opts: {
       }
     }
 
-    appendPluginRuntimeDeclarations({ plugin, subst, result, opts })
+    appendPluginRuntimeDeclarations({ plugin, subst, result })
 
     finish()
   }

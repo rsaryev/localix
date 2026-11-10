@@ -23,6 +23,7 @@ function ports(settings: Record<string, unknown>) {
   return createAgentDirectoryPorts(
     {
       directory: async () => [row('reviewer'), row('sec:auditor'), row('writer')],
+      resolveMainAgent: async () => null,
     } as never,
     { homeDir: join(root, 'home'), cwdOf: async () => null },
   )

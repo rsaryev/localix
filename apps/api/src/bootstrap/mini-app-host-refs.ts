@@ -3,7 +3,6 @@ import type { createAgentsService } from '../features/agents/service'
 import type { createChatService } from '../features/chat/service'
 import type { WakeDelivery } from '../features/triggers/delivery'
 import type { ModAgentGroup } from '../features/mods/registry'
-import type { PluginMonitorHost } from '../features/plugins/monitor-host'
 
 /**
  * The LATE-BOUND references a mini app host reads through.
@@ -30,7 +29,6 @@ export interface MiniAppHostRefs {
   wakes?: WakeDelivery<WakeRequest>
   publishCapabilityChange?: () => void
   channelHost?: { refresh: () => void }
-  monitorHost?: Pick<PluginMonitorHost, 'refresh' | 'arm' | 'disarm'>
   /** The mods host: reloaded after a plugin change; its commands listed with the plugins'. */
   mods?: {
     refresh: () => void

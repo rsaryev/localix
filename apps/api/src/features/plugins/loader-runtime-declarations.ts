@@ -1,10 +1,9 @@
 import { makeSubstituter } from '../ext/manifest-substitute'
-import { dataDirOfPlugin } from './plugin-data-id'
 import { pluginDataDir } from './mcp'
 import type { PluginManifest } from './contracts'
 import type { PluginConfigValues } from './config'
 import type { DiscoveredPlugin } from './discovery'
-import { buildLoadedAgent, type LoadedPlugins } from './loader-contract'
+import type { LoadedPlugins } from './loader-contract'
 import { pluginOutputStyles } from './output-styles'
 
 /**
@@ -36,38 +35,13 @@ export function appendPluginRuntimeDeclarations({
   plugin,
   subst,
   result,
-  opts,
 }: {
   plugin: DiscoveredPlugin
   subst: (text: string) => string
   result: LoadedPlugins
-  opts: { homeDir: string }
 }): void {
-  // ---- Background monitors (manifest `monitors` / monitors/monitors.json) -
-  // Typed + de-duplicated in discovery; collected here (enabled plugins only — the
-  // enable state is the trust gate) with the roots the monitor host substitutes
-  // into each command. Spawned by the monitor host, never per turn.
-  for (const monitor of plugin.entrypoints.monitors) {
-    result.monitors.push({
-      pluginName: plugin.manifest.name,
-      pluginRoot: plugin.dir,
-      dataDir: dataDirOfPlugin(plugin, opts.homeDir),
-      monitor,
-    })
-  }
-
-  // ---- Output styles and default settings (Claude Code) -----------------
+  // ---- Output styles (Claude Code) ---------------------------------------
   // A style's instructions are prompt text, so they take the plugin's path and config variables
-  // like an agent's prompt does. `settings.agent` names one of the plugin's own agents; one that
-  // names none is reported in the plugin's validation instead (`validate.ts`).
-  const components = plugin.entrypoints.components
+  // like an agent's prompt does. A plugin's default `agent` is the kit session's (`selectAgent`).
   result.outputStyles.push(...pluginOutputStyles(plugin, subst))
-  const mainAgent = components?.settings.agent
-  const agent = mainAgent
-    ? plugin.agents.find(
-        (entry) =>
-          entry.name === mainAgent || `${plugin.manifest.name}:${entry.name}` === mainAgent,
-      )
-    : undefined
-  if (agent) result.mainAgent = buildLoadedAgent(plugin.manifest.name, agent, subst)
 }

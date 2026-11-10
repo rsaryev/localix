@@ -1,13 +1,10 @@
-import { mkdirSync } from 'node:fs'
-
 import { createLineSplitter, MAX_LINE_CHARS } from '../../lib/line-splitter'
 import { resolveShellConfig } from '../agent-core/tools/environments/shell'
-import type { LoadedPluginMonitor } from './loader'
 
 /**
  * Spawn + stdout-stream primitives for the monitor host, split out so the host
- * module stays focused on lifecycle. Pure I/O helpers: process spawn shape, the
- * `${CLAUDE_*}` command substitution, a per-monitor rate gate, and the line pump.
+ * module stays focused on lifecycle. Pure I/O helpers: process spawn shape, a per-monitor rate
+ * gate, and the line pump. The command and its environment come from the kit (`kit/monitors.ts`).
  */
 
 /** Rate cap: at most this many lines per {@link RATE_WINDOW_MS} per monitor. */
@@ -32,17 +29,6 @@ export type MonitorSpawner = (
   opts: { cwd: string; env: Record<string, string | undefined> },
 ) => MonitorProc
 
-/** One monitor stdout line, ready for the delivery seam. */
-export interface MonitorNotification {
-  pluginName: string
-  monitorName: string
-  /** Manifest `description` (shown in the task panel). */
-  description: string
-  line: string
-  /** The sessions the monitor was ARMED for (monitor-arms.ts) — never empty when delivered. */
-  sessionIds: readonly string[]
-}
-
 /**
  * Default spawner — the resolved agent shell (`bash -c <command>`), stdout piped,
  * stderr/stdin dropped.
@@ -66,33 +52,13 @@ export const defaultSpawn: MonitorSpawner = (command, opts) => {
 }
 
 /**
- * Prepare a monitor command for the shell. `${CLAUDE_PROJECT_DIR}` / `${CLAUDE_PLUGIN_ROOT}` /
- * `${CLAUDE_PLUGIN_DATA}` are NOT pasted in: the shell expands them from the env the host sets.
- *
- * Pasting was command injection: the shell parses the command as source, so a project folder
- * named `x$(touch PWNED)` ran `touch PWNED` the moment the monitor started. A shell never re-parses
- * an expansion, so leaving the placeholder (which is ordinary shell syntax) makes the path data.
- * The one job left here is creating the data dir a command refers to before it runs.
- */
-export function substituteCommand(command: string, m: LoadedPluginMonitor): string {
-  if (command.includes('CLAUDE_PLUGIN_DATA')) {
-    try {
-      mkdirSync(m.dataDir, { recursive: true })
-    } catch {
-      // best-effort — a monitor referencing a dir we can't create still spawns
-    }
-  }
-  return command
-}
-
-/**
  * Per-monitor rate limiter: returns a predicate that admits at most
  * {@link MAX_LINES_PER_WINDOW} lines per window, dropping bursts past the cap and
  * invoking `onDrop` once per exceeded window.
  *
  * DROP, where an agent's own watch is STOPPED (`features/monitors/batch.ts`), and on purpose:
- * the user installed this monitor to watch indefinitely, it belongs to no session, and no line
- * of it is a turn the agent asked for — so a burst is noise to shed, not a verdict on a filter.
+ * the user installed this monitor to watch for the whole session, and no line of it is a turn the
+ * agent asked for — so a burst is noise to shed, not a verdict on a filter.
  * An agent's watch is the agent's choice and every event buys a turn, so flooding there is a
  * mistake in the filter, and the useful answer is to end it and say so.
  */

@@ -22,13 +22,20 @@ subagents either. Stopping the conversation stops its subagents.
 ## Model and effort are yours
 
 Claude Code's `Agent` lets the model pick the subagent's `model` and `effort`. Localix does not. A
-subagent runs on the model and effort you chose for that agent (its page in the Store, **Model** and
-**Effort**), from the providers you connected; an agent with no choice of yours runs on its chat's
-model and effort. Nothing else sets them: the `model` and `effort` of an agent file, of a plugin's
-agent, of the call and of a workflow's `agent()` are ignored, and so are recent choices, the
-project's model and environment variables such as `CLAUDE_CODE_SUBAGENT_MODEL`. A call that names
-`model`, `effort`, `isolation`, `team_name`, `mode` or `cwd` still runs; those fields are dropped. A
-fork runs on its parent's model.
+subagent's model is, in this order:
+
+- the model you chose for that agent (its page in the Store, **Model**), from the providers you
+  connected;
+- else the `model` of its agent file or of the mod that registered it: an alias such as `sonnet`
+  runs on the newest model of that family you connected, and a full model id runs when one of your
+  providers offers it;
+- else, and for `inherit`, its chat's model.
+
+Its effort is the one you chose for it (**Effort**), else its chat's. Nothing else sets them: the
+agent file's `effort`, the `model` and `effort` of the call and of a workflow's `agent()`, recent
+choices, the project's model and environment variables such as `CLAUDE_CODE_SUBAGENT_MODEL` are
+ignored. A call that names `model`, `effort`, `isolation`, `team_name`, `mode` or `cwd` still runs;
+those fields are dropped. A fork runs on its parent's model.
 
 ## The tools
 

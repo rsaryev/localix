@@ -217,6 +217,31 @@ describe("a scope's subagents, as the kit resolves them", () => {
     ])
   })
 
+  // settings.md, `agent`; plugins/components.md, "Default settings": the main conversation runs as
+  // the settings' `agent`, else as the default `agent` of the enabled plugin loaded last.
+  test("the main agent: the settings' agent over an enabled plugin's default", async () => {
+    const work = join(dir(), 'work')
+    const withDefault = (name: string, file: string, selected = true) =>
+      writeTestPlugin(
+        join(dir(), 'plugins', name),
+        name,
+        {
+          [`agents/${file}.md`]: agent(file, file),
+          'settings.json': JSON.stringify({ agent: file }),
+        },
+        selected,
+      )
+    const acme = await withDefault('acme', 'lead')
+    const off = await withDefault('off', 'boss', false)
+    expect((await read(work, [acme, off])).main?.fullName).toBe('acme:lead')
+    expect((await read(work, [off])).main).toBeNull()
+    writeTree(dir(), {
+      'home/.claude/agents/mine.md': agent('mine', 'm'),
+      'home/.claude/settings.json': '{"agent":"mine"}',
+    })
+    expect((await read(work, [acme])).main).toMatchObject({ fullName: 'mine', source: 'user' })
+  })
+
   test('CLAUDE_CONFIG_DIR moves the personal agents folder', async () => {
     writeTree(dir(), {
       'home/.claude/agents/home.md': agent('home', 'h'),

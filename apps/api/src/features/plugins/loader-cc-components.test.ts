@@ -25,23 +25,17 @@ async function load() {
     plugin,
     subst: (text) => text.replaceAll('${CLAUDE_PLUGIN_ROOT}', '/root'),
     result,
-    opts: { homeDir: dir() },
   })
   return result
 }
 
-describe('an enabled plugin’s output styles and default agent', () => {
-  test('reach the run: styles as `<plugin>:<name>`, `settings.agent` as the main agent', async () => {
+describe('an enabled plugin’s output styles', () => {
+  test('reach the run as `<plugin>:<name>`, their text substituted', async () => {
     await write(MANIFEST_FILE, { name: 'sec' })
     await write(
       'output-styles/terse.md',
       '---\ndescription: Short\n---\n\nShort replies. Notes in ${CLAUDE_PLUGIN_ROOT}/notes.\n',
     )
-    await write(
-      'agents/security-reviewer.md',
-      '---\nname: security-reviewer\ndescription: Reviews\ntools: Read, Grep\n---\n\nYou review.\n',
-    )
-    await write('settings.json', { agent: 'security-reviewer' })
     const result = await load()
     expect(result.outputStyles).toEqual([
       expect.objectContaining({
@@ -50,16 +44,6 @@ describe('an enabled plugin’s output styles and default agent', () => {
         style: expect.objectContaining({ prompt: 'Short replies. Notes in /root/notes.' }),
       }),
     ])
-    expect(result.mainAgent).toMatchObject({
-      fullName: 'sec:security-reviewer',
-      prompt: 'You review.',
-      tools: ['Read', 'Search'],
-    })
-  })
-
-  test('a setting that names no agent of the plugin applies nothing', async () => {
-    await write(MANIFEST_FILE, { name: 'sec', settings: { agent: 'missing' } })
-    expect((await load()).mainAgent).toBeNull()
   })
 })
 

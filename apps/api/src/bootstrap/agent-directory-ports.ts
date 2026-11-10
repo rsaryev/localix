@@ -1,7 +1,6 @@
 import type { createAgentsService } from '../features/agents/service'
 import { claudeCodeHome } from '../features/cc-settings/config-dir'
 import {
-  mainAgentSetting,
   readClaudeSettings,
   settingsAdditionalDirectories,
   settingsDeniesAgent,
@@ -40,10 +39,7 @@ export function createAgentDirectoryPorts(
 ) {
   const homeDir = options.homeDir ?? claudeCodeHome()
   return {
-    resolveMainAgent: async (userId: string, projectId: string | null, cwd: string | null) => {
-      const name = mainAgentSetting(await readClaudeSettings({ homeDir, cwd }))
-      return name ? agentsService.resolveMainAgent(userId, name, projectId) : null
-    },
+    resolveMainAgent: agentsService.resolveMainAgent.bind(agentsService),
     // The directory is advisory prompt context, so a failed read omits it rather than failing
     // the run — but it says so, instead of presenting an empty registry as the truth.
     listRegistryAgents: async (userId: string, projectId?: string | null) => {

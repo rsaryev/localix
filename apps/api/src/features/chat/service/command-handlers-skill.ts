@@ -1,6 +1,6 @@
 import { sessionRoute } from '../../../contracts/session-route'
 import { recordSkillUse } from '../../agent-core/skill-usage-recorder'
-import { announceSkillInvoked } from '../../agent-core/skill-invocations'
+import { announceSessionActive } from '../../agent-core/session-activity'
 import { resolveModelAlias } from '../../agent-core/model-alias'
 import { resolveDeclaredReasoningEffort } from '../../../db/types'
 import {
@@ -103,14 +103,8 @@ export async function handleSkillCommand(
       skill.scope,
       skill.scope === 'project' ? (session.projectId ?? '') : '',
     )
-  // A plugin monitor waiting for this skill starts now (`on-skill-invoke:<skill>`).
-  announceSkillInvoked({
-    userId,
-    sessionId: session.rootSessionId ?? sessionId,
-    skillName: skill.ownName,
-    ...(skill.plugin ? { pluginName: skill.plugin.name } : {}),
-    ...(workingDir ? { cwd: workingDir } : {}),
-  })
+  // The session recorded the skill: a plugin monitor waiting for it starts now.
+  announceSessionActive({ userId, chatId: session.rootSessionId ?? sessionId, sessionId })
 
   // CC `context: fork` — run the skill in a child session, started as the invoking agent and run
   // as the agent the expansion names.

@@ -4,14 +4,17 @@ import type { AgentMcpServerSpec, HooksSettings } from '@rsaryev/llx-plugin'
 import {
   agentHookGroups,
   hooksTrustGate,
+  MODEL_ALIASES,
   planAgentMemory,
   planPreloadedSkills,
   resolveAgentMcpServers,
+  resolveSubagentModel,
   resolveSubagentPermissionMode,
   type MemoryPlan,
 } from '@rsaryev/llx-plugin/agents'
 import type { AgentSource } from '@rsaryev/llx-plugin/format'
 import type { AgentPermissionMode } from '../../../contracts/agent-permission-mode'
+import { bestModelForFamily, type ModelAliasFamily } from '../../agent-core/model-alias'
 import type { PermissionMode } from '../../../contracts/permission-modes'
 
 /**
@@ -172,4 +175,40 @@ export function subagentPermissionMode(
     autoAvailable: false,
   })
   return basis === 'set' && LOCALIX_MODES.has(mode) ? (mode as AgentPermissionMode) : conversation
+}
+
+/** The main model's alias family, by the alias its id names (`claude-sonnet-4-5` is `sonnet`). */
+const familyOf = (modelId: string): string | undefined =>
+  MODEL_ALIASES.find((alias) => modelId.toLowerCase().includes(alias))
+
+/** Where the chat runs: its model, and the model ids its providers offer. */
+export interface SubagentModelContext {
+  mainModel: string
+  available: readonly string[]
+}
+
+/**
+ * The route an agent file's `model` gives a child the person chose no model for (sub-agents.md,
+ * "Choose a model"), as the kit resolves it (`resolveSubagentModel`) and Localix's providers carry
+ * it: the main model (`inherit`, or an alias of its family) is no route, so the child keeps its
+ * session's; another alias is the newest model of that family the providers offer; a full id is
+ * that model when they offer it. Anything they do not offer leaves the session's model.
+ */
+export function subagentModelRoute(
+  definition: string | undefined,
+  context: SubagentModelContext,
+): { modelId?: string; providerConnectionId?: null } {
+  const family = familyOf(context.mainModel)
+  const { model, kind } = resolveSubagentModel({
+    definition,
+    mainModel: context.mainModel,
+    ...(family ? { mainFamily: family } : {}),
+  })
+  const routed =
+    kind === 'alias'
+      ? bestModelForFamily(model as ModelAliasFamily, context.available)
+      : kind === 'full-id' && context.available.includes(model)
+        ? model
+        : undefined
+  return routed ? { modelId: routed, providerConnectionId: null } : {}
 }

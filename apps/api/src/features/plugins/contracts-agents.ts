@@ -27,6 +27,8 @@ export const pluginAgentSchema = z.object({
    * no restriction.
    */
   agentTypes: z.array(z.string()).optional(),
+  /** CC `model` — an alias, a full model id or `inherit`, as written (`kit/spawn.ts` routes it). */
+  model: z.string().optional(),
   /**
    * CC `skills` — skill names to preload into the agent's context when it runs.
    * The agent sees these skills' full content, not just their descriptions.

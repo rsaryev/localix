@@ -4,8 +4,8 @@ import { z } from 'zod'
  * `$.agent.register`'s spec as an agent definition: `name` is the subagent type and the rest is the
  * SDK's `AgentDefinition`, the fields of an agent file written as an object. The agent catalog
  * reads it as Claude Code reads the SDK `agents` option, the `--agents` source
- * (`plugins/kit/agents.ts`), so every field takes effect when a child runs as it. `model` and
- * `effort` are accepted, as Claude Code's files carry them, and not read: the person chooses.
+ * (`plugins/kit/agents.ts`), so every field takes effect when a child runs as it. `model` routes
+ * the child when the person chose no model for the agent; `effort` is accepted and not read.
  *
  * `permissionMode`, `mcpServers` and `hooks` apply as they do for an `--agents` agent: hooks and
  * inline servers without the folder's trust. `isolation: 'remote'` is a cloud session Localix does

@@ -63,6 +63,8 @@ export interface CoreReactorDeps {
   subagentRows: SubagentRowsLive
   /** Claude Code's `statusLine` per conversation: its conversation's notices redraw it. */
   statusLine: StatusLine
+  /** The plugin monitors of each chat: they stop when it is deleted. */
+  pluginMonitors: { endChat(chatId: string): Promise<void> }
 }
 
 export function createRouteRepairReactor(deps: CoreReactorDeps) {
@@ -238,7 +240,10 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
   })
   await deps.feed.subscribe('capability-cleanup', cleanup.handlers, { kind: 'reactor' })
   const residue = createSessionResidue({
-    stopMonitors: stopSessionMonitors,
+    stopMonitors: (...args) => {
+      stopSessionMonitors(...args)
+      void deps.pluginMonitors.endChat(...args)
+    },
     cancelLoops: cancelSessionLoops,
     forgetNotifications: (...args) => deps.notifications.forgetSession(...args),
     projectDirs: async (...args) =>

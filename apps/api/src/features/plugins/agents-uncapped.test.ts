@@ -6,8 +6,6 @@ import { MANIFEST_FILE } from '@localixai/claude-plugin'
 import { tempDirPerTest } from '@localixai/testing'
 
 import { loadManifest } from './discovery'
-import { emptyLoadedPlugins } from './loader-contract'
-import { appendPluginRuntimeDeclarations } from './loader-runtime-declarations'
 import { validatePluginAgents } from './validate-fields'
 
 /**
@@ -52,20 +50,5 @@ describe('a plugin with more than eight agents', () => {
     const plugin = await loadManifest(dir(), 'global', '')
     expect(plugin.error).toBeUndefined()
     expect(plugin.agents).toHaveLength(COUNT)
-  })
-
-  test('the plugin’s `settings.agent` may name its twelfth agent', async () => {
-    await write(MANIFEST_FILE, { name: 'crew' })
-    await writeAgents('agents')
-    await write('settings.json', { agent: names[COUNT - 1] })
-    const plugin = await loadManifest(dir(), 'global', '')
-    const result = emptyLoadedPlugins()
-    appendPluginRuntimeDeclarations({
-      plugin,
-      subst: (text) => text,
-      result,
-      opts: { homeDir: dir() },
-    })
-    expect(result.mainAgent?.fullName).toBe(`crew:${names[COUNT - 1]}`)
   })
 })

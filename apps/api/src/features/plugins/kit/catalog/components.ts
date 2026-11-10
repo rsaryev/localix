@@ -82,6 +82,7 @@ export function agentOf(record: AgentEntry, prefix: string): PluginAgent {
     ...(tools === undefined ? {} : { tools: mapOptionalCcTools(tools) }),
     ...(denied ? { disallowedTools: denied } : {}),
     ...(types ? { agentTypes: types } : {}),
+    ...(definition.model ? { model: definition.model } : {}),
     ...(pinned.length ? { pinnedSkills: pinned } : {}),
     ...(definition.maxTurns ? { maxTurns: definition.maxTurns } : {}),
     ...(definition.background === undefined ? {} : { background: definition.background }),

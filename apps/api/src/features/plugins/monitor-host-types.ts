@@ -1,32 +1,36 @@
-import type { AvailabilityReader } from '../capabilities/availability'
-import type { CapabilitySourceRepository } from '../capabilities/source-repository'
+import type { KitSession } from './kit'
 import type { PluginConditions } from '../notifications/conditions/plugins'
-import type { MonitorNotification, MonitorSpawner } from './monitor-stream'
-import type { SkillInvocationInput } from './monitor-skill-trigger'
+import type { MonitorSpawner } from './monitor-stream'
 
 /** The plugin monitor host's ports and surface (`monitor-host.ts`). */
 
-export interface MonitorHostOptions {
-  /**
-   * What the rules say about this user's plugins. A PORT: this host owns no storage, and
-   * the composition root is the only place that can bind the rule store.
-   *
-   * No agent is named because a monitor runs beside every turn rather than inside one; the
-   * root binds it to the agent that always exists (`DEFAULT_AGENT_ID`).
-   */
-  availabilityFor: (userId: string) => Promise<AvailabilityReader>
-  repo: CapabilitySourceRepository
+/** One monitor stdout line, for the chat its monitor belongs to. */
+export interface MonitorNotification {
   userId: string
-  /** Where a monitor stdout line goes — bound to the wake primitive by boot wiring. */
+  chatId: string
+  pluginName: string
+  monitorName: string
+  /** The monitor's `description` (shown in the task panel). */
+  description: string
+  line: string
+}
+
+/** A chat's kit session moved: it opened or ran a turn (`sessionId` is a sub-agent's for its runs). */
+export interface ChatSessionMoved {
+  userId: string
+  /** The chat: its monitors' lines go there, and they stop when it ends. */
+  chatId: string
+  /** The kit session that moved: the chat's own, or one of its sub-agents'. */
+  sessionId: string
+}
+
+export interface PluginMonitorHostOptions {
+  /** The kit session of a chat or sub-agent session (`ChatPluginSessions.get`). */
+  sessionOf: (sessionId: string) => KitSession | undefined
+  /** Where a monitor's stdout line goes: bound to the wake primitive by boot wiring. */
   deliver: (note: MonitorNotification) => void
-  /** A line no session was armed for: delivered to nobody, reported once per silent stretch. */
-  unaddressed?: (note: Omit<MonitorNotification, 'sessionIds'>) => void
-  /** Discovery + spawn cwd (`${CLAUDE_PROJECT_DIR}`); defaults to `~/.localix/workspace`. */
-  cwd?: string
-  /** The user's home (see `discoverPlugins`); `userHome()` in production, a fixture in a test. */
-  homeDir: string
   logger?: { info?: (msg: string) => void; warn: (msg: string, meta?: unknown) => void }
-  /** Injectable spawner (tests supply a fake). Defaults to `Bun.spawn`. */
+  /** Injectable spawner (tests supply a fake). Defaults to the agent's shell, `bash -c`. */
   spawn?: MonitorSpawner
   now?: () => number
   /** A monitor that stopped as a standing Event Center row, cleared when it starts again. */
@@ -34,34 +38,16 @@ export interface MonitorHostOptions {
 }
 
 export interface PluginMonitorHost {
-  start(): Promise<void>
-  refresh(): void
+  /**
+   * Start what the moved session hands out now (`kit/monitors.ts`): its `always` monitors when it
+   * opens, and the `on-skill-invoke` ones whose skill it expanded. One the chat already runs (a
+   * session it reopened hands it out again) is not started twice.
+   */
+  sessionMoved(input: ChatSessionMoved): Promise<void>
+  /** The chat ended (deleted, or it can take no wake): its monitors stop. */
+  endChat(chatId: string): Promise<void>
+  /** Process shutdown: every monitor stops. */
   stop(): Promise<void>
-  /** Names of currently running monitors, as `<plugin>:<monitor>`. */
-  running(): string[]
-  /**
-   * Point a monitor's lines at a session. Refused for a monitor the plugin does not declare
-   * and for a user this host does not run monitors for; the SESSION's ownership is the
-   * caller's to check (the host has no session store).
-   */
-  arm(input: MonitorArmInput): Promise<MonitorArmOutcome>
-  disarm(input: MonitorArmInput): void
-  /** A session that cannot take a wake any more leaves every monitor. */
-  disarmSession(sessionId: string): void
-  /**
-   * A chat ran a turn: its lines of every `always` monitor reach it, from a process in its working
-   * directory, as Claude Code starts them with each session.
-   */
-  sessionActive(input: { userId: string; sessionId: string; cwd?: string }): Promise<void>
-  /** A skill ran in a chat: start the monitors waiting for it, arm them; resolves their keys. */
-  skillInvoked(input: SkillInvocationInput): Promise<string[]>
+  /** The chat's running monitors, as `<plugin>:<monitor>`, in the order they started. */
+  running(chatId: string): string[]
 }
-
-export interface MonitorArmInput {
-  userId: string
-  sessionId: string
-  pluginName: string
-  monitorName: string
-}
-
-export type MonitorArmOutcome = { status: 'armed' } | { status: 'refused'; reason: string }

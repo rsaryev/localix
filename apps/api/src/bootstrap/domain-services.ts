@@ -202,12 +202,12 @@ export function createDomainServicesPhase({
     resolveProjectCwd,
     resolveSessionCwd,
     logger: { warn: (msg, meta) => warnPluginOnce({ event: 'plugin.warn', msg, meta }) },
-    // A plugin toggle re-converges the plugin hosts (monitors, mods) — no restart needed.
-    // Neither has an asynchronous settle to wait for, so the change is settled at once: bump,
-    // release a toggle waiting to answer, poke the clients.
+    // A plugin toggle re-converges the mods host — no restart needed. (Plugin monitors belong to
+    // the chats' kit sessions, which read the change at their next turn.) It has no asynchronous
+    // settle to wait for, so the change is settled at once: bump, release a toggle waiting to
+    // answer, poke the clients.
     onChanged: () => {
       capabilitiesChanged()
-      hostRefs.monitorHost!.refresh()
       hostRefs.mods?.refresh()
       hostRefs.onCapabilitiesSettled?.()
     },

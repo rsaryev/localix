@@ -19,13 +19,10 @@ function loadedFixture(): LoadedPlugins {
     ],
     skills: [skill('write-memo', DENIED), skill('read-chart', KEPT), skill('local-only')],
     lspServers: [],
-    monitors: [],
     outputStyles: [
       { pluginName: DENIED, fullName: `${DENIED}:terse` },
       { pluginName: KEPT, fullName: `${KEPT}:plain` },
     ],
-    // The denied plugin's default agent would otherwise run this agent's chat.
-    mainAgent: { pluginName: DENIED, name: 'clerk' },
     awaitingConsent: [],
     loaded: [
       {
@@ -55,7 +52,6 @@ test('a denied plugin contributes nothing to the run', () => {
   expect(narrowed.mcpServers.map((s) => s.id)).toEqual([`plugin:${KEPT}:feed`])
   expect(narrowed.binDirs).toEqual([`/plugins/${KEPT}/bin`])
   expect(narrowed.outputStyles.map((s) => s.pluginName)).toEqual([KEPT])
-  expect(narrowed.mainAgent).toBeNull()
   expect(narrowed.loaded.map((p) => p.name)).toEqual([KEPT])
 })
 

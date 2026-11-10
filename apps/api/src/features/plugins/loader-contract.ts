@@ -1,7 +1,7 @@
 import type { McpServerRecord } from '../mcp/repository'
 import type { DiscoveredSkill } from '../agent-core/skill-discovery'
 import { normalizeCcToolName } from './discovery'
-import type { PluginAgent, PluginMonitor } from './contracts'
+import type { PluginAgent } from './contracts'
 import type { PluginOutputStyle } from './output-styles'
 import type { ScopePlugin } from './kit'
 
@@ -30,6 +30,8 @@ export interface LoadedPluginAgent {
   disallowedTools?: readonly string[]
   /** `tools: Agent(a, b)`: the agent types it may delegate to as the main thread (none: all). */
   agentTypes?: readonly string[]
+  /** CC `model:` — as written; a child with no model the person chose runs on it (`kit/spawn.ts`). */
+  model?: string
   /** CC `skills:` — skill names to preload when this agent runs. */
   pinnedSkills?: string[]
   /** CC `maxTurns:` — the most turns a delegated run of it takes. */
@@ -50,19 +52,6 @@ export interface LoadedPluginAgent {
   initialPrompt?: string
 }
 
-/**
- * One background monitor contributed by an ENABLED plugin — its typed spec plus the
- * roots the monitor host exports to the command's env (`CLAUDE_PLUGIN_ROOT` /
- * `CLAUDE_PLUGIN_DATA`; never pasted into the shell text). Only enabled plugins contribute (the
- * enable state is the trust gate — monitors run unsandboxed at hook trust level).
- */
-export interface LoadedPluginMonitor {
-  pluginName: string
-  pluginRoot: string
-  dataDir: string
-  monitor: PluginMonitor
-}
-
 export interface LoadedPlugins {
   /**
    * Enabled plugins' `bin/` directories (each existing `<pluginDir>/bin`). Prepended
@@ -76,22 +65,10 @@ export interface LoadedPlugins {
   /** Bundled skills to fold into the filesystem skill list. */
   skills: DiscoveredSkill[]
   /**
-   * Background monitors from enabled plugins (manifest `monitors` / `monitors/monitors.json`).
-   * Spawned + streamed to the notification seam by the monitor host, NOT per turn. Only
-   * enabled plugins contribute (the trust gate — see {@link LoadedPluginMonitor}).
-   */
-  monitors: LoadedPluginMonitor[]
-  /**
    * Claude Code output styles from enabled plugins, offered as `<plugin>:<name>` (`/output-style`).
    * One marked `forceForPlugin` applies whenever its plugin is enabled; the first loaded wins.
    */
   outputStyles: PluginOutputStyle[]
-  /**
-   * The agent an enabled plugin's default settings (`settings.json` `agent`) run the main thread
-   * as, while the person has not chosen another agent for the chat. The last loaded wins, as in
-   * Claude Code.
-   */
-  mainAgent: LoadedPluginAgent | null
   /** Per-plugin summary for diagnostics / the prompt's plugin section. */
   loaded: Array<{
     name: string
@@ -122,9 +99,7 @@ export function emptyLoadedPlugins(): LoadedPlugins {
     binDirs: [],
     mcpServers: [],
     skills: [],
-    monitors: [],
     outputStyles: [],
-    mainAgent: null,
     loaded: [],
     awaitingConsent: [],
     kitPlugins: [],
@@ -164,6 +139,7 @@ export function buildLoadedAgent(
       ? { disallowedTools: agent.disallowedTools.map(normalizeCcToolName) }
       : {}),
     ...(agent.agentTypes?.length ? { agentTypes: agent.agentTypes } : {}),
+    ...(agent.model ? { model: agent.model } : {}),
     ...(agent.pinnedSkills?.length ? { pinnedSkills: agent.pinnedSkills } : {}),
     ...(agent.maxTurns ? { maxTurns: agent.maxTurns } : {}),
     ...(agent.background ? { background: true } : {}),

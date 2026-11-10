@@ -1,8 +1,4 @@
-import {
-  readAgentSetting,
-  readOutputStyleSetting,
-  type PluginOnlySurface,
-} from '@rsaryev/llx-plugin/settings'
+import { readOutputStyleSetting, type PluginOnlySurface } from '@rsaryev/llx-plugin/settings'
 import type { PermissionMode } from '../../../../contracts/permission-modes'
 import type { ClaudeSettings } from './read'
 
@@ -17,10 +13,6 @@ export const skillShellDisabled = (settings: ClaudeSettings): boolean =>
   !settings.policy().skills.shell('user').run
 
 const trimmed = (value: string | undefined) => value?.trim() || undefined
-
-/** `agent`: the agent the main conversation runs as. */
-export const mainAgentSetting = (settings: ClaudeSettings): string | undefined =>
-  trimmed(readAgentSetting(settings.policy().view))
 
 /** `outputStyle`: the style a chat speaks in when none is chosen. */
 export const outputStyleSetting = (settings: ClaudeSettings): string | undefined =>

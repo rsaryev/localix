@@ -24,11 +24,10 @@ export interface ResolvedEntrypoints {
   components?: PluginCcComponents
 }
 
-const monitorOf = ({ name, command, description, when }: Monitor): PluginMonitor => ({
+const monitorOf = ({ name, command, description }: Monitor): PluginMonitor => ({
   name,
   command,
   description,
-  when: when.kind === 'always' ? 'always' : `on-skill-invoke:${when.skill}`,
 })
 
 /** A skill's root: its folder's parent, or the folder itself when it is the plugin's one skill. */
