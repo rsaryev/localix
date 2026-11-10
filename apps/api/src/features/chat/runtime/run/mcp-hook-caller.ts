@@ -1,5 +1,5 @@
 import type { AgentTool } from '@localixai/agent/agents'
-import type { CcMcpToolResult } from '../../../cc-hooks'
+import type { CcMcpToolResult } from '../../../plugins/kit'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { SessionRecord } from '../../repository'
 import type { RunEnv } from './types'

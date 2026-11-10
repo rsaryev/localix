@@ -106,7 +106,6 @@ export function forgetSessionRuntimeState(
     | 'miniAppStartedSessions'
     | 'ccHooksStartedSessions'
     | 'ccHooksSessionStartSource'
-    | 'ccHookOnceKeys'
     | 'ccHookSessions'
     | 'contextSnapshots'
     | 'childRuntimeSessions'
@@ -141,7 +140,6 @@ export function forgetSessionRuntimeState(
   state.sessionAutoApprovedTools.delete(sessionId)
   state.ccHooksStartedSessions.delete(sessionId)
   state.ccHooksSessionStartSource.delete(sessionId)
-  state.ccHookOnceKeys.delete(sessionId)
   // Deleting the session ends it: its SessionEnd hooks run before its hooks are forgotten.
   endCcHookSession(state, sessionId, 'other')
   state.ccHookSessions.forget(sessionId)
@@ -203,7 +201,6 @@ export function createRuntimeState(work: WorkRegistry): RuntimeState {
     miniAppStartedSessions: new Set(),
     ccHooksStartedSessions: new Set(),
     ccHooksSessionStartSource: new Map(),
-    ccHookOnceKeys: new Map(),
     ccHookSessions: createCcHookSessions(watchFileNative),
     // Frozen per-session context snapshot (see
     // session-snapshot.ts). Opt out with LOCALIX_FREEZE_CONTEXT=0.

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 
 import type { SessionRecord } from '../../repository'
 import { setAgentService, type AgentServiceBinding } from '../agent-service-binding'
-import { createAgentHookRunner, createPromptHookEvaluator } from './cc-hook-evaluators'
+import { createHookModels, type HookModelsInput } from './cc-hook-evaluators'
 import { routedAgent, sessionFixture } from '../../../../testing/session-fixture'
 import type { RunProfile } from '../../../agent-core/run-shape'
 
@@ -23,6 +23,25 @@ const session: SessionRecord = sessionFixture({
 
 afterEach(() => setAgentService(null as unknown as AgentServiceBinding))
 
+const live = () => new AbortController().signal
+const agentRequest = (over: { model?: string; signal?: AbortSignal } = {}) => ({
+  prompt: 'verify',
+  tools: [],
+  readOnly: true as const,
+  maxTurns: 50,
+  signal: live(),
+  ...over,
+})
+/** The run's models over an env with no provider: enough for the verifier. */
+const verifier = () =>
+  createHookModels({
+    env: {} as never,
+    userId: 'u',
+    session,
+    catalog: {} as never,
+    effectiveModelId: 'p/m',
+  })
+
 describe('agent hook verifier', () => {
   test('cancellation during child creation stops the child without starting its run', async () => {
     const controller = new AbortController()
@@ -40,12 +59,9 @@ describe('agent hook verifier', () => {
         runs++
       },
     } as unknown as AgentServiceBinding)
-    await createAgentHookRunner({ userId: 'u', session })({
-      prompt: 'verify',
-      inputJson: '{}',
-      timeoutMs: 1000,
-      signal: controller.signal,
-    })
+    await expect(verifier().runAgent(agentRequest({ signal: controller.signal }))).rejects.toThrow(
+      'cancelled',
+    )
     expect(stopped).toEqual(['late-child'])
     expect(runs).toBe(0)
   })
@@ -64,32 +80,13 @@ describe('agent hook verifier', () => {
       finalAssistantText: async () => '{"ok":true}',
     } as unknown as AgentServiceBinding)
 
-    await createAgentHookRunner({ userId: 'u', session })({
-      prompt: 'verify',
-      inputJson: '{}',
-      timeoutMs: 1000,
-    })
+    await verifier().runAgent(agentRequest())
 
     expect(creates[0]).toEqual(
       expect.objectContaining({
         provenance: { kind: 'hook', parentSessionId: 'parent', phase: 'verifier' },
       }),
     )
-  })
-
-  test('puts the hook input where the prompt names $ARGUMENTS', async () => {
-    const tasks: string[] = []
-    setAgentService({
-      createSession: async () => ({ id: 'hook-child' }),
-      runJobTask: async (_u: string, _s: string, text: string) => {
-        tasks.push(text)
-      },
-      finalAssistantText: async () => '{"ok":true}',
-    } as unknown as AgentServiceBinding)
-    const run = createAgentHookRunner({ userId: 'u', session })
-    await run({ prompt: 'Judge $ARGUMENTS for \\$1.00', inputJson: '{"a":1}', timeoutMs: 1000 })
-    await run({ prompt: 'Judge it', inputJson: '{"a":1}', timeoutMs: 1000 })
-    expect(tasks).toEqual(['Judge {"a":1} for $1.00', 'Judge it\n\n{"a":1}'])
   })
 
   test('runs its child on a read-only profile it resolved itself', async () => {
@@ -102,11 +99,7 @@ describe('agent hook verifier', () => {
       finalAssistantText: async () => '{"ok":true}',
     } as unknown as AgentServiceBinding)
 
-    await createAgentHookRunner({ userId: 'u', session })({
-      prompt: 'verify',
-      inputJson: '{}',
-      timeoutMs: 1000,
-    })
+    await verifier().runAgent(agentRequest())
 
     // The profile is the verifier's whole identity: nothing else may widen its tools.
     const profile = runs[0]?.profileOverride as RunProfile
@@ -124,8 +117,7 @@ describe('agent hook verifier', () => {
 /**
  * `prompt` hooks spend real tokens on the user's key, once per hook EVENT — a PreToolUse
  * hook fires per tool call, so it can outspend the turn it guards. These tests pin that the
- * spend reaches the ledger under its own kind, and that the module's fail-open invariant
- * survives a ledger that is broken.
+ * spend reaches the ledger under its own kind, and that a broken ledger changes no answer.
  */
 describe('prompt hook billing', () => {
   const modelDeps = (complete: () => Promise<unknown>) => ({
@@ -161,13 +153,13 @@ describe('prompt hook billing', () => {
     }) as never
 
   const evaluate = (env: ReturnType<typeof envWith>) =>
-    createPromptHookEvaluator({
+    createHookModels({
       env,
       userId: 'u',
       session,
       catalog: catalog as never,
       effectiveModelId: 'p/m',
-    })({ prompt: 'allow?', inputJson: '{}', timeoutMs: 1000 })
+    }).complete({ prompt: 'allow?', signal: live() })
 
   test('the verdict call lands in the ledger under the hook kind', async () => {
     const events: Array<Record<string, unknown>> = []
@@ -180,7 +172,7 @@ describe('prompt hook billing', () => {
       ),
     )
 
-    expect(verdict).toEqual({ ok: true })
+    expect(verdict).toBe('{"ok":true}')
     // `finishReason` is the bucket the dashboard's Kind breakdown groups on, so the kind
     // has to be this exact string — a plausible-looking alternative would silently fold
     // hook spend into the 'turn' bucket.
@@ -195,18 +187,14 @@ describe('prompt hook billing', () => {
   })
 
   test('a broken ledger cannot turn a hook into a turn failure', async () => {
-    // The module's whole invariant is FAIL OPEN. Billing is bookkeeping bolted onto that,
-    // so a rejecting ledger must change nothing the caller sees.
+    // Billing is bookkeeping: a rejecting ledger must change nothing the hook reads.
     const verdict = await evaluate(
       envWith(
         async () => ({ content: '{"ok":false,"reason":"nope"}', usage: { inputTokens: 1 } }),
-        async () => {
-          throw new Error('ledger down')
-        },
+        () => Promise.reject(new Error('ledger down')),
       ),
     )
-
-    expect(verdict).toEqual({ ok: false, reason: 'nope' })
+    expect(verdict).toBe('{"ok":false,"reason":"nope"}')
   })
 
   test('a call the provider reported no tokens for writes no row', async () => {
@@ -254,48 +242,36 @@ describe('the model a hook names', () => {
     },
     streamRegistry: { publish: () => {} },
   })
-  const evaluator = (created: unknown[]) =>
-    createPromptHookEvaluator({
+  const models = (created: unknown[], over: Partial<HookModelsInput> = {}) =>
+    createHookModels({
       env: { deps: deps(created), repo: {}, usageRepo: {} } as never,
       userId: 'u',
       session,
       catalog: catalog as never,
       effectiveModelId: 'p/m',
+      ...over,
     })
 
   test('an alias (haiku) becomes the catalog model of that family', async () => {
     const created: unknown[] = []
-    const verdict = await evaluator(created)({
-      prompt: 'allow?',
-      inputJson: '{}',
-      model: 'haiku',
-      timeoutMs: 1000,
-    })
-    expect(verdict.failed).toBeUndefined()
+    expect(
+      await models(created).complete({ prompt: 'allow?', model: 'haiku', signal: live() }),
+    ).toBe('{"ok":true}')
     expect(JSON.stringify(created)).toContain('claude-haiku-4-5')
   })
 
-  test('a model that cannot be resolved is reported, not silently allowed', async () => {
-    const verdict = await evaluator([])({
-      prompt: 'allow?',
-      inputJson: '{}',
-      model: 'nonexistent/model',
-      timeoutMs: 1000,
-    })
-    expect(verdict.ok).toBe(true)
-    expect(verdict.failed).toBeString()
+  // A throw is the kit's model failure: what it means for the hook is the kit's.
+  test('a model that cannot be resolved throws, never a verdict', async () => {
+    await expect(
+      models([]).complete({ prompt: 'allow?', model: 'nonexistent/model', signal: live() }),
+    ).rejects.toThrow('not available')
   })
 
-  test('a session with no provider route is reported', async () => {
+  test('a session with no provider route throws', async () => {
     const unrouted = { ...session, agent: null } as unknown as SessionRecord
-    const verdict = await createPromptHookEvaluator({
-      env: { deps: deps([]), repo: {}, usageRepo: {} } as never,
-      userId: 'u',
-      session: unrouted,
-      catalog: catalog as never,
-      effectiveModelId: 'p/m',
-    })({ prompt: 'allow?', inputJson: '{}', timeoutMs: 1000 })
-    expect(verdict.failed).toBeString()
+    await expect(
+      models([], { session: unrouted }).complete({ prompt: 'allow?', signal: live() }),
+    ).rejects.toThrow('no provider connection')
   })
 
   test('a verifier session opens on the catalog model of an alias', async () => {
@@ -308,26 +284,16 @@ describe('the model a hook names', () => {
       runJobTask: async () => undefined,
       finalAssistantText: async () => '{"ok":true}',
     } as unknown as AgentServiceBinding)
-    await createAgentHookRunner({
-      userId: 'u',
-      session,
-      catalog: catalog as never,
-      effectiveModelId: 'p/m',
-    })({ prompt: 'verify', inputJson: '{}', model: 'haiku', timeoutMs: 1000 })
+    await models([]).runAgent(agentRequest({ model: 'haiku' }))
     expect(creates[0]?.modelId).toBe('p/claude-haiku-4-5')
   })
 
-  test('a verifier that cannot start is reported', async () => {
+  test('a verifier that cannot start throws', async () => {
     setAgentService({
       createSession: async () => {
         throw new Error('no capacity')
       },
     } as unknown as AgentServiceBinding)
-    const verdict = await createAgentHookRunner({ userId: 'u', session })({
-      prompt: 'verify',
-      inputJson: '{}',
-      timeoutMs: 1000,
-    })
-    expect(verdict.failed).toContain('no capacity')
+    await expect(verifier().runAgent(agentRequest())).rejects.toThrow('no capacity')
   })
 })

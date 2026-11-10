@@ -3,10 +3,18 @@
  * one Claude Code event and folds its handlers into the answer its dispatch point applies.
  */
 import type { CcHookEvent } from './contracts'
-import type { CcToolBatchCall } from './protocol-event-inputs'
 import type { CcHookToolRef, StopResult } from './runtime-contracts'
 
 /** A typed command that expanded into its prompt (UserPromptExpansion). */
+/** One call of a batch as PostToolBatch reads it. */
+export interface CcToolBatchCall {
+  tool_name: string
+  tool_input: unknown
+  tool_use_id: string
+  /** The content the model receives in the call's tool result. */
+  tool_response: string
+}
+
 export interface CcPromptExpansion {
   commandName: string
   commandArgs: string

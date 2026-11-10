@@ -114,7 +114,7 @@ export function createChatService(deps: ChatServiceDeps) {
       modelInfo: statusLineModelInfo(deps),
       transcriptPath: async (userId, session, cwd) => {
         const transcript = createCcTranscript({ repo, userId, session, cwd })
-        await transcript.refreshSession()
+        await transcript.refresh()
         return transcript.path
       },
       publish: (sessionId, text) => deps.mods?.composer.status(sessionId, 'statusLine', text),

@@ -1,7 +1,7 @@
 import type { PluginIssue, ResolvedMcpServer } from '@rsaryev/llx-plugin'
 import { createPolicyView } from '@rsaryev/llx-plugin/settings'
 import type { LocalixPluginHost } from './host'
-import { sessionOwn, sessionPlace, type ScopePlugin } from './sessions'
+import { sessionLocations, sessionOwn, type ScopePlugin } from './sessions'
 import { readClaudeSettings } from './settings/read'
 
 /** One scope: its folder, the home its Claude Code settings are read from, its catalog. */
@@ -37,6 +37,7 @@ export async function scopeMcpServers(
     settings: createPolicyView(own.layers),
     plugins: own.plugins.map(({ id, plugin }) => ({ id, plugin })),
     userConfig: own.userConfig,
+    locations: sessionLocations(host, scope.cwd, own.plugins),
   })
-  return host.within(sessionPlace(scope.cwd, own.plugins), () => session.mcpServers())
+  return session.mcpServers()
 }

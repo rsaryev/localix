@@ -1,4 +1,3 @@
-import { AsyncLocalStorage } from 'node:async_hooks'
 import { isDeepStrictEqual } from 'node:util'
 import {
   createPluginHost,
@@ -37,21 +36,10 @@ export interface LocalixPluginHost {
    * hide (`masked`) stays: another project's sessions still run it. Changes only when the set does.
    */
   setUserPlugins(plugins: readonly LoadedKitPlugin[], masked?: ReadonlySet<string>): void
-  /**
-   * Runs `call` with the locations of one session: its project and its own plugins' folders. The
-   * kit resolves a session's components through the host's locations (`host/scope.ts`).
-   */
-  within<T>(place: SessionPlace, call: () => Promise<T>): Promise<T>
   /** Every plugin the host was given, with whether it runs. */
   plugins(): readonly HostedPlugin[]
   /** One more each time the plugins change: a holder of the number sees the change. */
   readonly generation: number
-}
-
-/** Where one session runs: its project folder and the folder of each of its own plugins. */
-export interface SessionPlace {
-  readonly projectDir: string
-  readonly roots: ReadonlyMap<string, string>
 }
 
 const sameEntry = (one: LoadedKitPlugin, other: LoadedKitPlugin) =>
@@ -71,12 +59,11 @@ export const samePlugins = (a: readonly LoadedKitPlugin[], b: readonly LoadedKit
 export function createLocalixPluginHost(deps: PluginHostDeps): LocalixPluginHost {
   let held: readonly LoadedKitPlugin[] = []
   let roots = new Map<string, string>()
-  const place = new AsyncLocalStorage<SessionPlace>()
   const ports = createHostPorts({
     ...deps,
-    // Outside a session's place, the host's project is the home folder.
-    projectDir: () => place.getStore()?.projectDir ?? deps.homeDir,
-    pluginRoot: (id) => place.getStore()?.roots.get(id) ?? roots.get(id) ?? '',
+    // The host's project is the home folder; each session names its own (`./sessions`).
+    projectDir: () => deps.homeDir,
+    pluginRoot: (id) => roots.get(id) ?? '',
   })
   const kit = createPluginHost({
     plugins: [],
@@ -100,7 +87,6 @@ export function createLocalixPluginHost(deps: PluginHostDeps): LocalixPluginHost
       roots = new Map(next.map((entry) => [entry.id, entry.root]))
       kit.update({ plugins: next.map(({ id, plugin }) => ({ id, plugin })) })
     },
-    within: (where, call) => place.run(where, call),
     plugins: () => kit.plugins,
     get generation() {
       return kit.generation

@@ -22,11 +22,15 @@ import { reparseToolInput } from '../agent-core/tools/reparse-input'
 import { isBlockedThrow, resultFromThrow } from '../agent-core/tools/tool-error-result'
 import { joinContext } from './runtime-results'
 import { failureText, withContextReminder } from './tool-hook-results'
-import type { CcHooksRuntime } from './run'
-import type { HookLogger } from './executor'
+import type { CcHooksRuntime } from './runtime-contracts'
 import { blockTaskCompletion, reviewTaskCreation, taskBoardEvent } from './task-events'
 import type { McpElicitationHookCarrier } from '../agent-core/tools/hitl/mcp-elicitation'
 import { errorMessage } from '../../lib/errors'
+
+/** Where the wrapper says what it could not apply. */
+export interface HookLogger {
+  warn(message: string, fields?: Record<string, unknown>): void
+}
 
 /**
  * AskUserQuestion's `answers` are a hook's, not the model's, so the ask tool's schema leaves them

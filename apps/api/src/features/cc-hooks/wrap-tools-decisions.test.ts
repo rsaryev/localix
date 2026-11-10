@@ -8,7 +8,7 @@ import { z } from 'zod'
 import { defineAgentTool, type AgentTool, type AgentToolResult } from '@localixai/agent/agents'
 
 import type { PreToolUseVerdictCarrier } from '../agent-core/permission-hook-decision'
-import type { CcHooksRuntime } from './run'
+import type { CcHooksRuntime } from './runtime-contracts'
 import { EMPTY_RUNTIME } from './runtime-results'
 import { wrapToolsWithCcHooks } from './wrap-tools'
 

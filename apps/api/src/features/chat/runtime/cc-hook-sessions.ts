@@ -17,32 +17,16 @@
 import { existsSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 
-import {
-  createCcHooksRuntime,
-  INERT_CC_HOOKS,
-  type CcHookEvent,
-  type CcHookRegistry,
-  type CcHooksRuntime,
-  type CcSessionEnvFiles,
-  type CcTranscript,
-} from '../../cc-hooks'
+import { INERT_CC_HOOKS, type CcHooksRuntime } from '../../cc-hooks'
 import type { ScopedCcHooks } from './run-contract'
-import { hookIfRuns } from '../../plugins/kit'
 
 /** Watch one file; `onChange` fires on any change to it. Returns the disposer. */
 export type WatchFile = (path: string, onChange: () => void) => () => void
 
 export interface CcHookSessionEntry {
-  registry: CcHookRegistry
+  /** The session's hooks outside a run: its kit session, with nothing of a run's. */
+  runtime: () => CcHooksRuntime
   projectDir: string
-  onceKeys?: Set<string>
-  emitNotice?: (message: string, event: CcHookEvent) => void
-  /** The session's `CLAUDE_ENV_FILE`s: CwdChanged and FileChanged hooks write theirs there. */
-  envFiles?: CcSessionEnvFiles
-  /** The `env` of Claude Code's settings for the session's folder. */
-  settingsEnv?: Readonly<Record<string, string>>
-  /** The session's transcript file (`transcript_path`), refreshed before a hook reads it. */
-  transcript?: CcTranscript
 }
 
 /** hooks.md: `idle_prompt` comes "about 60 seconds after Claude finishes responding". */
@@ -66,39 +50,19 @@ const realTimers: IdleTimers = {
 /** Sessions watched at once; the oldest watch is dropped beyond it. */
 const MAX_WATCHED_SESSIONS = 64
 
-const logger = { warn: (m: string) => console.warn(m), info: (m: string) => console.info(m) }
-
 export function createCcHookSessions(watchFile?: WatchFile, timers: IdleTimers = realTimers) {
   const entries = new Map<string, CcHookSessionEntry>()
   const idle = new Map<string, unknown>()
   const pendingContext = new Map<string, string>()
-  /** What `async` hooks said after they exited, oldest first; every one reaches the next turn. */
-  const asyncContext = new Map<string, string[]>()
   const dynamicWatch = new Map<string, string[]>()
   const watches = new Map<string, Map<string, { dispose: () => void; existed: boolean }>>()
   const skillHooks = new Map<string, Map<string, ScopedCcHooks>>()
 
-  function runtimeFor(sessionId: string): CcHooksRuntime {
-    const entry = entries.get(sessionId)
-    if (!entry) return INERT_CC_HOOKS
-    return createCcHooksRuntime({
-      ifRuns: hookIfRuns,
-      registry: entry.registry,
-      sessionId,
-      projectDir: entry.projectDir,
-      enabled: true,
-      logger,
-      ...(entry.onceKeys ? { onceKeys: entry.onceKeys } : {}),
-      ...(entry.emitNotice ? { emitNotice: entry.emitNotice } : {}),
-      ...(entry.envFiles ? { envFiles: entry.envFiles } : {}),
-      ...(entry.settingsEnv ? { settingsEnv: entry.settingsEnv } : {}),
-      ...(entry.transcript ? { transcript: entry.transcript } : {}),
-      onAsyncContext: (text) => appendAsyncContext(sessionId, text),
-    })
-  }
+  /** The scoped hook blocks each session holds on its kit session (`registerScopedHooks`). */
+  const scopedPrefixes = new Map<string, string[]>()
 
-  function appendAsyncContext(sessionId: string, text: string): void {
-    asyncContext.set(sessionId, [...(asyncContext.get(sessionId) ?? []), text])
+  function runtimeFor(sessionId: string): CcHooksRuntime {
+    return entries.get(sessionId)?.runtime() ?? INERT_CC_HOOKS
   }
 
   async function fileChanged(sessionId: string, path: string): Promise<void> {
@@ -172,17 +136,15 @@ export function createCcHookSessions(watchFile?: WatchFile, timers: IdleTimers =
       if (text) pendingContext.set(sessionId, text)
       else pendingContext.delete(sessionId)
     },
-    /**
-     * What an `async` hook said after it exited (hooks.md: delivered "to Claude on the next
-     * conversation turn"). Added to what is already waiting, never replacing it.
-     */
-    appendAsyncContext,
     takeContext(sessionId: string): string | undefined {
-      const parts = [pendingContext.get(sessionId), ...(asyncContext.get(sessionId) ?? [])]
+      const text = pendingContext.get(sessionId)
       pendingContext.delete(sessionId)
-      asyncContext.delete(sessionId)
-      const kept = parts.filter((part): part is string => Boolean(part))
-      return kept.length > 0 ? kept.join('\n\n') : undefined
+      return text
+    },
+    /** The prefixes of the scoped hook blocks the session's last run registered. */
+    scopedPrefixes: (sessionId: string): readonly string[] => scopedPrefixes.get(sessionId) ?? [],
+    setScopedPrefixes(sessionId: string, prefixes: string[]): void {
+      scopedPrefixes.set(sessionId, prefixes)
     },
     /**
      * An invoked skill's frontmatter `hooks`, kept for "the rest of the session once the skill is
@@ -225,7 +187,7 @@ export function createCcHookSessions(watchFile?: WatchFile, timers: IdleTimers =
       skillHooks.delete(sessionId)
       entries.delete(sessionId)
       pendingContext.delete(sessionId)
-      asyncContext.delete(sessionId)
+      scopedPrefixes.delete(sessionId)
       dynamicWatch.delete(sessionId)
       for (const watch of watches.get(sessionId)?.values() ?? []) watch.dispose()
       watches.delete(sessionId)

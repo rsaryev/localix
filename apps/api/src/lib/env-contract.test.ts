@@ -96,10 +96,6 @@ const EXEMPTIONS: Exemptions = {
     reason:
       "A mod's `$.env.get(name)`: Claude Code's mods API reads the variable the mod names, as its processes would see it. No fixed var to route.",
   },
-  [exemptionKey('src/features/cc-hooks/http.ts', '<dynamic>')]: {
-    reason:
-      'Expands ${VAR} references inside user-authored CC hook configs — the var NAME comes from the config, gated by an allowed-keys set. No fixed var to route.',
-  },
 }
 
 /** A `process.env` READ — `.NAME`, `['NAME']`, or a computed `[expr]`. A bare

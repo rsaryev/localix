@@ -8,10 +8,7 @@
  *
  * Layer: api feature module (node:fs only).
  */
-import { mkdirSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-
-import type { CcHookEvent } from './contracts'
+import { join } from 'node:path'
 
 export interface CcSessionEnvFiles {
   /** Written by SessionStart hooks; kept for the session. */
@@ -28,39 +25,4 @@ export function ccSessionEnvFiles(dir: string): CcSessionEnvFiles {
 /** The files a Bash command runs before itself, in order. */
 export function ccSessionEnvScripts(files: CcSessionEnvFiles): string[] {
   return [files.sessionStart, files.cwd]
-}
-
-/**
- * The `CLAUDE_ENV_FILE` an event's hooks get, its folder created so `>> "$CLAUDE_ENV_FILE"`
- * works; undefined for every other event.
- */
-export function envFileForEvent(
-  files: CcSessionEnvFiles | undefined,
-  event: CcHookEvent,
-): string | undefined {
-  if (!files) return undefined
-  const file =
-    event === 'SessionStart'
-      ? files.sessionStart
-      : event === 'CwdChanged' || event === 'FileChanged'
-        ? files.cwd
-        : undefined
-  if (!file) return undefined
-  try {
-    mkdirSync(dirname(file), { recursive: true })
-  } catch {
-    return undefined
-  }
-  return file
-}
-
-/** A CwdChanged clears what CwdChanged and FileChanged hooks wrote before it. */
-export function clearCwdEnvFile(files: CcSessionEnvFiles | undefined): void {
-  if (!files) return
-  try {
-    mkdirSync(dirname(files.cwd), { recursive: true })
-    writeFileSync(files.cwd, '')
-  } catch {
-    // Best effort: a missing folder means nothing was written to clear.
-  }
 }

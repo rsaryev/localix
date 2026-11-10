@@ -279,45 +279,6 @@ describe('validatePlugin — sensitive keys in MCP config', () => {
   })
 })
 
-describe('validatePlugin — sensitive keys in hook commands', () => {
-  const userConfig = {
-    SECRET: { type: 'string', title: 'Secret', sensitive: true, description: 'a credential' },
-    REGION: { type: 'string', title: 'Region', description: 'a region' },
-  }
-
-  it('warns when a hook command references a sensitive ${user_config.KEY} (shell strings never substitute secrets)', async () => {
-    const plugin = await writePlugin('hook-secret', 'hook-secret', {
-      userConfig,
-      hooks: {
-        Stop: [{ hooks: [{ type: 'command', command: 'notify --token ${user_config.SECRET}' }] }],
-      },
-    })
-    const { warnings } = validatePlugin(plugin)
-    const hits = warnings.filter(
-      (w) => w.includes('sensitive key "${user_config.SECRET}"') && w.includes('Hook command'),
-    )
-    expect(hits).toHaveLength(1)
-    expect(hits[0]).toContain('environment')
-  })
-
-  it('does NOT warn for non-sensitive keys or bare shell vars in hook commands', async () => {
-    const plugin = await writePlugin('hook-secret-ok', 'hook-secret-ok', {
-      userConfig,
-      hooks: {
-        Stop: [
-          {
-            hooks: [
-              { type: 'command', command: 'deploy --region ${user_config.REGION} --home ${HOME}' },
-            ],
-          },
-        ],
-      },
-    })
-    const { warnings } = validatePlugin(plugin)
-    expect(warnings.some((w) => w.includes('Hook command references sensitive key'))).toBe(false)
-  })
-})
-
 describe('validateCompatibility', () => {
   it('does not warn on the Claude Code components Localix runs', async () => {
     const plugin = await writePlugin('cc-fields', 'cc-fields', {

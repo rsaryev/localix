@@ -3,28 +3,9 @@ import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
 
 import { isPathBelow } from '../../../../lib/path-containment'
-import type { CcHookEvent } from '../../../cc-hooks'
-import type { RuntimeState } from '../agent-runner-state'
 import type { SessionStreamRegistry } from '../session-stream-registry'
 
-// Each of these is a contract, not boilerplate: a second `once` Set would let a `once`
-// hook fire twice in one session, and the `hook.notice` shape is read by the UI.
-
-/**
- * Get-or-create a session's `once` tracker in the process-wide map. Keyed PER SESSION so it
- * outlives the per-run runtimes.
- */
-export function ensureCcHookOnceKeys(
-  ccHookOnceKeys: RuntimeState['ccHookOnceKeys'],
-  sessionId: string,
-): Set<string> {
-  let onceKeys = ccHookOnceKeys.get(sessionId)
-  if (!onceKeys) {
-    onceKeys = new Set()
-    ccHookOnceKeys.set(sessionId, onceKeys)
-  }
-  return onceKeys
-}
+// The `hook.notice` shape is read by the UI.
 
 /** The instruction files `InstructionsLoaded` reports: every one but an `AGENTS.md`. */
 export function instructionFilesForHooks<F extends { path: string }>(
@@ -38,7 +19,7 @@ export function isUserInstructionFile(path: string): boolean {
   return isPathBelow(join(homedir(), '.localix'), path)
 }
 
-/** The console sink `createCcHooksRuntime` logs through (the hook layer prefixes its tags). */
+/** The console sink the run's hook wiring logs through (the transcript, the tool wrapper). */
 export const ccHooksConsoleLogger = {
   warn: (m: string) => console.warn(m),
   info: (m: string) => console.info(m),
@@ -49,7 +30,7 @@ export function ccHookNoticeEmitter(
   streamRegistry: SessionStreamRegistry,
   userId: string,
   sessionId: string,
-): (message: string, hookEvent: CcHookEvent) => void {
+): (message: string, hookEvent: string) => void {
   return (message, hookEvent) =>
     streamRegistry.publish(userId, sessionId, {
       type: 'hook.notice',

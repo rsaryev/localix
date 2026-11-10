@@ -18,7 +18,6 @@ function loadedFixture(): LoadedPlugins {
       server(`plugin:${KEPT}:feed`, `${KEPT}_feed`),
     ],
     skills: [skill('write-memo', DENIED), skill('read-chart', KEPT), skill('local-only')],
-    ccHooks: [],
     lspServers: [],
     monitors: [],
     agents: [

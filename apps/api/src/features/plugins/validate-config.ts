@@ -1,7 +1,6 @@
 import type { DiscoveredPlugin } from './discovery'
 import type { PluginConfigValues } from './config'
 import { mcpShellFieldReferencingOption } from './mcp'
-import { collectHookUserConfigTokens } from '../cc-hooks/config'
 import { isRequiredConfigMissing } from '../ext/manifest-validate'
 
 /**
@@ -38,22 +37,6 @@ export function validatePluginConfig(
     if (field) {
       warnings.push(
         `MCP server "${name}" references \${user_config.*} in "${field}" — the value would be re-parsed by a shell, so the server does not load. Read the value inside the helper script (e.g. from an env var set in the server's "env" block).`,
-      )
-    }
-  }
-
-  // Hook commands / http urls are SHELL-form strings — `${user_config.KEY}` there
-  // never substitutes sensitive values (CC spec: shell-form rejects sensitive
-  // substitution). A sensitive token in a hook command is left unsubstituted at
-  // load time, so warn the author to route the value through env instead.
-  const hookTokens = new Set<string>()
-  for (const rawHooks of plugin.entrypoints.hookConfigs) {
-    for (const token of collectHookUserConfigTokens(rawHooks)) hookTokens.add(token)
-  }
-  for (const token of hookTokens) {
-    if (plugin.manifest.config?.[token]?.secret) {
-      warnings.push(
-        `Hook command references sensitive key "\${user_config.${token}}" — sensitive values are never substituted into hook commands (shell strings); the token is left unsubstituted. Read the value from the environment instead.`,
       )
     }
   }

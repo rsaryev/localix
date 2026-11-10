@@ -55,6 +55,5 @@ these two types.
 
 ## Source of truth
 
-- [Prompt and agent verdicts](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/prompt-hook.ts)
-- [MCP tool arguments](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/mcp-tool-input.ts)
+- [The run's hooks on the plugin session](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/hooks/run-hooks.ts)
 - [Model and verifier evaluators](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/cc-hook-evaluators.ts)

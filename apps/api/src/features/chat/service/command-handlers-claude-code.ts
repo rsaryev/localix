@@ -7,9 +7,8 @@ import { addAdditionalDirectory } from '../../cc-settings/settings-directories'
 import {
   readClaudeSettingsSync,
   settingsAdditionalDirectories,
-  settingsHooks,
+  formatHookEntries,
 } from '../../plugins/kit'
-import { buildCcHookRegistry } from '../../cc-hooks/config'
 import { localixHome } from '../../../lib/env'
 import { parsePermissionMode } from '../../../contracts/permission-modes'
 import type { MessageMutationResponse } from '../contracts'
@@ -18,7 +17,6 @@ import { runAddDir } from './command-add-dir'
 import { gitIn } from '../../../lib/git-in'
 import { runDiff } from './command-diff'
 import { runExport } from './command-export'
-import { formatHooks } from './command-hooks'
 import { INIT_INSTRUCTION } from './command-init'
 import { formatStatus } from './command-status'
 import type { CommandHandlerContext, DirectReply } from './command-handlers-context'
@@ -87,27 +85,15 @@ async function statusReply(ctx: CommandHandlerContext, userId: string, session: 
 }
 
 /** The hooks of the folder's settings files and enabled plugins, as a run would load them. */
-async function hooksReply(ctx: CommandHandlerContext, userId: string, session: SessionRecord) {
-  const homeDir = claudeCodeHome()
-  const cwd = await ctx.resolveSessionWorkingDir(userId, session)
-  const fromSettings = settingsHooks(readClaudeSettingsSync({ homeDir, cwd }))
-  const catalog = await ctx.buildSessionPluginCatalog(userId, session).catch(() => undefined)
-  const { registry, skipped } = await buildCcHookRegistry({
-    projectDir: cwd,
-    settingsHooks: fromSettings.blocks,
-    pluginHooks: (catalog?.enabled ?? [])
-      .filter(({ plugin }) => fromSettings.pluginAllowed(plugin.manifest.name))
-      .flatMap(({ plugin }) =>
-        plugin.entrypoints.hookConfigs.map((raw) => ({
-          pluginName: plugin.manifest.name,
-          pluginRoot: plugin.dir,
-          dataDir: '',
-          sensitiveKeys: [],
-          raw,
-        })),
-      ),
-  })
-  return formatHooks(registry, skipped.length)
+/**
+ * `/hooks`: what the chat's kit session runs (its settings', its plugins', its skills'). The
+ * session opens with the chat's first run in this process; before it, none is listed.
+ */
+function hooksReply(ctx: CommandHandlerContext, session: SessionRecord) {
+  const kit = ctx.deps.pluginSessions?.get(session.id)
+  return kit
+    ? formatHookEntries(kit.hookEntries())
+    : 'The hooks of this chat are listed once it has run in this folder.'
 }
 
 const isDirectory = (path: string) =>
@@ -147,7 +133,7 @@ export async function handleClaudeCodeControlCommand(
     case 'status':
       return directReply(await statusReply(ctx, userId, session))
     case 'hooks':
-      return directReply(await hooksReply(ctx, userId, session))
+      return directReply(hooksReply(ctx, session))
     case 'diff':
       return directReply(
         await runDiff({ git: gitIn(await ctx.resolveSessionWorkingDir(userId, session)) }),

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
-import type { EnvFileStore, PluginFiles } from '@rsaryev/llx-plugin'
+import type { EnvFileStore, HooksSettings, PluginFiles, PluginSession } from '@rsaryev/llx-plugin'
 import type { PluginStateStore, StagedDirectory } from '@rsaryev/llx-plugin/marketplace'
 import {
   fakeEnvironment,
@@ -14,6 +14,9 @@ import {
   scriptedRunner,
 } from '@rsaryev/llx-plugin/testing'
 import { createLocalixPluginHost, type LocalixPluginHost } from './host'
+import { createKitHooksRuntime } from './hooks/runtime'
+import { createChatPluginSessions } from './sessions'
+import type { CcHooksRuntime } from '../../cc-hooks/runtime-contracts'
 import type { LocalixKitPorts } from './ports/host-ports'
 
 /**
@@ -101,4 +104,26 @@ export function diskPluginHost(homeDir: string): LocalixPluginHost {
     mcp: () => undefined,
     models: () => undefined,
   })
+}
+
+/** A chat's kit session whose user settings hold `hooks`, in the trusted folder `cwd`. */
+export function hookTestSession(homeDir: string, cwd: string, hooks: HooksSettings): PluginSession {
+  return createChatPluginSessions(diskPluginHost(homeDir)).forRun({
+    chatId: 'chat-1',
+    cwd,
+    transcriptPath: join(homeDir, 'chat-1.jsonl'),
+    permissionMode: 'default',
+    trusted: true,
+    layers: [{ scope: 'user', settings: { hooks } }],
+    plugins: [],
+  })
+}
+
+/** The hooks of such a session as the chat runtime calls them, outside a run. */
+export function hookTestRuntime(
+  homeDir: string,
+  cwd: string,
+  hooks: HooksSettings,
+): CcHooksRuntime {
+  return createKitHooksRuntime(hookTestSession(homeDir, cwd, hooks), { cwd })
 }

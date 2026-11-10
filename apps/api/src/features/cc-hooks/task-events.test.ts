@@ -5,7 +5,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
 
-import type { CcHooksRuntime } from './run'
+import type { CcHooksRuntime } from './runtime-contracts'
 import { EMPTY_RUNTIME } from './runtime-results'
 import type { CcTask } from './runtime-contracts-added'
 import { wrapToolsWithCcHooks } from './wrap-tools'

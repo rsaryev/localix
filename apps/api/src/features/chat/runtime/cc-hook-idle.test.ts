@@ -7,12 +7,12 @@ import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
-import { buildCcHookRegistry } from '../../cc-hooks'
+import { hookTestRuntime } from '../../plugins/kit/testing'
 import { createCcHookSessions, IDLE_PROMPT_MS } from './cc-hook-sessions'
 
 const dir = tempDirPerTest('cc-idle-')
 
-async function sessionsWithIdleHook() {
+function sessionsWithIdleHook() {
   const timers: { fn: () => unknown; ms: number }[] = []
   const sessions = createCcHookSessions(undefined, {
     set: (fn, ms) => timers.push({ fn, ms }) - 1,
@@ -21,29 +21,18 @@ async function sessionsWithIdleHook() {
     },
   })
   const out = join(dir(), 'idle.json')
-  const { registry } = await buildCcHookRegistry({
-    projectDir: dir(),
-    pluginHooks: [],
-    settingsHooks: [
-      {
-        source: 'user',
-        raw: {
-          hooks: {
-            Notification: [
-              { matcher: 'idle_prompt', hooks: [{ type: 'command', command: `cat > "${out}"` }] },
-            ],
-          },
-        },
-      },
+  const hooks = hookTestRuntime(dir(), dir(), {
+    Notification: [
+      { matcher: 'idle_prompt', hooks: [{ type: 'command', command: `cat > "${out}"` }] },
     ],
   })
-  sessions.remember('s1', { registry, projectDir: dir() })
+  sessions.remember('s1', { runtime: () => hooks, projectDir: dir() })
   return { sessions, timers, out }
 }
 
 describe('idle_prompt', () => {
   test('fires 60 seconds after a reply when nothing happened since', async () => {
-    const { sessions, timers, out } = await sessionsWithIdleHook()
+    const { sessions, timers, out } = sessionsWithIdleHook()
     sessions.scheduleIdle('s1', () => false)
     expect(timers.at(-1)?.ms).toBe(IDLE_PROMPT_MS)
     await timers.at(-1)!.fn()
@@ -54,7 +43,7 @@ describe('idle_prompt', () => {
   })
 
   test('a new turn cancels it, and running background work holds it', async () => {
-    const { sessions, timers, out } = await sessionsWithIdleHook()
+    const { sessions, timers, out } = sessionsWithIdleHook()
     sessions.scheduleIdle('s1', () => false)
     sessions.cancelIdle('s1')
     expect(timers.at(-1)?.ms).toBe(-1)

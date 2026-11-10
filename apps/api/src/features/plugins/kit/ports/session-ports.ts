@@ -6,7 +6,6 @@ import type {
   PortFailure,
 } from '@rsaryev/llx-plugin'
 import { errorMessage } from '../../../../lib/errors'
-import type { CcMcpToolResult } from '../../../cc-hooks'
 
 /**
  * The ports whose engines belong to a session or come up late in bootstrap: MCP clients and the
@@ -15,6 +14,9 @@ import type { CcMcpToolResult } from '../../../cc-hooks'
  */
 
 /** Localix's MCP call by full name (`mcp__server__tool`); it resolves, never throws. */
+/** One MCP tool call's answer; a server that is not there says `notConnected`. */
+export type CcMcpToolResult = { text: string; isError?: boolean } | { notConnected: true }
+
 export type McpCallByName = (
   name: string,
   input: unknown,

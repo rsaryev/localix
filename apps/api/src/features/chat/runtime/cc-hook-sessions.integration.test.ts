@@ -7,7 +7,8 @@ import { writeFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
-import type { CcHookRegistry } from '../../cc-hooks'
+import type { CcHooksRuntime } from '../../cc-hooks'
+import { hookTestRuntime } from '../../plugins/kit/testing'
 import { createCcHookSessions, type WatchFile } from './cc-hook-sessions'
 
 const dir = tempDirPerTest('cc-sessions-')
@@ -23,21 +24,23 @@ function fakeWatcher() {
 }
 
 /** A FileChanged hook that appends its input as one line to `log` and may name more paths. */
-const fileChanged = (matcher: string | undefined, then = 'exit 0'): CcHookRegistry => ({
-  FileChanged: [
-    {
-      matcher,
-      handlers: [
-        {
-          source: 'plugin',
-          // One append per hook: two hooks running at once must not interleave their lines.
-          command: `line=$(cat); printf '%s\\n' "$line" >> "${join(dir(), 'log')}"; ${then}`,
-          timeoutMs: 5000,
-        },
-      ],
-    },
-  ],
-})
+const fileChanged = (matcher: string | undefined, then = 'exit 0'): (() => CcHooksRuntime) => {
+  const hooks = hookTestRuntime(dir(), dir(), {
+    FileChanged: [
+      {
+        ...(matcher ? { matcher } : {}),
+        hooks: [
+          {
+            type: 'command',
+            // One append per hook: two hooks running at once must not interleave their lines.
+            command: `line=$(cat); printf '%s\\n' "$line" >> "${join(dir(), 'log')}"; ${then}`,
+          },
+        ],
+      },
+    ],
+  })
+  return () => hooks
+}
 
 // The hooks are real shell processes; each wait below has its own deadline, every test this one.
 setDefaultTimeout(30_000)
@@ -68,7 +71,7 @@ describe('between-run hooks', () => {
   test("the matcher's filenames are watched in the working directory; each change fires", async () => {
     const w = fakeWatcher()
     const sessions = createCcHookSessions(w.watch)
-    sessions.remember('s1', { registry: fileChanged('.envrc|.env'), projectDir: dir() })
+    sessions.remember('s1', { runtime: fileChanged('.envrc|.env'), projectDir: dir() })
     const envrc = join(dir(), '.envrc')
     expect([...w.watched.keys()].sort()).toEqual([join(dir(), '.env'), envrc])
 
@@ -87,7 +90,11 @@ describe('between-run hooks', () => {
     const sessions = createCcHookSessions(w.watch)
     const extra = join(dir(), 'extra.json')
     sessions.remember('s1', {
-      registry: fileChanged(undefined, `echo '{"watchPaths":["${extra}"]}'`),
+      // hooks.md: `watchPaths` is FileChanged's `hookSpecificOutput`.
+      runtime: fileChanged(
+        undefined,
+        `echo '{"hookSpecificOutput":{"hookEventName":"FileChanged","watchPaths":["${extra}"]}}'`,
+      ),
       projectDir: dir(),
     })
     expect(w.watched.size).toBe(0)

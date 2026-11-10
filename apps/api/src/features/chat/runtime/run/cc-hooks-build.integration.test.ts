@@ -3,12 +3,14 @@
  * announced (InstructionsLoaded), the session's hooks are kept for its between-run events, a
  * SessionStart `watchPaths` seeds FileChanged, and a between-run hook's context reaches the turn.
  */
-import { describe, expect, setDefaultTimeout, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
+import { afterEach, beforeEach, describe, expect, setDefaultTimeout, test } from 'bun:test'
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
+import { createChatPluginSessions } from '../../../plugins/kit'
+import { diskPluginHost } from '../../../plugins/kit/testing'
 import { createCcHookSessions } from '../cc-hook-sessions'
 import { buildRunCcHooks, type BuildRunCcHooksInput } from './cc-hooks-build'
 
@@ -17,8 +19,26 @@ import { buildRunCcHooks, type BuildRunCcHooksInput } from './cc-hooks-build'
 setDefaultTimeout(30_000)
 
 const dir = tempDirPerTest('cc-build-')
+// The person's Claude Code settings hold the hooks: a home of this test's own.
+const home = () => join(dir(), 'home')
+const work = () => join(dir(), 'work')
+let realHome: string | undefined
+beforeEach(() => {
+  realHome = process.env.HOME
+  process.env.HOME = home()
+  mkdirSync(work(), { recursive: true })
+})
+afterEach(() => {
+  process.env.HOME = realHome
+})
 
 function input(hooks: Record<string, unknown>, extra: Partial<BuildRunCcHooksInput> = {}) {
+  mkdirSync(join(home(), '.claude'), { recursive: true })
+  writeFileSync(join(home(), '.claude', 'settings.json'), JSON.stringify({ hooks }))
+  // Claude Code runs no hook in a folder whose trust dialog was not accepted.
+  const trusted = { hasTrustDialogAccepted: true }
+  const projects = { [work()]: trusted, [realpathSync(work())]: trusted }
+  writeFileSync(join(home(), '.claude.json'), JSON.stringify({ projects }))
   const watched: string[][] = []
   const ccHookSessions = createCcHookSessions()
   const setWatchPaths = ccHookSessions.setWatchPaths
@@ -29,13 +49,16 @@ function input(hooks: Record<string, unknown>, extra: Partial<BuildRunCcHooksInp
   const state = {
     ccHooksStartedSessions: new Set<string>(),
     ccHooksSessionStartSource: new Map<string, string>(),
-    ccHookOnceKeys: new Map<string, Set<string>>(),
     ccHookSessions,
   }
   const build: BuildRunCcHooksInput = {
     // Hook files go to this test's folder, never the developer's ~/.localix.
     env: {
-      deps: { streamRegistry: { publish: () => {} }, sessionDataRoot: dir() },
+      deps: {
+        streamRegistry: { publish: () => {} },
+        sessionDataRoot: dir(),
+        pluginSessions: createChatPluginSessions(diskPluginHost(home())),
+      },
       repo: { listMessages: async () => [] },
       state,
     } as never,
@@ -45,13 +68,11 @@ function input(hooks: Record<string, unknown>, extra: Partial<BuildRunCcHooksInp
     params: { scope: {} } as never,
     catalog: {} as never,
     effectiveModelId: 'm',
-    defaultCwd: dir(),
+    defaultCwd: work(),
     disabledTools: [],
     availability: {} as never,
     capabilities: {} as never,
-    loadedPlugins: {
-      ccHooks: [{ pluginName: 'p', pluginRoot: dir(), dataDir: dir(), raw: { hooks } }],
-    } as never,
+    loadedPlugins: { kitPlugins: [] } as never,
     isContinuation: false,
     ...extra,
   }
@@ -80,9 +101,9 @@ describe('a run starting', () => {
       { InstructionsLoaded: capture('il.jsonl') },
       {
         contextFiles: [
-          { path: join(dir(), 'AGENTS.md') },
+          { path: join(work(), 'AGENTS.md') },
           { path: join(homedir(), '.localix', 'context.md') },
-          { path: join(dir(), 'CLAUDE.md') },
+          { path: join(work(), 'CLAUDE.md') },
         ],
       },
     )
@@ -98,19 +119,21 @@ describe('a run starting', () => {
         .map((l) => `${l.memory_type} ${l.load_reason} ${l.file_path}`)
         .sort(),
     ).toEqual([
-      `Project session_start ${join(dir(), 'CLAUDE.md')}`,
+      `Project session_start ${join(work(), 'CLAUDE.md')}`,
       `User session_start ${join(homedir(), '.localix', 'context.md')}`,
     ])
   })
 
   test("keeps the session's hooks for its between-run events and seeds the watch list", async () => {
-    const out = JSON.stringify({ hookSpecificOutput: { watchPaths: [join(dir(), '.envrc')] } })
+    const out = JSON.stringify({
+      hookSpecificOutput: { hookEventName: 'SessionStart', watchPaths: [join(work(), '.envrc')] },
+    })
     const { build, state, watched } = input({
       SessionStart: [{ hooks: [{ type: 'command', command: `cat >/dev/null; echo '${out}'` }] }],
       CwdChanged: capture('cwd.jsonl'),
     })
     await buildRunCcHooks(build)
-    expect(watched).toEqual([[join(dir(), '.envrc')]])
+    expect(watched).toEqual([[join(work(), '.envrc')]])
     expect(state.ccHookSessions.runtimeFor('s1').hasHooks('CwdChanged')).toBe(true)
   })
 

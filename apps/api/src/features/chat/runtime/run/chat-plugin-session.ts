@@ -11,6 +11,7 @@ import type { PermissionMode } from '../../../../contracts/permission-modes'
 import {
   settingsAdditionalDirectories,
   type ChatPluginSessions,
+  type KitSession,
   type ClaudeSettings,
   type ScopePlugin,
 } from '../../../plugins/kit'
@@ -30,8 +31,9 @@ export function openChatPluginSession(
   facts: ChatPluginSessionFacts,
   transcriptPath: string,
   permissionMode: PermissionMode | undefined,
-): void {
-  sessions?.forRun({
+  onWake?: (text: string) => void,
+): KitSession | undefined {
+  return sessions?.forRun({
     chatId: facts.chatId,
     cwd: facts.cwd,
     transcriptPath,
@@ -40,5 +42,6 @@ export function openChatPluginSession(
     additionalDirectories: settingsAdditionalDirectories(facts.settings),
     layers: facts.settings.layers,
     plugins: facts.plugins,
+    ...(onWake ? { onWake } : {}),
   })
 }

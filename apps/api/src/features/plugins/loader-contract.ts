@@ -1,4 +1,3 @@
-import type { PluginHookConfig } from '../cc-hooks'
 import type { McpServerRecord } from '../mcp/repository'
 import type { DiscoveredSkill } from '../agent-core/skill-discovery'
 import { normalizeCcToolName } from './discovery'
@@ -77,12 +76,6 @@ export interface LoadedPlugins {
   /** Bundled skills to fold into the filesystem skill list. */
   skills: DiscoveredSkill[]
   /**
-   * Declarative Claude Code hook configs (`hooks/hooks.json`) from enabled
-   * plugins — raw JSON + plugin root, merged with the settings-file hooks by the
-   * cc-hooks runtime. Only enabled plugins contribute (enablement is the consent gate).
-   */
-  ccHooks: PluginHookConfig[]
-  /**
    * Claude Code LSP server configs from enabled plugins (`lspServers` manifest field
    * / `.lsp.json` / strict:false marketplace entry), path-substituted. Registered with
    * the LSP feature, scoped to the project root — see `features/lsp/lsp-plugin-servers`.
@@ -146,7 +139,6 @@ export function emptyLoadedPlugins(): LoadedPlugins {
     binDirs: [],
     mcpServers: [],
     skills: [],
-    ccHooks: [],
     lspServers: [],
     monitors: [],
     agents: [],

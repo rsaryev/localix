@@ -106,12 +106,6 @@ export interface RuntimeState {
    */
   ccHooksSessionStartSource: Map<string, string>
   /**
-   * Per-session keys of CC-hook handlers declaring `once: true` that already ran
-   * (sessionId → Set<handlerKey>). Owned here so `once` de-dup survives across the
-   * per-run {@link createCcHooksRuntime} instances. Reaped on session delete.
-   */
-  ccHookOnceKeys: Map<string, Set<string>>
-  /**
    * Claude Code hooks between runs: each session's hooks as its latest run assembled them, the
    * context a between-run hook left for the next turn, and `FileChanged` watching. Reaped on
    * session delete.

@@ -68,20 +68,6 @@ describe('the plugin host of the app process', () => {
     expect([host.plugins().map(({ id }) => id), host.generation]).toEqual([['fmt@acme'], 1])
   })
 
-  test("within a session's place, the locations answer its project and its own plugins", async () => {
-    const host = createLocalixPluginHost(deps())
-    host.setUserPlugins([{ id: 'fmt@acme', root: '/plugins/fmt', plugin: await plugin('fmt') }])
-    const { locations } = host.ports.host
-    const place = { projectDir: '/work/app', roots: new Map([['lint', '/work/app/lint']]) }
-    const seen = await host.within(place, async () => [
-      locations.projectDir(),
-      locations.pluginRoot('lint'),
-      locations.pluginRoot('fmt@acme'),
-    ])
-    expect(seen).toEqual(['/work/app', '/work/app/lint', '/plugins/fmt'])
-    expect([locations.projectDir(), locations.pluginRoot('lint')]).toEqual([dir(), ''])
-  })
-
   test('reads the MCP engine bootstrap brings up after the host was made', async () => {
     const bound: { mcp?: McpCallByName } = {}
     const host = createLocalixPluginHost(deps(bound))

@@ -9,8 +9,6 @@ import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
 import type { DiscoveredPlugin } from './discovery'
-import type { LoadedPlugins } from './loader-contract'
-import { appendPluginRuntimeDeclarations } from './loader-runtime-declarations'
 import { pluginDataDir } from '../ext/user-config-substitute'
 import { pluginIdOf } from './plugin-data-id'
 
@@ -31,20 +29,6 @@ describe("a plugin's data directory", () => {
     expect(pluginIdOf(cached)).toBe('tool@shop')
     expect(pluginDataDir(pluginIdOf(cached), home())).toBe(
       join(home(), '.localix', 'plugin-data', 'tool-shop'),
-    )
-  })
-
-  test("reaches the plugin's hooks as CLAUDE_PLUGIN_DATA", () => {
-    const result = { ccHooks: [], lspServers: [], monitors: [], outputStyles: [] }
-    appendPluginRuntimeDeclarations({
-      plugin: plugin({ claudeCodeInstall: 'tool@official' }),
-      config: {},
-      subst: (text) => text,
-      result: result as unknown as LoadedPlugins,
-      opts: { homeDir: home() },
-    })
-    expect((result.ccHooks[0] as { dataDir: string }).dataDir).toBe(
-      join(home(), '.localix', 'plugin-data', 'tool-official'),
     )
   })
 

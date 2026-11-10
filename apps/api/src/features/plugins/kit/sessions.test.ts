@@ -4,7 +4,12 @@ import { loadPlugin, type Plugin } from '@rsaryev/llx-plugin'
 import { memoryFiles } from '@rsaryev/llx-plugin/testing'
 import { tempDirPerTest } from '@localixai/testing'
 import { createLocalixPluginHost } from './host'
-import { createChatPluginSessions, type ChatSessionFacts, type ScopePlugin } from './sessions'
+import {
+  createChatPluginSessions,
+  sessionLocations,
+  type ChatSessionFacts,
+  type ScopePlugin,
+} from './sessions'
 
 const dir = tempDirPerTest('kit-sessions')
 
@@ -130,7 +135,13 @@ describe('one kit session per chat', () => {
     chats.forRun(facts({ plugins: [lint] }))
     const session = chats.get('chat-1')
     expect(session?.plugins.map(({ id }) => id)).toEqual(['lint@acme'])
+    // The host knows only the user installs; the session's locations know its own.
     expect(host.ports.host.locations.pluginRoot('lint@acme')).toBe('')
+    const here = sessionLocations(host, '/work/app', [lint])
+    expect([here.projectDir(), here.pluginRoot('lint@acme')]).toEqual([
+      '/work/app',
+      '/work/app/.localix/plugins/lint',
+    ])
     // Re-read with the same data, the session stays; other values open a new one.
     chats.forRun(facts({ plugins: [{ ...lint, plugin: await plugin('lint') }] }))
     expect(chats.get('chat-1')).toBe(session)

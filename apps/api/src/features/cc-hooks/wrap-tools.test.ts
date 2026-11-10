@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'bun:test'
 import { z } from 'zod'
-import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
+import {
+  defineAgentTool,
+  type AgentTool,
+  type AgentToolExecutionContext,
+} from '@localixai/agent/agents'
+import type { McpElicitationHookCarrier } from '../agent-core/tools/hitl/mcp-elicitation'
 
 import { CcHookBlockedError, wrapToolsWithCcHooks } from './wrap-tools'
-import type { CcHooksRuntime } from './run'
+import type { CcHooksRuntime } from './runtime-contracts'
 import { EMPTY_RUNTIME } from './runtime-results'
 
 /** A runtime with only the tool hooks the wrapper calls; the rest stays inert. */
@@ -95,5 +100,64 @@ describe('wrapToolsWithCcHooks', () => {
     }) as AgentTool
     const [tool] = wrapToolsWithCcHooks([blocked], runtime({}), logger)
     await expect(tool.execute('tc1', {})).rejects.toThrow('blocked by plugin')
+  })
+
+  it('hands the hooks the tool itself, with its aliases and MCP server', async () => {
+    const ref = {
+      aliases: ['mcp__plugin_lin-mcp_echo__echo'],
+      mcpServer: { name: 'plugin:lin-mcp:echo', source: 'plugin' },
+    }
+    const seen: unknown[] = []
+    const tool = {
+      ...defineAgentTool({
+        name: 'mcp_lin_mcp_echo_echo',
+        description: 'echo',
+        activeVerb: 'Running',
+        inputSchema: z.object({}),
+        execute: () => Promise.resolve({ content: 'ok' }),
+      }),
+      ...ref,
+    } as AgentTool
+    const [wrapped] = wrapToolsWithCcHooks(
+      [tool],
+      runtime({
+        runPreToolUse: (given) => {
+          seen.push(given)
+          return Promise.resolve({ decision: 'proceed' as const, didRewrite: false })
+        },
+        runPostToolUse: (given) => {
+          seen.push(given)
+          return Promise.resolve({})
+        },
+      }),
+      logger,
+    )
+    await wrapped.execute('call-1', {})
+    expect(seen).toHaveLength(2)
+    for (const given of seen) expect(given).toMatchObject({ name: tool.name, ...ref })
+  })
+
+  it('gives an MCP tool call the elicitation hooks only when one is registered', async () => {
+    const seen: Array<(AgentToolExecutionContext & McpElicitationHookCarrier) | undefined> = []
+    const tool = {
+      name: 'mcp_issue_tracker_pick',
+      async execute(_id, _input, _signal, _onUpdate, context) {
+        seen.push(context)
+        return { content: 'ok' }
+      },
+    } as AgentTool
+    const answer = { action: 'accept' as const, content: { project_key: 'DOCS' } }
+    const withHooks = runtime({
+      hasHooks: (event) => event === 'Elicitation',
+      runElicitation: () => Promise.resolve(answer),
+    })
+    const [wrapped] = wrapToolsWithCcHooks([tool], withHooks, logger)
+    await wrapped!.execute('c1', {}, undefined, undefined, { interactive: true })
+    const request = { server: 'issue-tracker', message: 'Which project?', mode: 'form' as const }
+    expect(await seen.pop()?.mcpElicitationHooks?.before(request)).toEqual(answer)
+
+    const [plain] = wrapToolsWithCcHooks([tool], runtime({ hasHooks: () => false }), logger)
+    await plain!.execute('c2', {}, undefined, undefined, { interactive: true })
+    expect(seen.pop()?.mcpElicitationHooks).toBeUndefined()
   })
 })

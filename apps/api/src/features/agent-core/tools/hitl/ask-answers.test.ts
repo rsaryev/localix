@@ -8,7 +8,7 @@ import { expect, test } from 'bun:test'
 import type { AgentTool } from '@localixai/agent/agents'
 
 import { EMPTY_RUNTIME } from '../../../cc-hooks/runtime-results'
-import type { CcHooksRuntime } from '../../../cc-hooks/run'
+import type { CcHooksRuntime } from '../../../cc-hooks/runtime-contracts'
 import { wrapToolsWithCcHooks } from '../../../cc-hooks/wrap-tools'
 import { localInputFromHook } from '../../../ext/cc-tool-shapes'
 import { askToolInputSchema, createAskTool } from './ask'

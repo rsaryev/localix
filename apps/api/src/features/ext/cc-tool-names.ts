@@ -23,8 +23,8 @@ import { claudeCodeNames, shapedToolNames } from './cc-tool-shapes'
 
 /**
  * Claude Code's older and file-level names, which no call of a shaped tool carries as its own
- * name: `LS`, `MultiEdit`, `NotebookRead`, `Task` … `cc-hooks/matcher.ts` keeps matching these as
- * legacy candidates; the per-call names live with the shapes (`cc-tool-shapes.ts`).
+ * name: `LS`, `MultiEdit`, `NotebookRead`, `Task` … A tool list may still name them; the per-call
+ * names live with the shapes (`cc-tool-shapes.ts`).
  */
 export const CC_LEGACY_TOOL_NAMES: Readonly<Record<string, string>> = {
   // File system

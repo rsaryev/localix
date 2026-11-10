@@ -15,7 +15,7 @@ import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
 
 import { isRecord } from '../../lib/record'
 import type { CcTask } from './runtime-contracts-added'
-import type { CcHooksRuntime } from './run'
+import type { CcHooksRuntime } from './runtime-contracts'
 
 type Execute = AgentTool['execute']
 type ExecuteArgs = Readonly<Parameters<Execute>>

@@ -1,4 +1,9 @@
-import { normalizePermissionMode, type OptionValues, type PluginSession } from '@rsaryev/llx-plugin'
+import {
+  normalizePermissionMode,
+  type Locations,
+  type OptionValues,
+  type PluginSession,
+} from '@rsaryev/llx-plugin'
 import { createPolicyView, type PolicyLayer } from '@rsaryev/llx-plugin/settings'
 import { keepUnchanged, samePlugins, type LoadedKitPlugin, type LocalixPluginHost } from './host'
 
@@ -31,6 +36,8 @@ export interface ChatSessionFacts {
   readonly layers: readonly PolicyLayer[]
   /** Every plugin the run's catalog found. */
   readonly plugins: readonly ScopePlugin[]
+  /** An `asyncRewake` hook exited 2: wake the chat with this text (bound when the session opens). */
+  readonly onWake?: (text: string) => void
 }
 
 /**
@@ -63,8 +70,18 @@ export function sessionOwn(
 }
 
 /** The locations of a session: its project, and its own plugins' folders before the host's. */
-export function sessionPlace(cwd: string, plugins: readonly LoadedKitPlugin[]) {
-  return { projectDir: cwd, roots: new Map(plugins.map((one) => [one.id, one.root])) }
+export function sessionLocations(
+  host: LocalixPluginHost,
+  cwd: string,
+  plugins: readonly LoadedKitPlugin[],
+): Locations {
+  const { locations } = host.ports.host
+  const roots = new Map(plugins.map((one) => [one.id, one.root]))
+  return {
+    ...locations,
+    projectDir: () => cwd,
+    pluginRoot: (id) => roots.get(id) ?? locations.pluginRoot(id),
+  }
 }
 
 /**
@@ -104,8 +121,6 @@ export function createChatPluginSessions(host: LocalixPluginHost) {
       }
       if (held?.key === key && samePlugins(held.own, own.plugins))
         return held.session.withTurn(turn)
-      const { projectDir, roots } = sessionPlace(facts.cwd, own.plugins)
-      const { locations } = host.ports.host
       const session = host.kit.openSession({
         ...turn,
         sessionId: facts.chatId,
@@ -115,14 +130,10 @@ export function createChatPluginSessions(host: LocalixPluginHost) {
         settings: createPolicyView(own.layers),
         plugins: own.plugins.map(({ id, plugin }) => ({ id, plugin })),
         userConfig: own.userConfig,
-        hookPorts: {
-          locations: {
-            ...locations,
-            projectDir: () => projectDir,
-            pluginRoot: (id) => roots.get(id) ?? locations.pluginRoot(id),
-          },
-        },
+        locations: sessionLocations(host, facts.cwd, own.plugins),
       })
+      const { onWake } = facts
+      if (onWake) session.onBackground((delivered) => delivered.wake && onWake(delivered.wake))
       open.set(facts.chatId, { key, own: own.plugins, session })
       return session
     },

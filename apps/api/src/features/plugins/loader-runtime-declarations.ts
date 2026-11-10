@@ -64,29 +64,6 @@ export function appendPluginRuntimeDeclarations({
     logger?: { warn: (message: string, meta?: unknown) => void }
   }
 }): void {
-  // ---- Declarative CC hooks (manifest `hooks` / hooks/hooks.json) -------
-  // Raw JSON only — the cc-hooks runtime binds ${CLAUDE_PLUGIN_ROOT} /
-  // ${CLAUDE_PLUGIN_DATA} / ${CLAUDE_PROJECT_DIR} + non-sensitive
-  // ${user_config.KEY} (as env the shell expands, never pasted into a command)
-  // and merges these with the settings-file hooks. Hook
-  // commands are shell strings, so `secret: true` keys are NEVER substituted
-  // there (the cc-hooks side needs the key list to enforce that). Each resolved
-  // config (file paths, an array of them, or an inline manifest object) is
-  // contributed independently.
-  const sensitiveKeys = Object.entries(plugin.manifest.config ?? {}).flatMap(([key, option]) =>
-    option.secret ? [key] : [],
-  )
-  for (const raw of plugin.entrypoints.hookConfigs) {
-    result.ccHooks.push({
-      pluginName: plugin.manifest.name,
-      pluginRoot: plugin.dir,
-      dataDir: dataDirOfPlugin(plugin, opts.homeDir),
-      config,
-      sensitiveKeys,
-      raw,
-    })
-  }
-
   // ---- Declarative CC LSP servers (manifest `lspServers` / .lsp.json) ---
   // Path vars (${CLAUDE_PLUGIN_ROOT}/${CLAUDE_PLUGIN_DATA}/${CLAUDE_PROJECT_DIR}) and
   // `${user_config.KEY}` are substituted in every string of the config. Unlike skill and agent

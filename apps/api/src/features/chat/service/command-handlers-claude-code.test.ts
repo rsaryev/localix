@@ -7,6 +7,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { runSync, scratchGitEnv, tempDirPerTest } from '@localixai/testing'
 
+import { hookTestSession } from '../../plugins/kit/testing'
 import type { SessionRecord } from '../repository'
 import { handleControlCommand } from './command-handlers'
 import type { CommandHandlerContext } from './command-handlers-context'
@@ -98,23 +99,17 @@ describe('/status and /hooks', () => {
     expect(h.replies[0]).toContain(`\`${root()}\``)
   })
 
-  test('/hooks lists a plugin’s hooks by event, and says so when there are none', async () => {
-    const none = harness()
-    await none.run('/hooks')
-    expect(none.replies[0]).toContain('No hooks')
-    const plugin = {
-      manifest: { name: 'review' },
-      dir: '/p/review',
-      entrypoints: {
-        hookConfigs: [{ Stop: [{ hooks: [{ type: 'command', command: 'echo done' }] }] }],
-      },
-    }
-    const withPlugin = harness({
-      buildSessionPluginCatalog: async () => ({ enabled: [{ plugin }] }),
+  test("/hooks lists the session's hooks by event, once the chat has run", async () => {
+    const before = harness({ deps: {} })
+    await before.run('/hooks')
+    expect(before.replies[0]).toContain('once it has run')
+    const session = hookTestSession(root(), root(), {
+      Stop: [{ hooks: [{ type: 'command', command: 'echo done' }] }],
     })
-    await withPlugin.run('/hooks')
-    expect(withPlugin.replies[0]).toContain('**Stop**')
-    expect(withPlugin.replies[0]).toContain('plugin `review`')
+    const after = harness({ deps: { pluginSessions: { get: () => session } } })
+    await after.run('/hooks')
+    expect(after.replies[0]).toContain('**Stop**')
+    expect(after.replies[0]).toContain('(user settings)')
   })
 })
 

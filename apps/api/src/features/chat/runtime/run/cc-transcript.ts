@@ -56,13 +56,9 @@ export function createCcTranscript(input: {
   return {
     path,
     agentPath,
-    refreshSession: () => attempt(write(path, rootId), path),
-    async refresh(hookInput) {
+    async refresh(agentId) {
       await attempt(write(path, rootId), path)
-      if (hookInput.hook_event_name === 'SubagentStop' && 'agent_id' in hookInput) {
-        const agentId = hookInput.agent_id
-        if (agentId) await attempt(write(agentPath(agentId), agentId, agentId), agentPath(agentId))
-      }
+      if (agentId) await attempt(write(agentPath(agentId), agentId, agentId), agentPath(agentId))
     },
   }
 }

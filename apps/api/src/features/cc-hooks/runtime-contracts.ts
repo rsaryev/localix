@@ -1,13 +1,8 @@
-import type { CcHookEvent, CcHookRegistry, CcHookSource } from './contracts'
-import type { HookLogger, HookRewake } from './executor'
-import type { CcMcpToolCaller } from './mcp-tool-hook'
-import type { PromptHookEvaluator } from './prompt-hook'
-import type { AgentHookEvaluator } from './agent-hook'
+import type {
+  McpElicitationAnswer,
+  McpElicitationHookRequest,
+} from '../agent-core/tools/hitl/mcp-elicitation'
 import type { CcAddedHooksRuntime } from './runtime-contracts-added'
-import type { CcDisplayHooksRuntime } from './runtime-display-hooks'
-import type { CcWorktreeHooksRuntime } from './runtime-worktree-hooks'
-import type { CcSessionEnvFiles } from './session-env'
-import type { CcTranscript } from './transcript'
 
 /** Aggregated PreToolUse decision handed to the tool wrapper. */
 export interface PreToolUseResult {
@@ -74,8 +69,7 @@ export type CcHookToolRef =
       mcpServer?: { readonly name: string; readonly source: string }
     }
 
-export interface CcHooksRuntime
-  extends CcAddedHooksRuntime, CcDisplayHooksRuntime, CcWorktreeHooksRuntime {
+export interface CcHooksRuntime extends CcAddedHooksRuntime {
   /** True when at least one supported hook is registered AND the feature is enabled. */
   readonly active: boolean
   /**
@@ -148,7 +142,7 @@ export interface CcHooksRuntime
     agentType: string,
     agentId: string,
     lastMessage: string | null,
-    opts?: { sourcesOnly?: readonly CcHookSource[]; stopHookActive?: boolean },
+    opts?: { sourcesOnly?: readonly ('skill' | 'agent')[]; stopHookActive?: boolean },
   ): Promise<StopResult>
   /**
    * Claude Code's PreCompact: exit 2 / `decision:block` blocks the compaction. This host fires
@@ -157,93 +151,24 @@ export interface CcHooksRuntime
   runPreCompact(trigger: 'manual' | 'auto', customInstructions?: string): Promise<PreCompactResult>
   /** The hook that ended this run, the first one to; undefined while none has. */
   stoppedBy(): CcRunStop | undefined
+  /** An MCP server's request for input: a hook may answer it in the person's place. */
+  runElicitation(request: McpElicitationHookRequest): Promise<McpElicitationAnswer | undefined>
+  /** The person's answer before it goes back: a hook may change or decline it. */
+  runElicitationResult(
+    request: McpElicitationHookRequest,
+    answer: McpElicitationAnswer,
+  ): Promise<McpElicitationAnswer | undefined>
+  /** The turn's settled text: a hook may change only what is shown. */
+  runMessageDisplay(message: {
+    turnId: string
+    messageId: string
+    text: string
+  }): Promise<{ displayContent?: string }>
+  /** `undefined` when no WorktreeCreate hook runs: the caller makes the worktree itself. */
+  runWorktreeCreate(name: string): Promise<WorktreeCreateResult | undefined>
 }
 
-/** Whether a handler's `if` lets it run for this call: the kit's reader (`plugins/kit/hook-if.ts`). */
-export type HookIfReader = (
-  rule: string,
-  toolName: string,
-  toolInput: unknown,
-  aliases?: readonly string[],
-  cwd?: string,
-) => boolean
-
-export interface CreateCcHooksRuntimeOptions {
-  signal?: AbortSignal
-  /** Reads a handler's `if`, as the kit reads it. */
-  ifRuns: HookIfReader
-  registry: CcHookRegistry
-  sessionId: string
-  /** Session cwd → hook cwd + `CLAUDE_PROJECT_DIR`. */
-  projectDir: string
-  /** Kill switch — when false the runtime is inert. */
-  enabled: boolean
-  /**
-   * The session's mode in Claude Code's spelling (`default`, `plan`, `bypassPermissions` …),
-   * reported as `permission_mode` on the events whose documented input carries it.
-   */
-  permissionMode?: string
-  /** The user prompt this run answers → `prompt_id` (hooks.md, common input fields). */
-  promptId?: string
-  /** The effort level in effect → `effort.level` and `CLAUDE_EFFORT`; absent when reasoning is off. */
-  effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max'
-  /** The run's model → SessionStart's `model`. */
-  model?: string
-  /**
-   * The session's background work for Stop and SubagentStop (`background_tasks`, `session_crons`):
-   * its running jobs, monitors and delegated tasks, and its scheduled loops.
-   */
-  backgroundWork?: () => { background_tasks: unknown[]; session_crons: unknown[] }
-  /** The run is a delegated subagent's: every input names it (`agent_id`, `agent_type`). */
-  agent?: { id: string; type: string }
-  /** The session's `CLAUDE_ENV_FILE`s (session-env.ts); absent → hooks get none. */
-  envFiles?: CcSessionEnvFiles
-  /** The `env` of Claude Code's settings for the run's folder, given to every hook process. */
-  settingsEnv?: Readonly<Record<string, string>>
-  /** The session's transcript file and how to refresh it (transcript.ts); absent → paths are ''. */
-  transcript?: CcTranscript
-  logger: HookLogger
-  /**
-   * Arms the one wake an `asyncRewake` hook may send, as it starts; the hook's exit 2 fires it
-   * with the composed rewake message, any other ending dismisses it.
-   * Absent → asyncRewake degrades to plain `async` (fire-and-forget, no wake).
-   */
-  rewake?: HookRewake
-  /**
-   * Per-SESSION set of spent `once`-handler keys (owned by the caller so it survives
-   * across the per-run runtimes). Only a skill's hooks honour `once`, spent after their first
-   * successful run. Absent → `once` is not enforced.
-   */
-  onceKeys?: Set<string>
-  /**
-   * What an `async` hook's JSON response said to Claude (`additionalContext`, `systemMessage`)
-   * once it exited 0 — for the session's next turn. Absent → it is dropped.
-   */
-  onAsyncContext?: (context: string) => void
-  /**
-   * Injected single-shot LLM evaluator for `type:"prompt"` handlers. Absent → prompt
-   * handlers fail open (treated as `ok`, never block). Keeps cc-hooks chat-agnostic.
-   */
-  evaluatePromptHook?: PromptHookEvaluator
-  /**
-   * Injected bounded-sub-agent evaluator for `type:"agent"` handlers (a tool-using
-   * verifier). Absent → agent handlers fail open. Keeps cc-hooks chat-agnostic.
-   */
-  runAgentHook?: AgentHookEvaluator
-  /**
-   * Injected MCP tool caller for `type:"mcp_tool"` handlers, built by the chat
-   * runtime from the process-lifetime MCP client manager. Absent → mcp_tool handlers
-   * fail open. Keeps cc-hooks free of any MCP-feature import.
-   */
-  callMcpTool?: CcMcpToolCaller
-  /**
-   * Injected sink for a hook's non-blocking `systemMessage` — a user-facing
-   * warning (CC: "shown to the user in the transcript"). The chat runtime wires
-   * this to publish a `hook.notice` stream event. Absent → the message is dropped
-   * (keeps cc-hooks chat/UI-agnostic). Identical CONSECUTIVE messages within a run
-   * are de-duped before this fires.
-   */
-  emitNotice?: (message: string, event: CcHookEvent) => void
-  /** A handler's `statusMessage` while it runs (`active`), and once it is done. */
-  onHookStatus?: (message: string, active: boolean) => void
-}
+/** What a WorktreeCreate hook made: its folder, and the folder the hook ran in. */
+export type WorktreeCreateResult =
+  | { ok: true; path: string; cwd: string }
+  | { ok: false; error: string }

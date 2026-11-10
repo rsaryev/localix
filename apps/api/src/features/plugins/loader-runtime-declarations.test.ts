@@ -25,7 +25,7 @@ function lspServersOf(
   lspServers: Record<string, unknown>,
   config: Record<string, string>,
 ): Record<string, unknown> {
-  const result = { ccHooks: [], lspServers: [], monitors: [], outputStyles: [] }
+  const result = { lspServers: [], monitors: [], outputStyles: [] }
   appendPluginRuntimeDeclarations({
     plugin: plugin(lspServers),
     config,

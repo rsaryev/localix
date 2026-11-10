@@ -31,7 +31,13 @@ export type { PluginCcComponents, PluginWorkflow } from './catalog/components'
 export type { Plugin as KitPlugin } from '@rsaryev/llx-plugin/loading'
 export type { PluginIssue } from '@rsaryev/llx-plugin/format'
 export { createHostPorts, type HostPortsDeps, type LocalixKitPorts } from './ports/host-ports'
-export type { McpCallByName, ModelBackend } from './ports/session-ports'
+export {
+  lateMcpCaller,
+  lateModelRunner,
+  type CcMcpToolResult,
+  type McpCallByName,
+  type ModelBackend,
+} from './ports/session-ports'
 export {
   readClaudeSettings,
   readClaudeSettingsSync,
@@ -51,12 +57,7 @@ export {
 export { claudeCodeTrusts, trustedFolders } from './settings/trust'
 export { claudeCodeSettingsEnv, settingsEnvOf } from './settings/env'
 export { mcpSettingsReader } from './settings/mcp'
-export {
-  settingsCommandLine,
-  settingsHooks,
-  type SettingsCommandLine,
-  type SettingsHooks,
-} from './settings/hooks'
+export { settingsCommandLine, type SettingsCommandLine } from './settings/hooks'
 export {
   customizationLocks,
   mainAgentSetting,
@@ -81,7 +82,10 @@ export {
   type SettingsRules,
   type SettingsVerdict,
 } from './permissions'
-export { hookIfRuns } from './hook-if'
+export type { PluginSession as KitSession } from '@rsaryev/llx-plugin'
+export { openRunHooks } from './hooks/run-hooks'
+export type { ScopedHooksBlock } from './hooks/scoped'
+export { formatHookEntries } from './hooks/listing'
 export {
   settingsAdditionalDirectories,
   settingsRuleEntries,
