@@ -65,6 +65,7 @@
     "oxlint": "1.89.0",
     "oxlint-plugin-react-doctor": "^0.9.18",
     "oxlint-tsgolint": "^7.0.2004",
+    "sharp": "^0.35.5",
     "shx": "^0.4.0",
     "turbo": "^2.11.10",
     "typescript": "^7.0.2",

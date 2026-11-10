@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/unbound-method -- these tests swap the page's own fetch and XHR methods and compare them by identity */
 /**
  * The page's own requests in flight tell "the DOM is quiet because it is done" from "quiet
  * because the answer has not arrived". The tracker only watches: the page's fetch and XHR must

@@ -66,7 +66,7 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
       if (missing) return { result: { content: missing, isError: true } }
       return {
         result: await runGoal(
-          { ...deps, redact: deps.secrets?.redact },
+          { ...deps, redact: deps.secrets && ((value: unknown) => deps.secrets?.redact(value)) },
           {
             goal: input.goal!.trim(),
             values: input.values ?? [],

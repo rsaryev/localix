@@ -41,7 +41,10 @@ export function installScopedDialogGuard(consoleCapture: ConsoleCapture): Scoped
     }
 
     window.alert = function (this: unknown, ...args: unknown[]) {
-      if (held > 0) return void note('alert', args[0])
+      if (held > 0) {
+        note('alert', args[0])
+        return
+      }
       return (original.alert as (...a: unknown[]) => void).apply(this, args)
     } as typeof window.alert
     window.confirm = function (this: unknown, ...args: unknown[]) {

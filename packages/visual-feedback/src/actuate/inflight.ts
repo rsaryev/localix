@@ -69,7 +69,9 @@ export function installInflightTracker(
   }
 
   const proto = win.XMLHttpRequest?.prototype
+  // oxlint-disable-next-line typescript/unbound-method -- the page's own method, kept to call with its receiver and to put back
   const nativeOpen = proto?.open
+  // oxlint-disable-next-line typescript/unbound-method -- the page's own method, kept to call with its receiver and to put back
   const nativeSend = proto?.send
   const urls = new WeakMap<object, string>()
   let wrappedOpen: typeof nativeOpen

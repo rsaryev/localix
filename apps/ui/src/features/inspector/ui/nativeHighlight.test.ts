@@ -22,12 +22,14 @@ test('a steps batch (how every click and typing arrives) with a usable rect is s
 test('the box stays at its last opacity until it is removed, so it never flashes back', () => {
   const calls: unknown[][] = []
   const run = (script: string) => {
+    // oxlint-disable-next-line typescript/unbound-method -- kept only to put back
     const original = Element.prototype.animate
     Element.prototype.animate = function (...args: unknown[]) {
       calls.push(args)
       return {} as Animation
     } as typeof Element.prototype.animate
     try {
+      // oxlint-disable-next-line typescript/no-implied-eval -- the unit under test is a script string the webview evaluates
       new Function(script)()
     } finally {
       Element.prototype.animate = original
@@ -38,6 +40,7 @@ test('the box stays at its last opacity until it is removed, so it never flashes
 })
 
 test('the script draws one inert box over the target and removes it', () => {
+  // oxlint-disable-next-line typescript/no-implied-eval -- the unit under test is a script string the webview evaluates
   const run = (script: string) => new Function(script)()
   run(highlightScript({ x: 10, y: 20, width: 100, height: 30 }))
   run(highlightScript({ x: 12, y: 22, width: 100, height: 30 }))

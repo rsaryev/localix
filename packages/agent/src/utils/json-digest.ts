@@ -150,7 +150,7 @@ function errorFields(value: unknown): { errors: { path: string; text: string }[]
       for (const [key, field] of Object.entries(v)) {
         const at = path === '' ? key : `${path}.${key}`
         if (ERROR_KEY.test(key) && hasContent(field)) {
-          const text = typeof field === 'object' ? JSON.stringify(field) : String(field)
+          const text = typeof field === 'string' ? field : (JSON.stringify(field) ?? '')
           found.push({ path: at, text })
         } else visit(field, at, depth + 1)
       }

@@ -51,7 +51,7 @@ function mayHaveReachedOutside(result: AgentToolResult): boolean {
   if (!error || error.refusal === 'human') return false
   if (MAYBE_SENT_KINDS.has(error.kind)) return true
   if (error.kind !== 'execution') return false
-  return TRANSPORT_CODE.test(`${error.code ?? ''}`) || TRANSPORT_CODE.test(error.message)
+  return TRANSPORT_CODE.test(String(error.code ?? '')) || TRANSPORT_CODE.test(error.message)
 }
 
 export const UNCERTAIN_WRITE_NOTE = (toolName: string): string =>
