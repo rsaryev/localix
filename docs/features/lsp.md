@@ -200,9 +200,13 @@ instead where the table above says so. For other languages, enable a plugin that
 | `diagnostics`           | `false` keeps the server's diagnostics out of `Edit` and `Write` results              |
 | `transport`             | `stdio` or `socket`; both run over stdio, as in Claude Code                           |
 
+`${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`, `${CLAUDE_PROJECT_DIR}` and `${user_config.KEY}`
+resolve in `command`, `args`, `env` and `workspaceFolder`; `initializationOptions` and `settings`
+are sent as written. An option with no saved value stays as written and the plugin's log says where.
 The server process also receives `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA` and
-`CLAUDE_PROJECT_DIR`. A server config is a strict object: an unknown key keeps that server from
-loading, and the plugin's validation notes name the key.
+`CLAUDE_PROJECT_DIR`. A file opens with the language its extension maps to, spelled as the map
+writes it (`.C` and `.c` can name two languages). A server config is a strict object: an unknown key
+keeps the servers of that map from loading, and the plugin's validation names the key.
 
 For each enabled plugin server, Localix reports two things in the plugin's validation notes (the
 Store (Plugins) and `/plugin details`) and in the agent's `# Plugins` prompt section:

@@ -107,6 +107,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       fileMtimes: frame.stores.fileMtimes,
       skillCommandPolicy,
       ...(inputs.kitSession ? { kitSession: inputs.kitSession } : {}),
+      pluginLspServers: inputs.pluginLspServers,
       agentModelChoices: turn.globalAgentSettings?.agentModelChoices,
       listWorkflows: () =>
         listEnabledPluginWorkflows({

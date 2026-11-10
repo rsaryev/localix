@@ -10,6 +10,7 @@ import { createLspManager } from './lsp-manager'
 import { pluginLspNotes, summarizePluginLspServers } from './lsp-plugin-notes'
 import { configuredLspServer } from './lsp-plugin-servers'
 import { PythonServer } from './lsp-servers'
+import { testLspServers } from '../plugins/kit/testing'
 
 const dir = tempDirPerTest('localix-plugin-lsp')
 const root = '/fixture-php'
@@ -40,18 +41,20 @@ afterEach(() => {
   for (const spy of spies.splice(0)) spy.mockRestore()
 })
 
+/** A plugin server declaring `raw`, as the kit resolves it. */
+async function pluginServer(raw: Record<string, unknown>) {
+  const { servers } = await testLspServers(path.join(dir(), 'plugin'), { s: raw })
+  return configuredLspServer(servers[0]!)
+}
+
 const intelephense = () =>
-  configuredLspServer(
-    'intelephense',
-    {
-      command: 'intelephense',
-      args: ['--stdio'],
-      env: { INTELEPHENSE_LOG: 'off' },
-      initializationOptions: { storagePath: '/tmp/x' },
-      extensionToLanguage: { '.php': 'php' },
-    },
-    { env: { CLAUDE_PLUGIN_ROOT: '/plugins/php-lsp' } },
-  )
+  pluginServer({
+    command: 'intelephense',
+    args: ['--stdio'],
+    env: { INTELEPHENSE_LOG: 'off' },
+    initializationOptions: { storagePath: '/tmp/x' },
+    extensionToLanguage: { '.php': 'php' },
+  })
 
 describe('a plugin server whose command is an npm package', () => {
   test('not on PATH: installed on first use and run with Bun, with the plugin’s args, env and options', async () => {
@@ -84,18 +87,21 @@ describe('a plugin server whose command is an npm package', () => {
     })
     const statuses: string[] = []
     manager.onUpdate((_root, states) => statuses.push(states.map((s) => s.status).join()))
-    manager.setPluginServers(root, [intelephense()])
+    manager.setPluginServers(root, [await intelephense()])
     try {
       await manager.openDocument(root, file, '<?php echo 1;')
       for (let i = 0; i < 10; i++) await Promise.resolve()
 
       expect(requests).toEqual(['intelephense'])
-      expect(spawned).toEqual([
+      expect(spawned).toMatchObject([
         {
           via: 'bun',
           bin: path.join(installed, 'node_modules', '.bin', 'intelephense'),
           args: ['--stdio'],
-          env: { CLAUDE_PLUGIN_ROOT: '/plugins/php-lsp', INTELEPHENSE_LOG: 'off' },
+          env: {
+            CLAUDE_PLUGIN_ROOT: path.join(dir(), 'plugin', 'lsp-p'),
+            INTELEPHENSE_LOG: 'off',
+          },
         },
       ])
       expect(initializations).toEqual([{ storagePath: '/tmp/x' }])
@@ -107,7 +113,7 @@ describe('a plugin server whose command is an npm package', () => {
 
   test('on PATH: still run with Bun, so its `#!/usr/bin/env node` never needs Node', async () => {
     onPath = { intelephense: '/usr/local/bin/intelephense' }
-    await intelephense().spawn(root, root)
+    await (await intelephense()).spawn(root, root)
     expect(spawned.map(({ via, bin }) => [via, bin])).toEqual([
       ['bun', '/usr/local/bin/intelephense'],
     ])
@@ -115,10 +121,9 @@ describe('a plugin server whose command is an npm package', () => {
 
   test('a command that is not an npm package is spawned as it is', async () => {
     onPath = { zls: '/usr/local/bin/zls' }
-    await configuredLspServer('zig', {
-      command: 'zls',
-      extensionToLanguage: { '.zig': 'zig' },
-    }).spawn(root, root)
+    await (
+      await pluginServer({ command: 'zls', extensionToLanguage: { '.zig': 'zig' } })
+    ).spawn(root, root)
     expect(spawned.map(({ via, bin }) => [via, bin])).toEqual([['direct', '/usr/local/bin/zls']])
   })
 })
@@ -133,9 +138,7 @@ test('the built-in Python server runs a pyright-langserver found on PATH with Bu
 
 describe('plugin LSP notes never send anyone to npm', () => {
   const notesFor = (command: string) => {
-    const summaries = summarizePluginLspServers({
-      s: { command, extensionToLanguage: { '.zzz': 'x' } },
-    })
+    const summaries = summarizePluginLspServers([{ name: 's', command, extensions: ['.zzz'] }])
     return { summary: summaries[0]!, notes: pluginLspNotes(summaries) }
   }
 

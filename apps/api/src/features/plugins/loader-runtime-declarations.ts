@@ -31,68 +31,18 @@ export function makePluginSubstituter(
   })
 }
 
-/** Every string in a JSON-shaped value (object keys included) passed through `subst`. */
-function substituteStrings(value: unknown, subst: (text: string) => string): unknown {
-  if (typeof value === 'string') return subst(value)
-  if (Array.isArray(value)) return value.map((item) => substituteStrings(item, subst))
-  if (value && typeof value === 'object') {
-    const out: Record<string, unknown> = {}
-    for (const [key, item] of Object.entries(value)) {
-      out[subst(key)] = substituteStrings(item, subst)
-    }
-    return out
-  }
-  return value
-}
-
 /** Append already-discovered declarations in the loader's existing order. */
 export function appendPluginRuntimeDeclarations({
   plugin,
-  config,
   subst,
   result,
   opts,
 }: {
   plugin: DiscoveredPlugin
-  config: PluginConfigValues
   subst: (text: string) => string
   result: LoadedPlugins
-  opts: {
-    homeDir: string
-    /** The session project directory → `${CLAUDE_PROJECT_DIR}`. */
-    cwd?: string
-    logger?: { warn: (message: string, meta?: unknown) => void }
-  }
+  opts: { homeDir: string }
 }): void {
-  // ---- Declarative CC LSP servers (manifest `lspServers` / .lsp.json) ---
-  // Path vars (${CLAUDE_PLUGIN_ROOT}/${CLAUDE_PLUGIN_DATA}/${CLAUDE_PROJECT_DIR}) and
-  // `${user_config.KEY}` are substituted in every string of the config. Unlike skill and agent
-  // content, a sensitive option substitutes its real value here, as in Claude Code: the config
-  // goes to a language server process, never to the model or a shell. Each string is substituted
-  // on its own (no JSON round-trip), so a value holding a quote stays one string. Registered with
-  // the LSP feature (project-root scoped) by the chat runtime — enabled only.
-  if (Object.keys(plugin.entrypoints.lspServers).length > 0) {
-    const lspSubst = makeSubstituter({
-      pluginRoot: plugin.dir,
-      dataDir: dataDirOfPlugin(plugin, opts.homeDir),
-      projectDir: opts.cwd || '',
-      config,
-      isSecret: () => false,
-    })
-    result.lspServers.push({
-      pluginName: plugin.manifest.name,
-      env: {
-        CLAUDE_PLUGIN_ROOT: plugin.dir,
-        CLAUDE_PLUGIN_DATA: dataDirOfPlugin(plugin, opts.homeDir),
-        ...(opts.cwd ? { CLAUDE_PROJECT_DIR: opts.cwd } : {}),
-      },
-      servers: substituteStrings(plugin.entrypoints.lspServers, lspSubst) as Record<
-        string,
-        unknown
-      >,
-    })
-  }
-
   // ---- Background monitors (manifest `monitors` / monitors/monitors.json) -
   // Typed + de-duplicated in discovery; collected here (enabled plugins only — the
   // enable state is the trust gate) with the roots the monitor host substitutes

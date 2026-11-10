@@ -11,6 +11,10 @@ import { buildRunSystemPrompt } from './system-prompt-build'
 import { channelNameFromSourceKey } from '../../policy/axes/delivery'
 import { runPolicyFixture } from '../../../../testing/run-policy-fixture'
 import { buildPluginsPromptContext } from './plugins-prompt-context'
+import { tempDirPerTest } from '@localixai/testing'
+import { testLspServers } from '../../../plugins/kit/testing'
+
+const dir = tempDirPerTest('plugins-prompt-lsp')
 import { buildMiniAppsPromptContext } from './mini-apps-prompt-context'
 import { emptyLoadedMiniApps, type LoadedMiniApps } from '../../../mini-apps/loader-contract'
 import { routedAgent, sessionFixture } from '../../../../testing/session-fixture'
@@ -75,24 +79,16 @@ describe('channelNameFromSourceKey', () => {
 })
 
 describe('buildPluginsPromptContext', () => {
-  test('lists LSP contributions by extension, with a missing binary and its install hint', () => {
-    const loadedPlugins = {
-      loaded: [],
-      promptSections: [],
-      lspServers: [
-        {
-          pluginName: 'typescript-lsp',
-          servers: {
-            typescript: {
-              command: 'typescript-language-server',
-              extensionToLanguage: { '.ts': 'typescript', '.zzz': 'zzz' },
-            },
-          },
-        },
-      ],
-    } as unknown as LoadedPlugins
-    const out = buildPluginsPromptContext(loadedPlugins, [])!
-    expect(out).toContain('- typescript-lsp — LSP "typescript": .zzz; built-in server kept for .ts')
+  test('lists LSP contributions by extension, with a missing binary and its install hint', async () => {
+    const { servers } = await testLspServers(dir(), {
+      typescript: {
+        command: 'typescript-language-server',
+        extensionToLanguage: { '.ts': 'typescript', '.zzz': 'zzz' },
+      },
+    })
+    const loadedPlugins = { loaded: [], promptSections: [] } as unknown as LoadedPlugins
+    const out = buildPluginsPromptContext(loadedPlugins, servers, [])!
+    expect(out).toContain('- lsp-p@test — LSP "typescript": .zzz; built-in server kept for .ts')
     expect(out).toContain('diagnostics via edit/write results, not a tool')
   })
 
@@ -116,7 +112,7 @@ describe('buildPluginsPromptContext', () => {
       ],
     } as unknown as LoadedPlugins
 
-    const out = buildPluginsPromptContext(loadedPlugins, ['Skill', 'agents'])!
+    const out = buildPluginsPromptContext(loadedPlugins, [], ['Skill', 'agents'])!
 
     expect(out).toContain('- actionable — 1 skill')
     expect(out).not.toContain('ui-only')
@@ -227,7 +223,7 @@ describe('the run tools', () => {
       promptSections: [],
     } as unknown as LoadedPlugins
 
-    expect(buildPluginsPromptContext(loadedPlugins, [])).toBeUndefined()
+    expect(buildPluginsPromptContext(loadedPlugins, [], [])).toBeUndefined()
   })
 })
 

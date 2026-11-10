@@ -6,15 +6,22 @@ import { describe, expect, test } from 'bun:test'
 import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 
 import { spawn } from 'node:child_process'
+import { join } from 'node:path'
 
 import { createLspManager } from './lsp-manager'
 import { createLspClient } from './lsp-client'
 import type { LspClientInfo } from './lsp-protocol'
-import {
-  configuredLspServer,
-  lspServerConfigProblems,
-  parseLspServersConfig,
-} from './lsp-plugin-servers'
+import { configuredLspServer } from './lsp-plugin-servers'
+import { tempDirPerTest } from '@localixai/testing'
+import { testLspServers } from '../plugins/kit/testing'
+
+const dir = tempDirPerTest('lsp-plugin-config')
+
+/** The plugin server `s` declaring `raw`, as the kit resolves it. */
+async function serverOf(raw: Record<string, unknown>) {
+  const { servers } = await testLspServers(dir(), { s: raw })
+  return servers[0]!
+}
 
 type ClientInput = Parameters<typeof createLspClient>[0]
 
@@ -39,7 +46,7 @@ const fakeClient = {
 
 /** Open a file with the plugin server registered and capture what the client was started with. */
 async function startWith(raw: Record<string, unknown>, file = '/w/A.java') {
-  const config = parseLspServersConfig({ s: raw }).s!
+  const server = await serverOf(raw)
   let seen: ClientInput | undefined
   const manager = createLspManager({
     createClient: (async (input: ClientInput) => {
@@ -48,9 +55,7 @@ async function startWith(raw: Record<string, unknown>, file = '/w/A.java') {
       return fakeClient
     }) as typeof createLspClient,
   })
-  manager.setPluginServers('/w', [
-    configuredLspServer('p:s', config, { env: { CLAUDE_PLUGIN_ROOT: '/plug' } }),
-  ])
+  manager.setPluginServers('/w', [configuredLspServer(server)])
   await manager.openDocument('/w', file, 'class A {}')
   ;(seen?.process as ChildProcessWithoutNullStreams | undefined)?.kill()
   return { seen: seen!, manager }
@@ -127,44 +132,37 @@ describe('a plugin LSP server', () => {
   })
 
   test('the server process receives the plugin path variables', async () => {
-    const config = parseLspServersConfig({
-      s: { command: 'env', extensionToLanguage: { '.x': 'x' } },
-    })
-    const def = configuredLspServer('p:s', config.s!, { env: { CLAUDE_PLUGIN_ROOT: '/plug' } })
+    const def = configuredLspServer(
+      await serverOf({ command: 'env', extensionToLanguage: { '.x': 'x' } }),
+    )
     const handle = await def.spawn('/', '/')
     const out = await new Response(handle!.process.stdout as unknown as ReadableStream).text()
-    expect(out).toContain('CLAUDE_PLUGIN_ROOT=/plug')
+    expect(out).toContain(`CLAUDE_PLUGIN_ROOT=${join(dir(), 'lsp-p')}`)
   })
 
   test('restartOnCrash: false leaves a server that exited stopped', async () => {
-    const config = parseLspServersConfig({
-      s: { command: 'true', extensionToLanguage: { '.x': 'x' }, restartOnCrash: false },
-    })
-    const def = configuredLspServer('p:s', config.s!)
+    const def = configuredLspServer(
+      await serverOf({
+        command: 'true',
+        extensionToLanguage: { '.x': 'x' },
+        restartOnCrash: false,
+      }),
+    )
     const first = await def.spawn('/', '/')
     await new Promise((resolve) => first!.process.once('exit', resolve))
     expect(await def.spawn('/', '/')).toBeUndefined()
   })
 
   test('maxRestarts caps how often a crashed server starts again', async () => {
-    const config = parseLspServersConfig({
-      s: { command: 'true', extensionToLanguage: { '.x': 'x' }, maxRestarts: 1 },
-    })
-    const def = configuredLspServer('p:s', config.s!)
+    const def = configuredLspServer(
+      await serverOf({ command: 'true', extensionToLanguage: { '.x': 'x' }, maxRestarts: 1 }),
+    )
     for (let i = 0; i < 2; i++) {
       const handle = await def.spawn('/', '/')
       expect(handle).toBeDefined()
       await new Promise((resolve) => handle!.process.once('exit', resolve))
     }
     expect(await def.spawn('/', '/')).toBeUndefined()
-  })
-
-  test('an unknown key keeps the server from loading, and says why', () => {
-    const raw = { s: { command: 'gopls', extensionToLanguage: { '.go': 'go' }, lanugage: 'go' } }
-    expect(parseLspServersConfig(raw)).toEqual({})
-    expect(lspServerConfigProblems(raw)).toEqual([
-      'Invalid LSP server config for "s": unknown key "lanugage"',
-    ])
   })
 
   test('a client gives up on a silent server once its startupTimeout passes', async () => {

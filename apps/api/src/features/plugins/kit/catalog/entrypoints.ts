@@ -18,8 +18,8 @@ export interface ResolvedEntrypoints {
   hookConfigs: unknown[]
   /** The hooks module (`modules` in `hooks/hooks.json`), absolute: the plugin is a mod. */
   hookModule?: string
-  /** LSP server configs keyed by server id. */
-  lspServers: Record<string, unknown>
+  /** The LSP servers it declares, as written, keyed by name: what validation notes read. */
+  lspServers: Record<string, { command: string; extensionToLanguage: Record<string, string> }>
   monitors: PluginMonitor[]
   components?: PluginCcComponents
 }

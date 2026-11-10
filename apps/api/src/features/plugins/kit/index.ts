@@ -18,6 +18,7 @@ export {
   type ScopePlugin,
 } from './sessions'
 export { scopeMcpServers, type McpScope, type ScopeMcpServers } from './mcp-servers'
+export { sessionLspServers, type PluginLspServer, type SessionLspServers } from './lsp-servers'
 export {
   scopeAgents,
   type AgentReference,

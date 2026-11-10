@@ -1,7 +1,7 @@
 import type { DiscoveredPlugin } from './discovery'
 import type { PluginValidation } from './contracts'
 import { isKebabCase } from '../ext/manifest-validate'
-import { lspServerConfigProblems, pluginLspNotes, summarizePluginLspServers } from '../lsp'
+import { pluginLspNotes, summarizePluginLspServers } from '../lsp'
 
 /**
  * Claude Code compatibility advisories. Emits only WARNINGS — never blocks load.
@@ -21,10 +21,14 @@ import { lspServerConfigProblems, pluginLspNotes, summarizePluginLspServers } fr
  */
 export function validateCompatibility(plugin: DiscoveredPlugin): PluginValidation {
   const warnings: string[] = []
-  // LSP servers: missing binaries (with an install hint) and built-in overlap.
-  warnings.push(...pluginLspNotes(summarizePluginLspServers(plugin.entrypoints.lspServers)))
-  // A server whose config breaks Claude Code's strict shape does not load (Errors tab there).
-  warnings.push(...lspServerConfigProblems(plugin.entrypoints.lspServers))
+  // LSP servers: missing binaries (with an install hint) and built-in overlap. A config the kit
+  // refused is in the plugin's own issues and is not among these.
+  const lspServers = Object.entries(plugin.entrypoints.lspServers).map(([name, server]) => ({
+    name,
+    command: server.command,
+    extensions: Object.keys(server.extensionToLanguage),
+  }))
+  warnings.push(...pluginLspNotes(summarizePluginLspServers(lspServers)))
 
   // Kebab-case name: our schema accepts underscores/camel, but the Claude.ai
   // marketplace sync requires strict kebab-case.

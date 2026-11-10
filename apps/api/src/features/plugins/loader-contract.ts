@@ -76,17 +76,6 @@ export interface LoadedPlugins {
   /** Bundled skills to fold into the filesystem skill list. */
   skills: DiscoveredSkill[]
   /**
-   * Claude Code LSP server configs from enabled plugins (`lspServers` manifest field
-   * / `.lsp.json` / strict:false marketplace entry), path-substituted. Registered with
-   * the LSP feature, scoped to the project root — see `features/lsp/lsp-plugin-servers`.
-   */
-  lspServers: Array<{
-    pluginName: string
-    servers: Record<string, unknown>
-    /** What each server process is given: the plugin's path variables (Claude Code exports them). */
-    env?: Record<string, string>
-  }>
-  /**
    * Background monitors from enabled plugins (manifest `monitors` / `monitors/monitors.json`).
    * Spawned + streamed to the notification seam by the monitor host, NOT per turn. Only
    * enabled plugins contribute (the trust gate — see {@link LoadedPluginMonitor}).
@@ -133,7 +122,6 @@ export function emptyLoadedPlugins(): LoadedPlugins {
     binDirs: [],
     mcpServers: [],
     skills: [],
-    lspServers: [],
     monitors: [],
     outputStyles: [],
     mainAgent: null,

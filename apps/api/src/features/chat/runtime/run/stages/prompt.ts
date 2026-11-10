@@ -59,6 +59,7 @@ export async function buildRunPrompt(
     // The roster names each tool as the model is offered it (`Read`, an MCP tool's `modelName`).
     wireTools: toolset.tools,
     loadedPlugins: inputs.loadedPlugins,
+    pluginLspServers: inputs.pluginLspServers,
     loadedMiniApps: inputs.loadedMiniApps,
     frozenContext: inputs.frozenContext,
     // Preloaded and pinned skills through the mods' `skill.prompt`, as a typed or loaded one is.

@@ -62,7 +62,6 @@ describe('a plugin with more than eight agents', () => {
     const result = emptyLoadedPlugins()
     appendPluginRuntimeDeclarations({
       plugin,
-      config: {},
       subst: (text) => text,
       result,
       opts: { homeDir: dir() },

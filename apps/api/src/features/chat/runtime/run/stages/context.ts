@@ -30,7 +30,7 @@ import { applyCatalogAgent, contextFilesFor } from '../catalog-agent'
 import { agentScopedHooks } from '../agent-hooks'
 import { claudeCodeHome, claudeConfigDir } from '../../../../cc-settings/config-dir'
 import { autoMemoryDir } from '../../../../memory/auto-memory'
-import { claudeCodeTrusts } from '../../../../plugins/kit'
+import { claudeCodeTrusts, issueLine, sessionLspServers } from '../../../../plugins/kit'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { reloadedSkillsNote } from '../cc-reload-skills'
 import type { ModelView } from '../../model-view/view'
@@ -208,6 +208,10 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     }),
   })
   const { ccHooks, ccInitialUserMessage } = built
+  // The chat's plugin language servers, resolved once for the run in its session: the LSP feature
+  // starts them (`runtime-tools.ts`) and the prompt names them (`plugins-prompt-context.ts`).
+  const pluginLsp = built.kitSession ? await sessionLspServers(built.kitSession) : undefined
+  for (const issue of pluginLsp?.issues ?? []) consoleWarnLogger.warn(issueLine(issue))
   // `reloadSkills`: a SessionStart hook installed skills after this run's discovery read the folders.
   const reloaded = built.ccReloadSkills
     ? await reloadedSkillsNote({
@@ -272,6 +276,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     ccSessionStartContext,
     ...(ccInitialUserMessage ? { ccInitialUserMessage } : {}),
     ...(built.kitSession ? { kitSession: built.kitSession } : {}),
+    pluginLspServers: pluginLsp?.servers ?? [],
     mods,
   }
 }

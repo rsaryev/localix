@@ -8,12 +8,13 @@ import {
 
 describe('plugin LSP notes', () => {
   test('a missing binary gets an install hint; built-in extensions stay with the built-in', () => {
-    const summaries = summarizePluginLspServers({
-      typescript: {
+    const summaries = summarizePluginLspServers([
+      {
+        name: 'typescript',
         command: 'typescript-language-server-missing-for-test',
-        extensionToLanguage: { '.ts': 'typescript', '.zzz': 'zzz' },
+        extensions: ['.ts', '.zzz'],
       },
-    })
+    ])
     expect(summaries[0]).toMatchObject({
       id: 'typescript',
       extensions: ['.zzz'],
@@ -25,10 +26,8 @@ describe('plugin LSP notes', () => {
     expect(notes[1]).toContain('not found on PATH')
   })
 
-  test('withoutBuiltinOverlap drops a server whose every extension is built in', () => {
-    expect(withoutBuiltinOverlap({ command: 'x', extensionToLanguage: { '.ts': 't' } })).toBeNull()
-    expect(
-      withoutBuiltinOverlap({ command: 'x', extensionToLanguage: { '.ts': 't', '.zig': 'zig' } }),
-    ).toEqual({ command: 'x', extensionToLanguage: { '.zig': 'zig' } })
+  test('withoutBuiltinOverlap leaves no extension of a server whose every one is built in', () => {
+    expect(withoutBuiltinOverlap(['.ts'])).toBeNull()
+    expect(withoutBuiltinOverlap(['.ts', '.zig'])).toEqual(['.zig'])
   })
 })

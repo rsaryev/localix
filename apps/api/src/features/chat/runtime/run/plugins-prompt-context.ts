@@ -1,5 +1,6 @@
 import { TOOL } from '../../../agent-core/tool-names'
 import type { LoadedPlugins } from '../../../plugins/loader'
+import type { PluginLspServer } from '../../../plugins/kit'
 import { summarizePluginLspServers } from '../../../lsp'
 
 function countLabel(count: number, singular: string, plural = `${singular}s`): string {
@@ -14,6 +15,7 @@ function countLabel(count: number, singular: string, plural = `${singular}s`): s
  */
 export function buildPluginsPromptContext(
   loadedPlugins: LoadedPlugins,
+  lspServers: readonly PluginLspServer[],
   runtimeToolNames: readonly string[],
 ): string | undefined {
   const available = new Set(runtimeToolNames)
@@ -23,8 +25,8 @@ export function buildPluginsPromptContext(
       : [],
   )
   // LSP contributions are not tools: their diagnostics arrive inside edit/write results.
-  const lspLines = (loadedPlugins.lspServers ?? []).flatMap(({ pluginName, servers }) =>
-    summarizePluginLspServers(servers).map((server) => {
+  const lspLines = lspServers.flatMap((declared) =>
+    summarizePluginLspServers([declared]).map((server) => {
       const exts = server.extensions.length ? server.extensions.join(', ') : 'none'
       const builtin = server.builtinExtensions.length
         ? `; built-in server kept for ${server.builtinExtensions.join(', ')}`
@@ -36,7 +38,7 @@ export function buildPluginsPromptContext(
           : server.installsOnFirstUse
             ? '; installs on first use'
             : ''
-      return `- ${pluginName} — LSP "${server.id}": ${exts}${builtin}${missing} (diagnostics via edit/write results, not a tool)`
+      return `- ${declared.pluginId} — LSP "${server.id}": ${exts}${builtin}${missing} (diagnostics via edit/write results, not a tool)`
     }),
   )
   const lines = [...summaries, ...lspLines]

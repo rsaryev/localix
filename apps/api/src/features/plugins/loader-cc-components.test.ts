@@ -23,7 +23,6 @@ async function load() {
   const result = emptyLoadedPlugins()
   appendPluginRuntimeDeclarations({
     plugin,
-    config: {},
     subst: (text) => text.replaceAll('${CLAUDE_PLUGIN_ROOT}', '/root'),
     result,
     opts: { homeDir: dir() },

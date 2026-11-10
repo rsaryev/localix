@@ -26,7 +26,7 @@ import type { LoadedPlugins } from '../../../plugins/loader'
 import type { RunnerDeps } from '../agent-runner-types'
 import { buildFileToolPorts } from './file-tool-ports'
 import { announceSessionActive } from '../../../agent-core/session-activity'
-import { parseLspServersConfig, configuredLspServer, withoutBuiltinOverlap } from '../../../lsp'
+import { configuredLspServer, withoutBuiltinOverlap } from '../../../lsp'
 import type { RuntimeState } from '../agent-runner-state'
 import type { ChatRepository, SessionRecord } from '../../repository'
 import type { ToolSurface } from '@localixai/agent/agents'
@@ -36,7 +36,7 @@ import type { RunPolicy } from '../../policy/run-policy'
 import type { WorkflowEntry } from '../../../agent-core/tools/workflow/workflow'
 import type { AgentModelChoice } from '../../../agent-core/agent-model-route'
 import type { SkillCommandPolicyRef } from './skill-tool-ports'
-import type { KitSession } from '../../../plugins/kit'
+import type { KitSession, PluginLspServer } from '../../../plugins/kit'
 import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 
 export interface RuntimeToolWiringContext {
@@ -112,6 +112,8 @@ export function buildRunToolRegistry(
     skillCommandPolicy?: SkillCommandPolicyRef
     /** The chat's kit session as this run's turn: a skill the model loads runs through it. */
     kitSession?: KitSession
+    /** The language servers of the chat's plugins, as the kit resolved them for this run. */
+    pluginLspServers?: readonly PluginLspServer[]
   },
 ): RuntimeToolRegistry & { setLedger?: (ledger: ToolLedger) => void } {
   const { deps, work, terminalWaits } = ctx
@@ -126,18 +128,15 @@ export function buildRunToolRegistry(
     loadedMiniApps,
   } = params
 
-  // Register enabled plugins' Claude Code LSP servers (`lspServers`) with the LSP
-  // feature, scoped to this project root. Only ENABLED plugins reach loadedPlugins,
-  // so this honors the plugin trust gate. Idempotent per turn — setPluginServers
-  // REPLACES the root's set; already-running servers are left untouched.
+  // The chat's plugin language servers (the kit resolved them for this run's session), with the
+  // LSP feature, scoped to this project root. Idempotent per turn — setPluginServers REPLACES the
+  // root's set; already-running servers are left untouched.
   if (deps.lspManager) {
-    const pluginLspDefs = loadedPlugins.lspServers.flatMap(({ pluginName, servers, env }) =>
+    const pluginLspDefs = (params.pluginLspServers ?? []).flatMap((server) => {
       // A built-in server keeps the extensions it already owns (see lsp-plugin-notes.ts).
-      Object.entries(parseLspServersConfig(servers)).flatMap(([id, cfg]) => {
-        const own = withoutBuiltinOverlap(cfg)
-        return own ? [configuredLspServer(`${pluginName}:${id}`, own, { env })] : []
-      }),
-    )
+      const own = withoutBuiltinOverlap(server.extensions)
+      return own ? [configuredLspServer(server, own)] : []
+    })
     deps.lspManager.setPluginServers(defaultCwd, pluginLspDefs)
   }
   // The plugins' `always` monitors reach this chat, from its working directory.

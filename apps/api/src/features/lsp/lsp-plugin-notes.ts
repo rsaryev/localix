@@ -1,6 +1,6 @@
 import { which } from './lsp-bin-resolve'
 import { commandInstall, firstUseNote, toolchainHint } from './lsp-command-installs'
-import { parseLspServersConfig, type LspServerConfig } from './lsp-plugin-servers'
+import { routedExtensions } from './lsp-plugin-servers'
 import { getServersForExtension } from './lsp-servers'
 
 /**
@@ -30,17 +30,26 @@ function commandName(command: string): string {
   return command.split(/[\\/]/).pop() ?? command
 }
 
-/** Summarize a plugin's raw `lspServers` map (as discovery resolved it). */
-export function summarizePluginLspServers(raw: unknown): PluginLspServerSummary[] {
-  return Object.entries(parseLspServersConfig(raw)).map(([id, config]) => {
-    const all = Object.keys(config.extensionToLanguage)
+/** A plugin's server as a summary reads it: its name, its command, the extensions it declares. */
+export interface PluginLspDeclaration {
+  readonly name: string
+  readonly command: string
+  readonly extensions: readonly string[]
+}
+
+/** Summarize a plugin's LSP servers. */
+export function summarizePluginLspServers(
+  servers: readonly PluginLspDeclaration[],
+): PluginLspServerSummary[] {
+  return servers.map(({ name, command, extensions }) => {
+    const all = routedExtensions(extensions)
     const builtinExtensions = all.filter((ext) => getServersForExtension(ext).length > 0)
-    const absent = !which(config.command)
-    const installable = absent && commandInstall(config.command) !== undefined
-    const hint = absent && !installable ? toolchainHint(config.command) : undefined
+    const absent = !which(command)
+    const installable = absent && commandInstall(command) !== undefined
+    const hint = absent && !installable ? toolchainHint(command) : undefined
     return {
-      id,
-      command: config.command,
+      id: name,
+      command,
       extensions: all.filter((ext) => !builtinExtensions.includes(ext)),
       builtinExtensions,
       missing: absent && !installable,
@@ -71,11 +80,8 @@ export function pluginLspNotes(summaries: readonly PluginLspServerSummary[]): st
   return notes
 }
 
-/** The config with built-in extensions removed, or null when nothing is left to serve. */
-export function withoutBuiltinOverlap(config: LspServerConfig): LspServerConfig | null {
-  const entries = Object.entries(config.extensionToLanguage).filter(
-    ([ext]) => getServersForExtension(ext).length === 0,
-  )
-  if (!entries.length) return null
-  return { ...config, extensionToLanguage: Object.fromEntries(entries) }
+/** The extensions a server is routed, the built-in servers' removed; null when none is left. */
+export function withoutBuiltinOverlap(extensions: readonly string[]): string[] | null {
+  const own = routedExtensions(extensions).filter((ext) => getServersForExtension(ext).length === 0)
+  return own.length ? own : null
 }

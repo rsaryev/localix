@@ -19,6 +19,7 @@ import { createLocalixPluginHost, type LocalixPluginHost } from './host'
 import { createKitHooksRuntime } from './hooks/runtime'
 import { createChatPluginSessions, type ScopePlugin } from './sessions'
 import { readPluginFolder } from './catalog/read-folder'
+import { sessionLspServers, type SessionLspServers } from './lsp-servers'
 import type { CcHooksRuntime } from '../../cc-hooks/runtime-contracts'
 import type { LocalixKitPorts } from './ports/host-ports'
 
@@ -180,4 +181,38 @@ export async function writeTestPlugin(
   rmSync(dir, { recursive: true, force: true })
   writeTree(dir, { '.claude-plugin/plugin.json': JSON.stringify({ name }), ...files })
   return testScopePlugin(dir, selected)
+}
+
+/**
+ * The language servers of a chat over `<dir>/work` whose one plugin, `lsp-p@test` at `<dir>/lsp-p`,
+ * declares `servers` as its `.lsp.json`, with its option `tok` (sensitive) saved as `values` say.
+ */
+export async function testLspServers(
+  dir: string,
+  servers: Readonly<Record<string, unknown>>,
+  values: Readonly<Record<string, string>> = {},
+): Promise<SessionLspServers & { readonly root: string; readonly cwd: string }> {
+  const root = join(dir, 'lsp-p')
+  const cwd = join(dir, 'work')
+  rmSync(root, { recursive: true, force: true })
+  writeTree(root, {
+    '.claude-plugin/plugin.json': JSON.stringify({
+      name: 'lsp-p',
+      userConfig: {
+        tok: { type: 'string', title: 'Token', description: 'Token', sensitive: true },
+      },
+    }),
+    '.lsp.json': JSON.stringify(servers),
+  })
+  const plugin = { ...(await testScopePlugin(root)), values }
+  const session = createChatPluginSessions(diskPluginHost(dir)).forRun({
+    chatId: 'chat-1',
+    cwd,
+    transcriptPath: join(dir, 'chat-1.jsonl'),
+    permissionMode: 'default',
+    trusted: true,
+    layers: [],
+    plugins: [plugin],
+  })
+  return { ...(await sessionLspServers(session)), root, cwd }
 }

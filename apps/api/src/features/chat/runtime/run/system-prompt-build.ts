@@ -15,6 +15,7 @@ import { getLoopEngine } from '../../../loops/runtime-binding'
 import { toLoopPromptContext } from '../../../loops/prompt-context'
 import type { RunProfile } from '../../../agent-core/run-shape'
 import type { LoadedPlugins } from '../../../plugins/loader'
+import type { PluginLspServer } from '../../../plugins/kit'
 import type { FrozenSessionContext } from '../agent-runner-types'
 import type { RuntimeState } from '../agent-runner-state'
 import type { PreparedRunContext } from '../prompt-context'
@@ -54,6 +55,8 @@ export interface BuildRunSystemPromptOptions {
   /** The tools deferral left on the wire — what the roster and "# Mini apps" describe. */
   wireTools?: readonly { name: string; modelName?: string }[]
   loadedPlugins: LoadedPlugins
+  /** The chat's plugin language servers, as the kit resolved them for this run. */
+  pluginLspServers?: readonly PluginLspServer[]
   loadedMiniApps: LoadedMiniApps
   frozenContext: FrozenSessionContext
   pinnedSkills: PreparedRunContext['pinnedSkills']
@@ -127,7 +130,11 @@ export async function buildRunSystemPrompt(
   const agent = sessionAgent(session)
 
   const onWire = new Set(runtimeTools.toolNames)
-  const pluginsContext = buildPluginsPromptContext(loadedPlugins, runtimeTools.toolNames)
+  const pluginsContext = buildPluginsPromptContext(
+    loadedPlugins,
+    options.pluginLspServers ?? [],
+    runtimeTools.toolNames,
+  )
   const miniAppsContext = buildMiniAppsPromptContext(
     loadedMiniApps,
     runtimeTools.toolNames,
