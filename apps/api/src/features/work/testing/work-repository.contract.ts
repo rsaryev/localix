@@ -103,7 +103,11 @@ export function describeWorkRepositoryContract(
     test('a second record of the same id is refused, never merged', async () => {
       const repo = await make()
       await repo.insert(record('a'))
-      await expect(repo.insert(record('a', { label: 'again' }))).rejects.toThrow()
+      const refused = await repo.insert(record('a', { label: 'again' })).then(
+        () => false,
+        () => true,
+      )
+      expect(refused).toBe(true)
     })
   })
 }

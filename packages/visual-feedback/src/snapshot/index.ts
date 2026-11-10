@@ -100,7 +100,10 @@ function walk(el: Element, depth: number, ctx: WalkCtx): void {
   const cs = viewOf(el)?.getComputedStyle(el) ?? null
   if (isHidden(el, cs)) return
 
-  if (isFrame(el)) return void walkFrame(el, depth, ctx)
+  if (isFrame(el)) {
+    walkFrame(el, depth, ctx)
+    return
+  }
 
   const interactive = isInteractive(el, cs)
   const { emit, name } = shouldEmit(el, interactive)

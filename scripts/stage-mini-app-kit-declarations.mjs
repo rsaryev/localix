@@ -76,6 +76,9 @@ function originOf(ctx, symbol) {
   if (file.includes('/node_modules/lucide-react/')) return 'lucide'
   if (!file.includes('/node_modules/') && ctx.hostRoots.some((root) => file.startsWith(root)))
     return 'host'
+  // The host's Markdown is a package of its own, installed like any other. What a kit module
+  // lends from it is still the host's to describe: left foreign, `MermaidRenderer` became `any`.
+  if (file.includes('/node_modules/llx-markdown/')) return 'host'
   return 'foreign'
 }
 

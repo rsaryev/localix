@@ -15,7 +15,21 @@ const KIT_STAGER = join(import.meta.dir, 'stage-mini-app-kit.mjs')
 const root = mkdtempSync(join(tmpdir(), 'mini-app-kit-runtime-'))
 // Under a folder named in Cyrillic with a space, as a person's own project folders are: the
 // preload once turned its module URLs into percent-encoded paths that no file matched.
-const kitDir = join(root, 'контент план', 'kit')
+const cyrillicFolder = String.fromCodePoint(
+  0x43a,
+  0x43e,
+  0x43d,
+  0x442,
+  0x435,
+  0x43d,
+  0x442,
+  0x20,
+  0x43f,
+  0x43b,
+  0x430,
+  0x43d,
+)
+const kitDir = join(root, cyrillicFolder, 'kit')
 
 function stage(out: string, env: Record<string, string> = {}) {
   const result = spawnSync(
