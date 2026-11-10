@@ -9,12 +9,14 @@ import { tempDirPerTest } from '@localixai/testing'
 import { foldHookOutput } from './output-parse'
 import { createCcHooksRuntime } from './run'
 import type { CcHookEvent } from './contracts'
+import { hookIfRuns } from '../plugins/kit'
 
 const dir = tempDirPerTest('cc-suppress-prompt-')
 const silent = { warn: () => {}, info: () => {} }
 
 const make = (event: CcHookEvent, command: string) =>
   createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: { [event]: [{ handlers: [{ source: 'user', command, timeoutMs: 5000 }] }] },
     sessionId: 's1',
     projectDir: dir(),

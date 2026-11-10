@@ -1,10 +1,16 @@
 import { describe, expect, test } from 'bun:test'
+import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import type { SettingsRuleEntry } from './settings/permissions'
 import {
   settingsDeniesAgent,
   settingsRemovesTool,
+  settingsResolvedPaths,
   settingsRules,
   settingsVerdict,
+  withRealDirectories,
+  withSessionRules,
 } from './permissions'
 
 const FILE = '/work/app/.claude/settings.json'
@@ -24,7 +30,7 @@ describe("Claude Code's permission rules at a Localix call", () => {
     expect(settingsVerdict(rules, { name: 'Bash' }, { command: 'ls && rm -rf build' })).toEqual({
       effect: 'deny',
       rule: 'Bash(rm *)',
-      file: FILE,
+      where: FILE,
     })
     expect(settingsVerdict(rules, { name: 'Bash' }, { command: 'ls' })).toBeUndefined()
   })
@@ -41,7 +47,7 @@ describe("Claude Code's permission rules at a Localix call", () => {
     expect(run('git status && git diff')).toEqual({
       effect: 'allow',
       rule: 'Bash(git *)',
-      file: FILE,
+      where: FILE,
     })
     expect(run('git status && rm -rf build')).toBeUndefined()
   })
@@ -115,8 +121,75 @@ describe("Claude Code's permission rules at a Localix call", () => {
     expect(settingsVerdict(rules, { name: 'Agent' }, typed)).toBeUndefined()
   })
 
+  test("a run's own rules read as session rules beside the settings, with their own refusal", () => {
+    const base = rulesOf(entry('ask', 'Bash(git push *)'))
+    const skill = withSessionRules(base, {
+      rules: ['Bash(git *)', 'Read(/docs/**)'],
+      behavior: 'allow',
+      where: "the skill's allowed-tools",
+    })
+    const run = (command: string) => settingsVerdict(skill, { name: 'Bash' }, { command })
+    expect(run('git status')).toEqual({
+      effect: 'allow',
+      rule: 'Bash(git *)',
+      where: "the skill's allowed-tools",
+    })
+    // An ask in the settings still asks: allowed-tools never loosen a deny or an ask.
+    expect(run('git push')?.effect).toBe('ask')
+    expect(settingsVerdict(skill, { name: 'Read' }, { path: 'docs/a.md' })?.effect).toBe('allow')
+    const denied = withSessionRules(base, {
+      rules: ['Bash(rm *)'],
+      behavior: 'deny',
+      where: 'disallowed-tools',
+      message: 'Removed by the skill.',
+    })
+    expect(settingsVerdict(denied, { name: 'Bash' }, { command: 'rm -rf x' })).toMatchObject({
+      effect: 'deny',
+      message: 'Removed by the skill.',
+    })
+    expect(base.rules).toHaveLength(1)
+  })
+
   test('a rule Claude Code skips is no rule', () => {
     const rules = rulesOf(entry('deny', 'mcp__github(issue)'))
     expect(rules.rules).toEqual([])
+  })
+})
+
+describe('a path rule sees where a symlink leads', () => {
+  const tree = () => {
+    const root = realpathSync(mkdtempSync(join(tmpdir(), 'llx-links-')))
+    mkdirSync(join(root, 'proj'))
+    mkdirSync(join(root, 'secret'))
+    writeFileSync(join(root, 'secret', 'key'), 'k')
+    return root
+  }
+  const at = (root: string, ...entries: SettingsRuleEntry[]) =>
+    settingsRules(entries, {
+      cwd: join(root, 'proj'),
+      homeDir: '/home/me',
+      additionalDirectories: [],
+    })
+
+  test('a deny on a folder refuses a read through a link into it', async () => {
+    const root = tree()
+    symlinkSync(join(root, 'secret'), join(root, 'proj', 'link'))
+    const rules = at(root, entry('deny', `Read(/${root}/secret/**)`))
+    const read = { path: 'link/key' }
+    // The requested path alone is under the project, where no rule applies.
+    expect(settingsVerdict(rules, { name: 'Read' }, read)).toBeUndefined()
+    const resolved = await settingsResolvedPaths(rules, { name: 'Read' }, read)
+    expect(settingsVerdict(rules, { name: 'Read' }, read, resolved)?.effect).toBe('deny')
+    const plain = { path: 'notes.md' }
+    const none = await settingsResolvedPaths(rules, { name: 'Read' }, plain)
+    expect(settingsVerdict(rules, { name: 'Read' }, plain, none)).toBeUndefined()
+  })
+
+  test('a deny written through a linked folder also holds at its real location', async () => {
+    const root = tree()
+    symlinkSync(join(root, 'secret'), join(root, 'alias'))
+    const rules = await withRealDirectories(at(root, entry('deny', `Read(/${root}/alias/**)`)))
+    const read = { path: join(root, 'secret', 'key') }
+    expect(settingsVerdict(rules, { name: 'Read' }, read)?.effect).toBe('deny')
   })
 })

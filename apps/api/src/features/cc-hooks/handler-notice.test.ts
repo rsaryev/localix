@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test'
 import { createCcHooksRuntime } from './run'
 import type { CcHookHandler, CcHookRegistry } from './contracts'
+import { hookIfRuns } from '../plugins/kit'
 
 const handler: CcHookHandler = {
   source: 'plugin',
@@ -20,6 +21,7 @@ test('notice memory spans events and empty outcomes, and remains local to each r
   const messages = ['same', undefined, 'same', 'different', 'same']
   const makeRuntime = () =>
     createCcHooksRuntime({
+      ifRuns: hookIfRuns,
       registry,
       sessionId: 'notice-memory',
       projectDir: '.',
@@ -47,6 +49,7 @@ test('a failed notice sink is logged and does not retry an identical notice', as
   const warnings: string[] = []
   let attempts = 0
   const runtime = createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: { PreToolUse: [{ handlers: [handler] }] },
     sessionId: 'notice-failure',
     projectDir: '.',
@@ -77,6 +80,7 @@ test('a deny that words its reason only as a systemMessage, as hookify does, giv
     systemMessage: '**[block-rm]**\nrm -rf is off here',
   }
   const runtime = createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: { PreToolUse: [{ handlers: [handler] }] },
     sessionId: 'deny-reason',
     projectDir: '.',

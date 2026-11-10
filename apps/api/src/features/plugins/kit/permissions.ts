@@ -3,6 +3,8 @@ import {
   bashFileTargets,
   evaluateRules,
   parseRule,
+  prepareCall,
+  resolveRuleDirectories,
   type PathContext,
   type PermissionRule,
   type RuleSource,
@@ -15,28 +17,48 @@ import {
   claudeCodeToolName,
   singleCalls,
 } from '../../ext/cc-tool-shapes'
+import { realPathResolver } from './ports/session-files'
 import type { SettingsRuleEntry } from './settings/permissions'
 
 /**
  * CLAUDE CODE'S PERMISSION RULES AT A LOCALIX CALL. The kit reads each rule in force
  * (`parseRule`) and judges a call against them (`evaluateRules`: deny, then ask, then allow,
  * whatever the order of files and rules; `bashFileTargets` for the files a shell line names;
- * `availableTools` for the bare denials that take a tool away). This file only puts a Localix
- * call in Claude Code's shape (`ext/cc-tool-shapes.ts`) and says where a rule was written.
+ * `availableTools` for the bare denials that take a tool away; `prepareCall` and
+ * `resolveRuleDirectories` for where a symlink leads). This file only puts a Localix call in
+ * Claude Code's shape (`ext/cc-tool-shapes.ts`) and says where a rule was written.
  */
 export interface SettingsRules {
   readonly rules: readonly PermissionRule[]
   readonly paths: PathContext
-  /** The settings file each rule came from, for a message that names it. */
-  readonly files: ReadonlyMap<PermissionRule, string>
+  /** Where each rule was written (a settings file, a skill's `allowed-tools`), and its refusal. */
+  readonly origins: ReadonlyMap<PermissionRule, RuleOrigin>
 }
 
-export interface SettingsVerdict {
+/** `where`: the settings file, or what added the rule for the run. */
+export interface RuleOrigin {
+  readonly where: string
+  readonly message?: string
+}
+
+export interface SettingsVerdict extends RuleOrigin {
   effect: 'allow' | 'ask' | 'deny'
   /** As written: `Bash(rm *)`. */
   rule: string
-  file: string
 }
+
+/** Rules a run adds beside the settings: a skill's or command's tool lists, an agent's denials. */
+export interface SessionRuleSpec {
+  readonly rules: readonly string[]
+  readonly behavior: 'allow' | 'deny'
+  readonly where: string
+  readonly message?: string
+}
+
+/** Per Claude Code call of a Localix call, in order: where its path really is, when a link. */
+export type ResolvedPaths = readonly (readonly string[] | undefined)[]
+
+type RunPaths = { cwd: string; homeDir: string; additionalDirectories: readonly string[] }
 
 type LocalTool = { readonly name: string; readonly aliases?: readonly string[] }
 
@@ -51,15 +73,12 @@ const SOURCE_OF: { readonly [S in PolicyScope]: (file: string) => RuleSource | u
   addDir: () => undefined,
 }
 
-export function settingsRules(
-  entries: readonly SettingsRuleEntry[],
-  at: { cwd: string; homeDir: string; additionalDirectories: readonly string[] },
-): SettingsRules {
-  const files = new Map<PermissionRule, string>()
+export function settingsRules(entries: readonly SettingsRuleEntry[], at: RunPaths): SettingsRules {
+  const origins = new Map<PermissionRule, RuleOrigin>()
   for (const entry of entries) {
     const source = SOURCE_OF[entry.scope](entry.file)
     const rule = source && parseRule(entry.raw, { behavior: entry.effect, source }).rule
-    if (rule) files.set(rule, entry.file)
+    if (rule) origins.set(rule, { where: entry.file })
   }
   const paths: PathContext = {
     cwd: at.cwd,
@@ -68,7 +87,22 @@ export function settingsRules(
     additionalDirectories: at.additionalDirectories,
     platform: 'posix',
   }
-  return { rules: [...files.keys()], paths, files }
+  return { rules: [...origins.keys()], paths, origins }
+}
+
+/**
+ * The rules with a run's own added, read as Claude Code reads `--allowedTools` and
+ * `--disallowedTools` entries (source `session`: a `/path` anchors at the working directory).
+ */
+export function withSessionRules(base: SettingsRules, specs: SessionRuleSpec): SettingsRules {
+  const origins = new Map(base.origins)
+  const source = { kind: 'session' } as const
+  for (const text of specs.rules) {
+    const rule = parseRule(text, { behavior: specs.behavior, source }).rule
+    const message = specs.message ? { message: specs.message } : {}
+    if (rule) origins.set(rule, { where: specs.where, ...message })
+  }
+  return { ...base, rules: [...origins.keys()], origins }
 }
 
 /**
@@ -91,6 +125,32 @@ function claudeCodeCalls(tool: LocalTool, input: unknown, paths: PathContext) {
 }
 
 /**
+ * Where the paths of a call really are (permissions.md, "Symlinks": the check covers the path
+ * requested and the file it resolves to). A path the resolver cannot follow (a loop) is judged as
+ * requested: the tool itself refuses it.
+ */
+export async function settingsResolvedPaths(
+  rules: SettingsRules,
+  tool: LocalTool,
+  input: unknown,
+  signal?: AbortSignal,
+): Promise<ResolvedPaths> {
+  const { own, files } = claudeCodeCalls(tool, input, rules.paths)
+  return Promise.all(
+    [...own, ...files].map(async (call) => {
+      const prepared = await prepareCall(call, rules.paths, realPathResolver, { signal })
+      return 'resolvedPaths' in prepared ? prepared.resolvedPaths : undefined
+    }),
+  )
+}
+
+/** The rules with the real location of each linked directory a deny or ask rule names. */
+export async function withRealDirectories(rules: SettingsRules): Promise<SettingsRules> {
+  const real = await resolveRuleDirectories(rules.rules, rules.paths, realPathResolver)
+  return real.size ? { ...rules, paths: { ...rules.paths, realDirectories: real } } : rules
+}
+
+/**
  * What the rules say about a call: a deny anywhere beats an ask anywhere, which beats an allow; an
  * allow holds when it covers each of the call's own calls (a shell line's files only restrict).
  */
@@ -98,8 +158,13 @@ export function settingsVerdict(
   rules: SettingsRules,
   tool: LocalTool,
   input: unknown,
+  resolved?: ResolvedPaths,
 ): SettingsVerdict | undefined {
-  const judge = (call: ToolCall) => evaluateRules(rules.rules, call, { paths: rules.paths })
+  const judge = (call: ToolCall, at: number) => {
+    const resolvedPaths = resolved?.[at]
+    const prepared = resolvedPaths ? { ...call, resolvedPaths } : call
+    return evaluateRules(rules.rules, prepared, { paths: rules.paths })
+  }
   const { own, files } = claudeCodeCalls(tool, input, rules.paths)
   const verdicts = [...own, ...files].map(judge)
   const allowed = verdicts.slice(0, own.length)
@@ -112,11 +177,7 @@ export function settingsVerdict(
       ? { effect: 'allow' as const, rule: allowed[0]!.rule }
       : undefined)
   if (!decided?.rule) return undefined
-  return {
-    effect: decided.effect,
-    rule: decided.rule.text,
-    file: rules.files.get(decided.rule) ?? '',
-  }
+  return { effect: decided.effect, rule: decided.rule.text, ...rules.origins.get(decided.rule)! }
 }
 
 /** Whether bare deny rules take every Claude Code name of the tool away (`WebFetch`, `mcp__*`). */

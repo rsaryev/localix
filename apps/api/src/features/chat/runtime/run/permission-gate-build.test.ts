@@ -8,10 +8,12 @@ import {
   extractCallFacts,
   type PermissionRule,
 } from '../../../agent-core/permission-engine'
+import { withOuterRules } from '../../../agent-core/permission-verdict'
+import { runOuterRules } from './claude-code-permissions'
 import {
   buildRunPermissionGate,
   PERMISSION_RETRY_NOTE,
-  skillPermissionRules,
+  withAllowedTools,
 } from './permission-gate-build'
 import type { SessionRecord } from '../../repository'
 import type { RunEnv } from './types'
@@ -158,32 +160,27 @@ describe('deny patterns of an agent or a skill', () => {
 })
 
 describe('skill preapprovals', () => {
+  /** The list's decision with a skill's `allowed-tools` applied, as the gate composes them. */
+  const granted = (rules: PermissionRule[], allowed: string[], command: string) =>
+    withOuterRules(
+      evaluate(rules, tool, extractCallFacts('Bash', { command }, root)),
+      withAllowedTools(runOuterRules(root, '/home/me'), allowed).judge({
+        toolName: 'Bash',
+        input: { command },
+        tool: undefined,
+      }),
+    ).action
+  const ASK: PermissionRule[] = [{ permission: '*', pattern: '*', action: 'ask' }]
+
   test('CC colon prefixes preserve command word boundaries and compound safety', () => {
-    const rules: PermissionRule[] = [{ permission: '*', pattern: '*', action: 'ask' }]
-    const grants = skillPermissionRules(['Bash(git status:*)'])
-    for (const command of ['git status', 'git status --short']) {
-      expect(
-        evaluate(rules, tool, extractCallFacts('Bash', { command }, root), grants).action,
-      ).toBe('allow')
-    }
-    for (const command of ['git status-malicious', 'git status && npm publish']) {
-      expect(
-        evaluate(rules, tool, extractCallFacts('Bash', { command }, root), grants).action,
-      ).toBe('ask')
-    }
+    for (const command of ['git status', 'git status --short'])
+      expect(granted(ASK, ['Bash(git status:*)'], command)).toBe('allow')
+    for (const command of ['git status-malicious', 'git status && npm publish'])
+      expect(granted(ASK, ['Bash(git status:*)'], command)).toBe('ask')
   })
   test('skill allowed-tools overrides ask for its command family, not unrelated commands', () => {
-    const rules: PermissionRule[] = [{ permission: '*', pattern: '*', action: 'ask' }]
-    const grants = skillPermissionRules(['Bash(git *)'])
-
-    expect(
-      evaluate(rules, tool, extractCallFacts('Bash', { command: 'git status' }, root), grants)
-        .action,
-    ).toBe('allow')
-    expect(
-      evaluate(rules, tool, extractCallFacts('Bash', { command: 'npm publish' }, root), grants)
-        .action,
-    ).toBe('ask')
+    expect(granted(ASK, ['Bash(git *)'], 'git status')).toBe('allow')
+    expect(granted(ASK, ['Bash(git *)'], 'npm publish')).toBe('ask')
   })
 
   test('an agent deny survives a skill that declares an allow covering it', () => {
@@ -195,16 +192,7 @@ describe('skill preapprovals', () => {
         message: 'Do not push from this project.',
       },
     ]
-    const grants = skillPermissionRules(['Bash(git *)'])
-
-    expect(
-      evaluate(
-        projectRules,
-        tool,
-        extractCallFacts('Bash', { command: 'git push origin main' }, root),
-        grants,
-      ).action,
-    ).toBe('deny')
+    expect(granted(projectRules, ['Bash(git *)'], 'git push origin main')).toBe('deny')
   })
 })
 

@@ -159,8 +159,19 @@ export interface CcHooksRuntime
   stoppedBy(): CcRunStop | undefined
 }
 
+/** Whether a handler's `if` lets it run for this call: the kit's reader (`plugins/kit/hook-if.ts`). */
+export type HookIfReader = (
+  rule: string,
+  toolName: string,
+  toolInput: unknown,
+  aliases?: readonly string[],
+  cwd?: string,
+) => boolean
+
 export interface CreateCcHooksRuntimeOptions {
   signal?: AbortSignal
+  /** Reads a handler's `if`, as the kit reads it. */
+  ifRuns: HookIfReader
   registry: CcHookRegistry
   sessionId: string
   /** Session cwd → hook cwd + `CLAUDE_PROJECT_DIR`. */

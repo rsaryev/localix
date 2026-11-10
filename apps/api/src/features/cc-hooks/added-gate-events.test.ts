@@ -9,6 +9,7 @@ import { tempDirPerTest } from '@localixai/testing'
 
 import { createCcHooksRuntime } from './run'
 import type { CcHookHandler, CcHookRegistry } from './contracts'
+import { hookIfRuns } from '../plugins/kit'
 
 const dir = tempDirPerTest('cc-gate-')
 const silent = { warn: () => {}, info: () => {} }
@@ -19,6 +20,7 @@ const input = (name: string) => JSON.parse(readFileSync(join(dir(), name), 'utf8
 const json = (value: unknown) => `echo '${JSON.stringify(value)}'`
 const make = (registry: CcHookRegistry) =>
   createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry,
     sessionId: 's1',
     projectDir: dir(),

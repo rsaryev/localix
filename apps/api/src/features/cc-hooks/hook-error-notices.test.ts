@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os'
 
 import { createCcHooksRuntime } from './run'
 import type { CcHookEvent, CcHookHandler } from './contracts'
+import { hookIfRuns } from '../plugins/kit'
 
 const silent = { warn: () => {}, info: () => {} }
 
@@ -15,6 +16,7 @@ function make(event: CcHookEvent, command: string, matcher?: string) {
   const notices: string[] = []
   const handler: CcHookHandler = { source: 'user', command, timeoutMs: 5000 }
   const rt = createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: { [event]: [{ ...(matcher ? { matcher } : {}), handlers: [handler] }] },
     sessionId: 's1',
     projectDir: tmpdir(),

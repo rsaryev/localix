@@ -120,7 +120,10 @@ export type PermissionGateFn = (ctx: GateContext, signal?: AbortSignal) => Promi
  */
 export function createPermissionGate(opts: PermissionGateOptions): PermissionGateFn {
   const decide = async (ctx: GateContext, signal?: AbortSignal): Promise<GateResult> => {
-    const judged = judgeCall(opts, ctx)
+    // A path rule sees where a symlink leads (permissions.md, "Symlinks"): read before judging.
+    const tool = opts.toolsByName.get(ctx.toolName)
+    const prepared = await opts.outerRules?.prepare({ ...ctx, tool }, signal)
+    const judged = judgeCall(opts, { ...ctx, ...(prepared ? { prepared } : {}) })
     if (judged.kind === 'exempt') return undefined
     if (judged.kind === 'host') {
       return {

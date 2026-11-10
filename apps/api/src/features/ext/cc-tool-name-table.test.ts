@@ -4,7 +4,6 @@ import {
   CC_ALWAYS_ON_TOOLS,
   CC_SEMANTIC_GAPS,
   CC_TOOL_NAME_MAP,
-  mapCcRuleList,
   mapCcToolList,
   splitDenyList,
 } from './cc-tool-names'
@@ -87,15 +86,6 @@ describe('the tool-list name table', () => {
 })
 
 describe('a denylist with specifiers', () => {
-  it('keeps Tool(specifier) entries in engine form beside whole-tool entries', () => {
-    expect(mapCcRuleList(['Bash(rm *)', 'Read(.env)', 'Write', 'TodoWrite'])).toEqual([
-      'Bash(rm *)',
-      'Read(.env)',
-      'Write',
-    ])
-    expect(mapCcRuleList(['"Bash(git push:*)"', 'Bash(git push:*)'])).toEqual(['Bash(git push:*)'])
-  })
-
   it('splits whole-tool entries, which switch a tool off, from pattern entries, which only deny', () => {
     expect(splitDenyList(['Bash(rm *)', 'Write', 'Read(*)', 'Grep'])).toEqual({
       tools: ['Write', 'Read', 'Search'],

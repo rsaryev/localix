@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os'
 
 import { buildCcHookRegistry } from './config'
 import { createCcHooksRuntime } from './run'
+import { hookIfRuns } from '../plugins/kit'
 
 test('statusMessage is shown while its hook runs, and cleared after', async () => {
   const { registry } = await buildCcHookRegistry({
@@ -31,6 +32,7 @@ test('statusMessage is shown while its hook runs, and cleared after', async () =
   })
   const seen: [string, boolean][] = []
   await createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry,
     sessionId: 's1',
     projectDir: tmpdir(),

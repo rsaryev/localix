@@ -11,6 +11,7 @@ import { tempDirPerTest } from '@localixai/testing'
 
 import type { CcHookHandler, CcHookRegistry } from './contracts'
 import { createCcHooksRuntime } from './run'
+import { hookIfRuns } from '../plugins/kit'
 
 const dir = tempDirPerTest('cc-tool-shapes-')
 const silent = { warn: () => {}, info: () => {} }
@@ -24,6 +25,7 @@ const seen = (label: string) => JSON.parse(readFileSync(join(dir(), `${label}.js
 
 const runtime = (groups: CcHookRegistry) =>
   createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: groups,
     sessionId: 'sess-1',
     projectDir: dir(),

@@ -1,7 +1,6 @@
 import type { PluginHookConfig } from '../cc-hooks'
 import type { McpServerRecord } from '../mcp/repository'
 import type { DiscoveredSkill } from '../agent-core/skill-discovery'
-import { mapCcRuleList } from '../ext/cc-tool-names'
 import { normalizeCcToolName } from './discovery'
 import type { PluginAgent, PluginMonitor } from './contracts'
 import type { PluginOutputStyle } from './output-styles'
@@ -159,10 +158,6 @@ export function emptyLoadedPlugins(): LoadedPlugins {
   }
 }
 
-/** A deny entry as the engine names it, keeping a `Tool(specifier)` pattern. */
-const denyEntry = (entry: string): string =>
-  entry.includes('(') ? (mapCcRuleList([entry])[0] ?? entry) : normalizeCcToolName(entry)
-
 /**
  * Discover plugins for the scope, intersect with the user's enabled set, and load
  * each enabled plugin's contributions. Failures are isolated per-plugin: a bad
@@ -192,7 +187,9 @@ export function buildLoadedAgent(
     ...(agent.tools && !agent.tools.includes('*')
       ? { tools: [...new Set(agent.tools.map(normalizeCcToolName))] }
       : {}),
-    ...(agent.disallowedTools ? { disallowedTools: agent.disallowedTools.map(denyEntry) } : {}),
+    ...(agent.disallowedTools
+      ? { disallowedTools: agent.disallowedTools.map(normalizeCcToolName) }
+      : {}),
     ...(agent.agentTypes?.length ? { agentTypes: agent.agentTypes } : {}),
     ...(agent.pinnedSkills?.length ? { pinnedSkills: agent.pinnedSkills } : {}),
     ...(agent.maxTurns ? { maxTurns: agent.maxTurns } : {}),

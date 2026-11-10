@@ -90,7 +90,14 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     return { ...(envFile ? { envFile } : {}), ...(settingsEnv ? { settings: settingsEnv } : {}) }
   }
 
-  const select = createHookSelector({ registry, sessionId, logger, onceKeys, signalFor })
+  const select = createHookSelector({
+    registry,
+    sessionId,
+    logger,
+    onceKeys,
+    signalFor,
+    ifRuns: opts.ifRuns,
+  })
   const runHandler = createHookHandlerRunner({
     projectDir,
     logger,

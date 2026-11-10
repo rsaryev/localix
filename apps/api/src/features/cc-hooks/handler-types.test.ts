@@ -7,6 +7,7 @@ import type { CcHookRegistry } from './contracts'
 import type { SkippedHandler } from './config'
 import type { AgentHookEvaluator } from './agent-hook'
 import type { CcMcpToolCaller } from './mcp-tool-hook'
+import { hookIfRuns } from '../plugins/kit'
 
 const silentLogger = { warn: () => {}, info: () => {} }
 
@@ -18,6 +19,7 @@ function runtimeWith(
   },
 ) {
   return createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry,
     sessionId: 's1',
     projectDir: '/p',

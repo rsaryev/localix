@@ -71,11 +71,16 @@ export {
 export {
   settingsDeniesAgent,
   settingsRemovesTool,
+  settingsResolvedPaths,
   settingsRules,
   settingsVerdict,
+  withRealDirectories,
+  withSessionRules,
+  type SessionRuleSpec,
   type SettingsRules,
   type SettingsVerdict,
 } from './permissions'
+export { hookIfRuns } from './hook-if'
 export {
   settingsAdditionalDirectories,
   settingsRuleEntries,

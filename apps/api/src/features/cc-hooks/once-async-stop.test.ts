@@ -15,6 +15,7 @@ import { tmpdir } from 'node:os'
 import type { CcHookHandler, CcHookRegistry } from './contracts'
 import { asyncHookContext } from './output-parse'
 import { createCcHooksRuntime } from './run'
+import { hookIfRuns } from '../plugins/kit'
 
 const logger = { warn: () => {} }
 const cmd = (command: string, extra: Partial<CcHookHandler> = {}): CcHookHandler => ({
@@ -28,6 +29,7 @@ const make = (
   extra: Partial<Parameters<typeof createCcHooksRuntime>[0]> = {},
 ) =>
   createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry,
     sessionId: 's1',
     projectDir: tmpdir(),

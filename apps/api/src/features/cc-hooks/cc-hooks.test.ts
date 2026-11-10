@@ -8,6 +8,7 @@ import { isMatchAll, matchesField, matchesToolName, toolNameCandidates } from '.
 import { buildCcHookRegistry, parseHooksBlock } from './config'
 import { createCcHooksRuntime } from './run'
 import type { CcHookHandler, CcHookRegistry } from './contracts'
+import { hookIfRuns } from '../plugins/kit'
 
 const silentLogger = { warn: () => {}, info: () => {} }
 
@@ -232,6 +233,7 @@ describe('config parsing', () => {
         },
       )
       const rt = createCcHooksRuntime({
+        ifRuns: hookIfRuns,
         registry: reg,
         sessionId: 's1',
         projectDir,
@@ -369,6 +371,7 @@ const cmd = (command: string, extra?: Partial<CcHookHandler>): CcHookHandler => 
 describe('runtime protocol', () => {
   const make = (registry: CcHookRegistry, enabled = true) =>
     createCcHooksRuntime({
+      ifRuns: hookIfRuns,
       registry,
       sessionId: 's1',
       projectDir: tmpdir(),
@@ -660,6 +663,7 @@ describe('runtime protocol', () => {
 describe('systemMessage notices', () => {
   const makeWith = (registry: CcHookRegistry, emitNotice?: (m: string, e: string) => void) =>
     createCcHooksRuntime({
+      ifRuns: hookIfRuns,
       registry,
       sessionId: 's1',
       projectDir: tmpdir(),

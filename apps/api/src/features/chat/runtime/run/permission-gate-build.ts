@@ -1,6 +1,6 @@
 /**
- * Per-run permission-gate assembly: builds the confirm requester, folds skill
- * `allowed-tools` into task-local preapprovals, and constructs the
+ * Per-run permission-gate assembly: builds the confirm requester, adds a skill's or command's
+ * `allowed-tools` and the run's `disallowed-tools` to the Claude Code rule set, and constructs the
  * declarative permission gate evaluated at beforeToolCall.
  */
 import type { AgentTool, GateRefusalTracker } from '@localixai/agent/agents'
@@ -13,7 +13,8 @@ import {
   type ReviewVerdict,
   type VerdictOptions,
 } from '../../../agent-core/permission-verdict'
-import { claudeCodeAllowRules, claudeCodeDenyRules } from '../../../cc-settings/cc-rule-translate'
+import { claudeCodeHome } from '../../../cc-settings/config-dir'
+import { runOuterRules } from './claude-code-permissions'
 import { createConfirmRequester } from './confirm-requester'
 import { ownPlanDirForRun } from '../plan-view'
 import type { RunHookContext } from './run-hook-context'
@@ -65,23 +66,19 @@ export interface BuildRunPermissionGateOptions extends RunHookContext {
    * they win.
    */
   denyPatterns?: readonly string[]
-  /** Claude Code's settings `allow` rules as pre-approvals, beside a skill's `allowed-tools`. */
-  preapprovedRules?: readonly PermissionRule[]
   /** Receives the gate's inputs: a skill the model loads checks its injected commands on them. */
   onVerdictOptions?: (options: VerdictOptions) => void
 }
 
-/**
- * Translate skill declarations without rewriting the agent's ordered policy. The permission
- * evaluator applies these only to eligible questions after deciding the authored verdict.
- * A rule reads as Claude Code reads it (`cc-settings/cc-rule-translate.ts`); given the run's
- * working directory, its path patterns anchor there, as the call's paths do.
- */
-export function skillPermissionRules(
-  extraAllowedTools: readonly string[] | undefined,
-  cwd?: string,
-): PermissionRule[] {
-  return (extraAllowedTools ?? []).flatMap((spec) => claudeCodeAllowRules(spec, cwd))
+/** A skill's or command's `allowed-tools`, which answer the catch-all question for the run. */
+export function withAllowedTools(
+  outer: OuterRules,
+  allowedTools: readonly string[] | undefined,
+  where = 'allowed-tools',
+): OuterRules {
+  return allowedTools?.length
+    ? outer.with({ rules: allowedTools, behavior: 'allow', where })
+    : outer
 }
 
 export function buildRunPermissionGate(
@@ -129,21 +126,18 @@ export function buildRunPermissionGate(
   const verdictOptions = {
     // The run's OWN copy: a skill the model loads appends its `disallowed-tools` to it for the
     // rest of this run (`skill-turn-grants.ts`), and the authored list may be a cached snapshot.
-    rules: [
-      ...permissionRules,
-      ...(options.denyPatterns ?? []).flatMap((spec) =>
-        claudeCodeDenyRules(spec, defaultCwd, undefined, DENY_PATTERN_MESSAGE),
+    rules: [...permissionRules],
+    outerRules: withDisallowed(
+      withAllowedTools(
+        options.outerRules ?? runOuterRules(defaultCwd, claudeCodeHome()),
+        extraAllowedTools,
       ),
-    ],
-    preapprovedRules: [
-      ...skillPermissionRules(extraAllowedTools, defaultCwd),
-      ...(options.preapprovedRules ?? []),
-    ],
+      options.denyPatterns,
+    ),
     toolsByName,
     root: defaultCwd,
     // The conversation's own plan directory: a plan-shaped write anywhere else is a file write.
     ownPlanDir: ownPlanDirForRun(session, defaultCwd),
-    ...(options.outerRules ? { outerRules: options.outerRules } : {}),
     ...(options.extraRoots ? { extraRoots: options.extraRoots } : {}),
   }
   options.toolCheck?.lend(verdictOf(verdictOptions))
@@ -178,6 +172,16 @@ export function buildRunPermissionGate(
 }
 
 const DENY_PATTERN_MESSAGE = "This call is on the run's disallowed-tools list."
+
+const withDisallowed = (outer: OuterRules, specs: readonly string[] | undefined) =>
+  specs?.length
+    ? outer.with({
+        rules: specs,
+        behavior: 'deny',
+        where: 'disallowed-tools',
+        message: DENY_PATTERN_MESSAGE,
+      })
+    : outer
 
 /** What the model reads when a PermissionDenied hook returned `retry: true`. */
 export const PERMISSION_RETRY_NOTE =

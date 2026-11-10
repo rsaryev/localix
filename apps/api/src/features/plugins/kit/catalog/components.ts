@@ -4,7 +4,7 @@ import type { ClaudeTheme } from '@localixai/claude-plugin'
 import { readCatalog } from '@rsaryev/llx-plugin'
 import type { Plugin } from '@rsaryev/llx-plugin/loading'
 import { themeColorToHex, type AgentRecord, type Command } from '@rsaryev/llx-plugin/format'
-import { mapCcRuleList } from '../../../ext/cc-tool-names'
+import { mapCcToolList } from '../../../ext/cc-tool-names'
 import type { PluginAgent, PluginCommand } from '../../contracts'
 import { delegableAgentTypes, mapOptionalCcTools } from '../../discovery-cc-tools'
 import { preloadedSkills } from '../../agent-names'
@@ -33,12 +33,9 @@ function commandOf(command: Command): PluginCommand {
     prompt: command.body.trim(),
     ...(command.argumentHint ? { argumentHint: command.argumentHint } : {}),
     ...(named.length ? { arguments: named } : {}),
-    ...(command.allowedTools.length
-      ? { allowedTools: mapCcRuleList([...command.allowedTools]) }
-      : {}),
-    ...(command.disallowedTools.length
-      ? { disallowedTools: mapCcRuleList([...command.disallowedTools]) }
-      : {}),
+    // In Claude Code's rule syntax: the gate reads them as the kit does (`kit/permissions.ts`).
+    ...(command.allowedTools.length ? { allowedTools: [...command.allowedTools] } : {}),
+    ...(command.disallowedTools.length ? { disallowedTools: [...command.disallowedTools] } : {}),
     ...(command.model ? { model: command.model } : {}),
     ...(command.disableModelInvocation ? { disableModelInvocation: true } : {}),
   }
@@ -48,12 +45,10 @@ export function readCommands(plugin: Plugin) {
   return { commands: readCatalog(plugin).commands.map(commandOf) }
 }
 
-/** The tools a rule list denies, without their patterns: an agent denies a tool whole. */
+/** The tools a rule list denies: an agent's `Bash(rm *)` removes the whole tool, as the kit reads it. */
 function deniedTools(rules: readonly string[] | undefined): string[] | undefined {
-  const tools = new Set(
-    mapCcRuleList([...(rules ?? [])]).map((rule) => rule.replace(/\(.*\)$/s, '')),
-  )
-  return tools.size ? [...tools] : undefined
+  const tools = mapCcToolList([...(rules ?? [])], { dropUnknown: true })
+  return tools.length ? tools : undefined
 }
 
 /** An agent of the plugin, named below it (`team:security` for `<plugin>:team:security`). */

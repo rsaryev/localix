@@ -53,6 +53,14 @@ test('one edit or one file reads as Claude Code’s single-file call, its path a
   ])
 })
 
+test('a read of a path and a list is one call per file, the path among them', () => {
+  const input = { path: 'README.md', reads: [{ path: 'config/.env' }], cwd: '/p' }
+  expect(singleCalls('Read', input)).toEqual([
+    { path: 'README.md', cwd: '/p' },
+    { path: 'config/.env', cwd: '/p' },
+  ])
+})
+
 test('write, read, search and bash take Claude Code’s names and units', () => {
   expect(
     toolCallEvent({ name: 'Write' }, { files: [{ path: 'n.md', content: 'hi' }] }, 'w'),

@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os'
 
 import { createCcHooksRuntime } from './run'
 import type { CcHookHandler } from './contracts'
+import { hookIfRuns } from '../plugins/kit'
 
 const silent = { warn: () => {}, info: () => {} }
 const cmd = (json: unknown): CcHookHandler => ({
@@ -16,6 +17,7 @@ const cmd = (json: unknown): CcHookHandler => ({
 })
 const start = (...answers: unknown[]) =>
   createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: { SessionStart: [{ handlers: answers.map(cmd) }] },
     sessionId: 's1',
     projectDir: tmpdir(),

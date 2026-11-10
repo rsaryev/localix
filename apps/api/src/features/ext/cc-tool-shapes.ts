@@ -76,6 +76,12 @@ export function toolCallEvent(
  */
 export function singleCalls(tool: string, input: unknown): Fields[] {
   const fields = isRecord(input) ? input : {}
+  if (tool === 'Read' && 'path' in fields && Array.isArray(fields.reads)) {
+    // A read of `path` and of a list reads each: one call per file, the item's range its own.
+    const { path, reads, ...rest } = fields
+    const items = [{ path }, ...(reads as unknown[])]
+    return items.map((item) => ({ ...rest, ...(isRecord(item) ? item : { path: item }) }))
+  }
   const list = ({ Edit: 'edits', Write: 'files', Read: 'reads' } as Record<string, string>)[tool]
   const entries = list ? fields[list] : undefined
   if (!list || !Array.isArray(entries) || entries.length < 2) return [fields]

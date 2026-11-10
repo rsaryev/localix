@@ -8,7 +8,9 @@ import { pluginDataDir } from '../../../plugins/mcp'
 import type { SessionRecord } from '../../repository'
 import type { RunnerDeps } from '../agent-runner-types'
 import type { CcHookSessions } from '../cc-hook-sessions'
-import { skillPermissionRules } from './permission-gate-build'
+import { claudeCodeHome } from '../../../cc-settings/config-dir'
+import { runOuterRules } from './claude-code-permissions'
+import { withAllowedTools } from './permission-gate-build'
 import { applySkillTurnGrants } from './skill-turn-grants'
 import { skillToolPathVars, substituteToolPathVars } from '../../../agent-core/skill-tool-path-vars'
 
@@ -43,12 +45,10 @@ export function authorizeSkillCommands(
     const options = policy?.current
     if (!options) return 'the permission rules of this run are not available'
     if (!options.toolsByName.has(TOOL.Bash)) return 'this agent has no shell tool'
+    const outer = options.outerRules ?? runOuterRules(options.root ?? '/', claudeCodeHome())
     const verdict = verdictOf({
       ...options,
-      preapprovedRules: [
-        ...(options.preapprovedRules ?? []),
-        ...skillPermissionRules(allowedTools, options.root),
-      ],
+      outerRules: withAllowedTools(outer, allowedTools),
     })(TOOL.Bash, { command })
     if (verdict.decision === 'allow') return undefined
     const why = verdict.reason ?? (verdict.rule ? `rule ${verdict.rule}` : '')

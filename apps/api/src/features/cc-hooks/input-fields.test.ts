@@ -12,6 +12,7 @@ import { tempDirPerTest } from '@localixai/testing'
 import { createCcHooksRuntime } from './run'
 import type { CcHookEvent } from './contracts'
 import type { CreateCcHooksRuntimeOptions } from './run'
+import { hookIfRuns } from '../plugins/kit'
 
 const dir = tempDirPerTest('cc-input-fields-')
 const silent = { warn: () => {}, info: () => {} }
@@ -21,6 +22,7 @@ const env = () => readFileSync(join(dir(), 'env.txt'), 'utf8').trim()
 function make(event: CcHookEvent, extra: Partial<CreateCcHooksRuntimeOptions> = {}) {
   const command = `cat > "${join(dir(), 'in.json')}"; printf '%s' "$CLAUDE_EFFORT" > "${join(dir(), 'env.txt')}"`
   return createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: { [event]: [{ handlers: [{ source: 'plugin', command, timeoutMs: 5000 }] }] },
     sessionId: 's1',
     projectDir: dir(),

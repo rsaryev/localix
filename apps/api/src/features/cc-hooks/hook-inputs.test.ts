@@ -12,6 +12,7 @@ import { tempDirPerTest } from '@localixai/testing'
 import type { CcHookHandler, CcHookRegistry } from './contracts'
 import { createCcHooksRuntime, type CreateCcHooksRuntimeOptions } from './run'
 import { ccSessionEnvFiles } from './session-env'
+import { hookIfRuns } from '../plugins/kit'
 
 const dir = tempDirPerTest('cc-hook-inputs-')
 const silent = { warn: () => {}, info: () => {} }
@@ -35,6 +36,7 @@ function runtime(
   extra: Partial<CreateCcHooksRuntimeOptions> = {},
 ): ReturnType<typeof createCcHooksRuntime> {
   return createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: groups,
     sessionId: 'sess-1',
     projectDir: dir(),

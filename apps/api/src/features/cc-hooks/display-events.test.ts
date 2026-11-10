@@ -21,6 +21,7 @@ import {
 } from './contracts'
 import { createCcHooksRuntime } from './run'
 import { wrapToolsWithCcHooks } from './wrap-tools'
+import { hookIfRuns } from '../plugins/kit'
 
 const dir = tempDirPerTest('cc-display-')
 const silent = { warn: () => {}, info: () => {} }
@@ -30,6 +31,7 @@ const input = (name: string) => JSON.parse(readFileSync(join(dir(), name), 'utf8
 const json = (value: unknown) => `echo '${JSON.stringify(value)}'`
 const make = (registry: CcHookRegistry) =>
   createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry,
     sessionId: 's1',
     projectDir: dir(),

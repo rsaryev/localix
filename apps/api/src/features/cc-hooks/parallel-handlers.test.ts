@@ -9,6 +9,7 @@ import { tempDirPerTest } from '@localixai/testing'
 
 import { createCcHooksRuntime } from './run'
 import type { CcHookEvent, CcHookHandler } from './contracts'
+import { hookIfRuns } from '../plugins/kit'
 
 const dir = tempDirPerTest('cc-parallel-')
 const silent = { warn: () => {}, info: () => {} }
@@ -24,6 +25,7 @@ const touch = (name: string, then = 'true') =>
 
 const make = (event: CcHookEvent, handlers: CcHookHandler[]) =>
   createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: { [event]: [{ handlers }] },
     sessionId: 's1',
     projectDir: dir(),

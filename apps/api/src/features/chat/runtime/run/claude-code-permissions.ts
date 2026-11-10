@@ -4,8 +4,11 @@ import {
   readClaudeSettings,
   settingsAdditionalDirectories,
   settingsRuleEntries,
+  settingsResolvedPaths,
   settingsRules,
   settingsVerdict,
+  withRealDirectories,
+  withSessionRules,
   type ClaudeSettingsInput,
   type SettingsRules,
 } from '../../../plugins/kit'
@@ -33,11 +36,13 @@ export async function loadClaudeCodePermissions(
   const settings = await readClaudeSettings(input)
   const additionalDirectories = settingsAdditionalDirectories(settings)
   return {
-    rules: settingsRules(settingsRuleEntries(settings), {
-      cwd: input.cwd,
-      homeDir: input.homeDir,
-      additionalDirectories,
-    }),
+    rules: await withRealDirectories(
+      settingsRules(settingsRuleEntries(settings), {
+        cwd: input.cwd,
+        homeDir: input.homeDir,
+        additionalDirectories,
+      }),
+    ),
     additionalDirectories,
     cwd: input.cwd,
   }
@@ -45,34 +50,53 @@ export async function loadClaudeCodePermissions(
 
 const STOPS_ASKING: ReadonlySet<PermissionMode> = new Set(['bypass', 'autonomous'])
 
-const where = (verdict: { rule: string; file: string }) => `${verdict.rule} in ${verdict.file}`
+const where = (verdict: { rule: string; where: string }) => `${verdict.rule} in ${verdict.where}`
 
 /** What the gate takes from the person's Claude Code settings for one run. */
 export function claudeCodeGateOptions(
   permissions: ClaudeCodePermissions,
   options: { mode: PermissionMode },
-): { outerRules?: OuterRules; extraRoots?: string[] } {
+): { outerRules: OuterRules; extraRoots?: string[] } {
   return {
-    ...(permissions.rules.rules.length > 0
-      ? { outerRules: claudeCodeRules(permissions.rules, options.mode) }
-      : {}),
+    outerRules: claudeCodeOuterRules(permissions.rules, options.mode),
     ...(permissions.additionalDirectories.length > 0
       ? { extraRoots: permissions.additionalDirectories }
       : {}),
   }
 }
 
-function claudeCodeRules(rules: SettingsRules, mode: PermissionMode): OuterRules {
-  return ({ toolName, input, tool }) => {
-    const verdict = settingsVerdict(rules, tool ?? { name: toolName }, input)
-    if (!verdict) return undefined
-    if (verdict.effect === 'ask' && STOPS_ASKING.has(mode)) return undefined
-    return {
-      action: verdict.effect,
-      rule: where(verdict),
-      ...(verdict.effect === 'deny'
-        ? { message: `Blocked by the Claude Code permission rule ${where(verdict)}.` }
-        : {}),
-    }
+/** The Claude Code rules of a run with no settings read: what a skill or command adds. */
+export function runOuterRules(cwd: string, homeDir: string): OuterRules {
+  return claudeCodeOuterRules(
+    settingsRules([], { cwd, homeDir, additionalDirectories: [] }),
+    'default',
+  )
+}
+
+export function claudeCodeOuterRules(start: SettingsRules, mode: PermissionMode): OuterRules {
+  let rules = start
+  return {
+    with: (added) => claudeCodeOuterRules(withSessionRules(rules, added), mode),
+    add: (added) => {
+      rules = withSessionRules(rules, added)
+    },
+    prepare: async ({ toolName, input, tool }, signal) => {
+      if (rules.rules.length === 0) return undefined
+      const found = await settingsResolvedPaths(rules, tool ?? { name: toolName }, input, signal)
+      return found.some(Boolean) ? found : undefined
+    },
+    judge: ({ toolName, input, tool, prepared }) => {
+      if (rules.rules.length === 0) return undefined
+      const verdict = settingsVerdict(rules, tool ?? { name: toolName }, input, prepared)
+      if (!verdict) return undefined
+      if (verdict.effect === 'ask' && STOPS_ASKING.has(mode)) return undefined
+      const message =
+        verdict.message ?? `Blocked by the Claude Code permission rule ${where(verdict)}.`
+      return {
+        action: verdict.effect,
+        rule: where(verdict),
+        ...(verdict.effect === 'deny' ? { message } : {}),
+      }
+    },
   }
 }

@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { matchesField, matchesToolName, toolNameCandidates } from './matcher'
-import { evaluateIfGuard } from './if-guard'
+import { hookIfRuns } from '../plugins/kit'
 import { parseHooksBlock } from './config'
 import { createCcHooksRuntime } from './run'
 import type { CcHookHandler, CcHookRegistry } from './contracts'
@@ -44,6 +44,7 @@ const make = (
   extra?: Partial<Parameters<typeof createCcHooksRuntime>[0]>,
 ) =>
   createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry,
     sessionId: 's1',
     projectDir: tmpdir(),
@@ -77,47 +78,41 @@ describe('matcher: hyphenated exact-match', () => {
 // ---------------------------------------------------------------------------
 describe('if guard', () => {
   it('Bash(git commit:*) matches a git-commit command, not others', () => {
-    expect(evaluateIfGuard('Bash(git commit:*)', 'Bash', { command: 'git commit -m "x"' })).toBe(
-      true,
-    )
-    expect(evaluateIfGuard('Bash(git commit:*)', 'Bash', { command: 'git status' })).toBe(false)
-    expect(evaluateIfGuard('Bash(git push:*)', 'Bash', { command: 'git push origin main' })).toBe(
-      true,
-    )
-    expect(evaluateIfGuard('Bash(git:*)', 'Bash', { command: 'github-cli status' })).toBe(false)
+    expect(hookIfRuns('Bash(git commit:*)', 'Bash', { command: 'git commit -m "x"' })).toBe(true)
+    expect(hookIfRuns('Bash(git commit:*)', 'Bash', { command: 'git status' })).toBe(false)
+    expect(hookIfRuns('Bash(git push:*)', 'Bash', { command: 'git push origin main' })).toBe(true)
+    expect(hookIfRuns('Bash(git:*)', 'Bash', { command: 'github-cli status' })).toBe(false)
   })
   it('strips leading VAR=value assignments and checks &&-subcommands', () => {
-    expect(
-      evaluateIfGuard('Bash(git commit:*)', 'Bash', { command: 'FOO=1 git commit -m x' }),
-    ).toBe(true)
-    expect(evaluateIfGuard('Bash(git push:*)', 'Bash', { command: 'npm test && git push' })).toBe(
+    expect(hookIfRuns('Bash(git commit:*)', 'Bash', { command: 'FOO=1 git commit -m x' })).toBe(
       true,
     )
+    expect(hookIfRuns('Bash(git push:*)', 'Bash', { command: 'npm test && git push' })).toBe(true)
   })
   it('fails OPEN on command substitution (best-effort)', () => {
-    expect(evaluateIfGuard('Bash(git commit:*)', 'Bash', { command: 'echo $(git commit)' })).toBe(
-      true,
-    )
+    expect(hookIfRuns('Bash(git commit:*)', 'Bash', { command: 'echo $(git commit)' })).toBe(true)
   })
   it('the tool part must match (CC↔engine name aware)', () => {
-    expect(evaluateIfGuard('Bash(git commit:*)', 'Search', { command: 'git commit' })).toBe(false)
+    expect(hookIfRuns('Bash(git commit:*)', 'Search', { command: 'git commit' })).toBe(false)
     // Bare tool rule = tool-only match.
-    expect(evaluateIfGuard('Bash', 'Bash', { command: 'anything' })).toBe(true)
+    expect(hookIfRuns('Bash', 'Bash', { command: 'anything' })).toBe(true)
   })
   it('file-tool glob matches file_path', () => {
-    expect(evaluateIfGuard('Edit(*.ts)', 'Edit', { file_path: '/a/b.ts' })).toBe(true)
-    expect(evaluateIfGuard('Edit(*.ts)', 'Write', { file_path: '/a/b.md' })).toBe(false)
+    expect(hookIfRuns('Edit(*.ts)', 'Edit', { file_path: '/a/b.ts' })).toBe(true)
+    expect(hookIfRuns('Edit(*.ts)', 'Write', { file_path: '/a/b.md' })).toBe(false)
     // A batch matches when ANY of its files does — the hook must see a .ts among .md files.
     const batch = { files: [{ path: '/a/b.md' }, { path: '/a/c.ts' }] }
-    expect(evaluateIfGuard('Write(*.ts)', 'Write', batch)).toBe(true)
+    expect(hookIfRuns('Edit(*.ts)', 'Write', batch)).toBe(true)
+    // Claude Code's path rules for writing are `Edit` rules: `Write(...)` matches no file.
+    expect(hookIfRuns('Write(*.ts)', 'Write', batch)).toBe(false)
     const edits = { edits: [{ path: '/a/b.md' }, { path: '/a/c.ts' }] }
-    expect(evaluateIfGuard('Edit(*.ts)', 'Edit', edits)).toBe(true)
-    expect(evaluateIfGuard('Edit(*.ts)', 'Edit', { edits: [{ path: '/a/b.md' }] })).toBe(false)
+    expect(hookIfRuns('Edit(*.ts)', 'Edit', edits)).toBe(true)
+    expect(hookIfRuns('Edit(*.ts)', 'Edit', { edits: [{ path: '/a/b.md' }] })).toBe(false)
   })
   it('a batched read runs the hook when ANY of its files matches', () => {
     const input = { path: 'README.md', reads: [{ path: 'src/a.ts' }, { path: 'config/.env' }] }
-    expect(evaluateIfGuard('Read(*.env)', 'Read', input)).toBe(true)
-    expect(evaluateIfGuard('Read(*.py)', 'Read', input)).toBe(false)
+    expect(hookIfRuns('Read(*.env)', 'Read', input)).toBe(true)
+    expect(hookIfRuns('Read(*.py)', 'Read', input)).toBe(false)
   })
   it('runtime: an if-guarded PostToolUse hook only fires when the guard passes', async () => {
     const rt = make({

@@ -19,8 +19,6 @@ import { describeRule, evaluate, type PermissionRule, type ToolFacts } from './p
 
 export interface VerdictOptions {
   rules: readonly PermissionRule[]
-  /** Task-local skill grants may preapprove named questions, never class guards or denials. */
-  preapprovedRules?: readonly PermissionRule[]
   toolsByName: Map<string, AgentTool>
   root?: string
   /** Test seam for the host application's roots; production uses `lib/host-roots.ts`. */
@@ -32,9 +30,10 @@ export interface VerdictOptions {
    */
   ownPlanDir?: string
   /**
-   * A second rule set from outside the agent's list — the rules of a person's Claude Code settings
-   * (`chat/runtime/run/claude-code-permissions.ts`). Its deny refuses whatever the list says, its
-   * ask turns an allow into a question, and its allow answers only the list's catch-all question.
+   * A second rule set from outside the agent's list, in Claude Code's syntax: a person's Claude Code
+   * settings and the run's skill and command tool lists (`chat/runtime/run/claude-code-permissions.ts`).
+   * Its deny refuses whatever the list says, its ask turns an allow into a question, and its allow
+   * answers only the list's catch-all question, never a class guard or a denial.
    */
   outerRules?: OuterRules
   /** Further working directories (Claude Code's `additionalDirectories`): not outside the workspace. */
@@ -49,18 +48,41 @@ export interface OuterRuleVerdict {
   message?: string
 }
 
-export type OuterRules = (call: {
+/** One call as the outer rule set reads it; `prepared` is what its `prepare` found. */
+export interface OuterCall {
   toolName: string
   input: unknown
   tool: AgentTool | undefined
-  facts: ReturnType<typeof extractCallFacts>
-  writes: readonly string[]
-}) => OuterRuleVerdict | undefined
+  prepared?: OuterPrepared
+}
+
+/** Where each path of a call really is (a symlink's target), per call the outer set reads. */
+export type OuterPrepared = readonly (readonly string[] | undefined)[]
+
+export interface OuterRules {
+  judge(call: OuterCall): OuterRuleVerdict | undefined
+  /** The real locations of the call's paths, read before a call that is made is judged. */
+  prepare(call: OuterCall, signal?: AbortSignal): Promise<OuterPrepared | undefined>
+  /** A copy with more Claude Code rules: a skill's `allowed-tools`, its `disallowed-tools`. */
+  with(added: OuterRulesAdded): OuterRules
+  /** The same set, with more rules for the rest of the run (a skill the model loads). */
+  add(added: OuterRulesAdded): void
+}
+
+export interface OuterRulesAdded {
+  rules: readonly string[]
+  behavior: 'allow' | 'deny'
+  where: string
+  message?: string
+}
 
 export type RuleDecision = ReturnType<typeof evaluate>
 
 /** The list's decision with the outer rule set's verdict applied (see `outerRules`). */
-function withOuterRules(decision: RuleDecision, outer: OuterRuleVerdict | undefined): RuleDecision {
+export function withOuterRules(
+  decision: RuleDecision,
+  outer: OuterRuleVerdict | undefined,
+): RuleDecision {
   if (!outer || decision.action === 'deny') return decision
   if (outer.action === 'allow' && !(decision.action === 'ask' && decision.rule?.pattern === '*'))
     return decision
@@ -91,6 +113,8 @@ export type CallJudgement =
       call: ReturnType<typeof extractCallFacts>
       /** Every target is a file inside the agent's own `~/.localix` tree. */
       ownTree: boolean
+      /** What the outer rule set said, which a hook's allow keeps (`permission-hook-decision.ts`). */
+      outer?: OuterRuleVerdict
     }
 
 /** The tools whose `session` class rests on a plan-file path test (`file-call-class.ts`). */
@@ -98,7 +122,7 @@ const PLAN_FILE_WRITERS: ReadonlySet<string> = new Set([TOOL.Write, TOOL.Edit])
 
 export function judgeCall(
   opts: VerdictOptions,
-  ctx: { toolName: string; input: unknown },
+  ctx: { toolName: string; input: unknown; prepared?: OuterPrepared },
 ): CallJudgement {
   // A call is judged on the tool's own verdict about THIS input (`AgentTool.classify`), not on
   // a static flag: a dual-purpose tool declaring `mutates: true` would otherwise have every
@@ -142,19 +166,14 @@ export function judgeCall(
   // ONE evaluation, because there is one list. A session mode that stops asking does it by
   // rewriting that list before the run (`capabilities/permission-mode.ts`), never by a flag
   // here: a gate that knows about modes is a second answer to the question the rules answer.
-  const listed = evaluate(opts.rules, facts, call, opts.preapprovedRules)
-  const decision = opts.outerRules
-    ? withOuterRules(
-        listed,
-        opts.outerRules({
-          toolName: ctx.toolName,
-          input: ctx.input,
-          tool,
-          facts: call,
-          writes: writeTargets(ctx.toolName, ctx.input, opts.root),
-        }),
-      )
-    : listed
+  const listed = evaluate(opts.rules, facts, call)
+  const outer = opts.outerRules?.judge({
+    toolName: ctx.toolName,
+    input: ctx.input,
+    tool,
+    ...(ctx.prepared ? { prepared: ctx.prepared } : {}),
+  })
+  const decision = withOuterRules(listed, outer)
 
   // The agent's own system directories (workspace, scratch, etc.) are always writable without
   // approval, regardless of workspace boundary rules. The dir comes from the ONE `~/.localix`
@@ -172,7 +191,7 @@ export function judgeCall(
       ? writeTargets(ctx.toolName, ctx.input, opts.root)
       : []
   const ownTree = targets.length > 0 && targets.every((t) => isPathBelow(localixHome(), t))
-  return { kind: 'rule', decision, facts, call, ownTree }
+  return { kind: 'rule', decision, facts, call, ownTree, ...(outer ? { outer } : {}) }
 }
 
 /** A verdict as Claude Code's `tool.check` reads and answers it. */

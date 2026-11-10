@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os'
 
 import { createCcHooksRuntime } from './run'
 import type { CcHookEvent, CcHookHandler } from './contracts'
+import { hookIfRuns } from '../plugins/kit'
 
 const silent = { warn: () => {}, info: () => {} }
 const cmd = (command: string): CcHookHandler => ({ source: 'plugin', command, timeoutMs: 5000 })
@@ -15,6 +16,7 @@ const cmd = (command: string): CcHookHandler => ({ source: 'plugin', command, ti
 function make(event: CcHookEvent, command: string) {
   const notices: string[] = []
   const rt = createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: { [event]: [{ matcher: 'Write|Edit|Bash', handlers: [cmd(command)] }] },
     sessionId: 's1',
     projectDir: tmpdir(),

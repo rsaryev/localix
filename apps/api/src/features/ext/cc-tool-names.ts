@@ -188,28 +188,10 @@ export function mapCcToolList(list: string[], opts: { dropUnknown: boolean }): s
 }
 
 /**
- * Map an `allowed-tools` or `disallowed-tools` list to engine names, keeping each
- * `Tool(specifier)` pattern: `Bash(git add:*)` pre-approves `git add` only, `Bash(rm *)` denies
- * `rm` commands only, never the whole shell. The permission gate reads the pattern
- * (`skillPermissionRules`, `claudeCodeDenyRules`); a bare name is the whole tool.
- */
-export function mapCcRuleList(list: string[]): string[] {
-  const out: string[] = []
-  for (const raw of list) {
-    const token = raw.replace(/^["']|["']$/g, '').trim()
-    const pattern = token.match(/^([^(]+)\((.+)\)$/)
-    const mapped = pattern
-      ? mapCcToolList([pattern[1]!], { dropUnknown: true }).map((name) => `${name}(${pattern[2]})`)
-      : mapCcToolList([token], { dropUnknown: true })
-    for (const entry of mapped) if (!out.includes(entry)) out.push(entry)
-  }
-  return out
-}
-
-/**
- * Split a mapped denylist: `tools` are whole tools to switch off (a bare name, or `name(*)`);
- * `patterned` are the `name(specifier)` entries, which deny only what the pattern matches and
- * are turned into permission rows (`claudeCodeDenyRules`), never into a removed tool.
+ * Split a denylist: `tools` are whole tools to switch off (a bare name, or `name(*)`), by their
+ * Localix names; `patterned` are the `name(specifier)` entries as written, which deny only what
+ * the pattern matches: the kit reads them as session rules (`plugins/kit/permissions.ts`), never
+ * as a removed tool.
  */
 export function splitDenyList(list: readonly string[]): { tools: string[]; patterned: string[] } {
   const tools: string[] = []

@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import type { AgentTool } from '@localixai/agent/agents'
 import { evaluate, extractCallFacts, type ToolFacts } from '../agent-core/permission-engine'
-import { skillPermissionRules } from '../chat/runtime/run/permission-gate-build'
+import { withOuterRules } from '../agent-core/permission-verdict'
+import { runOuterRules } from '../chat/runtime/run/claude-code-permissions'
+import { withAllowedTools } from '../chat/runtime/run/permission-gate-build'
 import { builtinAgentPreset } from './builtin-agent-presets'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from './resolve'
 import type { Rule } from '../agent-core/capability-rule'
@@ -49,11 +51,14 @@ describe('capability policy at the runtime boundary', () => {
 
   test('a skill allow-list can lift an ask for exactly what it declared', () => {
     const rules = project([{ action: 'tool:Bash', resource: '*', effect: 'ask' }])
-    const grants = skillPermissionRules(['Bash(git *)'])
-    expect(evaluate(rules, tool, call, grants).action).toBe('allow')
-    expect(
-      evaluate(rules, tool, extractCallFacts('Bash', { command: 'npm publish' }), grants).action,
-    ).toBe('ask')
+    const grants = withAllowedTools(runOuterRules('/work', '/home/me'), ['Bash(git *)'])
+    const granted = (command: string) =>
+      withOuterRules(
+        evaluate(rules, tool, extractCallFacts('Bash', { command })),
+        grants.judge({ toolName: 'Bash', input: { command }, tool: undefined }),
+      ).action
+    expect(granted('git status')).toBe('allow')
+    expect(granted('npm publish')).toBe('ask')
   })
 
   test('last match permits an explicit exception', () => {

@@ -5,11 +5,20 @@ import { composeCapabilities, NO_ROSTERS, projectCapabilities } from '../../../c
 import { applyPermissionMode } from '../../../capabilities/permission-mode-policy'
 import { createReadTool } from '../../../agent-core/tools/file/read'
 import { evaluate, extractCallFacts } from '../../../agent-core/permission-engine'
-import { skillPermissionRules } from './permission-gate-build'
+import { withAllowedTools } from './permission-gate-build'
+import { runOuterRules } from './claude-code-permissions'
 import { createPermissionGate } from '../../../agent-core/permission-gate'
+import { withOuterRules } from '../../../agent-core/permission-verdict'
+import type { PermissionRule, ToolFacts } from '../../../agent-core/permission-engine'
 
 const root = '/workspace'
-const grants = skillPermissionRules(['Bash(git *)', 'Read'])
+const grants = withAllowedTools(runOuterRules(root, '/home/me'), ['Bash(git *)', 'Read'])
+/** The list's decision with the skill's grants applied, as the gate composes them. */
+const granted = (rules: readonly PermissionRule[], tool: ToolFacts, input: object) =>
+  withOuterRules(
+    evaluate(rules, tool, extractCallFacts(tool.name, input, root)),
+    grants.judge({ toolName: tool.name, input, tool: undefined }),
+  ).action
 const permissions = (name: string) =>
   projectCapabilities(composeCapabilities(builtinAgentPreset(name)), NO_ROSTERS).permissions
 
@@ -19,7 +28,7 @@ describe('shipped presets with task-local skill preapprovals', () => {
     const read = createReadTool(undefined, root)
     const gate = createPermissionGate({
       rules,
-      preapprovedRules: grants,
+      outerRules: grants,
       root,
       hostRoots: [],
       toolsByName: new Map([[read.name, read]]),
@@ -31,12 +40,11 @@ describe('shipped presets with task-local skill preapprovals', () => {
       await gate({ toolCallId: 'outside', toolName: 'Read', input: { path: '/elsewhere/a.ts' } }),
     ).toMatchObject({ block: true })
     expect(
-      evaluate(
+      granted(
         rules,
         { name: 'Bash', effect: 'external' },
-        extractCallFacts('Bash', { command: 'git push --force origin main' }, root),
-        grants,
-      ).action,
+        { command: 'git push --force origin main' },
+      ),
     ).toBe('ask')
   })
 
@@ -46,22 +54,10 @@ describe('shipped presets with task-local skill preapprovals', () => {
       { action: 'tool:Read', resource: '*', effect: 'deny' },
     ])
     const rules = projectCapabilities(composeCapabilities(mode.rules), NO_ROSTERS).permissions
-    expect(
-      evaluate(
-        rules,
-        { name: 'Read', effect: 'read' },
-        extractCallFacts('Read', { path: 'a' }, root),
-        grants,
-      ).action,
-    ).toBe('deny')
-    expect(
-      evaluate(
-        rules,
-        { name: 'Bash', effect: 'external' },
-        extractCallFacts('Bash', { command: 'git status' }, root),
-        grants,
-      ).action,
-    ).toBe('deny')
+    expect(granted(rules, { name: 'Read', effect: 'read' }, { path: 'a' })).toBe('deny')
+    expect(granted(rules, { name: 'Bash', effect: 'external' }, { command: 'git status' })).toBe(
+      'deny',
+    )
   })
 
   test('a skill grant answers only the catch-all question; an authored named ask still asks', () => {
@@ -70,18 +66,13 @@ describe('shipped presets with task-local skill preapprovals', () => {
       { permission: 'Bash', pattern: '*', action: 'deny' as const },
       { permission: 'Bash', pattern: 'git *', action: 'ask' as const },
     ]
-    const gitStatus = extractCallFacts('Bash', { command: 'git status' }, root)
+    const gitStatus = { command: 'git status' }
     const bash = { name: 'Bash', effect: 'read' as const }
-    expect(evaluate(rules, bash, gitStatus, grants).action).toBe('ask')
+    expect(granted(rules, bash, gitStatus)).toBe('ask')
     const catchAll = [{ permission: '*', pattern: '*', action: 'ask' as const }]
-    expect(evaluate(catchAll, bash, gitStatus, grants).action).toBe('allow')
-    expect(
-      evaluate(
-        rules,
-        { name: 'Bash', effect: 'external' },
-        extractCallFacts('Bash', { command: 'npm publish' }, root),
-        grants,
-      ).action,
-    ).toBe('deny')
+    expect(granted(catchAll, bash, gitStatus)).toBe('allow')
+    expect(granted(rules, { name: 'Bash', effect: 'external' }, { command: 'npm publish' })).toBe(
+      'deny',
+    )
   })
 })

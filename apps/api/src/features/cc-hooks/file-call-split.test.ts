@@ -11,6 +11,7 @@ import { tempDirPerTest } from '@localixai/testing'
 
 import { createCcHooksRuntime } from './run'
 import type { CcHookEvent, CcHookHandler } from './contracts'
+import { hookIfRuns } from '../plugins/kit'
 
 const dir = tempDirPerTest('cc-file-split-')
 const silent = { warn: () => {}, info: () => {} }
@@ -26,6 +27,7 @@ const calls = () =>
 
 const make = (event: CcHookEvent, handler: CcHookHandler) =>
   createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: { [event]: [{ matcher: 'Edit|Write|Read', handlers: [handler] }] },
     sessionId: 's1',
     projectDir: dir(),

@@ -9,12 +9,14 @@ import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
 import { createCcHooksRuntime } from './run'
+import { hookIfRuns } from '../plugins/kit'
 
 const dir = tempDirPerTest('cc-output-cap-')
 const silent = { warn: () => {}, info: () => {} }
 
 const make = (command: string) =>
   createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: { SessionStart: [{ handlers: [{ source: 'plugin', command, timeoutMs: 5000 }] }] },
     sessionId: 's1',
     projectDir: dir(),

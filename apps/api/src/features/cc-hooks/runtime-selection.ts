@@ -1,6 +1,6 @@
 import { isToolEvent, type CcHookEvent, type CcHookHandler, type CcHookRegistry } from './contracts'
 import type { HookLogger } from './executor'
-import { evaluateIfGuard } from './if-guard'
+import type { HookIfReader } from './runtime-contracts'
 import { plural } from '../../lib/plural'
 
 export interface SelectOptions {
@@ -22,6 +22,7 @@ interface HookSelectionOptions {
   logger: HookLogger
   onceKeys?: Set<string>
   signalFor: (event: CcHookEvent) => AbortSignal | undefined
+  ifRuns: HookIfReader
 }
 
 /** `once` per-session key for a handler (stable across the per-run runtimes). */
@@ -51,7 +52,7 @@ export function spendOnce(
 
 /** Select handlers against the live registry, retaining guard and once ordering. */
 export function createHookSelector(options: HookSelectionOptions) {
-  const { registry, sessionId, logger, onceKeys, signalFor } = options
+  const { registry, sessionId, logger, onceKeys, signalFor, ifRuns } = options
 
   /**
    * The handlers that will actually RUN for one event — or `null` when the event is
@@ -83,7 +84,7 @@ export function createHookSelector(options: HookSelectionOptions) {
         if (h.if) {
           if (!isToolEvent(event) || !opts.ifCtx) continue // `if` only applies on tool events
           const { toolName, toolInput, aliases, cwd } = opts.ifCtx
-          if (!evaluateIfGuard(h.if, toolName, toolInput, aliases, cwd)) continue
+          if (!ifRuns(h.if, toolName, toolInput, aliases, cwd)) continue
         }
         if (honorsOnce(h) && onceKeys?.has(onceKey(event, h))) continue
         ;(h.async ? asyncH : sync).push(h)

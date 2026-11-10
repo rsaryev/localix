@@ -4,6 +4,7 @@ import { parseHooksBlock } from './config'
 import type { CcHookRegistry } from './contracts'
 import type { CcMcpToolCaller } from './mcp-tool-hook'
 import { createCcHooksRuntime } from './run'
+import { hookIfRuns } from '../plugins/kit'
 
 /** The arguments an mcp_tool hook hands its tool, as a person wrote them in `input`. */
 function runtimeWith(event: string, handler: Record<string, unknown>, calls: unknown[]) {
@@ -17,6 +18,7 @@ function runtimeWith(event: string, handler: Record<string, unknown>, calls: unk
     return { text: '' }
   }
   return createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry,
     sessionId: 's1',
     projectDir: '/p',

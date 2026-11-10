@@ -21,6 +21,8 @@ describe('agent tools lists, read by the kit', () => {
   test('a disallowedTools entry with a specifier removes the whole tool, as in Claude Code', () => {
     const agent = agentOf('name: safe\ndescription: d\ndisallowedTools: Bash(rm *), Write')
     expect(agent?.disallowedTools).toEqual(['Bash', 'Write'])
+    const search = agentOf('name: safe\ndescription: d\ndisallowedTools: Grep(*.ts)')
+    expect(search?.disallowedTools).toEqual(['Search'])
   })
 
   test('a tools list of only unmapped names stays an empty allowlist, not the inherited surface', () => {

@@ -14,6 +14,7 @@ import { CC_INERT_HOOK_EVENTS, isCcHookEvent, type CcHookHandler } from './contr
 import type { CcMcpToolCaller } from './mcp-tool-hook'
 import { worktreePathFromText } from './output-parse'
 import { createCcHooksRuntime } from './run'
+import { hookIfRuns } from '../plugins/kit'
 
 const dir = tempDirPerTest('cc-worktree-')
 const notices: string[] = []
@@ -25,6 +26,7 @@ const cmd = (command: string, extra: Partial<CcHookHandler> = {}): CcHookHandler
 })
 const make = (handlers: CcHookHandler[], callMcpTool?: CcMcpToolCaller) =>
   createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: { WorktreeCreate: [{ handlers }] },
     sessionId: 's1',
     projectDir: dir(),
@@ -86,6 +88,7 @@ describe('WorktreeCreate: a command hook', () => {
 
   it('no handler that runs leaves the worktree to git', async () => {
     const none = createCcHooksRuntime({
+      ifRuns: hookIfRuns,
       registry: { Stop: [{ handlers: [cmd('true')] }] },
       sessionId: 's1',
       projectDir: dir(),

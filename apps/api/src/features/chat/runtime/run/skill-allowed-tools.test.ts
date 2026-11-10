@@ -7,6 +7,7 @@
  * `Agent(<type>)` and `Skill(<name>)` name the agent and the skill.
  */
 import { describe, expect, test } from 'bun:test'
+import type { AgentTool } from '@localixai/agent/agents'
 import { homedir } from 'node:os'
 
 import {
@@ -17,7 +18,9 @@ import {
 import { agentPermissionResources } from '../../../agent-core/tools/agent/agent-tool'
 import { skillPermissionResources } from '../../../agent-core/tools/skill'
 import { researchPermissionResources } from '../../../agent-core/tools/web/research-resources'
-import { skillPermissionRules } from './permission-gate-build'
+import { withOuterRules } from '../../../agent-core/permission-verdict'
+import { runOuterRules } from './claude-code-permissions'
+import { withAllowedTools } from './permission-gate-build'
 
 const root = '/work/app'
 /** The authored list asks about everything; only a grant can answer a call. */
@@ -28,10 +31,18 @@ const TOOLS = {
   Skill: { permissionResources: skillPermissionResources },
 }
 
-function granted(spec: string, toolName: string, input: Record<string, unknown>): boolean {
+function granted(
+  spec: string,
+  toolName: string,
+  input: Record<string, unknown>,
+  aliases?: string[],
+): boolean {
   const facts = extractCallFacts(toolName, input, root, TOOLS[toolName as keyof typeof TOOLS])
-  const grants = skillPermissionRules([spec], root)
-  return evaluate(ASK, { name: toolName, effect: 'read' }, facts, grants).action === 'allow'
+  const grants = withAllowedTools(runOuterRules(root, homedir()), [spec])
+  const tool = aliases ? ({ name: toolName, aliases } as unknown as AgentTool) : undefined
+  const outer = grants.judge({ toolName, input, tool })
+  const listed = evaluate(ASK, { name: toolName, effect: 'read' }, facts)
+  return withOuterRules(listed, outer).action === 'allow'
 }
 
 describe('path rules', () => {
@@ -51,20 +62,27 @@ describe('path rules', () => {
     expect(granted('Read(//tmp/scratch/**)', 'Read', { path: '/tmp/scratch/a' })).toBe(true)
     expect(granted('Read(~/notes/**)', 'Read', { path: `${homedir()}/notes/a.md` })).toBe(true)
     expect(
-      granted('Edit(/src/**)', 'Edit', { path: 'src/x.ts', old_string: 'a', new_string: 'b' }),
+      granted('Edit(/src/**)', 'Edit', {
+        edits: [{ path: 'src/x.ts', old_string: 'a', new_string: 'b' }],
+      }),
     ).toBe(true)
     expect(granted('Read(/src/**)', 'Read', { path: '/src/x.ts' })).toBe(false)
   })
 
   test('Edit covers write, Read covers search; Write and Glob path rules match nothing', () => {
-    expect(granted('Edit(docs/**)', 'Write', { path: 'docs/n.md', content: 'x' })).toBe(true)
+    expect(
+      granted('Edit(docs/**)', 'Write', { files: [{ path: 'docs/n.md', content: 'x' }] }),
+    ).toBe(true)
     expect(granted('Read(src/**)', 'Search', { query: 'x', path: 'src' })).toBe(true)
-    expect(granted('Write(docs/**)', 'Write', { path: 'docs/n.md', content: 'x' })).toBe(false)
-    expect(granted('Edit', 'Write', { path: 'anywhere.md', content: 'x' })).toBe(true)
+    expect(
+      granted('Write(docs/**)', 'Write', { files: [{ path: 'docs/n.md', content: 'x' }] }),
+    ).toBe(false)
+    // A bare `Edit` names the Edit tool alone, as the kit reads it (no path rule to route).
+    expect(granted('Edit', 'Write', { files: [{ path: 'anywhere.md', content: 'x' }] })).toBe(false)
   })
 
-  test('braces expand', () => {
-    expect(granted('Read(src/*.{ts,tsx})', 'Read', { path: 'src/a.tsx' })).toBe(true)
+  test('braces are no alternation: a path pattern is gitignore syntax, as the kit reads it', () => {
+    expect(granted('Read(src/*.{ts,tsx})', 'Read', { path: 'src/a.tsx' })).toBe(false)
   })
 })
 
@@ -96,7 +114,7 @@ describe('named resources', () => {
   })
 
   test('a bare mcp__<server> names every tool of that server', () => {
-    const rules = skillPermissionRules(['mcp__github'], root)
-    expect(rules).toEqual([{ action: 'allow', permission: 'mcp_github_*', pattern: '*' }])
+    expect(granted('mcp__github', 'mcp_github_issue', {}, ['mcp__github__issue'])).toBe(true)
+    expect(granted('mcp__github', 'mcp_linear_list', {}, ['mcp__linear__list'])).toBe(false)
   })
 })

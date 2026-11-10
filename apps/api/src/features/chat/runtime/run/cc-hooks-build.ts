@@ -12,8 +12,7 @@
  *  - the SessionStart fire, which must happen exactly once per session and never on
  *    a continuation segment.
  *
- * Layer rule: run/ may import runtime infrastructure + agent-core, never
- * features/chat/service*.
+ * Layer rule: run/ may import runtime infrastructure + agent-core, never features/chat/service*.
  */
 import type { AvailabilityReader } from '../../../capabilities/availability'
 import type { ResolvedCapabilities } from '../../../capabilities/resolve'
@@ -48,6 +47,7 @@ import type { PermissionMode } from '../../../../contracts/permission-modes'
 import type { ScopedCcHooks } from '../run-contract'
 import { createMcpHookCaller } from './mcp-hook-caller'
 import { openChatPluginSession } from './chat-plugin-session'
+import { hookIfRuns } from '../../../plugins/kit'
 
 export interface BuildRunCcHooksInput {
   signal?: AbortSignal
@@ -190,6 +190,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
   applyHttpHookPolicy(ccHookRegistry, fromSettings.httpHook)
 
   const ccHooks: CcHooksRuntime = createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     signal: input.signal,
     registry: ccHookRegistry,
     sessionId: session.id,

@@ -5,6 +5,7 @@ import { parseHooksBlock, type SkippedHandler } from './config'
 import type { CcHookRegistry } from './contracts'
 import { parsePromptHookResult, type PromptHookEvaluator } from './prompt-hook'
 import { createCcHooksRuntime } from './run'
+import { hookIfRuns } from '../plugins/kit'
 
 /** A hook of `type` on `event`, answered by a model that says `verdict`. */
 function runtime(
@@ -20,6 +21,7 @@ function runtime(
   )
   const evaluate: PromptHookEvaluator & AgentHookEvaluator = async () => verdict
   return createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry,
     sessionId: 's1',
     projectDir: '/p',
@@ -155,6 +157,7 @@ describe('a prompt hook that could not give a verdict', () => {
       { projectDir: '/p' },
     )
     const rt = createCcHooksRuntime({
+      ifRuns: hookIfRuns,
       registry,
       sessionId: 's1',
       projectDir: '/p',

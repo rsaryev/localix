@@ -17,7 +17,6 @@ const ASK: PermissionRule[] = [{ permission: '*', pattern: '*', action: 'ask' }]
 const policy = (): SkillCommandPolicyRef => ({
   current: {
     rules: [...ASK],
-    preapprovedRules: [],
     toolsByName: new Map(['Bash', 'Write', 'Read'].map((n) => [n, tool(n)])),
     root: '/w',
   },

@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test'
 import { createCcHooksRuntime } from './run'
 import type { CcHookHandler } from './contracts'
+import { hookIfRuns } from '../plugins/kit'
 
 const logger = { warn: () => {} }
 
@@ -8,6 +9,7 @@ test('a failed guard leaves a once hook available, while a selected denial spend
   const onceKeys = new Set<string>()
   const calls: string[] = []
   const runtime = createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     enabled: true,
     sessionId: 'selection-order',
     projectDir: '.',
@@ -70,6 +72,7 @@ test('source filtering happens before inspecting guards or spending once hooks',
     },
   }
   const runtime = createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     enabled: true,
     sessionId: 'source-order',
     projectDir: '.',

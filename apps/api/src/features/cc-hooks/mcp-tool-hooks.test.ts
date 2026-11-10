@@ -8,6 +8,7 @@ import { matchesToolName } from './matcher'
 import { createCcHooksRuntime, type CcHooksRuntime } from './run'
 import { EMPTY_RUNTIME } from './runtime-results'
 import { wrapToolsWithCcHooks } from './wrap-tools'
+import { hookIfRuns } from '../plugins/kit'
 
 // A plugin `lin-mcp` with an `echo` server: Localix's engine name and Claude Code's.
 const ENGINE = 'mcp_lin_mcp_echo_echo'
@@ -51,6 +52,7 @@ function echoingRegistry(matcher: string): CcHookRegistry {
 describe('PreToolUse input for a plugin MCP tool', () => {
   it('carries Claude Code’s tool_name and the mcp_server object', async () => {
     const rt = createCcHooksRuntime({
+      ifRuns: hookIfRuns,
       registry: echoingRegistry('mcp__plugin_lin-mcp_echo__.*'),
       sessionId: 's1',
       projectDir: tmpdir(),
@@ -67,6 +69,7 @@ describe('PreToolUse input for a plugin MCP tool', () => {
 
   it('sends no mcp_server for a tool that is not an MCP tool', async () => {
     const rt = createCcHooksRuntime({
+      ifRuns: hookIfRuns,
       registry: echoingRegistry('custom_tool'),
       sessionId: 's1',
       projectDir: tmpdir(),

@@ -11,12 +11,14 @@ import { parseHooksBlock } from './config'
 import { foldHookOutput } from './output-parse'
 import { createCcHooksRuntime } from './run'
 import type { CcHookEvent, CcHookHandler } from './contracts'
+import { hookIfRuns } from '../plugins/kit'
 
 const dir = tempDirPerTest('cc-output-semantics-')
 const silent = { warn: () => {}, info: () => {} }
 
 const make = (event: CcHookEvent, command: string, source: CcHookHandler['source'] = 'plugin') =>
   createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: { [event]: [{ handlers: [{ source, command, timeoutMs: 5000 }] }] },
     sessionId: 's1',
     projectDir: dir(),
@@ -89,6 +91,7 @@ describe('an http hook’s 2xx body', () => {
       { projectDir: dir(), pluginName: 'p' },
     )
     return createCcHooksRuntime({
+      ifRuns: hookIfRuns,
       registry,
       sessionId: 's1',
       projectDir: dir(),

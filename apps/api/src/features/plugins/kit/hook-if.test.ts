@@ -8,11 +8,11 @@
 import { describe, expect, test } from 'bun:test'
 import { homedir } from 'node:os'
 
-import { evaluateIfGuard } from './if-guard'
+import { hookIfRuns } from './hook-if'
 
 const cwd = '/proj'
 const runs = (rule: string, tool: string, input: Record<string, unknown>) =>
-  evaluateIfGuard(rule, tool, input, undefined, cwd)
+  hookIfRuns(rule, tool, input, undefined, cwd)
 
 describe('file rules', () => {
   test('a relative directory pattern names that directory of the working directory only', () => {

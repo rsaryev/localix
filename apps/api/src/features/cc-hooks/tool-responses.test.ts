@@ -10,6 +10,7 @@ import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
 import { createCcHooksRuntime } from './run'
+import { hookIfRuns } from '../plugins/kit'
 
 const dir = tempDirPerTest('cc-tool-responses-')
 const silent = { warn: () => {}, info: () => {} }
@@ -17,6 +18,7 @@ const saved = () => JSON.parse(readFileSync(join(dir(), 'post.json'), 'utf8'))
 
 const make = (command = `cat > "${join(dir(), 'post.json')}"`) =>
   createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: { PostToolUse: [{ handlers: [{ source: 'plugin', command, timeoutMs: 5000 }] }] },
     sessionId: 's1',
     projectDir: dir(),

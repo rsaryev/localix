@@ -10,6 +10,7 @@ import {
 } from './prompt-hook'
 import type { CcHookRegistry } from './contracts'
 import type { SkippedHandler } from './config'
+import { hookIfRuns } from '../plugins/kit'
 
 const silentLogger = { warn: () => {}, info: () => {} }
 
@@ -191,6 +192,7 @@ describe('mapPromptOutcome (per-event ok:false mapping)', () => {
 // ---------------------------------------------------------------------------
 function runtimeWith(registry: CcHookRegistry, evaluatePromptHook?: PromptHookEvaluator) {
   return createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry,
     sessionId: 's1',
     projectDir: '/p',

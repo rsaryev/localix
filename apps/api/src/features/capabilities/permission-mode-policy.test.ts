@@ -2,7 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import type { CallClass } from '@localixai/agent/agents'
 
 import { evaluate, extractCallFacts } from '../agent-core/permission-engine'
-import { skillPermissionRules } from '../chat/runtime/run/permission-gate-build'
+import { withOuterRules } from '../agent-core/permission-verdict'
+import { runOuterRules } from '../chat/runtime/run/claude-code-permissions'
+import { withAllowedTools } from '../chat/runtime/run/permission-gate-build'
 import { builtinAgentPreset } from './builtin-agent-presets'
 import { applyPermissionMode } from './permission-mode-policy'
 import { PERMISSION_MODES, type PermissionMode } from '../../contracts/permission-modes'
@@ -20,7 +22,7 @@ function runRules(mode: PermissionMode, rules: readonly Rule[], skillAllows?: st
     policy,
     denied: projection.denied.tool,
     permissions: projection.permissions,
-    grants: skillPermissionRules(skillAllows),
+    grants: withAllowedTools(runOuterRules(ROOT, '/home/me'), skillAllows),
   }
 }
 
@@ -29,9 +31,12 @@ const verdict = (
   name: string,
   callClass: CallClass,
   input: unknown = {},
-  grants: ReturnType<typeof skillPermissionRules> = [],
+  grants = runOuterRules(ROOT, '/home/me'),
 ) =>
-  evaluate(permissions, { name, ...callClass }, extractCallFacts(name, input, ROOT), grants).action
+  withOuterRules(
+    evaluate(permissions, { name, ...callClass }, extractCallFacts(name, input, ROOT)),
+    grants.judge({ toolName: name, input, tool: undefined }),
+  ).action
 
 const PRESET = builtinAgentPreset('localix')
 const ASKING: Rule[] = [...PRESET, { action: 'tool:Bash', resource: 'git push*', effect: 'ask' }]

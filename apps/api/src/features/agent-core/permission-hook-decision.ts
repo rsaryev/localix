@@ -15,7 +15,12 @@
  */
 import { resourceClassOf } from './capability-resource-classes'
 import { evaluate, type CallFacts, type PermissionRule, type ToolFacts } from './permission-engine'
-import type { RuleDecision, VerdictOptions } from './permission-verdict'
+import {
+  withOuterRules,
+  type OuterRuleVerdict,
+  type RuleDecision,
+  type VerdictOptions,
+} from './permission-verdict'
 
 export interface PreToolUseVerdict {
   decision: 'allow' | 'ask'
@@ -38,7 +43,7 @@ const asksAboutAClass = (rule: PermissionRule) =>
 /** The rule decision once the hook's verdict is applied; `byHook` when the hook allowed it. */
 export function withHookVerdict(
   opts: VerdictOptions,
-  judged: { decision: RuleDecision; facts: ToolFacts; call: CallFacts },
+  judged: { decision: RuleDecision; facts: ToolFacts; call: CallFacts; outer?: OuterRuleVerdict },
   hook: PreToolUseVerdict | undefined,
 ): { decision: RuleDecision; byHook: boolean } {
   const { decision } = judged
@@ -49,6 +54,8 @@ export function withHookVerdict(
   }
   if (decision.action !== 'ask' || judged.call.catastrophic) return { decision, byHook: false }
   const rules = opts.rules.filter((rule) => !asksAboutAClass(rule))
-  const lifted = evaluate(rules, judged.facts, judged.call, opts.preapprovedRules)
+  const listed = evaluate(rules, judged.facts, judged.call)
+  // An outer allow (a skill's `allowed-tools`) still answers the catch-all question it answered.
+  const lifted = judged.outer?.action === 'allow' ? withOuterRules(listed, judged.outer) : listed
   return { decision: lifted, byHook: lifted.action === 'allow' }
 }

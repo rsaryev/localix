@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { AgentTool } from '@localixai/agent/agents'
@@ -127,5 +128,28 @@ describe("Claude Code's permission rules in a Localix run", () => {
     expect(asked).toEqual([])
     await run('Read', { path: join(cwd, '../elsewhere/x.md') })
     expect(asked).toEqual(['Read'])
+  })
+
+  test('a deny on a folder refuses a read through a symlink into it', async () => {
+    const root = realpathSync(scratch())
+    const cwd = join(root, 'project')
+    mkdirSync(join(cwd, '.claude'), { recursive: true })
+    mkdirSync(join(root, 'secret'))
+    writeFileSync(join(root, 'secret', 'key'), 'k')
+    writeFileSync(
+      join(cwd, '.claude', 'settings.json'),
+      JSON.stringify({ permissions: { deny: [`Read(/${root}/secret/**)`] } }),
+    )
+    symlinkSync(join(root, 'secret'), join(cwd, 'link'))
+    const loaded = await loadClaudeCodePermissions({ homeDir: join(root, 'home'), cwd, env: {} })
+    const gate = createPermissionGate({
+      rules: ALLOW_ALL,
+      toolsByName: new Map([['Read', tool('Read', { classify: () => ({ effect: 'read' }) })]]),
+      root: cwd,
+      ...claudeCodeGateOptions(loaded, { mode: 'default' }),
+    })
+    const read = (path: string) => gate({ toolCallId: 'c', toolName: 'Read', input: { path } })
+    expect((await read('link/key'))?.block).toBe(true)
+    expect((await read('notes.md'))?.block).toBeUndefined()
   })
 })

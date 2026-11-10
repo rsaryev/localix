@@ -64,7 +64,6 @@ export function evaluate(
   rules: readonly PermissionRule[],
   tool: ToolFacts,
   call: CallFacts,
-  preapprovedRules: readonly PermissionRule[] = [],
 ): { action: PermissionAction; message?: string; rule?: PermissionRule } {
   let result: { action: PermissionAction; message?: string; rule?: PermissionRule } = {
     action: 'allow',
@@ -76,14 +75,6 @@ export function evaluate(
     ) {
       result = { action: rule.action, message: rule.message, rule }
     }
-  }
-  // A skill's grant answers only the catch-all question (`*`), Localix's form of Claude Code's
-  // default-mode prompt for a call no rule decides. A narrowed ask is an authored rule and still
-  // asks, as in Claude Code ("Deny and ask rules still override allowed-tools"); a grant never
-  // changes the authored list's order or opens a denied capability.
-  if (result.action === 'ask' && result.rule?.pattern === '*') {
-    const grant = evaluate(preapprovedRules, tool, call)
-    if (grant.rule?.action === 'allow') return grant
   }
   return result
 }

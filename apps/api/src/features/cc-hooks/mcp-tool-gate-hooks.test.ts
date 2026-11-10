@@ -8,7 +8,7 @@ import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
 import type { CcHookHandler, CcHookRegistry } from './contracts'
-import { evaluateIfGuard } from './if-guard'
+import { hookIfRuns } from '../plugins/kit'
 import { createCcHooksRuntime } from './run'
 
 // A plugin `lin-mcp` with an `echo` server: Localix's engine name and Claude Code's.
@@ -30,6 +30,7 @@ const cmd = (command: string, extra: Partial<CcHookHandler> = {}): CcHookHandler
 const json = (value: unknown) => `echo '${JSON.stringify(value)}'`
 const make = (registry: CcHookRegistry) =>
   createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry,
     sessionId: 's1',
     projectDir: dir(),
@@ -39,9 +40,9 @@ const make = (registry: CcHookRegistry) =>
 
 describe('a handler `if` on a plugin MCP tool', () => {
   it('matches the scoped name of a hyphenated plugin (hooks.md)', () => {
-    expect(evaluateIfGuard(CC, ENGINE, {}, [CC])).toBe(true)
-    expect(evaluateIfGuard('mcp__plugin_lin-mcp_other__echo', ENGINE, {}, [CC])).toBe(false)
-    expect(evaluateIfGuard('mcp__echo__echo', ENGINE, {}, [CC])).toBe(false)
+    expect(hookIfRuns(CC, ENGINE, {}, [CC])).toBe(true)
+    expect(hookIfRuns('mcp__plugin_lin-mcp_other__echo', ENGINE, {}, [CC])).toBe(false)
+    expect(hookIfRuns('mcp__echo__echo', ENGINE, {}, [CC])).toBe(false)
   })
 
   it('lets a PreToolUse hook guarded by that name run', async () => {

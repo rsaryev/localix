@@ -10,6 +10,7 @@ import { tempDirPerTest } from '@localixai/testing'
 
 import { parseHooksBlock } from './config'
 import { createCcHooksRuntime } from './run'
+import { hookIfRuns } from '../plugins/kit'
 
 const dir = tempDirPerTest('cc-on-failure-')
 const silent = { warn: () => {}, info: () => {} }
@@ -21,6 +22,7 @@ function make(event: string, hook: Record<string, unknown>) {
     pluginName: 'policy',
   })
   return createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry,
     sessionId: 's1',
     projectDir: dir(),

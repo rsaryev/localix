@@ -27,6 +27,7 @@ import {
   type CcTranscript,
 } from '../../cc-hooks'
 import type { ScopedCcHooks } from './run-contract'
+import { hookIfRuns } from '../../plugins/kit'
 
 /** Watch one file; `onChange` fires on any change to it. Returns the disposer. */
 export type WatchFile = (path: string, onChange: () => void) => () => void
@@ -81,6 +82,7 @@ export function createCcHookSessions(watchFile?: WatchFile, timers: IdleTimers =
     const entry = entries.get(sessionId)
     if (!entry) return INERT_CC_HOOKS
     return createCcHooksRuntime({
+      ifRuns: hookIfRuns,
       registry: entry.registry,
       sessionId,
       projectDir: entry.projectDir,

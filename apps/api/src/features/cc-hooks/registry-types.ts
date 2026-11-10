@@ -71,7 +71,7 @@ export interface CcHookHandler {
    * CC `if` — an optional secondary permission-rule guard (e.g. `Bash(git commit:*)`),
    * evaluated against `tool_name`/`tool_input` BEFORE the hook is spawned. Applies
    * only on tool events ({@link isToolEvent}); on other events a handler with an
-   * `if` never runs. Best-effort + fail-open (see `if-guard.ts`).
+   * `if` never runs. Read by the kit (`plugins/kit/hook-if.ts`).
    */
   if?: string
   /**

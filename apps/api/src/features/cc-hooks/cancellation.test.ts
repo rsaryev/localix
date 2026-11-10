@@ -1,11 +1,13 @@
 import { describe, expect, test } from 'bun:test'
 import { createCcHooksRuntime } from './run'
 import type { CcHookHandler } from './contracts'
+import { hookIfRuns } from '../plugins/kit'
 
 describe('lifecycle bounds at the compatibility adapter', () => {
   test('teardown hooks keep their own bounded lifetime after turn cancellation', async () => {
     const signals: (AbortSignal | undefined)[] = []
     const runtime = createCcHooksRuntime({
+      ifRuns: hookIfRuns,
       registry: {
         SessionEnd: [
           {
@@ -55,6 +57,7 @@ describe('lifecycle bounds at the compatibility adapter', () => {
         once: true,
       }
       const runtime = createCcHooksRuntime({
+        ifRuns: hookIfRuns,
         registry: { PreToolUse: [{ handlers: [handler] }] },
         sessionId: 'test',
         projectDir: process.cwd(),
@@ -81,6 +84,7 @@ describe('lifecycle bounds at the compatibility adapter', () => {
     const onceKeys = new Set<string>()
     let calls = 0
     const runtime = createCcHooksRuntime({
+      ifRuns: hookIfRuns,
       registry: {
         Stop: [
           {

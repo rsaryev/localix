@@ -2,10 +2,12 @@ import { describe, expect, it } from 'bun:test'
 
 import { parseHooksBlock } from './config'
 import { createCcHooksRuntime } from './run'
+import { hookIfRuns } from '../plugins/kit'
 
 /** A PreToolUse hook whose tool answers with `answer` (hooks.md: `permissionDecision: "defer"`). */
 function runtimeAnswering(answer: Record<string, unknown>, warnings: string[]) {
   return createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: parseHooksBlock(
       { PreToolUse: [{ hooks: [{ type: 'mcp_tool', server: 's', tool: 't' }] }] },
       'project',
@@ -33,6 +35,7 @@ describe('permissionDecision "defer"', () => {
 
   it('does not stop a later hook from denying', async () => {
     const rt = createCcHooksRuntime({
+      ifRuns: hookIfRuns,
       registry: parseHooksBlock(
         {
           PreToolUse: [

@@ -378,7 +378,7 @@ allow, but an expansion block never echoed the prompt, so there is nothing to le
 - [Declarative hook registry](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/config.ts)
 - [Declarative hook runtime](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/run.ts)
 - [Matcher semantics](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/matcher.ts)
-- [Secondary `if` filter](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/if-guard.ts)
+- [Secondary `if` filter](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/hook-if.ts)
 - [Tool rewrite and output folding](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/wrap-tools.ts)
 - [Bounded continuation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/run-continuations.ts)
 - [Model-backed evaluators](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/cc-hook-evaluators.ts)

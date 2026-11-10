@@ -9,6 +9,7 @@ import { tmpdir } from 'node:os'
 import type { CcHookEvent, CcHookHandler } from './contracts'
 import { foldHookOutput } from './output-parse'
 import { createCcHooksRuntime } from './run'
+import { hookIfRuns } from '../plugins/kit'
 
 const silent = { warn: () => {}, info: () => {} }
 
@@ -23,6 +24,7 @@ function answering(event: CcHookEvent, answers: Record<string, unknown>) {
     timeoutMs: 5000,
   }))
   const rt = createCcHooksRuntime({
+    ifRuns: hookIfRuns,
     registry: { [event]: [{ handlers }] },
     sessionId: 's1',
     projectDir: tmpdir(),

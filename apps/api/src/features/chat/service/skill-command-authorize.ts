@@ -3,7 +3,9 @@ import type { PermissionRule } from '../../agent-core/permission-engine'
 import { verdictOf } from '../../agent-core/permission-verdict'
 import { classifyBashCall } from '../../agent-core/tools/bash/bash-call-class'
 import { TOOL } from '../../agent-core/tool-names'
-import { skillPermissionRules } from '../runtime/run/permission-gate-build'
+import { claudeCodeHome } from '../../cc-settings/config-dir'
+import { runOuterRules } from '../runtime/run/claude-code-permissions'
+import { withAllowedTools } from '../runtime/run/permission-gate-build'
 import type { AuthorizeSkillCommand } from './skill-commands'
 
 /**
@@ -21,7 +23,7 @@ export function authorizeTypedSkillCommands(
   const bash = { name: TOOL.Bash, classify: classifyBashCall } as unknown as AgentTool
   const verdict = verdictOf({
     rules,
-    preapprovedRules: skillPermissionRules(allowedTools, root),
+    outerRules: withAllowedTools(runOuterRules(root, claudeCodeHome()), allowedTools),
     toolsByName: new Map([[TOOL.Bash, bash]]),
     root,
   })
