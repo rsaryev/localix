@@ -8,7 +8,7 @@ import { createDatabase } from '../../../db/connection'
 import { migrateToLatest } from '../../../db/migrator'
 import type { AppDatabase } from '../../../db/types'
 import { recordCoreChanges } from '../../changes/core-entities'
-import { agentFolders } from '../catalog/scan'
+import { testAgentScopes } from '../testing'
 import { createAgentBindings } from './bindings'
 import { GRACE_MS } from './plan'
 import { createAgentWatcher } from './watcher'
@@ -50,12 +50,12 @@ describe('agent watcher', () => {
       (row) => row.op,
     )
   const make = () => {
-    const folders = async () =>
-      agentFolders({ cwd: null, home: home(), managedDir: join(base(), 'managed') })
+    const scopes = testAgentScopes({ root: base() })
+    const folders = (project: string) => scopes.folders('u', project)
     const bindings = createAgentBindings({
       db,
       stores: capabilityStores,
-      folders,
+      catalog: scopes.catalog,
       now: () => clock,
       newId: () => `cc:test-${++counter}`,
     })

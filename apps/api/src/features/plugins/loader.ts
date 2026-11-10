@@ -10,7 +10,7 @@ import { pluginLoadBlockReason } from './load-block'
 import { buildPluginCatalog } from './catalog'
 import { catalogMcpServers, kitPluginsOf } from './catalog-kit'
 import type { LocalixPluginHost } from './kit'
-import { buildLoadedAgent, emptyLoadedPlugins, type LoadedPlugins } from './loader-contract'
+import { emptyLoadedPlugins, type LoadedPlugins } from './loader-contract'
 import { resolvePluginConfig } from './config'
 import { recordPluginLoad } from '../notifications/conditions/plugins'
 import { buildMcpRecords } from './mcp'
@@ -132,11 +132,6 @@ export async function loadEnabledPlugins(opts: {
 
     // ---- MCP servers ------------------------------------------------------
     result.mcpServers.push(...buildMcpRecords(plugin, mcp, opts.userId, now(), opts.logger))
-
-    // ---- Custom worker roles (sub-agents — manifest data + CC files) --------
-    for (const agent of plugin.agents) {
-      result.agents.push(buildLoadedAgent(plugin.manifest.name, agent, subst))
-    }
 
     // ---- Skills -----------------------------------------------------------
     for (const skillDir of plugin.entrypoints.skillDirs) {

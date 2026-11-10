@@ -8,22 +8,13 @@ import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
 import type { LoadedPluginAgent } from '../plugins/loader-contract'
-import { withModAgents } from '../../bootstrap/agent-catalog-sources'
 import { modAgentDefinition } from '../mods/agent-definition'
 import { createAgentsService } from './service'
+import { testAgentScopes } from './testing'
 
 const cleanup: Array<() => Promise<void>> = []
 afterEach(async () => {
   for (const run of cleanup.splice(0).reverse()) await run()
-})
-
-const pluginAgent = (plugin: string, name: string): LoadedPluginAgent => ({
-  pluginName: plugin,
-  name,
-  fullName: `${plugin}:${name}`,
-  label: name,
-  description: `${name} from ${plugin}`,
-  prompt: `You are ${name}.`,
 })
 
 async function fixture(
@@ -42,24 +33,17 @@ async function fixture(
   const service = createAgentsService({
     db,
     capabilityStores,
-    folders: async (_user, project) => ({
-      managed: join(root, 'managed', '.claude'),
-      user: userClaude,
-      project: project === 'p' ? [projectClaude] : project ? null : [],
-    }),
-    plugins: async () =>
-      withModAgents(
+    ...testAgentScopes({
+      root,
+      projects: { p: join(root, 'project') },
+      plugins: () =>
         Object.entries(plugins).map(([plugin, names]) => ({
           plugin,
-          projectId: '',
           enabled: true,
-          agents: names.map((name) => pluginAgent(plugin, name)),
+          agents: names.map((name) => ({ name, description: `${name} from ${plugin}` })),
         })),
-        [...new Set(modAgents.map((agent) => agent.pluginName))].map((plugin) => ({
-          plugin,
-          agents: modAgents.filter((agent) => agent.pluginName === plugin),
-        })),
-      ),
+      mods: () => modAgents,
+    }),
   })
   const file = (dir: string, name: string, front = '', body = `Body of ${name}.`) =>
     writeFile(
@@ -110,19 +94,20 @@ describe('resolving who a task goes to', () => {
     }
     expect(await typeOf('general-purpose')).toBe('general-purpose')
     expect(await typeOf('@agent-general-purpose')).toBe('general-purpose')
-    expect(await typeOf('General-Purpose')).toBe('general-purpose')
+    // Behaviour change (kit wins): a name is matched as written, as Claude Code matches it.
+    expect(await typeOf('General-Purpose')).toBe('unavailable')
     expect(await typeOf('claude')).toBe('claude')
   })
 
-  test('the other built-in types are catalog agents with Claude Code’s tool lists', async () => {
+  // Behaviour change (kit wins): the kit's built-ins carry no tool list of their own.
+  test('the other built-in types are catalog agents, with Localix’s prompts', async () => {
     const t = await fixture()
-    expect(await t.service.resolveDelegation('u', 'statusline-setup')).toMatchObject({
-      kind: 'agent',
-      definition: { tools: ['Read', 'Edit'] },
-    })
+    const found = await t.service.resolveDelegation('u', 'statusline-setup')
+    expect(found).toMatchObject({ kind: 'agent', definition: { source: 'builtin' } })
+    expect(found.kind === 'agent' && found.definition.prompt).toContain('status line')
+    expect(found.kind === 'agent' && found.definition.tools).toBeUndefined()
     expect(await t.service.resolveDelegation('u', 'claude-code-guide')).toMatchObject({
       kind: 'agent',
-      definition: { tools: ['Bash', 'Read', 'Research'] },
     })
   })
 

@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import type { AgentFolders } from '../catalog/scan'
+import type { AgentFolders } from '../catalog/agent-file'
 import type { AgentSnapshot } from './bindings'
 
 /** Runs `fn` after `ms` and returns the cancel. Injected so tests own the clock. */
@@ -33,8 +33,8 @@ const SETTLE_MS = 300
 const EVERY_MS = 60_000
 
 /**
- * Keeps agent bindings current while the app runs. It watches every folder the catalog reads:
- * the managed and user `.claude/agents` and each known project's chain. A burst of events settles,
+ * Keeps agent bindings current while the app runs. It watches every agents folder the catalog
+ * read and the managed, user and each known project's `.claude` folder. A burst of events settles,
  * then every scope reconciles; a definition that vanished is purged once its grace has run, which
  * this schedules. The folder itself may not exist yet, so its parent is watched for `agents`.
  */
@@ -57,13 +57,16 @@ export function createAgentWatcher(deps: AgentWatcherDeps) {
     )
   }
 
+  // The agents folders each scope's last reconcile read (the kit's answer), beside the folders an
+  // agents folder may appear in.
+  const read = new Map<string, readonly string[]>()
   const claudeDirs = async (): Promise<string[]> => {
     const dirs = new Set<string>()
     for (const scope of ['', ...(await deps.projects())]) {
       const folders = await deps.folders(scope)
       dirs.add(folders.managed)
       dirs.add(folders.user)
-      for (const dir of folders.project ?? []) dirs.add(dir)
+      if (folders.project) dirs.add(folders.project)
     }
     return [...dirs]
   }
@@ -84,12 +87,14 @@ export function createAgentWatcher(deps: AgentWatcherDeps) {
   async function arm(): Promise<void> {
     if (stopped) return
     const wanted = new Map<string, { dir: string; recursive: boolean }>()
+    const agentsDirs = new Set([...read.values()].flat())
     for (const claude of await claudeDirs()) {
       if (!existsSync(claude)) continue
       wanted.set(`${claude}:parent`, { dir: claude, recursive: false })
-      const agents = join(claude, 'agents')
-      if (existsSync(agents)) wanted.set(`${claude}:agents`, { dir: agents, recursive: true })
+      agentsDirs.add(join(claude, 'agents'))
     }
+    for (const agents of agentsDirs)
+      if (existsSync(agents)) wanted.set(`${agents}:agents`, { dir: agents, recursive: true })
     for (const [key, stop] of stops)
       if (!wanted.has(key)) {
         stop()
@@ -123,9 +128,11 @@ export function createAgentWatcher(deps: AgentWatcherDeps) {
     try {
       let due: number | null = null
       for (const scope of ['', ...(await deps.projects())]) {
-        const { purgeDueAt } = await deps.reconcile(scope)
+        const { purgeDueAt, watch } = await deps.reconcile(scope)
+        read.set(scope, watch)
         if (purgeDueAt !== null && (due === null || purgeDueAt < due)) due = purgeDueAt
       }
+      await arm()
       cancelPurge?.()
       cancelPurge = null
       if (due !== null)

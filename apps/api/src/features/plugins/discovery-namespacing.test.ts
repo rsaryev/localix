@@ -3,7 +3,6 @@ import { promises as fs } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { collectMarkdownFiles } from './discovery-cc-markdown-scan'
 import { loadManifest } from './discovery'
 
 /**
@@ -44,18 +43,6 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await fs.rm(dir, { recursive: true, force: true })
-})
-
-describe('collectMarkdownFiles (recursive namespacing)', () => {
-  it('namespaces nested files and keeps top-level bare, name-sorted', async () => {
-    const plug = join(dir, 'nested-plugin')
-    const files = await collectMarkdownFiles(plug, undefined, 'commands')
-    const names = files.map((f) => f.name)
-    expect(names).toContain('deploy')
-    expect(names).toContain('infra:scale')
-    // Deterministic name-sorted order.
-    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)))
-  })
 })
 
 describe('loadManifest wires namespaced commands + agents into provides', () => {

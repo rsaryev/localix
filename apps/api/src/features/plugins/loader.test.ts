@@ -112,33 +112,6 @@ beforeAll(async () => {
     '---\nname: auditor\ndescription: audits\n---\n\nYou audit for security issues.',
   )
 
-  // An agent using CC tool names (normalized) + `skills:` (pinned skills).
-  const ccnorm = join(dir, '.localix', 'plugins', 'ccnorm')
-  await fs.mkdir(join(ccnorm, 'agents'), { recursive: true })
-  await writeManifest(ccnorm, {
-    name: 'ccnorm',
-    version: '1.0.0',
-    description: 'CC name normalization test',
-  })
-  await fs.writeFile(
-    join(ccnorm, 'agents', 'norm-agent.md'),
-    '---\nname: norm-agent\ndescription: normalizes\ntools: Bash, Read, Grep\nskills: deploy-guide\n---\n\nYou normalize.',
-  )
-
-  // A Claude Code-layout plugin shipping a subagent as agents/reviewer.md (no inline
-  // `agents` field) — proves CC plugin subagents reach the delegation roster.
-  const ccagent = join(dir, '.localix', 'plugins', 'ccagent')
-  await fs.mkdir(join(ccagent, 'agents'), { recursive: true })
-  await writeManifest(ccagent, {
-    name: 'ccagent',
-    version: '1.0.0',
-    description: 'CC subagent plugin',
-  })
-  await fs.writeFile(
-    join(ccagent, 'agents', 'reviewer.md'),
-    '---\nname: reviewer\ndescription: Reviews code\nmodel: sonnet\n---\n\nYou are a meticulous code reviewer.',
-  )
-
   // A plugin whose `skills` path points directly at a skill dir (SKILL.md inside) —
   // the Claude Code `skills: ["./path/to/skill"]` form (e.g. ui-ux-pro-max).
   const directSkill = join(dir, '.localix', 'plugins', 'direct-skill')
@@ -225,55 +198,6 @@ describe('skills paths', () => {
     expect(skill).toBeDefined()
     expect(typeof Object.getOwnPropertyDescriptor(skill!, 'content')?.get).toBe('function')
     expect(skill!.content).toContain('Design beautifully.')
-  })
-})
-
-describe('custom worker roles (plugin agents)', () => {
-  it('collects agent files, namespaced and tool-mapped, from an enabled plugin', async () => {
-    const loaded = await loadEnabledPlugins(opts(fakeRepo([state('styler')]), allowing('styler')))
-    // Agent files load in name order; the label is the name, as Claude Code has none.
-    expect(loaded.agents).toEqual([
-      {
-        pluginName: 'styler',
-        name: 'auditor',
-        fullName: 'styler:auditor',
-        label: 'auditor',
-        description: 'audits',
-        prompt: 'You audit for security issues.',
-      },
-      {
-        pluginName: 'styler',
-        name: 'doc-writer',
-        fullName: 'styler:doc-writer',
-        label: 'doc-writer',
-        description: 'writes docs',
-        prompt: 'You write documentation.',
-        tools: ['Read', 'Search', 'Write'],
-      },
-    ])
-  })
-
-  it('contributes no agents when the rules switched the plugin off', async () => {
-    const loaded = await loadEnabledPlugins(opts(fakeRepo([state('styler')]), allowing()))
-    expect(loaded.agents).toEqual([])
-  })
-
-  it('normalizes CC tool names in agent files (Bash→bash, Grep→search) + propagates pinnedSkills', async () => {
-    const loaded = await loadEnabledPlugins(opts(fakeRepo([state('ccnorm')]), allowing('ccnorm')))
-    const agent = loaded.agents.find((a) => a.name === 'norm-agent')
-    expect(agent).toBeDefined()
-    // CC names normalized to engine names
-    expect(agent!.tools?.sort()).toEqual(['Bash', 'Read', 'Search'])
-    // pinnedSkills propagated
-    expect(agent!.pinnedSkills).toEqual(['deploy-guide'])
-  })
-
-  it('surfaces a Claude Code agents/*.md subagent in the delegation roster, dispatchable as a role', async () => {
-    const loaded = await loadEnabledPlugins(opts(fakeRepo([state('ccagent')]), allowing('ccagent')))
-    const agent = loaded.agents.find((a) => a.fullName === 'ccagent:reviewer')
-    expect(agent).toBeDefined()
-    expect(agent!.description).toBe('Reviews code')
-    expect(agent!.prompt).toContain('meticulous code reviewer')
   })
 })
 

@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
-import { readAgentFile } from './catalog/agent-file'
+import { scopeAgents } from '../plugins/kit'
+import { diskPluginHost } from '../plugins/kit/testing'
 import { agentFilePath, agentFileText, readAgentFileText, writeAgentFile } from './file-writer'
 import { recordOf } from './projection'
 
@@ -9,10 +10,19 @@ describe('agent file writer', () => {
   const dir = tempDirPerTest('agent-writer-')
 
   const roundTrip = async (input: Parameters<typeof agentFileText>[1], existing = '') => {
-    const path = agentFilePath(join(dir(), 'agents'), input.name)
+    const home = join(dir(), 'home')
+    const path = agentFilePath(join(home, '.claude', 'agents'), input.name)
     await writeAgentFile(path, agentFileText(existing, input))
-    const read = await readAgentFile(path, 'user', '')
-    return { path, record: recordOf(read!, 'id') }
+    // Read back as the catalog reads it: by the kit, from the person's agents folder.
+    const managedDirectory = join(dir(), 'managed')
+    const catalog = await scopeAgents(diskPluginHost(home, { managedDirectory }), {
+      cwd: '/',
+      homeDir: home,
+      plugins: [],
+      managed: { dir: managedDirectory },
+    })
+    const read = catalog.agents.find((agent) => agent.path === path)!
+    return { path, record: recordOf({ ...read, projectId: '', bodyHash: '' }, 'id') }
   }
 
   test('a definition survives the file: turns and skills', async () => {

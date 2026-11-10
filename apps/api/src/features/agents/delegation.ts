@@ -48,7 +48,7 @@ export function createAgentDelegation(deps: DelegationDeps) {
     const wanted = reference.trim()
     const byId = snapshot.agents.find((entry) => entry.id === wanted && !entry.shadowedBy)
     if (byId) return byId
-    const resolved = snapshot.catalog.resolve(wanted)
+    const resolved = snapshot.resolve(wanted)
     if (!resolved) return null
     if ('ambiguous' in resolved) return resolved
     return snapshot.agents.find((entry) => entry.agent === resolved.agent) ?? null

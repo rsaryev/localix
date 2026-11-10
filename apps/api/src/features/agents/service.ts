@@ -54,8 +54,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
   const bindings = createAgentBindings({
     db: deps.db,
     stores,
-    folders: deps.folders,
-    plugins: deps.plugins,
+    catalog: deps.catalog,
     onChanged: () => capabilitiesChanged(),
   })
 
@@ -104,7 +103,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
     const byId = current.agents.find((entry) => entry.id === name && !entry.shadowedBy)
     let entry = byId
     if (!entry) {
-      const resolved = current.catalog.resolve(name)
+      const resolved = current.resolve(name)
       if (resolved && 'ambiguous' in resolved)
         throw new ConflictError('agent_ambiguous', 'Select an agent by ID')
       entry = resolved

@@ -43,7 +43,6 @@ export function narrowLoadedPlugins(
       (server) => !deniedMcpIds.some((prefix) => server.id.startsWith(prefix)),
     ),
     binDirs: loaded.binDirs.filter((dir) => !deniedBinDirs.has(dir)),
-    agents: loaded.agents.filter((agent) => !denied.has(agent.pluginName)),
     outputStyles: loaded.outputStyles.filter((entry) => !denied.has(entry.pluginName)),
     mainAgent:
       loaded.mainAgent && denied.has(loaded.mainAgent.pluginName) ? null : loaded.mainAgent,

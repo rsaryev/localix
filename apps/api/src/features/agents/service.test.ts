@@ -13,6 +13,7 @@ import { seedAgentPresets } from '../capabilities/seed-agent-presets'
 import { resolveCapabilities } from '../capabilities/resolve'
 import { createInvocationRegistry } from '../capabilities/invocation'
 import { capabilityRevision } from '../capabilities/revision'
+import { testAgentScopes } from './testing'
 
 const cleanup: Array<() => Promise<void>> = []
 afterEach(async () => {
@@ -36,11 +37,7 @@ async function fixture() {
     db,
     capabilityStores,
     invocations,
-    folders: async (_user, project) => ({
-      managed: join(root, 'managed', '.claude'),
-      user: userClaude,
-      project: project === 'p' ? [projectClaude] : project ? null : [],
-    }),
+    ...testAgentScopes({ root, projects: { p: join(root, 'project') } }),
   })
   const rules = createCapabilityRuleRepository(db)
   await seedAgentPresets(

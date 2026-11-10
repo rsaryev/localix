@@ -6,8 +6,7 @@
  * execute), `now` is fixed, and ids are constant — so a render is byte-stable.
  */
 import { resolveRunProfile, type RunProfile } from '../../run-shape'
-import { DEFAULT_AGENT_NAME } from '../../../../db/author'
-import { BUILTIN_AGENT_TYPES } from '../../../agents/catalog/builtin-types'
+import { LOCALIX_AGENT } from '../../../agents/catalog/builtin-types'
 import {
   createRuntimeToolRegistry,
   type OptionalToolPorts,
@@ -106,10 +105,9 @@ export function fullPrompt(
   // One shipped record answers for every shape now that the task agents are retired: the
   // goldens lock the SHAPE's default surface, and the identity behind them only has to be a
   // real record with real instructions.
-  const agent = BUILTIN_AGENT_TYPES.find((type) => type.fullName === DEFAULT_AGENT_NAME)
   const profile = resolveRunProfile(
     { sessionKind: SHAPE_SESSION_KIND[profileKey] },
-    agent ? { prompt: agent.prompt } : undefined,
+    { prompt: LOCALIX_AGENT.prompt },
   )
   // Production parity (runtime-tools.ts): a session with active loops keeps `loops`
   // direct — the loops section instructs dynamic loops to call `loops.reschedule`.

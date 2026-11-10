@@ -19,6 +19,14 @@ export {
 } from './sessions'
 export { scopeMcpServers, type McpScope, type ScopeMcpServers } from './mcp-servers'
 export {
+  scopeAgents,
+  type AgentReference,
+  type ScopeAgent,
+  type ScopeAgents,
+  type ScopeAgentSource,
+} from './agents'
+export type { PluginScope } from './scope-session'
+export {
   issueLine,
   readPluginFolder,
   type CatalogPlugin,

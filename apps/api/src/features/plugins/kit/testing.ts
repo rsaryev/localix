@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto'
+import { rmSync } from 'node:fs'
 import { join } from 'node:path'
+import { writeTree } from '@localixai/testing'
 import type { EnvFileStore, HooksSettings, PluginFiles, PluginSession } from '@rsaryev/llx-plugin'
 import type { PluginStateStore, StagedDirectory } from '@rsaryev/llx-plugin/marketplace'
 import {
@@ -94,14 +96,17 @@ export function memoryKitPorts(options: MemoryKitOptions = {}): LocalixKitPorts 
 }
 
 /** A real plugin host over a home folder on disk, for tests that read plugins from folders. */
-export function diskPluginHost(homeDir: string): LocalixPluginHost {
+export function diskPluginHost(
+  homeDir: string,
+  options: { readonly managedDirectory?: string } = {},
+): LocalixPluginHost {
   return createLocalixPluginHost({
     homeDir,
     environment: () => ({ PATH: process.env.PATH }),
     pluginsRoot: () => join(homeDir, '.localix/plugins'),
     scratchDir: () => join(homeDir, 'scratch'),
     envFilesDir: (sessionId) => join(homeDir, 'sessions', sessionId),
-    managedDirectory: undefined,
+    managedDirectory: options.managedDirectory,
     mcp: () => undefined,
     models: () => undefined,
   })
@@ -139,19 +144,7 @@ export async function skillTestSession(
   cwd: string,
   pluginDirs: readonly string[] = [],
 ): Promise<PluginSession> {
-  const plugins: ScopePlugin[] = []
-  for (const dir of pluginDirs) {
-    const read = await readPluginFolder(dir)
-    if (!read.kit) throw new Error(`${dir} does not load as a plugin`)
-    plugins.push({
-      id: `${read.manifest.name}@test`,
-      root: dir,
-      plugin: read.kit,
-      selected: true,
-      scope: 'user',
-      values: {},
-    })
-  }
+  const plugins = await Promise.all(pluginDirs.map((dir) => testScopePlugin(dir)))
   return createChatPluginSessions(diskPluginHost(homeDir)).forRun({
     chatId: 'chat-1',
     cwd,
@@ -161,4 +154,30 @@ export async function skillTestSession(
     layers: [],
     plugins,
   })
+}
+
+/** A plugin folder read as a user install of the scope, `<name>@test`. */
+export async function testScopePlugin(dir: string, selected = true): Promise<ScopePlugin> {
+  const read = await readPluginFolder(dir)
+  if (!read.kit) throw new Error(`${dir} does not load as a plugin`)
+  return {
+    id: `${read.manifest.name}@test`,
+    root: dir,
+    plugin: read.kit,
+    selected,
+    scope: 'user',
+    values: {},
+  }
+}
+
+/** A plugin `name` written afresh at `dir` with these files beside its manifest, read as installed. */
+export async function writeTestPlugin(
+  dir: string,
+  name: string,
+  files: Readonly<Record<string, string>>,
+  selected = true,
+): Promise<ScopePlugin> {
+  rmSync(dir, { recursive: true, force: true })
+  writeTree(dir, { '.claude-plugin/plugin.json': JSON.stringify({ name }), ...files })
+  return testScopePlugin(dir, selected)
 }

@@ -1,59 +1,70 @@
 import { watch as fsWatch } from 'node:fs'
+import { join } from 'node:path'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../db/types'
 import { userHome } from '../lib/env'
 import { readAvailability } from '../features/capabilities/availability'
 import { createCapabilitySourceRepository } from '../features/capabilities/source-repository'
-import { agentFolders } from '../features/agents/catalog/scan'
-import type { AgentSnapshot, PluginAgentGroup } from '../features/agents/bindings/bindings'
+import type { AgentFolders } from '../features/agents/catalog/agent-file'
+import type { ScopeCatalog } from '../features/agents/catalog/compose'
+import type { AgentSnapshot } from '../features/agents/bindings/bindings'
 import { createAgentWatcher, type After, type WatchDir } from '../features/agents/bindings/watcher'
 import { recordCoreChanges } from '../features/changes/core-entities'
 import { onCapabilityRevision } from '../features/capabilities/revision'
 import { buildPluginCatalog } from '../features/plugins/catalog'
-import { buildLoadedAgent, type LoadedPluginAgent } from '../features/plugins/loader-contract'
+import { kitPluginsOf } from '../features/plugins/catalog-kit'
+import { managedSettingsDir, scopeAgents, type LocalixPluginHost } from '../features/plugins/kit'
+import type { LoadedPluginAgent } from '../features/plugins/loader-contract'
 
-/** Claude Code's folders for one scope; `project` is null while the project's directory is gone. */
-export function createAgentFoldersPort(
-  resolveProjectCwd: (userId: string, projectId: string) => Promise<string | null>,
-) {
-  return async (userId: string, projectId: string) => {
-    const home = userHome()
-    if (!projectId) return agentFolders({ cwd: undefined, home })
-    const cwd = await resolveProjectCwd(userId, projectId)
-    const folders = await agentFolders({ cwd, home })
-    return cwd ? folders : { ...folders, project: null }
+type ProjectCwd = (userId: string, projectId: string) => Promise<string | null>
+
+/** The `.claude` folders a scope's agent files are written to and watched in. */
+export function createAgentFoldersPort(resolveProjectCwd: ProjectCwd) {
+  return async (userId: string, projectId: string): Promise<AgentFolders> => {
+    const cwd = projectId ? await resolveProjectCwd(userId, projectId) : null
+    return {
+      managed: join(managedSettingsDir(), '.claude'),
+      user: join(userHome(), '.claude'),
+      project: cwd ? join(cwd, '.claude') : null,
+    }
   }
 }
 
 /**
- * The agents plugins bring, per installed plugin. A plugin's own switch is the person's rule on
- * the main agent, as everywhere else; a disabled plugin's agents are not gone, just not offered.
+ * A scope's subagents as the kit resolves them in a session of the scope's folder (`/` for no
+ * project, so the person's own agents are not read as a project's), with its installed plugins: a
+ * plugin's own switch is the person's rule on the main agent, as everywhere else, and a disabled
+ * plugin's agents are not gone, just not offered.
  */
-export function createPluginAgentGroups(
+export function createAgentCatalogPort(
   db: Kysely<AppDatabase>,
-  resolveProjectCwd: (userId: string, projectId: string) => Promise<string | null>,
+  pluginHost: LocalixPluginHost,
+  resolveProjectCwd: ProjectCwd,
   /** The agent types the loaded mods registered (`$.agent.register`), by plugin. */
   modAgents: () => readonly ModAgentGroup[] = () => [],
 ) {
-  return async (userId: string, projectId: string): Promise<PluginAgentGroup[]> => {
+  return async (userId: string, projectId: string): Promise<ScopeCatalog> => {
+    const cwd = projectId ? await resolveProjectCwd(userId, projectId) : null
     const catalog = await buildPluginCatalog({
       repo: createCapabilitySourceRepository(db, 'plugin'),
       availability: await readAvailability(db, { userId, agentId: DEFAULT_AGENT_ID }),
       userId,
       projectId,
-      cwd: projectId ? await resolveProjectCwd(userId, projectId) : null,
+      cwd,
       homeDir: userHome(),
     })
-    const files = catalog.all.map((entry) => ({
-      plugin: entry.plugin.manifest.name,
-      projectId: entry.plugin.scope === 'global' ? '' : projectId,
-      enabled: entry.enabled,
-      agents: entry.plugin.agents.map((agent) =>
-        buildLoadedAgent(entry.plugin.manifest.name, agent, (text) => text),
-      ),
-    }))
-    return withModAgents(files, modAgents())
+    const plugins = kitPluginsOf(catalog)
+    return {
+      agents: await scopeAgents(pluginHost, { cwd: cwd ?? '/', homeDir: userHome(), plugins }),
+      mods: modAgents().flatMap((group) => group.agents),
+      plugins: plugins.map((plugin) => ({
+        plugin: plugin.plugin.name,
+        projectId: plugin.scope === 'project' ? projectId : '',
+        enabled: plugin.selected,
+      })),
+      projectReadable: !projectId || cwd !== null,
+    }
   }
 }
 
@@ -61,28 +72,6 @@ export function createPluginAgentGroups(
 export interface ModAgentGroup {
   plugin: string
   agents: readonly LoadedPluginAgent[]
-}
-
-/**
- * Plugin groups with the mods' agents in them. A mod is part of its plugin, so its agents join the
- * plugin's own group (a type the mod registers replaces a file of the same name); a plugin the
- * catalog does not list gets a group of its own, on for every project.
- */
-export function withModAgents(
-  groups: readonly PluginAgentGroup[],
-  mods: readonly ModAgentGroup[],
-): PluginAgentGroup[] {
-  const out = groups.map((group) => ({ ...group }))
-  for (const mod of mods) {
-    const own = out.find((group) => group.plugin === mod.plugin && group.projectId === '')
-    if (!own) {
-      out.push({ plugin: mod.plugin, projectId: '', enabled: true, agents: [...mod.agents] })
-      continue
-    }
-    const names = new Set(mod.agents.map((agent) => agent.fullName))
-    own.agents = [...own.agents.filter((agent) => !names.has(agent.fullName)), ...mod.agents]
-  }
-  return out
 }
 
 /** `fs.watch` as the watcher's seam: a missing folder is reported, never thrown. */

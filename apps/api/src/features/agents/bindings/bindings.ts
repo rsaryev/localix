@@ -8,11 +8,8 @@ import { inheritedAgentPreset } from '../../capabilities/builtin-agent-presets'
 import type { CapabilitySourceRecord } from '../../capabilities/source-repository'
 import type { CapabilityStores } from '../../capabilities/store-factory'
 import { recordCoreChanges, type CoreChange } from '../../changes/core-entities'
-import type { LoadedPluginAgent } from '../../plugins/loader-contract'
-import type { CatalogAgent } from '../catalog/agent-file'
-import { composeCatalog, type AgentCatalog } from '../catalog/catalog'
-import { BUILTIN_AGENT_TYPES } from '../catalog/builtin-types'
-import { pluginCatalogAgent, scanFileAgents, type AgentFolders } from '../catalog/scan'
+import type { CatalogAgent, ResolvedAgent } from '../catalog/agent-file'
+import { composeCatalog, type ScopeCatalog } from '../catalog/compose'
 import {
   GRACE_MS,
   groupKey,
@@ -23,21 +20,11 @@ import {
   type FoundAgent,
 } from './plan'
 
-/** The agents a plugin brings, with whether the plugin is on: an installed plugin is never gone. */
-export interface PluginAgentGroup {
-  plugin: string
-  /** '' for a plugin installed for the person; else the project it is installed for. */
-  projectId: string
-  enabled: boolean
-  agents: readonly LoadedPluginAgent[]
-}
-
 export interface BindingDeps {
   db: Kysely<AppDatabase>
   stores: CapabilityStores
-  /** Claude Code's folders for a scope (`project` null when the folder cannot be read now). */
-  folders(userId: string, projectId: string): Promise<AgentFolders>
-  plugins?(userId: string, projectId: string): Promise<readonly PluginAgentGroup[]>
+  /** The scope's subagents as the kit resolves them, with its plugins and the mods' agents. */
+  catalog(userId: string, projectId: string): Promise<ScopeCatalog>
   now?: () => number
   newId?: () => string
   /** Called once a reconcile has committed a change, so capability readers re-read the agents. */
@@ -52,8 +39,11 @@ export interface BoundAgent {
 }
 
 export interface AgentSnapshot {
-  catalog: AgentCatalog
+  /** The one lookup of an agent by what a person or model typed (`catalog/compose.ts`). */
+  readonly resolve: (reference: string) => ResolvedAgent
   agents: readonly BoundAgent[]
+  /** The agents folders the catalog read, to watch for changes. */
+  watch: readonly string[]
   /** When the first missing definition of this scope is due to be purged, or null. */
   purgeDueAt: number | null
 }
@@ -137,10 +127,9 @@ export function createAgentBindings(deps: BindingDeps) {
     deps.onChanged?.()
   }
 
-  /** One scope: scan, plan, write what changed, and answer with every definition's id. */
+  /** One scope: read, plan, write what changed, and answer with every definition's id. */
   async function reconcile(userId: string, projectId: string): Promise<AgentSnapshot> {
-    const folders = await deps.folders(userId, projectId)
-    const plugins = (await deps.plugins?.(userId, projectId)) ?? []
+    const scope = await deps.catalog(userId, projectId)
     const rows = (await deps.stores.sources(deps.db, 'agent').listForScope(userId, projectId))
       .filter((record) => !record.name.startsWith('builtin:'))
       .map(toBoundRow)
@@ -148,24 +137,28 @@ export function createAgentBindings(deps: BindingDeps) {
     const scanned = new Set([
       groupKey({ projectId: '', source: 'managed' }),
       groupKey({ projectId: '', source: 'user' }),
-      ...(projectId && folders.project ? [groupKey({ projectId, source: 'project' })] : []),
+      ...(projectId && scope.projectReadable ? [groupKey({ projectId, source: 'project' })] : []),
     ])
-    const ordered: CatalogAgent[] = await scanFileAgents(folders, projectId)
     const installed = new Set<string>()
-    for (const group of plugins) {
-      const source = `plugin:${group.plugin}`
-      installed.add(groupKey({ projectId: group.projectId, source }))
-      if (!group.enabled) continue
-      scanned.add(groupKey({ projectId: group.projectId, source }))
-      ordered.push(...group.agents.map((agent) => pluginCatalogAgent(agent, group.projectId)))
+    for (const group of scope.plugins) {
+      const key = groupKey({ projectId: group.projectId, source: `plugin:${group.plugin}` })
+      installed.add(key)
+      if (group.enabled) scanned.add(key)
     }
-    const found: FoundAgent[] = ordered.map((agent) => ({
+    const catalog = composeCatalog(scope, projectId)
+    const found: FoundAgent[] = catalog.found.map((agent) => ({
       projectId: agent.projectId,
       source: sourceOf(agent),
       name: agent.fullName,
       path: agent.path,
       bodyHash: agent.bodyHash,
     }))
+    // A mod's plugin is installed and read even when the plugin catalog does not list it.
+    for (const agent of found)
+      if (agent.source.startsWith('plugin:')) {
+        installed.add(groupKey(agent))
+        scanned.add(groupKey(agent))
+      }
     // A plugin that is no longer installed and a row of the retired registry are gone for good.
     const gone = new Set<string>()
     for (const row of rows) {
@@ -177,7 +170,6 @@ export function createAgentBindings(deps: BindingDeps) {
     const plan = planBindings({ rows, found, scanned, gone, now: now(), newId })
     await apply(userId, plan)
 
-    const catalog = composeCatalog([...ordered, ...BUILTIN_AGENT_TYPES])
     const bound = (agent: CatalogAgent, id: string): BoundAgent => {
       const shadowedBy = catalog.shadowedBy(agent)
       return { id, agent, ...(shadowedBy ? { shadowedBy } : {}) }
@@ -188,11 +180,12 @@ export function createAgentBindings(deps: BindingDeps) {
       .map((row) => Date.parse(row.missingSince!))
     if (plan.missing.length > 0) waiting.push(now())
     return {
-      catalog,
+      resolve: catalog.resolve,
       agents: [
-        ...ordered.map((agent, index) => bound(agent, plan.ids.get(found[index]!)!)),
-        ...BUILTIN_AGENT_TYPES.map((agent) => bound(agent, builtinAgentId(agent.name))),
+        ...catalog.found.map((agent, index) => bound(agent, plan.ids.get(found[index]!)!)),
+        ...catalog.builtins.map((agent) => bound(agent, builtinAgentId(agent.name))),
       ],
+      watch: scope.agents.watch,
       purgeDueAt: waiting.length > 0 ? Math.min(...waiting) + GRACE_MS : null,
     }
   }

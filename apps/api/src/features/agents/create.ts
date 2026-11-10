@@ -13,7 +13,7 @@ import { inheritedAgentPreset } from '../capabilities/builtin-agent-presets'
 import type { VersionedCapabilityRuleRepository } from '../capabilities/rule-repository'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import { newAgentId } from './bindings/bindings'
-import type { AgentFolders } from './catalog/scan'
+import type { AgentFolders } from './catalog/agent-file'
 import type { AgentRecordInput, AgentSummary } from './contracts'
 import { agentFilePath, agentFileText, writeAgentFile } from './file-writer'
 
@@ -41,7 +41,7 @@ export async function agentsFolderFor(
   projectId: string,
 ): Promise<string> {
   const folders = await ports.folders(userId, projectId)
-  const claudeDir = projectId ? folders.project?.[0] : folders.user
+  const claudeDir = projectId ? folders.project : folders.user
   if (!claudeDir)
     throw new NotFoundError('project_directory_missing', 'Project directory is unavailable')
   return join(claudeDir, 'agents')

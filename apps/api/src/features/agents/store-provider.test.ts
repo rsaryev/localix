@@ -12,6 +12,7 @@ import { InvalidRequestError } from '../../lib/domain-errors'
 import { createAgentsService } from './service'
 import type { AgentModelChoice } from '../agent-core/agent-model-route'
 import { createAgentStoreProvider } from './store-provider'
+import { testAgentScopes } from './testing'
 
 const cleanup: Array<() => Promise<void>> = []
 afterEach(async () => {
@@ -37,11 +38,7 @@ async function setup() {
   const service = createAgentsService({
     db,
     capabilityStores,
-    folders: async (_user, project) => ({
-      managed,
-      user: userClaude,
-      project: project === 'p' ? [projectClaude] : [],
-    }),
+    ...testAgentScopes({ root, projects: { p: join(root, 'project') } }),
   })
   let heard = 0
   const choices: AgentModelChoice[] = []

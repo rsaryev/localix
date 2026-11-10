@@ -93,12 +93,6 @@ export interface LoadedPlugins {
    */
   monitors: LoadedPluginMonitor[]
   /**
-   * Custom worker ROLES (sub-agents) from enabled plugins — manifest data,
-   * namespaced `<plugin>:<name>`: the subagent types `Agent` runs a task as, as Claude Code's
-   * Agent tool does (`agent-core/tools/agent/agent-type.ts`).
-   */
-  agents: LoadedPluginAgent[]
-  /**
    * Claude Code output styles from enabled plugins, offered as `<plugin>:<name>` (`/output-style`).
    * One marked `forceForPlugin` applies whenever its plugin is enabled; the first loaded wins.
    */
@@ -141,7 +135,6 @@ export function emptyLoadedPlugins(): LoadedPlugins {
     skills: [],
     lspServers: [],
     monitors: [],
-    agents: [],
     outputStyles: [],
     mainAgent: null,
     loaded: [],

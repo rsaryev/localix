@@ -10,18 +10,18 @@ Create specialists from a conversation and manage them with `/agents`; see
 
 ## Where agents live
 
-| Kept in                      | Folder                                                        | You can edit it |
-| ---------------------------- | ------------------------------------------------------------- | --------------- |
-| Yours                        | `~/.claude/agents/` (or the folder `CLAUDE_CONFIG_DIR` names) | Yes             |
-| This project                 | `<project>/.claude/agents/`, up to the repository root        | Yes             |
-| Managed by your organisation | the managed `.claude/agents/` folder                          | No              |
-| From a plugin                | the `agents/` folder of an enabled plugin                     | No              |
-| Built in                     | `general-purpose`, `Explore`, `Plan` and `localix`            | No              |
+| Kept in                      | Folder                                                                                                | You can edit it |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------- | --------------- |
+| Yours                        | `~/.claude/agents/`                                                                                   | Yes             |
+| This project                 | `<project>/.claude/agents/`, up to the repository root                                                | Yes             |
+| Managed by your organisation | the managed `.claude/agents/` folder                                                                  | No              |
+| From a plugin                | the `agents/` folder of an enabled plugin                                                             | No              |
+| Built in                     | `general-purpose`, `claude`, `Explore`, `Plan`, `statusline-setup`, `claude-code-guide` and `localix` | No              |
 
 A file needs a `name` and a `description`. As in Claude Code, a name is valid unless it starts with
 `-`, contains `:` or is longer than 256 characters; such a file is skipped. Localix identifies an
-agent by that name, as written, so `Code Reviewer` and `reviewer.v2` load under those names. A
-plugin's agent is `plugin:name`.
+agent by that name, as written and with its case, so `Code Reviewer` and `reviewer.v2` load under
+those names. A plugin's agent is `plugin:name`, or its bare name when one plugin alone has it.
 
 `description` is the only text that says when to delegate: an agent has no `when_to_use`. Of the
 `skills` list the first 32 distinct names preload.

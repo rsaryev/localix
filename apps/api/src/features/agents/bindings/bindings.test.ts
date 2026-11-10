@@ -7,9 +7,8 @@ import { capabilityStores } from '../../../bootstrap/capability-stores'
 import { createDatabase } from '../../../db/connection'
 import { migrateToLatest } from '../../../db/migrator'
 import type { AppDatabase } from '../../../db/types'
-import type { LoadedPluginAgent } from '../../plugins/loader-contract'
-import { agentFolders } from '../catalog/scan'
-import { createAgentBindings, type PluginAgentGroup } from './bindings'
+import { testAgentScopes, type TestPlugin } from '../testing'
+import { createAgentBindings } from './bindings'
 import { GRACE_MS } from './plan'
 
 const file = (name: string, body = `You are ${name}.`) =>
@@ -19,7 +18,7 @@ describe('agent bindings', () => {
   const base = tempDirPerTest('agent-bindings-')
   let db: Kysely<AppDatabase>
   let clock = 1_000_000
-  let plugins: PluginAgentGroup[] = []
+  let plugins: TestPlugin[] = []
   let counter = 0
   const user = () => join(base(), 'home', '.claude', 'agents')
   const put = async (path: string, text: string) => {
@@ -30,13 +29,7 @@ describe('agent bindings', () => {
     createAgentBindings({
       db,
       stores: capabilityStores,
-      folders: async () =>
-        agentFolders({
-          cwd: null,
-          home: join(base(), 'home'),
-          managedDir: join(base(), 'managed'),
-        }),
-      plugins: async () => plugins,
+      catalog: testAgentScopes({ root: base(), plugins: () => plugins }).catalog,
       now: () => clock,
       newId: () => `cc:test-${++counter}`,
     })
@@ -52,14 +45,6 @@ describe('agent bindings', () => {
     (await b.snapshot('u', '')).agents
       .filter((entry) => entry.agent.source === 'user')
       .map((entry) => [entry.agent.name, entry.id])
-  const pluginAgent = (name: string): LoadedPluginAgent => ({
-    pluginName: 'acme',
-    name,
-    fullName: `acme:${name}`,
-    label: name,
-    description: name,
-    prompt: `You are ${name}.`,
-  })
 
   beforeEach(async () => {
     db = createDatabase()
@@ -137,14 +122,14 @@ describe('agent bindings', () => {
 
   test('a plugin that is off is not a deletion; an uninstalled one is purged at once', async () => {
     const b = bindings()
-    plugins = [{ plugin: 'acme', projectId: '', enabled: true, agents: [pluginAgent('lead')] }]
+    plugins = [{ plugin: 'acme', enabled: true, agents: [{ name: 'lead' }] }]
     const first = await b.snapshot('u', '')
     expect(first.agents.find((entry) => entry.agent.fullName === 'acme:lead')?.id).toBe('cc:test-1')
-    plugins = [{ plugin: 'acme', projectId: '', enabled: false, agents: [] }]
+    plugins = [{ plugin: 'acme', enabled: false, agents: [] }]
     const off = await b.snapshot('u', '')
     expect(off.agents.some((entry) => entry.agent.fullName === 'acme:lead')).toBe(false)
     expect((await notices()).filter(([op]) => op === 'deleted')).toEqual([])
-    plugins = [{ plugin: 'acme', projectId: '', enabled: true, agents: [pluginAgent('lead')] }]
+    plugins = [{ plugin: 'acme', enabled: true, agents: [{ name: 'lead' }] }]
     const on = await b.snapshot('u', '')
     expect(on.agents.find((entry) => entry.agent.fullName === 'acme:lead')?.id).toBe('cc:test-1')
     plugins = []

@@ -51,8 +51,14 @@ function deniedTools(rules: readonly string[] | undefined): string[] | undefined
   return tools.length ? tools : undefined
 }
 
+/** An agent as the kit read it: a file's record, or a catalog entry under its scoped name. */
+export type AgentEntry = Pick<
+  AgentRecord,
+  'scopedName' | 'name' | 'definition' | 'extras' | 'hooks'
+>
+
 /** An agent of the plugin, named below it (`team:security` for `<plugin>:team:security`). */
-export function agentOf(record: AgentRecord, prefix: string): PluginAgent {
+export function agentOf(record: AgentEntry, prefix: string): PluginAgent {
   const { definition, extras } = record
   const tools = definition.tools === undefined ? undefined : [...definition.tools]
   const denied = deniedTools(definition.disallowedTools)

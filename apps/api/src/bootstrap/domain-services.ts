@@ -11,7 +11,7 @@ import { mcpSettingsReader } from '../features/plugins/kit'
 import { createPluginService } from '../features/plugins/service'
 import type { ProcessPluginHost } from './plugin-host'
 import { createMiniAppService } from '../features/mini-apps/service'
-import { createAgentFoldersPort, createPluginAgentGroups } from './agent-catalog-sources'
+import { createAgentCatalogPort, createAgentFoldersPort } from './agent-catalog-sources'
 import { createAgentsService } from '../features/agents/service'
 import { createInvocationRegistry } from '../features/capabilities/invocation'
 import { createLspInstaller, createLspManager } from '../features/lsp'
@@ -233,8 +233,9 @@ export function createDomainServicesPhase({
     db,
     capabilityStores,
     folders: createAgentFoldersPort(resolveProjectCwd),
-    plugins: createPluginAgentGroups(
+    catalog: createAgentCatalogPort(
       db,
+      kit.pluginHost,
       resolveProjectCwd,
       () => hostRefs.mods?.agentGroups?.() ?? [],
     ),

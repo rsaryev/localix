@@ -4,8 +4,9 @@ import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../../db'
 import type { AgentRecord, AgentRecordInput, AgentSummary } from './contracts'
 import type { InvocationRegistry } from '../capabilities/invocation'
-import type { AgentBindings, PluginAgentGroup } from './bindings/bindings'
-import type { AgentFolders } from './catalog/scan'
+import type { AgentBindings } from './bindings/bindings'
+import type { AgentFolders } from './catalog/agent-file'
+import type { ScopeCatalog } from './catalog/compose'
 import type { AgentDelegation } from './delegation'
 import type { AgentAvailability, ApprovalAnswer, RunAgentDecision } from './invocation-service'
 
@@ -23,10 +24,10 @@ export interface AgentsServiceDeps {
   capabilityStores: CapabilityStores
   /** Host-owned state shared by catalog reads and launch admission. */
   invocations?: InvocationRegistry
-  /** Claude Code's folders for a scope (`project` is null when its folder cannot be read now). */
+  /** Where a scope's agent files are written and watched (`project` null when it has none now). */
   folders: (userId: string, projectId: string) => Promise<AgentFolders>
-  /** The agents plugins bring, and whether each plugin is on. */
-  plugins?: (userId: string, projectId: string) => Promise<readonly PluginAgentGroup[]>
+  /** The scope's subagents as the kit resolves them, with its plugins and the mods' agents. */
+  catalog: (userId: string, projectId: string) => Promise<ScopeCatalog>
   now?: () => string
 }
 
