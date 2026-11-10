@@ -7,7 +7,6 @@ import { themeColorToHex, type AgentRecord, type Command } from '@rsaryev/llx-pl
 import { mapCcToolList } from '../../../ext/cc-tool-names'
 import type { PluginAgent, PluginCommand } from '../../contracts'
 import { delegableAgentTypes, mapOptionalCcTools } from '../../discovery-cc-tools'
-import { preloadedSkills } from '../../agent-names'
 
 /**
  * A loaded plugin's Markdown and JSON components as the kit's sessions read them (`readCatalog`,
@@ -62,7 +61,7 @@ export function agentOf(record: AgentEntry, prefix: string): PluginAgent {
   const { definition, extras } = record
   const tools = definition.tools === undefined ? undefined : [...definition.tools]
   const denied = deniedTools(definition.disallowedTools)
-  const pinned = preloadedSkills(definition.skills)
+  const pinned = [...new Set(definition.skills ?? [])]
   const types = delegableAgentTypes(tools)
   const fields: PluginAgent = {
     name:

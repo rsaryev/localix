@@ -7,7 +7,7 @@ import { capabilityStores } from '../../bootstrap/capability-stores'
 import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
-import type { LoadedPluginAgent } from '../plugins/loader-contract'
+import type { HostAgents } from '../plugins/kit'
 import { modAgentDefinition } from '../mods/agent-definition'
 import { createAgentsService } from './service'
 import { testAgentScopes } from './testing'
@@ -19,7 +19,7 @@ afterEach(async () => {
 
 async function fixture(
   plugins: Record<string, readonly string[]> = {},
-  modAgents: readonly LoadedPluginAgent[] = [],
+  modAgents: HostAgents = {},
 ) {
   const root = await mkdtemp(join(tmpdir(), 'localix-agent-delegation-'))
   cleanup.push(() => rm(root, { recursive: true, force: true }))
@@ -60,7 +60,7 @@ async function fixture(
 
 describe('resolving who a task goes to', () => {
   test('an agent a mod registered runs as its definition: tools, turn limit, model', async () => {
-    const { agent } = modAgentDefinition('lab', {
+    const { name, definition } = modAgentDefinition({
       name: 'runner',
       description: 'Runs a spec',
       prompt: 'You run specs.',
@@ -68,11 +68,11 @@ describe('resolving who a task goes to', () => {
       maxTurns: 4,
       model: 'haiku',
     })
-    const t = await fixture({}, [agent])
-    const target = await t.service.resolveDelegation('u', 'lab:runner')
+    const t = await fixture({}, { [name]: definition })
+    const target = await t.service.resolveDelegation('u', 'runner')
     expect(target).toMatchObject({
       kind: 'agent',
-      definition: { fullName: 'lab:runner', tools: ['Read'], maxTurns: 4 },
+      definition: { fullName: 'runner', source: 'flag', tools: ['Read'], maxTurns: 4 },
     })
   })
 

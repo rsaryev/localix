@@ -1,6 +1,7 @@
 import type { DiscoveredSkill } from '../../agent-core/skill-discovery'
 import { filterDisabledSkills, type SkillOverrides } from '../../agent-core/skill-overrides'
 import { skillCallName } from '../../agent-core/tools/skill-names'
+import { preloadedSkillNames } from '../../plugins/kit'
 
 // Sits beside `prompt-skills.ts` (the model-selectable roster) and `prompt-skill-triggers.ts`
 // (keyword-forced skills): the third way a skill reaches a prompt, and the only explicit one.
@@ -13,17 +14,13 @@ import { skillCallName } from '../../agent-core/tools/skill-names'
  * the same split other agents make for `/skill:name` and Codex makes for an explicit
  * `$skill` mention when implicit invocation is disabled.
  */
-/** Claude Code preloads "up to the first 32 distinct names" an agent file's `skills` lists. */
-const MAX_PRELOADED_SKILLS = 32
-
 export function resolvePinnedSkills(
   allSkills: readonly DiscoveredSkill[],
   pinnedNames: readonly string[],
   skillOverrides: SkillOverrides = {},
   /**
    * `preload`: the names are an agent file's `skills`, not the person's pins. Claude Code
-   * preloads from the skills Claude may invoke, so a `disable-model-invocation` skill is left out,
-   * and only the first 32 distinct names count.
+   * preloads from the skills Claude may invoke, as the kit plans it (`preloadedSkillNames`).
    */
   opts: { preload?: boolean } = {},
 ): Array<{ name: string; content: string }> {
@@ -34,11 +31,12 @@ export function resolvePinnedSkills(
     const called = skillCallName(skill)
     if (!byName.has(called)) byName.set(called, skill)
   }
-  const distinct = [...new Set(pinnedNames)]
-  const names = opts.preload ? distinct.slice(0, MAX_PRELOADED_SKILLS) : distinct
+  const names = opts.preload
+    ? preloadedSkillNames(pinnedNames, (name) => byName.get(name))
+    : [...new Set(pinnedNames)]
   return names.flatMap((name) => {
     const skill = byName.get(name)
-    if (!skill || (opts.preload && skill.disableModelInvocation)) return []
+    if (!skill) return []
     try {
       return [
         {

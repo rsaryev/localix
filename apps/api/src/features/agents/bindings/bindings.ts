@@ -48,7 +48,8 @@ export interface AgentSnapshot {
   purgeDueAt: number | null
 }
 
-const FILE_SOURCES = new Set(['user', 'project', 'managed'])
+/** The sources every read lists whole: the folders, and the agents mods register (`flag`). */
+const READ_SOURCES = new Set(['user', 'project', 'managed', 'flag'])
 const text = (value: unknown) => (typeof value === 'string' ? value : '')
 
 const toBoundRow = (record: CapabilitySourceRecord): BoundRow => ({
@@ -137,6 +138,7 @@ export function createAgentBindings(deps: BindingDeps) {
     const scanned = new Set([
       groupKey({ projectId: '', source: 'managed' }),
       groupKey({ projectId: '', source: 'user' }),
+      groupKey({ projectId: '', source: 'flag' }),
       ...(projectId && scope.projectReadable ? [groupKey({ projectId, source: 'project' })] : []),
     ])
     const installed = new Set<string>()
@@ -153,17 +155,11 @@ export function createAgentBindings(deps: BindingDeps) {
       path: agent.path,
       bodyHash: agent.bodyHash,
     }))
-    // A mod's plugin is installed and read even when the plugin catalog does not list it.
-    for (const agent of found)
-      if (agent.source.startsWith('plugin:')) {
-        installed.add(groupKey(agent))
-        scanned.add(groupKey(agent))
-      }
     // A plugin that is no longer installed and a row of the retired registry are gone for good.
     const gone = new Set<string>()
     for (const row of rows) {
       const plugin = row.source.startsWith('plugin:')
-      if (plugin ? !installed.has(groupKey(row)) : !FILE_SOURCES.has(row.source))
+      if (plugin ? !installed.has(groupKey(row)) : !READ_SOURCES.has(row.source))
         gone.add(groupKey(row))
     }
 

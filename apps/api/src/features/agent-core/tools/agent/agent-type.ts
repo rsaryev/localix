@@ -1,8 +1,5 @@
 import type { TaskAgent, TaskAgentType, TaskDelegationOptions } from '../task-delegation-contracts'
-import {
-  agentPermissionModeOf,
-  type AgentPermissionMode,
-} from '../../../../contracts/agent-permission-mode'
+import type { AgentPermissionMode } from '../../../../contracts/agent-permission-mode'
 import { agentChoiceRoute, type AgentModelChoice, type AgentRoute } from '../../agent-model-route'
 
 /**
@@ -13,9 +10,9 @@ import { agentChoiceRoute, type AgentModelChoice, type AgentRoute } from '../../
  * the child takes the rest of its frontmatter: `model` and `effort` (an alias resolves against the
  * chat's provider, as a workflow agent's does; `inherit` keeps the chat's model), `skills`
  * preloaded, `maxTurns`, `background` (never held by `wait`) and `isolation: worktree` (a git
- * worktree of the chat's repository, kept for the child's life). The person's own agent files
- * (never a plugin's, as in Claude Code) also carry their `permissionMode` onto the child, which the run
- * weighs against the conversation's; their `hooks` and `mcpServers` apply when the child runs.
+ * worktree of the chat's repository, kept for the child's life). The `permissionMode` the kit
+ * resolved for the agent rides onto the child, which the run weighs against the conversation's;
+ * its `hooks` and `mcpServers` apply when the child runs (the kit drops a plugin's).
  *
  * `general-purpose` (and `claude`) is the delegating agent itself, so is an `agent` left out.
  */
@@ -73,10 +70,6 @@ export async function resolveAgentTarget(
       return { agent: found.agent, type: found.type }
   }
 }
-
-/** Whether the agent's file is the person's own: a user's, a project's or a managed one. */
-export const ownsFrontmatter = (type: Pick<TaskAgentType, 'source'> | undefined): boolean =>
-  type?.source === 'user' || type?.source === 'project' || type?.source === 'managed'
 
 /**
  * The refusal when the run's `Agent(...)` allowlist leaves out every name the target answers to
@@ -159,9 +152,8 @@ export async function prepareAgentChild(
   const chosen: AgentRoute = call.agentId ? agentChoiceRoute(ports?.choices, call.agentId) : {}
   const provenance: AgentChild['provenance'] = {}
   let worktree: AgentChild['worktree']
-  // The person's own agent files (not a plugin's, as in Claude Code) ask for a permission mode;
-  // the run weighs it against the conversation's (`contracts/agent-permission-mode.ts`).
-  const asked = ownsFrontmatter(type) ? agentPermissionModeOf(type?.permissionMode) : undefined
+  // The mode the agent asks for; the run weighs it against the conversation's (`plugins/kit/spawn.ts`).
+  const asked = type?.permissionMode
   if (asked) provenance.agentPermissionMode = asked
   if ((type?.isolation && !call.isolated) || call.isolate) {
     const isolated = await isolateChild(ports, call.toolCallId, who)

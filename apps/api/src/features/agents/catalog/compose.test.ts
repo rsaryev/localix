@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test'
 import type { ScopeAgent, ScopeAgents } from '../../plugins/kit'
-import type { LoadedPluginAgent } from '../../plugins/loader-contract'
 import { composeCatalog, type ScopeCatalog } from './compose'
 
 const agent = (fullName: string, fields: Partial<ScopeAgent> = {}): ScopeAgent => ({
@@ -13,14 +12,6 @@ const agent = (fullName: string, fields: Partial<ScopeAgent> = {}): ScopeAgent =
   source: fullName.includes(':') ? 'plugin' : 'user',
   path: '',
   ...fields,
-})
-const mod = (fullName: string, prompt: string): LoadedPluginAgent => ({
-  pluginName: fullName.split(':')[0]!,
-  name: fullName.split(':')[1]!,
-  fullName,
-  label: fullName,
-  description: fullName,
-  prompt,
 })
 
 /** The kit's answer for a scope, with a lookup by exact name. */
@@ -40,7 +31,6 @@ function scope(
         return found ? { agent: found } : null
       },
     },
-    mods: [],
     plugins: [],
     projectReadable: true,
     ...extra,
@@ -65,23 +55,6 @@ describe("a scope's catalog with Localix's additions", () => {
       ['acme:lead', ''],
     ])
     expect(catalog.found.every((one) => one.bodyHash.length === 16)).toBe(true)
-  })
-
-  test("a mod's agent replaces its plugin's file of the name, or joins; an off plugin's does not", () => {
-    const catalog = composeCatalog(
-      scope([agent('lab:file'), agent('Explore', { source: 'builtin', prompt: '' })], {
-        mods: [mod('lab:file', 'mod wins'), mod('lab:runner', 'r'), mod('off:quiet', 'q')],
-        plugins: [{ plugin: 'off', projectId: '', enabled: false }],
-      }),
-      '',
-    )
-    expect(catalog.found.map((one) => [one.fullName, one.prompt])).toEqual([
-      ['lab:file', 'mod wins'],
-      ['lab:runner', 'r'],
-    ])
-    expect(catalog.resolve('lab:file')).toMatchObject({ agent: { prompt: 'mod wins' } })
-    expect(catalog.resolve('lab:runner')).toMatchObject({ agent: { prompt: 'r' } })
-    expect(catalog.resolve('off:quiet')).toBeNull()
   })
 
   test("the built-ins run on Localix's prompts; general-purpose is the delegator; localix is added", () => {

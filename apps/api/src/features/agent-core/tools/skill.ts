@@ -11,6 +11,8 @@ import { MAX_OUTPUT_BYTES } from './file/read-output'
 import { truncationMarker } from './tool-output'
 import { filterDisabledSkills, isSkillDisabled, type SkillOverrides } from '../skill-overrides'
 import {
+  type SkillEntry,
+  type SkillFound,
   classifySkillCall,
   skillPermissionResources,
   prepareSkillArguments,
@@ -85,13 +87,22 @@ export function createSkillTool(
     )
   }
 
-  const notFoundMessage = (name: string, skills: DiscoveredSkill[]): string => {
-    const ambiguous = ambiguousSkillNames(skills, name)
+  /** The skill a name calls on disk, when no host finds it (`ports.findSkill`). */
+  const foundOnDisk = async (name: string): Promise<SkillFound> => {
+    const skills = await allSkills()
+    const found = findSkillByName(skills, name)
+    return {
+      ...(found ? { skill: entryOf(found) } : {}),
+      names: skills.map(skillCallName),
+      ambiguous: ambiguousSkillNames(skills, name),
+    }
+  }
+
+  const notFoundMessage = (name: string, { names, ambiguous = [] }: SkillFound): string => {
     if (ambiguous.length > 0) {
       return `Skill name "${name}" is ambiguous: ${ambiguous.map((n) => `/${n}`).join(', ')}. Ask for one by its full name.`
     }
-    if (skills.length === 0) return `Skill not found: "${name}". No skills are available.`
-    const names = skills.map(skillCallName)
+    if (names.length === 0) return `Skill not found: "${name}". No skills are available.`
     const shown = names.slice(0, 30)
     const more = names.length > shown.length ? ` (+${names.length - shown.length} more)` : ''
     return `Skill not found: "${name}". Available skills: ${shown.join(', ')}${more}`
@@ -148,10 +159,15 @@ export function createSkillTool(
 
         case 'get': {
           if (!input.name) return { content: 'name is required for action="get".', isError: true }
-          const skills = await allSkills()
-          const skill = findSkillByName(skills, input.name)
-          if (!skill) return { content: notFoundMessage(input.name, skills), isError: true }
-          const called = skillCallName(skill)
+          const found = await (ports.findSkill?.(input.name, signal) ?? foundOnDisk(input.name))
+          const names = found.names.filter((name) => !isSkillDisabled(skillOverrides, name))
+          const skill =
+            found.skill && !isSkillDisabled(skillOverrides, found.skill.name)
+              ? found.skill
+              : undefined
+          if (!skill)
+            return { content: notFoundMessage(input.name, { ...found, names }), isError: true }
+          const called = skill.name
           const args = input.arguments ?? ''
           // Claude Code's refusal (`disable-model-invocation`: "do not reproduce the steps another
           // way") or the reason a command or the file failed.
@@ -163,7 +179,7 @@ export function createSkillTool(
                   named: ports.userNamed?.(called) === true,
                   ...(signal ? { signal } : {}),
                 })
-              : { ok: true, text: skill.content }
+              : { ok: true, text: skill.content ?? '' }
           } catch (error) {
             run = { ok: false, message: errorMessage(error) }
           }
@@ -175,7 +191,7 @@ export function createSkillTool(
           }
           const body = run.text
           // Curator usage telemetry — best-effort, never blocks the get.
-          recordSkillUse(skill.name, skill.scope, skill.scope === 'project' ? projectId : '')
+          recordSkillUse(skill.ownName, skill.scope, skill.scope === 'project' ? projectId : '')
           // CC `context: fork`: the expanded skill is a subagent's task, of the type it names.
           if (run.fork && ports.forkSkill) {
             const { agent, wait, model, effort } = run.fork
@@ -209,7 +225,7 @@ export function createSkillTool(
             // What a mod's `skill.prompt` is told about the skill it rewrites.
             details: { skill: await skillPromptDetails(skill) },
             content: [
-              `# Skill: ${skillCallName(skill)}`,
+              `# Skill: ${called}`,
               `Source: ${JSON.stringify(skill.path)}`,
               `Resolve relative references from: ${JSON.stringify(skill.dir)}`,
               '',
@@ -225,4 +241,19 @@ export function createSkillTool(
       }
     },
   })
+}
+
+/** A skill found on disk, as a `get` uses it; its text is read when the `get` returns it. */
+function entryOf(skill: DiscoveredSkill): SkillEntry {
+  return {
+    name: skillCallName(skill),
+    ownName: skill.name,
+    scope: skill.scope,
+    path: skill.path,
+    dir: skill.dir,
+    ...(skill.pluginName ? { pluginName: skill.pluginName } : {}),
+    get content() {
+      return skill.content
+    },
+  }
 }

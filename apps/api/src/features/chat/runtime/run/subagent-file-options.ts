@@ -1,17 +1,11 @@
-import { TOOL } from '../../../agent-core/tool-names'
-import { join } from 'node:path'
-import { readMemoryIndex } from '../../../memory/auto-memory'
+import { agentMemory, type AgentMemoryContext } from '../../../plugins/kit'
 import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
 
 /**
  * What a run as an agent type takes from the agent file beyond its prompt and tools
- * (sub-agents.md, "Frontmatter reference"):
- *
- * - `autoCompactWindow`: the window the run compacts against;
- * - `memory`: a persistent folder — `~/.claude/agent-memory/<name>/` (user),
- *   `.claude/agent-memory/<name>/` (project) or `.claude/agent-memory-local/<name>/` (local) — whose
- *   `MEMORY.md`, its first 200 lines or 25KB, joins the instructions with how to keep it, and the
- *   file tools to keep it with.
+ * (sub-agents.md, "Frontmatter reference"): `autoCompactWindow`, the window the run compacts
+ * against, and `memory`, a persistent folder the kit plans (`agentMemory`) whose `MEMORY.md` joins
+ * the instructions with how to keep it, and the file tools to keep it with.
  */
 export interface SubagentRunOptions {
   contextLimit?: number
@@ -23,43 +17,26 @@ export interface SubagentRunOptions {
   memoryDir?: string
 }
 
-export function agentMemoryDir(
-  agent: Pick<LoadedPluginAgent, 'name' | 'memory'>,
-  dirs: { projectDir: string; homeDir: string },
-): string | null {
-  const leaf = agent.name.split(':').pop() ?? agent.name
-  switch (agent.memory) {
-    case 'user':
-      return join(dirs.homeDir, '.claude', 'agent-memory', leaf)
-    case 'project':
-      return join(dirs.projectDir, '.claude', 'agent-memory', leaf)
-    case 'local':
-      return join(dirs.projectDir, '.claude', 'agent-memory-local', leaf)
-    case undefined:
-      return null
-  }
-}
-
 export async function subagentRunOptions(
   agent: Pick<LoadedPluginAgent, 'name' | 'autoCompactWindow' | 'memory'>,
-  dirs: { projectDir: string; homeDir: string },
+  context: AgentMemoryContext,
 ): Promise<SubagentRunOptions> {
   const options: SubagentRunOptions = {
     enableTools: [],
     ...(agent.autoCompactWindow ? { contextLimit: agent.autoCompactWindow } : {}),
   }
-  const dir = agentMemoryDir(agent, dirs)
-  if (!dir) return options
-  const { index: head, clipped } = await readMemoryIndex(dir)
+  const memory = await agentMemory(agent.memory, agent.name, context)
+  if (!memory) return options
+  const dir = memory.directory
   options.memoryDir = dir
   options.instructions = [
     '# Agent memory',
     `You have a persistent memory folder at ${dir}, kept across conversations. Read it before you start, and save what you learn there (codebase patterns, decisions, recurring issues) before you finish. Keep an index in MEMORY.md and put details in topic files beside it.`,
-    head
-      ? `## MEMORY.md${clipped ? ' (first 200 lines or 25KB; curate it to stay within that)' : ''}\n${head}`
+    memory.index.trim()
+      ? `## MEMORY.md${memory.truncated ? ' (first 200 lines or 25KB; curate it to stay within that)' : ''}\n${memory.index.trimEnd()}`
       : 'MEMORY.md does not exist yet.',
   ].join('\n\n')
-  options.enableTools = [TOOL.Read, TOOL.Write, TOOL.Edit]
+  options.enableTools = [...memory.addTools]
   return options
 }
 

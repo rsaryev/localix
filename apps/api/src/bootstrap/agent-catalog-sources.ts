@@ -4,6 +4,7 @@ import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../db/types'
 import { userHome } from '../lib/env'
+import { claudeConfigDir } from '../features/cc-settings/config-dir'
 import { readAvailability } from '../features/capabilities/availability'
 import { createCapabilitySourceRepository } from '../features/capabilities/source-repository'
 import type { AgentFolders } from '../features/agents/catalog/agent-file'
@@ -15,7 +16,7 @@ import { onCapabilityRevision } from '../features/capabilities/revision'
 import { buildPluginCatalog } from '../features/plugins/catalog'
 import { kitPluginsOf } from '../features/plugins/catalog-kit'
 import { managedSettingsDir, scopeAgents, type LocalixPluginHost } from '../features/plugins/kit'
-import type { LoadedPluginAgent } from '../features/plugins/loader-contract'
+import type { ModAgentGroup } from '../features/mods/registry'
 
 type ProjectCwd = (userId: string, projectId: string) => Promise<string | null>
 
@@ -25,7 +26,7 @@ export function createAgentFoldersPort(resolveProjectCwd: ProjectCwd) {
     const cwd = projectId ? await resolveProjectCwd(userId, projectId) : null
     return {
       managed: join(managedSettingsDir(), '.claude'),
-      user: join(userHome(), '.claude'),
+      user: claudeConfigDir(userHome()),
       project: cwd ? join(cwd, '.claude') : null,
     }
   }
@@ -55,9 +56,21 @@ export function createAgentCatalogPort(
       homeDir: userHome(),
     })
     const plugins = kitPluginsOf(catalog)
+    // A person's switched-off plugin brings no agent, its mods' included.
+    const off = new Set(
+      plugins.filter((one) => !one.selected && one.scope === 'user').map((one) => one.plugin.name),
+    )
+    const flag = Object.fromEntries(
+      modAgents()
+        .filter((group) => !off.has(group.plugin))
+        .flatMap((group) => Object.entries(group.agents)),
+    )
     return {
-      agents: await scopeAgents(pluginHost, { cwd: cwd ?? '/', homeDir: userHome(), plugins }),
-      mods: modAgents().flatMap((group) => group.agents),
+      agents: await scopeAgents(
+        pluginHost,
+        { cwd: cwd ?? '/', homeDir: userHome(), plugins },
+        { flag },
+      ),
       plugins: plugins.map((plugin) => ({
         plugin: plugin.plugin.name,
         projectId: plugin.scope === 'project' ? projectId : '',
@@ -66,12 +79,6 @@ export function createAgentCatalogPort(
       projectReadable: !projectId || cwd !== null,
     }
   }
-}
-
-/** The agents a plugin's loaded mod registered. */
-export interface ModAgentGroup {
-  plugin: string
-  agents: readonly LoadedPluginAgent[]
 }
 
 /** `fs.watch` as the watcher's seam: a missing folder is reported, never thrown. */

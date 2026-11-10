@@ -18,8 +18,8 @@ const child = (provenance: Record<string, unknown> = {}) =>
 const agent = (over: Record<string, unknown> = {}) => ({ source: 'user', hooks: HOOKS, ...over })
 
 describe('the hooks of a delegated agent', () => {
-  test('a delegated child of a user, managed or trusted project agent runs them as a subagent', () => {
-    for (const source of ['user', 'managed', 'project']) {
+  test('a delegated child of a user, managed, flag or trusted project agent runs them as a subagent', () => {
+    for (const source of ['user', 'managed', 'flag', 'project']) {
       expect(agentScopedHooks(child(), agent({ source }), { projectTrusted: true })).toEqual([
         { raw: HOOKS, source: 'agent', asSubagent: true, agentType: 'guard' },
       ])
@@ -35,6 +35,9 @@ describe('the hooks of a delegated agent', () => {
     ).toEqual([])
     expect(
       agentScopedHooks(child(), agent({ hooks: undefined }), { projectTrusted: true }),
+    ).toEqual([])
+    expect(
+      agentScopedHooks(child(), agent({ source: 'builtin' }), { projectTrusted: true }),
     ).toEqual([])
     expect(agentScopedHooks(child(), undefined, { projectTrusted: true })).toEqual([])
   })

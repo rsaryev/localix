@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import type { CallClass } from '@localixai/agent/agents'
-import type { DiscoveredSkill } from '../skill-frontmatter'
 
 /**
  * The `Skill` tool's call contract: its input, the ports a host gives it, and what a call means to
@@ -60,7 +59,33 @@ export type SkillRun =
     }
   | { ok: false; message: string }
 
+/** A skill a `get` found: the name it is called by, its own name, its file and its folder. */
+export interface SkillEntry {
+  name: string
+  /** Without a plugin's prefix: what a monitor's `on-skill-invoke` names. */
+  ownName: string
+  scope: 'global' | 'project'
+  path?: string
+  dir?: string
+  pluginName?: string
+  /** The text as written: what a `get` returns when no host runs the skill. */
+  content?: string
+}
+
+/** The skill a name calls, and every name the model may call (for the not-found answer). */
+export interface SkillFound {
+  skill?: SkillEntry
+  names: readonly string[]
+  /** The call names a bare name could mean when it means none of them. */
+  ambiguous?: readonly string[]
+}
+
 export interface SkillToolPorts {
+  /**
+   * Finds the skill a name calls as the chat's kit session names its skills (`skill-tool-ports.ts`),
+   * its folders read again first. Absent: the skills found on disk (`../skill-discovery`).
+   */
+  findSkill?: (name: string, signal?: AbortSignal) => Promise<SkillFound>
   /**
    * Whether the person's latest message names the skill as a separate `/name` word: Claude Code
    * reads that as permission to run it for that message, a `disable-model-invocation` one too.
@@ -72,7 +97,7 @@ export interface SkillToolPorts {
    * fork. Absent: the content as written, inline.
    */
   invokeSkill?: (
-    skill: DiscoveredSkill,
+    skill: SkillEntry,
     request: { arguments: string; named: boolean; signal?: AbortSignal },
   ) => Promise<SkillRun>
   /** Runs a `context: fork` skill the agent loads as a subagent; absent: the skill runs inline. */

@@ -13,11 +13,8 @@ test('agents spawn as delegated children, from types a mod registered, and list 
     },
   } as unknown as AgentTool
   let running = false
-  const reports: string[] = []
   const registry = createModRegistry(() => {})
   const api = createAgentApi({
-    plugin: 'lab',
-    report: (_plugin, message) => void reports.push(message),
     instance: 'lab~1',
     registry,
     scene: () => ({ userId: 'u', sessionId: 's', cwd: '/p' }),
@@ -41,31 +38,25 @@ test('agents spawn as delegated children, from types a mod registered, and list 
       initialPrompt: 'Run this spec: {{intent}}',
       permissionMode: 'plan',
     }),
-  ).toEqual({ agent: 'lab:runner' })
-  // The fields stay on the definition the agent catalog lists (`registry.agentGroups`).
+  ).toEqual({ agent: 'runner' })
+  // The fields stay on the definition the agent catalog reads (`registry.agentGroups`).
   expect(registry.agentGroups()).toMatchObject([
-    {
-      plugin: 'lab',
-      agents: [{ fullName: 'lab:runner', prompt: 'You run specs.', tools: ['Read'] }],
-    },
-  ])
-  expect(reports).toEqual([
-    "agent.register: permissionMode of lab:runner are kept and not applied: Claude Code leaves them out of a plugin's agent",
+    { plugin: 'lab', agents: { runner: { prompt: 'You run specs.', tools: ['Read'] } } },
   ])
   await expect(
     api.register({ name: 'bad', description: 'd', prompt: 'p', maxTurns: 0 }),
   ).rejects.toThrow()
   expect(
-    await api.spawn({ prompt: 'spec.md', description: 'run', subagentType: 'lab:runner' }),
+    await api.spawn({ prompt: 'spec.md', description: 'run', subagentType: 'runner' }),
   ).toEqual({ agentId: 'child-1', model: '' })
   // The agent runs as its definition, not as a prompt in front of the task.
   expect(tasks[0]).toEqual({
     prompt: 'Run this spec: spec.md',
     description: 'run',
-    subagent_type: 'lab:runner',
+    subagent_type: 'runner',
   })
-  await api.spawn({ prompt: 'x.md', name: 'scout', subagentType: 'lab:runner' })
-  expect(tasks[1]).toMatchObject({ description: 'scout', subagent_type: 'lab:runner' })
+  await api.spawn({ prompt: 'x.md', name: 'scout', subagentType: 'runner' })
+  expect(tasks[1]).toMatchObject({ description: 'scout', subagent_type: 'runner' })
   await api.spawn({ prompt: 'Review', subagentType: 'reviewer' })
   expect(tasks[2]).toEqual({ prompt: 'Review', description: 'Review', subagent_type: 'reviewer' })
   expect(await api.list()).toEqual([

@@ -139,8 +139,6 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
     },
     agent: {
       ...createAgentApi({
-        plugin,
-        report: ports.report,
         instance,
         registry,
         scene,

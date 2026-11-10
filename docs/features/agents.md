@@ -12,7 +12,7 @@ Create specialists from a conversation and manage them with `/agents`; see
 
 | Kept in                      | Folder                                                                                                | You can edit it |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------- | --------------- |
-| Yours                        | `~/.claude/agents/`                                                                                   | Yes             |
+| Yours                        | `~/.claude/agents/` (or the folder `CLAUDE_CONFIG_DIR` names)                                         | Yes             |
 | This project                 | `<project>/.claude/agents/`, up to the repository root                                                | Yes             |
 | Managed by your organisation | the managed `.claude/agents/` folder                                                                  | No              |
 | From a plugin                | the `agents/` folder of an enabled plugin                                                             | No              |
@@ -27,9 +27,10 @@ those names. A plugin's agent is `plugin:name`, or its bare name when one plugin
 `skills` list the first 32 distinct names preload.
 
 When two agents share a name, Claude Code's precedence decides which one runs: managed, then the
-project (the closest folder wins), then yours, then plugins. A file with the name of a built-in type
-replaces it. Folders are watched: an agent you add or edit in an editor appears in the Store within
-a moment, and a file you delete leaves every list at once.
+agents mods register (Claude Code's `--agents` source), then the project (the closest folder wins),
+then yours, then plugins. A file with the name of a built-in type replaces it. Folders are watched:
+an agent you add or edit in an editor appears in the Store within a moment, and a file you delete
+leaves every list at once.
 
 Localix keeps in its own database only what a file cannot hold: the agent's **access** rules, a
 stable identity that survives a rename, and chat history. The identity is why a renamed or moved
@@ -42,8 +43,8 @@ Messages it wrote stay, under its last name.
 ## What your own agent files can set
 
 Some front matter is honoured only in a file you or your organisation own (yours, the project's or a
-managed one). A plugin's agent loads without it, as in Claude Code, because a plugin is code you did
-not write.
+managed one) and in an agent a mod registers. A plugin's agent loads without it, as in Claude Code,
+because a plugin is code you did not write.
 
 | Field            | Effect while the agent runs as a delegated child                                 |
 | ---------------- | -------------------------------------------------------------------------------- |
@@ -146,7 +147,9 @@ Agents do not inherit one another's skill lists. Loading a skill never grants de
 silences outside-workspace and dangerous-command confirmations.
 
 Every agent in a chat shares the repository's [memory](learning-loop.md#memory) folder. Claude
-Code's `memory:` key gives an agent run as a subagent a memory folder of its own. See
+Code's `memory:` key gives an agent run as a subagent a memory folder of its own, named by its type
+(a plugin's `plugin:name` as `plugin-name`); the `user` scope's is below `CLAUDE_CONFIG_DIR` when it
+is set, and with auto memory off the key does nothing. See
 [stored context](learning-loop.md#recall).
 
 ![An agent's page in the Store: standing instructions and turn limit](../assets/screenshots/agents/context-and-limits--2026-10-27.png)

@@ -1,8 +1,8 @@
 import { expect, test } from 'bun:test'
 import { modAgentDefinition } from './agent-definition'
 
-test('a spec’s fields become the plugin agent a run takes them from', () => {
-  const { agent, notApplied } = modAgentDefinition('lab', {
+test('a spec’s fields become the definition the catalog reads as the SDK `agents` option', () => {
+  const { name, definition } = modAgentDefinition({
     name: 'runner',
     description: 'Runs a spec',
     prompt: 'You run specs.',
@@ -19,27 +19,23 @@ test('a spec’s fields become the plugin agent a run takes them from', () => {
     initialPrompt: 'Run {{intent}}',
     permissionMode: 'plan',
   })
-  expect(agent).toMatchObject({
-    fullName: 'lab:runner',
+  expect(name).toBe('runner')
+  expect(definition).toMatchObject({
+    description: 'Runs a spec',
     prompt: 'You run specs.',
     tools: ['Read', 'Bash'],
-    disallowedTools: ['Write'],
-    maxTurns: 5,
-    pinnedSkills: ['spec-format'],
-    memory: 'project',
-    background: true,
-    omitClaudeMd: true,
-    isolation: 'isolated',
+    skills: ['spec-format'],
+    isolation: 'worktree',
     initialPrompt: 'Run {{intent}}',
+    permissionMode: 'plan',
   })
-  // A plugin's agent never carries a permission mode, as in Claude Code.
-  expect(notApplied).toEqual(['permissionMode'])
+  expect(definition).not.toHaveProperty('name')
 })
 
 test('a spec the schema refuses rejects with its reason', () => {
   const base = { name: 'a', description: 'd', prompt: 'p' }
-  expect(() => modAgentDefinition('lab', { ...base, maxTurns: 0 })).toThrow('maxTurns')
-  expect(() => modAgentDefinition('lab', { ...base, isolation: 'remote' })).toThrow('isolation')
-  expect(() => modAgentDefinition('lab', { ...base, colour: 'red' })).toThrow('colour')
-  expect(() => modAgentDefinition('lab', { ...base, prompt: '' })).toThrow('prompt')
+  expect(() => modAgentDefinition({ ...base, maxTurns: 0 })).toThrow('maxTurns')
+  expect(() => modAgentDefinition({ ...base, isolation: 'remote' })).toThrow('isolation')
+  expect(() => modAgentDefinition({ ...base, colour: 'red' })).toThrow('colour')
+  expect(() => modAgentDefinition({ ...base, prompt: '' })).toThrow('prompt')
 })

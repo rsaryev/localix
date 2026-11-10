@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { isValidCcAgentName } from './agent-names'
 
 /**
  * A custom worker ROLE a plugin contributes — the same thing a registry agent is, declared in a
@@ -8,13 +7,9 @@ import { isValidCcAgentName } from './agent-names'
  * `<plugin>:<name>` (a skill's `agent:`). Pure manifest data.
  */
 export const pluginAgentSchema = z.object({
-  // Accepts a namespaced `foo:bar` name (nested `agents/foo/bar.md`); a plain name is
-  // the single-segment case. Claude Code's name rules apply (`agent-names.ts`). Assignee
-  // resolution splits on the FIRST `:` so `<plugin>:foo:bar` still routes correctly.
-  name: z
-    .string()
-    .max(256)
-    .refine((name) => isValidCcAgentName(name, { namespaced: true })),
+  // A namespaced `foo:bar` name (nested `agents/foo/bar.md`) or a plain one, as the kit read it
+  // under Claude Code's name rules.
+  name: z.string(),
   label: z.string().max(60).optional(),
   description: z.string().default(''),
   /** The worker identity/system prompt for this role. */

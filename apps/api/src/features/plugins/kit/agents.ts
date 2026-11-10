@@ -1,21 +1,31 @@
 import type { PluginIssue, PluginSession } from '@rsaryev/llx-plugin'
 import {
   agentMentions,
+  catalogTier,
   selectSessionAgent,
   type AgentCatalog,
   type CatalogAgent,
-  type CatalogSource,
+  type CatalogTier,
 } from '@rsaryev/llx-plugin/agents'
 import { buildLoadedAgent, type LoadedPluginAgent } from '../loader-contract'
 import { agentOf } from './catalog/components'
 import type { LocalixPluginHost } from './host'
 import { openScopeSession, type PluginScope } from './scope-session'
+import { askedPermissionMode } from './spawn'
+import type { AgentPermissionMode } from '../../../contracts/agent-permission-mode'
 
 /**
- * Where a subagent of a scope comes from (sub-agents.md, "Choose the subagent scope"): `managed`,
- * `project`, `user`, `plugin` or `builtin` (Localix passes no `--agents` flag, so never `flag`).
+ * Where a subagent of a scope comes from, as the row of the priority table it ranks by (sub-agents.md,
+ * "Choose the subagent scope"): `managed`, `flag` (an agent a mod registered), `project`, `user`,
+ * `plugin` or `builtin`.
  */
-export type ScopeAgentSource = CatalogSource
+export type ScopeAgentSource = CatalogTier
+
+/**
+ * The agents a host registers at run time, as the `--agents` flag and the SDK `agents` option take
+ * them: each key a subagent type, each value its definition (`prompt` and the frontmatter fields).
+ */
+export type HostAgents = Readonly<Record<string, Readonly<Record<string, unknown>>>>
 
 /** A subagent of a scope as the kit resolved it, in the shape Localix's runtime takes. */
 export interface ScopeAgent extends LoadedPluginAgent {
@@ -24,8 +34,8 @@ export interface ScopeAgent extends LoadedPluginAgent {
   path: string
   /** The plugin a plugin's agent belongs to: its id and whether it is the project's own install. */
   plugin?: { id: string; scope: 'user' | 'project' }
-  /** Frontmatter `permissionMode`, as written. */
-  permissionMode?: string
+  /** The Localix mode its frontmatter `permissionMode` asks for (`spawn.ts`). */
+  permissionMode?: AgentPermissionMode
   /** Frontmatter `hooks`, active while the agent runs; never set for a plugin's or built-in agent. */
   hooks?: unknown
   /** Frontmatter `mcpServers`: names of configured servers and inline definitions. */
@@ -50,15 +60,17 @@ export interface ScopeAgents {
   readonly resolve: (reference: string) => AgentReference
 }
 
-const pluginNameOf = (agent: CatalogAgent) => agent.name.slice(0, agent.name.indexOf(':'))
+/** A plugin's agent's plugin, as the session runs it: its id, manifest name and install scope. */
+interface AgentPlugin {
+  readonly id: string
+  readonly name: string
+  readonly scope: 'user' | 'project'
+}
 
 /** One kit catalog entry as Localix's agent shape; `prompt` is the session's resolved one. */
-function scopeAgentOf(
-  agent: CatalogAgent,
-  prompt: string,
-  plugin: ScopeAgent['plugin'],
-): ScopeAgent {
-  const owner = agent.source === 'plugin' ? pluginNameOf(agent) : agent.source
+function scopeAgentOf(agent: CatalogAgent, prompt: string, plugin?: AgentPlugin): ScopeAgent {
+  const source = catalogTier(agent.source)
+  const owner = plugin?.name ?? source
   const fields = agentOf(
     {
       scopedName: agent.name,
@@ -67,15 +79,16 @@ function scopeAgentOf(
       extras: agent.extras,
       hooks: agent.hooks,
     },
-    agent.source === 'plugin' ? owner : '',
+    plugin ? owner : '',
   )
-  const { permissionMode, mcpServers } = agent.definition
+  const { mcpServers } = agent.definition
+  const permissionMode = askedPermissionMode(agent.definition.permissionMode)
   return {
     ...buildLoadedAgent(owner, fields, (text) => text),
     fullName: agent.name,
-    source: agent.source,
-    path: agent.source === 'plugin' ? '' : (agent.path ?? ''),
-    ...(plugin ? { plugin } : {}),
+    source,
+    path: source === 'plugin' || source === 'flag' ? '' : (agent.path ?? ''),
+    ...(plugin ? { plugin: { id: plugin.id, scope: plugin.scope } } : {}),
     // Claude Code starts a built-in such as Explore without the CLAUDE.md files.
     ...(agent.startsWith.claudeMd ? {} : { omitClaudeMd: true }),
     ...(permissionMode ? { permissionMode } : {}),
@@ -94,8 +107,9 @@ function lookup(catalog: AgentCatalog, of: (agent: CatalogAgent) => ScopeAgent) 
     const choice = selectSessionAgent(catalog, { flag: wanted })
     if (choice.ok) return choice.agent ? { agent: of(choice.agent) } : null
     // The kit refuses a bare name several plugins have; one no subagent has is simply none.
-    const named = catalog.agents.filter((agent) => agent.ownName === wanted)
-    return named.length ? { ambiguous: named.map((agent) => agent.name) } : null
+    return choice.candidates.length
+      ? { ambiguous: choice.candidates.map((agent) => agent.name) }
+      : null
   }
 }
 
@@ -103,22 +117,26 @@ function lookup(catalog: AgentCatalog, of: (agent: CatalogAgent) => ScopeAgent) 
 export async function sessionAgents(
   session: PluginSession,
   plugins: PluginScope['plugins'],
-  signal: AbortSignal = new AbortController().signal,
+  options: AgentsRead = {},
 ): Promise<ScopeAgents> {
-  const reload = await session.reloadAgents({ signal })
-  const catalog = session.agentCatalog()
-  const resolved = await session.agents({ signal })
+  const signal = options.signal ?? new AbortController().signal
+  const overrides = { flag: options.flag }
+  const reload = await session.reloadAgents({ signal, overrides })
+  const catalog = session.agentCatalog(overrides)
+  const resolved = await session.agents({ signal, overrides })
   const prompts = new Map(resolved.resolved.map((one) => [one.name, one.definition.prompt]))
-  const running = new Map(
-    session.plugins.filter((one) => one.enabled).map((one) => [one.name, one.id]),
-  )
+  const names = new Map(session.plugins.map((one) => [one.id, one.name]))
   const scopes = new Map(plugins.map((one) => [one.id, one.scope]))
+  const pluginOf = (agent: CatalogAgent): AgentPlugin | undefined => {
+    if (agent.source.kind !== 'plugin') return undefined
+    const { pluginId: id } = agent.source
+    return { id, name: names.get(id) ?? id, scope: scopes.get(id) ?? 'user' }
+  }
   const made = new Map<CatalogAgent, ScopeAgent>()
   const of = (agent: CatalogAgent): ScopeAgent => {
     const known = made.get(agent)
     if (known) return known
-    const id = agent.source === 'plugin' ? running.get(pluginNameOf(agent)) : undefined
-    const plugin = id ? { id, scope: scopes.get(id) ?? 'user' } : undefined
+    const plugin = pluginOf(agent)
     const prompt =
       (catalog.agents.includes(agent) && prompts.get(agent.name)) || agent.definition.prompt
     const shaped = scopeAgentOf(agent, prompt, plugin)
@@ -134,6 +152,13 @@ export async function sessionAgents(
   }
 }
 
+/** What a read of a scope's agents takes besides the scope. */
+export interface AgentsRead {
+  readonly signal?: AbortSignal | undefined
+  /** The agents registered at run time (the mods'), the kit's `--agents` source; none by default. */
+  readonly flag?: HostAgents | undefined
+}
+
 /**
  * The subagents of a scope as the kit resolves them (`session.reloadAgents`, `agentCatalog`) in a
  * session of the scope (`./scope-session`): the built-ins, the managed, project (the working
@@ -143,7 +168,7 @@ export async function sessionAgents(
 export async function scopeAgents(
   host: LocalixPluginHost,
   scope: PluginScope,
-  signal?: AbortSignal,
+  options?: AgentsRead,
 ): Promise<ScopeAgents> {
-  return sessionAgents(await openScopeSession(host, scope, 'agents'), scope.plugins, signal)
+  return sessionAgents(await openScopeSession(host, scope, 'agents'), scope.plugins, options)
 }

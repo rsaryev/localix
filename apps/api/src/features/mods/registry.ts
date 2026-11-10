@@ -1,4 +1,3 @@
-import type { LoadedPluginAgent } from '../plugins/loader-contract'
 import { pluginOfInstance } from './instance-id'
 
 /**
@@ -29,13 +28,17 @@ export interface ModTool extends Owned {
   inputSchema?: Record<string, unknown>
 }
 
-/** An agent type a mod defined (`$.agent.register`), spawned as `<plugin>:<name>`. */
+/** An agent type a mod defined (`$.agent.register`), spawned as `name`. */
 export interface ModAgent extends Owned {
   name: string
-  description: string
-  prompt: string
-  /** The definition a child runs as (`agent-definition.ts`). */
-  definition: LoadedPluginAgent
+  /** The definition a child runs as (`agent-definition.ts`): `prompt` and the file's fields. */
+  definition: Readonly<Record<string, unknown>>
+}
+
+/** The agent types one plugin's mods registered, each name to its definition. */
+export interface ModAgentGroup {
+  plugin: string
+  agents: Readonly<Record<string, Readonly<Record<string, unknown>>>>
 }
 
 export interface ModPane extends Owned {
@@ -79,26 +82,23 @@ export function createModRegistry(onChange: () => void) {
     },
     addAgent(instance: string, spec: Omit<ModAgent, keyof Owned>): string {
       const name = checkName('An agent', spec.name)
-      const agent = { ...owner(instance), ...spec, name }
-      agents.set(key(instance, name), agent)
-      return `${agent.plugin}:${name}`
+      agents.set(key(instance, name), { ...owner(instance), ...spec, name })
+      return name
     },
-    /** The agent types mods registered, by plugin: what the agent catalog lists beside the files'. */
-    agentGroups(): { plugin: string; agents: LoadedPluginAgent[] }[] {
-      const groups = new Map<string, Map<string, LoadedPluginAgent>>()
+    /** The agent types mods registered, by plugin: the agent catalog's `--agents` source. */
+    agentGroups(): ModAgentGroup[] {
+      const groups = new Map<string, Record<string, Readonly<Record<string, unknown>>>>()
       for (const agent of agents.values()) {
-        const group = groups.get(agent.plugin) ?? new Map<string, LoadedPluginAgent>()
-        group.set(agent.definition.fullName, agent.definition)
+        const group = groups.get(agent.plugin) ?? {}
+        group[agent.name] = agent.definition
         groups.set(agent.plugin, group)
       }
-      return [...groups].map(([plugin, group]) => ({ plugin, agents: [...group.values()] }))
+      return [...groups].map(([plugin, group]) => ({ plugin, agents: group }))
     },
-    /** `<plugin>:<name>` as an instance of that plugin registered it. */
-    agent: (fullName: string, instances?: ReadonlySet<string>) =>
+    /** The type `name` as an instance registered it. */
+    agent: (name: string, instances?: ReadonlySet<string>) =>
       [...agents.values()].find(
-        (agent) =>
-          `${agent.plugin}:${agent.name}` === fullName &&
-          (!instances || instances.has(agent.instance)),
+        (agent) => agent.name === name && (!instances || instances.has(agent.instance)),
       ),
     openPane(
       instance: string,

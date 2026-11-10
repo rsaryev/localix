@@ -21,6 +21,8 @@ export { scopeMcpServers, type McpScope, type ScopeMcpServers } from './mcp-serv
 export {
   scopeAgents,
   type AgentReference,
+  type AgentsRead,
+  type HostAgents,
   type ScopeAgent,
   type ScopeAgents,
   type ScopeAgentSource,
@@ -34,7 +36,19 @@ export {
 } from './catalog/read-folder'
 export type { ResolvedEntrypoints } from './catalog/entrypoints'
 export { validatePluginFolder } from './catalog/validate'
-export { readAgentText, type AgentFileRead } from './catalog/agent-file'
+export {
+  agentHooksRun,
+  agentMcpSpecs,
+  agentMemory,
+  askedPermissionMode,
+  preloadedSkillNames,
+  subagentPermissionMode,
+  type AgentMcpSpecs,
+  type AgentMemory,
+  type AgentMemoryContext,
+  type AgentMemoryScope,
+  type PreloadableSkill,
+} from './spawn'
 export type { PluginCcComponents, PluginWorkflow } from './catalog/components'
 export type { Plugin as KitPlugin } from '@rsaryev/llx-plugin/loading'
 export type { PluginIssue } from '@rsaryev/llx-plugin/format'
@@ -107,3 +121,13 @@ export {
   type SkillInvocation,
   type SkillShellAnswer,
 } from './skills'
+export {
+  findSessionSkill,
+  reloadSessionSkills,
+  sessionSkills,
+  skillListing,
+  touchSessionFiles,
+  typedSkills,
+  type ChatSkill,
+  type TypedSkills,
+} from './skill-catalog'

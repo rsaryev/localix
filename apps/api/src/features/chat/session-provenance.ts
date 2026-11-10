@@ -1,6 +1,6 @@
 import type { AgentSessionKind } from '../../db'
 import {
-  agentPermissionModeOf,
+  isAgentPermissionMode,
   type AgentPermissionMode,
 } from '../../contracts/agent-permission-mode'
 import { DELEGATION_PRIORITIES, type DelegationPriority } from '../agent-core/delegation-lanes'
@@ -47,7 +47,7 @@ export type SessionProvenance =
       /**
        * The mode the agent's file asked for (`permissionMode`), when it is one Localix has and the
        * agent is the person's own (a plugin's agent and a fork never carry it). The conversation's
-       * mode still decides (`contracts/agent-permission-mode.ts`); the run reads both.
+       * mode still decides (`plugins/kit/spawn.ts`); the run reads both.
        */
       agentPermissionMode?: AgentPermissionMode
       /**
@@ -155,7 +155,7 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
         (value.worktreeByHook === undefined || value.worktreeByHook === true) &&
         optionalString(value.agentType) &&
         (value.agentPermissionMode === undefined ||
-          agentPermissionModeOf(value.agentPermissionMode) === value.agentPermissionMode) &&
+          isAgentPermissionMode(value.agentPermissionMode)) &&
         (value.fork === undefined || isForkBase(value.fork))
         ? {
             kind: 'task-delegation',

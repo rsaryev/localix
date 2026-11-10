@@ -89,8 +89,8 @@ export interface TaskAgentType {
   tools?: readonly string[]
   /** Where the definition comes from: `plugin` and built-in agents ignore the fields below. */
   source?: string
-  /** The file's `permissionMode`, as written. */
-  permissionMode?: string
+  /** The mode its `permissionMode` asks for, as the kit resolved it (none for a plugin's). */
+  permissionMode?: AgentPermissionMode
 }
 
 /** Who a task goes to, as the catalog resolves it and Access admits it. */

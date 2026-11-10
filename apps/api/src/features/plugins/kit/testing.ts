@@ -98,11 +98,11 @@ export function memoryKitPorts(options: MemoryKitOptions = {}): LocalixKitPorts 
 /** A real plugin host over a home folder on disk, for tests that read plugins from folders. */
 export function diskPluginHost(
   homeDir: string,
-  options: { readonly managedDirectory?: string } = {},
+  options: { readonly managedDirectory?: string; readonly env?: NodeJS.ProcessEnv } = {},
 ): LocalixPluginHost {
   return createLocalixPluginHost({
     homeDir,
-    environment: () => ({ PATH: process.env.PATH }),
+    environment: () => ({ PATH: process.env.PATH, ...options.env }),
     pluginsRoot: () => join(homeDir, '.localix/plugins'),
     scratchDir: () => join(homeDir, 'scratch'),
     envFilesDir: (sessionId) => join(homeDir, 'sessions', sessionId),

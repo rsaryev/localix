@@ -1,11 +1,15 @@
 import { expect, test } from 'bun:test'
 import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { tempDirPerTest } from '@localixai/testing'
+import { skillTestSession, writeTestPlugin } from '../../plugins/kit/testing'
 import { handlePluginCommand } from './command-handlers'
 import type { CommandHandlerContext } from './command-handlers-context'
 import { sessionFixture } from '../../../testing/session-fixture'
 import { workflowCommand } from '../../plugins/workflow-commands'
 
 const session = sessionFixture({ id: 'plugin-command', userId: 'u' })
+const dir = tempDirPerTest('plugin-command-')
 
 function fixture(commandName: string) {
   const trace: string[] = []
@@ -20,7 +24,6 @@ function fixture(commandName: string) {
     },
     repo: { listMessages: forbidden },
     runner: {},
-    gatherEnabledPluginSkills: async () => [],
     gatherEnabledPluginCommands: async () => {
       trace.push('gather')
       return [
@@ -94,7 +97,6 @@ test('a command that declares tools activates them for the chat before its run s
       },
     },
     runner: {},
-    gatherEnabledPluginSkills: async () => [],
     gatherEnabledPluginCommands: async () => [
       {
         plugin: 'planner',
@@ -137,7 +139,6 @@ test('a plugin workflow runs as its command: the workflow tool is activated and 
       ) => change([]),
     },
     runner: {},
-    gatherEnabledPluginSkills: async () => [],
     gatherEnabledPluginCommands: async () => [
       {
         plugin: 'acme',
@@ -163,13 +164,12 @@ test('a plugin workflow runs as its command: the workflow tool is activated and 
   expect(instruction).toContain('Input: 1024, 1025')
 })
 
-function dupCtx(prompt: string, skills: unknown[], replies: string[], runs: string[]) {
+function dupCtx(prompt: string, replies: string[], runs: string[]) {
   return {
     now: () => 'now',
     deps: {},
     repo: { listMessages: async () => [] },
     runner: {},
-    gatherEnabledPluginSkills: async () => skills,
     gatherEnabledPluginCommands: async () => [
       { plugin: 'dup', pluginDir: tmpdir(), command: { name: 'tidy', prompt, args: [] } },
     ],
@@ -185,15 +185,20 @@ function dupCtx(prompt: string, skills: unknown[], replies: string[], runs: stri
   } as unknown as CommandHandlerContext
 }
 
-// skills.md, "Resolve skills that share a name": "A skill and a file in `.claude/commands/` | The
-// skill". The command steps aside; the skill handler, later in the dispatch, runs the skill.
-test('a plugin command steps aside for a same-name skill of its plugin', async () => {
+// The kit's judgment (Claude Code 2.1.319, host/session-skill-entries.ts): a plugin's command wins
+// a plugin-local name collision with its skill, so the command runs.
+test('a plugin command runs over a same-name skill of its plugin', async () => {
   const runs: string[] = []
-  const skill = { name: 'dup:tidy', pluginName: 'dup' }
-  const ctx = dupCtx('DUP-COMMAND', [skill], [], runs)
-  expect(await handlePluginCommand(ctx, 'u', session.id, session, '/dup:tidy')).toBeNull()
-  const modelOnly = dupCtx('DUP-COMMAND', [{ ...skill, userInvocable: false }], [], runs)
-  await handlePluginCommand(modelOnly, 'u', session.id, session, '/dup:tidy')
+  const root = join(dir(), 'dup')
+  await writeTestPlugin(root, 'dup', {
+    'commands/tidy.md': 'DUP-COMMAND\n',
+    'skills/tidy/SKILL.md': '---\ndescription: Tidies\n---\nDUP-SKILL\n',
+  })
+  const ctx = {
+    ...dupCtx('DUP-COMMAND', [], runs),
+    chatPluginSession: () => skillTestSession(join(dir(), 'home'), dir(), [root]),
+  } as CommandHandlerContext
+  expect(await handlePluginCommand(ctx, 'u', session.id, session, '/dup:tidy')).not.toBeNull()
   expect(runs).toEqual(['DUP-COMMAND'])
 })
 
@@ -202,7 +207,7 @@ test('a plugin command steps aside for a same-name skill of its plugin', async (
 test('a failing injected command aborts the plugin command before the model is asked', async () => {
   const replies: string[] = []
   const runs: string[] = []
-  const ctx = dupCtx('BODY\n!`echo partial; exit 3`', [], replies, runs)
+  const ctx = dupCtx('BODY\n!`echo partial; exit 3`', replies, runs)
   await handlePluginCommand(ctx, 'u', session.id, session, '/dup:tidy')
   expect(runs).toEqual([])
   expect(replies[0]).toContain('Shell command failed for pattern "!`echo partial; exit 3`"')
@@ -213,7 +218,7 @@ test('a failing injected command aborts the plugin command before the model is a
 // block: the arguments reach the script, each as one word, and are not appended again.
 test('an injected command receives the arguments as shell words', async () => {
   const runs: string[] = []
-  const ctx = dupCtx('```!\nprintf "[%s]" $ARGUMENTS\n```', [], [], runs)
+  const ctx = dupCtx('```!\nprintf "[%s]" $ARGUMENTS\n```', [], runs)
   await handlePluginCommand(ctx, 'u', session.id, session, '/dup:tidy Polish "the README" $(id)')
   expect(runs).toEqual(['[Polish][the README][$(id)]'])
 })

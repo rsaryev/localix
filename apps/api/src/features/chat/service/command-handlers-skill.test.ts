@@ -13,8 +13,8 @@ import type { SkillRecord } from './skills'
 import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 
 /**
- * A typed `/name` runs the skill as the chat's kit session expands it (skills.md); Localix's own
- * list says which names are skills, and the handler turns the expansion into the turn.
+ * A typed `/name` runs the skill as the chat's kit session expands it (skills.md); the kit says
+ * which names are skills, and the handler turns the expansion into the turn.
  */
 const dir = tempDirPerTest('typed-skill-')
 const work = () => join(dir(), 'work')
@@ -72,8 +72,6 @@ function context(
     repo: { listMessages: async () => [] },
     runner: { isBusy: () => false, isRunning: () => false },
     now: () => 'now',
-    gatherSessionSkills: async () => own,
-    gatherEnabledPluginSkills: async () => plugins,
     loadSkillOverrides: async () => ({}),
     resolveSessionWorkingDir: async () => work(),
     chatPluginSession: () => skillTestSession(join(dir(), 'home'), work(), pluginDirs),
@@ -144,17 +142,19 @@ describe('a typed skill', () => {
   // skills.md: "Claude Code starts a new subagent of the type set in the `agent` field".
   test('context: fork runs the fork as the subagent type it names, with its hooks', async () => {
     const hooks = { PreToolUse: [{ hooks: [{ type: 'command', command: 'x' }] }] }
-    const forked = {
-      ...skill('review', 'context: fork\nagent: reviewer', 'Review.', 'cc'),
-      hooks,
-    }
+    const forked = skill(
+      'review',
+      'context: fork\nagent: reviewer\nhooks:\n  PreToolUse:\n    - hooks:\n        - type: command\n          command: x',
+      'Review.',
+      'cc',
+    )
     const { ctx, forks, runs } = context([], [forked])
     await typed(ctx, '/cc:review')
     expect(runs).toEqual([])
     expect(forks[0]).toMatchObject({
       agent: 'reviewer',
       hooks,
-      hooksPlugin: { name: 'cc', root: join(dir(), 'plugins', 'cc') },
+      hooksPlugin: { id: 'cc@test', name: 'cc' },
     })
   })
 
@@ -191,10 +191,9 @@ describe('plugin skills run as /<plugin>:<skill>', () => {
   // The kit's judgment: a plugin's folder skill is `<plugin>:<folder>` and has no bare name; only
   // a plugin's root SKILL.md answers bare (loading/readers-text.ts, host/session-skill-entries.ts).
   test('a folder skill answers only to the namespaced name', async () => {
-    const { ctx, runs, replies } = context([], [skill('lint', '', 'Lint.', 'kit')])
-    await typed(ctx, '/lint')
+    const { ctx, runs } = context([], [skill('lint', '', 'Lint.', 'kit')])
+    expect(await typed(ctx, '/lint')).toBeNull()
     expect(runs).toEqual([])
-    expect(replies[0]).toContain('does not list it')
   })
 
   test("the person's own skill keeps its bare name over a plugin's", async () => {

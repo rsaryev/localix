@@ -23,7 +23,7 @@ describe('a session’s skill hooks', () => {
 
   test('the same hooks from two plugins are two registrations', () => {
     const sessions = createCcHookSessions()
-    const plugin = (name: string) => ({ name, root: `/p/${name}`, dataDir: `/d/${name}` })
+    const plugin = (name: string) => ({ id: `${name}@m`, name })
     sessions.addSkillHooks('s1', { raw: guard, source: 'skill', plugin: plugin('a') })
     sessions.addSkillHooks('s1', { raw: guard, source: 'skill', plugin: plugin('b') })
     expect(sessions.skillHooks('s1').map((hooks) => hooks.plugin?.name)).toEqual(['a', 'b'])

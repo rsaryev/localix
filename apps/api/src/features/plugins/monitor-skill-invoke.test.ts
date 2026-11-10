@@ -209,10 +209,10 @@ describe('an on-skill-invoke monitor', () => {
           announceSkillInvoked({
             userId: 'u1',
             sessionId: 'c1',
-            skillName: loaded.name,
+            skillName: loaded.ownName,
             ...(loaded.pluginName ? { pluginName: loaded.pluginName } : {}),
           })
-          return { ok: true, text: loaded.content }
+          return { ok: true, text: loaded.content ?? '' }
         },
       })
       const out = await tool.execute('t', { action: 'get', name: 'deploy' } as never)

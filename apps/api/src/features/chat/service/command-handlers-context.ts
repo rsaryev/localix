@@ -125,8 +125,6 @@ export interface CommandHandlerContext {
   ) => Promise<
     Array<{ plugin: string; command: PluginCommand; pluginDir: string; dataDir?: string }>
   >
-  /** Enabled plugins' skills, named `<plugin>:<skill>` (`session-workspace.ts`). */
-  gatherEnabledPluginSkills: (userId: string, session: SessionRecord) => Promise<SkillRecord[]>
   resolveSessionWorkingDir: (userId: string, session: SessionRecord) => Promise<string>
   /**
    * Spawn a delegated session from the skill task and agent selection;

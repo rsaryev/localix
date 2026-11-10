@@ -28,7 +28,6 @@ import type { ChatRepository, SessionRecord } from '../../repository'
 import type { SkillOverrides } from '../../../agent-core/skill-overrides'
 import type { KitSession } from '../../../plugins/kit'
 import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
-import { escapeRegExp } from '../../../../lib/regexp'
 
 export interface DirectToolInstanceDeps {
   agentProfile: RunProfile
@@ -82,6 +81,7 @@ export function buildDirectToolInstances(
     defaultCwd,
     ...(deps.kitSession ? { kitSession: deps.kitSession } : {}),
     commandPolicy: deps.skillCommandPolicy,
+    ...(deps.latestUserText ? { latestUserText: deps.latestUserText } : {}),
   })
   return {
     // Plugin-bundled skills are passed in read-only so skill.get/list resolve
@@ -96,7 +96,6 @@ export function buildDirectToolInstances(
           {
             ...skillPorts,
             ...(deps.forkSkill ? { forkSkill: deps.forkSkill } : {}),
-            userNamed: (name) => namesSkill(deps.latestUserText, name),
           },
         )
       : undefined,
@@ -126,11 +125,4 @@ export function buildDirectToolInstances(
         : undefined
     })(),
   }
-}
-
-/** `go ahead and /deploy to staging`: the name as its own word, no punctuation attached. */
-export function namesSkill(text: string | undefined, name: string): boolean {
-  if (!text) return false
-  const escaped = escapeRegExp(name)
-  return new RegExp(`(^|\\s)/${escaped}(?=\\s|$)`, 'i').test(text)
 }

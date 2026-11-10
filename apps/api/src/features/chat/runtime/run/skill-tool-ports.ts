@@ -1,9 +1,17 @@
 import { announceSkillInvoked } from '../../../agent-core/skill-invocations'
 import { verdictOf, type VerdictOptions } from '../../../agent-core/permission-verdict'
 import { TOOL } from '../../../agent-core/tool-names'
-import type { SkillToolPorts } from '../../../agent-core/tools/skill-call'
-import { skillCallName } from '../../../agent-core/tools/skill-names'
-import { invokeSkill, type KitSession, type SkillShellAnswer } from '../../../plugins/kit'
+import type { SkillEntry, SkillToolPorts } from '../../../agent-core/tools/skill-call'
+import {
+  findSessionSkill,
+  invokeSkill,
+  reloadSessionSkills,
+  sessionSkills,
+  typedSkills,
+  type ChatSkill,
+  type KitSession,
+  type SkillShellAnswer,
+} from '../../../plugins/kit'
 import type { SessionRecord } from '../../repository'
 import { claudeCodeHome } from '../../../cc-settings/config-dir'
 import { runOuterRules } from './claude-code-permissions'
@@ -33,7 +41,8 @@ export function skillShellAnswer(policy: SkillCommandPolicyRef | undefined): Ski
 
 /**
  * The host half of the `Skill` tool's `get` (`agent-core/tools/skill.ts`): the chat's kit session
- * expands the skill as Claude Code does when Claude invokes it (`disable-model-invocation`, its
+ * finds the skill by the names it runs skills by, the person's latest message permits the ones it
+ * names as a `/name` word (the kit reads it), and the session expands the skill as Claude Code does when Claude invokes it (`disable-model-invocation`, its
  * commands against the run's rules, its frontmatter `hooks` registered for the rest of the
  * session), its tool lists apply to the rest of the run, and a plugin monitor waiting for it
  * starts. No kit session (a test's runtime): no port, the content as written.
@@ -45,12 +54,26 @@ export function skillToolPorts(input: {
   kitSession?: KitSession
   /** The run's permission inputs: each command a loaded skill injects is checked against them. */
   commandPolicy?: SkillCommandPolicyRef
-}): Pick<SkillToolPorts, 'invokeSkill'> {
-  const { userId, session, defaultCwd, kitSession, commandPolicy } = input
+  /** The person's latest message, whose `/name` words permit those skills for this message. */
+  latestUserText?: string
+}): Pick<SkillToolPorts, 'findSkill' | 'invokeSkill' | 'userNamed'> {
+  const { userId, session, defaultCwd, kitSession, commandPolicy, latestUserText } = input
   if (!kitSession) return {}
+  const permitted = latestUserText ? typedSkills(kitSession, latestUserText).permitted : new Set()
   return {
+    findSkill: async (name, signal) => {
+      await reloadSessionSkills(kitSession, signal ?? new AbortController().signal)
+      const found = findSessionSkill(kitSession, name)
+      return {
+        ...(found ? { skill: entryOf(found) } : {}),
+        names: sessionSkills(kitSession)
+          .filter((one) => one.modelInvocable && !one.dormant)
+          .map((one) => one.name),
+      }
+    },
+    userNamed: (name) => permitted.has(name),
     invokeSkill: async (skill, request) => {
-      const invoked = await invokeSkill(kitSession, skillCallName(skill), {
+      const invoked = await invokeSkill(kitSession, skill.name, {
         arguments: request.arguments,
         invoker: 'model',
         permittedByMention: request.named,
@@ -63,7 +86,7 @@ export function skillToolPorts(input: {
       announceSkillInvoked({
         userId,
         sessionId: session.rootSessionId ?? session.id,
-        skillName: skill.name,
+        skillName: skill.ownName,
         ...(skill.pluginName ? { pluginName: skill.pluginName } : {}),
         ...(defaultCwd ? { cwd: defaultCwd } : {}),
       })
@@ -75,5 +98,16 @@ export function skillToolPorts(input: {
           : {}),
       }
     },
+  }
+}
+
+function entryOf(skill: ChatSkill): SkillEntry {
+  return {
+    name: skill.name,
+    ownName: skill.ownName,
+    scope: skill.scope,
+    ...(skill.path ? { path: skill.path } : {}),
+    ...(skill.dir ? { dir: skill.dir } : {}),
+    ...(skill.plugin ? { pluginName: skill.plugin.name } : {}),
   }
 }

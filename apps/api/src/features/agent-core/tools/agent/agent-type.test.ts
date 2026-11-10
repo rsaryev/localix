@@ -216,14 +216,12 @@ test('an agent whose tools list resolves to nothing is refused', async () => {
   expect(calls.create).toEqual([])
 })
 
-// sub-agents.md, `permissionMode`: the person's own agent files carry it; a plugin's are ignored.
+// sub-agents.md, `permissionMode`: the mode the kit resolved for the agent rides onto the child
+// (`plugins/kit/spawn.ts`; a plugin's agent and a mode Localix lacks carry none).
 test.each([
   ['user', 'plan', 'plan'],
   ['project', 'default', 'default'],
-  ['managed', 'plan', 'plan'],
-  ['plugin', 'plan', undefined],
-  ['user', 'acceptEdits', undefined],
-  ['user', 'bypassPermissions', undefined],
+  ['flag', 'plan', 'plan'],
   ['user', undefined, undefined],
 ] as const)(
   'a %s agent file with permissionMode %s leaves %s on the child',

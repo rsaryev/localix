@@ -99,6 +99,7 @@ export function createChatPluginSessions(host: LocalixPluginHost) {
       readonly key: string
       readonly own: readonly LoadedKitPlugin[]
       readonly session: PluginSession
+      readonly locations: Locations
     }
   >()
   // The wake of each chat's latest run: a session may open outside a run (a typed `/skill`).
@@ -124,6 +125,7 @@ export function createChatPluginSessions(host: LocalixPluginHost) {
       }
       if (held?.key === key && samePlugins(held.own, own.plugins))
         return held.session.withTurn(turn)
+      const locations = sessionLocations(host, facts.cwd, own.plugins)
       const session = host.kit.openSession({
         ...turn,
         sessionId: facts.chatId,
@@ -133,11 +135,11 @@ export function createChatPluginSessions(host: LocalixPluginHost) {
         settings: createPolicyView(own.layers),
         plugins: own.plugins.map(({ id, plugin }) => ({ id, plugin })),
         userConfig: own.userConfig,
-        locations: sessionLocations(host, facts.cwd, own.plugins),
+        locations,
       })
       const { chatId } = facts
       session.onBackground((delivered) => delivered.wake && wakes.get(chatId)?.(delivered.wake))
-      open.set(facts.chatId, { key, own: own.plugins, session })
+      open.set(facts.chatId, { key, own: own.plugins, session, locations })
       return session
     },
     get: (chatId: string): PluginSession | undefined => open.get(chatId)?.session,

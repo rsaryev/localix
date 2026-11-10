@@ -73,7 +73,11 @@ function projectSkill(name: string, frontmatter: string, body: string): Discover
   return { name, description: 'd', content: body, scope: 'project', path, dir: at }
 }
 
-function loadTool(skill: DiscoveredSkill, commandPolicy: SkillCommandPolicyRef) {
+function loadTool(
+  _skill: DiscoveredSkill,
+  commandPolicy: SkillCommandPolicyRef,
+  latestUserText?: string,
+) {
   mkdirSync(join(dir(), 'work', '.git'), { recursive: true })
   const kitSession = createChatPluginSessions(diskPluginHost(join(dir(), 'home'))).forRun({
     chatId: 's',
@@ -90,8 +94,9 @@ function loadTool(skill: DiscoveredSkill, commandPolicy: SkillCommandPolicyRef) 
     defaultCwd: join(dir(), 'work'),
     kitSession,
     commandPolicy,
+    ...(latestUserText ? { latestUserText } : {}),
   })
-  return createSkillTool(null, [skill], {}, '', undefined, ports)
+  return createSkillTool(null, [], {}, '', undefined, ports)
 }
 
 describe('the skill tool’s get runs the skill through the chat’s kit session', () => {
@@ -130,9 +135,28 @@ describe('the skill tool’s get runs the skill through the chat’s kit session
     expect(check()('Write', { path: 'a.txt', content: 'x' }).decision).toBe('deny')
   })
 
-  test('a disable-model-invocation skill is refused to the model', async () => {
+  // skills.md: a `/name` "after plain text, as a separate word with no punctuation attached"
+  // permits the skill for that message, a `disable-model-invocation` one too.
+  test('a disable-model-invocation skill is refused to the model unless the message names it', async () => {
     const skill = projectSkill('deploy', 'disable-model-invocation: true', 'Deploy.')
-    const got = await loadTool(skill, policy(PLAN)).execute('t', { action: 'get', name: 'deploy' })
-    expect(got.isError).toBe(true)
+    const get = (text?: string) =>
+      loadTool(skill, policy(PLAN), text).execute('t', { action: 'get', name: 'deploy' })
+    expect((await get()).isError).toBe(true)
+    expect((await get('see /deploy, then')).isError).toBe(true)
+    const named = await get('go ahead and /deploy to staging')
+    expect(named.isError).toBeUndefined()
+    expect(String(named.content)).toContain('Deploy.')
+  })
+
+  // The kit's names: a plugin's skill is `<plugin>:<folder>`, whatever its frontmatter `name`.
+  test('get finds a skill by the kit’s name and answers a miss with the names it has', async () => {
+    const skill = projectSkill('zz-named', '', 'Named.')
+    const tool = loadTool(skill, policy(PLAN))
+    expect(
+      String((await tool.execute('t', { action: 'get', name: '/zz-named' })).content),
+    ).toContain('Named.')
+    const miss = await tool.execute('t', { action: 'get', name: 'zz-nope' })
+    expect(miss.isError).toBe(true)
+    expect(String(miss.content)).toContain('Available skills: zz-named')
   })
 })

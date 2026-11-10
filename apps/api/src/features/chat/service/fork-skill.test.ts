@@ -119,10 +119,10 @@ describe('spawnForkSkill — a fork of the invoking agent', () => {
     })
   })
 
-  it("a plugin skill's hooks run in the child with that plugin's root and data dir", async () => {
+  it("a plugin skill's hooks run in the child under that plugin's id", async () => {
     const { deps, getRunOptions } = makeDeps(parentSession())
     const hooks = { Stop: [{ hooks: [{ type: 'command', command: 'x' }] }] }
-    const plugin = { name: 'kit', root: '/plugins/kit', dataDir: '/data/kit' }
+    const plugin = { id: 'kit@market', name: 'kit' }
     await createSpawnForkSkill(deps)('u1', 'parent', 'work', { hooks, hooksPlugin: plugin })
     expect(getRunOptions()?.ccScopedHooks).toEqual([
       { raw: hooks, source: 'skill', asSubagent: true, agentType: 'general-purpose', plugin },

@@ -16,7 +16,7 @@ import { announceSkillInvoked } from '../../agent-core/skill-invocations'
 import { nextActivatedTools } from '../runtime/run/tool-deferral'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext } from './command-handlers-context'
-import { findPluginSkill } from './command-handlers-skill'
+import { findSessionSkill } from '../../plugins/kit'
 import { SkillCommandFailedError } from './skill-commands'
 
 /**
@@ -66,16 +66,13 @@ export async function handlePluginCommand(
   const match = available.find(
     (c) => c.plugin.toLowerCase() === pluginName && c.command.name.toLowerCase() === commandName,
   )
-  // A skill and a command of the same name: the skill runs (Claude Code, "Resolve skills that
-  // share a name"). The skill handler, later in the dispatch, takes it.
-  const sameNameSkill = match
-    ? findPluginSkill(
-        await ctx.gatherEnabledPluginSkills(userId, session),
-        `${match.plugin}:${match.command.name}`.toLowerCase(),
-      )
-    : undefined
-  if (sameNameSkill && sameNameSkill.userInvocable !== false) return null
   if (match) {
+    // What the name runs is the kit's answer: a plugin's command wins a same-name skill of its
+    // plugin (Claude Code 2.1.319); a skill the name runs instead goes to the skill handler,
+    // later in the dispatch.
+    const kitSession = await ctx.chatPluginSession?.(userId, session)
+    const runs = kitSession && findSessionSkill(kitSession, `${match.plugin}:${match.command.name}`)
+    if (runs?.kind === 'skill' && runs.userInvocable) return null
     // No busy refusal: a command sent while the session works waits in the queue whole
     // (`run-macro.ts`). The session's agent answers it.
     const route = sessionRoute(session)

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
-import { scopeAgents, type ScopeAgents } from './agents'
+import { scopeAgents, type HostAgents, type ScopeAgents } from './agents'
 import type { ScopePlugin } from './sessions'
 import { diskPluginHost, writeTestPlugin } from './testing'
 
@@ -20,16 +20,20 @@ const installed = (name: string, agents: Record<string, string>, selected = true
     selected,
   )
 
-async function read(cwd: string, plugins: ScopePlugin[] = [], policy: unknown = {}) {
+async function read(
+  cwd: string,
+  plugins: ScopePlugin[] = [],
+  policy: unknown = {},
+  options: { flag?: HostAgents; env?: NodeJS.ProcessEnv } = {},
+) {
   const managed = join(dir(), 'managed')
   writeTree(managed, { 'managed-settings.json': JSON.stringify(policy) })
-  const host = diskPluginHost(join(dir(), 'home'), { managedDirectory: managed })
-  return scopeAgents(host, {
-    cwd,
-    homeDir: join(dir(), 'home'),
-    plugins,
-    managed: { dir: managed },
-  })
+  const host = diskPluginHost(join(dir(), 'home'), { managedDirectory: managed, env: options.env })
+  return scopeAgents(
+    host,
+    { cwd, homeDir: join(dir(), 'home'), plugins, managed: { dir: managed } },
+    { flag: options.flag },
+  )
 }
 
 const own = (catalog: ScopeAgents) =>
@@ -166,5 +170,69 @@ describe("a scope's subagents, as the kit resolves them", () => {
     expect(loose && 'agent' in loose ? loose.agent : null).not.toHaveProperty('hooks')
     expect(loose && 'agent' in loose ? loose.agent : null).not.toHaveProperty('mcpServers')
     expect(loose && 'agent' in loose ? loose.agent : null).not.toHaveProperty('permissionMode')
+  })
+
+  // sub-agents.md, "Choose the subagent scope": the `--agents` flag (the SDK `agents` option, what a
+  // mod registers) ranks under managed and over project, user and plugin.
+  test("the agents a mod registered are the flag source: over the person's files, by name", async () => {
+    const work = join(dir(), 'work')
+    writeTree(dir(), {
+      'home/.claude/agents/runner.md': agent('runner', 'mine'),
+      'managed/.claude/agents/org.md': agent('org', 'org'),
+    })
+    const catalog = await read(
+      work,
+      [],
+      {},
+      {
+        flag: {
+          runner: {
+            description: 'registered',
+            prompt: 'You run specs.',
+            tools: ['Read'],
+            permissionMode: 'plan',
+            mcpServers: ['github'],
+            hooks: { Stop: [{ hooks: [{ type: 'command', command: './done.sh' }] }] },
+          },
+          org: { description: 'loses', prompt: 'p' },
+        },
+      },
+    )
+    expect(catalog.resolve('runner')).toMatchObject({
+      agent: {
+        source: 'flag',
+        description: 'registered',
+        prompt: 'You run specs.',
+        path: '',
+        permissionMode: 'plan',
+        mcpServers: ['github'],
+        hooks: { Stop: [{ hooks: [{ type: 'command', command: './done.sh' }] }] },
+      },
+    })
+    expect(catalog.resolve('@agent-runner')).toMatchObject({ agent: { source: 'flag' } })
+    expect(catalog.resolve('org')).toMatchObject({ agent: { source: 'managed' } })
+    expect(catalog.shadowed.map(({ agent: lost, by }) => [lost.source, by.source])).toEqual([
+      ['flag', 'managed'],
+      ['user', 'flag'],
+    ])
+  })
+
+  test('CLAUDE_CONFIG_DIR moves the personal agents folder', async () => {
+    writeTree(dir(), {
+      'home/.claude/agents/home.md': agent('home', 'h'),
+      'config/agents/moved.md': agent('moved', 'm'),
+    })
+    const catalog = await read(
+      join(dir(), 'work'),
+      [],
+      {},
+      {
+        env: { CLAUDE_CONFIG_DIR: join(dir(), 'config') },
+      },
+    )
+    expect(own(catalog)).toEqual(['moved'])
+    expect(catalog.resolve('moved')).toMatchObject({
+      agent: { source: 'user', path: join(dir(), 'config/agents/moved.md') },
+    })
   })
 })

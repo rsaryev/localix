@@ -12,7 +12,7 @@ import {
   PERMISSION_MODES,
   type PermissionMode,
 } from '../../../../contracts/permission-modes'
-import { childPermissionMode } from '../../../../contracts/agent-permission-mode'
+import { subagentPermissionMode } from '../../../plugins/kit'
 import type { SessionProvenance } from '../../session-provenance'
 import { applyPermissionMode } from '../../../capabilities/permission-mode-policy'
 import { defineAxis } from '../axis'
@@ -26,13 +26,13 @@ export interface PermissionFacts {
 /**
  * The mode the run is in: the row's, which a root's mode change writes to its whole tree, with a
  * delegated child's agent letting it plan under a Default conversation
- * (`contracts/agent-permission-mode.ts`). Read from the provenance, so a change of the tree's mode
+ * (`plugins/kit/spawn.ts`). Read from the provenance, so a change of the tree's mode
  * never erases what the agent asked for.
  */
 const modeOf = (facts: PermissionFacts): PermissionMode => {
   const conversation = facts.permissionMode ?? DEFAULT_PERMISSION_MODE
   return facts.provenance?.kind === 'task-delegation'
-    ? childPermissionMode(conversation, facts.provenance.agentPermissionMode)
+    ? subagentPermissionMode(conversation, facts.provenance.agentPermissionMode)
     : conversation
 }
 

@@ -141,7 +141,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     ...ccHookSessions.skillHooks(session.id),
     ...(params.scope.ccScopedHooks ?? []).filter((one) => one.lifetime !== 'session'),
     ...(input.agentHooks ?? []),
-  ].map((one) => scopedBlock(one, loadedPlugins))
+  ].map(scopedBlock)
   const subagent = ccSubagentOf(session)
   const facts = ccRunFacts(params, input.effort, effectiveModelId)
   const run = openRunHooks(kitSession, {
@@ -228,10 +228,8 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
 }
 
 /** A scoped block as the kit registers it; a plugin's carries its id (`${CLAUDE_PLUGIN_ROOT}`). */
-function scopedBlock(scoped: ScopedCcHooks, loadedPlugins: LoadedPlugins): ScopedHooksBlock {
-  const pluginId = scoped.plugin
-    ? loadedPlugins.kitPlugins.find((one) => one.root === scoped.plugin?.root)?.id
-    : undefined
+function scopedBlock(scoped: ScopedCcHooks): ScopedHooksBlock {
+  const pluginId = scoped.plugin?.id
   return {
     raw: scoped.raw,
     source: scoped.source,

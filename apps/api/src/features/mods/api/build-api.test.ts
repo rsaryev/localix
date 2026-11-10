@@ -35,7 +35,7 @@ describe('the answers of $ calls', () => {
         ($) => call($, 'tool.register', { name: 'count', description: 'Count' }),
         ($) => call($, 'agent.register', { name: 'scout', description: 'Scout', prompt: 'Look.' }),
       ]),
-    ).toEqual([{ command: 'recap' }, { tool: 'mcp__m__count' }, { agent: 'm:scout' }])
+    ).toEqual([{ command: 'recap' }, { tool: 'mcp__m__count' }, { agent: 'scout' }])
   })
 
   test('command.register refuses a built-in name and keeps immediate', async () => {

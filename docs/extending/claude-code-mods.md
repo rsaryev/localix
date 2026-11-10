@@ -53,7 +53,7 @@ too, without waiting. An `engine.create` step adds nouns of its own (`$.telemetr
 | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `$.tool.call`, `list`, `check`, `register`; `$.mcp.call`                                         | The running turn's tools under Claude Code's names (`Bash`, `Edit`, `mcp__<server>__<tool>` …), other core tools as the model calls them (`Browser`) |
 | `$.command.register`, `run`, `list`                                                              | `/<name>` or `/<plugin>:<name>`, answered by the project's instance; `list` adds Localix's commands and skills                                       |
-| `$.agent.spawn`, `list`, `register`                                                              | A delegated child task of the chat; `register` defines `<plugin>:<name>` as an agent definition                                                      |
+| `$.agent.spawn`, `list`, `register`                                                              | A delegated child task of the chat; `register` defines `name` as a subagent type, ranked as Claude Code's `--agents` source                          |
 | `$.model.complete`, `fork`, `classify`                                                           | One completion on the chat's model; a question after the conversation, with its system prompt                                                        |
 | `$.session.*`, `$.turn.abort`                                                                    | The chat's transcript, model, usage, repository and checkpoint; stop the turn                                                                        |
 | `$.prompt.submit`, `fill`, `suggest`, `compose`, `read`                                          | A new turn; the message box's draft and its ghost suggestion (Tab); the system prompt's sections                                                     |
@@ -223,10 +223,10 @@ the `code-modernization` plugin load and run their hooks, commands and panes in 
   a workspace tab, so `rows`, `columns` and `holdToasts` are accepted (`rows` and `columns` as
   positive whole numbers) and not applied.
 - `$.agent.register` applies `tools`, `disallowedTools`, `maxTurns`, `skills`, `memory`,
-  `background`, `omitClaudeMd`, `isolation: 'worktree'`, `autoCompactWindow` and `initialPrompt`
-  when a child runs as the agent. It keeps `permissionMode`, `mcpServers` and `hooks` and does not
-  apply them, as Claude Code does for any plugin's agent; the API log says so. `isolation: 'remote'`
-  is refused. `$.agent.spawn` honours `name` as the task's name, which the chat's `SendMessage`
+  `background`, `omitClaudeMd`, `isolation: 'worktree'`, `autoCompactWindow`, `initialPrompt`,
+  `permissionMode`, `mcpServers` and `hooks` when a child runs as the agent, as Claude Code applies
+  an `--agents` agent's: its hooks and inline servers need no folder trust. `isolation: 'remote'` is
+  refused. `$.agent.spawn` honours `name` as the task's name, which the chat's `SendMessage`
   addresses, and has no `cwd`: a child runs where the conversation is.
 - `tool.check` carries `agentId` inside a child's loop, `isReadOnly` when the tool says the input
   reads, and `approver: 'person'` when someone can be asked. It never carries `ceiling`, which comes

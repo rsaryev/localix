@@ -5,12 +5,12 @@ import { loadEnabledPlugins } from '../../plugins/loader'
 import type { McpServerRecord } from '../../mcp/repository'
 import type { PluginCommand } from '../../plugins/contracts'
 import { folderWorkflowCommands } from '../../plugins/workflow-commands'
-import { catalogPluginCommands, readCatalogPluginSkills } from '../../plugins/plugin-skills'
+import { catalogPluginCommands } from '../../plugins/plugin-skills'
 import type { createProjectsRepository } from '../../projects/repository'
 import type { SessionRecord } from '../repository'
 import { projectWorkingDirPort, resolveBaseSessionCwd } from '../session-cwd'
 import { userHome } from '../../../lib/env'
-import { toFileSkillRecord, toPluginSkillRecord, type SkillRecord } from './skills'
+import { toFileSkillRecord, type SkillRecord } from './skills'
 import type { SkillDiscoveryLogger } from '../../agent-core/skill-discovery'
 import type { AvailabilityReader } from '../../capabilities/availability'
 import type { CapabilitySourceRepository } from '../../capabilities/source-repository'
@@ -159,29 +159,6 @@ export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
   }
 
   /**
-   * The `SKILL.md` skills of every ENABLED plugin, named as Claude Code types them:
-   * `/<plugin>:<skill>`. Read with the loader's substitution, so the slash command runs the text
-   * the model would load; skill overrides do not apply to them, as in Claude Code.
-   */
-  const gatherEnabledPluginSkills = async (
-    userId: string,
-    session: SessionRecord,
-  ): Promise<SkillRecord[]> => {
-    const projectId = session.projectId ?? ''
-    const [catalog, projectDir] = await Promise.all([
-      buildSessionPluginCatalog(userId, session),
-      resolveSessionWorkingDir(userId, session),
-    ])
-    const skills = await readCatalogPluginSkills(catalog, {
-      projectId,
-      projectDir,
-      homeDir: userHome(),
-      logger,
-    })
-    return skills.map((skill) => toPluginSkillRecord(skill, projectId))
-  }
-
-  /**
    * The chat's kit session with the facts its next run opens it with (`cc-hooks-build.ts`): its
    * folder, Claude Code's settings there, the catalog's plugins and the chat's mode. A typed
    * `/skill` expands in it, so the skill's hooks and `once` keys carry into the run.
@@ -214,7 +191,6 @@ export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
     resolveSessionWorkingDir,
     gatherSessionSkills,
     gatherEnabledPluginCommands,
-    gatherEnabledPluginSkills,
     buildSessionPluginCatalog,
     loadSessionPluginMcpServers,
   }

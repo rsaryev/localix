@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { scopeAgents } from '../plugins/kit'
 import { diskPluginHost, writeTestPlugin } from '../plugins/kit/testing'
-import type { LoadedPluginAgent } from '../plugins/loader-contract'
+import type { HostAgents } from '../plugins/kit'
 import type { AgentsServiceDeps } from './service-contract'
 
 /** A plugin of a test scope, installed for the person, with the agent files it ships. */
@@ -24,7 +24,8 @@ export function testAgentScopes(opts: {
   root: string
   projects?: Readonly<Record<string, string | null>>
   plugins?: () => readonly TestPlugin[]
-  mods?: () => readonly LoadedPluginAgent[]
+  /** The agent types mods registered, as the catalog's `--agents` source. */
+  mods?: () => HostAgents
 }): Pick<AgentsServiceDeps, 'folders' | 'catalog'> {
   const homeDir = join(opts.root, 'home')
   const managed = join(opts.root, 'managed')
@@ -55,13 +56,11 @@ export function testAgentScopes(opts: {
         ),
       )
       return {
-        agents: await scopeAgents(host, {
-          cwd: cwd ?? '/',
-          homeDir,
-          plugins,
-          managed: { dir: managed },
-        }),
-        mods: opts.mods?.() ?? [],
+        agents: await scopeAgents(
+          host,
+          { cwd: cwd ?? '/', homeDir, plugins, managed: { dir: managed } },
+          { flag: opts.mods?.() },
+        ),
         plugins: tests.map(({ plugin, enabled }) => ({ plugin, projectId: '', enabled })),
         projectReadable: !projectId || cwd !== null,
       }

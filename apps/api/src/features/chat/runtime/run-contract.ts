@@ -40,10 +40,10 @@ export interface ScopedCcHooks {
   /** Agent type surfaced on a self-fired SubagentStop (delegated agent / fork skill). */
   agentType?: string
   /**
-   * The plugin that ships the skill or agent: its hooks get `${CLAUDE_PLUGIN_ROOT}` and
-   * `${CLAUDE_PLUGIN_DATA}` like the plugin's own `hooks.json`.
+   * The plugin that ships the skill or agent, by its id: its hooks get `${CLAUDE_PLUGIN_ROOT}` and
+   * `${CLAUDE_PLUGIN_DATA}` like the plugin's own `hooks.json` (the kit finds both by the id).
    */
-  plugin?: { name: string; root: string; dataDir: string }
+  plugin?: { id: string; name: string }
   /**
    * `session`: a skill's hooks, which Claude Code keeps for "the rest of the session once the
    * skill is invoked" — this run registers them and every later run of the session merges them

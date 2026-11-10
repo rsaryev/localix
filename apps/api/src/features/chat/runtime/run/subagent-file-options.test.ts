@@ -2,49 +2,43 @@ import { describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
-import { readFile } from 'node:fs/promises'
-import { readAgentText } from '../../../plugins/kit'
-import { buildLoadedAgent } from '../../../plugins/loader-contract'
 import { subagentRunOptions } from './subagent-file-options'
 
-/** An agent file as the kit reads it (`kit/catalog/agent-file.ts`). */
-const parseAgentFile = async (path: string) =>
-  readAgentText(await readFile(path, 'utf8'), path, 'user')?.agent
-
-// sub-agents.md, "Frontmatter reference": `omitClaudeMd` starts the subagent "without the user,
-// project, and local CLAUDE.md files"; `autoCompactWindow` lowers its auto-compact window (100000
-// to 1000000); `memory` gives it a persistent directory whose `MEMORY.md` (first 200 lines or
-// 25KB) is in its system prompt, with Read, Write and Edit enabled.
+// sub-agents.md, "Frontmatter reference": `autoCompactWindow` lowers its auto-compact window;
+// `memory` gives it a persistent directory whose `MEMORY.md` (first 200 lines or 25KB) is in its
+// system prompt, with Read, Write and Edit enabled. The kit plans the memory (`agentMemory`).
 describe('an agent file’s run options', () => {
   const dir = tempDirPerTest('subagent-options-')
+  const context = (on = true) => ({
+    projectDir: join(dir(), 'repo'),
+    homeDir: join(dir(), 'home'),
+    configDir: join(dir(), 'config'),
+    autoMemoryEnabled: () => on,
+  })
 
-  test('omitClaudeMd, autoCompactWindow and memory are read and applied', async () => {
-    const file = join(dir(), 'agents', 'reviewer.md')
-    await fs.mkdir(join(dir(), 'agents'), { recursive: true })
-    await fs.writeFile(
-      file,
-      '---\nname: reviewer\ndescription: Reviews\ntools: Grep\nomitClaudeMd: true\nautoCompactWindow: 150000\nmemory: project\n---\nReview.',
-    )
-    const agent = buildLoadedAgent('kit', (await parseAgentFile(file))!, (t) => t)
-    expect(agent).toMatchObject({
-      omitClaudeMd: true,
-      autoCompactWindow: 150000,
-      memory: 'project',
-    })
-
-    const project = join(dir(), 'repo')
-    const memoryDir = join(project, '.claude', 'agent-memory', 'reviewer')
+  test('autoCompactWindow and memory are applied', async () => {
+    const memoryDir = join(dir(), 'repo', '.claude', 'agent-memory', 'reviewer')
     await fs.mkdir(memoryDir, { recursive: true })
     const lines = Array.from({ length: 250 }, (_, i) => `line ${i + 1}`)
     await fs.writeFile(join(memoryDir, 'MEMORY.md'), lines.join('\n'))
-    const options = await subagentRunOptions(agent, {
-      projectDir: project,
-      homeDir: join(dir(), 'home'),
-    })
+    const agent = { name: 'reviewer', autoCompactWindow: 150000, memory: 'project' as const }
+    const options = await subagentRunOptions(agent, context())
     expect(options.contextLimit).toBe(150000)
-    expect(options.instructions).toContain(memoryDir)
+    expect(options.memoryDir).toBe(memoryDir)
     expect(options.instructions).toContain('line 200')
     expect(options.instructions).not.toContain('line 201')
     expect(options.enableTools).toEqual(['Read', 'Write', 'Edit'])
+  })
+
+  test('a user memory lives in the configuration folder, named by the full agent type', async () => {
+    const agent = { name: 'kit:reviewer', memory: 'user' as const }
+    const options = await subagentRunOptions(agent, context())
+    expect(options.memoryDir).toBe(join(dir(), 'config', 'agent-memory', 'kit-reviewer'))
+    expect(options.instructions).toContain('MEMORY.md does not exist yet.')
+  })
+
+  test('with auto memory off the agent has no memory', async () => {
+    const options = await subagentRunOptions({ name: 'r', memory: 'user' as const }, context(false))
+    expect(options).toEqual({ enableTools: [] })
   })
 })

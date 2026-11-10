@@ -28,7 +28,8 @@ import { publishHumanAssignment } from '../human-assignment'
 import { applyMainAgent, runToolsAgent } from '../plugin-main-agent'
 import { applyCatalogAgent, contextFilesFor } from '../catalog-agent'
 import { agentScopedHooks } from '../agent-hooks'
-import { claudeCodeHome } from '../../../../cc-settings/config-dir'
+import { claudeCodeHome, claudeConfigDir } from '../../../../cc-settings/config-dir'
+import { autoMemoryDir } from '../../../../memory/auto-memory'
 import { claudeCodeTrusts } from '../../../../plugins/kit'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { reloadedSkillsNote } from '../cc-reload-skills'
@@ -145,7 +146,13 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     agentId === DEFAULT_AGENT_ID ? null : applyCatalogAgent(context, turn.admittedAgent.spec)
   // The agent file's own run options: no instruction files, its compaction window, its memory.
   const typeOptions = typed
-    ? await subagentRunOptions(typed.subagent, { projectDir: defaultCwd, homeDir: userHome() })
+    ? await subagentRunOptions(typed.subagent, {
+        projectDir: defaultCwd,
+        homeDir: userHome(),
+        configDir: claudeConfigDir(userHome()),
+        autoMemoryEnabled: () =>
+          autoMemoryDir({ cwd: defaultCwd, homeDir: claudeCodeHome() }) !== null,
+      })
     : null
   const asType = typed && typeOptions ? withSubagentRunOptions(typed, typeOptions) : typed
   if (typeOptions?.contextLimit) {

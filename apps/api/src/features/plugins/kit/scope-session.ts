@@ -30,7 +30,11 @@ export async function openScopeSession(
     ...(scope.managed === undefined ? {} : { managed: scope.managed }),
   })
   const own = sessionOwn(host, { layers: settings.layers, plugins: scope.plugins })
-  return host.kit.openSession({
+  const locations = {
+    ...sessionLocations(host, scope.cwd, own.plugins),
+    homeDir: () => scope.homeDir,
+  }
+  const session = host.kit.openSession({
     sessionId,
     cwd: scope.cwd,
     permissionMode: 'default',
@@ -39,6 +43,7 @@ export async function openScopeSession(
     settings: createPolicyView(own.layers),
     plugins: own.plugins.map(({ id, plugin }) => ({ id, plugin })),
     userConfig: own.userConfig,
-    locations: { ...sessionLocations(host, scope.cwd, own.plugins), homeDir: () => scope.homeDir },
+    locations,
   })
+  return session
 }
