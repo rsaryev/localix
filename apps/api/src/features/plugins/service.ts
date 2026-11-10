@@ -88,8 +88,18 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
   const now = deps.now ?? (() => new Date().toISOString())
   const repo: CapabilitySourceRepository = deps.capabilityStores.sources(deps.db, 'plugin', now)
   // Marketplace registry deps — one git clone primitive shared with plugin install.
-  const registryDeps: MarketplaceRegistryDeps = { cloneRepo, now, root: marketplacesRoot(home) }
-  const syncDeclared = createDeclaredMarketplaceSync({ deps: registryDeps, homeDir: home })
+  const managed = deps.managedSettingsDir ? { managedSettingsDir: deps.managedSettingsDir } : {}
+  const registryDeps: MarketplaceRegistryDeps = {
+    cloneRepo,
+    now,
+    root: marketplacesRoot(home),
+    ...managed,
+  }
+  const syncDeclared = createDeclaredMarketplaceSync({
+    deps: registryDeps,
+    homeDir: home,
+    ...managed,
+  })
   // Tool rosters of enabled native plugins, remembered in memory and across restarts
   // (see `inspection-snapshots.ts`); every lifecycle mutation below invalidates them.
 

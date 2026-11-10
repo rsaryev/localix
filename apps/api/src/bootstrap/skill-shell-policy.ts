@@ -1,6 +1,9 @@
 import { claudeCodeHome } from '../features/cc-settings/config-dir'
-import type { ManagedSettingsSource } from '../features/cc-settings/managed-settings'
-import { skillShellExecutionDisabled } from '../features/cc-settings/settings-policy'
+import {
+  readClaudeSettings,
+  skillShellDisabled,
+  type ManagedSettingsSource,
+} from '../features/plugins/kit'
 import type { SkillShellPolicy } from '../features/chat/service/skill-render'
 
 interface Options {
@@ -19,9 +22,11 @@ interface Options {
 export function createSkillShellPolicy(options: Options = {}): SkillShellPolicy {
   const homeDir = options.homeDir ?? claudeCodeHome()
   return async ({ workingDir }) =>
-    skillShellExecutionDisabled({
-      homeDir,
-      cwd: workingDir,
-      ...(options.managed !== undefined ? { managed: options.managed } : {}),
-    })
+    skillShellDisabled(
+      await readClaudeSettings({
+        homeDir,
+        cwd: workingDir,
+        ...(options.managed !== undefined ? { managed: options.managed } : {}),
+      }),
+    )
 }

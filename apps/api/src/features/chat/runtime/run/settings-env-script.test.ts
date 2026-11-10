@@ -10,11 +10,11 @@ import { settingsEnvScriptFor } from './settings-env-script'
 const dir = tempDirPerTest('cc-settings-env-script-')
 
 test('the script exports the variables to the command, quoted', async () => {
-  const [script] = settingsEnvScriptFor(dir(), { API_BASE: 'https://team', NOTE: "it's" })
-  const result = await run('bash', ['-c', `. '${script}'; printf '%s|%s' "$API_BASE" "$NOTE"`], {
-    timeoutMs: 10_000,
-  })
-  expect(result.stdout).toBe("https://team|it's")
+  const env = { API_BASE: 'https://team', NOTE: "it's", CMD: '$(echo run)' }
+  const [script] = settingsEnvScriptFor(dir(), env)
+  const print = `. '${script}'; printf '%s|%s|%s' "$API_BASE" "$NOTE" "$CMD"`
+  const result = await run('bash', ['-c', print], { timeoutMs: 10_000 })
+  expect(result.stdout).toBe("https://team|it's|$(echo run)")
 })
 
 test('no variables, no script — and a stale one is removed', () => {

@@ -184,7 +184,7 @@ export function mergeCcHookRegistries(dest: CcHookRegistry, src: CcHookRegistry)
 export async function buildCcHookRegistry(opts: {
   projectDir: string
   pluginHooks?: readonly PluginHookConfig[]
-  /** The `hooks` of Claude Code's settings files (`cc-settings/settings-hooks.ts`), lowest first. */
+  /** The `hooks` of Claude Code's settings files (`plugins/kit`, `settingsHooks`), lowest first. */
   settingsHooks?: ReadonlyArray<{ source: 'user' | 'project' | 'local'; raw: unknown }>
 }): Promise<BuildRegistryResult> {
   const skipped: SkippedHandler[] = []

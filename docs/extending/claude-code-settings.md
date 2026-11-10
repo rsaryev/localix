@@ -50,7 +50,8 @@ which beats an allow.
 What a repository grants — the `allow` rules and `additionalDirectories` of its committed
 `.claude/settings.json`, its `env`, its hooks, and the approval of its own `.mcp.json` servers —
 applies once you trusted the folder in Claude Code (`hasTrustDialogAccepted` for the folder in
-`~/.claude.json`). Rules that only restrict, `deny` and `ask`, apply at once.
+`~/.claude.json`). Rules that only restrict, `deny` and `ask`, apply at once. The `statusLine` and
+`subagentStatusLine` commands, from any file, also wait for the folder's trust, as in Claude Code.
 
 ### Keys that lock things down
 
@@ -152,11 +153,11 @@ These keys and sources do not change Localix:
 
 ## Source of truth
 
-- [Settings files and merge](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-settings/settings-files.ts)
-- [Managed settings](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-settings/managed-settings.ts)
+- [Settings files and merge](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/settings/read.ts)
+- [Managed settings](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/settings/managed.ts)
 - [Permission rules](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-settings/settings-permissions.ts)
-- [Settings env](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-settings/settings-env.ts)
-- [Settings hooks](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-settings/settings-hooks.ts)
+- [Settings env](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/settings/env.ts)
+- [Settings hooks](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/settings/hooks.ts)
 - [Claude Code MCP servers](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/claude-code-servers.ts)
 - [Status line](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/status-line.ts)
 - [Status line input](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/status-line-input.ts)

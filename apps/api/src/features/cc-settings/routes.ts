@@ -4,7 +4,7 @@ import { z } from 'zod'
 import type { AppContext } from '../../app'
 import { defaultErrorHandler } from '../../lib/http'
 import { zValidator } from '../../lib/validator'
-import { describeClaudeCodePermissions } from './permissions-view'
+import type { ClaudeCodePermissionsView } from '../plugins/kit'
 
 /**
  * Read-only views of the person's Claude Code settings files, for Settings to show what applies
@@ -13,7 +13,8 @@ import { describeClaudeCodePermissions } from './permissions-view'
 export interface ClaudeCodeSettingsRoutesPorts {
   /** The project's working directory, or null for none (the person's own files only). */
   workingDir(userId: string, projectId: string): Promise<string | null>
-  homeDir: string
+  /** What the settings read in `cwd` say about permissions (`describeClaudeCodePermissions`). */
+  permissions(cwd: string | null): Promise<ClaudeCodePermissionsView>
 }
 
 export function createClaudeCodeSettingsRoutes(ports: ClaudeCodeSettingsRoutesPorts) {
@@ -25,7 +26,7 @@ export function createClaudeCodeSettingsRoutes(ports: ClaudeCodeSettingsRoutesPo
     async (c) => {
       const { projectId } = c.req.valid('query')
       const cwd = projectId ? await ports.workingDir(c.get('userId'), projectId) : null
-      return c.json(await describeClaudeCodePermissions({ homeDir: ports.homeDir, cwd }), 200)
+      return c.json(await ports.permissions(cwd), 200)
     },
   )
 

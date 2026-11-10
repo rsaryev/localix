@@ -1,5 +1,5 @@
 import { userHome } from '../../../../lib/env'
-import { claudeCodeOutputStyle } from '../../../cc-settings/settings-files'
+import { outputStyleSetting, readClaudeSettingsSync } from '../../../plugins/kit'
 import { readLocalOutputStyles } from '../../../plugins/output-style-files'
 import {
   activeOutputStyle,
@@ -29,7 +29,8 @@ export async function resolveRunOutputStyle(input: {
   const homeDir = input.homeDir ?? userHome()
   // Claude Code's `outputStyle` setting for the folder, when Localix has no default of its own.
   const defaultStyle =
-    input.defaultStyle || claudeCodeOutputStyle({ homeDir, cwd: input.cwd ?? null })
+    input.defaultStyle ||
+    outputStyleSetting(readClaudeSettingsSync({ homeDir, cwd: input.cwd ?? null }))
   if (!input.chosen && !defaultStyle) return null
   const local = await readLocalOutputStyles({ homeDir, cwd: input.cwd })
   return activeOutputStyle(

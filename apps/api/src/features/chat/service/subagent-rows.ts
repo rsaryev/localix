@@ -2,8 +2,7 @@ import { claudeCodeHome } from '../../cc-settings/config-dir'
 import { agentRoute } from '../../../contracts/session-route'
 import { userHome } from '../../../lib/env'
 import type { ChildRunSummary } from '../../agent-core/tools/agent/agent-control'
-import { settingsCommandLine } from '../../cc-settings/settings-commands'
-import { readSettingsFileLayers } from '../../cc-settings/settings-files'
+import { readClaudeSettingsSync, settingsCommandLine } from '../../plugins/kit'
 import type { PluginCatalog } from '../../plugins/catalog'
 import {
   activeSubagentStatusLine,
@@ -68,7 +67,7 @@ export function createSubagentRows(deps: SubagentRowsDeps) {
     const cwd = await deps.resolveSessionWorkingDir(userId, session)
     // The person's own Claude Code settings, a higher layer than any plugin's default.
     const own = settingsCommandLine(
-      readSettingsFileLayers({ homeDir: deps.homeDir ?? claudeCodeHome(), cwd }),
+      readClaudeSettingsSync({ homeDir: deps.homeDir ?? claudeCodeHome(), cwd }),
       'subagentStatusLine',
     )
     const line = own

@@ -7,8 +7,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
-import { readSettingsFileLayers } from './settings-files'
-import { settingsAdditionalDirectories } from './settings-permissions'
+import { readClaudeSettingsSync, settingsAdditionalDirectories } from '../plugins/kit'
 import { addAdditionalDirectory } from './settings-directories'
 
 const root = tempDirPerTest('settings-directories-')
@@ -24,10 +23,8 @@ describe('addAdditionalDirectory', () => {
     const { cwd, home } = project()
     const result = addAdditionalDirectory({ cwd, directory: '/srv/shared' })
     expect(result).toEqual({ status: 'added', file: join(cwd, '.claude', 'settings.local.json') })
-    const layers = readSettingsFileLayers({ homeDir: home, cwd, managed: null })
-    expect(
-      settingsAdditionalDirectories(layers, { projectTrusted: false, cwd, homeDir: home }),
-    ).toEqual(['/srv/shared'])
+    const settings = readClaudeSettingsSync({ homeDir: home, cwd, env: {}, managed: null })
+    expect(settingsAdditionalDirectories(settings)).toEqual(['/srv/shared'])
   })
 
   test('keeps every other setting and the folders already listed, and adds a folder once', () => {

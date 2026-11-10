@@ -1,9 +1,8 @@
 import type { createAgentsService } from '../features/agents/service'
 import { claudeCodeHome } from '../features/cc-settings/config-dir'
-import { readSettingsLayers } from '../features/cc-settings/settings-files'
 import { settingsPermissionRules } from '../features/cc-settings/settings-permissions'
 import { specifierMatchesValue } from '../features/cc-settings/permission-value-match'
-import { claudeCodeMainAgent } from '../features/cc-settings/settings-modes'
+import { mainAgentSetting, readClaudeSettings, settingsRuleEntries } from '../features/plugins/kit'
 
 type AgentsService = ReturnType<typeof createAgentsService>
 
@@ -19,8 +18,8 @@ interface DirectoryOptions {
  * (permissions.md, "Agent"): `Agent` would refuse the call, so the directory does not offer it.
  */
 async function deniedAgentSpecifiers(homeDir: string, cwd: string | null): Promise<string[]> {
-  const layers = await readSettingsLayers({ homeDir, cwd })
-  return settingsPermissionRules(layers, { projectTrusted: false }).flatMap((rule) =>
+  const settings = await readClaudeSettings({ homeDir, cwd })
+  return settingsPermissionRules(settingsRuleEntries(settings)).flatMap((rule) =>
     rule.effect === 'deny' && (rule.tool === 'Agent' || rule.tool === 'Task') && rule.specifier
       ? [rule.specifier]
       : [],
@@ -35,7 +34,7 @@ export function createAgentDirectoryPorts(
   const homeDir = options.homeDir ?? claudeCodeHome()
   return {
     resolveMainAgent: async (userId: string, projectId: string | null, cwd: string | null) => {
-      const name = await claudeCodeMainAgent({ homeDir, cwd })
+      const name = mainAgentSetting(await readClaudeSettings({ homeDir, cwd }))
       return name ? agentsService.resolveMainAgent(userId, name, projectId) : null
     },
     // The directory is advisory prompt context, so a failed read omits it rather than failing

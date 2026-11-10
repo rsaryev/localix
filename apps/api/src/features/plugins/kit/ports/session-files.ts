@@ -5,7 +5,7 @@ import type { PathResolver } from '@rsaryev/llx-plugin/rules'
 import type { WorkspaceTrust } from '@rsaryev/llx-plugin/loading'
 import { errorMessage } from '../../../../lib/errors'
 import { ccSessionEnvFiles } from '../../../cc-hooks'
-import { trustedFolders } from '../../../cc-settings/settings-trust'
+import { trustedFolders } from '../settings/trust'
 
 /**
  * Trust, a session's `CLAUDE_ENV_FILE` files and real paths. Localix keeps no trust of its own: it

@@ -1,7 +1,7 @@
 import { DEFAULT_OUTPUT_STYLE } from '@localixai/claude-plugin'
 
 import { userHome } from '../../../lib/env'
-import { claudeCodeOutputStyle } from '../../cc-settings/settings-files'
+import { outputStyleSetting, readClaudeSettingsSync } from '../../plugins/kit'
 import { readLocalOutputStyles } from '../../plugins/output-style-files'
 import {
   activeOutputStyle,
@@ -74,7 +74,9 @@ async function chatOutputStyles(
     styles: outputStyleCatalog({ plugins, ...local }),
     defaultStyle:
       settings?.outputStyle ??
-      claudeCodeOutputStyle({ homeDir: ctx.homeDir ?? userHome(), cwd: cwd ?? null }),
+      outputStyleSetting(
+        readClaudeSettingsSync({ homeDir: ctx.homeDir ?? userHome(), cwd: cwd ?? null }),
+      ),
   }
 }
 

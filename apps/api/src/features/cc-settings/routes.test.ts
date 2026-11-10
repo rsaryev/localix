@@ -5,6 +5,7 @@ import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { Hono } from 'hono'
 
 import type { AppContext } from '../../app'
+import { describeClaudeCodePermissions } from '../plugins/kit'
 import { createClaudeCodeSettingsRoutes } from './routes'
 
 const scratch = tempDirPerTest('cc-settings-routes-')
@@ -18,7 +19,8 @@ function appOver(root: string) {
   app.route(
     '/',
     createClaudeCodeSettingsRoutes({
-      homeDir: join(root, 'home'),
+      permissions: (cwd) =>
+        describeClaudeCodePermissions({ homeDir: join(root, 'home'), cwd, env: {}, managed: null }),
       workingDir: async (_user, projectId) => (projectId === 'p1' ? join(root, 'project') : null),
     }),
   )

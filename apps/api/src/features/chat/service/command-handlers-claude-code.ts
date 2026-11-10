@@ -4,10 +4,11 @@ import { dirname, join } from 'node:path'
 import { CLAUDE_CODE_BASE_VERSION } from '../../cc-settings/claude-code-version'
 import { claudeCodeHome } from '../../cc-settings/config-dir'
 import { addAdditionalDirectory } from '../../cc-settings/settings-directories'
-import { readSettingsFileLayers } from '../../cc-settings/settings-files'
-import { settingsHooks } from '../../cc-settings/settings-hooks'
-import { settingsAdditionalDirectories } from '../../cc-settings/settings-permissions'
-import { claudeCodeTrusts } from '../../cc-settings/settings-trust'
+import {
+  readClaudeSettingsSync,
+  settingsAdditionalDirectories,
+  settingsHooks,
+} from '../../plugins/kit'
 import { buildCcHookRegistry } from '../../cc-hooks/config'
 import { localixHome } from '../../../lib/env'
 import { parsePermissionMode } from '../../../contracts/permission-modes'
@@ -65,7 +66,7 @@ function handleCompact(
 async function statusReply(ctx: CommandHandlerContext, userId: string, session: SessionRecord) {
   const homeDir = claudeCodeHome()
   const cwd = await ctx.resolveSessionWorkingDir(userId, session)
-  const layers = readSettingsFileLayers({ homeDir, cwd })
+  const settings = readClaudeSettingsSync({ homeDir, cwd })
   const catalog = await ctx.buildSessionPluginCatalog(userId, session).catch(() => undefined)
   return formatStatus({
     title: session.title,
@@ -79,11 +80,7 @@ async function statusReply(ctx: CommandHandlerContext, userId: string, session: 
           reasoningEffort: session.agent.reasoningEffort,
         }
       : undefined,
-    addedDirs: settingsAdditionalDirectories(layers, {
-      projectTrusted: claudeCodeTrusts({ homeDir, cwd }),
-      cwd,
-      homeDir,
-    }),
+    addedDirs: settingsAdditionalDirectories(settings),
     plugins: catalog?.enabled.map((entry) => entry.plugin.manifest.name) ?? [],
     claudeCodeVersion: CLAUDE_CODE_BASE_VERSION,
   })
@@ -93,9 +90,7 @@ async function statusReply(ctx: CommandHandlerContext, userId: string, session: 
 async function hooksReply(ctx: CommandHandlerContext, userId: string, session: SessionRecord) {
   const homeDir = claudeCodeHome()
   const cwd = await ctx.resolveSessionWorkingDir(userId, session)
-  const fromSettings = settingsHooks(readSettingsFileLayers({ homeDir, cwd }), {
-    projectTrusted: claudeCodeTrusts({ homeDir, cwd }),
-  })
+  const fromSettings = settingsHooks(readClaudeSettingsSync({ homeDir, cwd }))
   const catalog = await ctx.buildSessionPluginCatalog(userId, session).catch(() => undefined)
   const { registry, skipped } = await buildCcHookRegistry({
     projectDir: cwd,

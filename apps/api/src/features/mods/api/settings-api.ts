@@ -1,22 +1,27 @@
-import type { ManagedSettingsSource } from '../../cc-settings/managed-settings'
-import { readSettingsLayers } from '../../cc-settings/settings-files'
 import {
-  mergeSettingsLayer,
-  mergeSettingsSources,
+  mergedSettings,
+  readClaudeSettings,
+  type ManagedSettingsSource,
   type Settings,
-  type SettingsSource,
-} from '../../cc-settings/settings-merge'
+  type SettingsFileScope,
+} from '../../plugins/kit'
 import { isRecord } from '../../../lib/record'
 
 /**
  * `$.settings.read`: Claude Code's settings as its engine runs under them — one source as loaded,
  * or every source merged, lowest precedence first: `user` (`$CLAUDE_CONFIG_DIR/settings.json`,
  * else ~/.claude/settings.json), `project` (.claude/settings.json), `local`
- * (.claude/settings.local.json, at the repository root), `flag` (none in Localix) and `policy`
- * (the managed settings). The files and the merge are Claude Code's (`cc-settings/`).
+ * (.claude/settings.local.json), `flag` (none in Localix) and `policy` (the managed settings).
+ * Reading and merging are the kit's (`plugins/kit`).
  */
 
-const SOURCES: readonly SettingsSource[] = ['user', 'project', 'local', 'flag', 'policy']
+const SCOPES: Readonly<Record<string, SettingsFileScope | null>> = {
+  user: 'user',
+  project: 'project',
+  local: 'local',
+  flag: null,
+  policy: 'managed',
+}
 
 export function createSettingsApi(input: {
   cwd: () => string
@@ -25,32 +30,26 @@ export function createSettingsApi(input: {
   /** The managed source; the machine's own by default. */
   managed?: ManagedSettingsSource | null
 }) {
-  const layers = () =>
-    readSettingsLayers({
-      homeDir: input.homeDir,
-      cwd: input.cwd(),
-      ...(input.env ? { env: input.env } : {}),
-      ...(input.managed !== undefined ? { managed: input.managed } : {}),
-    })
   return {
     async read(args?: unknown): Promise<unknown> {
       const settings = await load(args)
       const key = isRecord(args) ? args.key : undefined
       // A key resolves to that key's value, anything else to the settings object.
-      return typeof key === 'string' ? settings[key] : settings
+      return typeof key === 'string' ? settings[key as keyof Settings] : settings
     },
   }
   async function load(args?: unknown): Promise<Readonly<Settings>> {
     const source = isRecord(args) ? args.source : undefined
-    if (typeof source === 'string') {
-      if (!SOURCES.includes(source as SettingsSource))
-        throw new Error(`settings.read: no source named ${source}`)
-      // A source as loaded: the local files (repository root and working directory) as one.
-      const own = (await layers()).filter((layer) => layer.source === source)
-      return Object.freeze(
-        own.reduce<Settings>((out, l) => mergeSettingsLayer(out, l.settings), {}),
-      )
-    }
-    return Object.freeze(mergeSettingsSources(await layers()))
+    if (typeof source === 'string' && !Object.hasOwn(SCOPES, source))
+      throw new Error(`settings.read: no source named ${source}`)
+    const scope = typeof source === 'string' ? SCOPES[source] : undefined
+    if (scope === null) return Object.freeze({})
+    const settings = await readClaudeSettings({
+      homeDir: input.homeDir,
+      cwd: input.cwd(),
+      ...(input.env ? { env: input.env } : {}),
+      ...(input.managed !== undefined ? { managed: input.managed } : {}),
+    })
+    return Object.freeze(mergedSettings(settings, scope))
   }
 }

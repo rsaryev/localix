@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto'
 import { stableStringify } from '@localixai/agent'
 import type { McpServerRecord } from './repository'
-import { folderSettingsEnv, mcpLaunch } from './mcp-settings-env'
+import { folderSettingsEnv } from './claude-code-settings'
+import { mcpLaunch } from './mcp-settings-env'
 
 export function mcpConnectionKey(server: McpServerRecord, cwd: string): string {
   const settingsEnv = folderSettingsEnv(cwd)

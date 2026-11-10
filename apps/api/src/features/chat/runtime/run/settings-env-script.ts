@@ -1,7 +1,13 @@
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { envExportScript } from '../../../cc-settings/settings-env'
+/** A shell script that exports the variables, for a Bash command to source first. */
+function envExportScript(env: Readonly<Record<string, string>>): string {
+  const quote = (value: string) => `'${value.replace(/'/g, `'\\''`)}'`
+  return Object.entries(env)
+    .map(([name, value]) => `export ${name}=${quote(value)}`)
+    .join('\n')
+}
 
 /**
  * The `env` of Claude Code's settings as a script the Bash tool sources before each command

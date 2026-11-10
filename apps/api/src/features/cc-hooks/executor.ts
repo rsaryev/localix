@@ -43,7 +43,7 @@ export interface HookLogger {
  */
 export interface HookEnv {
   envFile?: string
-  /** The `env` of Claude Code's settings for the folder (`cc-settings/settings-env.ts`). */
+  /** The `env` of Claude Code's settings for the folder (`plugins/kit`, `settingsEnvOf`). */
   settings?: Readonly<Record<string, string>>
 }
 

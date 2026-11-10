@@ -7,18 +7,18 @@
  * Layer rule: run/ may import runtime infrastructure + agent-core, never features/chat/service*.
  */
 import type { PermissionMode } from '../../../../contracts/permission-modes'
-import { claudeCodeHome } from '../../../cc-settings/config-dir'
-import { settingsAdditionalDirectories } from '../../../cc-settings/settings-permissions'
-import type { SettingsLayer } from '../../../cc-settings/settings-files'
-import type { ChatPluginSessions } from '../../../plugins/kit'
+import {
+  settingsAdditionalDirectories,
+  type ChatPluginSessions,
+  type ClaudeSettings,
+} from '../../../plugins/kit'
 import { ccPermissionMode } from './cc-hook-session-facts'
 
-/** What the run's hooks already read: the folder, its trust, and Claude Code's settings files. */
+/** What the run's hooks already read: the folder and Claude Code's settings there. */
 export interface ChatPluginSessionFacts {
   readonly chatId: string
   readonly cwd: string
-  readonly trusted: boolean
-  readonly layers: readonly SettingsLayer[]
+  readonly settings: ClaudeSettings
 }
 
 export function openChatPluginSession(
@@ -32,11 +32,7 @@ export function openChatPluginSession(
     cwd: facts.cwd,
     transcriptPath,
     permissionMode: ccPermissionMode(permissionMode ?? 'default'),
-    trusted: facts.trusted,
-    additionalDirectories: settingsAdditionalDirectories(facts.layers, {
-      projectTrusted: facts.trusted,
-      cwd: facts.cwd,
-      homeDir: claudeCodeHome(),
-    }),
+    trusted: facts.settings.trusted,
+    additionalDirectories: settingsAdditionalDirectories(facts.settings),
   })
 }

@@ -5,15 +5,15 @@ import { join, resolve } from 'node:path'
 import { MARKETPLACE_FILE } from '@localixai/claude-plugin'
 
 import { claudeConfigDir } from '../cc-settings/config-dir'
-import {
-  readSettingsLayers,
-  type SettingsFilesInput,
-  type SettingsLayer,
-} from '../cc-settings/settings-files'
 import { pathExists } from '../ext/fs-discovery'
 import { isRecord } from '../../lib/record'
 import type { DiscoveredPlugin } from './discovery-types'
-import type { FolderSource } from './kit'
+import {
+  readClaudeSettings,
+  type ClaudeSettingsInput,
+  type FolderSource,
+  type SettingsFile,
+} from './kit'
 import { loadManifest } from './manifest-load'
 import { resolveEntrySource } from './marketplace-entry-source'
 import type { MarketplaceEntry } from './marketplace'
@@ -61,21 +61,31 @@ interface InstallRecord {
 const SCOPES = new Set<CcScope>(['user', 'project', 'local'])
 
 /**
- * `enabledPlugins` across the settings files Claude Code reads (`cc-settings/settings-files.ts`),
+ * `enabledPlugins` across the settings files Claude Code reads (`plugins/kit`, `readClaudeSettings`),
  * lowest precedence first, the later file winning key by key; managed settings come last, so a
  * plugin they turn off is blocked and one they turn on cannot be turned off.
  */
-async function enabledPlugins(
-  input: SettingsFilesInput,
-): Promise<Map<string, { on: boolean; source: EnabledBy }>> {
+function enabledPlugins(
+  files: readonly SettingsFile[],
+): Map<string, { on: boolean; source: EnabledBy }> {
   const merged = new Map<string, { on: boolean; source: EnabledBy }>()
-  for (const { source, settings } of await readSettingsLayers(input)) {
-    if (source === 'flag' || !isRecord(settings.enabledPlugins)) continue
-    for (const [id, value] of Object.entries(settings.enabledPlugins))
+  for (const { scope, settings } of files) {
+    const source: EnabledBy = scope === 'managed' ? 'policy' : scope
+    const enabled: unknown = settings.enabledPlugins
+    if (!isRecord(enabled)) continue
+    for (const [id, value] of Object.entries(enabled))
       if (typeof value === 'boolean') merged.set(id, { on: value, source })
   }
   return merged
 }
+
+type InstallsInput = Pick<ClaudeSettingsInput, 'homeDir' | 'cwd' | 'env' | 'managed'>
+
+const settingsFiles = (input: InstallsInput) =>
+  readClaudeSettings(input).then(
+    (settings) => settings.files,
+    () => [] as SettingsFile[],
+  )
 
 /** The install records by plugin id; version 1 kept one object per id instead of a list. */
 function installRecords(raw: unknown): Map<string, InstallRecord[]> {
@@ -152,16 +162,14 @@ export const entrySource = (id: string, entry: MarketplaceEntry | undefined): Fo
 })
 
 /** What Claude Code would load for a session in `cwd` (null: no project). */
-export async function readClaudeCodeInstalls(
-  opts: Pick<SettingsFilesInput, 'homeDir' | 'cwd' | 'env' | 'managed'>,
-): Promise<ClaudeCodeInstall[]> {
+export async function readClaudeCodeInstalls(opts: InstallsInput): Promise<ClaudeCodeInstall[]> {
   // `CLAUDE_CODE_PLUGIN_CACHE_DIR` moves Claude Code's plugins root, as in Claude Code.
   const pluginsRoot =
     (opts.env ?? process.env).CLAUDE_CODE_PLUGIN_CACHE_DIR?.trim() ||
     join(claudeConfigDir(opts.homeDir, opts.env), 'plugins')
   const [records, enabled, known] = await Promise.all([
     readJsonFile(join(pluginsRoot, 'installed_plugins.json')).then(installRecords),
-    enabledPlugins(opts),
+    settingsFiles(opts).then(enabledPlugins),
     readJsonFile(join(pluginsRoot, 'known_marketplaces.json')),
   ])
   const ids = [...new Set([...records.keys(), ...enabled.keys()])].sort()
@@ -196,11 +204,11 @@ export async function readClaudeCodeInstalls(
  * project and local entries, since it substitutes them into hooks and servers. Sensitive options
  * live in the OS keychain, which Localix does not read; they are asked for here.
  */
-function claudeCodeOptions(layers: readonly SettingsLayer[], id: string): Record<string, unknown> {
+function claudeCodeOptions(files: readonly SettingsFile[], id: string): Record<string, unknown> {
   const out: Record<string, unknown> = {}
-  for (const layer of layers) {
-    if (layer.source !== 'user' && layer.source !== 'policy') continue
-    const configs = layer.settings.pluginConfigs
+  for (const file of files) {
+    if (file.scope !== 'user' && file.scope !== 'managed') continue
+    const configs: unknown = file.settings.pluginConfigs
     const entry = isRecord(configs) ? configs[id] : undefined
     if (isRecord(entry) && isRecord(entry.options)) Object.assign(out, entry.options)
   }
@@ -237,11 +245,11 @@ export async function discoverClaudeCodePlugins(opts: {
   cwd: string | null
   projectId: string
   env?: Record<string, string | undefined>
-  managed?: SettingsFilesInput['managed']
+  managed?: InstallsInput['managed']
 }): Promise<DiscoveredPlugin[]> {
   const [installs, layers] = await Promise.all([
     readClaudeCodeInstalls(opts).catch(() => []),
-    readSettingsLayers(opts).catch(() => [] as SettingsLayer[]),
+    settingsFiles(opts),
   ])
   const plugins = await Promise.all(
     installs.map(async (install): Promise<DiscoveredPlugin | null> => {

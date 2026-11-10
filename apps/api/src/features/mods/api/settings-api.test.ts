@@ -28,8 +28,9 @@ test('settings read one source as loaded, or all merged by precedence', async ()
   })
   expect(await settings.read({ source: 'flag' })).toEqual({})
   expect(await settings.read()).toEqual({
+    // The kit merges an array higher scope first (and a drop-in before the base file).
     model: 'opus',
-    permissions: { allow: ['Read', 'Bash(ls)'], deny: ['WebFetch'] },
+    permissions: { allow: ['Bash(ls)', 'Read'], deny: ['WebFetch'] },
     env: { A: '1' },
   })
   await expect(settings.read({ source: 'nope' })).rejects.toThrow('no source named nope')
@@ -54,7 +55,7 @@ test('settings follow CLAUDE_CONFIG_DIR, managed drop-ins and whole-value keys',
   expect(await settings.read()).toEqual({
     model: 'opus',
     fallbackModel: ['haiku'],
-    permissions: { deny: ['WebFetch', 'Bash'] },
+    permissions: { deny: ['Bash', 'WebFetch'] },
   })
   expect(await settings.read({ source: 'user' })).toEqual({
     fallbackModel: ['opus', 'sonnet'],

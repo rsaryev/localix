@@ -57,7 +57,14 @@ beforeAll(async () => {
   process.env.CLAUDE_CONFIG_DIR = join(root, 'claude')
   db = createDatabase()
   await migrateToLatest(db)
-  service = createPluginService({ db, capabilityStores, homeDir: home, env: {} })
+  service = createPluginService({
+    db,
+    capabilityStores,
+    homeDir: home,
+    env: {},
+    // Hermetic: the machine's managed settings may declare marketplaces of their own.
+    managedSettingsDir: join(root, 'managed'),
+  })
   await service.addMarketplace('u1', { source: catalogFile('market') })
   await service.install('u1', { source: 'tool@shop', enable: true })
   await service.install('u1', { source: 'gated@shop', enable: true })
@@ -85,6 +92,7 @@ describe('marketplace auto-update and updates', () => {
       capabilityStores,
       homeDir: home,
       env: { DISABLE_UPDATES: '1' },
+      managedSettingsDir: join(root, 'managed'),
     })
     expect((await paused.listMarketplaces('u1')).find((m) => m.name === 'shop')).toMatchObject({
       autoUpdatePaused: true,

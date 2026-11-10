@@ -27,6 +27,7 @@ import { createProjectsRoutes, type ProjectsRoutesService } from './features/pro
 import { createUserRoutes, type UserRoutesService } from './features/user/routes'
 import { createToolsRoutes, type ToolGcSource } from './features/tools/routes'
 import { claudeCodeHome } from './features/cc-settings/config-dir'
+import { describeClaudeCodePermissions } from './features/plugins/kit'
 import { createClaudeCodeSettingsRoutes } from './features/cc-settings/routes'
 import {
   createEffectiveConfigRoutes,
@@ -255,7 +256,7 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
     .route(
       '/rpc/claude-code',
       createClaudeCodeSettingsRoutes({
-        homeDir: claudeCodeHome(),
+        permissions: (cwd) => describeClaudeCodePermissions({ homeDir: claudeCodeHome(), cwd }),
         workingDir: async (userId, projectId) =>
           (await deps.projectsService.getProject(userId, projectId)).workingDir,
       }),

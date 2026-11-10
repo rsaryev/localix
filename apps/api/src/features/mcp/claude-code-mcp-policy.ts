@@ -1,5 +1,5 @@
 import { isRecord } from '../../lib/record'
-import type { SettingsLayer } from '../cc-settings/settings-files'
+import type { SettingsFile } from '../plugins/kit'
 import { expandString } from './expand'
 import type { McpServerRecord } from './repository'
 
@@ -75,15 +75,15 @@ function matches(entry: Entry, server: McpServerRecord, env: Record<string, stri
 }
 
 export function mcpServerPolicy(
-  layers: readonly SettingsLayer[],
+  layers: readonly SettingsFile[],
   env: Record<string, string | undefined> = process.env,
 ) {
   const managedOnly = layers.some(
-    (l) => l.source === 'policy' && l.settings.allowManagedMcpServersOnly === true,
+    (l) => l.scope === 'managed' && l.settings.allowManagedMcpServersOnly === true,
   )
   const denied = layers.flatMap((l) => entries(l.settings.deniedMcpServers))
   const allowSources = layers.filter(
-    (l) => l.settings.allowedMcpServers !== undefined && (!managedOnly || l.source === 'policy'),
+    (l) => l.settings.allowedMcpServers !== undefined && (!managedOnly || l.scope === 'managed'),
   )
   const allowed =
     allowSources.length > 0

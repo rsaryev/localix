@@ -20,6 +20,10 @@ test("the settings' subagentStatusLine runs, in the conversation's folder", asyn
       subagentStatusLine: { type: 'command', command: 'mine.sh' },
     }),
     'repo/.keep': '',
+    // A command line waits for the folder's trust, as in Claude Code.
+    'home/.claude.json': JSON.stringify({
+      projects: { [join(root, 'repo')]: { hasTrustDialogAccepted: true } },
+    }),
   })
   const commands: string[] = []
   const parent = sessionFixture({ id: 'parent' })

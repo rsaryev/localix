@@ -1,11 +1,7 @@
 import { resolve } from 'node:path'
 
 import { isRecord } from '../../lib/record'
-import {
-  readManagedSettings,
-  systemManagedSource,
-  type ManagedSettingsSource,
-} from '../cc-settings/managed-settings'
+import { readManagedSettings, systemManagedSource, type ManagedSettingsSource } from './kit'
 import type { MarketplaceSource } from './marketplace-source'
 
 /**
@@ -31,13 +27,15 @@ export interface ManagedPolicy {
 }
 
 /**
- * The plugin policy of the machine's managed settings, read through the settings reader (MDM
- * profile and files, `managedSourcesBehavior` honoured). A directory names a file-only source.
+ * The plugin policy of the machine's managed settings, as the kit composes them (MDM profile and
+ * files). A directory names a file-only source.
  */
 export async function readManagedPolicy(
   from: string | ManagedSettingsSource = systemManagedSource(),
 ): Promise<ManagedPolicy> {
-  const settings = await readManagedSettings(typeof from === 'string' ? { dir: from } : from)
+  const settings: Record<string, unknown> = await readManagedSettings(
+    typeof from === 'string' ? { dir: from } : from,
+  )
   const policy: ManagedPolicy = { enabledPlugins: {}, blockedMarketplaces: [] }
   if (isRecord(settings.enabledPlugins))
     for (const [id, on] of Object.entries(settings.enabledPlugins))

@@ -1,6 +1,4 @@
 import { TOOL } from '../agent-core/tool-names'
-import { join, resolve } from 'node:path'
-
 import { isRecord } from '../../lib/record'
 import type { PermissionRule } from '../agent-core/permission-engine'
 import { claudeCodeAllowRules } from './cc-rule-translate'
@@ -8,35 +6,33 @@ import { normalizeCcToolName } from '../ext/cc-tool-names'
 import { parseRuleString } from './permission-rules'
 import { specifierIsAll, specifierMatchesValue } from './permission-value-match'
 import { bashRuleMatches } from './settings-bash-match'
-import type { SettingsLayer } from './settings-files'
 import { pathListMatches } from './settings-path-match'
 import { fetchedUrls, webFetchRuleMatches } from './settings-webfetch-match'
 
 /**
- * THE `permissions` OF CLAUDE CODE'S SETTINGS FILES, judged as Claude Code judges them
- * (permissions.md, "Permission rule syntax", "Tool-specific permission rules", "Settings
- * precedence"): every `allow`, `ask` and `deny` rule of every file counts, and a deny anywhere
- * beats an ask anywhere, which beats an allow — the order of the files and of the rules does
- * not matter. Localix's own rules are a separate, ordered list; the gate combines the two
- * (`agent-core/permission-verdict.ts`).
+ * CLAUDE CODE'S PERMISSION RULES, judged as Claude Code judges them (permissions.md, "Permission
+ * rule syntax", "Tool-specific permission rules", "Settings precedence"): every `allow`, `ask` and
+ * `deny` rule in force counts, and a deny anywhere beats an ask anywhere, which beats an allow —
+ * the order of the files and of the rules does not matter. Localix's own rules are a separate,
+ * ordered list; the gate combines the two (`agent-core/permission-verdict.ts`).
  *
- * What a person's existing setup needs is honoured: `allow` rules of a project's committed
- * `.claude/settings.json` apply only once that folder was trusted in Claude Code
- * (`hasTrustDialogAccepted` in `~/.claude.json`), as Claude Code holds them until then, and
- * `allowManagedPermissionRulesOnly` in managed settings leaves the managed rules alone.
+ * Which rules are in force — trust, `allowManagedPermissionRulesOnly` — the kit decides
+ * (`settingsRuleEntries` of `plugins/kit`); this file parses each entry once and matches calls.
  */
 
 export type CcEffect = 'allow' | 'ask' | 'deny'
 
-export interface CcPermissionRule {
+/** A rule in force as the settings reader hands it: as written, with its file and anchor. */
+export interface CcRuleEntry {
   effect: CcEffect
-  /** As written: `Bash(git push *)`. */
   raw: string
-  tool: string
-  specifier?: string
-  /** The settings file it came from, and where its `/path` anchors. */
   file: string
   sourceDir: string
+}
+
+export interface CcPermissionRule extends CcRuleEntry {
+  tool: string
+  specifier?: string
 }
 
 /** One call, as the rules read it: Localix's tool and input, and what Localix resolved. */
@@ -53,44 +49,15 @@ export interface CcCallFacts {
   homeDir: string
 }
 
-const EFFECTS: readonly CcEffect[] = ['allow', 'ask', 'deny']
-
-/** Every rule of the session's settings, with the files' trust applied. */
-export function settingsPermissionRules(
-  layers: readonly SettingsLayer[],
-  options: { projectTrusted: boolean },
-): CcPermissionRule[] {
-  const managedOnly = layers.some(
-    (l) => l.source === 'policy' && l.settings.allowManagedPermissionRulesOnly === true,
-  )
-  const out: CcPermissionRule[] = []
-  for (const layer of layers) {
-    if (managedOnly && layer.source !== 'policy') continue
-    const permissions = layer.settings.permissions
-    if (!isRecord(permissions)) continue
-    for (const effect of EFFECTS) {
-      const list = permissions[effect]
-      if (!Array.isArray(list)) continue
-      // A committed project file grants nothing until its folder is trusted.
-      if (effect === 'allow' && layer.source === 'project' && !options.projectTrusted) continue
-      for (const raw of list) {
-        if (typeof raw !== 'string') continue
-        const parsed = parseRuleString(raw)
-        if (!parsed) continue
-        // Claude Code skips an `mcp__` rule with parentheses when it loads a settings file.
-        if (parsed.tool.startsWith('mcp__') && parsed.specifier !== undefined) continue
-        out.push({
-          effect,
-          raw,
-          tool: parsed.tool,
-          ...(specifierIsAll(parsed.specifier) ? {} : { specifier: parsed.specifier }),
-          file: layer.file,
-          sourceDir: layer.anchorDir,
-        })
-      }
-    }
-  }
-  return out
+/** The entries parsed; one that is no rule, or an `mcp__` rule with parentheses, is skipped as Claude Code skips it. */
+export function settingsPermissionRules(entries: readonly CcRuleEntry[]): CcPermissionRule[] {
+  return entries.flatMap((entry) => {
+    const parsed = parseRuleString(entry.raw)
+    if (!parsed) return []
+    if (parsed.tool.startsWith('mcp__') && parsed.specifier !== undefined) return []
+    const specifier = specifierIsAll(parsed.specifier) ? {} : { specifier: parsed.specifier }
+    return [{ ...entry, tool: parsed.tool, ...specifier }]
+  })
 }
 
 const READ_TOOLS = new Set<string>([TOOL.Read, TOOL.Search])
@@ -253,35 +220,6 @@ export function settingsRemoveTool(
       r.tool !== 'WebSearch' &&
       namesTool(r, call),
   )
-}
-
-/**
- * `permissions.additionalDirectories` of every file, absolute: further working directories whose
- * files a call may touch as it touches the project's. A committed project file's entries wait for
- * the folder's trust, as its allow rules do; relative entries resolve against the working
- * directory and `~` against home.
- */
-export function settingsAdditionalDirectories(
-  layers: readonly SettingsLayer[],
-  options: { projectTrusted: boolean; cwd: string; homeDir: string },
-): string[] {
-  const out = new Set<string>()
-  for (const layer of layers) {
-    if (layer.source === 'project' && !options.projectTrusted) continue
-    const permissions = layer.settings.permissions
-    const list = isRecord(permissions) ? permissions.additionalDirectories : undefined
-    if (!Array.isArray(list)) continue
-    for (const entry of list) {
-      if (typeof entry !== 'string' || !entry.trim()) continue
-      const dir = entry.trim()
-      out.add(
-        dir === '~' || dir.startsWith('~/')
-          ? join(options.homeDir, dir.slice(1))
-          : resolve(options.cwd, dir),
-      )
-    }
-  }
-  return [...out]
 }
 
 /** The allow rules as the Localix rows that pre-approve the same calls, anchored for `cwd`. */

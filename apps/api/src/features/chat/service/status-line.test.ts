@@ -62,6 +62,8 @@ function harness(statusLine: Record<string, unknown> | undefined, options: Harne
   writeTree(root, {
     'home/.claude/settings.json': JSON.stringify(statusLine ? { statusLine } : {}),
     'project/.keep': '',
+    // A status line waits for the folder's trust, as in Claude Code.
+    'home/.claude.json': JSON.stringify({ projects: { [cwd]: { hasTrustDialogAccepted: true } } }),
   })
   const session: SessionRecord = sessionFixture({
     id: 'S-1',

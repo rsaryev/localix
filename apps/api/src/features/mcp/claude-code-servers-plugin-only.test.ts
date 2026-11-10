@@ -1,10 +1,16 @@
-import { describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
+import { mcpSettingsReader } from '../plugins/kit'
 import { claudeCodeMcpServers } from './claude-code-servers'
+import { installMcpSettingsReader } from './claude-code-settings'
 import type { McpServerRecord } from './repository'
+
+// The settings are read through the kit, as the host installs it at boot.
+beforeAll(() => installMcpSettingsReader(mcpSettingsReader))
+afterAll(() => installMcpSettingsReader(undefined))
 
 // settings-reference.md, `strictPluginOnlyCustomization.mcp`: servers of `~/.claude.json` and
 // `.mcp.json` are blocked; `managed-mcp.json`, `managedMcpServers` and plugins' servers still load.

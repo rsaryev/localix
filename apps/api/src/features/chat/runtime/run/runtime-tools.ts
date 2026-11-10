@@ -19,7 +19,7 @@ import { buildOptionalToolPorts, explainEmptyPorts, manageableJobs } from './run
 import { ccSessionEnvScripts, type CcHooksRuntime } from '../../../cc-hooks'
 import { ccSessionEnvFilesOf } from './cc-hook-session-facts'
 import { settingsEnvScriptFor } from './settings-env-script'
-import { claudeCodeSettingsEnv } from '../../../cc-settings/settings-env'
+import { claudeCodeSettingsEnv } from '../../../plugins/kit'
 import { dirname } from 'node:path'
 import type { ExecutionEnvironment } from '../../../agent-core/tools/environment'
 import type { LoadedPlugins } from '../../../plugins/loader'

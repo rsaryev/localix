@@ -49,7 +49,7 @@ export const DEFAULT_TITLE = 'New Chat'
 
 export interface ChatServiceDeps {
   agentManagement?: AgentManagementPort
-  /** Claude Code's mode settings for a folder (`cc-settings/settings-modes.ts`). */
+  /** Claude Code's mode settings for a folder (`settingsModes` of `plugins/kit`). */
   claudeCodeModes?: (
     cwd: string,
   ) => Promise<{ defaultMode?: PermissionMode; bypassDisabled: boolean }>

@@ -1,9 +1,9 @@
 import path from 'node:path'
 
-import { managedSettingsDir } from '../features/cc-settings/managed-settings'
 import {
   createChatPluginSessions,
   createLocalixPluginHost,
+  managedSettingsDir,
   type ChatPluginSessions,
   type LocalixPluginHost,
 } from '../features/plugins/kit'
@@ -29,7 +29,7 @@ export function createProcessPluginHost(): ProcessPluginHost {
     pluginsRoot: () => path.join(localixHome(), 'plugins'),
     scratchDir: () => path.join(localixHome(), 'plugin-scratch'),
     // Where the run's hooks and the Bash tool keep them (`ccSessionEnvFilesOf`).
-    envFilesDir: (sessionId) => path.join(sessionDataDir(sessionId), '.claude-code'),
+    envFilesDir: (...args) => path.join(sessionDataDir(...args), '.claude-code'),
     managedDirectory: managedSettingsDir(),
     mcp: () => undefined,
     models: () => undefined,

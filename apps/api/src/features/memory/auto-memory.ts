@@ -3,8 +3,7 @@ import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
 import { claudeConfigDir } from '../cc-settings/config-dir'
-import { localSettingsRoot, readSettingsFileLayers } from '../cc-settings/settings-files'
-import { mergeSettingsSources } from '../cc-settings/settings-merge'
+import { readClaudeSettingsSync } from '../plugins/kit'
 import { expandHome } from '../../lib/home-path'
 
 /**
@@ -52,18 +51,18 @@ export function autoMemoryDir(input: {
   try {
     cwd = realpathSync(cwd)
   } catch {}
-  const layers = readSettingsFileLayers({ ...input, cwd, env, managed: null })
-  if (mergeSettingsSources(layers).autoMemoryEnabled === false) return null
+  const settings = readClaudeSettingsSync({ ...input, cwd, env, managed: null })
+  if (settings.view.merged().autoMemoryEnabled === false) return null
   // A repository's committed settings cannot send memory elsewhere: only the person's own may.
-  const own = mergeSettingsSources(layers.filter((layer) => layer.source !== 'project'))
-  const configured = own.autoMemoryDirectory
+  const configured = settings.files.findLast(
+    (file) => file.scope !== 'project' && typeof file.settings.autoMemoryDirectory === 'string',
+  )?.settings.autoMemoryDirectory
   if (typeof configured === 'string' && configured.trim()) {
     const dir = configured.trim()
     return resolve(expandHome(dir, input.homeDir))
   }
-  // `localSettingsRoot` declines a repository rooted at home, where Claude Code keeps no local
-  // settings file; memory still keys on that root, so it is asked with a home that never matches.
-  const project = localSettingsRoot(cwd, '\0', input.platform) ?? cwd
+  // Memory keys on the repository's main checkout, a repository rooted at home included.
+  const project = settings.repository?.root ?? cwd
   return join(claudeConfigDir(input.homeDir, env), 'projects', claudeProjectKey(project), 'memory')
 }
 

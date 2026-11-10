@@ -1,6 +1,9 @@
 import type { SkillSourcePolicy } from '../features/agent-core/skill-source-policy'
-import type { ManagedSettingsSource } from '../features/cc-settings/managed-settings'
-import { readPluginOnlyLocks } from '../features/cc-settings/settings-policy'
+import {
+  customizationLocks,
+  readClaudeSettings,
+  type ManagedSettingsSource,
+} from '../features/plugins/kit'
 
 /**
  * `strictPluginOnlyCustomization`, for skill folders (A4: the composition root reads Claude Code's
@@ -12,11 +15,12 @@ export function createSkillSourcePolicy(
   options: { managed?: ManagedSettingsSource | null } = {},
 ): SkillSourcePolicy {
   return async ({ workingDir, homeDir }) => {
-    const locks = await readPluginOnlyLocks({
+    const settings = await readClaudeSettings({
       homeDir,
       cwd: workingDir,
       ...(options.managed !== undefined ? { managed: options.managed } : {}),
     })
+    const locks = customizationLocks(settings)
     return { blockFolders: locks.has('skills'), stripHooks: locks.has('hooks') }
   }
 }

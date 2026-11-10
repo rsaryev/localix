@@ -31,11 +31,8 @@ import { createAgentHookRunner, createPromptHookEvaluator } from './cc-hook-eval
 import type { RunCatalog, RunEnv, RunParams } from './types'
 import { ccPermissionMode, ccSessionEnvFilesOf, ccSubagentOf } from './cc-hook-session-facts'
 import { claudeCodeHome } from '../../../cc-settings/config-dir'
-import { claudeCodeSettingsEnv } from '../../../cc-settings/settings-env'
-import { readSettingsFileLayers } from '../../../cc-settings/settings-files'
-import { settingsHooks } from '../../../cc-settings/settings-hooks'
+import { readClaudeSettingsSync, settingsEnvOf, settingsHooks } from '../../../plugins/kit'
 import { applyHttpHookPolicy } from '../../../cc-hooks/http-policy'
-import { claudeCodeTrusts } from '../../../cc-settings/settings-trust'
 import { ccBackgroundWork, ccRunFacts } from './cc-hook-run-facts'
 import { createCcTranscript } from './cc-transcript'
 import { publishAgentPhase } from '../session-stream-registry'
@@ -121,8 +118,9 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
   ccHookSessions.cancelIdle(session.id)
   const emitNotice = ccHookNoticeEmitter(deps.streamRegistry, userId, session.id)
   const envFiles = ccSessionEnvFilesOf(session, deps.sessionDataRoot)
-  // Claude Code's settings `env` for this folder reaches every hook process.
-  const settingsEnv = claudeCodeSettingsEnv({ homeDir: claudeCodeHome(), cwd: defaultCwd })
+  // Claude Code's settings for this folder: their `env` reaches every hook process.
+  const settings = readClaudeSettingsSync({ homeDir: claudeCodeHome(), cwd: defaultCwd })
+  const settingsEnv = settingsEnvOf(settings)
   const transcript = createCcTranscript({
     repo: env.repo,
     userId,
@@ -135,11 +133,8 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
 
   // Claude Code's settings files add their own `hooks`, and may hold plugins' back
   // (`disableAllHooks`, `allowManagedHooksOnly`).
-  const settingsInput = { homeDir: claudeCodeHome(), cwd: defaultCwd }
-  const layers = readSettingsFileLayers(settingsInput)
-  const trusted = claudeCodeTrusts(settingsInput)
-  const fromSettings = settingsHooks(layers, { projectTrusted: trusted })
-  const facts = { chatId: session.id, cwd: defaultCwd, trusted, layers }
+  const fromSettings = settingsHooks(settings)
+  const facts = { chatId: session.id, cwd: defaultCwd, settings }
   openChatPluginSession(deps.pluginSessions, facts, transcript.path, input.permissionMode)
   const { registry: ccHookRegistry } = await buildCcHookRegistry({
     projectDir: defaultCwd,
@@ -148,7 +143,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     ),
     settingsHooks: fromSettings.blocks,
   })
-  applyHttpHookPolicy(ccHookRegistry, fromSettings.http)
+  applyHttpHookPolicy(ccHookRegistry, fromSettings.httpHook)
   // The session's own hooks — before this run's scoped ones merge in — are what its between-run
   // events fire (a model switch, a project move, a watched file). See cc-hook-sessions.ts.
   ccHookSessions.remember(session.id, {
@@ -173,7 +168,8 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     ...(params.scope.ccScopedHooks ?? []).filter((scoped) => scoped.lifetime !== 'session'),
     ...(input.agentHooks ?? []),
   ]
-  for (const scoped of fromSettings.frontmatterAllowed ? scopedHooks : []) {
+  const allowed = scopedHooks.filter((scoped) => fromSettings.frontmatterAllowed(scoped.source))
+  for (const scoped of allowed) {
     mergeCcHookRegistries(
       ccHookRegistry,
       parseScopedHooks(scoped.raw, scoped.source, {
@@ -185,7 +181,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
   }
 
   // The http allowlist holds a skill's or an agent's http hooks too.
-  applyHttpHookPolicy(ccHookRegistry, fromSettings.http)
+  applyHttpHookPolicy(ccHookRegistry, fromSettings.httpHook)
 
   const ccHooks: CcHooksRuntime = createCcHooksRuntime({
     signal: input.signal,

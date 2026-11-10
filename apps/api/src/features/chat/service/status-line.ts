@@ -3,15 +3,12 @@ import { join } from 'node:path'
 import { claudeCodeHome, claudeConfigDir } from '../../cc-settings/config-dir'
 import { sessionRoute } from '../../../contracts/session-route'
 import { childEnv } from '../../../lib/login-shell-env'
-import { settingsCommandLine, type SettingsCommandLine } from '../../cc-settings/settings-commands'
 import {
-  localSettingsRoot,
-  readSettingsFileLayers,
-  type SettingsLayer,
-} from '../../cc-settings/settings-files'
-import { claudeCodeSettingsEnv } from '../../cc-settings/settings-env'
-import { settingsAdditionalDirectories } from '../../cc-settings/settings-permissions'
-import { claudeCodeTrusts } from '../../cc-settings/settings-trust'
+  readClaudeSettingsSync,
+  settingsAdditionalDirectories,
+  settingsCommandLine,
+  settingsEnvOf,
+} from '../../plugins/kit'
 import { runHookCommand } from '../../lifecycle-hooks/command'
 import type { StatusLineDeps } from './status-line-deps'
 import { statusLineInput } from './status-line-input'
@@ -94,14 +91,12 @@ export function createStatusLine(deps: StatusLineDeps) {
       ...(deps.env ? { env: deps.env } : {}),
       ...(deps.managed !== undefined ? { managed: deps.managed } : {}),
     }
-    const layers: SettingsLayer[] = readSettingsFileLayers(settingsInput)
-    const line: SettingsCommandLine | undefined = settingsCommandLine(layers, 'statusLine')
-    return { session, cwd, settingsInput, layers, line }
+    const settings = readClaudeSettingsSync(settingsInput)
+    return { session, cwd, settings, line: settingsCommandLine(settings, 'statusLine') }
   }
 
   /** The folders whose settings files may set the line: a change in one is a trigger. */
-  function settingsDirs(cwd: string): string[] {
-    const root = localSettingsRoot(cwd, homeDir())
+  function settingsDirs(cwd: string, root: string | undefined): string[] {
     return [
       claudeConfigDir(homeDir(), deps.env ?? process.env),
       join(cwd, '.claude'),
@@ -132,12 +127,12 @@ export function createStatusLine(deps: StatusLineDeps) {
     entry: Entry,
     signal: AbortSignal,
   ): Promise<number | undefined> {
-    const { session, cwd, settingsInput, layers, line } = await resolveLine(userId, sessionId)
+    const { session, cwd, settings, line } = await resolveLine(userId, sessionId)
     // Deleted, or let go of, while the settings were read: leave nothing behind.
     if (signal.aborted || !isLive(userId, sessionId, entry)) return undefined
     entry.command = line?.command
     const onSettingsChange = () => void (entry.done = settingsChanged(userId, sessionId))
-    const dirs = settingsDirs(cwd)
+    const dirs = settingsDirs(cwd, settings.localRoot)
     entry.unwatch ??= deps.watchSettings
       ? deps.watchSettings(dirs, onSettingsChange)
       : watchSettingsDirs(dirs, onSettingsChange)
@@ -145,7 +140,6 @@ export function createStatusLine(deps: StatusLineDeps) {
       deps.publish(sessionId, undefined)
       return undefined
     }
-    const trusted = claudeCodeTrusts(settingsInput)
     const route = sessionRoute(session)
     const [usage, model, workspace, transcriptPath] = await Promise.all([
       deps.usage(userId, sessionId),
@@ -159,11 +153,7 @@ export function createStatusLine(deps: StatusLineDeps) {
         statusLineInput({
           session,
           cwd,
-          addedDirs: settingsAdditionalDirectories(layers, {
-            projectTrusted: trusted,
-            cwd,
-            homeDir: homeDir(),
-          }),
+          addedDirs: settingsAdditionalDirectories(settings),
           usage,
           ...(model ? { model } : {}),
           workspace,
@@ -175,7 +165,7 @@ export function createStatusLine(deps: StatusLineDeps) {
       maxOutputBytes: MAX_OUTPUT_BYTES,
       signal,
       env: childEnv({
-        ...claudeCodeSettingsEnv(settingsInput),
+        ...settingsEnvOf(settings),
         CLAUDE_PROJECT_DIR: cwd,
         COLUMNS: String(COLUMNS),
         LINES: '1',

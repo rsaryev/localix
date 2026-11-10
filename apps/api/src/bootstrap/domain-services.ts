@@ -6,6 +6,8 @@ import { createHostRefResolver } from '../features/context-fabric/host-ref-resol
 import { CORE_CONTEXT_MAX_TOKENS } from '../features/context-fabric/contribution-validate'
 import { capabilitiesChanged } from '../features/capabilities/revision'
 import { createMcpService } from '../features/mcp/service'
+import { installMcpSettingsReader } from '../features/mcp/claude-code-settings'
+import { mcpSettingsReader } from '../features/plugins/kit'
 import { createPluginService } from '../features/plugins/service'
 import { createProcessPluginHost, type ProcessPluginHost } from './plugin-host'
 import { createMiniAppService } from '../features/mini-apps/service'
@@ -179,6 +181,8 @@ export function createDomainServicesPhase({
     capabilitiesChanged()
     hostRefs.publishCapabilityChange?.()
   }
+  // MCP reads Claude Code's settings through the kit, handed to it here (`mcp/claude-code-settings.ts`).
+  installMcpSettingsReader(mcpSettingsReader)
   const mcpService = createMcpService({
     db,
     resolveProjectCwd,

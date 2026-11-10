@@ -1,7 +1,7 @@
 import { errorMessage } from '../../lib/errors'
 import { isRecord } from '../../lib/record'
-import { readSettingsFileLayers } from '../cc-settings/settings-files'
 import { readManagedPolicy } from './claude-code-policy'
+import { readClaudeSettingsSync } from './kit'
 import { sameMarketplaceSource } from './marketplace-source-identity'
 import { parseMarketplaceSourceObject } from './marketplace-source-object'
 import {
@@ -48,18 +48,17 @@ export async function declaredMarketplaces(opts: {
   env?: NodeJS.ProcessEnv
   managedSettingsDir?: string
 }): Promise<DeclaredMarketplace[]> {
-  // The settings files as the settings reader finds them (the local file at the repository root).
-  const files = readSettingsFileLayers({
+  // The settings files where the kit places them (the local file at the repository root).
+  const { files } = readClaudeSettingsSync({
     homeDir: opts.homeDir,
     cwd: opts.cwd,
-    env: opts.env,
+    ...(opts.env ? { env: opts.env } : {}),
     managed: null,
   })
-  const layers: [DeclaredFrom, Record<string, unknown>][] = files.flatMap((layer) =>
-    layer.source === 'user' || layer.source === 'project' || layer.source === 'local'
-      ? [[layer.source, declarations(layer.settings)] as [DeclaredFrom, Record<string, unknown>]]
-      : [],
-  )
+  const layers = files.map((one): [DeclaredFrom, Record<string, unknown>] => [
+    one.scope,
+    declarations(one.settings),
+  ])
   layers.push([
     'managed',
     (await readManagedPolicy(opts.managedSettingsDir)).extraKnownMarketplaces ?? {},

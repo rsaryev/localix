@@ -3,16 +3,8 @@ import { join, resolve } from 'node:path'
 import { readJsonRecordSync } from '../../lib/json'
 import { isRecord } from '../../lib/record'
 import { claudeStateFile } from '../cc-settings/config-dir'
-import { managedSettingsDir } from '../cc-settings/managed-settings'
-import {
-  localSettingsRoot,
-  readSettingsFileLayers,
-  type SettingsFilesInput,
-  type SettingsLayer,
-} from '../cc-settings/settings-files'
-import { claudeCodeSettingsEnv } from '../cc-settings/settings-env'
-import { pluginOnlyLocks } from '../cc-settings/settings-policy'
-import { claudeCodeTrusts } from '../cc-settings/settings-trust'
+import type { ClaudeSettingsInput, SettingsFile } from '../plugins/kit'
+import { mcpFolderSettings } from './claude-code-settings'
 import { mcpServerPolicy } from './claude-code-mcp-policy'
 import { normalizeMcpServerEntry } from './normalize'
 import type { McpServerRecord } from './repository'
@@ -37,7 +29,7 @@ import type { McpServerRecord } from './repository'
  * (`claude-code-mcp-policy.ts`). Read on every run; nothing here writes.
  */
 
-export interface ClaudeCodeMcpInput extends SettingsFilesInput {
+export interface ClaudeCodeMcpInput extends ClaudeSettingsInput {
   cwd: string
   /** The person's servers in Localix's registry, and the run's plugin servers. */
   own: readonly McpServerRecord[]
@@ -58,10 +50,8 @@ const serversOf = (doc: Record<string, unknown> | undefined) =>
   doc && isRecord(doc.mcpServers) ? doc.mcpServers : {}
 
 /** Approved by the honoured files, rejected by none (see the header). */
-function approval(layers: readonly SettingsLayer[], trusted: boolean) {
-  const honoured = layers.filter(
-    (l) => trusted || l.source === 'user' || l.source === 'policy' || l.source === 'flag',
-  )
+function approval(layers: readonly SettingsFile[], trusted: boolean) {
+  const honoured = layers.filter((l) => trusted || l.scope === 'user' || l.scope === 'managed')
   const all = honoured.some((l) => l.settings.enableAllProjectMcpServers === true)
   const named = new Set(
     honoured.flatMap((l) =>
@@ -78,24 +68,23 @@ function approval(layers: readonly SettingsLayer[], trusted: boolean) {
 
 export function claudeCodeMcpServers(input: ClaudeCodeMcpInput): McpServerRecord[] {
   const env = input.env ?? process.env
-  const layers = readSettingsFileLayers(input)
+  const settings = mcpFolderSettings(input)
+  const layers = settings.files
   const cwd = resolve(input.cwd)
-  const root = localSettingsRoot(cwd, input.homeDir, input.platform)
+  const root = settings.localRoot
   const state = readJsonRecordSync(claudeStateFile(input.homeDir, env))
   const projects = state && isRecord(state.projects) ? state.projects : {}
   const local = [cwd, root].flatMap((dir) => {
     const entry = dir ? projects[dir] : undefined
     return isRecord(entry) ? [serversOf(entry)] : []
   })
-  const managedDir =
-    input.managed === null ? null : (input.managed?.dir ?? managedSettingsDir(input.platform))
-  const exclusive = managedDir
-    ? readJsonRecordSync(join(managedDir, 'managed-mcp.json'))
+  const exclusive = settings.managedDir
+    ? readJsonRecordSync(join(settings.managedDir, 'managed-mcp.json'))
     : undefined
   const provided = layers
-    .filter((l) => l.source === 'policy')
+    .filter((l) => l.scope === 'managed')
     .map((l) => (isRecord(l.settings.managedMcpServers) ? l.settings.managedMcpServers : {}))
-  const trusted = claudeCodeTrusts(input)
+  const { trusted } = settings
   const approved = approval(layers, trusted)
   const mcpJson =
     readJsonRecordSync(join(cwd, '.mcp.json')) ??
@@ -107,7 +96,7 @@ export function claudeCodeMcpServers(input: ClaudeCodeMcpInput): McpServerRecord
     ...provided.map((servers): [Scope, Record<string, unknown>] => ['managed', servers]),
   ]
   // `strictPluginOnlyCustomization` with `mcp`: `~/.claude.json` and `.mcp.json` are closed.
-  if (!exclusive && !pluginOnlyLocks(layers).has('mcp')) {
+  if (!exclusive && !settings.mcpLocked) {
     for (const servers of local) ranked.push(['local', servers])
     const project = Object.fromEntries(
       Object.entries(serversOf(mcpJson)).filter(([name]) => approved(name)),
@@ -133,7 +122,7 @@ export function claudeCodeMcpServers(input: ClaudeCodeMcpInput): McpServerRecord
   for (const server of exclusive ? [] : input.plugins) add(server, false)
   for (const server of exclusive ? [] : (input.extra ?? [])) add(server, false)
   // The folder's settings `env` sets the limits Claude Code reads from its environment.
-  const settingsEnv = claudeCodeSettingsEnv(input)
+  const settingsEnv = settings.env
   return Object.keys(settingsEnv).length > 0 ? out.map((s) => ({ ...s, settingsEnv })) : out
 }
 

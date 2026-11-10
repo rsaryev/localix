@@ -1,4 +1,4 @@
-import type { ManagedSettingsSource } from '../../cc-settings/managed-settings'
+import type { ManagedSettingsSource } from '../../plugins/kit'
 import type { HookCommandOptions, runHookCommand } from '../../lifecycle-hooks/command'
 import type { SessionRecord } from '../repository'
 import type { StatusLineModelInfo } from './status-line-input'

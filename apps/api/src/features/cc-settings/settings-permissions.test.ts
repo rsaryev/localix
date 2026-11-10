@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
-import { readSettingsLayers } from './settings-files'
+import { readClaudeSettings, settingsRuleEntries } from '../plugins/kit'
 import { evaluate } from '../agent-core/permission-engine'
 import { fetchedUrls } from './settings-webfetch-match'
 import {
@@ -22,14 +22,18 @@ const scratch = tempDirPerTest('cc-permissions-')
 
 async function rulesFor(tree: Record<string, string>, options: { projectTrusted?: boolean } = {}) {
   const root = scratch()
-  writeTree(root, tree)
-  const layers = await readSettingsLayers({
+  const trust = { projects: { [join(root, 'project')]: { hasTrustDialogAccepted: true } } }
+  writeTree(root, {
+    ...((options.projectTrusted ?? true) ? { 'home/.claude.json': JSON.stringify(trust) } : {}),
+    ...tree,
+  })
+  const read = await readClaudeSettings({
     homeDir: join(root, 'home'),
     cwd: join(root, 'project'),
     env: {},
     managed: { dir: join(root, 'managed') },
   })
-  const rules = settingsPermissionRules(layers, { projectTrusted: options.projectTrusted ?? true })
+  const rules = settingsPermissionRules(settingsRuleEntries(read))
   const cwd = join(root, 'project')
   // As the gate composes them: deny and ask judged here, allow as the translated pre-approvals.
   const rows = settingsAllowRows(rules, cwd)

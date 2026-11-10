@@ -1,20 +1,23 @@
 import type { PermissionMode } from '../../../../contracts/permission-modes'
 import type { OuterRules } from '../../../agent-core/permission-verdict'
-import { readSettingsLayers, type SettingsFilesInput } from '../../../cc-settings/settings-files'
-import { claudeCodeTrusts } from '../../../cc-settings/settings-trust'
 import { bashFiles } from '../../../cc-settings/settings-bash-paths'
 import type { PermissionRule } from '../../../agent-core/permission-engine'
 import {
   settingsAllowRows,
-  settingsAdditionalDirectories,
   settingsPermissionDecision,
   settingsPermissionRules,
   type CcPermissionRule,
 } from '../../../cc-settings/settings-permissions'
+import {
+  readClaudeSettings,
+  settingsAdditionalDirectories,
+  settingsRuleEntries,
+  type ClaudeSettingsInput,
+} from '../../../plugins/kit'
 
 /**
  * THE PERSON'S CLAUDE CODE `permissions`, AT A RUN'S GATE. A run in a folder reads the settings
- * files Claude Code would read there (`cc-settings/settings-files.ts`) and hands their rules to
+ * files Claude Code would read there (`readClaudeSettings` of `plugins/kit`) and hands their rules to
  * the gate: its deny and ask rules as the outer rule set (`agent-core/permission-verdict.ts`,
  * `outerRules`) — a deny refuses, an ask raises a card, whatever the agent's own rules say — and
  * its allow rules as pre-approvals (`cc-settings/cc-rule-translate.ts`), which answer the agent's
@@ -30,17 +33,12 @@ export interface ClaudeCodePermissions {
 }
 
 export async function loadClaudeCodePermissions(
-  input: SettingsFilesInput & { cwd: string },
+  input: ClaudeSettingsInput & { cwd: string },
 ): Promise<ClaudeCodePermissions> {
-  const layers = await readSettingsLayers(input)
-  const projectTrusted = claudeCodeTrusts(input)
+  const settings = await readClaudeSettings(input)
   return {
-    rules: settingsPermissionRules(layers, { projectTrusted }),
-    additionalDirectories: settingsAdditionalDirectories(layers, {
-      projectTrusted,
-      cwd: input.cwd,
-      homeDir: input.homeDir,
-    }),
+    rules: settingsPermissionRules(settingsRuleEntries(settings)),
+    additionalDirectories: settingsAdditionalDirectories(settings),
     cwd: input.cwd,
   }
 }

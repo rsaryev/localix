@@ -30,3 +30,45 @@ export type { Plugin as KitPlugin } from '@rsaryev/llx-plugin/loading'
 export type { PluginIssue } from '@rsaryev/llx-plugin/format'
 export { createHostPorts, type HostPortsDeps, type LocalixKitPorts } from './ports/host-ports'
 export type { McpCallByName, ModelBackend } from './ports/session-ports'
+export {
+  readClaudeSettings,
+  readClaudeSettingsSync,
+  mergedSettings,
+  type ClaudeSettings,
+  type ClaudeSettingsInput,
+  type Settings,
+  type SettingsFile,
+  type SettingsFileScope,
+} from './settings/read'
+export {
+  managedSettingsDir,
+  readManagedSettings,
+  systemManagedSource,
+  type ManagedSettingsSource,
+} from './settings/managed'
+export { claudeCodeTrusts, trustedFolders } from './settings/trust'
+export { claudeCodeSettingsEnv, settingsEnvOf } from './settings/env'
+export { mcpSettingsReader } from './settings/mcp'
+export {
+  settingsCommandLine,
+  settingsHooks,
+  type SettingsCommandLine,
+  type SettingsHooks,
+} from './settings/hooks'
+export {
+  customizationLocks,
+  mainAgentSetting,
+  outputStyleSetting,
+  settingsModes,
+  skillShellDisabled,
+  type SettingsModes,
+} from './settings/values'
+export {
+  describeClaudeCodePermissions,
+  type ClaudeCodePermissionsView,
+} from './settings/permissions-view'
+export {
+  settingsAdditionalDirectories,
+  settingsRuleEntries,
+  type SettingsRuleEntry,
+} from './settings/permissions'

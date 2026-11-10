@@ -46,9 +46,9 @@ import { createPermissionRulePersister } from '../features/capabilities/availabi
 import { createAgentDirectoryPorts } from './agent-directory-ports'
 import { createTerminalPorts } from './terminal-ports'
 import { createChatFeaturePorts } from './chat-feature-ports'
-import { claudeCodeModes } from '../features/cc-settings/settings-modes'
 import type { MiniAppService } from '../features/mini-apps/service'
 import type { PluginService } from '../features/plugins/service-types'
+import { readClaudeSettings, settingsModes } from '../features/plugins/kit'
 import type { ModsHost } from '../features/mods/host'
 
 type ChatServiceDeps = Parameters<typeof createChatService>[0]
@@ -279,7 +279,8 @@ export function createChatServicePhase({
     decisions: decisionService,
     semantic: semanticService,
     resolveSessionAgent: createSessionAgentResolver(agentsService),
-    claudeCodeModes: (cwd) => claudeCodeModes({ homeDir: claudeCodeHome(), cwd }),
+    claudeCodeModes: async (cwd) =>
+      settingsModes(await readClaudeSettings({ homeDir: claudeCodeHome(), cwd })),
     loadAgentModelDefaults: agentModelDefaultsPort(agentModelChoicesPort(userService).read),
     ...createAgentDirectoryPorts(agentsService, {
       cwdOf: async (userId, projectId) =>

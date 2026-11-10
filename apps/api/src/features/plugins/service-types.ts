@@ -43,6 +43,8 @@ export interface PluginServiceDeps {
    * `marketplace-auto-update.ts`); the process's own by default.
    */
   env?: Record<string, string | undefined>
+  /** The managed settings folder the marketplace policy is read from; the machine's own by default. */
+  managedSettingsDir?: string
   /** The commit a remote git ref points at (`git ls-remote`); tests stub the network. */
   remoteCommit?: (url: string, ref?: string) => Promise<string | undefined>
   /**

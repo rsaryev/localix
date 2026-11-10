@@ -1,8 +1,7 @@
 import { promises as fs } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { claudeConfigDir } from '../../cc-settings/config-dir'
-import { managedSettingsDir } from '../../cc-settings/managed-settings'
-import { readPluginOnlyLocks } from '../../cc-settings/settings-policy'
+import { customizationLocks, managedSettingsDir, readClaudeSettings } from '../../plugins/kit'
 import type { LoadedPluginAgent } from '../../plugins/loader-contract'
 import { bodyHashOf, scanAgentFolder, type CatalogAgent } from './agent-file'
 import { BUILTIN_AGENT_TYPES } from './builtin-types'
@@ -58,11 +57,13 @@ export async function agentFolders(opts: {
   managedDir?: string
 }): Promise<AgentFolders> {
   // The policy sits beside the managed agents folder: the machine's own, or the one injected.
-  const locks = await readPluginOnlyLocks({
-    homeDir: opts.home,
-    cwd: opts.cwd ?? null,
-    ...(opts.managedDir ? { managed: { dir: opts.managedDir } } : {}),
-  })
+  const locks = customizationLocks(
+    await readClaudeSettings({
+      homeDir: opts.home,
+      cwd: opts.cwd ?? null,
+      ...(opts.managedDir ? { managed: { dir: opts.managedDir } } : {}),
+    }),
+  )
   return {
     ...(locks.has('agents') ? { pluginOnly: true } : {}),
     managed: join(opts.managedDir ?? managedSettingsDir(), '.claude'),
