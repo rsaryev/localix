@@ -41,7 +41,6 @@ describe("a plugin's data directory", () => {
       config: {},
       subst: (text) => text,
       result: result as unknown as LoadedPlugins,
-      summary: {} as LoadedPlugins['loaded'][number],
       opts: { homeDir: home() },
     })
     expect((result.ccHooks[0] as { dataDir: string }).dataDir).toBe(

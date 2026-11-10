@@ -41,13 +41,8 @@
   "apps/api/src/features/mcp/mcp-connect.ts spells CLAUDE_PLUGIN_DATA (plugin variables)",
   "apps/api/src/features/mini-apps/folder.ts spells plugin.json (manifest reading)",
   "apps/api/src/features/mods/summary.ts spells plugin.json (manifest reading)",
-  "apps/api/src/features/plugins/claude-code-installs.ts spells plugin.json (manifest reading)",
-  "apps/api/src/features/plugins/discovery-cc-files.ts spells allowed-tools (frontmatter)",
-  "apps/api/src/features/plugins/discovery-cc-files.ts spells disable-model-invocation (frontmatter)",
   "apps/api/src/features/plugins/install-helpers.ts spells plugin.json (manifest reading)",
   "apps/api/src/features/plugins/install-versioned.ts spells plugin.json (manifest reading)",
-  "apps/api/src/features/plugins/layout/compose.ts spells plugin.json (manifest reading)",
-  "apps/api/src/features/plugins/layout/read.ts spells plugin.json (manifest reading)",
   "apps/api/src/features/plugins/loader-runtime-declarations.ts spells CLAUDE_PLUGIN_DATA (plugin variables)",
   "apps/api/src/features/plugins/marketplace-entry-manifest.ts spells plugin.json (manifest reading)",
   "apps/api/src/features/plugins/mcp.ts spells CLAUDE_PLUGIN_DATA (plugin variables)",
@@ -59,6 +54,5 @@
   "apps/api/src/features/plugins/validate-config.ts spells CLAUDE_PLUGIN_DATA (plugin variables)",
   "apps/api/src/features/plugins/validate-config.ts spells user_config. (user config references)",
   "apps/api/src/features/plugins/workflow-commands.ts spells $ARGUMENTS (skill arguments)",
-  "packages/claude-plugin/src/layout.ts spells plugin.json (manifest reading)",
-  "packages/claude-plugin/src/manifest.ts spells plugin.json (manifest reading)"
+  "packages/claude-plugin/src/layout.ts spells plugin.json (manifest reading)"
 ]

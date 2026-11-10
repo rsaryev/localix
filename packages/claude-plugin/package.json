@@ -31,9 +31,6 @@
     "type-check": "bun ../../scripts/tsc.mjs --noEmit",
     "clean": "shx rm -rf dist .turbo"
   },
-  "dependencies": {
-    "zod": "^4.4.3"
-  },
   "devDependencies": {
     "@types/bun": "1.4.3",
     "shx": "^0.4.0",

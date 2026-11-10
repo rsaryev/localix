@@ -2,7 +2,7 @@ import { readJsonFile } from '../../lib/json'
 import { listItems } from './config-lists'
 import { join, resolve } from 'node:path'
 
-import { MANIFEST_FILE, MARKETPLACE_FILE } from '@localixai/claude-plugin'
+import { MARKETPLACE_FILE } from '@localixai/claude-plugin'
 
 import { claudeConfigDir } from '../cc-settings/config-dir'
 import {
@@ -13,14 +13,9 @@ import {
 import { pathExists } from '../ext/fs-discovery'
 import { isRecord } from '../../lib/record'
 import type { DiscoveredPlugin } from './discovery-types'
-import type { ManifestFiles } from './layout/compose'
+import type { FolderSource } from './kit'
 import { loadManifest } from './manifest-load'
 import { resolveEntrySource } from './marketplace-entry-source'
-import {
-  entryHasManifestOverrides,
-  mergeEntryOverrides,
-  synthesizeEntryManifest,
-} from './marketplace-entry-manifest'
 import type { MarketplaceEntry } from './marketplace'
 import { withWorkflowCommands } from './workflow-commands'
 
@@ -148,34 +143,13 @@ async function marketplaceListing(known: unknown, id: string): Promise<Listing |
 }
 
 /**
- * The manifests Claude Code reads for the plugin: with no `plugin.json`, the entry is the manifest
- * (the official `*-lsp` plugins ship none); else the entry is combined into it, as an install does
- * on disk (`marketplace-entry-manifest.ts`). A plugin without either is named by its entry, not by
- * its cache folder (a version).
+ * What names the plugin besides its folder: its marketplace entry, merged into its manifest by the
+ * kit (`kit/catalog`), and the id's name for a plugin with neither (not its cache folder, a version).
  */
-export function withEntry(id: string, entry: MarketplaceEntry | undefined) {
-  return (read: ManifestFiles): ManifestFiles => {
-    // Claude Code never reads a root `plugin.json`, so its fields do not count.
-    const { root: _ignored, ...files } = read
-    const plugin = files.plugin
-    if (!plugin && !files.miniApp) {
-      let json: Record<string, unknown> = { name: id.slice(0, id.lastIndexOf('@')) || id }
-      try {
-        if (entry) json = synthesizeEntryManifest(entry)
-      } catch {
-        // Hooks an entry writes as a path are refused at install too; the name still holds.
-      }
-      return { ...files, plugin: { file: MANIFEST_FILE, json } }
-    }
-    if (!entry || !plugin || !('json' in plugin) || !isRecord(plugin.json)) return files
-    if (!entryHasManifestOverrides(entry)) return files
-    try {
-      return { ...files, plugin: { ...plugin, json: mergeEntryOverrides(plugin.json, entry) } }
-    } catch (error) {
-      return { ...files, plugin: { file: plugin.file, readError: (error as Error).message } }
-    }
-  }
-}
+export const entrySource = (id: string, entry: MarketplaceEntry | undefined): FolderSource => ({
+  ...(entry ? { entry } : {}),
+  name: id.slice(0, id.lastIndexOf('@')) || id,
+})
 
 /** What Claude Code would load for a session in `cwd` (null: no project). */
 export async function readClaudeCodeInstalls(
@@ -277,7 +251,7 @@ export async function discoverClaudeCodePlugins(opts: {
           install.dir,
           scope,
           opts.projectId,
-          withEntry(install.id, install.entry),
+          entrySource(install.id, install.entry),
         ),
       )
       if (!install.enabledBy && plugin.manifest.defaultEnabled === false) return null

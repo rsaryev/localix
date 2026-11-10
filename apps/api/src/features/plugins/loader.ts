@@ -176,7 +176,7 @@ export async function loadEnabledPlugins(opts: {
       }
     }
 
-    appendPluginRuntimeDeclarations({ plugin, config, subst, result, summary, opts })
+    appendPluginRuntimeDeclarations({ plugin, config, subst, result, opts })
 
     finish()
   }

@@ -18,6 +18,7 @@ import type { HitlRegistry } from '../runtime/hitl-registry'
 import type { SessionStreamRegistry } from '../runtime/session-stream-registry'
 import type { PersistedMessage } from '../contracts'
 import type { LspManager } from '../../lsp'
+import type { ChatPluginSessions } from '../../plugins/kit'
 import type { ChatFeaturePorts } from '../feature-ports'
 import type {
   TerminalJobHandle,
@@ -111,6 +112,8 @@ export interface ChatServiceDeps {
   /** Structured diagnostic sink; feature code must never write straight to a host's stdout. */
   logger?: SkillDiscoveryLogger
   lspManager?: LspManager
+  /** One kit plugin session per chat (`features/plugins/kit/sessions.ts`). */
+  pluginSessions?: ChatPluginSessions
   /** When set, background bash jobs run in a real PTY pane (terminal feature) via this host. */
   spawnTerminalJob?: (input: {
     userId: string

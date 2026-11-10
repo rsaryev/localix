@@ -65,13 +65,6 @@ describe('a plugin with more than eight agents', () => {
       config: {},
       subst: (text) => text,
       result,
-      summary: {
-        name: 'crew',
-        scope: 'global',
-        description: '',
-        skills: [],
-        mcpServers: [],
-      },
       opts: { homeDir: dir() },
     })
     expect(result.mainAgent?.fullName).toBe(`crew:${names[COUNT - 1]}`)

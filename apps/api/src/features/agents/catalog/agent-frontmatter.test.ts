@@ -55,8 +55,9 @@ You are guarded.
   test('a plugin’s agent loads without them', async () => {
     const file = join(dir(), 'guarded.md')
     await fs.writeFile(file, FILE)
-    const { parseAgentFile } = await import('../../plugins/discovery-cc-files')
-    const parsed = await parseAgentFile(file)
+    const { readAgentText } = await import('../../plugins/kit')
+    const { readFile } = await import('node:fs/promises')
+    const parsed = readAgentText(await readFile(file, 'utf8'), file, 'user')?.agent
     const loaded = buildLoadedAgent('acme', parsed!, (text) => text)
     expect(loaded).not.toHaveProperty('hooks')
     expect(loaded).not.toHaveProperty('mcpServers')

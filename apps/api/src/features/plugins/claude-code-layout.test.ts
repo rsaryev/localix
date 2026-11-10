@@ -84,7 +84,6 @@ describe('a Claude Code plugin in place', () => {
       commands: './custom/commands/special.md',
       agents: ['./custom/agents/reviewer.md'],
     })
-    expect(plugin.manifest.defaultDirs).toEqual({ commands: false, agents: false })
     expect(plugin.provides.commands).toEqual(['special'])
     expect(plugin.provides.agents).toEqual(['replace:reviewer'])
   })
@@ -94,7 +93,6 @@ describe('a Claude Code plugin in place', () => {
     await write('commands/infra/scale.md', md('description: Scale', 'Scale.'))
     await write('agents/planner.md', md('name: planner\ndescription: Plans', 'Plan.'))
     const { plugin } = await writeAndLoad({ name: 'defaults' })
-    expect(plugin.manifest.defaultDirs).toBeUndefined()
     expect(plugin.provides.commands.sort()).toEqual(['deploy', 'infra:scale'])
     expect(plugin.provides.agents).toEqual(['defaults:planner'])
   })
@@ -133,10 +131,11 @@ describe('a Claude Code plugin in place', () => {
     expect(plugin.entrypoints.hookConfigs).toHaveLength(1)
     // Plugin variables are native substitution variables: carried over verbatim.
     expect(JSON.stringify(plugin.entrypoints.hookConfigs)).toContain('${CLAUDE_PLUGIN_ROOT}')
+    // Behaviour change (kit wins): an unknown event is the kit's issue, listed before Localix's notes.
     expect(notes).toEqual([
+      'hooks.NotAnEvent: "NotAnEvent" is not a hook event',
       `hooks: Hook event Setup never fires in Localix: ${CC_INERT_HOOK_EVENTS.Setup}`,
       `hooks: Hook event WorktreeRemove never fires in Localix: ${CC_INERT_HOOK_EVENTS.WorktreeRemove}`,
-      'hooks: Not Claude Code hook events, never fired: NotAnEvent',
     ])
   })
 
@@ -219,12 +218,10 @@ describe('a Claude Code plugin in place', () => {
       },
     ])
     expect(components.workflows.map((workflow) => workflow.name)).toEqual(['audit'])
-    // The file wins over the manifest key; a key plugins cannot set is dropped with a note.
+    // The file wins over the manifest key; a key plugins cannot set is dropped.
     expect(components.settings).toEqual({ agent: 'reviewer' })
-    expect(components.issues.map((found) => found.message)).toEqual([
-      'Plugin settings ignore "theme"',
-    ])
-    expect(plugin.manifest.channels).toEqual([{ server: 'chat' }])
+    // Behaviour change (kit wins): the kit drops a key plugins cannot set without a note.
+    expect(components.issues).toEqual([])
     expect(plugin.manifest.config?.bot_token?.secret).toBe(true)
     expect(notes.join('\n')).not.toMatch(/not used/)
     expect(validatePlugin(plugin).warnings.join('\n')).not.toMatch(/ignores it|Unrecognized/)

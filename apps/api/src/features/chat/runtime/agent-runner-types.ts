@@ -36,8 +36,11 @@ import type { AgentNotifications } from '../../notifications/producers'
 import type { AgentManagementPort } from '../../agents/service-contract'
 import type { StoreAgentPort } from '../../store/agent-port'
 import type { ModsHost } from '../../mods/host'
+import type { ChatPluginSessions } from '../../plugins/kit'
 
 export interface RunnerDeps {
+  /** One kit plugin session per chat (`features/plugins/kit`): opened at its first run. */
+  pluginSessions?: ChatPluginSessions
   /** Where session data lives (plugin data, Claude Code hook files); `sessionDataRoot()` if absent. */
   sessionDataRoot?: string
   agentManagement?: AgentManagementPort

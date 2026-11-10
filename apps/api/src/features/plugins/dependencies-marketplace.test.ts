@@ -12,7 +12,8 @@ import {
   type DependencyResolverDeps,
   type ResolvedDependencyStep,
 } from './dependencies'
-import { fromClaudePlugin } from './layout/claude-code'
+import { tempDirPerTest, writeTree } from '@localixai/testing'
+import { readPluginFolder } from './kit'
 
 const step = (name: string, marketplace: string): ResolvedDependencyStep => ({
   name,
@@ -36,15 +37,18 @@ function resolver(
 }
 
 /** The dependencies a plugin.json declares, as the runtime manifest carries them. */
-const declared = (dependencies: unknown[]) =>
-  normalizePluginDependencies(
-    fromClaudePlugin({ name: 'deploy-kit', dependencies } as never).dependencies,
-  )
+const folder = tempDirPerTest('deps-declared')
+async function declared(dependencies: unknown[]) {
+  writeTree(folder(), {
+    '.claude-plugin/plugin.json': JSON.stringify({ name: 'deploy-kit', dependencies }),
+  })
+  return normalizePluginDependencies((await readPluginFolder(folder())).manifest.dependencies)
+}
 
 describe('a dependency that names its marketplace', () => {
-  it('reads "name@marketplace" and { name, marketplace } from plugin.json', () => {
+  it('reads "name@marketplace" and { name, marketplace } from plugin.json', async () => {
     expect(
-      declared([
+      await declared([
         'audit-logger@shared',
         { name: 'secrets-vault', marketplace: 'shared', version: '~2.1.0' },
         'plain',

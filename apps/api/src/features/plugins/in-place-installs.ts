@@ -6,7 +6,7 @@ import { ConflictError } from '../../lib/domain-errors'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import { isRecord } from '../../lib/record'
 import { pathExists } from '../ext/fs-discovery'
-import { withEntry } from './claude-code-installs'
+import { entrySource } from './claude-code-installs'
 import type { DiscoveredPlugin } from './discovery-types'
 import { loadManifest } from './manifest-load'
 import { locateManifest, MARKETPLACE_MANIFEST_CANDIDATES } from './manifest-locate'
@@ -117,7 +117,7 @@ export async function loadInPlacePlugin(
   entry: MarketplaceEntry | undefined,
   projectId: string,
 ): Promise<DiscoveredPlugin> {
-  const plugin = await loadManifest(record.dir, 'global', projectId, withEntry(record.id, entry))
+  const plugin = await loadManifest(record.dir, 'global', projectId, entrySource(record.id, entry))
   return { ...plugin, inPlaceInstall: record.id }
 }
 

@@ -3,9 +3,7 @@ import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-import { resolveEntrypoints } from './discovery-entrypoints'
 import { loadManifest } from './manifest-load'
-import type { PluginManifest } from './contracts'
 import {
   synthesizeEntryManifest,
   mergeEntryOverrides,
@@ -14,9 +12,6 @@ import {
 } from './marketplace-entry-manifest'
 import type { MarketplaceEntry } from './marketplace'
 
-const manifest = (extra: Partial<PluginManifest>): PluginManifest =>
-  ({ name: 'p', version: '1.0.0', description: '', ...extra }) as PluginManifest
-
 let dir: string
 beforeEach(async () => {
   dir = await fs.mkdtemp(join(tmpdir(), 'cc-parity-'))
@@ -24,93 +19,6 @@ beforeEach(async () => {
 afterEach(async () => {
   await fs.rm(dir, { recursive: true, force: true })
 })
-
-// ---- A: manifest `hooks` field ------------------------------------------------
-
-describe('resolveEntrypoints — manifest hooks field (Part A)', () => {
-  const inlineBlock = {
-    hooks: { PreToolUse: [{ hooks: [{ type: 'command', command: 'echo hi' }] }] },
-  }
-
-  it('resolves an INLINE hooks object', async () => {
-    const r = await resolveEntrypoints(dir, manifest({ hooks: inlineBlock as never }))
-    expect(r.hookConfigs).toEqual([inlineBlock])
-  })
-
-  it('resolves a STRING path to a hooks-json file', async () => {
-    await fs.writeFile(join(dir, 'my-hooks.json'), JSON.stringify(inlineBlock))
-    const r = await resolveEntrypoints(dir, manifest({ hooks: './my-hooks.json' }))
-    expect(r.hookConfigs).toEqual([inlineBlock])
-  })
-
-  it('resolves an ARRAY of hook-file paths (in order)', async () => {
-    const a = { hooks: { Stop: [{ hooks: [{ type: 'command', command: 'a' }] }] } }
-    const b = { hooks: { Stop: [{ hooks: [{ type: 'command', command: 'b' }] }] } }
-    await fs.writeFile(join(dir, 'a.json'), JSON.stringify(a))
-    await fs.writeFile(join(dir, 'b.json'), JSON.stringify(b))
-    const r = await resolveEntrypoints(dir, manifest({ hooks: ['./a.json', './b.json'] }))
-    expect(r.hookConfigs).toEqual([a, b])
-  })
-
-  it('falls back to the default hooks/hooks.json when the field is absent', async () => {
-    await fs.mkdir(join(dir, 'hooks'), { recursive: true })
-    await fs.writeFile(join(dir, 'hooks', 'hooks.json'), JSON.stringify(inlineBlock))
-    const r = await resolveEntrypoints(dir, manifest({}))
-    expect(r.hookConfigs).toEqual([inlineBlock])
-  })
-
-  it('the manifest field MERGES with the default file, which loads first (Claude Code)', async () => {
-    await fs.mkdir(join(dir, 'hooks'), { recursive: true })
-    await fs.writeFile(join(dir, 'hooks', 'hooks.json'), JSON.stringify({ hooks: { Stop: [] } }))
-    const r = await resolveEntrypoints(dir, manifest({ hooks: inlineBlock as never }))
-    expect(r.hookConfigs).toEqual([{ hooks: { Stop: [] } }, inlineBlock])
-  })
-
-  it('MCP and LSP sources merge the same way: the default file, then the listed ones', async () => {
-    await fs.writeFile(
-      join(dir, '.mcp.json'),
-      JSON.stringify({ mcpServers: { a: { command: 'a' } } }),
-    )
-    await fs.writeFile(join(dir, 'more.mcp.json'), JSON.stringify({ b: { command: 'b' } }))
-    const r = await resolveEntrypoints(
-      dir,
-      manifest({ mcpServers: ['./more.mcp.json', { c: { command: 'c' } }] as never }),
-    )
-    expect(Object.keys(r.mcpServers)).toEqual(['a', 'b', 'c'])
-  })
-
-  it('a `..`-escaping path is dropped (confined to the plugin dir)', async () => {
-    const r = await resolveEntrypoints(dir, manifest({ hooks: '../evil.json' }))
-    expect(r.hookConfigs).toEqual([])
-  })
-})
-
-// ---- C: manifest `lspServers` field -------------------------------------------
-
-describe('resolveEntrypoints — manifest lspServers field (Part C)', () => {
-  const rust = {
-    'rust-analyzer': { command: 'rust-analyzer', extensionToLanguage: { '.rs': 'rust' } },
-  }
-
-  it('resolves an INLINE lspServers map', async () => {
-    const r = await resolveEntrypoints(dir, manifest({ lspServers: rust as never }))
-    expect(r.lspServers).toEqual(rust)
-  })
-
-  it('resolves a STRING path to a .lsp.json file (unwraps a {lspServers} wrapper)', async () => {
-    await fs.writeFile(join(dir, 'servers.json'), JSON.stringify({ lspServers: rust }))
-    const r = await resolveEntrypoints(dir, manifest({ lspServers: './servers.json' }))
-    expect(r.lspServers).toEqual(rust)
-  })
-
-  it('falls back to the default .lsp.json when the field is absent', async () => {
-    await fs.writeFile(join(dir, '.lsp.json'), JSON.stringify(rust))
-    const r = await resolveEntrypoints(dir, manifest({}))
-    expect(r.lspServers).toEqual(rust)
-  })
-})
-
-// ---- B: strict:false entry-as-manifest ---------------------------------------
 
 describe('marketplace entry-as-manifest synthesis (Part B)', () => {
   it('entryHasComponents detects inline skills / lspServers', () => {

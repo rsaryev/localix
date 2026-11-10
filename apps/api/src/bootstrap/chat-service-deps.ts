@@ -93,6 +93,7 @@ export interface ChatServicePhaseInput extends Pick<
   | 'scripts'
   | 'announceCapabilityChange'
   | 'externalAgents'
+  | 'pluginSessions'
 > {
   uiLocationCatalogService: ChatServiceDeps['uiLocationCatalog']
   /** The host's plugin service; chat shares it rather than building a second. */
@@ -132,6 +133,7 @@ export function createChatServicePhase({
   uiLocationCatalogService,
   providerConnectionsService,
   lspManager,
+  pluginSessions,
   mediaStore,
   capabilityRegistry,
   secretsStore,
@@ -195,6 +197,7 @@ export function createChatServicePhase({
     uiLocationCatalog: uiLocationCatalogService,
     providerConnectionsService,
     lspManager,
+    pluginSessions,
     mediaStore,
     // Mini app capabilities resolve PER USE: resolving once at boot would freeze hot
     // enable/disable in both directions. An absent provider degrades gracefully.

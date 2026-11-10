@@ -32,9 +32,9 @@ function memoryEnvFiles(): EnvFileStore & { readonly files: Map<string, string> 
   const files = new Map<string, string>()
   return {
     files,
-    path: async (kind) => `/session/${kind}-env.sh`,
+    path: async (sessionId, kind) => `/${sessionId}/${kind}-env.sh`,
     read: async (path) => files.get(path),
-    clear: async (kind) => void files.set(`/session/${kind}-env.sh`, ''),
+    clear: async (sessionId, kind) => void files.set(`/${sessionId}/${kind}-env.sh`, ''),
   }
 }
 

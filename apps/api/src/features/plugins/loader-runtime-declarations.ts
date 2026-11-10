@@ -51,14 +51,12 @@ export function appendPluginRuntimeDeclarations({
   config,
   subst,
   result,
-  summary,
   opts,
 }: {
   plugin: DiscoveredPlugin
   config: PluginConfigValues
   subst: (text: string) => string
   result: LoadedPlugins
-  summary: LoadedPlugins['loaded'][number]
   opts: {
     homeDir: string
     /** The session project directory → `${CLAUDE_PROJECT_DIR}`. */
@@ -74,12 +72,7 @@ export function appendPluginRuntimeDeclarations({
   // commands are shell strings, so `secret: true` keys are NEVER substituted
   // there (the cc-hooks side needs the key list to enforce that). Each resolved
   // config (file paths, an array of them, or an inline manifest object) is
-  // contributed independently; a broken file contributes nothing and its load
-  // failure is the plugin's error (Claude Code's Errors tab), the rest still loads.
-  for (const message of plugin.entrypoints.hookErrors ?? []) {
-    summary.error = summary.error ? `${summary.error}; ${message}` : message
-    opts.logger?.warn(`plugin "${plugin.manifest.name}": ${message}`)
-  }
+  // contributed independently.
   const sensitiveKeys = Object.entries(plugin.manifest.config ?? {}).flatMap(([key, option]) =>
     option.secret ? [key] : [],
   )

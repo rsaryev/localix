@@ -24,7 +24,9 @@ describe('plugin artifact diagnostics', () => {
 
     const malformedPlugin = await loadManifest(malformed, 'global', '')
     expect(malformedPlugin.manifest.name).toBe('malformed')
-    expect(malformedPlugin.error).toStartWith('Invalid .claude-plugin/plugin.json:')
+    expect(malformedPlugin.error).toStartWith(
+      '.claude-plugin/plugin.json could not be read as JSON',
+    )
     expect((await validatePluginFull(malformedPlugin)).errors).toContain(malformedPlugin.error!)
 
     const unreadable = join(root, 'unreadable')
@@ -32,7 +34,7 @@ describe('plugin artifact diagnostics', () => {
 
     const unreadablePlugin = await loadManifest(unreadable, 'global', '')
     expect(unreadablePlugin.manifest.name).toBe('unreadable')
-    expect(unreadablePlugin.error).toStartWith('Cannot read .claude-plugin/plugin.json:')
+    expect(unreadablePlugin.error).toContain('the file could not be read')
   })
 
   test('surfaces bad markdown while retaining valid sibling artifacts', async () => {
@@ -60,30 +62,14 @@ describe('plugin artifact diagnostics', () => {
       '---\ndescription: Missing body\n---\n',
     )
 
+    // Behaviour change (kit wins): a command file with an empty body loads, as Claude Code loads it.
     const plugin = await loadManifest(pluginDir, 'global', '')
     expect(plugin.error).toBeUndefined()
-    expect(plugin.provides.commands).toEqual(['good'])
-
-    const diagnostics = plugin.entrypoints.diagnostics ?? []
-    expect(
-      diagnostics.some(
-        (item) => item.kind === 'command' && item.path.endsWith('missing-command.md'),
-      ),
-    ).toBe(true)
-    expect(
-      diagnostics.some(
-        (item) => item.kind === 'command' && item.message.includes('no prompt body'),
-      ),
-    ).toBe(true)
-    expect(
-      diagnostics.some(
-        (item) => item.kind === 'agent' && item.message.includes('not a regular file'),
-      ),
-    ).toBe(true)
+    expect(plugin.provides.commands.sort()).toEqual(['empty', 'good'])
 
     const validation = await validatePluginFull(plugin)
-    expect(validation.errors.some((error) => error.includes('missing-command.md'))).toBe(true)
-    expect(validation.errors.some((error) => error.includes('empty.md'))).toBe(true)
-    expect(validation.errors.some((error) => error.includes('not-an-agent.md'))).toBe(true)
+    const found = [...validation.errors, ...validation.warnings]
+    expect(found.some((message) => message.includes('missing-command.md'))).toBe(true)
+    expect(found.some((message) => message.includes('not-an-agent.md'))).toBe(true)
   })
 })

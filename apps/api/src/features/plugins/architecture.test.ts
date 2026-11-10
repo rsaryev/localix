@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 
 import { pluginManifestSchema, type PluginManifest } from './contracts'
 import type { DiscoveredPlugin } from './discovery'
-import type { ResolvedEntrypoints } from './discovery-entrypoints'
+import type { ResolvedEntrypoints } from './kit'
 import { normalizeCcToolName } from './discovery'
 import { buildMcpRecords, buildPluginOptionEnv, pluginDataDir } from './mcp'
 import { pluginConfigOptionSchema } from './contracts-config'
@@ -25,7 +25,6 @@ function mkEntrypoints(over: Partial<ResolvedEntrypoints> = {}): ResolvedEntrypo
     skillDirs: [],
     mcpServers: {},
     commandFiles: [],
-    agentFiles: [],
     hookConfigs: [],
     lspServers: {},
     monitors: [],
@@ -50,12 +49,8 @@ function mkPlugin(
       mcpServers: [],
       commands: [],
     },
-    commands: (manifest.commands ?? []).filter(
-      (c): c is Exclude<typeof c, string> => typeof c === 'object',
-    ),
-    agents: (manifest.agents ?? []).filter(
-      (a): a is Exclude<typeof a, string> => typeof a === 'object',
-    ),
+    commands: [],
+    agents: [],
     ...over,
   }
 }

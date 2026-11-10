@@ -1,6 +1,5 @@
 import type { PluginAgent, PluginCommand, PluginManifest, PluginProvides } from './contracts'
-import type { PluginIssue } from '@localixai/claude-plugin'
-import type { ResolvedEntrypoints } from './discovery-entrypoints'
+import type { KitPlugin, PluginIssue, ResolvedEntrypoints } from './kit'
 
 export interface DiscoveredPlugin {
   manifest: PluginManifest
@@ -10,6 +9,8 @@ export interface DiscoveredPlugin {
    * and flag cross-spec compatibility issues. Undefined on read/parse failure.
    */
   rawManifest?: Record<string, unknown>
+  /** The plugin as the kit loaded it; absent when it did not load. */
+  kit?: KitPlugin
   /** Absolute plugin directory. */
   dir: string
   scope: 'global' | 'project'

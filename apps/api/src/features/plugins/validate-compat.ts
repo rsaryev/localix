@@ -1,6 +1,6 @@
 import type { DiscoveredPlugin } from './discovery'
 import type { PluginValidation } from './contracts'
-import { isUnsafeRelPath, isKebabCase } from '../ext/manifest-validate'
+import { isKebabCase } from '../ext/manifest-validate'
 import { lspServerConfigProblems, pluginLspNotes, summarizePluginLspServers } from '../lsp'
 
 /**
@@ -21,40 +21,6 @@ import { lspServerConfigProblems, pluginLspNotes, summarizePluginLspServers } fr
  */
 export function validateCompatibility(plugin: DiscoveredPlugin): PluginValidation {
   const warnings: string[] = []
-  const raw = plugin.rawManifest
-  if (!raw) return { errors: [], warnings }
-
-  // Declarative hooks (the manifest `hooks` field) are honored; an event with no Localix lifecycle
-  // point is reported where the manifest is loaded (`manifest-load.ts`), so a clean `hooks` key
-  // raises nothing here — `--strict` promotes warnings to errors.
-
-  // Path traversal + absolute path checks for string path fields (security + portability nudge).
-  for (const field of ['commands', 'agents', 'skills', 'mcpServers'] as const) {
-    const value = raw[field]
-    const entries = Array.isArray(value) ? value : typeof value === 'string' ? [value] : []
-    for (const entry of entries) {
-      if (typeof entry !== 'string') continue
-      if (entry.includes('..')) {
-        warnings.push(
-          `Manifest "${field}" path "${entry}" contains ".." — paths must stay inside the plugin directory and are dropped on load.`,
-        )
-      } else if (isUnsafeRelPath(entry)) {
-        // Absolute paths (Unix /path, Windows C:\path or \\server\share) are rejected by toAbsList.
-        warnings.push(
-          `Manifest "${field}" path "${entry}" is absolute — use a relative path starting with "./" (e.g. "./${entry.replace(/^[/\\]+/, '')}")`,
-        )
-      }
-    }
-  }
-
-  // `defaultDirs.<field>: false` advisory — only when it actually hides an existing
-  // default dir (the Claude Code REPLACE rule an imported plugin carries).
-  for (const field of plugin.entrypoints.ccReplacedDefaults ?? []) {
-    warnings.push(
-      `The manifest lists "${field}" paths with defaultDirs.${field} = false, so the default "${field}/" directory is NOT scanned (it exists in this plugin). List "./${field}" explicitly to keep both.`,
-    )
-  }
-
   // LSP servers: missing binaries (with an install hint) and built-in overlap.
   warnings.push(...pluginLspNotes(summarizePluginLspServers(plugin.entrypoints.lspServers)))
   // A server whose config breaks Claude Code's strict shape does not load (Errors tab there).

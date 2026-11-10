@@ -18,6 +18,7 @@ import {
   type MonitorSpawner,
 } from './monitor-host'
 import { monitorWaitsForSkill } from './monitor-skill-trigger'
+import type { PluginMonitor } from './contracts-monitors'
 
 /**
  * Claude Code starts an `on-skill-invoke:<skill>` monitor the first time that skill runs in the
@@ -97,12 +98,16 @@ function host(
 const DEPLOY_WATCH = {
   name: 'deploy-status',
   command: 'watch-deploy',
+  description: 'Deploy status',
   when: 'on-skill-invoke:deploy',
 }
 
 describe('an on-skill-invoke monitor', () => {
   test('waits for its skill, then starts once and reaches the chat that ran it', async () => {
-    await writePlugin('ops', [DEPLOY_WATCH, { name: 'tail', command: 'tail-log' }])
+    await writePlugin('ops', [
+      DEPLOY_WATCH,
+      { name: 'tail', command: 'tail-log', description: 'Log' },
+    ])
     const spawned: string[] = []
     let delivered!: (note: MonitorNotification) => void
     const firstLine = new Promise<MonitorNotification>((resolve) => (delivered = resolve))
@@ -219,7 +224,7 @@ describe('an on-skill-invoke monitor', () => {
 })
 
 describe('monitorWaitsForSkill', () => {
-  const loaded = (when: string) => ({
+  const loaded = (when: PluginMonitor['when']) => ({
     pluginName: 'ops',
     pluginRoot: '/p',
     dataDir: '/d',

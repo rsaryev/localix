@@ -50,6 +50,7 @@ import {
 import type { PermissionMode } from '../../../../contracts/permission-modes'
 import type { ScopedCcHooks } from '../run-contract'
 import { createMcpHookCaller } from './mcp-hook-caller'
+import { openChatPluginSession } from './chat-plugin-session'
 
 export interface BuildRunCcHooksInput {
   signal?: AbortSignal
@@ -135,9 +136,11 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
   // Claude Code's settings files add their own `hooks`, and may hold plugins' back
   // (`disableAllHooks`, `allowManagedHooksOnly`).
   const settingsInput = { homeDir: claudeCodeHome(), cwd: defaultCwd }
-  const fromSettings = settingsHooks(readSettingsFileLayers(settingsInput), {
-    projectTrusted: claudeCodeTrusts(settingsInput),
-  })
+  const layers = readSettingsFileLayers(settingsInput)
+  const trusted = claudeCodeTrusts(settingsInput)
+  const fromSettings = settingsHooks(layers, { projectTrusted: trusted })
+  const facts = { chatId: session.id, cwd: defaultCwd, trusted, layers }
+  openChatPluginSession(deps.pluginSessions, facts, transcript.path, input.permissionMode)
   const { registry: ccHookRegistry } = await buildCcHookRegistry({
     projectDir: defaultCwd,
     pluginHooks: loadedPlugins.ccHooks.filter((plugin) =>

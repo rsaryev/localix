@@ -162,11 +162,14 @@ describe('plugin commands and skills', () => {
     expect(rooted!.content).not.toContain('${CLAUDE_PLUGIN_ROOT}')
   })
 
-  it("confines a plugin manifest's skill paths to its own directory", async () => {
+  // Behaviour change (kit wins): a skill path leaving the plugin keeps the whole plugin from
+  // loading, where Localix used to drop that path and load the rest.
+  it('refuses a plugin whose manifest names a skill path outside its directory', async () => {
     const found = await discoverPlugins({ cwd: dir, projectId: 'p1', homeDir: home })
-    const e = found.find((x) => x.manifest.name === 'escaper')!
-    expect(e.provides.skills).toContain('safe') // in-dir skill kept
-    expect(e.provides.skills).not.toContain('pwned') // ../escape dropped
+    const e = found.find((x) => x.dir.endsWith('escaper'))!
+    expect(e.error).toBeDefined()
+    expect(e.provides.skills).toEqual([])
+    expect(e.manifestIssues?.some((issue) => issue.message.includes('path traversal'))).toBe(true)
   })
 
   it('validatePlugin flags a command with an empty prompt', async () => {

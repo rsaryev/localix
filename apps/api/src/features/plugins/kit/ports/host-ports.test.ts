@@ -15,7 +15,7 @@ function deps(bound: { mcp?: McpCallByName; models?: ModelBackend } = {}): HostP
     pluginRoot: (id) => join(dir(), 'plugins', id),
     pluginsRoot: () => join(dir(), '.localix/plugins'),
     scratchDir: () => join(dir(), 'scratch'),
-    envFilesDir: () => join(dir(), 'session'),
+    envFilesDir: (sessionId) => join(dir(), 'sessions', sessionId),
     managedDirectory: undefined,
     mcp: () => bound.mcp,
     models: () => bound.models,
@@ -68,7 +68,9 @@ describe('the ports Localix gives the plugin kit', () => {
 
   test('puts env files in the session folder and opens bundles per plugin root', async () => {
     const ports = createHostPorts(deps())
-    expect(await ports.envFiles.path('cwd', signal)).toBe(join(dir(), 'session/cwd-env.sh'))
+    expect(await ports.envFiles.path('s1', 'cwd', signal)).toBe(
+      join(dir(), 'sessions/s1/cwd-env.sh'),
+    )
     expect(
       await ports.bundles(join(dir(), 'p')).open({ kind: 'path', path: 'x.mcpb' }, '.mcpb-cache'),
     ).toBeUndefined()

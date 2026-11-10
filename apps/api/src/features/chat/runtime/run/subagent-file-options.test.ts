@@ -2,9 +2,14 @@ import { describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
-import { parseAgentFile } from '../../../plugins/discovery-cc-files'
+import { readFile } from 'node:fs/promises'
+import { readAgentText } from '../../../plugins/kit'
 import { buildLoadedAgent } from '../../../plugins/loader-contract'
 import { subagentRunOptions } from './subagent-file-options'
+
+/** An agent file as the kit reads it (`kit/catalog/agent-file.ts`). */
+const parseAgentFile = async (path: string) =>
+  readAgentText(await readFile(path, 'utf8'), path, 'user')?.agent
 
 // sub-agents.md, "Frontmatter reference": `omitClaudeMd` starts the subagent "without the user,
 // project, and local CLAUDE.md files"; `autoCompactWindow` lowers its auto-compact window (100000

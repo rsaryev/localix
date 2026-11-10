@@ -1,19 +1,22 @@
 import { describe, expect, test } from 'bun:test'
-import { writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
 import { skillPermissionRules } from '../chat/runtime/run/permission-gate-build'
 import { toolOverrideOptions } from '../chat/service/tool-override-options'
-import { parseCommandFile } from './discovery-cc-files'
+import { readPluginFolder } from './kit'
 
 const dir = tempDirPerTest('command-allowed-tools-')
 
 /** The rules a plugin command's run is pre-approved with, from its file on disk. */
 async function grantsOf(frontmatter: string) {
-  const file = join(dir(), 'commit.md')
-  writeFileSync(file, `---\n${frontmatter}\n---\n\nCommit the staged changes.`)
-  const command = await parseCommandFile(file)
+  mkdirSync(join(dir(), 'commands'), { recursive: true })
+  writeFileSync(
+    join(dir(), 'commands', 'commit.md'),
+    `---\n${frontmatter}\n---\n\nCommit the staged changes.`,
+  )
+  const [command] = (await readPluginFolder(dir())).commands
   return skillPermissionRules(toolOverrideOptions(command!)?.extraAllowedTools)
 }
 

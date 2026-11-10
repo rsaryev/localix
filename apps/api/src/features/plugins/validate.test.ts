@@ -167,19 +167,19 @@ describe('validatePlugin', () => {
     expect(warnings.some((w) => w.includes('${API_KEY}'))).toBe(false)
   })
 
-  it('warns on command with empty description + agent with empty description', async () => {
+  // Behaviour change (kit wins): a command without a description takes its body's first line, and
+  // an agent without one gets the kit's stand-in with the kit's warning.
+  it('fills a missing command description from its body, and warns on an agent without one', async () => {
     const plugin = await writePlugin(
       'nodesc2',
       'nodesc2',
       { commands: { run: { content: 'Go.' } } },
       { 'agents/worker.md': md('name: worker', 'Work.') },
     )
+    expect(plugin.commands[0]?.description).toBe('Go.')
     const { warnings } = validatePlugin(plugin)
-    expect(warnings.some((w) => w.includes('Command "run"') && w.includes('no description'))).toBe(
-      true,
-    )
     expect(
-      warnings.some((w) => w.includes('Agent role "worker"') && w.includes('no description')),
+      warnings.some((w) => w.includes('"description": it is missing') && w.includes('worker.md')),
     ).toBe(true)
   })
 
@@ -213,7 +213,7 @@ describe('validatePlugin', () => {
 
   it('warns that top-level monitors belong under experimental, and loads them', async () => {
     const plugin = await writePlugin('cc-monitors', 'cc-monitors', {
-      monitors: [{ name: 'watch', command: 'echo hi' }],
+      monitors: [{ name: 'watch', command: 'echo hi', description: 'Watch' }],
     })
     expect(plugin.entrypoints.monitors.map((monitor) => monitor.name)).toEqual(['watch'])
     const { warnings } = validatePlugin(plugin)
@@ -222,7 +222,7 @@ describe('validatePlugin', () => {
 
   it('is silent about experimental.monitors (honored, not ignored)', async () => {
     const plugin = await writePlugin('cc-exp-monitors', 'cc-exp-monitors', {
-      experimental: { monitors: [{ name: 'watch', command: 'echo hi' }] },
+      experimental: { monitors: [{ name: 'watch', command: 'echo hi', description: 'Watch' }] },
     })
     expect(plugin.entrypoints.monitors.map((monitor) => monitor.name)).toEqual(['watch'])
     const { warnings } = validatePlugin(plugin)
@@ -249,9 +249,14 @@ describe('validatePlugin — sensitive keys in MCP config', () => {
       userConfig,
       mcpServers: {
         a: { command: 'node', args: ['--key=${SECRET}'], env: { TOKEN: '${SECRET}' } },
-        b: { url: 'https://x.example', headers: { Authorization: 'Bearer ${user_config.SECRET}' } },
+        b: {
+          type: 'http',
+          url: 'https://x.example',
+          headers: { Authorization: 'Bearer ${user_config.SECRET}' },
+        },
       },
     })
+    expect(plugin.error).toBeUndefined()
     const { warnings } = validatePlugin(plugin)
     expect(warnings.some((w) => w.includes('SECRET') || w.includes('user_config'))).toBe(false)
   })
@@ -260,7 +265,11 @@ describe('validatePlugin — sensitive keys in MCP config', () => {
     const plugin = await writePlugin('mcp-helper', 'mcp-helper', {
       userConfig,
       mcpServers: {
-        api: { url: 'https://x.example', headersHelper: './auth.sh ${user_config.REGION}' },
+        api: {
+          type: 'http',
+          url: 'https://x.example',
+          headersHelper: './auth.sh ${user_config.REGION}',
+        },
       },
     })
     const { warnings } = validatePlugin(plugin)
@@ -349,10 +358,14 @@ describe('validateCompatibility', () => {
     expect(warnings.some((w) => w.includes('inline command'))).toBe(false)
   })
 
-  it('warns on path traversal in a string path field', async () => {
+  // Behaviour change (kit wins): a path field leaving the plugin keeps it from loading, where it
+  // used to load with a compatibility warning.
+  it('refuses a plugin whose path field leaves its folder', async () => {
     const plugin = await writePlugin('trav', 'trav', { skills: '../../evil' })
-    const { warnings } = validateCompatibility(plugin)
-    expect(warnings.some((w) => w.includes('..') && w.includes('"skills"'))).toBe(true)
+    expect(plugin.error).toBeDefined()
+    expect(plugin.manifestIssues?.some((issue) => issue.message.includes('path traversal'))).toBe(
+      true,
+    )
   })
 
   it('warns on a non-kebab-case name', async () => {

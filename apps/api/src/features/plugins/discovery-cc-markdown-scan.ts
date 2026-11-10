@@ -7,9 +7,15 @@ import { isPathWithin } from '../../lib/path-containment'
 import { readDirentsLimit } from '../../lib/read-dir-limit'
 import { skillFileErrorDetail } from '../agent-core/skill-file'
 import { toAbsList } from './discovery-paths'
-import type { PluginArtifactDiagnostic } from './discovery-entrypoints'
 
 /** A resolved Claude Code flat-file, paired with its namespaced (subdir-derived) name. */
+/** A Markdown file that could not be read, reported by the scan's caller. */
+export interface PluginArtifactDiagnostic {
+  kind: 'command' | 'agent'
+  path: string
+  message: string
+}
+
 export interface CollectedMarkdownFile {
   /** Absolute path to the `.md` file. */
   file: string

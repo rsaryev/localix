@@ -70,6 +70,7 @@ export function createRunnerLifecycle({ deps, state, wakeQueue }: RunnerLifecycl
     /** Reap all process-lifetime runtime state for a session being DELETED. */
     async forgetSession(userId: string, sessionId: string) {
       forgetSessionRuntimeState(state, sessionId)
+      deps.pluginSessions?.forget(sessionId)
       // What the person was told is waiting on them there must not outlive the session.
       deps.notifications?.attention.forgetSession(sessionId)
       await wakeQueue.forget(userId, sessionId)

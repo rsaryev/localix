@@ -2,9 +2,14 @@ import { describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
-import { parseAgentFile } from '../../plugins/discovery-cc-files'
+import { readFile } from 'node:fs/promises'
+import { readAgentText, readPluginFolder } from '../../plugins/kit'
 import { recordOf } from '../projection'
 import { agentFolders, scanAgents } from './scan'
+
+/** An agent file as the kit reads it (`kit/catalog/agent-file.ts`). */
+const parseAgentFile = async (path: string) =>
+  readAgentText(await readFile(path, 'utf8'), path, 'user')?.agent
 
 // sub-agents.md, `name`: "at most 256 characters ... can't contain `:`"; a file whose name starts
 // with `-`, contains `:` or is longer than 256 characters is skipped. No character class is
@@ -66,12 +71,15 @@ describe('agent names and fields as Claude Code reads them', () => {
     expect(loaded.map((a) => a.fullName)).toEqual(['fine_name-2'])
   })
 
-  test('a plugin agent whose name is not usable loads under its file name', async () => {
+  // Behaviour change (kit wins): a plugin agent keeps the `name` it declares, even one starting with
+  // `-`; one with none is named after its file.
+  test('a plugin agent loads under the name it declares, its file name without one', async () => {
     const dir = join(base(), 'plugin')
-    const bad = await file(join(dir, 'helper.md'), agent('-bad'))
-    const spaced = await file(join(dir, 'my agent.md'), '---\ndescription: x\n---\nBody')
-    expect((await parseAgentFile(bad))?.name).toBe('helper')
-    expect((await parseAgentFile(spaced))?.name).toBe('my agent')
+    const bad = await file(join(dir, 'agents', 'helper.md'), agent('-bad'))
+    const spaced = await file(join(dir, 'agents', 'my agent.md'), '---\ndescription: x\n---\nBody')
+    expect([bad, spaced]).toHaveLength(2)
+    const plugin = await readPluginFolder(dir)
+    expect(plugin.agents.map((a) => a.name).sort()).toEqual(['-bad', 'my agent'])
   })
 
   test('an agent has no when_to_use: its description is the description alone', async () => {

@@ -9,8 +9,7 @@ import { dirname, join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
 import { readSkillsFromRoot } from '../agent-core/skill-scan'
-import { resolveEntrypoints } from './discovery-entrypoints'
-import type { PluginManifest } from './contracts'
+import { loadManifest } from './manifest-load'
 
 const dir = tempDirPerTest('root-skill-')
 const skill = (name: string) => `---\nname: ${name}\ndescription: ${name} skill\n---\nDo ${name}.\n`
@@ -23,8 +22,9 @@ function plugin(files: Record<string, string>): string {
   return dir()
 }
 
-async function skillNames(root: string, manifest: Partial<PluginManifest> = {}) {
-  const { skillDirs } = await resolveEntrypoints(root, { name: 'p', ...manifest } as PluginManifest)
+async function skillNames(root: string, manifest?: Record<string, unknown>) {
+  if (manifest) plugin({ '.claude-plugin/plugin.json': JSON.stringify({ name: 'p', ...manifest }) })
+  const { skillDirs } = (await loadManifest(root, 'global', '')).entrypoints
   const skills = await Promise.all(
     skillDirs.map((skillDir) => readSkillsFromRoot(skillDir, 'global')),
   )

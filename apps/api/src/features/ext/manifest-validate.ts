@@ -68,24 +68,6 @@ export function isRequiredConfigMissing(
 }
 
 // ---------------------------------------------------------------------------
-// Path safety predicate
-// ---------------------------------------------------------------------------
-
-/**
- * Return true when `path` contains `..` (traversal) OR is an absolute path
- * (Unix `/`, Windows `C:\`, or UNC `\\`). Used as a pure predicate; the caller
- * composes the warning message with context.
- */
-export function isUnsafeRelPath(path: string): boolean {
-  return (
-    path.includes('..') ||
-    path.startsWith('/') ||
-    /^[A-Za-z]:\\/.test(path) ||
-    path.startsWith('\\\\')
-  )
-}
-
-// ---------------------------------------------------------------------------
 // Kebab-case name predicate
 // ---------------------------------------------------------------------------
 

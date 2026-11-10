@@ -1,12 +1,8 @@
 import { createHash } from 'node:crypto'
 import { promises as fs } from 'node:fs'
-import {
-  parseYamlFrontmatterBlock,
-  parseMarkdownFrontmatter,
-} from '../../agent-core/frontmatter-yaml'
-import { collectMarkdownFiles, parseAgentFile } from '../../plugins/discovery-cc-files'
+import { collectMarkdownFiles } from '../../plugins/discovery-cc-markdown-scan'
+import { readAgentText } from '../../plugins/kit'
 import { buildLoadedAgent, type LoadedPluginAgent } from '../../plugins/loader-contract'
-import { scalarField } from '../../agent-core/skill-frontmatter'
 
 /**
  * A Claude Code agent file as the catalog knows it (sub-agents.md). The format is Claude Code's:
@@ -37,37 +33,27 @@ export interface CatalogAgent extends LoadedPluginAgent {
 export const bodyHashOf = (text: string): string =>
   createHash('sha256').update(text).digest('hex').slice(0, 16)
 
-/**
- * One agent file, or null when it is documentation: Claude Code needs a `name` (at most 256
- * characters, no `:`, not starting with `-`) and a `description`.
- */
+/** One agent file, read by the kit, or null when it is documentation Claude Code would skip. */
 export async function readAgentFile(
   file: string,
   source: Exclude<AgentSource, 'plugin' | 'builtin'>,
   projectId: string,
 ): Promise<CatalogAgent | null> {
-  const raw = await fs.readFile(file, 'utf8').catch(() => '')
-  const { fields } = parseMarkdownFrontmatter(raw)
-  const name = scalarField(fields.name)?.trim()
-  if (!name || !scalarField(fields.description)?.trim() || name.startsWith('-')) return null
-  if (name.includes(':') || name.length > 256) return null
-  // The scan name is the bare file name, so a subfolder never prefixes the identity.
-  const parsed = await parseAgentFile(file, file.replace(/^.*[\\/]/, '').replace(/\.md$/i, ''))
-  if (!parsed) return null
-  const yaml = parseYamlFrontmatterBlock(raw)
-  const loaded = buildLoadedAgent(source, parsed, (text) => text)
-  const permissionMode = typeof yaml?.permissionMode === 'string' ? yaml.permissionMode : undefined
+  const read = readAgentText(await fs.readFile(file, 'utf8').catch(() => ''), file, source)
+  if (!read) return null
+  const { agent, permissionMode } = read
+  const loaded = buildLoadedAgent(source, agent, (text) => text)
   return {
     ...loaded,
-    fullName: parsed.name,
+    fullName: agent.name,
     source,
     projectId,
     path: file,
-    bodyHash: bodyHashOf(parsed.prompt),
+    bodyHash: bodyHashOf(agent.prompt),
     ...(permissionMode ? { permissionMode } : {}),
-    ...(parsed.hooks !== undefined ? { hooks: parsed.hooks } : {}),
-    ...(Array.isArray(parsed.mcpServers) && parsed.mcpServers.length
-      ? { mcpServers: parsed.mcpServers }
+    ...(agent.hooks !== undefined ? { hooks: agent.hooks } : {}),
+    ...(Array.isArray(agent.mcpServers) && agent.mcpServers.length
+      ? { mcpServers: agent.mcpServers }
       : {}),
   }
 }

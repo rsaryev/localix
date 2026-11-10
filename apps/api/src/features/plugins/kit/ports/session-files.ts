@@ -23,21 +23,21 @@ export function claudeTrust(deps: ClaudeTrustDeps): WorkspaceTrust {
   return { isFolderTrusted: async (key) => trustedFolders(deps.homeDir, deps.env())(key) }
 }
 
-/** The files of the session whose folder `dir` names, by the names Localix's Bash tool sources. */
-export function sessionEnvFiles(dir: () => string): EnvFileStore {
-  const fileOf = (kind: 'session' | 'cwd') => {
-    const files = ccSessionEnvFiles(dir())
+/** Each session's files, in the folder `dirOf` names for it, by the names Localix's Bash tool sources. */
+export function sessionEnvFiles(dirOf: (sessionId: string) => string): EnvFileStore {
+  const fileOf = (sessionId: string, kind: 'session' | 'cwd') => {
+    const files = ccSessionEnvFiles(dirOf(sessionId))
     return kind === 'session' ? files.sessionStart : files.cwd
   }
   return {
-    async path(kind) {
-      const file = fileOf(kind)
+    async path(sessionId, kind) {
+      const file = fileOf(sessionId, kind)
       await fs.mkdir(dirname(file), { recursive: true })
       return file
     },
     read: (path) => fs.readFile(path, 'utf8').catch(() => undefined),
-    async clear(kind) {
-      const file = fileOf(kind)
+    async clear(sessionId, kind) {
+      const file = fileOf(sessionId, kind)
       if (await fs.stat(file).catch(() => undefined)) await fs.writeFile(file, '')
     },
   }

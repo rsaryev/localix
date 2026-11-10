@@ -26,13 +26,6 @@ async function load() {
     config: {},
     subst: (text) => text.replaceAll('${CLAUDE_PLUGIN_ROOT}', '/root'),
     result,
-    summary: {
-      name: 'sec',
-      scope: 'global',
-      description: '',
-      skills: [],
-      mcpServers: [],
-    },
     opts: { homeDir: dir() },
   })
   return result

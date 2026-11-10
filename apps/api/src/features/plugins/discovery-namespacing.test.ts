@@ -3,13 +3,8 @@ import { promises as fs } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { collectMarkdownFiles, parseCommandFile, parseAgentFile } from './discovery-cc-files'
-import { discoverPlugins, loadManifest } from './discovery'
-import { validateCompatibility } from './validate-compat'
-import {
-  MANIFEST_DIR as CLAUDE_CODE_DIR,
-  MANIFEST_FILE as CLAUDE_CODE_PLUGIN_MANIFEST,
-} from '@localixai/claude-plugin'
+import { collectMarkdownFiles } from './discovery-cc-markdown-scan'
+import { loadManifest } from './discovery'
 
 /**
  * Nested-subdirectory namespacing for Claude Code `commands/`/`agents/` flat files:
@@ -60,100 +55,6 @@ describe('collectMarkdownFiles (recursive namespacing)', () => {
     expect(names).toContain('infra:scale')
     // Deterministic name-sorted order.
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)))
-  })
-})
-
-describe('parseCommandFile / parseAgentFile with a namespaced override', () => {
-  it('parses a command file under a namespaced name', async () => {
-    const plug = join(dir, 'nested-plugin')
-    const cmd = await parseCommandFile(join(plug, 'commands', 'infra', 'scale.md'), 'infra:scale')
-    expect(cmd?.name).toBe('infra:scale')
-    expect(cmd?.description).toBe('Scale infra')
-  })
-
-  it('a frontmatter agent name overrides the leaf but keeps the subdir prefix', async () => {
-    const plug = join(dir, 'nested-plugin')
-    const noName = await parseAgentFile(
-      join(plug, 'agents', 'sample', 'security.md'),
-      'sample:security',
-    )
-    expect(noName?.name).toBe('sample:security')
-    const withName = await parseAgentFile(join(plug, 'agents', 'sample', 'lead.md'), 'sample:lead')
-    expect(withName?.name).toBe('sample:sec-lead')
-  })
-})
-
-describe('Claude Code REPLACE semantics for manifest commands/agents', () => {
-  let ccPlug: string
-
-  beforeAll(async () => {
-    const plug = join(dir, 'replace-plugin')
-    await fs.mkdir(join(plug, 'commands'), { recursive: true })
-    await fs.mkdir(join(plug, 'agents'), { recursive: true })
-    await fs.mkdir(join(plug, 'extra-cmds'), { recursive: true })
-    await fs.mkdir(join(plug, 'extra-agents'), { recursive: true })
-    await fs.mkdir(join(plug, 'skills', 'default-skill'), { recursive: true })
-    await fs.mkdir(join(plug, 'more-skills', 'extra-skill'), { recursive: true })
-    const cmd = '---\ndescription: d\n---\nBody.'
-    const agent = '---\ndescription: d\n---\nYou review.'
-    await fs.writeFile(join(plug, 'commands', 'default-cmd.md'), cmd)
-    await fs.writeFile(join(plug, 'extra-cmds', 'alt-cmd.md'), cmd)
-    await fs.writeFile(join(plug, 'agents', 'default-agent.md'), agent)
-    await fs.writeFile(join(plug, 'extra-agents', 'alt-agent.md'), agent)
-    await fs.writeFile(join(plug, 'skills', 'default-skill', 'SKILL.md'), '# s')
-    await fs.writeFile(join(plug, 'more-skills', 'extra-skill', 'SKILL.md'), '# s')
-    await fs.mkdir(join(plug, CLAUDE_CODE_DIR), { recursive: true })
-    await fs.writeFile(
-      join(plug, CLAUDE_CODE_PLUGIN_MANIFEST),
-      JSON.stringify({
-        name: 'replace-plugin',
-        commands: ['./extra-cmds'],
-        agents: ['./extra-agents'],
-        skills: ['./more-skills'],
-      }),
-    )
-    ccPlug = plug
-  })
-
-  it('imported Claude Code plugin keeps REPLACE: listed commands/agents hide the default dirs', async () => {
-    const plugin = await loadManifest(ccPlug, 'global', '')
-    expect(plugin.provides.commands).toEqual(['alt-cmd'])
-    expect(plugin.provides.agents).toEqual(['replace-plugin:alt-agent'])
-    expect(plugin.manifest.origin?.format).toBe('claude-code')
-    expect(plugin.manifest.defaultDirs).toEqual({ commands: false, agents: false })
-    // Both hidden default dirs are recorded and surfaced as validate advisories.
-    expect(plugin.entrypoints.ccReplacedDefaults?.sort()).toEqual(['agents', 'commands'])
-    const { warnings } = validateCompatibility(plugin)
-    expect(warnings.join('\n')).toContain('defaultDirs.commands = false')
-  })
-
-  it('preserves the import origin across normal .localix discovery and rediscovery', async () => {
-    const home = join(dir, 'restart-home')
-    const installed = join(home, '.localix', 'plugins', 'replace-plugin')
-    await fs.mkdir(join(home, '.localix', 'plugins'), { recursive: true })
-    await fs.cp(ccPlug, installed, { recursive: true })
-
-    for (let pass = 0; pass < 2; pass++) {
-      const found = await discoverPlugins({ homeDir: home, cwd: null })
-      const plugin = found.find((candidate) => candidate.manifest.name === 'replace-plugin')
-      expect(plugin?.manifest.origin?.format).toBe('claude-code')
-      expect(plugin?.provides.commands).toEqual(['alt-cmd'])
-      expect(plugin?.provides.agents).toEqual(['replace-plugin:alt-agent'])
-    }
-  })
-
-  it('skills always ADD to the default skills dir', async () => {
-    const cc = await loadManifest(ccPlug, 'global', '')
-    expect(cc.provides.skills.sort()).toEqual(['default-skill', 'extra-skill'])
-  })
-
-  it('manifest-less plugins scan the default dirs', async () => {
-    const bare = join(dir, 'bare-cc-plugin')
-    await fs.mkdir(join(bare, 'commands'), { recursive: true })
-    await fs.writeFile(join(bare, 'commands', 'only.md'), '---\ndescription: d\n---\nBody.')
-    const plugin = await loadManifest(bare, 'global', '')
-    expect(plugin.provides.commands).toEqual(['only'])
-    expect(plugin.entrypoints.ccReplacedDefaults).toBeUndefined()
   })
 })
 

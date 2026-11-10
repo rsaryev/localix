@@ -108,6 +108,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       uiLocationCatalog: deps.uiLocationCatalog,
       logger: deps.logger,
       lspManager: deps.lspManager,
+      pluginSessions: deps.pluginSessions,
       spawnTerminalJob: deps.spawnTerminalJob,
       readTerminalJob: deps.readTerminalJob,
       terminalControl: deps.terminalControl,

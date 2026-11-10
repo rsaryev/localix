@@ -7,6 +7,7 @@ import { CORE_CONTEXT_MAX_TOKENS } from '../features/context-fabric/contribution
 import { capabilitiesChanged } from '../features/capabilities/revision'
 import { createMcpService } from '../features/mcp/service'
 import { createPluginService } from '../features/plugins/service'
+import { createProcessPluginHost, type ProcessPluginHost } from './plugin-host'
 import { createMiniAppService } from '../features/mini-apps/service'
 import { createAgentFoldersPort, createPluginAgentGroups } from './agent-catalog-sources'
 import { createAgentsService } from '../features/agents/service'
@@ -54,7 +55,7 @@ export interface DomainServicesPhaseInput
   hostRefs: MiniAppHostRefs
 }
 
-export interface DomainServicesPhase {
+export interface DomainServicesPhase extends ProcessPluginHost {
   projectsService: ReturnType<typeof createProjectsService>
   userService: ReturnType<typeof createUserService>
   resolveProjectCwd: (userId: string, projectId: string) => Promise<string | null>
@@ -186,6 +187,7 @@ export function createDomainServicesPhase({
   // Late-bound: chatService is created below, but a command's arg-options runner needs a
   // session's cwd. Hold a ref, assign it once chatService exists.
   const resolveSessionCwd = sessionCwdOrNull(hostRefs)
+  const kit = createProcessPluginHost()
   const pluginService = createPluginService({
     db,
     capabilityStores,
@@ -278,6 +280,7 @@ export function createDomainServicesPhase({
     resolveProjectCwd,
     mcpService,
     pluginService,
+    ...kit,
     miniAppService,
     agentsService,
     lspManager,

@@ -1,16 +1,25 @@
 import { describe, expect, test } from 'bun:test'
-import { parseTheme, type ClaudeTheme } from '@localixai/claude-plugin'
+import type { ClaudeTheme } from '@localixai/claude-plugin'
 
 import type { PluginCatalog, PluginCatalogEntry } from './catalog'
 import { CC_THEME_TOKEN_VARS, listThemesFromCatalog, toLocalixTheme } from './themes'
 
-const dracula = parseTheme('dracula', {
+/** A theme as the kit reads one: its colors already CSS. */
+const theme = (slug: string, fields: Partial<ClaudeTheme> = {}): ClaudeTheme => ({
+  slug,
+  name: slug,
+  base: 'dark',
+  overrides: {},
+  ...fields,
+})
+
+const dracula = theme('dracula', {
   name: 'Dracula',
   base: 'light-daltonized',
   overrides: {
     claude: '#bd93f9',
-    error: 'ansi:redBright',
-    success: 'rgb(80,250,123)',
+    error: '#ff0000',
+    success: '#50fa7b',
     planMode: '#38bdf8',
     purple_FOR_SUBAGENTS_ONLY: '#ff79c6',
     diffAdded: '#14532d',
@@ -21,7 +30,7 @@ const dracula = parseTheme('dracula', {
     selectionBg: '#44475a',
     inverseText: '#000000',
   },
-})!
+})
 
 describe('toLocalixTheme', () => {
   test('maps each Claude Code token onto the CSS properties that draw its role', () => {
@@ -88,8 +97,8 @@ describe('listThemesFromCatalog', () => {
 
   test("lists the themes of the scope's enabled plugins, its project plugins included", () => {
     const on = entry('vamp', 'global', [dracula])
-    const off = entry('off', 'global', [parseTheme('x', {})!])
-    const local = entry('local', 'project', [parseTheme('y', {})!])
+    const off = entry('off', 'global', [theme('x')])
+    const local = entry('local', 'project', [theme('y')])
     expect(listThemesFromCatalog(catalog([on, local], [on, off, local])).map((t) => t.id)).toEqual([
       'vamp:dracula',
       'local:y',

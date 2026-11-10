@@ -5,7 +5,7 @@ import type { InstallPlan, StoreComponent } from '@localixai/store'
 
 import { isRecord } from '../../lib/record'
 import { readSkillsFromRoot } from '../agent-core/skill-discovery'
-import { withEntry } from './claude-code-installs'
+import { entrySource } from './claude-code-installs'
 import type { DiscoveredPlugin } from './discovery-types'
 import type { MarketplaceEntry } from './marketplace'
 import { loadManifest } from './manifest-load'
@@ -113,7 +113,7 @@ export async function scanPluginContents(
   entry?: MarketplaceEntry,
 ): Promise<PluginContents> {
   const [plugin, bin] = await Promise.all([
-    loadManifest(dir, 'global', '', withEntry(id, entry)),
+    loadManifest(dir, 'global', '', entrySource(id, entry)),
     fs.readdir(join(dir, 'bin')).catch(() => [] as string[]),
   ])
   // A skill's description is in its own file; a folder that cannot be read just says less.

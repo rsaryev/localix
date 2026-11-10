@@ -33,10 +33,11 @@ describe('a plugin agent file', () => {
     ])
   })
 
-  test('whose frontmatter does not parse loads with every field ignored', async () => {
+  // Behaviour change (kit wins): the kit reads the `name` line of frontmatter YAML cannot parse.
+  test('whose frontmatter does not parse keeps the name the kit reads from it', async () => {
     const broken = '---\nname: [unclosed\ndescription: : :\n---\nYou review code.'
     const [agent] = await agentsOf({ 'agents/reviewer.md': broken })
-    expect(agent?.name).toBe('reviewer')
+    expect(agent?.name).toBe('[unclosed')
   })
 
   test('with a name longer than 256 characters is named after the file', async () => {

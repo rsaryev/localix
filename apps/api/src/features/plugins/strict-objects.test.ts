@@ -1,7 +1,7 @@
 /**
  * The manifest's strict objects (plugins/manifest-reference, "Unrecognized fields"): an unknown key
- * inside a `userConfig` option, a `channels` entry or a `monitors` entry is an error, and the
- * plugin doesn't load.
+ * inside a `userConfig` option or a `channels` entry is an error, and the plugin doesn't load; in a
+ * `monitors` entry it is an issue, and only that monitor is dropped.
  */
 import { describe, expect, test } from 'bun:test'
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -30,7 +30,9 @@ describe('an unknown key in a strict manifest object', () => {
     expect(plugin.error).toContain('channels')
   })
 
-  test('in a monitors entry keeps the plugin from loading', async () => {
+  // Behaviour change (kit wins): a bad monitors entry is an issue on a plugin that still loads,
+  // without that monitor; Localix used to refuse the whole plugin.
+  test('in a monitors entry is an issue, and that monitor is not run', async () => {
     const plugin = await load(
       {},
       {
@@ -39,7 +41,9 @@ describe('an unknown key in a strict manifest object', () => {
         ]),
       },
     )
-    expect(plugin.error).toContain('every')
+    expect(plugin.error).toBeUndefined()
+    expect(plugin.manifestIssues?.some((issue) => issue.message.includes('every'))).toBe(true)
+    expect(plugin.entrypoints.monitors).toEqual([])
   })
 
   test('a valid monitor still loads', async () => {

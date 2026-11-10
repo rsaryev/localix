@@ -4,12 +4,7 @@ import {
   resolveDeclaredReasoningEffort,
 } from '../../db/types'
 import { describe, it, expect } from 'bun:test'
-import {
-  checkApiVersion,
-  isRequiredConfigMissing,
-  isUnsafeRelPath,
-  isKebabCase,
-} from './manifest-validate'
+import { checkApiVersion, isRequiredConfigMissing, isKebabCase } from './manifest-validate'
 
 describe('checkApiVersion', () => {
   it('pushes a warning when apiVersion is undefined', () => {
@@ -81,34 +76,6 @@ describe('isRequiredConfigMissing', () => {
 
   it('returns false when required and value is boolean true', () => {
     expect(isRequiredConfigMissing({ required: true }, true)).toBe(false)
-  })
-})
-
-describe('isUnsafeRelPath', () => {
-  it('returns true for paths containing ".."', () => {
-    expect(isUnsafeRelPath('../x')).toBe(true)
-    expect(isUnsafeRelPath('foo/../bar')).toBe(true)
-    expect(isUnsafeRelPath('..')).toBe(true)
-  })
-
-  it('returns true for Unix absolute paths', () => {
-    expect(isUnsafeRelPath('/abs/path')).toBe(true)
-    expect(isUnsafeRelPath('/')).toBe(true)
-  })
-
-  it('returns true for Windows absolute paths (C:\\...)', () => {
-    expect(isUnsafeRelPath('C:\\Users\\foo')).toBe(true)
-    expect(isUnsafeRelPath('D:\\something')).toBe(true)
-  })
-
-  it('returns true for UNC paths (\\\\server\\share)', () => {
-    expect(isUnsafeRelPath('\\\\server\\share')).toBe(true)
-  })
-
-  it('returns false for safe relative paths', () => {
-    expect(isUnsafeRelPath('./ok/x')).toBe(false)
-    expect(isUnsafeRelPath('tools/index.mjs')).toBe(false)
-    expect(isUnsafeRelPath('skills')).toBe(false)
   })
 })
 

@@ -8,7 +8,7 @@ import { buildPluginCatalog } from './catalog'
 import { listFolderWorkflows } from './folder-workflows'
 import type { PluginCommand } from './contracts'
 import type { DiscoveredPlugin } from './discovery-types'
-import type { PluginWorkflow } from './discovery-cc-components'
+import type { PluginWorkflow } from './kit'
 
 /**
  * A plugin's workflows as its commands: `/<plugin>:<name>`, as Claude Code names them. The command

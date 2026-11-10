@@ -6,7 +6,7 @@ import { pathExists } from '../ext/fs-discovery'
 import { removeIfUnderRoot } from '../ext/install-tree'
 import type { DiscoveredPlugin } from './discovery-types'
 import { loadInPlacePlugin, setInPlaceRecord, type InPlaceRecord } from './in-place-installs'
-import { readManifestFiles } from './layout/read'
+import { MINI_APP_FILE } from './layout/read'
 import type { MarketplaceEntry } from './marketplace'
 import { entryPrunesSkills } from './marketplace-entry-manifest'
 import type { ResolvedMarketplaceInstall } from './marketplace-registry'
@@ -35,8 +35,7 @@ export async function inPlaceInstallFor(
   if (!resolved?.inPlace || scope !== 'global') return null
   const dir = resolve(resolved.dir)
   if (isPathWithin(resolve(installRoot), dir) || entryPrunesSkills(resolved.entry)) return null
-  const files = await readManifestFiles(dir)
-  if (files.miniApp) return null
+  if (await pathExists(join(dir, MINI_APP_FILE))) return null
   const record = { id: `${resolved.entry.name}@${resolved.marketplace}`, dir }
   const load = (projectId: string) => loadInPlacePlugin(record, resolved.entry, projectId)
   return { record, entry: resolved.entry, load }

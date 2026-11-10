@@ -38,24 +38,30 @@ describe('workspace trust, as Claude Code records it', () => {
   })
 })
 
-describe('the CLAUDE_ENV_FILE files of one session', () => {
-  test('names one file per kind, its folder made, the same path each call', async () => {
-    const files = sessionEnvFiles(() => join(dir(), 'session-1'))
-    const session = await files.path('session', signal)
+describe('the CLAUDE_ENV_FILE files of each session', () => {
+  const filesOf = () => sessionEnvFiles((sessionId) => join(dir(), sessionId))
+
+  test('names one file per session and kind, its folder made, the same path each call', async () => {
+    const files = filesOf()
+    const session = await files.path('session-1', 'session', signal)
     expect(session).toBe(join(dir(), 'session-1/session-start-env.sh'))
-    expect(await files.path('session', signal)).toBe(session)
-    expect(await files.path('cwd', signal)).toBe(join(dir(), 'session-1/cwd-env.sh'))
+    expect(await files.path('session-1', 'session', signal)).toBe(session)
+    expect(await files.path('session-1', 'cwd', signal)).toBe(join(dir(), 'session-1/cwd-env.sh'))
     expect(existsSync(join(dir(), 'session-1'))).toBe(true)
+    // Another session never gets this one's file.
+    expect(await files.path('session-2', 'session', signal)).toBe(
+      join(dir(), 'session-2/session-start-env.sh'),
+    )
   })
 
   test('reads what a hook wrote, and a cwd change empties only the cwd file', async () => {
-    const files = sessionEnvFiles(() => join(dir(), 'session-1'))
-    const session = await files.path('session', signal)
-    const cwd = await files.path('cwd', signal)
+    const files = filesOf()
+    const session = await files.path('session-1', 'session', signal)
+    const cwd = await files.path('session-1', 'cwd', signal)
     writeFileSync(session, 'export A=1\n')
     writeFileSync(cwd, 'export B=2\n')
     expect(await files.read(session, signal)).toBe('export A=1\n')
-    await files.clear('cwd', signal)
+    await files.clear('session-1', 'cwd', signal)
     expect(readFileSync(cwd, 'utf8')).toBe('')
     expect(await files.read(session, signal)).toBe('export A=1\n')
     expect(await files.read(join(dir(), 'none.sh'), signal)).toBeUndefined()

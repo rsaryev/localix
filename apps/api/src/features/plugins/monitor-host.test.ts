@@ -24,7 +24,6 @@ import {
   type MonitorSpawner,
 } from './monitor-host'
 import { defaultSpawn, substituteCommand } from './monitor-stream'
-import { parseMonitors } from './contracts-monitors'
 
 /** In-memory repo (mirrors channel-host.test). */
 function fakeRepo(rows: CapabilitySourceRecord[]): CapabilitySourceRepository {
@@ -148,24 +147,29 @@ beforeAll(async () => {
   })
   await writePlugin('partial-mon', {
     monitors: [
-      { name: 'first', command: 'echo first', when: 'always' },
-      { name: 'second', command: 'echo second', when: 'always' },
+      { name: 'first', description: 'd', command: 'echo first', when: 'always' },
+      { name: 'second', description: 'd', command: 'echo second', when: 'always' },
     ],
   })
   await writePlugin('skill-mon', {
-    monitors: [{ name: 'lazy', command: 'echo x', when: 'on-skill-invoke:review' }],
+    monitors: [
+      { name: 'lazy', description: 'd', command: 'echo x', when: 'on-skill-invoke:review' },
+    ],
   })
   await writePlugin(
     'file-mon',
     {},
     {
-      'monitors/monitors.json': JSON.stringify({ monitors: [{ name: 'f', command: 'echo f' }] }),
+      'monitors/monitors.json': JSON.stringify([
+        { name: 'f', description: 'd', command: 'echo f' },
+      ]),
     },
   )
   await writePlugin('subst-mon', {
     monitors: [
       {
         name: 's',
+        description: 'd',
         command: 'run ${CLAUDE_PLUGIN_ROOT} ${CLAUDE_PLUGIN_DATA} ${CLAUDE_PROJECT_DIR}',
       },
     ],
@@ -192,47 +196,10 @@ afterAll(async () => {
   await fs.rm(dir, { recursive: true, force: true })
 })
 
-describe('parseMonitors (schema + validation)', () => {
-  it('accepts a valid inline array and defaults when/description', () => {
-    const { monitors, errors } = parseMonitors([{ name: 'a', command: 'echo a' }])
-    expect(errors).toEqual([])
-    expect(monitors).toEqual([{ name: 'a', command: 'echo a', description: '', when: 'always' }])
-  })
-
-  it('accepts the { monitors: [...] } file wrapper', () => {
-    const { monitors } = parseMonitors({ monitors: [{ name: 'a', command: 'echo a' }] })
-    expect(monitors.map((m) => m.name)).toEqual(['a'])
-  })
-
-  it('drops duplicate names and reports them', () => {
-    const { monitors, errors } = parseMonitors([
-      { name: 'a', command: 'x' },
-      { name: 'a', command: 'y' },
-    ])
-    expect(monitors.map((m) => m.command)).toEqual(['x'])
-    expect(errors.some((e) => e.includes('duplicate'))).toBe(true)
-  })
-
-  it('drops invalid entries (empty command, bad when) and reports them', () => {
-    const { monitors, errors } = parseMonitors([
-      { name: 'a', command: '' },
-      { name: 'b', command: 'ok', when: 'sometimes' },
-      { name: 'c', command: 'ok' },
-    ])
-    expect(monitors.map((m) => m.name)).toEqual(['c'])
-    expect(errors.length).toBe(2)
-  })
-
-  it('accepts on-skill-invoke:<skill>', () => {
-    const { monitors } = parseMonitors([{ name: 'a', command: 'x', when: 'on-skill-invoke:foo' }])
-    expect(monitors[0].when).toBe('on-skill-invoke:foo')
-  })
-})
-
 describe('experimental.monitors', () => {
   it('loads the monitors Claude Code reads under experimental', async () => {
     await writePlugin('experimental-mon', {
-      experimental: { monitors: [{ name: 'm', command: 'echo m' }] },
+      experimental: { monitors: [{ name: 'm', command: 'echo m', description: 'm' }] },
     })
     const loaded = await loadEnabledPlugins({
       availability: on('experimental-mon'),

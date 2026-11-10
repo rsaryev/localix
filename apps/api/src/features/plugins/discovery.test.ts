@@ -9,7 +9,6 @@ import {
 
 import { resolve } from 'node:path'
 import { discoverPlugins, loadManifest, pluginInstallRoot } from './discovery'
-import { resolveEntrypoints } from './discovery-entrypoints'
 
 /** The path of a plugin's `.claude-plugin/plugin.json`, its folder created. */
 function manifestAt(pluginDir: string): string {
@@ -180,8 +179,9 @@ beforeAll(async () => {
   // An agent using newer CC tool names: AskUserQuestion→ask, EnterPlanMode unmapped.
   await fs.writeFile(
     join(cc, 'agents', 'plan-agent.md'),
-    '---\nname: plan-agent\ndescription: Plans tasks.\ntools: AskUserQuestion EnterPlanMode Read\n---\n\nYou plan.',
+    '---\nname: plan-agent\ndescription: Plans tasks.\ntools: AskUserQuestion, EnterPlanMode, Read\n---\n\nYou plan.',
   )
+  // The kit reads `tools` as Claude Code does, comma-separated: a space-separated list is one name.
   // An agent with `tools: *` (wildcard = all tools → undefined).
   await fs.writeFile(
     join(cc, 'agents', 'wildcard.md'),
@@ -799,16 +799,11 @@ describe('B2 — CC userConfig sensitive → secret promotion', () => {
   })
 })
 
-describe('resolveEntrypoints', () => {
+describe('the entrypoints of a loaded plugin', () => {
   it('applies the ./skills directory default when the manifest is silent', async () => {
     const pluginDir = join(dir, '.localix', 'plugins', 'weather')
     const plugin = await loadManifest(pluginDir, 'project', 'proj1')
-    const eps = await resolveEntrypoints(pluginDir, {
-      name: 'weather',
-      version: '0',
-      description: '',
-    })
-    expect(eps.skillDirs.some((p) => p.endsWith('/skills'))).toBe(true)
+    expect(plugin.entrypoints.skillDirs.some((p) => p.endsWith('/skills'))).toBe(true)
     // The manifest-declared MCP server is resolved through loadManifest.
     expect(Object.keys(plugin.entrypoints.mcpServers)).toContain('wx')
   })

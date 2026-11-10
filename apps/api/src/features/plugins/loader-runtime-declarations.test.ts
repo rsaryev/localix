@@ -26,7 +26,6 @@ function lspServersOf(
   config: Record<string, string>,
 ): Record<string, unknown> {
   const result = { ccHooks: [], lspServers: [], monitors: [], outputStyles: [] }
-  const summary = {}
   appendPluginRuntimeDeclarations({
     plugin: plugin(lspServers),
     config,
@@ -40,7 +39,6 @@ function lspServersOf(
       '/home/u',
     ),
     result: result as unknown as LoadedPlugins,
-    summary: summary as LoadedPlugins['loaded'][number],
     opts: { homeDir: '/home/u', cwd: '/repo' },
   })
   expect(result.lspServers).toHaveLength(1)

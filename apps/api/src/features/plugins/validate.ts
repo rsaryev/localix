@@ -7,6 +7,7 @@ import { validateCompatibility } from './validate-compat'
 import { validatePluginSkills } from './validate-skill'
 import { validatePluginConfig } from './validate-config'
 import { validatePluginCommands, validatePluginAgents } from './validate-fields'
+import { issueLine, validatePluginFolder } from './kit'
 
 /**
  * Core plugin/skill validation — the single source of truth surfaced as structured
@@ -46,18 +47,15 @@ export function validatePlugin(
 
   // Manifest parse / read failure → hard error.
   if (plugin.error) errors.push(plugin.error)
-  for (const diagnostic of plugin.entrypoints.diagnostics ?? []) {
-    errors.push(`${diagnostic.message}: ${diagnostic.path}`)
-  }
-  // What Claude Code's own rules found (`layout/compose.ts`).
-  const components = plugin.entrypoints.components
-  for (const found of [...(plugin.manifestIssues ?? []), ...(components?.issues ?? [])]) {
-    ;(found.severity === 'error' ? errors : warnings).push(`${found.message} (${found.path})`)
+  // What the kit found loading the plugin (`kit/catalog`).
+  for (const found of plugin.manifestIssues ?? []) {
+    const line = issueLine(found)
+    if (line !== plugin.error) (found.severity === 'error' ? errors : warnings).push(line)
   }
 
   // A default `agent` runs one of the plugin's own agents as the main thread; any other name
   // would leave the setting without effect.
-  const mainAgent = components?.settings.agent
+  const mainAgent = plugin.entrypoints.components?.settings.agent
   if (
     mainAgent &&
     !plugin.agents.some((agent) =>
@@ -97,20 +95,6 @@ export function validatePlugin(
   errors.push(...agentValidation.errors)
   warnings.push(...agentValidation.warnings)
 
-  // MCP server entries should look shaped (a launchable command or a remote url).
-  for (const [name, server] of Object.entries(plugin.entrypoints.mcpServers)) {
-    // command can be a string (shell form) or a non-empty string array (exec form).
-    const hasCommand =
-      (typeof server.command === 'string' && server.command.length > 0) ||
-      (Array.isArray(server.command) &&
-        server.command.length > 0 &&
-        typeof server.command[0] === 'string')
-    const hasUrl = typeof server.url === 'string' && server.url.length > 0
-    if (!hasCommand && !hasUrl) {
-      warnings.push(`MCP server "${name}" declares neither a command nor a url.`)
-    }
-  }
-
   validatePluginConfig(plugin, warnings, opts)
 
   // Cross-spec compatibility (Claude Code fields/shapes this host won't honor).
@@ -125,9 +109,9 @@ export function validatePlugin(
 }
 
 /**
- * The CANONICAL full validation of a plugin: the synchronous manifest / commands /
- * agents / compat checks ({@link validatePlugin}) merged with the async SKILL.md
- * checks ({@link validatePluginSkills}). This is the single source of truth reused by
+ * The CANONICAL full validation of a plugin: what the kit's `claude plugin validate` finds, the
+ * synchronous Localix checks ({@link validatePlugin}) and the async SKILL.md checks
+ * ({@link validatePluginSkills}). This is the single source of truth reused by
  * BOTH the plugin service (the Store / `/plugins`) and the dev CLI
  * (`scripts/validate-plugins.ts`) — callers must not re-implement the merge. `strict`
  * promotes the COMBINED warning set (manifest + skills) to errors.
@@ -136,12 +120,14 @@ export async function validatePluginFull(
   plugin: DiscoveredPlugin,
   opts?: { config?: PluginConfigValues; strict?: boolean },
 ): Promise<PluginValidation> {
-  const [manifest, skills] = await Promise.all([
+  const [manifest, skills, kit] = await Promise.all([
     Promise.resolve(validatePlugin(plugin, { config: opts?.config })),
     validatePluginSkills(plugin),
+    validatePluginFolder(plugin.dir),
   ])
-  const errors = [...manifest.errors, ...skills.errors]
-  const warnings = [...manifest.warnings, ...skills.warnings]
+  // The kit's validation repeats much of what its loading found: each message once.
+  const errors = [...new Set([...manifest.errors, ...skills.errors, ...kit.errors])]
+  const warnings = [...new Set([...manifest.warnings, ...skills.warnings, ...kit.warnings])]
   if (opts?.strict && warnings.length > 0) return { errors: [...errors, ...warnings], warnings: [] }
   return { errors, warnings }
 }

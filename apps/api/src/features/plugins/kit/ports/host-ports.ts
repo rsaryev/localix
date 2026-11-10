@@ -45,8 +45,8 @@ export interface HostPortsDeps {
   /** Where installs and their state files live: `~/.localix/plugins`. */
   pluginsRoot(): string
   scratchDir(): string
-  /** The folder of the session's `CLAUDE_ENV_FILE` files. */
-  envFilesDir(): string
+  /** The folder of one session's `CLAUDE_ENV_FILE` files. */
+  envFilesDir(sessionId: string): string
   /** `managedSettingsDir()`, or `undefined` for a machine with no managed settings. */
   readonly managedDirectory: string | undefined
   mcp(): McpCallByName | undefined
@@ -99,7 +99,7 @@ export function createHostPorts(deps: HostPortsDeps): LocalixKitPorts {
       clock: systemClock,
       folders: diskFolderScan({ managedDirectory: deps.managedDirectory }),
     },
-    envFiles: sessionEnvFiles(() => deps.envFilesDir()),
+    envFiles: sessionEnvFiles((sessionId) => deps.envFilesDir(sessionId)),
     trust: claudeTrust({ homeDir: deps.homeDir, env: () => deps.environment() }),
     paths: realPathResolver,
     ...(deps.classifier === undefined ? {} : { classifier: deps.classifier }),
