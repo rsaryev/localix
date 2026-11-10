@@ -22,14 +22,13 @@ import { resolveExecutionProfile } from '../../run-profile'
 import { buildRunToolRegistry } from '../runtime-tools'
 import type { SkillCommandPolicyRef } from '../skill-tool-ports'
 import { agentRunMcpServers } from '../agent-run-mcp'
-import { claudeCodeTrusts } from '../../../../plugins/kit'
+import { claudeCodeTrusts, settingsRemovesTool } from '../../../../plugins/kit'
 import { resolveRunDenyPatterns, resolveRunDisabledTools } from '../run-tool-policy'
 import { surfaceMiniApps, surfaceTools } from '../surface-tools'
 import { assembleRunTools } from '../tool-assembly'
 import { assertRunToolRequirements } from '../tool-requirements'
 import { listEnabledPluginWorkflows } from '../../../../plugins/workflow-commands'
 import { userHome } from '../../../../../lib/env'
-import { settingsRemoveTool } from '../../../../cc-settings/settings-permissions'
 import { loadClaudeCodePermissions } from '../claude-code-permissions'
 import type { RunInputs } from './context'
 import { currentAssistantMessageId, type RunFrame } from './frame'
@@ -194,7 +193,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     hiddenBySettings: claudeCodePermissionsPromise.then(
       ({ rules }) =>
         (tool) =>
-          settingsRemoveTool(rules, tool),
+          settingsRemovesTool(rules, tool),
     ),
   })
   // Answers "why can the model not see my tool" with the values the roster was built from.

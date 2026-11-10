@@ -15,6 +15,7 @@ export {
   createChatPluginSessions,
   type ChatPluginSessions,
   type ChatSessionFacts,
+  type ScopePlugin,
 } from './sessions'
 export {
   issueLine,
@@ -67,6 +68,14 @@ export {
   describeClaudeCodePermissions,
   type ClaudeCodePermissionsView,
 } from './settings/permissions-view'
+export {
+  settingsDeniesAgent,
+  settingsRemovesTool,
+  settingsRules,
+  settingsVerdict,
+  type SettingsRules,
+  type SettingsVerdict,
+} from './permissions'
 export {
   settingsAdditionalDirectories,
   settingsRuleEntries,

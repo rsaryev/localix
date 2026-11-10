@@ -134,7 +134,13 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
   // Claude Code's settings files add their own `hooks`, and may hold plugins' back
   // (`disableAllHooks`, `allowManagedHooksOnly`).
   const fromSettings = settingsHooks(settings)
-  const facts = { chatId: session.id, cwd: defaultCwd, settings }
+  const facts = {
+    chatId: session.id,
+    projectId: session.projectId,
+    cwd: defaultCwd,
+    settings,
+    plugins: loadedPlugins.kitPlugins,
+  }
   openChatPluginSession(deps.pluginSessions, facts, transcript.path, input.permissionMode)
   const { registry: ccHookRegistry } = await buildCcHookRegistry({
     projectDir: defaultCwd,

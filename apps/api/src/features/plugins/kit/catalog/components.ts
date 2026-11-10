@@ -1,26 +1,17 @@
 import { join } from 'node:path'
 import type { OutputStyle } from '@localixai/claude-plugin'
 import type { ClaudeTheme } from '@localixai/claude-plugin'
-import type { Plugin, PluginTextFile } from '@rsaryev/llx-plugin/loading'
-import {
-  readAgent,
-  readCommand,
-  readCommandEntry,
-  readOutputStyle,
-  themeColorToHex,
-  type AgentRecord,
-  type Command,
-  type PluginIssue,
-} from '@rsaryev/llx-plugin/format'
+import { readCatalog } from '@rsaryev/llx-plugin'
+import type { Plugin } from '@rsaryev/llx-plugin/loading'
+import { themeColorToHex, type AgentRecord, type Command } from '@rsaryev/llx-plugin/format'
 import { mapCcRuleList } from '../../../ext/cc-tool-names'
 import type { PluginAgent, PluginCommand } from '../../contracts'
 import { delegableAgentTypes, mapOptionalCcTools } from '../../discovery-cc-tools'
 import { preloadedSkills } from '../../agent-names'
 
 /**
- * A loaded plugin's Markdown and JSON components read by the kit's format readers, in the shapes
- * Localix's runtime takes. Kit gap: the kit reads them so in `host/catalog.ts` (`readCatalog`),
- * which it does not export; the path of a folder file is written the same way here.
+ * A loaded plugin's Markdown and JSON components as the kit's sessions read them (`readCatalog`,
+ * once per `Plugin`), in the shapes Localix's runtime takes.
  */
 
 /** A workflow script of the plugin, as the `Workflow` tool runs it. */
@@ -30,22 +21,6 @@ export interface PluginWorkflow {
   whenToUse?: string
   /** The script, absolute. */
   file: string
-}
-
-/** `db:migrate` is the file `db/migrate.md` below its folder. */
-const relativePath = (file: PluginTextFile) => `${file.name.split(':').join('/')}.md`
-const pathOf = (file: PluginTextFile, folder: string) =>
-  file.path ?? `${folder}/${relativePath(file)}`
-
-/** One per name, the first kept, as the kit keeps it. */
-function firstPerName<T>(items: readonly T[], nameOf: (item: T) => string): T[] {
-  const seen = new Set<string>()
-  return items.filter((item) => {
-    const name = nameOf(item)
-    if (seen.has(name)) return false
-    seen.add(name)
-    return true
-  })
 }
 
 function commandOf(command: Command): PluginCommand {
@@ -70,27 +45,7 @@ function commandOf(command: Command): PluginCommand {
 }
 
 export function readCommands(plugin: Plugin) {
-  const origin = { kind: 'plugin' as const, plugin: plugin.name }
-  const reads = plugin.commands.map((file) =>
-    file.entry === undefined
-      ? readCommand(pathOf(file, 'commands'), file.text, {
-          origin,
-          relativePath: relativePath(file),
-        })
-      : readCommandEntry(
-          file.name,
-          file.entry,
-          file.entry.source === undefined ? undefined : file.text,
-          {
-            origin,
-          },
-        ),
-  )
-  const commands = firstPerName(
-    reads.flatMap((read) => read.command ?? []),
-    (command) => command.name,
-  )
-  return { commands: commands.map(commandOf), issues: reads.flatMap((read) => read.issues) }
+  return { commands: readCatalog(plugin).commands.map(commandOf) }
 }
 
 /** The tools a rule list denies, without their patterns: an agent denies a tool whole. */
@@ -136,39 +91,17 @@ export function agentOf(record: AgentRecord, prefix: string): PluginAgent {
 }
 
 export function readAgents(plugin: Plugin) {
-  const reads = plugin.agents.map((file) =>
-    readAgent(file.text, {
-      path: pathOf(file, 'agents'),
-      source: 'plugin',
-      plugin: { name: plugin.name, relativePath: relativePath(file) },
-    }),
-  )
-  const records = firstPerName(
-    reads.flatMap((read) => (read.outcome === 'loaded' ? [read.agent] : [])),
-    (agent) => agent.scopedName,
-  )
-  return {
-    agents: records.map((record) => agentOf(record, plugin.name)),
-    issues: reads.flatMap((read): readonly PluginIssue[] => read.issues),
-  }
+  return { agents: readCatalog(plugin).agents.map((record) => agentOf(record, plugin.name)) }
 }
 
-function readStyles(plugin: Plugin) {
-  const reads = plugin.outputStyles.map((file) =>
-    readOutputStyle(pathOf(file, 'output-styles'), file.text, { plugin: plugin.name }),
-  )
-  const styles = reads.map(({ style }): OutputStyle => ({
+const stylesOf = (plugin: Plugin): OutputStyle[] =>
+  readCatalog(plugin).outputStyles.map((style) => ({
     name: style.name,
     description: style.description ?? '',
     keepCodingInstructions: style.keepCodingInstructions,
     forceForPlugin: style.forceForPlugin,
     prompt: style.instructions.trim(),
   }))
-  return {
-    outputStyles: firstPerName(styles, (style) => style.name),
-    issues: reads.flatMap((read) => read.issues),
-  }
-}
 
 const themesOf = (plugin: Plugin): ClaudeTheme[] =>
   plugin.themes.flatMap(({ theme }) =>
@@ -203,15 +136,13 @@ const workflowsOf = (plugin: Plugin, dir: string): PluginWorkflow[] =>
       : [],
   )
 
-/** Output styles, themes, workflows and the default settings, with what their reading found. */
+/** Output styles, themes, workflows and the default settings. */
 export function readComponents(plugin: Plugin, dir: string) {
-  const styles = readStyles(plugin)
   return {
-    outputStyles: styles.outputStyles,
+    outputStyles: stylesOf(plugin),
     themes: themesOf(plugin),
     workflows: workflowsOf(plugin, dir),
     settings: { ...plugin.settings },
-    issues: styles.issues,
   }
 }
 

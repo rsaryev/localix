@@ -203,6 +203,18 @@ describe('a plugin folder read by the kit', () => {
     expect(found.manifest.description).toBe('Go')
   })
 
+  test("an entry's inline hooks replace the hook file's for the same event", async () => {
+    const hook = (command: string) => [{ hooks: [{ type: 'command', command }] }]
+    const found = await read(
+      {
+        ...manifest({ name: 'fmt' }),
+        'hooks/hooks.json': JSON.stringify({ hooks: { Stop: hook('from-file') } }),
+      },
+      { entry: { name: 'fmt', source: './fmt', hooks: { Stop: hook('from-entry') } } },
+    )
+    expect(found.entrypoints.hookConfigs).toEqual([{ hooks: { Stop: hook('from-entry') } }])
+  })
+
   test('with no manifest and no entry, the given name names the plugin', async () => {
     const found = await read(
       { 'skills/a/SKILL.md': '---\ndescription: A\n---\nA' },

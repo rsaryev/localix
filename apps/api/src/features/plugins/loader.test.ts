@@ -202,6 +202,15 @@ describe('loadEnabledPlugins', () => {
     expect(loaded.mcpServers).toHaveLength(0)
     expect(loaded.loaded).toHaveLength(0)
   })
+
+  it("hands the plugin host every plugin of the scope, selected as the agent's rules say", async () => {
+    const loaded = await loadEnabledPlugins(opts(fakeRepo([]), allowing('demo')))
+    const selection = Object.fromEntries(loaded.kitPlugins.map((one) => [one.id, one.selected]))
+    expect(selection).toMatchObject({ demo: true, styler: false })
+    expect(loaded.kitPlugins.find((one) => one.id === 'demo')?.root).toBe(
+      join(dir, '.localix', 'plugins', 'demo'),
+    )
+  })
 })
 
 describe('skills paths', () => {

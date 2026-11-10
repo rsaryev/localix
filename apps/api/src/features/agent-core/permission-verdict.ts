@@ -32,9 +32,9 @@ export interface VerdictOptions {
    */
   ownPlanDir?: string
   /**
-   * A second, restrictive rule set from outside the agent's list — the deny and ask rules of a
-   * person's Claude Code settings (`chat/runtime/run/claude-code-permissions.ts`). Its deny refuses
-   * whatever the list says, its ask turns an allow into a question; it never loosens the list.
+   * A second rule set from outside the agent's list — the rules of a person's Claude Code settings
+   * (`chat/runtime/run/claude-code-permissions.ts`). Its deny refuses whatever the list says, its
+   * ask turns an allow into a question, and its allow answers only the list's catch-all question.
    */
   outerRules?: OuterRules
   /** Further working directories (Claude Code's `additionalDirectories`): not outside the workspace. */
@@ -42,7 +42,8 @@ export interface VerdictOptions {
 }
 
 export interface OuterRuleVerdict {
-  action: 'ask' | 'deny'
+  /** An allow only answers the list's catch-all question (`*`), as a skill's grant does. */
+  action: 'allow' | 'ask' | 'deny'
   /** The rule as written, and where: `Bash(rm *)` in `.claude/settings.json`. */
   rule: string
   message?: string
@@ -61,6 +62,8 @@ export type RuleDecision = ReturnType<typeof evaluate>
 /** The list's decision with the outer rule set's verdict applied (see `outerRules`). */
 function withOuterRules(decision: RuleDecision, outer: OuterRuleVerdict | undefined): RuleDecision {
   if (!outer || decision.action === 'deny') return decision
+  if (outer.action === 'allow' && !(decision.action === 'ask' && decision.rule?.pattern === '*'))
+    return decision
   const rule: PermissionRule = {
     action: outer.action,
     permission: 'claude-code',
@@ -72,7 +75,7 @@ function withOuterRules(decision: RuleDecision, outer: OuterRuleVerdict | undefi
     rule,
     ...(outer.message ? { message: outer.message } : {}),
   }
-  if (outer.action === 'deny') return replaced
+  if (outer.action !== 'ask') return replaced
   return decision.action === 'allow' ? replaced : decision
 }
 

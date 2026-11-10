@@ -14,14 +14,15 @@ import { createHostPorts, type HostPortsDeps, type LocalixKitPorts } from './por
  */
 export type PluginHostDeps = Omit<HostPortsDeps, 'pluginRoot' | 'projectDir'>
 
-/** A plugin the catalog loaded: its `name@marketplace` id, the folder it was read from, and its state. */
+/**
+ * A plugin the catalog loaded: its `name@marketplace` id and the folder it was read from. Whether
+ * it runs is each session's settings' to say (`./sessions`), never the host's.
+ */
 export interface LoadedKitPlugin {
   readonly id: string
   /** The folder `loadPlugin` read: `${CLAUDE_PLUGIN_ROOT}`, where its command hooks run. */
   readonly root: string
   readonly plugin: Plugin
-  /** What Localix's rules decided (`capability_rule`, trust): the host runs only these. */
-  readonly enabled: boolean
 }
 
 export interface LocalixPluginHost {
@@ -30,11 +31,23 @@ export interface LocalixPluginHost {
   readonly ports: LocalixKitPorts
   /** Replaces every plugin the host holds; open sessions read the new set at their next use. */
   setPlugins(plugins: readonly LoadedKitPlugin[]): void
+  /**
+   * The plugins one scope's catalog found (a project and folder): the host holds those of every
+   * scope a run has read, the first of an id kept, and changes only when a scope's set does.
+   */
+  feedScope(scope: string, plugins: readonly LoadedKitPlugin[]): void
   /** Every plugin the host was given, with whether it runs. */
   plugins(): readonly HostedPlugin[]
   /** One more each time the plugins change: a holder of the number sees the change. */
   readonly generation: number
 }
+
+const sameSet = (held: readonly LoadedKitPlugin[] | undefined, given: readonly LoadedKitPlugin[]) =>
+  held?.length === given.length &&
+  held.every(
+    (one, at) =>
+      one.id === given[at]?.id && one.root === given[at]?.root && one.plugin === given[at]?.plugin,
+  )
 
 export function createLocalixPluginHost(deps: PluginHostDeps): LocalixPluginHost {
   let roots = new Map<string, string>()
@@ -50,15 +63,25 @@ export function createLocalixPluginHost(deps: PluginHostDeps): LocalixPluginHost
     envFiles: ports.envFiles,
     // Localix builds the launch environment of every process (`childEnv`).
     launchOwnsEnvironment: true,
+    // A project's portable `.agents/skills` beside its `.claude` ones (`agent-core/skill-scan.ts`).
+    extraScopeFolders: ['.agents'],
   })
+  const scopes = new Map<string, readonly LoadedKitPlugin[]>()
+  const setPlugins = (plugins: readonly LoadedKitPlugin[]) => {
+    roots = new Map(plugins.map((entry) => [entry.id, entry.root]))
+    kit.update({ plugins: plugins.map(({ id, plugin }) => ({ id, plugin })) })
+  }
   return {
     kit,
     ports,
-    setPlugins(plugins) {
-      roots = new Map(plugins.map((entry) => [entry.id, entry.root]))
-      kit.update({
-        plugins: plugins.map(({ id, plugin, enabled }) => ({ id, plugin, enabled })),
-      })
+    setPlugins,
+    feedScope(scope, plugins) {
+      if (sameSet(scopes.get(scope), plugins)) return
+      scopes.set(scope, plugins)
+      const byId = new Map<string, LoadedKitPlugin>()
+      for (const entry of [...scopes.values()].flat())
+        if (!byId.has(entry.id)) byId.set(entry.id, entry)
+      setPlugins([...byId.values()])
     },
     plugins: () => kit.plugins,
     get generation() {

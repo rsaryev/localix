@@ -11,7 +11,6 @@
  * The permission gate is run-scoped rather than kept across turns: between two turns the user
  * may have granted an approval or changed mode, and a carried-over gate would still refuse.
  */
-import { claudeCodeHome } from '../../../../cc-settings/config-dir'
 import { agentModelSettingsFor } from '@localixai/agent'
 import { createGateRefusalTracker } from '@localixai/agent/agents'
 
@@ -79,7 +78,6 @@ export async function intakeRunTurn(
   if (accepted) await markPromptBlocked(deps, userId, accepted, false, now())
 
   const gateOptions = claudeCodeGateOptions(toolset.claudeCodePermissions, {
-    homeDir: claudeCodeHome(),
     mode: turn.policy.permission.mode,
   })
   // Claude Code's additional directories, and the memory folders this run keeps.

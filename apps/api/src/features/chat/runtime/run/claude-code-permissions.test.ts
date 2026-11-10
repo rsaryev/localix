@@ -38,7 +38,7 @@ async function gateFor(
     rules,
     toolsByName: new Map(tools.map((t) => [t.name, t])),
     root: cwd,
-    ...claudeCodeGateOptions(loaded, { homeDir: join(root, 'home'), mode }),
+    ...claudeCodeGateOptions(loaded, { mode }),
     requestConfirm: async (args) => {
       asked.push(args.toolName)
       return { approved: true }

@@ -5,6 +5,7 @@ import { mapCcRuleList } from '../ext/cc-tool-names'
 import { normalizeCcToolName } from './discovery'
 import type { PluginAgent, PluginMonitor } from './contracts'
 import type { PluginOutputStyle } from './output-styles'
+import type { ScopePlugin } from './kit'
 
 /**
  * WHAT A LOAD PRODUCES — the shape every consumer of `loadEnabledPlugins` reads.
@@ -129,6 +130,11 @@ export interface LoadedPlugins {
   }>
   /** Installed, waiting on a decision, deliberately NOT loaded — names only (`ext/trust.ts`). */
   awaitingConsent: string[]
+  /**
+   * Every plugin of the scope the kit loaded, with whether this agent may run it: what the run gives
+   * the plugin host and its chat's session settings (`plugins/kit/sessions.ts`).
+   */
+  kitPlugins: ScopePlugin[]
 }
 
 /**
@@ -149,6 +155,7 @@ export function emptyLoadedPlugins(): LoadedPlugins {
     mainAgent: null,
     loaded: [],
     awaitingConsent: [],
+    kitPlugins: [],
   }
 }
 

@@ -1,8 +1,13 @@
 import type { createAgentsService } from '../features/agents/service'
 import { claudeCodeHome } from '../features/cc-settings/config-dir'
-import { settingsPermissionRules } from '../features/cc-settings/settings-permissions'
-import { specifierMatchesValue } from '../features/cc-settings/permission-value-match'
-import { mainAgentSetting, readClaudeSettings, settingsRuleEntries } from '../features/plugins/kit'
+import {
+  mainAgentSetting,
+  readClaudeSettings,
+  settingsAdditionalDirectories,
+  settingsDeniesAgent,
+  settingsRuleEntries,
+  settingsRules,
+} from '../features/plugins/kit'
 
 type AgentsService = ReturnType<typeof createAgentsService>
 
@@ -14,16 +19,18 @@ interface DirectoryOptions {
 }
 
 /**
- * The names an `Agent(name)` deny rule of Claude Code's settings keeps from the model
+ * Whether an `Agent(name)` deny rule of Claude Code's settings keeps a subagent from the model
  * (permissions.md, "Agent"): `Agent` would refuse the call, so the directory does not offer it.
  */
-async function deniedAgentSpecifiers(homeDir: string, cwd: string | null): Promise<string[]> {
+async function agentDenial(homeDir: string, cwd: string | null) {
   const settings = await readClaudeSettings({ homeDir, cwd })
-  return settingsPermissionRules(settingsRuleEntries(settings)).flatMap((rule) =>
-    rule.effect === 'deny' && (rule.tool === 'Agent' || rule.tool === 'Task') && rule.specifier
-      ? [rule.specifier]
-      : [],
-  )
+  const additionalDirectories = settingsAdditionalDirectories(settings)
+  const rules = settingsRules(settingsRuleEntries(settings), {
+    cwd: cwd ?? homeDir,
+    homeDir,
+    additionalDirectories,
+  })
+  return (name: string) => settingsDeniesAgent(rules, name)
 }
 
 /** The prompt directory and the main-agent lookup. */
@@ -43,12 +50,9 @@ export function createAgentDirectoryPorts(
       try {
         const rows = await agentsService.directory(userId, projectId)
         const cwd = (await options.cwdOf?.(userId, projectId ?? null)) ?? null
-        const denied = await deniedAgentSpecifiers(homeDir, cwd)
-        if (denied.length === 0) return rows
+        const denied = await agentDenial(homeDir, cwd)
         const hidden = (name: string) =>
-          [name, name.slice(name.indexOf(':') + 1)].some((candidate) =>
-            denied.some((spec) => specifierMatchesValue(spec, candidate)),
-          )
+          [name, name.slice(name.indexOf(':') + 1)].some((candidate) => denied(candidate))
         return rows.map((row) => (hidden(row.name) ? { ...row, delegable: false } : row))
       } catch (error: unknown) {
         console.warn('[agents] directory unavailable for this run:', error)

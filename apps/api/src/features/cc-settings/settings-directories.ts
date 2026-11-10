@@ -6,7 +6,7 @@ import { isRecord } from '../../lib/record'
 /**
  * `/add-dir`: remember a further working directory the way Claude Code's "remember" choice does,
  * in the project's `.claude/settings.local.json` under `permissions.additionalDirectories`. The
- * permission gate reads that key from every settings layer (`settings-permissions.ts`), so the
+ * permission gate reads that key from every settings layer (`plugins/kit/settings/permissions.ts`), so the
  * folder is judged like the project from the next run on. The file is Claude Code's own, so
  * nothing else in it is touched, and one that is not valid JSON is left alone.
  */

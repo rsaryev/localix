@@ -220,8 +220,12 @@ describe('a Claude Code plugin in place', () => {
     expect(components.workflows.map((workflow) => workflow.name)).toEqual(['audit'])
     // The file wins over the manifest key; a key plugins cannot set is dropped.
     expect(components.settings).toEqual({ agent: 'reviewer' })
-    // Behaviour change (kit wins): the kit drops a key plugins cannot set without a note.
-    expect(components.issues).toEqual([])
+    // What the kit notes: the default folder the manifest replaces, the key plugins cannot set;
+    // its format readers found nothing in the styles, themes and workflows.
+    expect(plugin.manifestIssues?.map((found) => found.path)).toEqual([
+      'outputStyles',
+      'settings.json.theme',
+    ])
     expect(plugin.manifest.config?.bot_token?.secret).toBe(true)
     expect(notes.join('\n')).not.toMatch(/not used/)
     expect(validatePlugin(plugin).warnings.join('\n')).not.toMatch(/ignores it|Unrecognized/)

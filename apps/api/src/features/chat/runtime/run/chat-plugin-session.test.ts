@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
-import { tempDirPerTest } from '@localixai/testing'
+import { tempDirPerTest, writeTree } from '@localixai/testing'
 import {
   createChatPluginSessions,
   createLocalixPluginHost,
   readClaudeSettingsSync,
+  readPluginFolder,
 } from '../../../plugins/kit'
 import { openChatPluginSession } from './chat-plugin-session'
 
@@ -27,7 +28,9 @@ function sessions() {
 
 const facts = () => ({
   chatId: 's1',
+  projectId: 'PRJ-1',
   cwd: '/work/app',
+  plugins: [],
   settings: readClaudeSettingsSync({ homeDir: dir(), cwd: '/work/app', env: {}, managed: null }),
 })
 
@@ -44,5 +47,20 @@ describe("a run opens its chat's plugin session", () => {
 
   test('a runtime without the kit host opens nothing', () => {
     expect(() => openChatPluginSession(undefined, facts(), '/data/s1.jsonl', 'plan')).not.toThrow()
+  })
+
+  test("the run's catalog reaches the host, and its agent's selection decides what runs", async () => {
+    const chats = sessions()
+    const root = join(dir(), 'fmt')
+    writeTree(root, { '.claude-plugin/plugin.json': JSON.stringify({ name: 'fmt' }) })
+    const plugin = (await readPluginFolder(root)).kit!
+    const selection = (selected: boolean) => ({
+      ...facts(),
+      plugins: [{ id: 'fmt@acme', root, plugin, selected }],
+    })
+    openChatPluginSession(chats, selection(false), '/data/s1.jsonl', 'default')
+    expect(chats.get('s1')?.plugins).toEqual([{ id: 'fmt@acme', name: 'fmt', enabled: false }])
+    openChatPluginSession(chats, selection(true), '/data/s1.jsonl', 'default')
+    expect(chats.get('s1')?.plugins).toEqual([{ id: 'fmt@acme', name: 'fmt', enabled: true }])
   })
 })

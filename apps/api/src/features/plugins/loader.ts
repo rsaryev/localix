@@ -61,6 +61,18 @@ export async function loadEnabledPlugins(opts: {
     homeDir: opts.homeDir,
   })
   result.awaitingConsent = catalog.awaitingConsent
+  result.kitPlugins = catalog.all.flatMap(({ plugin, enabled }) =>
+    plugin.kit
+      ? [
+          {
+            id: pluginIdOf(plugin),
+            root: plugin.dir,
+            plugin: plugin.kit,
+            selected: enabled && !pluginLoadBlockReason(plugin),
+          },
+        ]
+      : [],
+  )
 
   for (const { plugin, state } of catalog.enabled) {
     const summary = {

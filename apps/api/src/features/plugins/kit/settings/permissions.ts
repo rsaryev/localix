@@ -11,8 +11,7 @@ import type { ClaudeSettings, SettingsFile } from './read'
  * Which `permissions` rules and `additionalDirectories` of the settings files are in force, as the
  * kit decides it (`permissionRuleLists`: `allowManagedPermissionRulesOnly`, a committed project's
  * allow rules and directories waiting for the folder's trust, one entry for a rule several files
- * write). Each rule stays as written: matching a call to it is Localix's permission engine
- * (`cc-settings/settings-permissions.ts`), which parses each once.
+ * write). Each rule stays as written; the kit reads and matches it (`../permissions.ts`).
  */
 export interface SettingsRuleEntry {
   effect: 'allow' | 'ask' | 'deny'
@@ -21,6 +20,8 @@ export interface SettingsRuleEntry {
   /** The settings file it came from (the highest of its scope), and where its `/path` anchors. */
   file: string
   sourceDir: string
+  /** The settings scope that wrote it, which decides where the kit anchors its `/path`. */
+  scope: PolicyScope
 }
 
 const EFFECTS = ['deny', 'ask', 'allow'] as const
@@ -51,7 +52,10 @@ export function settingsRuleEntries(settings: ClaudeSettings): SettingsRuleEntry
   return EFFECTS.flatMap((effect) =>
     lists[effect].flatMap((entry) => {
       const file = fileOf(settings, entry.scope)
-      return file ? [{ effect, raw: entry.rule, file: file.file, sourceDir: file.anchorDir }] : []
+      if (!file) return []
+      return [
+        { effect, raw: entry.rule, file: file.file, sourceDir: file.anchorDir, scope: entry.scope },
+      ]
     }),
   )
 }

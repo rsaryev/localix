@@ -18,6 +18,7 @@ test('each rule in force, with the file it came from and where its paths anchor'
     raw: 'Bash(rm *)',
     file: join(settings.root, 'project', '.claude', 'settings.json'),
     sourceDir: join(settings.root, 'project'),
+    scope: 'project',
   })
   expect(allow).toMatchObject({
     effect: 'allow',

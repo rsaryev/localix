@@ -45,9 +45,8 @@ function skillDirsOf(plugin: Plugin, dir: string): string[] {
 }
 
 /**
- * The packaged servers (`.mcpb` / `.dxt`) the manifest names, opened by Localix's MCPB reader.
- * Decision: the kit is given no bundle reader (its bundle settings are being reworked), so its
- * "needs an extractor" warning is dropped where the issues are gathered.
+ * The packaged servers (`.mcpb` / `.dxt`) the manifest names, opened by Localix's MCPB reader for
+ * the MCP runtime and the settings form (see the kit gap at `NOT_EXTRACTED`, `read-folder.ts`).
  */
 async function bundlesOf(plugin: Plugin, dir: string): Promise<McpBundles | undefined> {
   const field = plugin.manifest?.mcpServers
