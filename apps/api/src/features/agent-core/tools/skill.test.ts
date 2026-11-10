@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { classifySkillCall, createSkillTool } from './skill'
 import { skillToolInputSchema } from './skill-call'
+import { testSkillPorts } from '../testing/skill-ports'
 
 const run = (tool: ReturnType<typeof createSkillTool>, input: Record<string, unknown>) =>
   tool.execute('t', input as never)
@@ -56,33 +57,6 @@ describe('skill tool — call classification', () => {
   })
 })
 
-describe('skill tool — project round-trip', () => {
-  let dir: string
-  const NAME = 'zz-skilltool-fixture'
-  beforeAll(async () => {
-    dir = await mkdtemp(join(tmpdir(), 'skill-tool-'))
-  })
-  afterAll(async () => {
-    await rm(dir, { recursive: true, force: true })
-  })
-
-  test('save → get a project skill', async () => {
-    const tool = createSkillTool(dir)
-
-    const saved = await run(tool, {
-      action: 'save',
-      name: NAME,
-      description: 'Fixture skill',
-      content: 'STEP ONE marker',
-    })
-    expect(saved.isError).toBeUndefined()
-    expect(saved.content).toContain('Skill saved')
-    expect(saved.content).toContain('(project)')
-
-    expect((await run(tool, { action: 'get', name: NAME })).content).toContain('STEP ONE marker')
-  })
-})
-
 // The tool wrote SKILL.md and announced nothing: the capability revision never moved, so the
 // Skills list and the next run's "# Available skills" stayed stale until an unrelated toggle.
 describe('skill tool — a save announces the capability change', () => {
@@ -97,7 +71,7 @@ describe('skill tool — a save announces the capability change', () => {
 
   test('a save announces once; reads and refusals do not', async () => {
     let announced = 0
-    const tool = createSkillTool(dir, [], {}, '', () => announced++)
+    const tool = createSkillTool(dir, {}, '', () => announced++)
 
     await run(tool, { action: 'save', name: NAME, description: 'd', content: 'c' })
     expect(announced).toBe(1)
@@ -107,7 +81,7 @@ describe('skill tool — a save announces the capability change', () => {
   })
 
   test('a throwing announcement never turns a written skill into an error', async () => {
-    const tool = createSkillTool(dir, [], {}, '', () => {
+    const tool = createSkillTool(dir, {}, '', () => {
       throw new Error('poke failed')
     })
     const saved = await run(tool, { action: 'save', name: NAME, description: 'd', content: 'c' })
@@ -131,7 +105,7 @@ describe('skill tool — filesystem', () => {
   })
 
   describe('skill tool (filesystem)', () => {
-    test('save writes a SKILL.md file and get retrieves its content', async () => {
+    test('save writes a SKILL.md file into the project', async () => {
       const tool = createSkillTool(dir)
       const saved = await tool.execute('t1', {
         action: 'save',
@@ -141,20 +115,9 @@ describe('skill tool — filesystem', () => {
         scope: 'project',
       })
       expect(saved.content).toContain('Skill saved: "deploy-staging"')
-
-      // The file exists on disk.
       const onDisk = await fs.readFile(join(dir, '.claude/skills/deploy-staging/SKILL.md'), 'utf8')
       expect(onDisk).toContain('name: deploy-staging')
       expect(onDisk).toContain('Run the deploy script.')
-
-      const got = await tool.execute('t2', { action: 'get', name: 'deploy-staging' })
-      expect(got.content).toContain('# Skill: deploy-staging')
-      expect(got.content).toContain(
-        `Resolve relative references from: ${JSON.stringify(
-          join(dir, '.claude/skills/deploy-staging'),
-        )}`,
-      )
-      expect(got.content).toEndWith('Run the deploy script.')
     })
 
     test('get returns not found for a missing skill', async () => {
@@ -169,15 +132,12 @@ describe('skill tool — filesystem', () => {
         name: `plugin-skill-${String(i).padStart(2, '0')}`,
         description: 'd',
         content: 'c',
-        scope: 'global' as const,
         path: '/x/SKILL.md',
         dir: '/x',
       }))
-      const tool = createSkillTool(dir, extras)
+      const tool = createSkillTool(dir, {}, '', undefined, testSkillPorts(extras))
       const got = await tool.execute('t1', { action: 'get', name: 'nope' })
       expect(got.isError).toBe(true)
-      // Host home dir may contribute real global skills, so assert the cap shape,
-      // not exact boundary names.
       const text = String(got.content)
       expect(text).toContain('Available skills:')
       expect(text).toContain('plugin-skill-00')
@@ -185,14 +145,13 @@ describe('skill tool — filesystem', () => {
       expect(match).not.toBeNull()
       const shown = match![1].split(', ')
       expect(shown.length).toBe(30)
-      expect(shown.length + Number(match![2])).toBeGreaterThanOrEqual(35)
+      expect(shown.length + Number(match![2])).toBe(35)
     })
   })
 
   describe('skill tool (plugin-contributed extras)', () => {
     const pluginSkill = {
       name: 'frontend-design',
-      description: 'Design guidance',
       content: 'Follow the design system.',
       scope: 'global' as const,
       path: '/plugins/frontend-design/SKILL.md',
@@ -200,7 +159,7 @@ describe('skill tool — filesystem', () => {
     }
 
     test('get resolves a plugin-contributed skill', async () => {
-      const tool = createSkillTool(dir, [pluginSkill])
+      const tool = createSkillTool(dir, {}, '', undefined, testSkillPorts([pluginSkill]))
       const got = await tool.execute('t1', { action: 'get', name: 'frontend-design' })
       expect(got.isError).toBeUndefined()
       expect(got.content).toContain('Resolve relative references from: "/plugins/frontend-design"')
@@ -208,7 +167,13 @@ describe('skill tool — filesystem', () => {
     })
 
     test('off hides a skill from get and blocks a save over it by a guessed name', async () => {
-      const tool = createSkillTool(dir, [pluginSkill], { 'frontend-design': 'off' })
+      const tool = createSkillTool(
+        dir,
+        { 'frontend-design': 'off' },
+        '',
+        undefined,
+        testSkillPorts([pluginSkill]),
+      )
 
       const saved = await tool.execute('t1-save', {
         action: 'save',
@@ -232,25 +197,12 @@ describe('skill tool — filesystem', () => {
           throw new Error('SKILL.md disappeared')
         },
       })
-      const tool = createSkillTool(dir, [stale])
+      const tool = createSkillTool(dir, {}, '', undefined, testSkillPorts([stale]))
 
       const got = await tool.execute('t1', { action: 'get', name: 'frontend-design' })
       expect(got.isError).toBe(true)
       expect(got.content).toContain('could not be loaded')
       expect(got.content).toContain('disappeared')
-    })
-
-    test('a filesystem skill wins over a plugin skill with the same name', async () => {
-      const tool = createSkillTool(dir, [pluginSkill])
-      await tool.execute('t1', {
-        action: 'save',
-        name: 'frontend-design',
-        description: 'Local',
-        content: 'Local override.',
-        scope: 'project',
-      })
-      const got = await tool.execute('t2', { action: 'get', name: 'frontend-design' })
-      expect(got.content).toEndWith('Local override.')
     })
   })
 
@@ -279,10 +231,16 @@ describe('skill tool — filesystem', () => {
         ticks.push({ name, scope })
       })
       try {
-        const tool = createSkillTool(dir)
+        const tool = createSkillTool(
+          dir,
+          {},
+          '',
+          undefined,
+          testSkillPorts([{ name: 'tracked', content: 'do it' }]),
+        )
         await tool.execute('t1', {
           action: 'save',
-          name: 'tracked',
+          name: 'saved',
           description: 'T',
           content: 'do it',
           scope: 'project',
@@ -306,14 +264,13 @@ describe('skill tool — filesystem', () => {
         throw new Error('db down')
       })
       try {
-        const tool = createSkillTool(dir)
-        await tool.execute('t1', {
-          action: 'save',
-          name: 's',
-          description: 'S',
-          content: 'body',
-          scope: 'project',
-        })
+        const tool = createSkillTool(
+          dir,
+          {},
+          '',
+          undefined,
+          testSkillPorts([{ name: 's', content: 'body' }]),
+        )
         const got = await tool.execute('t2', { action: 'get', name: 's' })
         expect(got.content).toEndWith('body')
         expect(got.isError).toBeUndefined()
@@ -331,20 +288,20 @@ describe('skill tool — filesystem', () => {
  * `ToolOutput` all cap at 64 KB with a numbered marker.
  */
 describe('skill get is bounded and says so', () => {
-  let dir = ''
   const NAME = 'huge-skill'
-  beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), 'localix-skill-cap-'))
-  })
-  afterEach(async () => {
-    if (dir) await rm(dir, { recursive: true, force: true })
-  })
+  const sized = (content: string) =>
+    createSkillTool(
+      null,
+      {},
+      '',
+      undefined,
+      testSkillPorts([{ name: NAME, content, path: '/s/SKILL.md', dir: '/s' }]),
+    )
 
   test('a long body is capped, marked with real counts, and points at the file', async () => {
-    const tool = createSkillTool(dir)
     // The instructions lead, so the HEAD must survive and the tail must be what is cut.
     const body = `FIRST LINE MARKER\n${Array.from({ length: 20_000 }, (_, i) => `line ${i}`).join('\n')}\nLAST LINE MARKER`
-    await run(tool, { action: 'save', name: NAME, description: 'big', content: body })
+    const tool = sized(body)
 
     const got = await run(tool, { action: 'get', name: NAME })
     const text = String(got.content)
@@ -360,8 +317,7 @@ describe('skill get is bounded and says so', () => {
   })
 
   test('a short body carries no marker at all', async () => {
-    const tool = createSkillTool(dir)
-    await run(tool, { action: 'save', name: NAME, description: 'small', content: 'STEP ONE' })
+    const tool = sized('STEP ONE')
     const text = String((await run(tool, { action: 'get', name: NAME })).content)
     expect(text).toContain('STEP ONE')
     expect(text).not.toContain('truncated')

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { DiscoveredSkill } from '../skill-discovery'
+import { testSkillPorts } from '../testing/skill-ports'
 import { createSkillTool, type SkillForkRequest, type SkillRun } from './skill'
 
 // skills.md, "Run skills in a subagent": with `context: fork` "Claude Code starts a new subagent of
@@ -8,12 +8,10 @@ import { createSkillTool, type SkillForkRequest, type SkillRun } from './skill'
 // (`plugins/kit/skills.ts`); the tool hands them to the subagent port as they come.
 const skill = {
   name: 'zz-fork-research',
-  description: 'Research a topic',
   content: 'Research $ARGUMENTS thoroughly.',
-  scope: 'project',
   path: '/p/.claude/skills/zz-fork-research/SKILL.md',
   dir: '/p/.claude/skills/zz-fork-research',
-} as DiscoveredSkill
+}
 
 describe('a context: fork skill the agent loads', () => {
   test('runs in the subagent the expansion names, with its task, model and effort', async () => {
@@ -23,10 +21,16 @@ describe('a context: fork skill the agent loads', () => {
       text: 'Research auth thoroughly.',
       fork: { agent: 'Explore', wait: true, model: 'haiku', effort: 'low' },
     }
-    const tool = createSkillTool(null, [skill], {}, '', undefined, {
-      invokeSkill: async () => run,
-      forkSkill: async (_id, request) => (asked.push(request), { content: 'the report' }),
-    })
+    const tool = createSkillTool(
+      null,
+      {},
+      '',
+      undefined,
+      testSkillPorts([skill], {
+        invokeSkill: async () => run,
+        forkSkill: async (_id, request) => (asked.push(request), { content: 'the report' }),
+      }),
+    )
     const got = await tool.execute('call-1', {
       action: 'get',
       name: 'zz-fork-research',
@@ -53,13 +57,19 @@ describe('a skill named in the person’s message', () => {
   test('the host is told the person named it, and its refusal is the result', async () => {
     const named: boolean[] = []
     const tool = (userNamed: boolean) =>
-      createSkillTool(null, [skill], {}, '', undefined, {
-        userNamed: () => userNamed,
-        invokeSkill: async (_skill, request): Promise<SkillRun> => {
-          named.push(request.named)
-          return request.named ? { ok: true, text: 'go' } : { ok: false, message: 'user only' }
-        },
-      })
+      createSkillTool(
+        null,
+        {},
+        '',
+        undefined,
+        testSkillPorts([skill], {
+          userNamed: () => userNamed,
+          invokeSkill: async (_skill, request): Promise<SkillRun> => {
+            named.push(request.named)
+            return request.named ? { ok: true, text: 'go' } : { ok: false, message: 'user only' }
+          },
+        }),
+      )
     const get = { action: 'get', name: 'zz-fork-research' } as const
     expect((await tool(true).execute('c', get)).isError).toBeUndefined()
     const refused = await tool(false).execute('c', get)

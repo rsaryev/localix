@@ -158,8 +158,8 @@ Curator pins protect automatic passes, but manual archive remains available.
 
 - Personal and project skills are merged, personal first, as in Claude Code: a personal skill
   shadows a project skill of the same name.
-- Personal `.agents/skills` is not read. Skills in a folder below the working directory are not read
-  either; start the session there to use them.
+- Personal `.agents/skills` is not read. Skills in a folder below the working directory load once
+  the session works with a file there, as in Claude Code.
 - Skills read from `.agents/skills`, `.claude/commands` and a parent folder's `.claude/skills` are
   read sources: the Store writes, deletes and archives only the open scope's `.claude/skills`.
 - Project and plugin symlinks cannot extend discovery outside their safety root; personal skill
@@ -194,9 +194,9 @@ Curator pins protect automatic passes, but manual archive remains available.
 - [Skill scanning and safety bounds](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/skill-scan.ts)
 - [One-shot skill command expansion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/skill-commands.ts)
 - [Session pin resolution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/skills.ts)
-- [Runtime prompt injection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/prompt-skills.ts)
-- [Keyword triggers](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/prompt-skill-triggers.ts)
-- [Pinned bodies](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/prompt-pinned-skills.ts)
+- [Runtime listing, pins and keyword triggers](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run-skills.ts)
+- [Keyword matching](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/prompt-skill-triggers.ts)
+- [The chat's skills, as the plugin kit reads them](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/skill-catalog.ts)
 - [Model skill access](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/skill.ts)
 - [Skill manager operations](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/skill-ops.ts)
 - [Curator scheduling and policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/skills-curator/service.ts)

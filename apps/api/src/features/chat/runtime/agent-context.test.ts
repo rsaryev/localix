@@ -11,6 +11,7 @@ import { createSessionSnapshotCache } from './session-snapshot'
 import type { FrozenSessionContext } from './frozen-session-context'
 import { prepareRunContext, type PromptContextDeps } from './prompt-context'
 import { claudeProjectKey } from '../../memory/auto-memory'
+import { skillTestSession } from '../../plugins/kit/testing'
 
 test('per-agent skills and the repository memory reach ordinary and delegated turns without leaking', async () => {
   const cwd = await realpath(await mkdtemp(join(tmpdir(), 'localix-agent-context-')))
@@ -37,14 +38,16 @@ test('per-agent skills and the repository memory reach ordinary and delegated tu
         return providerOn ? memoryProvider : null
       },
     }
-    const skills = ['shared', 'alpha', 'beta', 'blocked'].map((name) => ({
-      name,
-      description: '',
-      content: `instructions for ${name}`,
-      scope: 'project',
-      path: '',
-      dir: cwd,
-    }))
+    await mkdir(join(cwd, '.git'), { recursive: true })
+    await writeFile(join(cwd, '.git', 'HEAD'), 'ref: refs/heads/main\n')
+    for (const name of ['shared', 'alpha', 'beta', 'blocked']) {
+      await mkdir(join(cwd, '.claude', 'skills', name), { recursive: true })
+      await writeFile(
+        join(cwd, '.claude', 'skills', name, 'SKILL.md'),
+        `---\ndescription: ${name}\n---\ninstructions for ${name}\n`,
+      )
+    }
+    const kit = await skillTestSession(home, cwd)
     const deps = {
       claudeHome: home,
       projectsRepo: { getProject: async () => ({ workingDir: cwd, settings: null }) },
@@ -61,7 +64,7 @@ test('per-agent skills and the repository memory reach ordinary and delegated tu
           snapshots.set(JSON.stringify(address), structuredClone(value))
         },
       },
-      runScopes: { resolve: async () => [skills, emptyLoadedPlugins(), loadedMiniApps, []] },
+      runScopes: { resolve: async () => [emptyLoadedPlugins(), loadedMiniApps, []] },
       now: () => '2026-01-01T00:00:00Z',
     } as unknown as PromptContextDeps
     for (const sessionKind of ['chat', 'subagent'] as const) {
@@ -71,10 +74,10 @@ test('per-agent skills and the repository memory reach ordinary and delegated tu
         pinnedSkills: ['shared'],
         agent: routedAgent({ agentId: 'native:project:alpha', name: 'alpha' }),
       })
-      const prepare = (name: string) => {
+      const prepare = async (name: string) => {
         const agentId = `native:project:${name}`
         session.agent = routedAgent({ agentId, name: name })
-        return prepareRunContext(deps, {
+        const context = await prepareRunContext(deps, {
           userId: 'u',
           session,
           agentId,
@@ -95,6 +98,7 @@ test('per-agent skills and the repository memory reach ordinary and delegated tu
             ]),
           },
         })
+        return context.promptContext(kit, new AbortController().signal)
       }
       providerOn = false
       const alpha = await prepare('alpha')

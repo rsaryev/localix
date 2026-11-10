@@ -76,14 +76,12 @@ export interface SkillEntry {
 export interface SkillFound {
   skill?: SkillEntry
   names: readonly string[]
-  /** The call names a bare name could mean when it means none of them. */
-  ambiguous?: readonly string[]
 }
 
 export interface SkillToolPorts {
   /**
    * Finds the skill a name calls as the chat's kit session names its skills (`skill-tool-ports.ts`),
-   * its folders read again first. Absent: the skills found on disk (`../skill-discovery`).
+   * its folders read again first. Absent: no skill is found.
    */
   findSkill?: (name: string, signal?: AbortSignal) => Promise<SkillFound>
   /**

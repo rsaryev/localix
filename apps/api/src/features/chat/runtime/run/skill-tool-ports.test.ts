@@ -6,7 +6,6 @@ import { tempDirPerTest } from '@localixai/testing'
 
 import type { PermissionRule } from '../../../agent-core/permission-engine'
 import { verdictOf } from '../../../agent-core/permission-verdict'
-import type { DiscoveredSkill } from '../../../agent-core/skill-discovery'
 import { createSkillTool } from '../../../agent-core/tools/skill'
 import { createChatPluginSessions } from '../../../plugins/kit'
 import { diskPluginHost } from '../../../plugins/kit/testing'
@@ -65,19 +64,15 @@ describe('a skill’s injected commands meet the run’s rules', () => {
 })
 
 /** A skill folder in the chat's project, as the kit session finds it. */
-function projectSkill(name: string, frontmatter: string, body: string): DiscoveredSkill {
+function projectSkill(name: string, frontmatter: string, body: string): string {
   const at = join(dir(), 'work', '.claude', 'skills', name)
   mkdirSync(at, { recursive: true })
   const path = join(at, 'SKILL.md')
   writeFileSync(path, `---\nname: ${name}\ndescription: d\n${frontmatter}\n---\n${body}\n`)
-  return { name, description: 'd', content: body, scope: 'project', path, dir: at }
+  return path
 }
 
-function loadTool(
-  _skill: DiscoveredSkill,
-  commandPolicy: SkillCommandPolicyRef,
-  latestUserText?: string,
-) {
+function loadTool(_skill: string, commandPolicy: SkillCommandPolicyRef, latestUserText?: string) {
   mkdirSync(join(dir(), 'work', '.git'), { recursive: true })
   const kitSession = createChatPluginSessions(diskPluginHost(join(dir(), 'home'))).forRun({
     chatId: 's',
@@ -96,7 +91,7 @@ function loadTool(
     commandPolicy,
     ...(latestUserText ? { latestUserText } : {}),
   })
-  return createSkillTool(null, [], {}, '', undefined, ports)
+  return createSkillTool(join(dir(), 'work'), {}, '', undefined, ports)
 }
 
 describe('the skill tool’s get runs the skill through the chat’s kit session', () => {
@@ -158,5 +153,25 @@ describe('the skill tool’s get runs the skill through the chat’s kit session
     const miss = await tool.execute('t', { action: 'get', name: 'zz-nope' })
     expect(miss.isError).toBe(true)
     expect(String(miss.content)).toContain('Available skills: zz-named')
+  })
+})
+
+describe('a skill the agent saves is the one it loads', () => {
+  test('save writes the project skill, and the next get finds it through the session', async () => {
+    const skills = loadTool('', policy([]))
+    const saved = await skills.execute('t1', {
+      action: 'save',
+      name: 'zz-ports-saved',
+      description: 'Saved',
+      content: 'STEP ONE marker',
+      scope: 'project',
+    })
+    expect(saved.content).toContain('(project)')
+    const got = await skills.execute('t2', { action: 'get', name: 'zz-ports-saved' })
+    expect(got.content).toContain('# Skill: zz-ports-saved')
+    expect(got.content).toContain(
+      JSON.stringify(join(dir(), 'work', '.claude', 'skills', 'zz-ports-saved')),
+    )
+    expect(got.content).toContain('STEP ONE marker')
   })
 })

@@ -1,11 +1,7 @@
 import type { AgentDefinition } from '@localixai/agent/agents'
-import type { DiscoveredSkill } from '../../agent-core/skill-discovery'
-import { GENERAL_PURPOSE_TYPE } from '../../agent-core/tools/agent/agent-type'
-import {
-  filterDisabledSkills,
-  skillOverridesRevision,
-  type SkillOverrides,
-} from '../../agent-core/skill-overrides'
+import { skillOverridesRevision } from '../../agent-core/skill-overrides'
+import type { ResolvedRunAgent } from '../../agents/invocation-service'
+import type { KitSession } from '../../plugins/kit'
 import { loadMemoryProviderContext } from '../../mini-apps/memory-hooks'
 import type { LoadedMiniApps } from '../../mini-apps/loader-contract'
 import type { SessionRecord } from '../repository'
@@ -15,12 +11,18 @@ import type { SessionSnapshotCache } from './session-snapshot'
 import type { FrozenSessionContext } from './frozen-session-context'
 import { consoleWarnLogger } from './plugin-hook-logger'
 import { resolvePromptSnapshot } from './prompt-snapshot'
-import { resolvePinnedSkills } from './prompt-pinned-skills'
-import { resolveTriggeredSkills } from './prompt-skill-triggers'
+import { latestUserText as latestUserTextOf, resolveRunSkills } from './run-skills'
 import { hostPolicy } from '../policy/session-policy'
 
-/** Memory and skills are frozen per view epoch; memory reloads early only when its folder moves. */
+/**
+ * Memory and the skill listing are frozen per view epoch; memory reloads early only when its folder
+ * moves. The skills are read from the chat's plugin session once its SessionStart hooks ran.
+ */
 export async function resolveAgentPromptContext(input: {
+  kitSession: KitSession | undefined
+  capabilities: ResolvedRunAgent['capabilities']
+  cwd: string
+  signal: AbortSignal
   userId: string
   session: SessionRecord
   agentId: string
@@ -29,10 +31,7 @@ export async function resolveAgentPromptContext(input: {
   viewEpoch: string
   /** The auto memory folder and its MEMORY.md as loaded; null when the run keeps no memory. */
   memory: { dir: string; index: string; clipped: boolean } | null
-  skillsContext?: string
   projectInstructions?: string
-  allSkills: DiscoveredSkill[]
-  skillOverrides: SkillOverrides
   /** The memory provider, when a mini app's backend registered one. */
   loadedMiniApps: LoadedMiniApps
   contextSnapshots: SessionSnapshotCache<FrozenSessionContext>
@@ -45,14 +44,20 @@ export async function resolveAgentPromptContext(input: {
     historyMessages,
     viewEpoch,
     memory,
-    skillsContext,
     projectInstructions,
-    allSkills,
-    skillOverrides,
     loadedMiniApps,
     contextSnapshots,
     promptSnapshots,
   } = input
+  const runSkills = await resolveRunSkills(input.kitSession, {
+    capabilities: input.capabilities,
+    session,
+    ...(skills ? { agentSkills: skills } : {}),
+    history: historyMessages,
+    cwd: input.cwd,
+    signal: input.signal,
+  })
+  const { skillsContext, skillOverrides } = runSkills
   const currentSkillOverridesRevision = skillOverridesRevision(skillOverrides)
 
   // Freeze prompt text per agent lane until its view epoch changes: a checkpoint or `/clear`
@@ -60,11 +65,7 @@ export async function resolveAgentPromptContext(input: {
   // The user's own latest message, and only that: injected skill content is read as
   // instruction, so triggering on tool output or file contents would let any repository
   // containing the keyword push instructions into the prompt. External memory recalls by it too.
-  const latestUserContent = [...historyMessages]
-    .reverse()
-    .find((message) => message.payload.role === 'user' && !message.payload.isInternal)
-    ?.payload.content
-  const latestUserText = typeof latestUserContent === 'string' ? latestUserContent : undefined
+  const latestUserText = latestUserTextOf(historyMessages)
   const freshContext: FrozenSessionContext = {
     ...(memory
       ? {
@@ -108,20 +109,5 @@ export async function resolveAgentPromptContext(input: {
     })
   }
 
-  // Pinned skills are "applied" to the session — their full content is
-  // warmed into the system prompt so the agent follows them this whole session.
-  const pinnedNames = [...new Set([...(session.pinnedSkills ?? []), ...(skills ?? [])])]
-  // A child delegated to an agent got its pins from the agent file's `skills`: preloads.
-  const preload =
-    session.provenance?.kind === 'task-delegation' &&
-    !!session.provenance.agentType &&
-    session.provenance.agentType !== GENERAL_PURPOSE_TYPE
-  const pinnedSkills = resolvePinnedSkills(allSkills, pinnedNames, skillOverrides, { preload })
-  const triggeredSkills = resolveTriggeredSkills(
-    filterDisabledSkills(allSkills, skillOverrides),
-    latestUserText,
-    pinnedNames,
-  )
-
-  return { frozenContext, pinnedSkills, triggeredSkills }
+  return { ...runSkills, frozenContext }
 }

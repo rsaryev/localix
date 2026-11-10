@@ -23,7 +23,6 @@ import {
   type GlobalSearchPort,
 } from '../../../agent-core/tools/global-search/global-search'
 import type { createContextStoreRepository } from '../../../context-store/repository'
-import type { LoadedPlugins } from '../../../plugins/loader'
 import type { ChatRepository, SessionRecord } from '../../repository'
 import type { SkillOverrides } from '../../../agent-core/skill-overrides'
 import type { KitSession } from '../../../plugins/kit'
@@ -34,7 +33,6 @@ export interface DirectToolInstanceDeps {
   /** The run's effective disabled set — decides which halves of `ToolOutput` survive. */
   disabledTools: string[]
   defaultCwd: string
-  loadedPlugins: LoadedPlugins
   loadedMiniApps: LoadedMiniApps
   repo: ChatRepository
   contextStore: ReturnType<typeof createContextStoreRepository>
@@ -68,7 +66,6 @@ export function buildDirectToolInstances(
     agentProfile,
     disabledTools,
     defaultCwd,
-    loadedPlugins,
     loadedMiniApps,
     repo,
     contextStore,
@@ -84,12 +81,10 @@ export function buildDirectToolInstances(
     ...(deps.latestUserText ? { latestUserText: deps.latestUserText } : {}),
   })
   return {
-    // Plugin-bundled skills are passed in read-only so skill.get/list resolve
-    // every name the "# Available skills" prompt section advertises.
+    // The chat's kit session finds and runs the skills the prompt's listing names.
     Skill: isToolDirect(agentProfile, TOOL.Skill)
       ? createSkillTool(
           defaultCwd,
-          loadedPlugins.skills,
           deps.skillOverrides,
           session.projectId ?? '',
           deps.announceCapabilityChange,

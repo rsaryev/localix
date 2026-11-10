@@ -11,7 +11,7 @@ import type {
 } from '../capabilities/source-repository'
 import { announceSkillInvoked, setSkillInvocationListener } from '../agent-core/skill-invocations'
 import { createSkillTool } from '../agent-core/tools/skill'
-import type { DiscoveredSkill } from '../agent-core/skill-discovery'
+import { testSkillPorts } from '../agent-core/testing/skill-ports'
 import {
   createPluginMonitorHost,
   type MonitorNotification,
@@ -195,27 +195,33 @@ describe('an on-skill-invoke monitor', () => {
       return result
     })
     try {
-      const skill: DiscoveredSkill = {
-        name: 'deploy',
-        description: 'Ship it',
+      const skill = {
+        name: 'ops:deploy',
+        ownName: 'deploy',
         content: 'Deploy.',
-        scope: 'global',
+        scope: 'global' as const,
         path: join(home(), 'SKILL.md'),
         dir: home(),
         pluginName: 'ops',
       }
-      const tool = createSkillTool(null, [skill], {}, '', undefined, {
-        invokeSkill: async (loaded) => {
-          announceSkillInvoked({
-            userId: 'u1',
-            sessionId: 'c1',
-            skillName: loaded.ownName,
-            ...(loaded.pluginName ? { pluginName: loaded.pluginName } : {}),
-          })
-          return { ok: true, text: loaded.content ?? '' }
-        },
-      })
-      const out = await tool.execute('t', { action: 'get', name: 'deploy' } as never)
+      const tool = createSkillTool(
+        null,
+        {},
+        '',
+        undefined,
+        testSkillPorts([skill], {
+          invokeSkill: async (loaded) => {
+            announceSkillInvoked({
+              userId: 'u1',
+              sessionId: 'c1',
+              skillName: loaded.ownName,
+              ...(loaded.pluginName ? { pluginName: loaded.pluginName } : {}),
+            })
+            return { ok: true, text: loaded.content ?? '' }
+          },
+        }),
+      )
+      const out = await tool.execute('t', { action: 'get', name: 'ops:deploy' } as never)
       expect(out.isError).toBeFalsy()
       expect(await Promise.all(started)).toEqual([['ops:deploy-status']])
       expect(spawned).toEqual(['watch-deploy'])

@@ -1,4 +1,3 @@
-import type { DiscoveredSkill } from '../../agent-core/skill-discovery'
 import { escapeRegExp } from '../../../lib/regexp'
 
 /**
@@ -40,36 +39,30 @@ function mentions(text: string, keyword: string): boolean {
   return new RegExp(`(?<![\\p{L}\\p{N}_])${pattern}(?![\\p{L}\\p{N}_])`, 'iu').test(text)
 }
 
+/** A skill a keyword of the message fired, by the name it is listed by. */
+export interface KeywordHit {
+  name: string
+  keyword: string
+}
+
 /**
- * The skills whose keywords appear in `text`, in discovery order, deduplicated by name.
- * `alreadyPinned` names are skipped: their content is in the prompt already, and a second
- * copy would spend the budget saying the same thing twice.
+ * The skills whose keywords appear in `text`, in listing order, each once on its first matching
+ * keyword. The run leaves out the pinned ones (their text is in the prompt already) and reads the
+ * texts of the rest (`run-skills.ts`).
  */
-export function resolveTriggeredSkills(
-  skills: readonly DiscoveredSkill[],
+export function triggeringKeywords(
+  skills: readonly { readonly name: string; readonly keywords?: readonly string[] }[],
   text: string | undefined,
-  alreadyPinned: readonly string[] = [],
-): TriggeredSkill[] {
+): KeywordHit[] {
   if (!text?.trim()) return []
-  const pinned = new Set(alreadyPinned)
   const seen = new Set<string>()
-  const out: TriggeredSkill[] = []
+  const out: KeywordHit[] = []
   for (const skill of skills) {
-    if (!skill.keywords?.length || pinned.has(skill.name) || seen.has(skill.name)) continue
-    const hit = skill.keywords.find((keyword) => mentions(text, keyword))
-    if (!hit) continue
+    if (!skill.keywords?.length || seen.has(skill.name)) continue
+    const keyword = skill.keywords.find((one) => mentions(text, one))
+    if (!keyword) continue
     seen.add(skill.name)
-    out.push({
-      name: skill.name,
-      // Same shape as a pinned skill: relative references in a procedure resolve against
-      // the skill's own directory, not the session cwd.
-      content: [
-        `Resolve relative references from: ${JSON.stringify(skill.dir)}`,
-        '',
-        skill.content,
-      ].join('\n'),
-      keyword: hit,
-    })
+    out.push({ name: skill.name, keyword })
   }
   return out
 }

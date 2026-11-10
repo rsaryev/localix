@@ -1,5 +1,4 @@
 import { discoverContextFiles } from '../../agent-core/context-files'
-import { discoverFilesystemSkills } from '../../agent-core/skill-discovery'
 import type { AvailabilityReader } from '../../capabilities/availability'
 import { loadEnabledMiniApps } from '../../mini-apps/loader'
 import { emptyLoadedMiniApps } from '../../mini-apps/loader-contract'
@@ -13,18 +12,15 @@ import type { PromptContextDeps } from './prompt-context-contracts'
 
 /**
  * Everything a run's prompt discovers that depends only on its scope (user, project, working
- * directory, agent): filesystem skills, the enabled plugins and mini apps, and the context files.
+ * directory, agent): the enabled plugins and mini apps, and the context files.
  * `prepareRunContext` shares one answer across the scope (`runScopes`), so a spawned child that
- * inherits its parent's directory does not redo the walk or re-`register()` every plugin.
+ * inherits its parent's directory does not re-`register()` every plugin.
  */
 export function loadScopeDiscovery(
   ctx: PromptContextDeps,
   scope: { userId: string; projectId: string; cwd: string; availability: AvailabilityReader },
 ) {
   return Promise.all([
-    // Merge portable filesystem SKILL.md skills (project + home) into the
-    // prompt's skill list, so the agent knows it can invoke them by name.
-    discoverFilesystemSkills(scope.cwd, undefined, ctx.logger).catch(() => []),
     // Plugins: discover + load the user's ENABLED plugins for this scope. The
     // enable-state is the trust gate — only enabled plugins' native code is
     // imported. Their bundled skills, MCP servers and native tools fold into the

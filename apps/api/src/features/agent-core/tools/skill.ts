@@ -3,15 +3,13 @@ import { errorMessage } from '../../../lib/errors'
 import { homedir } from 'node:os'
 import { defineAgentTool } from '@localixai/agent/agents'
 import { TOOL } from '../tool-names'
-import { discoverFilesystemSkills, writeSkillFile, type DiscoveredSkill } from '../skill-discovery'
+import { writeSkillFile } from '../skill-discovery'
 import { recordSkillUse } from '../skill-usage-recorder'
 import { skillPromptDetails } from '../skill-prompt-details'
-import { ambiguousSkillNames, findSkillByName, skillCallName } from './skill-names'
 import { MAX_OUTPUT_BYTES } from './file/read-output'
 import { truncationMarker } from './tool-output'
-import { filterDisabledSkills, isSkillDisabled, type SkillOverrides } from '../skill-overrides'
+import { isSkillDisabled, type SkillOverrides } from '../skill-overrides'
 import {
-  type SkillEntry,
   type SkillFound,
   classifySkillCall,
   skillPermissionResources,
@@ -30,16 +28,11 @@ export {
 } from './skill-call'
 
 /**
- * Filesystem-backed skill management. Skills are directories containing a
- * SKILL.md (plus any scripts/assets the agent adds with the write/bash tools).
- * They are discovered by walking up from `workingDir` and falling back to the
- * home dir — no database involved, so skills are portable and shippable.
+ * Skill management. Skills are directories containing a SKILL.md (plus any scripts/assets the
+ * agent adds with the write/bash tools); `save` writes one into the project's or the person's
+ * `.claude/skills`, and `get` loads one the host finds (`ports.findSkill`: the chat's kit session).
  *
  * @param workingDir The session's project working dir, or null/'/' if none.
- * @param extraSkills Read-only skills contributed outside the filesystem scopes
- *   (e.g. plugin-bundled skills from `loadEnabledPlugins`). They are visible to
- *   `get` but cannot be saved over — saving always targets
- *   the filesystem scopes, and a filesystem skill of the same name wins.
  * @param skillOverrides User visibility policy. `off` removes a skill from every
  *   model-facing action, including guessed names.
  * @param projectId Exact project scope for usage telemetry. Empty means sessions
@@ -51,13 +44,13 @@ export {
  *   next run's prompt could omit what the agent had just saved — until an unrelated plugin
  *   or MCP toggle happened to bump the revision. Injected rather than imported: the
  *   announcement (bump + client poke) belongs to the host, not to agent-core.
- * @param ports Host ports: `invokeSkill` runs the skill as Claude Code does when Claude invokes it
- *   (who may invoke it, its arguments, `${CLAUDE_*}` variables and injected commands, its fork);
- *   its refusal is the result's error. Absent: the content as written.
+ * @param ports Host ports: `findSkill` finds the skill a name calls (absent: none is found);
+ *   `invokeSkill` runs it as Claude Code does when Claude invokes it (who may invoke it, its
+ *   arguments, `${CLAUDE_*}` variables and injected commands, its fork); its refusal is the
+ *   result's error. Absent: the content as written.
  */
 export function createSkillTool(
   workingDir?: string | null,
-  extraSkills: DiscoveredSkill[] = [],
   skillOverrides: SkillOverrides = {},
   projectId = '',
   onSkillsChanged?: () => void,
@@ -72,36 +65,7 @@ export function createSkillTool(
   }
   const projectBase = workingDir && workingDir !== '/' ? workingDir : null
 
-  // Filesystem skills win on a name clash (same precedence the system prompt uses
-  // in agent-runner: fileSkills before loadedPlugins.skills). Keyed by the name a skill is called
-  // by, so two plugins' `lookup` stay two skills: `/a:lookup` and `/b:lookup`. The sort is for the
-  // list only: `findSkillByName` matches a call name exactly before any bare plugin name.
-  const allSkills = async (): Promise<DiscoveredSkill[]> => {
-    const fileSkills = await discoverFilesystemSkills(projectBase)
-    const byName = new Map<string, DiscoveredSkill>()
-    for (const s of [...fileSkills, ...extraSkills]) {
-      if (!byName.has(skillCallName(s))) byName.set(skillCallName(s), s)
-    }
-    return filterDisabledSkills([...byName.values()], skillOverrides).sort((a, b) =>
-      skillCallName(a).localeCompare(skillCallName(b)),
-    )
-  }
-
-  /** The skill a name calls on disk, when no host finds it (`ports.findSkill`). */
-  const foundOnDisk = async (name: string): Promise<SkillFound> => {
-    const skills = await allSkills()
-    const found = findSkillByName(skills, name)
-    return {
-      ...(found ? { skill: entryOf(found) } : {}),
-      names: skills.map(skillCallName),
-      ambiguous: ambiguousSkillNames(skills, name),
-    }
-  }
-
-  const notFoundMessage = (name: string, { names, ambiguous = [] }: SkillFound): string => {
-    if (ambiguous.length > 0) {
-      return `Skill name "${name}" is ambiguous: ${ambiguous.map((n) => `/${n}`).join(', ')}. Ask for one by its full name.`
-    }
+  const notFoundMessage = (name: string, { names }: SkillFound): string => {
     if (names.length === 0) return `Skill not found: "${name}". No skills are available.`
     const shown = names.slice(0, 30)
     const more = names.length > shown.length ? ` (+${names.length - shown.length} more)` : ''
@@ -159,7 +123,7 @@ export function createSkillTool(
 
         case 'get': {
           if (!input.name) return { content: 'name is required for action="get".', isError: true }
-          const found = await (ports.findSkill?.(input.name, signal) ?? foundOnDisk(input.name))
+          const found: SkillFound = (await ports.findSkill?.(input.name, signal)) ?? { names: [] }
           const names = found.names.filter((name) => !isSkillDisabled(skillOverrides, name))
           const skill =
             found.skill && !isSkillDisabled(skillOverrides, found.skill.name)
@@ -241,19 +205,4 @@ export function createSkillTool(
       }
     },
   })
-}
-
-/** A skill found on disk, as a `get` uses it; its text is read when the `get` returns it. */
-function entryOf(skill: DiscoveredSkill): SkillEntry {
-  return {
-    name: skillCallName(skill),
-    ownName: skill.name,
-    scope: skill.scope,
-    path: skill.path,
-    dir: skill.dir,
-    ...(skill.pluginName ? { pluginName: skill.pluginName } : {}),
-    get content() {
-      return skill.content
-    },
-  }
 }

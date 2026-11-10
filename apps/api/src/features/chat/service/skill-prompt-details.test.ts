@@ -6,6 +6,7 @@ import { skillPrompt } from '../../mods/conversation-events'
 import { hostWithMod } from '../../mods/testing/testing-host'
 import { skillPromptDetails } from '../../agent-core/skill-prompt-details'
 import { createSkillTool } from '../../agent-core/tools/skill'
+import { testSkillPorts } from '../../agent-core/testing/skill-ports'
 
 // claude-code types, `SkillPromptInput`: a hook on `skill.prompt` is handed the skill's
 // `frontmatter` "as its author wrote it", its `source` (`userSettings`, `projectSettings`,
@@ -60,16 +61,15 @@ test('a skill the agent loads tells skill.prompt the same', async () => {
       ($, e: any) => (seen.push([e.source, e.path, e.frontmatter.name]), { text: e.text }),
     )
   })
-  const tool = createSkillTool(null, [
-    {
-      name: 'zz-details',
-      description: 'd',
-      content: 'Body.',
-      scope: 'project',
-      path,
-      dir: join(dir(), 'zz-details'),
-    },
-  ])
+  const tool = createSkillTool(
+    null,
+    {},
+    '',
+    undefined,
+    testSkillPorts([
+      { name: 'zz-details', content: 'Body.', path, dir: join(dir(), 'zz-details') },
+    ]),
+  )
   const [wrapped] = scope.wrapTools([tool as never])
   await (wrapped as typeof tool).execute('t', { action: 'get', name: 'zz-details' })
   expect(seen).toEqual([['projectSettings', path, 'zz-details']])

@@ -1,35 +1,24 @@
 /**
  * hooks.md, "Reload skills that a hook installs": with `reloadSkills`, a skill a SessionStart hook
- * wrote reaches this session — the agent is told of it, and the next run's discovery reads it.
+ * wrote reaches this session; a listing frozen before it was written leaves the agent a note.
  */
 import { expect, test } from 'bun:test'
-import { mkdirSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { tempDirPerTest } from '@localixai/testing'
-
+import type { ChatSkill } from '../../../plugins/kit'
 import { reloadedSkillsNote } from './cc-reload-skills'
 
-const dir = tempDirPerTest('cc-reload-skills-')
+const skill = (name: string, more: Partial<ChatSkill> = {}) =>
+  ({
+    name,
+    description: `About ${name}`,
+    modelInvocable: true,
+    dormant: false,
+    ...more,
+  }) as ChatSkill
 
-test('names the skills that appeared after the run’s discovery, and forgets the cached scope', async () => {
-  const skill = join(dir(), '.claude', 'skills', 'deploy', 'SKILL.md')
-  mkdirSync(join(skill, '..'), { recursive: true })
-  writeFileSync(skill, '---\nname: deploy\ndescription: Ship the build\n---\nShip it.\n')
-  let invalidated = 0
-  const note = await reloadedSkillsNote({
-    cwd: dir(),
-    homeDir: join(dir(), 'home'),
-    known: ['review'],
-    invalidate: () => invalidated++,
-  })
-  expect(note).toContain('deploy: Ship the build')
-  expect(invalidated).toBe(1)
-  expect(
-    await reloadedSkillsNote({
-      cwd: dir(),
-      homeDir: join(dir(), 'home'),
-      known: ['deploy'],
-      invalidate: () => {},
-    }),
-  ).toBeUndefined()
+test('names the skills the frozen listing lacks, and only those Claude may load', () => {
+  const skills = [skill('review'), skill('deploy'), skill('quiet', { modelInvocable: false })]
+  expect(reloadedSkillsNote(skills, '- review: About review')).toBe(
+    'Skills a SessionStart hook installed, available with the Skill tool:\n- deploy: About deploy',
+  )
+  expect(reloadedSkillsNote(skills, '- review: About review\n- deploy')).toBeUndefined()
 })

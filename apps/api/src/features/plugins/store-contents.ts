@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import type { InstallPlan, StoreComponent } from '@localixai/store'
 
 import { isRecord } from '../../lib/record'
-import { readSkillsFromRoot } from '../agent-core/skill-discovery'
+import { readSkillDescriptions } from './kit'
 import { entrySource } from './claude-code-installs'
 import type { DiscoveredPlugin } from './discovery-types'
 import type { MarketplaceEntry } from './marketplace'
@@ -116,13 +116,8 @@ export async function scanPluginContents(
     loadManifest(dir, 'global', '', entrySource(id, entry)),
     fs.readdir(join(dir, 'bin')).catch(() => [] as string[]),
   ])
-  // A skill's description is in its own file; a folder that cannot be read just says less.
-  const skills = await Promise.all(
-    plugin.entrypoints.skillDirs.map((root) => readSkillsFromRoot(root, 'global').catch(() => [])),
-  )
-  const descriptions = new Map(
-    skills.flat().flatMap((skill) => (skill.description ? [[skill.name, skill.description]] : [])),
-  )
+  // A skill's description is in its own file, as the kit read it; a plugin that did not load says less.
+  const descriptions = plugin.kit ? readSkillDescriptions(plugin.kit) : new Map<string, string>()
   return contentsOfPlugin(plugin, bin.sort(), descriptions)
 }
 

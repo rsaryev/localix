@@ -78,15 +78,7 @@ export function buildOptionalToolPorts(
   stopJob: NonNullable<OptionalToolPorts['TaskStop']>['stopJob'],
 ): { optional: OptionalToolPorts; ledgerRef: { current?: ToolLedger } } {
   const { deps, repo } = ctx
-  const {
-    userId,
-    session,
-    defaultCwd,
-    disabledTools,
-    agentProfile,
-    loadedPlugins,
-    loadedMiniApps,
-  } = params
+  const { userId, session, defaultCwd, disabledTools, agentProfile, loadedMiniApps } = params
   const { ccHooks } = params
   const contextStore = deps.ports.contextStore
   // Filled by the caller once the registry (and so the ledger) exists — `configure` reads it
@@ -155,7 +147,6 @@ export function buildOptionalToolPorts(
       agentProfile,
       disabledTools,
       defaultCwd,
-      loadedPlugins,
       loadedMiniApps,
       repo,
       contextStore,

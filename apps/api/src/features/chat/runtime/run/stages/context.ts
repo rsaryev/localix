@@ -62,7 +62,6 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
       promptSnapshots: createSessionPromptSnapshotRepository(deps.db),
       runScopes: runtimeState.runScopes,
       now,
-      logger: env.deps.logger,
       // A mini app's user-facing problem rides the same frame a Claude Code hook's
       // non-blocking `systemMessage` does — one inline transcript warning the client renders —
       // marked as the app's, so the client also keeps it as a standing Event Center row.
@@ -212,19 +211,11 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
   // starts them (`runtime-tools.ts`) and the prompt names them (`plugins-prompt-context.ts`).
   const pluginLsp = built.kitSession ? await sessionLspServers(built.kitSession) : undefined
   for (const issue of pluginLsp?.issues ?? []) consoleWarnLogger.warn(issueLine(issue))
-  // `reloadSkills`: a SessionStart hook installed skills after this run's discovery read the folders.
+  // The skills are read now, after the SessionStart hooks: a skill one installed is in this run.
+  const prompt = await context.promptContext(built.kitSession, frame.abort.signal)
+  // `reloadSkills` with a listing frozen before the hook wrote its skills: the agent is told of them.
   const reloaded = built.ccReloadSkills
-    ? await reloadedSkillsNote({
-        cwd: defaultCwd,
-        known: context.allSkills.map((skill) => skill.name),
-        invalidate: () =>
-          runtimeState.runScopes.invalidate({
-            userId,
-            projectId: session.projectId ?? '',
-            cwd: defaultCwd,
-            agentId: context.agent.id,
-          }),
-      })
+    ? reloadedSkillsNote(prompt.skills, prompt.frozenContext.skillsContext)
     : undefined
   const ccSessionStartContext =
     [built.ccSessionStartContext, reloaded].filter(Boolean).join('\n\n') || undefined
@@ -259,6 +250,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
 
   return {
     ...context,
+    ...prompt,
     contextFiles,
     agent: main.agent,
     disabledTools: main.disabledTools,

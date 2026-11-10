@@ -40,6 +40,15 @@ function commandOf(command: Command): PluginCommand {
   }
 }
 
+/** The plugin's skills' descriptions, by the skill's own name, as the kit read its `SKILL.md` files. */
+export function readSkillDescriptions(plugin: Plugin): Map<string, string> {
+  return new Map(
+    readCatalog(plugin).skills.flatMap((skill) =>
+      skill.description ? [[skill.name, skill.description] as const] : [],
+    ),
+  )
+}
+
 export function readCommands(plugin: Plugin) {
   return { commands: readCatalog(plugin).commands.map(commandOf) }
 }

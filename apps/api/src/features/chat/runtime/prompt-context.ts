@@ -1,5 +1,5 @@
 import type { ResolvedRunAgent } from '../../agents/invocation-service'
-import { NO_ROSTERS, projectCapabilities, skillOverridesOf } from '../../capabilities/resolve'
+import { NO_ROSTERS, projectCapabilities } from '../../capabilities/resolve'
 import { narrowLoadedPlugins } from '../../plugins/narrow'
 import { narrowLoadedMiniApps } from '../../mini-apps/narrow'
 import { BUILTIN_TOOL_NAMES } from '../../agent-core/tool-names'
@@ -13,12 +13,10 @@ import { localEnvironment } from '../../agent-core/tools/environments/local'
 import { resolveAgentPromptContext } from './prompt-agent-context'
 import type { LoadedMiniApps } from '../../mini-apps/loader'
 import type { LoadedPlugins } from '../../plugins/loader'
+import type { KitSession } from '../../plugins/kit'
 import { loadScopeDiscovery } from './prompt-context-discovery'
 import { availabilityOf } from '../../capabilities/availability'
 import type { loadUserSettingsContext } from '../../user/runtime-settings'
-import { skillsMatchingFiles } from './prompt-skill-paths'
-import { withWorkspaceExtensions } from './prompt-context-extensions'
-import { buildSkillsContext } from './prompt-skills'
 import { agentRoute } from '../../../contracts/session-route'
 import type { SessionRecord } from '../repository'
 import { resolveBaseSessionCwd } from '../session-cwd'
@@ -114,26 +112,24 @@ export async function prepareRunContext(
   // `runScopes` keys on the capability revision too, so enabling a plugin is visible to
   // the very next run without anyone clearing anything. See run-scope.ts for why the
   // role- and turn-shaped inputs stay OUT of this.
-  const [[fileSkills, rawPlugins, rawMiniApps, contextFiles], projectStructure] = await Promise.all(
-    [
-      ctx.runScopes.resolve(
-        {
+  const [[rawPlugins, rawMiniApps, contextFiles], projectStructure] = await Promise.all([
+    ctx.runScopes.resolve(
+      {
+        userId,
+        projectId: session.projectId ?? '',
+        cwd: defaultCwd,
+        agentId: resolvedAgent.definition.id,
+      },
+      () =>
+        loadScopeDiscovery(ctx, {
           userId,
           projectId: session.projectId ?? '',
           cwd: defaultCwd,
-          agentId: resolvedAgent.definition.id,
-        },
-        () =>
-          loadScopeDiscovery(ctx, {
-            userId,
-            projectId: session.projectId ?? '',
-            cwd: defaultCwd,
-            availability: scopeAvailability,
-          }),
-      ),
-      loadProjectStructureSnapshot(env, defaultCwd),
-    ],
-  )
+          availability: scopeAvailability,
+        }),
+    ),
+    loadProjectStructureSnapshot(env, defaultCwd),
+  ])
 
   // The load answered for the whole scope. This agent's own rules are applied here, on the
   // cheap side of that cache: a plugin it may not reach contributes nothing to its turn.
@@ -142,26 +138,12 @@ export async function prepareRunContext(
   // once, when the load decided to import it; asking again with no trust class would answer
   // for a dropped-in plugin as if it were bundled, and asking with one would re-litigate a
   // question already settled. What is left for the role to say is "not this one".
-  const narrowed: LoadedPlugins = narrowLoadedPlugins(
+  const loadedPlugins: LoadedPlugins = narrowLoadedPlugins(
     rawPlugins,
     rawPlugins.loaded
       .filter((entry) => scopeAvailability.effectFor('plugin', entry.name) === 'deny')
       .map((entry) => entry.name),
   )
-  // What the session's work reached (a subfolder's skills, `paths:` skills) and the agent files.
-  const { touched, loadedPlugins } = await withWorkspaceExtensions(
-    narrowed,
-    fileSkills,
-    historyMessages,
-    defaultCwd,
-  )
-  // Project skills first (closer to the working dir), then global. Mirrors CC's
-  // scope-priority: nearest SKILL.md definition wins, so listing in that order
-  // surfaces the most relevant skills at the top of the model's attention window.
-  const sortedFileSkills = [...fileSkills].sort((a, b) =>
-    a.scope === b.scope ? 0 : a.scope === 'project' ? -1 : 1,
-  )
-  const allSkills = [...sortedFileSkills, ...loadedPlugins.skills]
   const loadedMiniApps: LoadedMiniApps = narrowLoadedMiniApps(
     rawMiniApps,
     rawMiniApps.loaded
@@ -170,13 +152,12 @@ export async function prepareRunContext(
   )
 
   // NOW the rules are projected, and not before: a projection can only subtract from the
-  // roster it is handed, so doing this above — where the plugin tools and the skill list are
-  // still unknown — answered "nothing is denied" for every kind but the built-in tools. That
-  // is how a `skill:` rule could read as off in Settings and still load into the turn.
+  // roster it is handed, so doing this above — where the mini app tools are still unknown —
+  // answered "nothing is denied" for them. The skills are the chat's plugin session's, so their
+  // rules apply where the run reads them (`run-skills.ts`).
   const policy = projectCapabilities(resolvedAgent.capabilities, {
     ...NO_ROSTERS,
     tool: [...BUILTIN_TOOL_NAMES, ...loadedMiniApps.tools.map((tool) => tool.name)],
-    skill: allSkills.map((skill) => skill.name),
   })
   // The scope's own answer, and the only one. A session-level "economy mode" used to add a
   // second trim here, which meant a tool could be ON in Capabilities and absent from the turn.
@@ -185,29 +166,26 @@ export async function prepareRunContext(
   // confirmations that used to be prepended here are rows in that list now
   // (`builtin-agent-presets.ts`), so there is one place to read and one order to reason about.
   const permissionRules: PermissionRule[] = policy.permissions
-  const skillOverrides = skillOverridesOf(policy.denied.skill)
-  const skillsContext = buildSkillsContext(
-    allSkills,
-    skillOverrides,
-    defaultCwd,
-    skillsMatchingFiles(allSkills, defaultCwd, touched),
-  )
-  const { frozenContext, pinnedSkills, triggeredSkills } = await resolveAgentPromptContext({
-    userId,
-    session,
-    agentId,
-    skills: resolvedAgent.definition.skills,
-    historyMessages,
-    viewEpoch,
-    memory,
-    skillsContext,
-    projectInstructions: boundedProjectInstructions,
-    allSkills,
-    skillOverrides,
-    loadedMiniApps,
-    contextSnapshots,
-    promptSnapshots: ctx.promptSnapshots,
-  })
+  // The prompt's frozen sections and the skills, once the chat's plugin session is open and its
+  // SessionStart hooks ran (`run/stages/context.ts`).
+  const promptContext = (kitSession: KitSession | undefined, signal: AbortSignal) =>
+    resolveAgentPromptContext({
+      kitSession,
+      capabilities: resolvedAgent.capabilities,
+      cwd: defaultCwd,
+      signal,
+      userId,
+      session,
+      agentId,
+      skills: resolvedAgent.definition.skills,
+      historyMessages,
+      viewEpoch,
+      memory,
+      projectInstructions: boundedProjectInstructions,
+      loadedMiniApps,
+      contextSnapshots,
+      promptSnapshots: ctx.promptSnapshots,
+    })
 
   return {
     agent: resolvedAgent.definition,
@@ -223,11 +201,7 @@ export async function prepareRunContext(
     loadedPlugins,
     loadedMiniApps,
     contextFiles,
-    allSkills,
-    frozenContext,
-    pinnedSkills,
-    triggeredSkills,
-    skillOverrides,
+    promptContext,
     projectStructure,
   }
 }

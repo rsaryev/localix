@@ -5,21 +5,15 @@ import type { ToolDenial } from '../../capabilities/resolve'
 import type { CapabilitySourceRepository } from '../../capabilities/source-repository'
 import type { PermissionRule } from '../../projects/contracts'
 import type { ExecutionEnvironment } from '../../agent-core/tools/environment'
-import type {
-  discoverFilesystemSkills,
-  SkillDiscoveryLogger,
-} from '../../agent-core/skill-discovery'
 import type { discoverContextFiles } from '../../agent-core/context-files'
-import type { TriggeredSkill } from './prompt-skill-triggers'
 import type { LoadedPlugins } from '../../plugins/loader'
 import type { LoadedMiniApps, LoadMiniAppsOptions } from '../../mini-apps/loader'
 import type { AvailabilityReader } from '../../capabilities/availability'
 import type { SessionPromptSnapshotRepository } from '../session-prompt-snapshot-repository'
-import type { FrozenSessionContext } from './agent-runner-types'
 import type { RuntimeState } from './agent-runner-state'
 import type { createProjectsRepository } from '../../projects/repository'
-import type { SkillOverrides } from '../../agent-core/skill-overrides'
-import type { LocalixPluginHost } from '../../plugins/kit'
+import type { KitSession, LocalixPluginHost } from '../../plugins/kit'
+import type { resolveAgentPromptContext } from './prompt-agent-context'
 
 export interface PromptContextDeps {
   /** Where Claude Code's files are read from; the process's home by default (`claudeCodeHome`). */
@@ -37,7 +31,6 @@ export interface PromptContextDeps {
    */
   runScopes: RuntimeState['runScopes']
   now: () => string
-  logger?: SkillDiscoveryLogger
   /**
    * Deliver a mini app's user-facing problem onto a session's firehose.
    *
@@ -81,11 +74,13 @@ export interface PreparedRunContext {
   loadedPlugins: LoadedPlugins
   loadedMiniApps: LoadedMiniApps
   contextFiles: Awaited<ReturnType<typeof discoverContextFiles>>
-  allSkills: Array<Awaited<ReturnType<typeof discoverFilesystemSkills>>[number]>
-  frozenContext: FrozenSessionContext
-  pinnedSkills: Array<{ name: string; content: string }>
-  /** Skills a keyword in the latest user message forced in for this turn. */
-  triggeredSkills: TriggeredSkill[]
-  skillOverrides: SkillOverrides
+  /**
+   * The frozen prompt sections and the run's skills, read once the chat's plugin session is open
+   * and its SessionStart hooks ran (`run-skills.ts`).
+   */
+  promptContext: (
+    kitSession: KitSession | undefined,
+    signal: AbortSignal,
+  ) => ReturnType<typeof resolveAgentPromptContext>
   projectStructure?: string
 }

@@ -51,6 +51,7 @@ export {
   type PreloadableSkill,
 } from './spawn'
 export type { PluginCcComponents, PluginWorkflow } from './catalog/components'
+export { readSkillDescriptions } from './catalog/components'
 export type { Plugin as KitPlugin } from '@rsaryev/llx-plugin/loading'
 export type { PluginIssue } from '@rsaryev/llx-plugin/format'
 export { createHostPorts, type HostPortsDeps, type LocalixKitPorts } from './ports/host-ports'
@@ -132,3 +133,5 @@ export {
   type ChatSkill,
   type TypedSkills,
 } from './skill-catalog'
+export { preloadedSkillTexts, skillTexts, type SkillText } from './skill-texts'
+export { scopeSkills, type ScopeSkills } from './scope-skills'

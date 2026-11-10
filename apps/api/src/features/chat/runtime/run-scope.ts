@@ -38,7 +38,6 @@
  */
 import { createSessionSnapshotCache } from './session-snapshot'
 import { capabilityRevision } from '../../capabilities/revision'
-import type { DiscoveredSkill } from '../../agent-core/skill-discovery'
 import type { discoverContextFiles } from '../../agent-core/context-files'
 import type { LoadedPlugins } from '../../plugins/loader'
 import type { LoadedMiniApps } from '../../mini-apps/loader-contract'
@@ -50,7 +49,6 @@ import type { LoadedMiniApps } from '../../mini-apps/loader-contract'
  * step with it for no reader benefit.
  */
 export type ScopeDiscovery = [
-  fileSkills: DiscoveredSkill[],
   plugins: LoadedPlugins,
   miniApps: LoadedMiniApps,
   contextFiles: Awaited<ReturnType<typeof discoverContextFiles>>,

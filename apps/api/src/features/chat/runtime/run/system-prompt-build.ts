@@ -19,6 +19,7 @@ import type { PluginLspServer } from '../../../plugins/kit'
 import type { FrozenSessionContext } from '../agent-runner-types'
 import type { RuntimeState } from '../agent-runner-state'
 import type { PreparedRunContext } from '../prompt-context'
+import type { RunSkills } from '../run-skills'
 import type { buildRunToolRegistry } from './runtime-tools'
 import type { SessionRecord } from '../../repository'
 import { buildPluginsPromptContext } from './plugins-prompt-context'
@@ -59,8 +60,8 @@ export interface BuildRunSystemPromptOptions {
   pluginLspServers?: readonly PluginLspServer[]
   loadedMiniApps: LoadedMiniApps
   frozenContext: FrozenSessionContext
-  pinnedSkills: PreparedRunContext['pinnedSkills']
-  triggeredSkills: PreparedRunContext['triggeredSkills']
+  pinnedSkills: RunSkills['pinnedSkills']
+  triggeredSkills: RunSkills['triggeredSkills']
   contextFiles: PreparedRunContext['contextFiles']
   projectStructure?: PreparedRunContext['projectStructure']
   defaultCwd: string

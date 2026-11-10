@@ -51,6 +51,18 @@ export interface ChatSkill {
   readonly dir?: string
   /** Frontmatter `hooks`, as written. */
   readonly hooks?: unknown
+  /**
+   * Frontmatter `keywords`, which only Localix reads: phrases of the person's message that put the
+   * skill's text in the prompt (`chat/runtime/prompt-skill-triggers.ts`). Comma-separated, so a
+   * phrase may hold spaces.
+   */
+  readonly keywords?: readonly string[]
+}
+
+/** `keywords: a, b c` or a YAML list, as the frontmatter record holds it. */
+function keywordsOf(value: unknown): string[] {
+  const items = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : []
+  return items.flatMap((item) => (typeof item === 'string' && item.trim() ? [item.trim()] : []))
 }
 
 const PROJECT_SCOPES: ReadonlySet<ScanScope> = new Set(['project', 'nested', 'additional'])
@@ -63,6 +75,7 @@ function chatSkillOf(row: SessionSkill): ChatSkill {
       ? { id: source.pluginId, name: origin.plugin }
       : undefined
   const folder = source.kind === 'folder' ? source.scope : undefined
+  const keywords = keywordsOf(invocable.frontmatter.keywords)
   return {
     name: invocable.command,
     names: row.names,
@@ -83,6 +96,7 @@ function chatSkillOf(row: SessionSkill): ChatSkill {
     ...(row.file ? { path: row.file } : {}),
     ...(row.directory ? { dir: row.directory } : {}),
     ...(invocable.hooks ? { hooks: invocable.hooks } : {}),
+    ...(keywords.length ? { keywords } : {}),
   }
 }
 

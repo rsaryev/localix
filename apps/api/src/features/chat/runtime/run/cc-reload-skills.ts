@@ -1,23 +1,20 @@
-import { discoverFilesystemSkills } from '../../../agent-core/skill-discovery'
+import type { ChatSkill } from '../../../plugins/kit'
 
 /**
- * A SessionStart hook's `reloadSkills` (hooks.md, "Reload skills that a hook installs"): the run's
- * skills were found before its hooks ran, so the folders are read again. The cached discovery of
- * the scope is forgotten, so the next run lists them, and this run's agent is told of the skills
- * that appeared; the Skill tool reads the folders when it is called, so it can load them now.
+ * A SessionStart hook's `reloadSkills` (hooks.md, "Reload skills that a hook installs"): the run
+ * reads the skills after its hooks ran, so a skill a hook wrote is in this run's session. When the
+ * prompt's listing was frozen earlier in the view epoch, the agent is told of the skills it lacks;
+ * the Skill tool finds them either way.
  */
-export async function reloadedSkillsNote(input: {
-  cwd: string
-  /** The names this run's discovery already listed. */
-  known: readonly string[]
-  invalidate: () => void
-  /** The person's home, where their own skills are read (test seam; defaults to the OS home). */
-  homeDir?: string
-}): Promise<string | undefined> {
-  input.invalidate()
-  const known = new Set(input.known)
-  const added = (await discoverFilesystemSkills(input.cwd, input.homeDir).catch(() => [])).filter(
-    (skill) => !known.has(skill.name),
+export function reloadedSkillsNote(
+  skills: readonly ChatSkill[],
+  frozenListing: string | undefined,
+): string | undefined {
+  const listed = new Set(
+    (frozenListing ?? '').split('\n').map((line) => line.replace(/^- /, '').split(':')[0]),
+  )
+  const added = skills.filter(
+    (skill) => skill.modelInvocable && !skill.dormant && !listed.has(skill.name),
   )
   if (!added.length) return undefined
   return [
