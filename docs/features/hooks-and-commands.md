@@ -162,8 +162,9 @@ irreversible calls stand. `defer` needs a headless caller: it is warned about an
 
 ### Matcher, `if`, and `once`
 
-Tool-event matchers accept engine names and compatible aliases such as `Bash`, including MCP name
-forms. Empty, omitted, or `*` matchers match all. Simple names separated by `|` or commas compare
+A tool-event matcher meets the call's Claude Code tool name (see
+[Hook tool calls](hook-tool-calls.md)), `mcp__<server>__<tool>` for an MCP tool, and no other
+spelling. Empty, omitted, or `*` matchers match all. Simple names separated by `|` or commas compare
 exactly, case included (`Bash`, not `bash`, is Claude Code's name); other patterns are unanchored
 JavaScript regular expressions. Invalid regexes do not match. `UserPromptSubmit` and `Stop` ignore
 group matchers; other lifecycle matchers inspect the event's source, reason, agent type,
@@ -377,7 +378,7 @@ allow, but an expansion block never echoed the prompt, so there is nothing to le
 - [Declarative hook contracts](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/contracts.ts)
 - [Declarative hook runtime](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/hooks/runtime.ts)
 - [Scoped skill and agent hooks](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/hooks/scoped.ts)
-- [One call per file](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/runtime-file-calls.ts)
+- [One call per file](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/hooks/file-calls.ts)
 - [Tool rewrite and output folding](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/wrap-tools.ts)
 - [Bounded continuation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/run-continuations.ts)
 - [Model-backed evaluators](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/cc-hook-evaluators.ts)

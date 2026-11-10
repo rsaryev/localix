@@ -1,15 +1,12 @@
-import type { EventFactsOf, HookOutcome, PluginSession } from '@rsaryev/llx-plugin'
+import type { EventFactsOf, HookEvent, HookOutcome, PluginSession } from '@rsaryev/llx-plugin'
 import type { HookSourceKind } from '@rsaryev/llx-plugin/hooks'
 import type { CcHooksRuntime, CcRunStop } from '../../../cc-hooks/runtime-contracts'
-import { byFile } from '../../../cc-hooks/runtime-file-calls'
 import { joinContext } from '../../../cc-hooks/runtime-results'
 import type { CcTranscript } from '../../../cc-hooks/transcript'
 import { createDisplayEvents } from './display-events'
+import { byFile } from './file-calls'
 import { createSessionEvents } from './session-events'
 import { createToolEvents } from './tool-events'
-
-/** An event the session dispatches (the kit names no such type). */
-export type HookEvent = Parameters<PluginSession['hasHooks']>[0]
 
 /** What a run tells its hooks beyond the session: where to say things, and what runs beside it. */
 export interface KitHooksRuntimeOptions {

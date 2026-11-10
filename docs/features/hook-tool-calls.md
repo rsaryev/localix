@@ -72,9 +72,8 @@ WebSearch replaces the text the model reads. Bash output arrives merged in `stdo
 
 `once: true` applies only to hooks in skill frontmatter; a plugin's `hooks.json` and agent
 frontmatter ignore it. The hook is removed after its first successful run. A run that fails, blocks
-with exit code 2, or times out leaves it in place for the next matching event. The marker is tracked
-per session in API-process memory, and its key combines event, source, plugin name, and command or
-prompt text. API restart or session runtime cleanup clears these markers.
+with exit code 2, or times out leaves it in place for the next matching event. The chat's plugin
+session keeps what has run, so an API restart or deleting the chat starts it over.
 
 ## Limits
 
@@ -90,4 +89,4 @@ prompt text. API restart or session runtime cleanup clears these markers.
 
 - [Tool shapes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/ext/cc-tool-shapes.ts)
 - [Tool responses](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/ext/cc-tool-responses.ts)
-- [Per-file hook calls](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/runtime-file-calls.ts)
+- [Per-file hook calls](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/hooks/file-calls.ts)

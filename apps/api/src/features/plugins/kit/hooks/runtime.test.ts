@@ -134,6 +134,19 @@ describe('a call that names several files', () => {
     })
   })
 
+  it('a read of a path and a list is one Read per file, and a rewrite keeps its shape', async () => {
+    const rewrite = `grep -q '"file_path":"/p/b.md"' && ${pre('allow', {
+      updatedInput: { file_path: '/p/c.md' },
+    })} || true`
+    const input = { path: '/p/a.md', reads: [{ path: '/p/b.md' }], cwd: '/p' }
+    const result = await runtime(on('PreToolUse', rewrite, 'Read')).runPreToolUse('Read', input)
+    expect(result.updatedInput).toEqual({
+      path: '/p/a.md',
+      reads: [{ path: '/p/c.md' }],
+      cwd: '/p',
+    })
+  })
+
   it('PostToolUse sees one Write per file', async () => {
     const input = {
       files: [

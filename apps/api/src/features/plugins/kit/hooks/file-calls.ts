@@ -5,47 +5,26 @@
  * any file refuses the call, an allow approves it only when every file is allowed, and each part's
  * rewrite lands on its own entry.
  */
-import type { CcHookToolRef, CcHooksRuntime, PreToolUseResult } from './runtime-contracts'
-import { joinContext } from './runtime-results'
-import { isRecord } from '../../lib/record'
+import type {
+  CcHookToolRef,
+  CcHooksRuntime,
+  PreToolUseResult,
+} from '../../../cc-hooks/runtime-contracts'
+import { joinContext } from '../../../cc-hooks/runtime-results'
+import { fileCallParts, type FileCallParts } from '../../../ext/cc-tool-shapes'
 
-type Fields = Record<string, unknown>
 type ToolRunners = Pick<
   CcHooksRuntime,
   'runPreToolUse' | 'runPostToolUse' | 'runPostToolUseFailure'
 >
 
-/** The list each file tool names its files in. */
-const LIST_KEY: Record<string, string> = { Edit: 'edits', Write: 'files', Read: 'reads' }
-
 const toolName = (tool: CcHookToolRef) => (typeof tool === 'string' ? tool : tool.name)
-
-/** One call per file, and the way back to one call; undefined for a call of one file. */
-export function fileCallParts(
-  tool: string,
-  input: unknown,
-): { parts: Fields[]; join(parts: readonly unknown[]): Fields } | undefined {
-  const key = LIST_KEY[tool]
-  if (!key || !isRecord(input)) return undefined
-  const list = input[key]
-  if (!Array.isArray(list) || list.length < 2) return undefined
-  return {
-    parts: list.map((entry) => ({ ...input, [key]: [entry] })),
-    join: (parts) => ({
-      ...input,
-      [key]: parts.map((part, i) => {
-        const entries = isRecord(part) ? part[key] : undefined
-        return Array.isArray(entries) && entries.length === 1 ? entries[0] : list[i]
-      }),
-    }),
-  }
-}
 
 /** Fold the parts' PreToolUse results into the call's. */
 async function preToolUseByFile(
   run: ToolRunners['runPreToolUse'],
   tool: CcHookToolRef,
-  split: NonNullable<ReturnType<typeof fileCallParts>>,
+  split: FileCallParts,
   toolUseId?: string,
 ): Promise<PreToolUseResult> {
   const contexts: (string | undefined)[] = []

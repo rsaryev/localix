@@ -70,23 +70,63 @@ export function toolCallEvent(
   }
 }
 
-/**
- * A Localix call as the single-file calls Claude Code's tools make: one input per edit, per file
- * written or per file read, so each reads as `Edit`, `Write` or `Read` does (one input otherwise).
- */
-export function singleCalls(tool: string, input: unknown): Fields[] {
-  const fields = isRecord(input) ? input : {}
-  if (tool === 'Read' && 'path' in fields && Array.isArray(fields.reads)) {
-    // A read of `path` and of a list reads each: one call per file, the item's range its own.
-    const { path, reads, ...rest } = fields
-    const items = [{ path }, ...(reads as unknown[])]
-    return items.map((item) => ({ ...rest, ...(isRecord(item) ? item : { path: item }) }))
-  }
-  const list = ({ Edit: 'edits', Write: 'files', Read: 'reads' } as Record<string, string>)[tool]
-  const entries = list ? fields[list] : undefined
-  if (!list || !Array.isArray(entries) || entries.length < 2) return [fields]
-  return entries.map((entry) => ({ ...fields, [list]: [entry] }))
+/** A Localix call split into the single-file calls Claude Code's tools make, and the way back. */
+export interface FileCallParts {
+  /** One input per edit, per file written or per file read, as `Edit`, `Write` or `Read` takes it. */
+  readonly parts: Fields[]
+  /** The call again from its parts, each part's rewrite on its own entry. */
+  join(parts: readonly unknown[]): Fields
 }
+
+/** The list each file tool names its files in. */
+const FILE_LISTS: Record<string, string> = { Edit: 'edits', Write: 'files', Read: 'reads' }
+
+/** A part's entry of `list`, or the original entry when the part does not carry exactly one. */
+const entryOf = (part: unknown, list: string, fallback: unknown) => {
+  const entries = isRecord(part) ? part[list] : undefined
+  return Array.isArray(entries) && entries.length === 1 ? entries[0] : fallback
+}
+
+/**
+ * A Localix call as the single-file calls Claude Code's tools make, so each reads as `Edit`,
+ * `Write` or `Read` does; undefined for a call of one file.
+ */
+export function fileCallParts(tool: string, input: unknown): FileCallParts | undefined {
+  if (!isRecord(input)) return undefined
+  if (tool === 'Read' && 'path' in input && Array.isArray(input.reads) && input.reads.length) {
+    // A read of `path` and of a list reads each: one call per file, the item's range its own.
+    const { path, reads, ...rest } = input
+    const items: Fields[] = [
+      { path },
+      ...reads.map((item) => (isRecord(item) ? item : { path: item })),
+    ]
+    const own = (part: unknown, item: Fields) =>
+      isRecord(part)
+        ? Object.fromEntries(Object.entries(part).filter(([key]) => !(key in rest) || key in item))
+        : item
+    return {
+      parts: items.map((item) => ({ ...rest, ...item })),
+      join: (parts) => {
+        const [first, ...others] = items.map((item, at) => own(parts[at], item))
+        return { ...rest, path: first?.path ?? path, reads: others }
+      },
+    }
+  }
+  const list = FILE_LISTS[tool]
+  const entries = list ? input[list] : undefined
+  if (!list || !Array.isArray(entries) || entries.length < 2) return undefined
+  return {
+    parts: entries.map((entry) => ({ ...input, [list]: [entry] })),
+    join: (parts) => ({
+      ...input,
+      [list]: entries.map((entry, at) => entryOf(parts[at], list, entry)),
+    }),
+  }
+}
+
+/** The single-file calls of a Localix call: its parts, or the call itself. */
+export const singleCalls = (tool: string, input: unknown): Fields[] =>
+  fileCallParts(tool, input)?.parts ?? [isRecord(input) ? input : {}]
 
 /**
  * The tool's own input from the event a hook passed to `next`. `agentId` says whose call the mod

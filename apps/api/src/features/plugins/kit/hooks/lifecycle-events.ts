@@ -1,7 +1,7 @@
-import type { HookOutcome } from '@rsaryev/llx-plugin'
+import type { HookEvent, HookOutcome } from '@rsaryev/llx-plugin'
 import type { CcHooksRuntime } from '../../../cc-hooks/runtime-contracts'
 import type { CcModelSwitch, CcTask } from '../../../cc-hooks/runtime-contracts-added'
-import { claudeText, type EventDeps, type HookEvent } from './runtime'
+import { claudeText, type EventDeps } from './runtime'
 
 type LifecycleEvents = Pick<
   CcHooksRuntime,
