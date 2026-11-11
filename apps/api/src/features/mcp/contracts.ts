@@ -52,7 +52,7 @@ export const mcpStdioConfigSchema = z.object({
 /**
  * A remote URL that is EITHER a valid absolute URL OR a string carrying a
  * `${VAR}` / `${VAR:-default}` token — those are expanded at connect time
- * (see `expand.ts`), so CC's documented `"${API_BASE_URL:-https://…}/mcp"` form
+ * (`plugins/kit/settings/mcp-connect.ts`), so CC's documented `"${API_BASE_URL:-https://…}/mcp"` form
  * must not be rejected at store time. The expanded value is validated when we
  * build the transport (`new URL(url)`), surfacing a bad host as a connect error.
  */
@@ -91,7 +91,7 @@ export const mcpHttpConfigSchema = z.object({
   headers: z.record(z.string(), z.string()).optional(),
   /**
    * Claude Code's `headersHelper`: a shell command whose stdout is a JSON object of headers, run on
-   * each connection (`headers-helper.ts`). Dynamic headers win a name the static ones set.
+   * each connection (`plugins/kit/settings/mcp-remote.ts`). Dynamic headers win a name the static ones set.
    */
   headersHelper: z.string().min(1).optional(),
   /** Optional OAuth client overrides (interactive sign-in handles the rest). */

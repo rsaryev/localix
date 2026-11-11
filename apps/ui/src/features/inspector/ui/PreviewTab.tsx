@@ -9,6 +9,7 @@ import { usePreviewViewport } from './usePreviewViewport'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { PREVIEW_VIEWPORT_FILL } from '../model/previewViewportPresets'
 import { usePreviewEndpoint } from './usePreviewEndpoint'
+import { registerPreviewFrame } from '../model/previewFrameNavigation'
 import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 const INTRO_SEEN_KEY = 'vf.preview.introSeen'
@@ -83,6 +84,12 @@ export function PreviewTab({
   }, [])
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const vf = useVisualFeedback(iframeRef)
+  // A sign-in page the frame heads for opens in this tab's native page while the person works in
+  // it (`previewFrameNavigation.ts`). A background host is the agent's and never has the focus.
+  useEffect(() => {
+    if (backgroundHost || !sessionId || !previewId) return
+    return registerPreviewFrame({ sessionId, previewId, frame: () => iframeRef.current })
+  }, [backgroundHost, sessionId, previewId])
 
   const { viewport, fixedViewport, changeViewport } = usePreviewViewport({
     sessionId,

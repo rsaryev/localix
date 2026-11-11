@@ -1,6 +1,6 @@
 import { BUILTIN_OUTPUT_STYLES } from './output-style-builtins'
 import type { DiscoveredPlugin } from './discovery-types'
-import { DEFAULT_OUTPUT_STYLE_ID, type StyleBody } from './kit'
+import { activeStyleId, DEFAULT_OUTPUT_STYLE_ID, type StyleBody } from './kit'
 
 /**
  * The output styles a chat can run in, as Claude Code lists them in `/output-style`: the built-in
@@ -60,22 +60,22 @@ export function outputStyleCatalog(input: {
 }
 
 /**
- * The style a chat runs in: a plugin style marked `force-for-plugin` while its plugin is enabled
- * (the first loaded wins, over every choice, as in Claude Code); else the chat's own choice; else,
- * when the chat made none, the person's default (`outputStyle` in Settings). `default` is an
- * explicit choice of no style. A name nothing offers any more — a removed file, a disabled plugin —
- * falls back to the default style, as an unmatched `outputStyle` does in Claude Code.
+ * The style a chat runs in, as the kit resolves it (`activeStyleId`): a plugin style marked
+ * `force-for-plugin` while its plugin is enabled (the first loaded wins), else the chat's own choice
+ * (`chosen`, as `/output-style` set it), else the person's default (`fallback`: `outputStyle` in
+ * Settings, or Claude Code's). `default`, or a name nothing offers any more (a removed file, a
+ * disabled plugin), is no style.
  */
 export function activeOutputStyle(
   styles: readonly NamedOutputStyle[],
   chosen: string | null | undefined,
   fallback?: string | null,
 ): NamedOutputStyle | null {
-  const forced = styles.find((entry) => entry.source === 'plugin' && entry.style.forceForPlugin)
-  if (forced) return forced
-  const name = chosen || fallback
-  if (!name || name === DEFAULT_OUTPUT_STYLE_ID) return null
-  return styles.find((entry) => entry.fullName === name) ?? null
+  const id = activeStyleId(
+    styles.map((entry) => ({ id: entry.fullName, style: entry.style })),
+    { ...(chosen ? { command: chosen } : {}), ...(fallback ? { setting: fallback } : {}) },
+  )
+  return styles.find((entry) => entry.fullName === id) ?? null
 }
 
 /**

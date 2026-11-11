@@ -82,12 +82,9 @@ describe('a plugin folder read by the kit', () => {
       {
         name: 'db:migrate',
         description: 'Migrate after a schema change',
-        args: [],
         prompt: 'Migrate $target',
         argumentHint: '[target]',
-        arguments: ['target'],
         allowedTools: ['Bash(git add:*)', 'Read'],
-        model: 'haiku',
       },
     ])
     expect(found.provides.commands).toEqual(['db:migrate'])

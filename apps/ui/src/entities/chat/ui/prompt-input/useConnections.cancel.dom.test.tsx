@@ -5,6 +5,7 @@ test('declining provider sign-in clears OAuth state, releases the form, and allo
   const teardown = registerDom()
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
+  const { SWRConfig } = await import('swr')
   const { backendClient } = await import('@/shared/api/client')
   const { useChatStore } = await import('@/entities/chat/model/store')
   const { useConnections } = await import('./useConnections')
@@ -53,7 +54,14 @@ test('declining provider sign-in clears OAuth state, releases the form, and allo
   const button = (text: string) =>
     Array.from(document.querySelectorAll('button')).find((element) => element.textContent === text)!
   try {
-    await act(async () => root.render(<Harness />))
+    // A cache of its own: the stubbed catalog must not answer a later test's `catalog` read.
+    await act(async () =>
+      root.render(
+        <SWRConfig value={{ provider: () => new Map() }}>
+          <Harness />
+        </SWRConfig>,
+      ),
+    )
     for (let attempt = 0; attempt < 2; attempt += 1) {
       await act(async () => button('Connect via OAuth').click())
       expect(button('Connecting').disabled).toBe(true)

@@ -3,7 +3,13 @@ import { describe, expect, test } from 'bun:test'
 import { pluginVersion } from './kit'
 import { kitEntry } from './kit/testing'
 
-import { entryVersionInput, RELATIVE_INPUT, withCommit } from './plugin-version'
+import { entryVersionInput, withCommit } from './plugin-version'
+
+const RELATIVE_INPUT = {
+  inGitRepository: false,
+  enclosingRepoIgnored: false,
+  sourceKind: 'relative',
+} as const
 
 const SHA = '0123456789abcdef0123456789abcdef01234567'
 const BASE = { inGitRepository: false, enclosingRepoIgnored: false }

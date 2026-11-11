@@ -139,6 +139,33 @@ describe('positive and negative controls', () => {
     ])
   })
 
+  test('X6 reads a marker through regex escapes and knows the config, hook and skill markers', () => {
+    const hits = X6_PLUGIN_SEMANTICS_IN_THE_KIT.detect([
+      planted('apps/api/src/a.ts', 'const ref = /\\$\\{user_config\\.([\\w.-]+)\\}/g'),
+      planted('apps/api/src/b.ts', 'const v = /\\$\\{([A-Za-z_]\\w*)(?::-([^}]*))?\\}/g'),
+      planted('apps/api/src/c.ts', "const f = join(dir, '.mcp.json')"),
+      planted('apps/api/src/d.ts', "const f = join(dir, 'hooks', 'hooks.json')"),
+      planted('apps/api/src/e.ts', "const f = join(dir, 'SKILL.md')"),
+      planted('apps/api/src/f.ts', "env.CLAUDE_ENV_FILE = file; env['CLAUDE_PROJECT_DIR'] = cwd"),
+      planted('apps/api/src/g.ts', 'const run = server.headersHelper'),
+      planted('apps/api/src/h.ts', "const forced = mode === 'force-for-plugin'"),
+      // Not markers: a shell default without a captured name, a bare `${NAME}` of Localix's own.
+      planted('apps/api/src/i.ts', 'const line = \'case "${HISTFILE:-}" in\''),
+      planted('apps/api/src/j.ts', 'const t = /\\$\\{([A-Z0-9_]+)\\}/g'),
+    ])
+    expect(hits).toEqual([
+      'apps/api/src/a.ts spells user_config. (user config references)',
+      'apps/api/src/b.ts spells ${VAR:-default} (variable expansion)',
+      'apps/api/src/c.ts spells .mcp.json (MCP config reading)',
+      'apps/api/src/d.ts spells hooks.json (hooks reading)',
+      'apps/api/src/e.ts spells SKILL.md (skill reading)',
+      'apps/api/src/f.ts spells CLAUDE_PROJECT_DIR (hook variables)',
+      'apps/api/src/f.ts spells CLAUDE_ENV_FILE (hook env files)',
+      'apps/api/src/g.ts spells headersHelper (MCP headers helper)',
+      'apps/api/src/h.ts spells force-for-plugin (plugin settings)',
+    ])
+  })
+
   test('X7 fires on a kit value or re-export outside the boundary, never on a type import', () => {
     const hits = X7_KIT_THROUGH_THE_BOUNDARY.detect([
       planted(

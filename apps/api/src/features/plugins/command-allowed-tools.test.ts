@@ -7,7 +7,6 @@ import { withOuterRules } from '../agent-core/permission-verdict'
 import { evaluate, extractCallFacts } from '../agent-core/permission-engine'
 import { runOuterRules } from '../chat/runtime/run/claude-code-permissions'
 import { withAllowedTools } from '../chat/runtime/run/permission-gate-build'
-import { toolOverrideOptions } from '../chat/service/tool-override-options'
 import { readPluginFolder } from './kit'
 
 const dir = tempDirPerTest('command-allowed-tools-')
@@ -22,7 +21,7 @@ async function grantsOf(frontmatter: string) {
     `---\n${frontmatter}\n---\n\nCommit the staged changes.`,
   )
   const [command] = (await readPluginFolder(dir())).commands
-  const allowed = toolOverrideOptions(command!)?.extraAllowedTools
+  const allowed = command!.allowedTools
   const grants = withAllowedTools(runOuterRules(dir(), '/home/me'), allowed)
   return (toolName: string, input: object) =>
     withOuterRules(

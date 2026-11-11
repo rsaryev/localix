@@ -10,9 +10,9 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 
 import type { McpServerRecord } from './repository'
 import { mcpLaunch } from './mcp-settings-env'
-import { resolveConnectTimeoutMs, serverEnv } from './mcp-timeouts'
+import { claudeCodeMcp } from './claude-code-settings'
+import { resolveConnectTimeoutMs } from './mcp-timeouts'
 import { mcpOAuthSession, silentAuthProvider } from './oauth/runtime'
-import { remoteRequest } from './mcp-remote-request'
 import { createElicitingClient } from './mcp-elicitation'
 import { HeadersWebSocketTransport } from './mcp-ws-transport'
 
@@ -106,7 +106,7 @@ function ensurePluginDataDir(server: McpServerRecord, env: Record<string, string
 export async function connectClient(server: McpServerRecord, cwd: string): Promise<Client> {
   // Offers elicitation: the server may ask the person for input during a tool call.
   const client = createElicitingClient({ name: CLIENT_NAME, version: CLIENT_VERSION })
-  const deadline = Date.now() + resolveConnectTimeoutMs(serverEnv(server))
+  const deadline = Date.now() + resolveConnectTimeoutMs(server)
 
   if (server.transport === 'ws') {
     const config = mcpLaunch(server, cwd).config
@@ -124,19 +124,20 @@ export async function connectClient(server: McpServerRecord, cwd: string): Promi
     const url = config.url as string | undefined
     if (!url) throw new Error('http server has no url')
     // The static headers with a headersHelper's over them, and the fetch that re-runs the helper
-    // after a 401/403 (`mcp-remote-request.ts`). Any helper failure fails this connect.
+    // after a call's 401/403 (`plugins/kit/settings/mcp-remote.ts`). Any helper failure, and a
+    // rejection of its credential while connecting, fails this connect.
     const oauth = mcpOAuthSession(server)
-    const remote = await remoteRequest(server, config, cwd, oauth.fetch)
+    const remote = await claudeCodeMcp().remoteRequest(server, config, cwd, oauth.fetch)
     const { requestInit } = remote
     // Attach a SILENT OAuth provider: it uses any stored tokens (refreshing them
     // as needed) but never opens a browser — a server needing auth with no token
     // simply fails with UnauthorizedError (surfaced as "needs auth"). Servers that
     // don't require auth are unaffected (the provider is only invoked on a 401).
-    // A helper that supplied `Authorization` is the server's authentication (Claude Code does not
-    // fall back to OAuth then), so a rejection is a connect failure, never "needs sign-in".
-    const authProvider = remote.authorizedByHelper
-      ? undefined
-      : silentAuthProvider(server, undefined, oauth)
+    // An `Authorization` header, set or a helper's, is the server's authentication (Claude Code does
+    // not fall back to OAuth then), so a rejection is a connect failure, never "needs sign-in".
+    const authProvider = remote.oauthFallback
+      ? silentAuthProvider(server, undefined, oauth)
+      : undefined
     try {
       const transport = new StreamableHTTPClientTransport(new URL(url), {
         requestInit,
@@ -144,6 +145,7 @@ export async function connectClient(server: McpServerRecord, cwd: string): Promi
         fetch: remote.fetch,
       })
       await connectTransport(client, transport, deadline)
+      remote.connected()
       return client
     } catch (httpErr) {
       // Older servers only speak the legacy SSE transport — retry once.
@@ -154,6 +156,7 @@ export async function connectClient(server: McpServerRecord, cwd: string): Promi
           fetch: remote.fetch,
         })
         await connectTransport(client, sse, deadline)
+        remote.connected()
         return client
       } catch (sseErr) {
         // Both transports failed: the server is unreachable/misconfigured, NOT just

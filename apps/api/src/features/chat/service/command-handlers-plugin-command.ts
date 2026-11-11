@@ -1,36 +1,19 @@
-import { sessionRoute } from '../../../contracts/session-route'
-import { announceSessionActive } from '../../agent-core/session-activity'
-import {
-  skillToolPathVars,
-  substituteToolPathVars,
-  toolOverrideOptions,
-} from './tool-override-options'
-import { authorizeTypedSkillCommands } from './skill-command-authorize'
-import { pluginDataDir } from '../../plugins/mcp'
-import { userHome } from '../../../lib/env'
-import { parsePluginCommandArgs, renderPluginPrompt } from './plugin-commands'
 import type { MessageBinding } from '@localixai/agent'
-import { resolveMessageBindings } from './message-bindings'
+import { isPluginCommand } from '../../plugins/kit'
 import type { SessionRecord } from '../repository'
-import { nextActivatedTools } from '../runtime/run/tool-deferral'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext } from './command-handlers-context'
-import { findSessionSkill, resolveModelAlias } from '../../plugins/kit'
-import { SkillCommandFailedError } from './skill-commands'
+import { handleSkillCommand } from './command-handlers-skill'
+import { handleWorkflowCommand } from './command-handlers-workflow'
 
 /**
- * Handles namespaced plugin slash commands (`/<plugin>:<command>`). Plugins
- * declare their own slash-commands in their manifest; a namespaced token is
- * dispatched generically: parse positional args against the command's declared
- * `args`, render its `prompt` template, and run it as a macro. Nothing here
- * knows about any specific plugin. Returns null when the prompt's first token
- * isn't a namespaced command.
- *
- * Context refs attached to the send resolve through the SAME channel every message uses
- * (`resolveMessageBindings` → Context Fabric → model-only context assets).
- * Kind-agnostic: any `@session:`/`@project:`/`@message:`/`@snippet`/
- * `@resource:` (git·db·container·cluster·chat) link reaches the plugin command's model
- * turn exactly like it would any command invocation.
+ * A plugin's typed command (`/<plugin>:<name>`, its `commands/*.md`) and a workflow typed as a
+ * command, claimed before the mods' commands. The command runs as the skill it is in the chat's kit
+ * session (`handleSkillCommand`): its arguments, `${CLAUDE_*}` and `${user_config.*}` values, `!`
+ * commands against the agent's rules and `@` files, as Claude Code runs it. A plugin's skill, or a
+ * folder's command, is left for the skill handler. Context the person attached to the send reaches
+ * the turn as every message's does (`resolveMessageBindings`). Returns null when the prompt names
+ * neither.
  */
 export async function handlePluginCommand(
   ctx: CommandHandlerContext,
@@ -38,136 +21,17 @@ export async function handlePluginCommand(
   sessionId: string,
   session: SessionRecord,
   prompt: string,
-  /** Context refs the user attached to this send. Expanded into model-only
-   *  instruction attachments so a plugin command over an attached
-   *  `@resource:localix://resource/git/…` can act on the linked node. */
   bindings?: MessageBinding[],
 ): Promise<MessageMutationResponse | null> {
-  const { repo, now, deps, insertDirectReply, runMacroCommand, gatherEnabledPluginCommands } = ctx
-
-  const firstToken = prompt.trim().split(/\s+/)[0] ?? ''
-  // Accept the namespaced `/<plugin>:<command>` form, OR a bare `/<name>` which we
-  // only treat as a plugin command when a plugin named `<name>` has a command also
-  // named `<name>` (the redundant `<plugin>:<plugin>` case — collapsed for nicer UX,
-  // e.g. `/feature-dev` instead of `/feature-dev:feature-dev`). A bare `/<name>` with
-  // no same-name command falls through (return null) so skills/builtins still resolve.
-  // The command part may itself be namespaced (`/<plugin>:<sub>:<cmd>` from a nested
-  // `commands/<sub>/<cmd>.md`), so it captures one-or-more colon-joined segments.
-  const tokenMatch = firstToken.match(/^\/([a-z0-9_-]+)(?::([a-z0-9_-]+(?::[a-z0-9_-]+)*))?$/i)
-  if (!tokenMatch) return null
-  const pluginName = tokenMatch[1].toLowerCase()
-  const commandName = (tokenMatch[2] ?? tokenMatch[1]).toLowerCase()
-
-  const ts = now()
-  const argString = prompt.trim().slice(firstToken.length).trim()
-
-  const available = await gatherEnabledPluginCommands(userId, session)
-  const match = available.find(
-    (c) => c.plugin.toLowerCase() === pluginName && c.command.name.toLowerCase() === commandName,
-  )
-  if (match) {
-    // What the name runs is the kit's answer: a plugin's command wins a same-name skill of its
-    // plugin (Claude Code 2.1.319); a skill the name runs instead goes to the skill handler,
-    // later in the dispatch.
-    const kitSession = await ctx.chatPluginSession?.(userId, session)
-    const runs = kitSession && findSessionSkill(kitSession, `${match.plugin}:${match.command.name}`)
-    if (runs?.invocable.kind === 'skill' && runs.policy.user) return null
-    // No busy refusal: a command sent while the session works waits in the queue whole
-    // (`run-macro.ts`). The session's agent answers it.
-    const route = sessionRoute(session)
-    const parsed = parsePluginCommandArgs(match.command, argString, match.plugin)
-    if ('usage' in parsed) {
-      return insertDirectReply(userId, sessionId, prompt, parsed.usage, ts, 'warning')
-    }
-    const projectDir = await ctx.resolveSessionWorkingDir(userId, session)
-    const pathVars = skillToolPathVars({
-      projectDir,
-      pluginRoot: match.pluginDir,
-      pluginDataDir: pluginDataDir(match.plugin, userHome()),
-    })
-    // The agent's rules, which every injected command meets first (`skill-command-authorize.ts`).
-    const rules = await ctx.loadSkillCommandRules?.(userId, route.agentId)
-    let instruction: string
-    try {
-      instruction = await renderPluginPrompt(match.command.prompt, parsed.values, argString, {
-        sessionId,
-        effort: route.reasoningEffort ?? undefined,
-        pluginDir: match.pluginDir,
-        pluginName: match.plugin,
-        ...(match.dataDir ? { dataDir: match.dataDir } : {}),
-        projectDir,
-        // CC dynamic content (`!\`cmd\``, `@path`) runs in the session working dir.
-        cwd: projectDir,
-        shellDisabled:
-          (await ctx.skillShellDisabled?.({
-            workingDir: projectDir,
-            skillPath: match.pluginDir,
-          })) === true,
-        arguments: match.command.arguments,
-        ...(rules
-          ? {
-              authorize: authorizeTypedSkillCommands(
-                rules,
-                substituteToolPathVars(match.command.allowedTools, pathVars),
-                projectDir,
-              ),
-            }
-          : {}),
-      })
-    } catch (error) {
-      // CC: a failed injected command aborts the invocation; the model never sees the command.
-      if (!(error instanceof SkillCommandFailedError)) throw error
-      const reply = `\`${firstToken}\`: ${error.message.slice(0, 4000)}`
-      return insertDirectReply(userId, sessionId, prompt, reply, ts, 'error')
-    }
-    // Localix rendered the command itself: the kit session records it, so a monitor waiting for
-    // it (`on-skill-invoke`) starts now.
-    if (kitSession?.recordSkillInvocation(`${match.plugin}:${match.command.name}`))
-      announceSessionActive({ userId, chatId: session.rootSessionId ?? sessionId, sessionId })
-    const resolvedBindings = await resolveMessageBindings(deps, userId, session, bindings)
-    if (match.command.activateTools?.length) {
-      const tools = match.command.activateTools
-      const stored = await repo.changeActivatedTools(userId, sessionId, (current) =>
-        nextActivatedTools(current, tools),
-      )
-      if (stored) session.activatedTools = stored.next
-    }
-    return runMacroCommand(
+  return (
+    (await handleSkillCommand(
+      ctx,
       userId,
       sessionId,
       session,
-      () => repo.listMessages(userId, sessionId),
       prompt,
-      instruction,
-      ts,
-      {
-        ...toolOverrideOptions(match.command, pathVars),
-        ...(resolvedBindings?.length ? { bindings: resolvedBindings } : {}),
-        invocation: {
-          source: 'plugin',
-          invocation: {
-            kind: 'plugin-command',
-            name: `${match.plugin}:${match.command.name}`,
-            ...(argString ? { arguments: argString } : {}),
-            lifetime: 'turn',
-          },
-          presentation: { label: `/${match.command.name}`, token: firstToken },
-        },
-        // CC command `model:` frontmatter → best-effort per-run model override.
-        // May be an alias (`sonnet`/`opus`/`inherit`) — resolve it like agent/skill
-        // `model:` values; `inherit`/unresolved falls back to the session model,
-        // which runMacroCommand treats as "no override".
-        ...(match.command.model
-          ? {
-              modelId: resolveModelAlias(match.command.model, route.modelId ?? undefined),
-            }
-          : {}),
-      },
-    )
-  }
-  // No matching plugin command — whether bare `/<name>` or the namespaced
-  // `/<plugin>:<command>` form. Fall through (return null) so skills and other
-  // handlers get a chance. The final unresolved-slash gate reports an error if
-  // neither layer claims it, so command-shaped input never silently reaches the model.
-  return null
+      bindings,
+      isPluginCommand,
+    )) ?? handleWorkflowCommand(ctx, userId, sessionId, session, prompt, bindings)
+  )
 }

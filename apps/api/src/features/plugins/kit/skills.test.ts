@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 import { createLocalixPluginHost } from './host'
@@ -83,6 +83,27 @@ describe('a skill invoked through the chat kit session', () => {
     })
     if (!allowed.ok) throw new Error(allowed.message)
     expect(allowed.skill.text).toContain('ran-it')
+  })
+
+  test('an argument reaches a `!` command as data, in every quoting', async () => {
+    skill('say', 'description: Say', 'Said: !`printf "[%s]" $ARGUMENTS "$1" \'$0\'`')
+    const asked: string[] = []
+    const invoked = await invokeSkill(session(), 'say', {
+      invoker: 'model',
+      arguments: `"a; touch PWNED" '$(touch PWNED2)'`,
+      signal,
+      shellPermission: ({ command }) => (asked.push(command), 'allow'),
+    })
+    if (!invoked.ok) throw new Error(invoked.message)
+    expect(invoked.skill.text).toEndWith(
+      'Said: [a; touch PWNED][$(touch PWNED2)][$(touch PWNED2)][a; touch PWNED]\n',
+    )
+    expect(existsSync(join(dir(), 'work', 'PWNED'))).toBe(false)
+    expect(existsSync(join(dir(), 'work', 'PWNED2'))).toBe(false)
+    // The rules read the command that runs, each value quoted.
+    expect(asked).toEqual([
+      `printf "[%s]" 'a; touch PWNED' '$(touch PWNED2)' "\\$(touch PWNED2)" 'a; touch PWNED'`,
+    ])
   })
 
   test('an unknown skill is a refusal with its reason', async () => {

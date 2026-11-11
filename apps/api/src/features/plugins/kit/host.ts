@@ -73,6 +73,8 @@ export function createLocalixPluginHost(deps: PluginHostDeps): LocalixPluginHost
     launchOwnsEnvironment: true,
     // A project's portable `.agents/skills` beside its `.claude` ones.
     extraScopeFolders: ['.agents'],
+    // An argument the person or the model typed reaches a `!` command as data, never as shell.
+    shellArguments: 'environment-reference',
   })
   return {
     kit,

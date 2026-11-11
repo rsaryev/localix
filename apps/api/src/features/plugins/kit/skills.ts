@@ -1,5 +1,6 @@
 import type {
   Expansion,
+  FileReference,
   PermissionBehavior,
   PluginSession,
   SkillInvoker,
@@ -21,6 +22,8 @@ export interface InvokedSkill {
   readonly fork?: { readonly agent: string; readonly wait: boolean }
   readonly model?: string
   readonly effort?: string
+  /** The files its text names with `@`, for the host to attach; the `@` stays in `text`. */
+  readonly references: readonly FileReference[]
 }
 
 export type SkillInvocation =
@@ -69,6 +72,7 @@ function invokedOf(expansion: Extract<Expansion, { ok: true }>): InvokedSkill {
     text: expansion.text,
     grants: expansion.grants,
     disallowed: expansion.disallowed,
+    references: expansion.references,
     ...(execution.mode === 'fork'
       ? { fork: { agent: execution.agent, wait: !execution.background } }
       : {}),

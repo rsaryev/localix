@@ -19,6 +19,7 @@ import { withAllowedTools } from './permission-gate-build'
 import { applySkillTurnGrants } from './skill-turn-grants'
 import { skillFilePath } from '../../../plugins/kit'
 import { skillFolderOf, writeSkill } from '../../skill-files'
+import { attachFileReferences } from '../../file-references'
 
 /** The run's permission inputs, filled once its gate is built (`stages/intake.ts`). */
 export type SkillCommandPolicyRef = { current?: VerdictOptions }
@@ -65,7 +66,8 @@ export function skillSavePorts(
  * names as a `/name` word (the kit reads it), and the session expands the skill as Claude Code does when Claude invokes it (`disable-model-invocation`, its
  * commands against the run's rules, its frontmatter `hooks` registered for the rest of the
  * session), its tool lists apply to the rest of the run, and a plugin monitor waiting for it
- * starts. No kit session (a test's runtime): no port, the content as written.
+ * starts, and the files it names with `@` are attached inside the working folder or the skill's
+ * own. No kit session (a test's runtime): no port, the content as written.
  */
 export function skillToolPorts(input: {
   userId: string
@@ -101,7 +103,10 @@ export function skillToolPorts(input: {
         signal: request.signal ?? new AbortController().signal,
       })
       if (!invoked.ok) return invoked
-      const { text, fork, model, effort } = invoked.skill
+      const { fork, model, effort, references } = invoked.skill
+      // The files its text names with `@`, attached as a typed skill's are (`command-handlers-skill.ts`).
+      const bases = [defaultCwd, ...(skill.dir ? [skill.dir] : [])]
+      const text = await attachFileReferences(invoked.skill.text, references, bases)
       applySkillTurnGrants(commandPolicy, skill.name, invoked.skill, defaultCwd)
       // The session recorded the skill: a plugin monitor waiting for it starts now.
       announceSessionActive({

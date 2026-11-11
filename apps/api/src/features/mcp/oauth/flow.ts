@@ -6,8 +6,7 @@ import { UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js'
 
 import { errorMessage } from '../../../lib/errors'
 import type { McpServerRecord } from '../repository'
-import { connectServerConfig } from '../expand'
-import { remoteRequest } from '../mcp-remote-request'
+import { claudeCodeMcp } from '../claude-code-settings'
 import { listenForCallback, type CallbackListener } from './callback-listener'
 import { createMcpOAuthProvider } from './provider'
 import { createPendingOAuthRegistry } from './pending-flow-registry'
@@ -58,14 +57,16 @@ export async function startMcpOAuth(
   pending.sweep(now)
   if (server.transport !== 'http')
     throw new Error('OAuth is only supported for remote (http) MCP servers')
-  const config = connectServerConfig(server)
+  const config = claudeCodeMcp().connectConfig(server, process.env)
   const url = config.url as string | undefined
   if (!url) throw new Error('server has no url')
 
   const session = mcpOAuthSession(server)
-  const remote = await remoteRequest(server, config, process.cwd(), session.fetch)
-  if (remote.authorizedByHelper)
-    throw new Error('its headersHelper supplies the Authorization header, so there is no sign-in')
+  const remote = await claudeCodeMcp().remoteRequest(server, config, process.cwd(), session.fetch)
+  if (!remote.oauthFallback)
+    throw new Error(
+      'its Authorization header (set or from its headersHelper) is its credential, so there is no sign-in',
+    )
 
   const state = randomUUID()
   let captured: string | undefined

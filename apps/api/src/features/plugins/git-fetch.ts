@@ -51,17 +51,6 @@ export async function readHeadCommit(dir: string): Promise<string | undefined> {
   }
 }
 
-/** The commit `ref` (the default branch when absent) points at on the remote, or undefined. */
-export async function readRemoteCommit(url: string, ref?: string): Promise<string | undefined> {
-  try {
-    const out = await git(['ls-remote', '--', url, ref ?? 'HEAD'])
-    const sha = out.split(/\s+/)[0] ?? ''
-    return /^[0-9a-f]{40}$/i.test(sha) ? sha : undefined
-  } catch {
-    return undefined
-  }
-}
-
 /**
  * Fetch one revision of `url` into `dest`, as Claude Code does for a plugin source. A commit SHA
  * is fetched directly (most hosts serve a reachable commit even when its branch is gone); a

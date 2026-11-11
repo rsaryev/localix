@@ -1,5 +1,4 @@
 import type { ChatServiceDeps } from './service/context'
-export type { SkillInput, SkillRecord } from './service/skills'
 import { createChatServiceGraph } from './service/service-graph'
 import { createSessionCore } from './service/session-core'
 import { createOperationContexts } from './service/operation-contexts'

@@ -1,6 +1,7 @@
 import {
   BUILTIN_OUTPUT_STYLES,
   readOutputStyle,
+  resolveOutputStyle,
   type OutputStyle,
 } from '@rsaryev/llx-plugin/format'
 
@@ -35,3 +36,18 @@ export const outputStyleFile = (path: string, text: string): StyleBody =>
 export function builtinStyleDescription(id: string): string | undefined {
   return BUILTIN_OUTPUT_STYLES.find((style) => style.id === id)?.description
 }
+
+/**
+ * The id of the style in force, as the kit decides it (output-styles.md, "Change your output
+ * style"): a `force-for-plugin` style over everything, else the `/output-style` choice (case
+ * ignored), else the `outputStyle` setting (exact), else `default`. `styles` are the custom ones,
+ * each under the id `/output-style` lists it by; the built-ins are the kit's.
+ */
+export const activeStyleId = (
+  styles: readonly { readonly id: string; readonly style: StyleBody }[],
+  choice: { readonly command?: string; readonly setting?: string },
+): string =>
+  resolveOutputStyle({
+    ...choice,
+    styles: styles.map(({ id, style }) => ({ ...style, id, path: id })),
+  }).id

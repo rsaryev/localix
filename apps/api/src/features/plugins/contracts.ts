@@ -11,7 +11,7 @@ import { pluginConfigFieldSchema } from './contracts-config'
  */
 
 export type { PluginConfigType, PluginConfigOption, PluginConfigField } from './contracts-config'
-export { pluginCommandSchema, pluginCommandSpecSchema } from './contracts-commands'
+export { pluginCommandSpecSchema } from './contracts-commands'
 export type {
   MiniAppCommandArg,
   PluginCommand,

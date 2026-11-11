@@ -4,6 +4,7 @@ import { installWorkbenchGestures } from '@/shared/lib/workbenchGesture'
 import { startWorkspaceResourceSync } from './workspaceResourceSync'
 import { lazy, Suspense, useEffect, useLayoutEffect } from 'react'
 import { usePreviewHosts } from '@/features/inspector/model/previewHosts'
+import { startPreviewFrameNavigation } from '@/features/inspector/model/previewFrameNavigation'
 import { shouldMountBrowserHost } from '@/features/inspector/model/browserHostPolicy'
 import { Outlet, useLocation } from 'react-router'
 import { ActionConfirm } from '@/shared/ui/ActionConfirm'
@@ -61,6 +62,8 @@ export function RootLayout() {
 
   useEffect(() => startWorkspaceResourceSync(), [])
   useLayoutEffect(() => startBrowserLinkRouting(), [])
+  // The desktop shell hands a preview frame's sign-in page to the tab it came from.
+  useLayoutEffect(() => startPreviewFrameNavigation(), [])
   useLayoutEffect(() => installWorkbenchGestures(), [])
 
   // ── Startup instrumentation, staged in two phases ───────────────────────────

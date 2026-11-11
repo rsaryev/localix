@@ -8,8 +8,9 @@ import { parse } from 'shell-quote'
  * shell-quote does the lexing (quotes, adjacency, escapes). The argv is spawned directly, never
  * through a shell, so the shell features shell-quote would ALSO apply are wrong here and are
  * neutralised before it sees the line:
- *   - `$VAR` / `${VAR:-x}` stay verbatim — `features/mcp/expand.ts` owns `${…}` expansion, and an
- *     unbalanced `${` must not throw while someone is still typing;
+ *   - `$VAR` / `${VAR:-x}` stay verbatim — the connect-time expansion
+ *     (`plugins/kit/settings/mcp-connect.ts`) owns `${…}`, and an unbalanced `${` must not throw
+ *     while someone is still typing;
  *   - `| & ; ( ) < > #` and backticks are literal characters, not operators or a comment
  *     (`foo#bar` is one argument, not `foo` plus a comment);
  *   - an unquoted backslash escapes only a character a shell would treat specially, so a pasted

@@ -83,5 +83,3 @@ export function createRouteDefaults(ports: RouteDefaultsPorts) {
 
   return { startingRoute }
 }
-
-export type RouteDefaults = ReturnType<typeof createRouteDefaults>

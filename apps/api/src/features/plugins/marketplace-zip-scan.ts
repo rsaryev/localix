@@ -1,4 +1,6 @@
+import type { ArchiveLimits } from '@rsaryev/llx-plugin/marketplace'
 import { UnprocessableError } from '../../lib/domain-errors'
+import { ARCHIVE_LIMITS } from './kit'
 
 /**
  * Claude Code's extraction limits for an `archive` plugin source, checked against the zip's
@@ -12,21 +14,11 @@ import { UnprocessableError } from '../../lib/domain-errors'
  * (`marketplace-zip-inflate.ts`) holds each entry to them.
  */
 
-export interface ZipLimits {
-  maxEntries: number
-  maxFileBytes: number
-  maxTotalBytes: number
-  maxRatio: number
-}
-
-const MiB = 1024 * 1024
-
-export const ZIP_LIMITS: ZipLimits = {
-  maxEntries: 100_000,
-  maxFileBytes: 512 * MiB,
-  maxTotalBytes: 1024 * MiB,
-  maxRatio: 50,
-}
+/** The extraction half of the kit's `ArchiveLimits` (`ARCHIVE_LIMITS`, Claude Code's own). */
+export type ZipLimits = Pick<
+  ArchiveLimits,
+  'maxEntries' | 'maxFileBytes' | 'maxUncompressedBytes' | 'maxCompressionRatio'
+>
 
 const EOCD = 0x06054b50
 const ZIP64_LOCATOR = 0x07064b50
@@ -176,7 +168,7 @@ function memberAt(buf: Buffer, at: number, dir: Directory): { member: ZipMember;
 }
 
 /** Walk the whole central directory, refusing the archive past `limits`. */
-export function scanZip(buf: Buffer, limits: ZipLimits = ZIP_LIMITS): ZipSummary {
+export function scanZip(buf: Buffer, limits: ZipLimits = ARCHIVE_LIMITS): ZipSummary {
   const end = findEnd(buf)
   const dir = directoryOf(buf, end)
   if (dir.count > limits.maxEntries)
@@ -195,17 +187,17 @@ export function scanZip(buf: Buffer, limits: ZipLimits = ZIP_LIMITS): ZipSummary
     largestBytes = Math.max(largestBytes, member.bytes)
     if (member.bytes > limits.maxFileBytes)
       throw tooLarge(`Archive has a file of ${member.bytes} bytes (limit ${limits.maxFileBytes})`)
-    if (totalBytes > limits.maxTotalBytes)
-      throw tooLarge(`Archive unpacks to more than ${limits.maxTotalBytes} bytes`)
+    if (totalBytes > limits.maxUncompressedBytes)
+      throw tooLarge(`Archive unpacks to more than ${limits.maxUncompressedBytes} bytes`)
     at = next
   }
   if (members.length !== dir.count)
     throw bad(
       `Archive end record counts ${dir.count} entries; its directory holds ${members.length}`,
     )
-  if (totalBytes > buf.length * limits.maxRatio)
+  if (totalBytes > buf.length * limits.maxCompressionRatio)
     throw tooLarge(
-      `Archive unpacks to ${totalBytes} bytes, more than ${limits.maxRatio} times its ${buf.length}-byte size`,
+      `Archive unpacks to ${totalBytes} bytes, more than ${limits.maxCompressionRatio} times its ${buf.length}-byte size`,
     )
   return { entries: members.length, totalBytes, largestBytes, members }
 }

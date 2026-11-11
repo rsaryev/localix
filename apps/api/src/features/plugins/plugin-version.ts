@@ -1,10 +1,10 @@
 import type { MarketplaceEntry, VersionInput } from '@rsaryev/llx-plugin/marketplace'
+import { readFetchedManifest } from './kit'
 
 /**
  * What a marketplace entry's `source` tells the kit's version rules (`pluginVersion` in `./kit`)
  * before anything is fetched: a git source pinned to a commit knows it and never moves, an unpinned
- * one learns it from the remote, and a relative entry's commit is its marketplace's, filled in by
- * the caller (`withCommit`).
+ * one learns it from the fetch, and a relative entry's commit is its marketplace's (`withCommit`).
  */
 
 const FULL_SHA = /^[0-9a-f]{7,40}$/i
@@ -42,16 +42,29 @@ export const entryVersionInput = <K extends Source['kind']>(entry: {
   readonly source: Extract<Source, { kind: K }>
 }): VersionInput => (INPUTS[entry.source.kind] as InputOf<K>)(entry.source)
 
-/** A relative path inside a git-hosted marketplace. */
-export const RELATIVE_INPUT: VersionInput = { ...BASE, sourceKind: 'relative' }
-
 const GIT_KINDS: ReadonlySet<VersionInput['sourceKind']> = new Set(['github', 'url', 'git-subdir'])
-
-/** A git source: its commit is the remote's when the entry pins none. */
-export const isGitInput = (input: VersionInput) => GIT_KINDS.has(input.sourceKind)
 
 /** The commit a clone or the marketplace gave a git or relative source; a relative one is then in git. */
 export const withCommit = (input: VersionInput, commitSha: string | undefined): VersionInput =>
-  !commitSha || !(isGitInput(input) || input.sourceKind === 'relative')
+  !commitSha || !(GIT_KINDS.has(input.sourceKind) || input.sourceKind === 'relative')
     ? input
     : { ...input, commitSha, ...(input.sourceKind === 'relative' ? { inGitRepository: true } : {}) }
+
+/**
+ * What the kit computes a fetched plugin's version from: its entry's source, the commit its files
+ * came from, the manifest's `version` and the entry's (plugins/loading.md, "How Claude Code
+ * computes the version"). The install names its cache folder by it; an update check compares it.
+ */
+export async function fetchedVersionInput(fetched: {
+  readonly dir: string
+  readonly entry: MarketplaceEntry
+  readonly commitSha?: string
+}): Promise<VersionInput> {
+  const declared = (await readFetchedManifest(fetched.dir))?.version
+  const { version } = fetched.entry
+  return {
+    ...withCommit(entryVersionInput(fetched.entry), fetched.commitSha),
+    ...(declared === undefined ? {} : { manifestVersion: declared }),
+    ...(version === undefined ? {} : { entryVersion: version }),
+  }
+}

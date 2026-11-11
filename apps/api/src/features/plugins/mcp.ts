@@ -5,7 +5,7 @@ import type { DiscoveredPlugin } from './discovery'
 import type { Resolved, ResolvedMcpServer } from '@rsaryev/llx-plugin'
 
 // `pluginDataDir` lives in `../ext/user-config-substitute` (shared with cc-hooks).
-export { mcpShellFieldReferencingOption, pluginDataDir } from '../ext/user-config-substitute'
+export { pluginDataDir } from '../ext/user-config-substitute'
 
 /**
  * The MCP server records of one enabled plugin, from the servers its scope's kit session resolved
@@ -30,7 +30,7 @@ export function buildMcpRecords(
       )
       const config = input.config as Record<string, unknown>
       // A stdio process gets the path variables beneath its own `env`; a remote server's helper is
-      // a shell command run in the plugin's directory (`mcp/headers-helper.ts`).
+      // a shell command run in the plugin's directory (`kit/settings/mcp-remote.ts`).
       const finalConfig =
         input.transport === 'stdio'
           ? { ...config, env: { ...resolved.environment, ...(config.env as object | undefined) } }

@@ -63,7 +63,7 @@ describe('splitCommandLine', () => {
     ])
   })
 
-  test('leaves variables for features/mcp/expand.ts and never throws on a half-typed one', () => {
+  test('leaves variables for the connect-time expansion and never throws on a half-typed one', () => {
     expect(splitCommandLine('srv $HOME/x ${TOKEN:-none} "${KEY}" \'$RAW\' ${')).toEqual([
       'srv',
       '$HOME/x',

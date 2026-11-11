@@ -88,11 +88,12 @@ pub(crate) fn is_embedded_navigation_url(url: &tauri::Url) -> bool {
 }
 
 /// Whether a navigation target is a local loopback server (dev server, the
-/// embedded API's preview strip-proxy, a user's app under development). The
-/// webview's `on_navigation` handler fires for EVERY frame — including the
-/// Preview pane's iframe — so loopback http(s) must stay allowed in RELEASE
-/// builds too, or the preview iframe gets cancelled and the system browser
-/// pops instead. Any port; http/https only (ws upgrades never hit on_navigation).
+/// embedded API's preview strip-proxy, a user's app under development). On macOS
+/// and Linux the webview's `on_navigation` handler fires for every frame —
+/// including the Preview pane's iframe (Windows: the top document only, see
+/// `workspace_navigation`) — so loopback http(s) must stay allowed in RELEASE
+/// builds too, or the preview iframe gets cancelled. Any port; http/https only
+/// (ws upgrades never hit on_navigation).
 pub(crate) fn is_loopback(url: &tauri::Url) -> bool {
     if !matches!(url.scheme(), "http" | "https") {
         return false;

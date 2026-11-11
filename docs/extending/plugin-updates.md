@@ -83,13 +83,16 @@ update lands, and a chat's plugin monitors keep running until the chat ends.
 | `FORCE_AUTOUPDATE_PLUGINS=1`                                                         | Keeps the pass on despite those                   |
 
 **Update now** on a plugin's row updates it at once, with its progress on the row; it appears when
-the marketplace's listing resolves to another version. What is available is computed from the
-listings: the Store (Plugins) fetches the listings when it opens, and every marketplace refresh
-checks again. A newer version found in a marketplace with auto-update on is installed at once, so
-**Update now** is offered only for the other marketplaces.
+updating would install another version. A check fetches each plugin's listing entry as an install
+does (a relative entry is read in the marketplace's copy) and computes its version as Claude Code
+does; the update that follows within ten minutes uses that fetch. The Store (Plugins) checks when it
+opens, and every marketplace refresh checks again. A newer version found in a marketplace with
+auto-update on is installed at once, so **Update now** is offered only for the other marketplaces.
 
-An unpinned git entry is compared by its remote commit. **Update marketplace** refreshes the listing
-and updates the plugins installed from it, and names any it leaves for you, such as an entry with a
+A plugin whose manifest sets `version` updates only when that changes, while one without follows its
+commit. A check never fetches an entry with a `headersHelper` or a `command` source, since both run
+a command you accept, so neither is offered here. **Update marketplace** refreshes the listing and
+updates the plugins installed from it, and names any it leaves for you, such as an entry with a
 `headersHelper`. A marketplace's `autoUpdate` lives on its record in
 `~/.localix/marketplaces/known.json`; one that Claude Code's settings declare under
 `extraKnownMarketplaces` brings its own `autoUpdate` value along (see below).

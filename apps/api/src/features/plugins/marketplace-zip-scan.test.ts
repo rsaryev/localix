@@ -8,7 +8,7 @@ import { stubFetch } from '../../testing/fetch-stub'
 import { makeZip } from '../../testing/zip-fixture'
 import { fetchArchivePlugin } from './marketplace-source-archive'
 import { verifyZipMembers } from './marketplace-zip-inflate'
-import { ZIP_LIMITS, scanZip, type ZipLimits } from './marketplace-zip-scan'
+import { scanZip, type ZipLimits } from './marketplace-zip-scan'
 
 /**
  * The zip pre-scan: an archive is held to Claude Code's extraction limits (entries, one file's
@@ -26,8 +26,8 @@ const dir = tempDirPerTest('mkt-zip')
 const small: ZipLimits = {
   maxEntries: 3,
   maxFileBytes: 1000,
-  maxTotalBytes: 1500,
-  maxRatio: 1000,
+  maxUncompressedBytes: 1500,
+  maxCompressionRatio: 1000,
 }
 
 function summary(zip: Buffer, limits?: ZipLimits) {
@@ -36,15 +36,6 @@ function summary(zip: Buffer, limits?: ZipLimits) {
 }
 
 describe('scanZip', () => {
-  it('uses Claude Code extraction limits by default', () => {
-    expect(ZIP_LIMITS).toEqual({
-      maxEntries: 100_000,
-      maxFileBytes: 512 * 1024 * 1024,
-      maxTotalBytes: 1024 * 1024 * 1024,
-      maxRatio: 50,
-    })
-  })
-
   it('accepts an archive inside every limit, stored, deflated or ZIP64', () => {
     const zip = makeZip([
       { name: 'a', data: 'x'.repeat(10), deflate: false },
@@ -91,7 +82,7 @@ describe('scanZip', () => {
       { count: 1 },
     )
     expect(() => scanZip(lying, small)).toThrow('more than 1500 bytes')
-    const honestSizes: ZipLimits = { ...small, maxTotalBytes: 10_000, maxEntries: 10 }
+    const honestSizes: ZipLimits = { ...small, maxUncompressedBytes: 10_000, maxEntries: 10 }
     expect(() => scanZip(lying, honestSizes)).toThrow('counts 1 entries; its directory holds 4')
   })
 

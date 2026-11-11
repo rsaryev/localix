@@ -28,7 +28,7 @@ export function createProcessPluginHost(): ProcessPluginHost {
     environment: () => childEnv(),
     pluginsRoot: () => path.join(localixHome(), 'plugins'),
     scratchDir: () => path.join(localixHome(), 'plugin-scratch'),
-    // Where the run's hooks and the Bash tool keep them (`ccSessionEnvFilesOf`).
+    // Where the run's hooks and the Bash tool keep them (`ccSessionEnvDirOf`).
     envFilesDir: (...args) => path.join(sessionDataDir(...args), '.claude-code'),
     managedDirectory: managedSettingsDir(),
     mcp: () => undefined,

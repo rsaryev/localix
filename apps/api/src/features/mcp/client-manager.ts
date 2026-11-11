@@ -29,7 +29,6 @@ import type {
 } from './client-manager-types'
 import { connectClient, isMcpAuthenticationRequiredError } from './mcp-connect'
 import { disambiguate, filterToolDefs, modelVisibleToolDefs, namespacedName } from './mcp-tools'
-import { resolveConnectTimeoutMs } from './mcp-timeouts'
 
 // What the chat runtime reads from the manager (a gather's result, the required-servers failure).
 export type { McpGatherResult } from './mcp-client-contracts'
@@ -71,7 +70,7 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
   const pool = createConnectionPool({
     connect: options.connect ?? connectClient,
     metadata,
-    startupTimeoutMs: Math.max(1, options.startupTimeoutMs ?? resolveConnectTimeoutMs()),
+    startupTimeoutMs: options.startupTimeoutMs,
     promptListTimeoutMs: options.promptListTimeoutMs,
     observer: () => connectionObserver,
     promptsChanged: () => promptsListener,

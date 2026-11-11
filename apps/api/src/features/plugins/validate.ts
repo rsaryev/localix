@@ -19,16 +19,11 @@ import { issueLine, validatePluginFolder } from './kit'
  */
 
 /**
- * Validate a discovered plugin's static surface. Checks:
- * manifest parse, API version, discoverability metadata (description/author/version),
- * defaultEnabled trust gate, dir name; commands (unique names, description, prompt,
- * arg order/duplicates/argHint, choice options/duplicates/empty values/placeholder,
- * allowedTools/disallowedTools); agents (unique names, description, prompt, tools,
- * effort, pinnedSkills, credential-like names); view/promptSection
- * deduplication; MCP shape; config quality (description, credential-not-secret,
- * secret+default, required+default, type mismatch, invalid keys, builtin-var shadowing);
- * required config not set; CC compat (validateCompatibility).
- * Errors and warnings retain the severity chosen by each owning validator.
+ * Validate a discovered plugin's static surface: what the kit found reading it (`manifestIssues`),
+ * and Localix's own checks, each named where it is made: the `settings.agent` that is not one of
+ * the plugin's agents, the directory name that is not the manifest name (installs and removals key
+ * on it), the commands' and agents' checks (`validate-fields.ts`), the options' checks
+ * (`validate-config.ts`) and what runs differently in Localix (`validate-compat.ts`).
  */
 export function validatePlugin(
   plugin: DiscoveredPlugin,

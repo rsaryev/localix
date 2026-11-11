@@ -192,7 +192,7 @@ Curator pins protect automatic passes, but manual archive remains available.
 
 - [A scope's skills, read through the plugin kit](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/scope-skills.ts)
 - [Writing skills to a scope's folder](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/skill-files.ts)
-- [One-shot skill command expansion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/skill-commands.ts)
+- [Typed skill and command expansion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers-skill.ts)
 - [Session pin resolution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/skills.ts)
 - [Runtime listing, pins and keyword triggers](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run-skills.ts)
 - [Keyword matching](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/prompt-skill-triggers.ts)

@@ -10,6 +10,9 @@ import type { SessionRecord } from '../../repository'
 import { resolveMcpTools } from './mcp-tools'
 import type { RunEnv } from './types'
 import type { McpClientLike } from '../../../mcp/mcp-client-contracts'
+import { withClaudeCodeMcp } from '../../../mcp/testing/claude-code-host'
+
+withClaudeCodeMcp()
 
 const empty: McpGatherResult = {
   tools: [],
@@ -31,7 +34,17 @@ function resolve(gathered: McpGatherResult, pluginServers: Array<{ name: string 
     env: { mcpRepo: { listForScope: async () => [] } } as unknown as RunEnv,
     userId: 'u',
     session: { id: 's', projectId: 'p' } as SessionRecord,
-    pluginMcpServers: pluginServers as never,
+    pluginMcpServers: pluginServers.map(({ name }): McpServerRecord => ({
+      id: `plugin:kit:${name}`,
+      userId: 'u',
+      projectId: 'p',
+      name,
+      description: '',
+      transport: 'stdio',
+      config: { command: ['x'] },
+      createdAt: '',
+      updatedAt: '',
+    })),
     defaultCwd: '/work',
     availability: UNDECIDED,
   })

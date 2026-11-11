@@ -8,41 +8,18 @@ export interface FieldValidation {
 }
 
 /**
- * Validate a plugin's commands (inline map entries and `commands/*.md` files). Names are unique
- * by construction: discovery keeps the first command of a name (`manifest-load.ts`).
+ * Localix's checks of a plugin's commands; the kit reads them and reports what Claude Code's own
+ * validator does (a missing name or description, frontmatter). Named:
+ * - an empty command, which would dispatch nothing to the model;
+ * - a tool `allowed-tools` or `disallowed-tools` names that Localix's engine does not have.
  */
 export function validatePluginCommands(plugin: DiscoveredPlugin): FieldValidation {
   const errors: string[] = []
   const warnings: string[] = []
   for (const cmd of plugin.commands) {
-    if (!cmd.name) {
-      errors.push('A declared command is missing a name.')
-      continue
-    }
     if (!cmd.prompt || cmd.prompt.trim().length === 0) {
       warnings.push(`Command "${cmd.name}" has an empty prompt template.`)
       continue
-    }
-    if (!cmd.description.trim()) {
-      warnings.push(
-        `Command "${cmd.name}" has no description — add one so users know what the command does in the composer menu.`,
-      )
-    }
-    // A `${name}` placeholder no CC `arguments` entry names renders empty in the dispatched
-    // prompt — most likely a typo.
-    const positional = new Set(cmd.arguments ?? [])
-    const placeholders = new Set(
-      [...cmd.prompt.matchAll(/\$\{([a-zA-Z_][a-zA-Z0-9_-]*)\}/g)].map((match) => match[1]),
-    )
-    for (const token of placeholders) {
-      // SCREAMING_CASE tokens are the config/env convention (${API_KEY}) — prompts
-      // legitimately mention them as documentation, so only lowercase-style tokens
-      // are treated as likely arg typos.
-      if (!positional.has(token) && !/^[A-Z][A-Z0-9_]*$/.test(token)) {
-        warnings.push(
-          `Command "${cmd.name}" prompt references \${${token}} which isn't a declared arg.`,
-        )
-      }
     }
     for (const tool of cmd.allowedTools ?? []) {
       // `bash(git add:*)` names the tool before its pattern.
@@ -78,34 +55,24 @@ function unknownToolNote(tool: string, verb: 'lists' | 'disallows'): string {
 }
 
 /**
- * Validate a plugin's custom worker roles (sub-agents) — names must be
- * unique (the namespaced `<plugin>:<name>` is the address), prompts non-empty,
- * tools real engine tools. A plugin may declare any number, as in Claude Code.
+ * Localix's checks of a plugin's agents; the kit reads them (one per name, a missing description
+ * reported and filled in) and reports what Claude Code's own validator does. Named:
+ * - a name that repeats the plugin prefix, which Localix's dispatch (`<plugin>:<agent>`, split on
+ *   the first colon) never resolves;
+ * - an empty prompt;
+ * - a tool `tools` or `disallowedTools` names that is not one of Localix's built-ins;
+ * - a `skills` entry Localix cannot preload (namespaced, not a skill name, or repeated).
  */
 export function validatePluginAgents(plugin: DiscoveredPlugin): FieldValidation {
   const errors: string[] = []
   const warnings: string[] = []
-  const seenAgentNames = new Set<string>()
   for (const { name, definition: agent } of plugin.agents) {
-    if (!name) {
-      errors.push('A declared agent role is missing a name.')
-      continue
-    }
-    if (seenAgentNames.has(name)) {
-      errors.push(`Duplicate agent role "${name}" — names must be unique within a plugin.`)
-    }
-    seenAgentNames.add(name)
     if (name.startsWith(`${plugin.manifest.name}:`)) {
       // Dispatch resolves `<plugin>:<agent>` by splitting on the FIRST colon, so a
       // manifest name that repeats the plugin prefix becomes `<plugin>:<plugin>:<agent>`
       // and silently never matches — delegate degrades to a general-purpose agent.
       warnings.push(
         `Agent role "${name}" repeats the plugin prefix — it is dispatched as "${plugin.manifest.name}:${name}" and will never resolve. Name it "${name.slice(plugin.manifest.name.length + 1)}" instead.`,
-      )
-    }
-    if (!agent.description.trim()) {
-      warnings.push(
-        `Agent role "${name}" has no description — add one so users know what this role does in the Store.`,
       )
     }
     if (!agent.prompt || agent.prompt.trim().length === 0) {

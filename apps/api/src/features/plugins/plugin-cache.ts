@@ -29,14 +29,9 @@ import type { InstallRecord } from '@rsaryev/llx-plugin/marketplace'
  * background sweep removes it 14 days later, only while at least one install is recorded.
  */
 
-export interface CachedInstallRecord {
-  installPath: string
-  version: string
-  installedAt: string
-  lastUpdated: string
-  /** The commit the copy was taken from, when its source was git. */
-  gitCommitSha?: string
-}
+/** The kit's record of a copy as Localix reads it: its times always set (`''` when unrecorded). */
+export type CachedInstallRecord = Pick<InstallRecord, 'installPath' | 'version' | 'gitCommitSha'> &
+  Required<Pick<InstallRecord, 'installedAt' | 'lastUpdated'>>
 
 const serialize = createKeyedSerializer()
 
@@ -59,7 +54,7 @@ const toCached = ({
   installedAt,
   lastUpdated,
   gitCommitSha,
-}: InstallRecord) => ({
+}: InstallRecord): CachedInstallRecord => ({
   installPath,
   version,
   installedAt: installedAt ?? '',

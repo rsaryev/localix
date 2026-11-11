@@ -69,6 +69,14 @@ describe('choosing a style', () => {
     expect(activeOutputStyle([entry('a', 'terse')], null)).toBeNull()
   })
 
+  // output-styles.md: `/output-style` wins over the setting, and `default` is a choice of its own.
+  test('a choice nothing offers leaves the setting in force; `default` over the setting is none', () => {
+    const styles = [entry('a', 'terse'), entry('a', 'house')]
+    expect(activeOutputStyle(styles, 'gone:style', 'a:house')?.fullName).toBe('a:house')
+    expect(activeOutputStyle(styles, 'default', 'a:house')).toBeNull()
+    expect(activeOutputStyle(styles, null, 'a:house')?.fullName).toBe('a:house')
+  })
+
   test('a query names the default, a full name, or a bare name one plugin offers', () => {
     const styles = [entry('a', 'terse'), entry('b', 'terse'), entry('a', 'teacher')]
     expect(findOutputStyle(styles, 'Default')).toEqual({ kind: 'default' })

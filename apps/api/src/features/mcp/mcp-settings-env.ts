@@ -1,5 +1,4 @@
-import { folderSettingsEnv } from './claude-code-settings'
-import { connectServerConfig } from './expand'
+import { claudeCodeMcp, folderSettingsEnv } from './claude-code-settings'
 import type { McpServerRecord } from './repository'
 
 /**
@@ -14,8 +13,10 @@ export function mcpLaunch(
   cwd: string,
   settingsEnv: Readonly<Record<string, string>> = folderSettingsEnv(cwd),
 ): { config: Record<string, unknown>; env: Record<string, string> } {
-  const config = connectServerConfig(server, {
-    extraEnv: { ...settingsEnv, CLAUDE_PROJECT_DIR: cwd },
+  const config = claudeCodeMcp().connectConfig(server, {
+    ...process.env,
+    ...settingsEnv,
+    CLAUDE_PROJECT_DIR: cwd,
   })
   const own = (config.env as Record<string, string> | undefined) ?? {}
   return {

@@ -38,14 +38,43 @@ its plugins or mini apps. What the core publishes for them is the mini app SDK a
 address grammar both sides name lives in `packages/uri` (the SDK re-exports it for mini apps). The
 loaders enforce X2.
 
-The same test enforces X6 and X7. X6 looks for the format's markers in code (strings count, comments
-do not): `$ARGUMENTS`, `CLAUDE_SKILL_DIR`, `${CLAUDE_PLUGIN_ROOT}`, `CLAUDE_PLUGIN_DATA`,
-`user_config.`, `hookSpecificOutput`, `permissionDecision`, `disable-model-invocation`,
-`allowed-tools` and `plugin.json`, in `apps/api/src`, `apps/ui/src` and `packages/`, outside the
-boundary, tests and testing helpers. Its baseline, `scripts/architecture-baselines/x6.json`, lists
-the code that still spells them and only shrinks as each piece moves behind the boundary. X7 reads
-every import in `apps/`, `packages/` and `scripts/`, tests included: an `import type` of the kit
-passes anywhere, a value import, `import()` or re-export outside the boundary fails, and its
+The same test enforces X6 and X7. X6 looks for the format's markers in code (strings and regex
+literals count, read with their escapes removed so `\$\{CLAUDE_PLUGIN_ROOT\}` is caught; comments do
+not): `$ARGUMENTS`, `CLAUDE_SKILL_DIR`, `${CLAUDE_PLUGIN_ROOT}`, `CLAUDE_PLUGIN_DATA`,
+`CLAUDE_PROJECT_DIR`, `CLAUDE_ENV_FILE`, a `${VAR:-default}` pattern, `user_config.`,
+`hookSpecificOutput`, `permissionDecision`, `hooks.json`, `disable-model-invocation`,
+`allowed-tools`, `SKILL.md`, `plugin.json`, `.mcp.json`, `headersHelper` and `force-for-plugin`. A
+bare `${NAME}` is not a marker: Localix's own mini app manifests, model catalog and `.npmrc` use it.
+It reads `apps/api/src`, `apps/ui/src` and `packages/`, outside the boundary, tests and testing
+helpers. Its baseline, `scripts/architecture-baselines/x6.json`, lists the code that still spells
+them and only shrinks as each piece moves behind the boundary. Each entry that stays is one of
+these:
+
+- Words for the person or the model, not reading: the `search` and `skill` tool descriptions, the
+  `/skills`, `/mcp` and `/plugin` listings, the OAuth flow's reason for no sign-in
+  (`mcp/oauth/flow.ts`), and the doc comments that name `CLAUDE_ENV_FILE`.
+- Localix's own formats and runtime: Localix skills are `SKILL.md` folders (`chat/skill-files.ts`);
+  a mini app folder is told apart from a plugin by its `plugin.json` (`mini-apps/folder.ts`); the
+  agent's tool rules name a skill's `allowed-tools` and `disallowed-tools`
+  (`permission-gate-build.ts`, `skill-turn-grants.ts`), whose values the kit parses.
+- The process environment Localix starts, which the kit describes and the host spawns: the status
+  line and subagent status line commands (`CLAUDE_PROJECT_DIR`, `CLAUDE_PLUGIN_ROOT`,
+  `CLAUDE_PLUGIN_DATA`), a settings MCP server's environment (`mcp-settings-env.ts`) and the data
+  folder a plugin server writes to (`mcp-connect.ts`).
+- The MCP record Localix stores and connects: its `headersHelper` field (`mcp/contracts.ts`,
+  `normalize.ts`, the plugin record's helper root in `plugins/mcp.ts`), the untrusted folder's
+  helper dropped before it can run (`claude-code-servers.ts`) and the Store's `.mcp.json` scope
+  label (`store-listing.ts`). The kit plans and runs the helper (`kit/settings/mcp-remote.ts`).
+- A marketplace entry's `headersHelper`, which the person accepts by its hash before it runs
+  (`entry-headers-helper.ts`, `marketplace-resolve.ts`, `marketplace-materialize.ts`) and which an
+  update leaves to them (`update-candidates.ts`, `service-marketplaces.ts`), as the kit's
+  `planUpdate` does.
+- `ext/manifest-substitute.ts`: the variables of a plugin's output style instructions. The kit's
+  catalog reads an output style without substituting it, so Localix's prompt path keeps this until
+  the kit names a surface for it.
+
+X7 reads every import in `apps/`, `packages/` and `scripts/`, tests included: an `import type` of
+the kit passes anywhere, a value import, `import()` or re-export outside the boundary fails, and its
 baseline is empty. A Localix type that adds product facts to a kit shape composes it
 (`{ plugin: Plugin; … }` or an intersection) rather than restating its fields.
 
@@ -59,6 +88,16 @@ baseline is empty. A Localix type that adds product facts to a kit shape compose
 | Localix's own | The Localix marketplace's `plugins` folder, registered as the `localix` marketplace on first start: they install and update like any plugin, with no special origin. |
 | Surfaces      | `/rpc/plugins` (with `/rpc/plugins/updates`), the Store (Plugins), `/plugin`.                                                                                        |
 | Agent         | Skills, commands and agents, namespaced `/<plugin>:<name>` as in Claude Code.                                                                                        |
+
+A plugin's command runs as the skill it is in the chat's kit session, as a folder's
+`.claude/commands` file does (`chat/service/command-handlers-plugin-command.ts`, claimed before the
+mods' commands so `/<plugin>:<name>` reaches the plugin): the kit expands it, the agent's permission
+rules answer its `!` commands (`skill-command-authorize.ts`), and Localix attaches the files its `@`
+names from inside the working folder (`file-references.ts`). The host opens the kit with
+`shellArguments: 'environment-reference'` (`plugins/kit/host.ts`): an argument reaches a `!` command
+as a variable, not pasted into it as Claude Code does, so typed text is never run as shell. The
+catalog keeps only what the menu, the store and the validator read of a command
+(`pluginCommandSchema`).
 
 A part Claude Code defines and Localix does not run is reported in the plugin's validation, never
 dropped silently. A key Claude Code does not define is a validation warning, as in Claude Code.

@@ -4,6 +4,9 @@ import { tempDirPerTest } from '@localixai/testing'
 
 import { connectClient } from './mcp-connect'
 import type { McpServerRecord } from './repository'
+import { withClaudeCodeMcp } from './testing/claude-code-host'
+
+withClaudeCodeMcp()
 
 /** What a WebSocket MCP server RECEIVES in the upgrade request from a configured `headers`. */
 const scratch = tempDirPerTest('mcp-ws-headers-')

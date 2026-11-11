@@ -1,4 +1,5 @@
 import { validatePlugin } from '@rsaryev/llx-plugin'
+import { HEADERS_HELPER_GUARD, rejectUserConfigInShell } from '@rsaryev/llx-plugin/loading'
 import { diskFiles } from '../ports/files'
 
 /**
@@ -19,3 +20,17 @@ export async function validatePluginFolder(
   }
   return { errors, warnings }
 }
+
+/**
+ * The kit's refusals of the servers whose `headersHelper` references `${user_config.*}`: it runs
+ * through a shell, so such a server does not load (mcp.md, "dynamic headers").
+ */
+export const mcpShellFieldRefusals = (servers: Record<string, object>): string[] =>
+  Object.entries(servers).flatMap(([server, config]) => {
+    const helper: unknown = Reflect.get(config, 'headersHelper')
+    const refusal =
+      typeof helper === 'string'
+        ? rejectUserConfigInShell(HEADERS_HELPER_GUARD, helper, { server }, server)
+        : undefined
+    return refusal ? [refusal.message] : []
+  })

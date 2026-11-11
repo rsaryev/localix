@@ -9,9 +9,8 @@ import type { PluginCommandSpec } from './contracts'
  */
 
 /**
- * Flatten the slash-commands declared by every ENABLED plugin in scope into
- * namespaced specs the composer can render. The `prompt` template stays server-side
- * (rendered during dispatch); only arg metadata is exposed.
+ * Flatten the slash-commands of every ENABLED plugin in scope into the specs the composer
+ * renders, each `/<plugin>:<name>` as Claude Code names it. The text stays server-side.
  */
 export function listCommandsFromCatalog(
   catalog: PluginCatalog,
@@ -20,36 +19,15 @@ export function listCommandsFromCatalog(
   const commands: PluginCommandSpec[] = []
   for (const { plugin } of catalog.enabled) {
     if (!projectId && plugin.scope === 'project') continue
-    for (const cmd of plugin.commands) {
-      // Collapse the redundant `<plugin>:<plugin>` to a bare `<plugin>` (e.g.
-      // feature-dev's `commands/feature-dev.md` → `/feature-dev`, not
-      // `/feature-dev:feature-dev`). Dispatch accepts both forms.
-      const fullName =
-        cmd.name === plugin.manifest.name
-          ? plugin.manifest.name
-          : `${plugin.manifest.name}:${cmd.name}`
+    for (const cmd of plugin.commands)
       commands.push({
         pluginName: plugin.manifest.name,
         name: cmd.name,
-        fullName,
+        fullName: `${plugin.manifest.name}:${cmd.name}`,
         description: cmd.description,
-        // Collapse `optionsScript` → a `dynamic` flag; the script PATH never
-        // reaches the client — the composer only needs to know it must fetch
-        // this arg's options on demand (via /command-args/options).
-        args: cmd.args.map((a) => ({
-          name: a.name,
-          type: a.type,
-          description: a.description,
-          ...(a.placeholder ? { placeholder: a.placeholder } : {}),
-          required: a.required,
-          ...(a.options ? { options: a.options } : {}),
-          ...(a.optionsScript ? { dynamic: true } : {}),
-          ...(a.when ? { when: a.when } : {}),
-        })),
+        args: [],
         ...(cmd.argumentHint ? { argumentHint: cmd.argumentHint } : {}),
-        ...(cmd.featured ? { featured: true } : {}),
       })
-    }
   }
   return commands
 }

@@ -1,35 +1,26 @@
-import { promises as fs } from 'node:fs'
-import { join } from 'node:path'
-
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
-import { isRecord } from '../../lib/record'
 import type { DiscoveredPlugin } from './discovery-types'
+import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
 import {
-  catalogAt,
-  isUpdate,
-  PLUGIN_MANIFEST,
-  pluginVersion,
+  precheckUpdate,
   readMarketplace,
   resolveEntryName,
-  cloneUrl,
-  entryFetchPlan,
-  localEntryDir,
   UNKNOWN_VERSION,
+  updateCheck,
   type KnownMarketplace,
 } from './kit'
 import { parseMarketplaceRef, sourceMatchesRef } from './marketplace-source'
 import { readInstallRecords } from './plugin-cache'
-import { entryVersionInput, isGitInput, RELATIVE_INPUT, withCommit } from './plugin-version'
+import { fetchedVersionInput } from './plugin-version'
 
 /**
- * WHAT AN UPDATE WOULD INSTALL, computed without installing: the version of each user-scope plugin
- * installed from a marketplace, against the version its current listing resolves to by Claude
- * Code's rule (the kit's, `pluginVersion`). A relative entry is read in the marketplace's copy (its
- * manifest, else the entry, else the marketplace's commit); a git entry pinned to a commit is that
- * commit and never moves; an unpinned git entry asks the remote for its commit (`git ls-remote`),
- * since its manifest is not known before a fetch, and counts as newer only when the commit differs
- * from the one installed. An npm or an unpinned archive entry is `unknown`, so it never updates
- * unless a `version` field changes, as in Claude Code.
+ * WHAT AN UPDATE WOULD INSTALL, decided by the kit as Claude Code decides it (plugins/loading.md,
+ * "Versions and updates"): the version of each user-scope plugin installed from a marketplace is
+ * computed again from a fresh fetch of its current listing entry, and a new copy is made only when
+ * it differs from the recorded one. A relative entry is read in the marketplace's copy, fetched
+ * with its listing; any other is fetched as the install fetches it, and the update that follows
+ * within ten minutes reuses that fetch (`marketplace-materialize.ts`). An entry that runs a
+ * command the person accepts (a `headersHelper`, a `command` source) is left to them.
  */
 export interface MarketplaceInstall {
   /** `<plugin>@<marketplace>`. */
@@ -39,13 +30,10 @@ export interface MarketplaceInstall {
   /** The install row's source, what an update installs again. */
   source: string
   version: string
-  commitSha?: string
 }
 
 export interface UpdateCandidate {
   version: string
-  /** The commit the listing points at, for a git source. */
-  commitSha?: string
   /** Set when the entry is one an update leaves for the person (a `headersHelper` entry). */
   manual?: string
 }
@@ -74,20 +62,10 @@ export async function listMarketplaceInstalls(deps: {
         marketplace: id.slice(id.lastIndexOf('@') + 1),
         source: row.source,
         version: record?.version ?? plugin.manifest.version ?? UNKNOWN_VERSION,
-        ...(record?.gitCommitSha ? { commitSha: record.gitCommitSha } : {}),
       }
     }),
   )
   return installs.filter((install): install is MarketplaceInstall => install !== null)
-}
-
-async function manifestVersion(dir: string): Promise<string | undefined> {
-  try {
-    const json = JSON.parse(await fs.readFile(join(dir, PLUGIN_MANIFEST), 'utf8'))
-    return isRecord(json) && typeof json.version === 'string' ? json.version : undefined
-  } catch {
-    return undefined
-  }
 }
 
 /** The registered marketplace an install names, by its catalog name or the source it was added from. */
@@ -100,15 +78,33 @@ export function marketplaceRecord(
   return Object.entries(known).find(([, record]) => sourceMatchesRef(record.source, marketplace))
 }
 
-/** The version the install's current listing resolves to, or null when it is no longer listed. */
+/** What an update fetches: the install's plugin, from its marketplace, as the install fetches it. */
+export type FetchPlugin = (ref: {
+  plugin: string
+  marketplace: string
+}) => Promise<{ dir: string; commitSha?: string }>
+
+/** Entries an update leaves for the person: each runs a command they accept (`planUpdate`). */
+const leftToPerson = (entry: MarketplaceEntry): string | undefined => {
+  if (entry.headersHelper !== undefined) return 'its marketplace entry sets a headersHelper'
+  return entry.source.kind === 'command'
+    ? 'its marketplace entry installs with a command'
+    : undefined
+}
+
+/**
+ * What an update of the install would bring, or null when it brings nothing or the entry is no
+ * longer listed: the kit's check before the fetch (`precheckUpdate`), then on the fetched copy
+ * (`updateCheck`).
+ */
 export async function candidateFor(
   install: MarketplaceInstall,
   known: Record<string, KnownMarketplace>,
-  remoteCommit: (url: string, ref?: string) => Promise<string | undefined>,
+  fetch: FetchPlugin,
 ): Promise<UpdateCandidate | null> {
   const found = marketplaceRecord(known, install.marketplace)
   if (!found) return null
-  const [, record] = found
+  const [marketplace, record] = found
   const market = await readMarketplace(record).catch(() => null)
   if (!market) return null
   let name: string
@@ -119,40 +115,13 @@ export async function candidateFor(
   }
   const entry = market.plugins.find((plugin) => plugin.name === name)
   if (!entry) return null
-  if (entry.headersHelper !== undefined)
-    return { version: install.version, manual: 'its marketplace entry sets a headersHelper' }
-  let input = entryVersionInput(entry)
-  let declared: string | undefined
-  const plan = (() => {
-    try {
-      return entryFetchPlan(entry, record.source)
-    } catch {
-      return null
-    }
-  })()
-  if (plan?.kind === 'local') {
-    declared = await manifestVersion(localEntryDir(catalogAt(record).root, entry, plan))
-    if (record.gitCommitSha) input = withCommit(RELATIVE_INPUT, record.gitCommitSha)
-  } else if (plan?.kind === 'git' && isGitInput(input) && !input.commitSha) {
-    input = withCommit(input, await remoteCommit(cloneUrl(plan.repo), plan.sha ?? plan.ref))
-  }
-  const version = await pluginVersion({
-    ...input,
-    ...(declared === undefined ? {} : { manifestVersion: declared }),
-    ...(entry.version === undefined ? {} : { entryVersion: entry.version }),
-  })
-  const { commitSha } = input
-  return { version, ...(commitSha ? { commitSha } : {}) }
-}
-
-/**
- * Whether installing the candidate would change the install, as far as can be known now: the kit's
- * one comparison (`isUpdate`), before any fetch.
- */
-export function isNewer(install: MarketplaceInstall, candidate: UpdateCandidate): boolean {
-  if (candidate.manual || candidate.version === UNKNOWN_VERSION) return false
-  if (isUpdate(install.version, candidate.version) === 'unchanged') return false
-  // A remote git source whose commit is the installed one has nothing new, whatever the version
-  // string the listing alone can compute.
-  return !(candidate.commitSha && install.commitSha === candidate.commitSha)
+  const manual = leftToPerson(entry)
+  if (manual) return { version: install.version, manual }
+  const subject = { source: entry.source, origin: record.source }
+  if (precheckUpdate(subject, install.version) !== 'fetch') return null
+  const fetched = await fetch({ plugin: name, marketplace })
+  const version = await fetchedVersionInput({ ...fetched, entry })
+  const verdict = await updateCheck({ ...subject, version }, install.version)
+  if (verdict.check !== 'new copy') return null
+  return { version: verdict.version }
 }

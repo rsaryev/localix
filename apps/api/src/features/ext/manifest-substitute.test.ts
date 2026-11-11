@@ -8,29 +8,7 @@
  */
 
 import { describe, it, expect } from 'bun:test'
-import { makeSubstituter, normalizeTokenKey } from './manifest-substitute'
-
-// ---------------------------------------------------------------------------
-// normalizeTokenKey
-// ---------------------------------------------------------------------------
-
-describe('normalizeTokenKey', () => {
-  it('strips CLAUDE_PLUGIN_OPTION_ prefix without casing coercion', () => {
-    expect(normalizeTokenKey('CLAUDE_PLUGIN_OPTION_API_KEY')).toBe('API_KEY')
-    expect(normalizeTokenKey('CLAUDE_PLUGIN_OPTION_api_key')).toBe('api_key')
-    expect(normalizeTokenKey('CLAUDE_PLUGIN_OPTION_MixedCase')).toBe('MixedCase')
-  })
-
-  it('strips user_config. prefix without casing coercion', () => {
-    expect(normalizeTokenKey('user_config.API_KEY')).toBe('API_KEY')
-    expect(normalizeTokenKey('user_config.api_key')).toBe('api_key')
-  })
-
-  it('returns bare key unchanged', () => {
-    expect(normalizeTokenKey('API_KEY')).toBe('API_KEY')
-    expect(normalizeTokenKey('token')).toBe('token')
-  })
-})
+import { makeSubstituter } from './manifest-substitute'
 
 // ---------------------------------------------------------------------------
 // makeSubstituter — B3 regression (the core fix)

@@ -1,7 +1,6 @@
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import {
-  ORPHAN_GRACE_MS,
   ORPHANED_MARKER,
   createStoreLayout,
   dirsToOrphan,
@@ -93,5 +92,3 @@ export async function orphansToSweep(root: string, nowMs: number): Promise<reado
   if (remaining.length === 0) return []
   return orphanSweep({ remaining, orphans: await markedOrphans(layout), nowMs, layout })
 }
-
-export { ORPHAN_GRACE_MS }

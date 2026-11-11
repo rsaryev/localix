@@ -4,8 +4,11 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 
 import { buildToolForServer } from './mcp-tools'
-import { resolveToolTimeoutMs } from './mcp-timeouts'
+import { serverTimeouts } from './mcp-timeouts'
 import type { McpServerRecord } from './repository'
+import { withClaudeCodeMcp } from './testing/claude-code-host'
+
+withClaudeCodeMcp()
 
 /**
  * How long an MCP tool call may run, as Claude Code bounds it (mcp.md, "Time limits on MCP tool
@@ -80,21 +83,26 @@ async function slowTool(
 describe('MCP tool call time limits', () => {
   test('with no timeout configured, a call may run for hours, not 30 seconds', () => {
     delete process.env.MCP_TOOL_TIMEOUT
-    expect(resolveToolTimeoutMs({})).toBeGreaterThan(24 * 60 * 60 * 1000)
+    expect(serverTimeouts().toolMs).toBeGreaterThan(24 * 60 * 60 * 1000)
   })
 
   test('a server that goes silent for the idle window fails the call', async () => {
-    process.env[IDLE] = '60'
-    const result = await (await slowTool(400))()
+    process.env[IDLE] = '1000'
+    const result = await (await slowTool(1_500))()
     expect(result.isError).toBe(true)
     expect(String(result.content)).toContain('timed out')
   })
 
   test('progress notifications keep a long call alive past the idle window', async () => {
-    process.env[IDLE] = '80'
-    const result = await (await slowTool(300, {}, 20))()
+    process.env[IDLE] = '1000'
+    const result = await (await slowTool(1_500, {}, 200))()
     expect(result.isError).not.toBe(true)
     expect(String(result.content)).toBe('built')
+  })
+
+  test('an idle window below one second is raised to one second', () => {
+    process.env[IDLE] = '60'
+    expect(serverTimeouts().idleMs).toBe(1_000)
   })
 
   test('an idle window of 0 turns the check off', async () => {
@@ -104,14 +112,14 @@ describe('MCP tool call time limits', () => {
   })
 
   test("a server's own timeout is the floor of its idle window", async () => {
-    process.env[IDLE] = '40'
-    const result = await (await slowTool(150, { timeout: 2_000 }))()
+    process.env[IDLE] = '1000'
+    const result = await (await slowTool(1_500, { timeout: 3_000 }))()
     expect(String(result.content)).toBe('built')
   })
 
   test("the folder's Claude Code settings env sets the limits, as Claude Code's own env does", async () => {
     delete process.env[IDLE]
-    const result = await (await slowTool(400, {}, undefined, { [IDLE]: '60' }))()
+    const result = await (await slowTool(1_500, {}, undefined, { [IDLE]: '1000' }))()
     expect(result.isError).toBe(true)
     expect(String(result.content)).toContain('timed out')
   })

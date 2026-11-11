@@ -64,7 +64,7 @@ export interface RuleOrigin {
  * line or a path, and `?`/`[...]` classes buy nothing here while making a stored pattern hard
  * to reason about at a glance.
  *
- * Nor is it the PATH glob of permission-rule paths (`cc-settings/path-glob.ts`, picomatch).
+ * Nor is it the PATH glob of Claude Code's permission-rule paths, which the kit matches.
  * One resource pattern is matched against the call's commands AND its paths
  * (`agent-core/capability-call-match.ts`), and for a command `*` has to span `/` and spaces:
  * `rm *` must cover `rm -rf /tmp/x`, where a path glob's `*` stops at the first `/` — so a deny

@@ -1,45 +1,29 @@
 import type { DiscoveredPlugin } from './discovery'
 import type { PluginConfigValues } from './config'
-import { mcpShellFieldReferencingOption } from './mcp'
+import { mcpShellFieldRefusals } from './kit'
 import { isRequiredConfigMissing } from '../ext/manifest-validate'
 
 /**
- * Built-in path variables always injected into MCP config substitution — never need a
- * `config` declaration and must NOT trigger the "undeclared key" warning.
+ * Localix's checks of a plugin's `userConfig` options, which Claude Code's own validator does not
+ * make. Named:
+ * - an MCP server's shell-run field that references a plugin option, which does not load (the
+ *   kit refuses it when the server resolves; this says so before, in the kit's words);
+ * - an option the Settings form would show without a description;
+ * - a credential-looking option not marked `sensitive` (its value would show in Settings), and a
+ *   sensitive one with a default (visible in the manifest);
+ * - `required` with a default, and a default of another type than the option's;
+ * - a required option not set (with the person's values).
  */
-const BUILTIN_PLUGIN_VARS = new Set([
-  'CLAUDE_PLUGIN_ROOT',
-  'CLAUDE_PLUGIN_DATA',
-  'CLAUDE_PROJECT_DIR',
-])
-
-/** Accumulate configuration diagnostics in the caller's existing validation order. */
 export function validatePluginConfig(
   plugin: DiscoveredPlugin,
   warnings: string[],
   opts?: { config?: PluginConfigValues },
 ): void {
-  // A key Claude Code's option schema accepts is a word (`[A-Za-z_][A-Za-z0-9_]*`); one that
-  // shadows a built-in path variable loses to it.
-  for (const key of Object.keys(plugin.manifest.config ?? {})) {
-    if (BUILTIN_PLUGIN_VARS.has(key)) {
-      warnings.push(
-        `Config key "${key}" shadows the built-in path variable \${${key}} — the built-in value always wins; rename the key to avoid confusion.`,
-      )
-    }
-  }
   // An undeclared `${VAR}` in an MCP config reads the environment, as in Claude Code: no warning.
 
   // Options, sensitive ones included, substitute anywhere in an MCP server's config, as in Claude
-  // Code — except `headersHelper`, which runs through a shell: such a server does not load.
-  for (const [name, server] of Object.entries(plugin.entrypoints.mcpServers)) {
-    const field = mcpShellFieldReferencingOption(server)
-    if (field) {
-      warnings.push(
-        `MCP server "${name}" references \${user_config.*} in "${field}" — the value would be re-parsed by a shell, so the server does not load. Read the value inside the helper script (e.g. from an env var set in the server's "env" block).`,
-      )
-    }
-  }
+  // Code — except a field run through a shell: the kit refuses such a server.
+  warnings.push(...mcpShellFieldRefusals(plugin.entrypoints.mcpServers))
 
   // Validate config fields — description, required+default inconsistency, type mismatch, and unset required.
   for (const [key, opt] of Object.entries(plugin.manifest.config ?? {})) {

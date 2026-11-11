@@ -14,6 +14,9 @@ import {
 } from './mcp-channel-permissions'
 import type { McpServerRecord } from './repository'
 import type { McpClientLike } from './mcp-client-contracts'
+import { withClaudeCodeMcp } from './testing/claude-code-host'
+
+withClaudeCodeMcp()
 
 const record = (id: string, config: Record<string, unknown> = {}): McpServerRecord => ({
   id,

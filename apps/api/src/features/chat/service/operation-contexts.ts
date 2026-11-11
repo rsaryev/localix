@@ -59,7 +59,7 @@ export function createOperationContexts(
     resolveSessionWorkingDir,
     gatherSessionSkills,
     scopeSkillsOf,
-    gatherEnabledPluginCommands,
+    enabledWorkflows,
     buildSessionPluginCatalog,
     loadSessionPluginMcpServers,
     chatPluginSession,
@@ -165,7 +165,6 @@ export function createOperationContexts(
 
   const commandCtx: CommandHandlerContext = {
     ...(deps.loadSkillCommandRules ? { loadSkillCommandRules: deps.loadSkillCommandRules } : {}),
-    ...(deps.skillShellDisabled ? { skillShellDisabled: deps.skillShellDisabled } : {}),
     deps,
     repo,
     usageRepo,
@@ -183,7 +182,7 @@ export function createOperationContexts(
     runAgent,
     gatherSessionSkills,
     loadSkillOverrides,
-    gatherEnabledPluginCommands,
+    enabledWorkflows,
     resolveSessionWorkingDir,
     buildSessionPluginCatalog,
     loadSessionPluginMcpServers,

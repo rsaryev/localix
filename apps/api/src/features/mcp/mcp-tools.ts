@@ -14,7 +14,7 @@ import {
   resolveMcpResultMaxChars,
 } from './mcp-result'
 
-import { resolveToolIdleTimeoutMs, resolveToolTimeoutMs, serverEnv } from './mcp-timeouts'
+import { serverEnv, serverTimeouts } from './mcp-timeouts'
 
 /** MCP tool descriptions can be huge (multi-KB); cap what reaches the model. */
 export const MCP_DESCRIPTION_MAX_CHARS = 600
@@ -187,8 +187,10 @@ export function buildToolForServer(
     ? `[MCP: ${server.name}] ${capDescription(def.description.trim())}`
     : `[MCP: ${server.name}] ${def.name}`
   const env = serverEnv(server)
-  const timeout = resolveToolTimeoutMs(server.config, env)
-  const idleTimeout = resolveToolIdleTimeoutMs(server)
+  const limits = serverTimeouts(server)
+  const timeout = limits.toolMs
+  // No idle check is the deadline's 0.
+  const idleTimeout = limits.idleMs ?? 0
   const maxResultChars = resolveMcpResultMaxChars(def.maxResultChars, env)
   const callClass = classifyMcpTool(def.annotations)
   const mutates = callClass.effect !== 'read'

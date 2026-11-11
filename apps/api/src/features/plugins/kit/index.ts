@@ -24,7 +24,7 @@ export { isPluginFolder, PLUGIN_MANIFEST } from './catalog/plugin-folder'
 export { dropSynthesizedManifest } from './catalog/synthesized-manifest'
 export { pluginNameRefusal } from './catalog/manifest'
 export type { ResolvedEntrypoints } from './catalog/entrypoints'
-export { validatePluginFolder } from './catalog/validate'
+export { mcpShellFieldRefusals, validatePluginFolder } from './catalog/validate'
 export {
   agentHooksRun,
   agentMcpSpecs,
@@ -42,6 +42,7 @@ export { workflowScript, type WorkflowScript } from './catalog/workflow-script'
 export { savedWorkflows } from './catalog/saved-workflows'
 export { frontmatterFileText } from './catalog/frontmatter-edit'
 export {
+  activeStyleId,
   builtinStyleDescription,
   DEFAULT_OUTPUT_STYLE_ID,
   outputStyleFile,
@@ -62,7 +63,7 @@ export { claudeCodeTrusts } from './settings/trust'
 export { claudeCodeSettingsEnv, settingsEnvOf } from './settings/env'
 export { installKitPorts } from './install-ports'
 export { settingsCommandLine } from './settings/hooks'
-export { outputStyleSetting, settingsModes, skillShellDisabled } from './settings/values'
+export { outputStyleSetting, settingsModes } from './settings/values'
 export {
   describeClaudeCodePermissions,
   type ClaudeCodePermissionsView,
@@ -84,6 +85,7 @@ export { settingsAdditionalDirectories, settingsRuleEntries } from './settings/p
 export { invokeSkill, invokeTypedSkills, type SkillShellAnswer } from './skills'
 export {
   findSessionSkill,
+  isPluginCommand,
   projectOrGlobal,
   sessionSkills,
   skillListing,
@@ -139,7 +141,7 @@ export {
   type FetchedCopy,
 } from './marketplace/install-closure'
 export { autoUpdatePassAllowed, autoUpdateToggleRefusal } from './marketplace/updates'
-export { pluginVersion, UNKNOWN_VERSION } from './marketplace/versions'
+export { pluginVersion, precheckUpdate, UNKNOWN_VERSION, updateCheck } from './marketplace/versions'
 export {
   cloneUrl,
   describeSource,
@@ -164,9 +166,9 @@ export { archiveHeaders, catalogHeaders, type UrlSourceHeaders } from './marketp
 export { claudeCodePluginSettings } from './marketplace/claude-code'
 export { declaredMarketplaces, type DeclaredMarketplace } from './marketplace/declared'
 export {
+  ARCHIVE_LIMITS,
   DEFAULT_MARKETPLACE_PATH,
   installsAt,
-  isUpdate,
   marketplaceAutoUpdate,
   parseInstalledPlugins,
 } from '@rsaryev/llx-plugin/marketplace'
@@ -212,4 +214,5 @@ export { defaultElementTable, describeApi, isHookBody } from '@rsaryev/llx-plugi
 export { diskFiles, type DiskFiles } from './ports/files'
 export { createModsHost } from '@rsaryev/llx-plugin/mods'
 export { hostCommandRunner } from './ports/command-runner'
+export { sessionEnvScripts } from './ports/session-files'
 export { hostLocations, systemClock } from './ports/host-io'

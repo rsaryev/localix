@@ -12,7 +12,6 @@ export {
   ENGINE_ORIGIN,
   foldRender,
   isElementNode,
-  isEngineRef,
   joinHandlers,
   mergeModSettingsLayers,
   plainDataProblem,

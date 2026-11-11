@@ -1,5 +1,4 @@
 //! One builder for every trusted workspace; the API sidecar is prepared once in lib.rs.
-use crate::deeplink::{is_embedded_navigation_url, is_external_url, is_internal_url, is_loopback};
 use crate::prefs::load_theme_is_dark;
 #[cfg(target_os = "macos")]
 use crate::{log::logln, window_material};
@@ -118,50 +117,41 @@ pub(crate) fn build(
         builder = builder.background_color(initial_bg);
     }
 
-    // External links open in the system browser instead of navigating the
-    // app webview away from itself (a hard break with no back button).
-    // Internal app URLs + hash routes load normally.
+    // Nothing navigates the app's webview away from itself (a hard break with no back button).
+    // The app, loopback pages (the preview frames) and generated documents load; mail and
+    // calls go to the OS; a web page is cancelled and handed to the UI where it may be a
+    // preview frame's, which switches that tab to its native page (`workspace_navigation`).
     {
+        use crate::workspace_navigation::{decide, hand_to_ui, Navigation, HANDLER_SEES_FRAMES};
         use tauri::webview::NewWindowResponse;
         use tauri_plugin_opener::OpenerExt;
         let nav_handle = app.clone();
-        builder = builder.on_navigation(move |url| {
-            if is_internal_url(url) {
-                return true;
-            }
-            // Loopback URLs (Preview iframe: dev server / strip-proxy) must
-            // load in-webview in release too — this handler fires for every
-            // frame, not just the top document.
-            if is_loopback(url) {
-                return true;
-            }
-            if is_external_url(url) {
+        let workspace = label.to_string();
+        builder = builder.on_navigation(move |url| match decide(url, HANDLER_SEES_FRAMES) {
+            Navigation::Load => true,
+            Navigation::Refuse => false,
+            Navigation::OpenExternally => {
                 let _ = nav_handle.opener().open_url(url.as_str(), None::<&str>);
-                return false;
+                false
             }
-            // Generated documents/workers remain in WebKit. Unknown
-            // schemes (file:, javascript:, custom handlers) are denied.
-            is_embedded_navigation_url(url)
+            Navigation::AskUi => {
+                hand_to_ui(&nav_handle, &workspace, url);
+                false
+            }
         });
 
-        // window.open / target="_blank" (e.g. an OAuth "Connect" popup) →
-        // open external http(s) in the system browser instead of a bare
-        // embedded webview window. The OAuth flow finalizes via the local
-        // callback HTTP server, so the browser is the correct, native path.
+        // window.open / target="_blank" (e.g. an OAuth "Connect" popup) → open external http(s)
+        // in the system browser instead of a bare embedded webview window. The OAuth flow
+        // finalizes via the local callback HTTP server, so the browser is the correct, native
+        // path. A new window never replaces a frame's document, so it is never the UI's question.
         let open_handle = app.clone();
-        builder = builder.on_new_window(move |url, _features| {
-            if is_internal_url(&url) || is_loopback(&url) {
-                return NewWindowResponse::Allow;
-            }
-            if is_external_url(&url) {
+        builder = builder.on_new_window(move |url, _features| match decide(&url, false) {
+            Navigation::Load => NewWindowResponse::Allow,
+            Navigation::OpenExternally => {
                 let _ = open_handle.opener().open_url(url.as_str(), None::<&str>);
-                return NewWindowResponse::Deny;
-            }
-            if is_embedded_navigation_url(&url) {
-                NewWindowResponse::Allow
-            } else {
                 NewWindowResponse::Deny
             }
+            Navigation::Refuse | Navigation::AskUi => NewWindowResponse::Deny,
         });
     }
 

@@ -10,9 +10,8 @@ import {
   type MonitorProc,
 } from './monitor-stream'
 
-export type { MonitorProc, MonitorSpawner } from './monitor-stream'
+export type { MonitorSpawner } from './monitor-stream'
 export type {
-  ChatSessionMoved,
   MonitorNotification,
   PluginMonitorHost,
   PluginMonitorHostOptions,

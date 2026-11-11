@@ -1,41 +1,9 @@
-import { scalarConfig } from '../capabilities/source-repository'
-import { dataDirOfPlugin, pluginIdOf } from './plugin-data-id'
 import type { PluginCatalog } from './catalog'
 import { listCommandsFromCatalog, modCommandSpecs } from './commands'
-import { resolvePluginConfig } from './config'
-import type { PluginCommand, PluginCommandSpec } from './contracts'
-import { makePluginSubstituter } from './loader-runtime-declarations'
+import type { PluginCommandSpec } from './contracts'
 import { kitPluginsOf } from './catalog-kit'
 import type { SessionSkill } from '@rsaryev/llx-plugin'
 import { savedWorkflows, scopeSkills, skillPlugin, type LocalixPluginHost } from './kit'
-
-/**
- * The commands of every ENABLED plugin, with their text read as a skill's is (a command is a skill
- * in Claude Code): `${user_config.KEY}` takes the saved value, a sensitive one a placeholder.
- */
-export function catalogPluginCommands(
-  catalog: PluginCatalog,
-  opts: { projectDir: string; homeDir: string },
-): Array<{ plugin: string; command: PluginCommand; pluginDir: string; dataDir: string }> {
-  return catalog.enabled.flatMap(({ plugin, state }) => {
-    const name = plugin.manifest.name
-    const config = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
-    const subst = makePluginSubstituter(
-      plugin.dir,
-      pluginIdOf(plugin),
-      config,
-      plugin.manifest,
-      opts.projectDir,
-      opts.homeDir,
-    )
-    return plugin.commands.map((command) => ({
-      plugin: name,
-      command: { ...command, prompt: subst(command.prompt) },
-      pluginDir: plugin.dir,
-      dataDir: dataDirOfPlugin(plugin, opts.homeDir),
-    }))
-  })
-}
 
 /**
  * Plugin skills as composer commands, named as the kit names them (`<plugin>:<skill>`). One the
@@ -46,16 +14,7 @@ export function pluginSkillCommandSpecs(
   skills: readonly SessionSkill[],
   taken: readonly PluginCommandSpec[],
 ): PluginCommandSpec[] {
-  // A command named after its plugin is listed bare (`/feature-dev`) yet also answers
-  // `/feature-dev:feature-dev`, which dispatch tries before skills.
-  const seen = new Set(
-    taken.flatMap((spec) => [
-      spec.fullName.toLowerCase(),
-      ...(spec.fullName === spec.pluginName
-        ? [`${spec.pluginName}:${spec.name}`.toLowerCase()]
-        : []),
-    ]),
-  )
+  const seen = new Set(taken.map((spec) => spec.fullName.toLowerCase()))
   const specs: PluginCommandSpec[] = []
   for (const skill of skills) {
     const plugin = skillPlugin(skill)?.name
@@ -75,10 +34,10 @@ export function pluginSkillCommandSpecs(
 }
 
 /**
- * Every composer command of a scope: plugin commands, mods' commands, then plugin skills. One
- * function so the capability snapshot and the commands route cannot list different things. A
- * plugin skill and a plugin command of the same name list once, as the skill: the skill is what
- * runs (Claude Code, "Resolve skills that share a name").
+ * Every composer command of a scope: plugin workflows, mods' commands, saved workflows, then the
+ * plugin skills and commands the kit lists. One function so the capability snapshot and the
+ * commands route cannot list different things. A name lists once, as what it runs: a plugin's
+ * command over its skill of the name (Claude Code 2.1.319), a skill over a workflow.
  */
 export async function listCatalogCommandSpecs(
   catalog: PluginCatalog,
@@ -108,14 +67,9 @@ export async function listCatalogCommandSpecs(
     mods,
   )
   const bySkill = new Set(skills.map((spec) => spec.fullName.toLowerCase()))
-  // A command named after its plugin also answers `/<plugin>:<plugin>`, which a skill may take.
+  // The kit lists a plugin's commands with its skills; what is left are its workflows.
   const commands = listCommandsFromCatalog(catalog, opts.projectId).filter(
-    (spec) =>
-      !bySkill.has(spec.fullName.toLowerCase()) &&
-      !(
-        spec.fullName === spec.pluginName &&
-        bySkill.has(`${spec.pluginName}:${spec.name}`.toLowerCase())
-      ),
+    (spec) => !bySkill.has(spec.fullName.toLowerCase()),
   )
   const saved: PluginCommandSpec[] = (
     await savedWorkflows({ cwd: opts.projectDir, homeDir: opts.homeDir })

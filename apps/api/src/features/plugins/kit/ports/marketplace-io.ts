@@ -29,8 +29,8 @@ export const nodeSha256: Sha256 = {
 const NO_LIMITS = {
   maxEntries: Infinity,
   maxFileBytes: Infinity,
-  maxTotalBytes: Infinity,
-  maxRatio: Infinity,
+  maxUncompressedBytes: Infinity,
+  maxCompressionRatio: Infinity,
 }
 const S_IFMT = 0o170000
 const S_IFLNK = 0o120000

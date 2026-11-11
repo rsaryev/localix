@@ -25,9 +25,3 @@ export type CcInertHookEvent = keyof typeof CC_INERT_HOOK_EVENTS
 export function isInertCcHookEvent(value: string): value is CcInertHookEvent {
   return Object.hasOwn(CC_INERT_HOOK_EVENTS, value)
 }
-
-/**
- * Max chars of hook context appended to a tool result: Claude Code's 10,000-character cap per
- * string, for the joined notes of several hooks.
- */
-export const CC_POST_APPEND_CAP_BYTES = 4 * 10_000

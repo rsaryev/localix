@@ -1,6 +1,5 @@
 import type { PermissionMode } from '../../../contracts/permission-modes'
 import type { PermissionRule } from '../../agent-core/permission-engine'
-import type { SkillShellPolicy } from './skill-commands'
 import type { DecisionService } from '../../decisions/service'
 import type { SemanticService } from '../../embeddings/service'
 import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'
@@ -79,11 +78,6 @@ export interface ChatServiceDeps {
    * (`skill-command-authorize.ts`). Absent: no rules to meet, the commands run as typed.
    */
   loadSkillCommandRules?: (userId: string, agentId: string) => Promise<PermissionRule[]>
-  /**
-   * Whether `disableSkillShellExecution` applies to a skill or command about to render: the host
-   * reads the settings for the session's folder. Absent: commands run as authored.
-   */
-  skillShellDisabled?: SkillShellPolicy
   db: Kysely<AppDatabase>
   /** The process's one work registry; the runner records background work in it. */
   work: WorkRegistry

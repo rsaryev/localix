@@ -1,5 +1,6 @@
 import {
   listingLine,
+  skillPlugin,
   skillScope,
   type PluginSession,
   type SessionSkill,
@@ -17,6 +18,10 @@ const PROJECT_SCOPES: ReadonlySet<SkillScope> = new Set(['project', 'nested', 'a
 export function projectOrGlobal(skill: SessionSkill): 'global' | 'project' {
   return PROJECT_SCOPES.has(skillScope(skill)) ? 'project' : 'global'
 }
+
+/** A plugin's command file (`commands/*.md`), which Claude Code runs as one of the plugin's skills. */
+export const isPluginCommand = (skill: SessionSkill): boolean =>
+  skill.invocable.kind === 'command' && skillPlugin(skill) !== undefined
 
 /** The session's skills and commands, in the kit's order (plugins first, then the folders). */
 export function sessionSkills(

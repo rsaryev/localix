@@ -2,13 +2,18 @@ import { sessionRoute } from '../../../contracts/session-route'
 import { recordSkillUse } from '../../agent-core/skill-usage-recorder'
 import { announceSessionActive } from '../../agent-core/session-activity'
 import { resolveDeclaredReasoningEffort } from '../../../db/types'
+import type { MessageBinding } from '@localixai/agent'
+import type { SessionSkill } from '@rsaryev/llx-plugin'
 import {
   invokeTypedSkills,
+  isPluginCommand,
   resolveModelAlias,
   skillPlugin,
   projectOrGlobal,
   typedSkills,
 } from '../../plugins/kit'
+import { attachFileReferences } from '../file-references'
+import { resolveMessageBindings } from './message-bindings'
 import { commandFolder } from './command-folder'
 import { parseSkillCommand } from './slash-commands'
 import { typedSkillShellAnswer } from './skill-command-authorize'
@@ -23,10 +28,13 @@ import { isSkillDisabled } from '../../agent-core/skill-overrides'
  * the chat's kit session reads as a skill (its names, Claude Code's) runs the agent with the skill
  * as the session expands it (Claude Code: `user-invocable`, arguments, `${CLAUDE_*}`, its
  * `!` commands against the agent's rules, the skills stacked after it, its fork, model and
- * effort; its frontmatter `hooks` register on the session for the rest of it). Returns null when
- * the prompt isn't a skill command, the kit has no skill by the name or the agent's capability
- * rules turn it off; the final unresolved-slash
- * gate then reports command-shaped input that no dynamic handler claimed.
+ * effort; its frontmatter `hooks` register on the session for the rest of it). A typed command is
+ * a skill too (Claude Code: `.claude/commands/*.md` and a plugin's `commands/*.md`), run the same
+ * way. The files the text names with `@` are attached from inside the working folder (and the
+ * skill's own folder), and the context the person attached to the send reaches the turn. Returns
+ * null when the prompt isn't a skill command, the kit has no skill by the name, `claims` leaves it
+ * to a later handler or the agent's capability rules turn it off; the final unresolved-slash gate
+ * then reports command-shaped input that no dynamic handler claimed.
  */
 export async function handleSkillCommand(
   ctx: CommandHandlerContext,
@@ -34,6 +42,10 @@ export async function handleSkillCommand(
   sessionId: string,
   session: SessionRecord,
   prompt: string,
+  /** Context refs the user attached to this send, resolved as every message's are. */
+  bindings?: MessageBinding[],
+  /** Which skills this call runs; absent, every one. */
+  claims?: (skill: SessionSkill) => boolean,
 ): Promise<MessageMutationResponse | null> {
   const { repo, now, runMacroCommand, spawnForkSkill, insertDirectReply } = ctx
 
@@ -46,7 +58,7 @@ export async function handleSkillCommand(
   const named = typedSkills(kitSession, prompt)
   const [skill] = named.leading
   // No skill by the name — let the final unresolved-slash gate report it.
-  if (!skill) return null
+  if (!skill || (claims && !claims(skill))) return null
   const name = skill.invocable.command
   const scope = projectOrGlobal(skill)
   // The skill's plugin, for a forked child's hooks (`${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`).
@@ -74,7 +86,11 @@ export async function handleSkillCommand(
   if (!typed.ok) return fail(typed.message.slice(0, 4000))
   const [first] = typed.skills
   if (!first) return fail("this chat's plugin session does not list it.")
-  const expanded = typed.skills.map((one) => one.text).join('\n\n')
+  const bases = [workingDir, ...(skill.directory ? [skill.directory] : [])]
+  const texts = await Promise.all(
+    typed.skills.map((one) => attachFileReferences(one.text, one.references, bases)),
+  )
+  const expanded = texts.join('\n\n')
   const arg = named.arguments
   // Claude Code mods' `skill.prompt`: the text the model reads for the skill.
   const instruction = await skillPrompt(
@@ -116,6 +132,11 @@ export async function handleSkillCommand(
   const grants = typed.skills.flatMap((one) => one.grants)
   const disallowed = typed.skills.flatMap((one) => one.disallowed)
   const effort = resolveDeclaredReasoningEffort(first.effort)
+  const resolvedBindings = await resolveMessageBindings(ctx.deps, userId, session, bindings)
+  // A plugin's command is the plugin's (`/<plugin>:<name>`); the rest are the person's skills.
+  const kind = isPluginCommand(skill)
+    ? ({ source: 'plugin', kind: 'plugin-command' } as const)
+    : ({ source: 'slash', kind: 'skill' } as const)
   return runMacroCommand(
     userId,
     sessionId,
@@ -135,10 +156,11 @@ export async function handleSkillCommand(
         : {}),
       // CC skill `effort:` — the invoking turn's effort; an unknown value keeps the session's.
       ...(effort ? { reasoningEffort: effort } : {}),
+      ...(resolvedBindings?.length ? { bindings: resolvedBindings } : {}),
       invocation: {
-        source: 'slash',
+        source: kind.source,
         invocation: {
-          kind: 'skill',
+          kind: kind.kind,
           name,
           ...(arg ? { arguments: arg } : {}),
           lifetime: 'turn',

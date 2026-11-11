@@ -228,7 +228,7 @@ describe('a plugin whose dependency is not met', () => {
  * in promptSections, skill content, and agent prompts. Its `isSecret` predicate guards
  * this: if `manifest.config[key].secret` is true the token becomes a placeholder naming the option.
  *
- * `sensitive: true` is read as `secret: true` (`layout/claude-code.ts`) → `isSecret` returns
+ * `sensitive: true` is read as `secret: true` (`kit/catalog/manifest.ts`) → `isSecret` returns
  * true → the value is NOT substituted (a placeholder instead).
  */
 describe('B2 — sensitive:true userConfig key is NOT substituted into model-facing text', () => {

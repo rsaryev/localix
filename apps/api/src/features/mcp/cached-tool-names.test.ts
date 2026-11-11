@@ -3,6 +3,9 @@ import { describe, expect, test } from 'bun:test'
 import { createMcpClientManager } from './client-manager'
 import type { McpServerRecord } from './repository'
 import type { McpClientLike } from './mcp-client-contracts'
+import { withClaudeCodeMcp } from './testing/claude-code-host'
+
+withClaudeCodeMcp()
 
 /**
  * The anti-drift suite.

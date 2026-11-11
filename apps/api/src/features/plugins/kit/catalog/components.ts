@@ -21,19 +21,14 @@ export interface PluginWorkflow {
 
 function commandOf(command: Command): PluginCommand {
   const description = [command.description, command.whenToUse].filter(Boolean).join(' ').trim()
-  const named = command.arguments.filter((name) => !/^\d+$/.test(name))
   return {
     name: command.name,
     description,
-    args: [],
     prompt: command.body.trim(),
     ...(command.argumentHint ? { argumentHint: command.argumentHint } : {}),
-    ...(named.length ? { arguments: named } : {}),
     // In Claude Code's rule syntax: the gate reads them as the kit does (`kit/permissions.ts`).
     ...(command.allowedTools.length ? { allowedTools: [...command.allowedTools] } : {}),
     ...(command.disallowedTools.length ? { disallowedTools: [...command.disallowedTools] } : {}),
-    ...(command.model ? { model: command.model } : {}),
-    ...(command.disableModelInvocation ? { disableModelInvocation: true } : {}),
   }
 }
 

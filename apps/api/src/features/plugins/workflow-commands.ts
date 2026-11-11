@@ -1,5 +1,3 @@
-import { dirname } from 'node:path'
-
 import type { AvailabilityReader } from '../capabilities/availability'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import { TOOL } from '../agent-core/tool-names'
@@ -15,7 +13,17 @@ import { savedWorkflows, type PluginWorkflow } from './kit'
  * chat; the person's input becomes the workflow's `args`.
  */
 
-export function workflowCommand(
+/** What the agent reads for `/<fullName> <input>`: run the workflow with the `Workflow` tool. */
+export function workflowInstruction(fullName: string, input: string): string {
+  return [
+    `Run the workflow \`${fullName}\` now with the \`${TOOL.Workflow}\` tool: name "${fullName}", and as args the input below — JSON (a list or an object) when it reads as structured data, a string otherwise, and no args when it is empty.`,
+    'The run goes on in the background: say it started, and answer with its result when it arrives.',
+    '',
+    `Input: ${input}`,
+  ].join('\n')
+}
+
+function workflowCommand(
   pluginName: string | null,
   workflow: Pick<PluginWorkflow, 'name' | 'description'>,
 ): PluginCommand {
@@ -24,15 +32,8 @@ export function workflowCommand(
   return {
     name: workflow.name,
     description: workflow.description,
-    args: [],
     argumentHint: '[input]',
-    activateTools: [TOOL.Workflow],
-    prompt: [
-      `Run the workflow \`${fullName}\` now with the \`${TOOL.Workflow}\` tool: name "${fullName}", and as args the input below — JSON (a list or an object) when it reads as structured data, a string otherwise, and no args when it is empty.`,
-      'The run goes on in the background: say it started, and answer with its result when it arrives.',
-      '',
-      'Input: $ARGUMENTS',
-    ].join('\n'),
+    prompt: workflowInstruction(fullName, ''),
   }
 }
 
@@ -78,16 +79,4 @@ export async function listEnabledPluginWorkflows(opts: {
       })),
     ),
   )
-}
-
-/** The workflows kept in folders as commands: `/<name>`, with the folder's script as their home. */
-export async function folderWorkflowCommands(opts: {
-  cwd: string
-  homeDir: string
-}): Promise<Array<{ plugin: string; command: PluginCommand; pluginDir: string }>> {
-  return (await savedWorkflows(opts)).map((entry) => ({
-    plugin: entry.fullName,
-    command: workflowCommand(null, { name: entry.fullName, description: entry.description }),
-    pluginDir: dirname(entry.file),
-  }))
 }

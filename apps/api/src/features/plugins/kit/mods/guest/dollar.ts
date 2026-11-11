@@ -1,4 +1,4 @@
-import { defaultElementTable, selects } from '@rsaryev/llx-plugin/mods/isolate'
+import { defaultElementTable, selects, UI_SURFACES } from '@rsaryev/llx-plugin/mods/isolate'
 import type { ApiShape, CallMeta, NextReply } from './call-protocol'
 import type { Endpoint } from './endpoint'
 
@@ -15,10 +15,6 @@ import type { Endpoint } from './endpoint'
  */
 
 type Fn = (...args: unknown[]) => unknown
-
-type Surface = Parameters<typeof defaultElementTable>[0]
-/** The apps an element table is for (`./mods` `UI_SURFACES`, which the isolate entry leaves out). */
-const SURFACES: readonly Surface[] = ['terminal', 'desktop', 'vscode', 'mobile']
 
 /** A hook run's own time, as `next.budget.remainingMs` reads it: it stops while the host works. */
 function createMeter(remainingMs: number) {
@@ -57,7 +53,7 @@ export function createGuestApi(endpoint: Endpoint) {
     if (namespace === 'ui' && name === 'resolve' && member.fn === 'sync')
       return (e) => {
         const { component, surface } = (e ?? {}) as { component?: unknown; surface?: unknown }
-        const app = SURFACES.find((one) => one === surface) ?? 'desktop'
+        const app = UI_SURFACES.find((one) => one === surface) ?? 'desktop'
         // The elements another mod restyled for this site, over the kit's own.
         const restyled = typeof component === 'string' ? tables.get(component) : undefined
         return restyled ? { ...defaultElementTable(app), ...restyled } : defaultElementTable(app)

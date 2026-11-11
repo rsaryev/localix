@@ -10,6 +10,7 @@ import { ApiError, errorMessage } from '../../lib/errors'
 import { childEnv } from '../../lib/login-shell-env'
 import { rmrf } from '../ext/install-tree'
 import { catalogHop, fetchChecked, httpsPublicHop, readCapped } from './marketplace-download'
+import { ARCHIVE_LIMITS } from './kit'
 import { verifyZipMembers } from './marketplace-zip-inflate'
 import { scanZip, type ZipLimits } from './marketplace-zip-scan'
 import type { ArchiveFetchPlan } from '@rsaryev/llx-plugin/marketplace'
@@ -39,9 +40,9 @@ function onOrigin(
  */
 
 const MiB = 1024 * 1024
-export const MAX_ARCHIVE_BYTES = 256 * MiB
+export const MAX_ARCHIVE_BYTES = ARCHIVE_LIMITS.maxDownloadBytes
 export const MAX_CATALOG_BYTES = 5 * MiB
-export const ARCHIVE_TIMEOUT_MS = 120_000
+export const ARCHIVE_TIMEOUT_MS = ARCHIVE_LIMITS.timeoutMs
 export const CATALOG_TIMEOUT_MS = 10_000
 
 /** Download a hosted `marketplace.json` (http or https) as text, within the size ceiling. */

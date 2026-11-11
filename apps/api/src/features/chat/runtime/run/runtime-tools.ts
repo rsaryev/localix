@@ -16,11 +16,10 @@ import { announcePtyOpen } from './pty-announce'
 import { buildTerminalToolOptions } from './terminal-tool-options'
 import { buildJobsTool, buildStopJob } from './jobs-tool'
 import { buildOptionalToolPorts, explainEmptyPorts, manageableJobs } from './runtime-tool-ports'
-import { ccSessionEnvScripts, type CcHooksRuntime } from '../../../cc-hooks'
-import { ccSessionEnvFilesOf } from './cc-hook-session-facts'
+import type { CcHooksRuntime } from '../../../cc-hooks'
+import { ccSessionEnvDirOf } from './cc-hook-session-facts'
 import { settingsEnvScriptFor } from './settings-env-script'
-import { claudeCodeSettingsEnv } from '../../../plugins/kit'
-import { dirname } from 'node:path'
+import { claudeCodeSettingsEnv, sessionEnvScripts } from '../../../plugins/kit'
 import type { ExecutionEnvironment } from '../../../agent-core/tools/environment'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { RunnerDeps } from '../agent-runner-types'
@@ -228,10 +227,10 @@ export function buildRunToolRegistry(
       // Claude Code's settings `env` for the folder is sourced first, so a hook's export still wins.
       bashEnvScripts: [
         ...settingsEnvScriptFor(
-          dirname(ccSessionEnvFilesOf(session, deps.sessionDataRoot).sessionStart),
+          ccSessionEnvDirOf(session, deps.sessionDataRoot),
           claudeCodeSettingsEnv({ homeDir: claudeCodeHome(), cwd: defaultCwd }),
         ),
-        ...ccSessionEnvScripts(ccSessionEnvFilesOf(session, deps.sessionDataRoot)),
+        ...sessionEnvScripts(ccSessionEnvDirOf(session, deps.sessionDataRoot)),
       ],
       // Research is tokenless. Only its SSRF policy is configurable; every search
       // engine works without secrets and every page/redirect passes the same guard.

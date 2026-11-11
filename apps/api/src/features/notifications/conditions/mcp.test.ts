@@ -12,6 +12,9 @@ import {
   type TestJournal,
 } from './testing/test-journal'
 import type { McpClientLike } from '../../mcp/mcp-client-contracts'
+import { withClaudeCodeMcp } from '../../mcp/testing/claude-code-host'
+
+withClaudeCodeMcp()
 
 const journals: TestJournal[] = []
 afterEach(async () => {

@@ -69,14 +69,6 @@ describe('validatePlugin', () => {
     ).toBe(true)
   })
 
-  it('warns when a prompt references a placeholder no argument names', async () => {
-    const plugin = await writePlugin('cmds2', 'cmds2', {
-      commands: { go: { description: 'go', content: 'Use ${mystery} here.' } },
-    })
-    const { warnings } = validatePlugin(plugin)
-    expect(warnings.some((w) => w.includes('${mystery}'))).toBe(true)
-  })
-
   it('warns when an agent role name repeats the plugin prefix', async () => {
     const plugin = await writePlugin(
       'prefixed',
@@ -159,16 +151,6 @@ describe('validatePlugin', () => {
     expect(mcpTool).not.toContain('ignored')
   })
 
-  it('does not flag SCREAMING_CASE tokens (config/env documentation) as arg typos', async () => {
-    const plugin = await writePlugin('cmds4', 'cmds4', {
-      commands: { go: { content: 'Substitute ${API_KEY} from config.' } },
-    })
-    const { warnings } = validatePlugin(plugin)
-    expect(warnings.some((w) => w.includes('${API_KEY}'))).toBe(false)
-  })
-
-  // Behaviour change (kit wins): a command without a description takes its body's first line, and
-  // an agent without one gets the kit's stand-in with the kit's warning.
   it('fills a missing command description from its body, and warns on an agent without one', async () => {
     const plugin = await writePlugin(
       'nodesc2',
@@ -273,9 +255,9 @@ describe('validatePlugin — sensitive keys in MCP config', () => {
       },
     })
     const { warnings } = validatePlugin(plugin)
-    const hits = warnings.filter((w) => w.includes('MCP server "api"'))
+    const hits = warnings.filter((w) => w.includes("MCP server 'api'"))
     expect(hits).toHaveLength(1)
-    expect(hits[0]).toContain('"headersHelper"')
+    expect(hits[0]).toStartWith("headersHelper for MCP server 'api' references ${user_config.*}.")
   })
 })
 

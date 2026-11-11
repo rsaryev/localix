@@ -9,6 +9,9 @@ import {
 } from './mcp-channels'
 import type { McpServerRecord } from './repository'
 import type { McpClientLike } from './mcp-client-contracts'
+import { withClaudeCodeMcp } from './testing/claude-code-host'
+
+withClaudeCodeMcp()
 
 const server = (id: string, name: string): McpServerRecord => ({
   id,

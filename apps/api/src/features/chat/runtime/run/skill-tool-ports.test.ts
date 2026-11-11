@@ -151,6 +151,17 @@ describe('the skill tool’s get runs the skill through the chat’s kit session
     expect(String(named.content)).toContain('Deploy.')
   })
 
+  // skills.md: the files a local skill's body names with `@` are attached as a user's `@` are,
+  // when Claude invokes it too; one outside the working folder stays plain text.
+  test('the files the skill names with @ are attached inside the working folder only', async () => {
+    writeFileSync(join(dir(), 'outside.md'), 'OUTSIDE secret')
+    const skill = projectSkill('zz-refs', '', 'Read @notes.md and @../outside.md.')
+    writeFileSync(join(dir(), 'work', 'notes.md'), 'NOTES body')
+    const got = await loadTool(skill, policy(PLAN)).execute('t', { action: 'get', name: 'zz-refs' })
+    expect(String(got.content)).toContain('``` notes.md\nNOTES body\n```')
+    expect(String(got.content)).not.toContain('OUTSIDE secret')
+  })
+
   // The kit's names: a plugin's skill is `<plugin>:<folder>`, whatever its frontmatter `name`.
   test('get finds a skill by the kit’s name and answers a miss with the names it has', async () => {
     const skill = projectSkill('zz-named', '', 'Named.')

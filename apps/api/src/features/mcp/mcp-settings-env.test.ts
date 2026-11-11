@@ -2,6 +2,9 @@ import { expect, test } from 'bun:test'
 
 import { mcpLaunch } from './mcp-settings-env'
 import type { McpServerRecord } from './repository'
+import { withClaudeCodeMcp } from './testing/claude-code-host'
+
+withClaudeCodeMcp()
 
 /**
  * An MCP server a person added sees the `env` of the Claude Code settings for the folder it runs

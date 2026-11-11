@@ -2,6 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import type { McpClientLike } from './mcp-client-contracts'
 import { buildToolForServer } from './mcp-tools'
 import type { McpServerRecord } from './repository'
+import { withClaudeCodeMcp } from './testing/claude-code-host'
+
+withClaudeCodeMcp()
 
 const client: McpClientLike = {
   listTools: async () => ({ tools: [] }),

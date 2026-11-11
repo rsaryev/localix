@@ -8,6 +8,9 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
 import { classifyMcpTool, isTransportError } from './mcp-tools'
 import type { McpServerRecord } from './repository'
 import type { McpClientLike } from './mcp-client-contracts'
+import { withClaudeCodeMcp } from './testing/claude-code-host'
+
+withClaudeCodeMcp()
 
 function makeServer(overrides: Partial<McpServerRecord> = {}): McpServerRecord {
   return {

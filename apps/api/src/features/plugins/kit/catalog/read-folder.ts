@@ -5,6 +5,7 @@ import type { PluginIssue } from '@rsaryev/llx-plugin/format'
 import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
 import { CC_INERT_HOOK_EVENTS, isInertCcHookEvent } from '../../../cc-hooks/contracts'
 import type { DiscoveredPlugin } from '../../discovery-types'
+import { MINI_APP_FILE } from '../../layout/read'
 import { diskFiles } from '../ports/files'
 import { mcpBundleReader } from '../ports/mcp-bundle'
 import { readCommands } from './components'
@@ -17,7 +18,6 @@ import { localixManifest } from './manifest'
  * catalog, validation and runtime take. Never throws: what kept it from loading is `error`.
  */
 
-const MINI_APP = '.localix-mini-app/mini-app.json'
 const MINI_APP_REFUSAL =
   'This folder is a mini app (.localix-mini-app/mini-app.json), not a plugin: add it from the Store'
 
@@ -109,7 +109,7 @@ export async function readPluginFolder(
 ): Promise<CatalogPlugin> {
   const disk = diskFiles(dir)
   const fallbackName = from.name ?? basename(dir)
-  if (await disk.exists(MINI_APP)) return empty(dir, fallbackName, MINI_APP_REFUSAL, [])
+  if (await disk.exists(MINI_APP_FILE)) return empty(dir, fallbackName, MINI_APP_REFUSAL, [])
   const { entry } = from
   // The kit merges the entry with `plugin.json` itself (`mergeEntryWithManifest`).
   const loaded = await loadPlugin({

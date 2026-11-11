@@ -7,6 +7,9 @@ import { createAesCipher } from '../../secrets/cipher'
 import type { McpServerRecord } from '../repository'
 import { startMcpOAuth } from './flow'
 import { createMcpOAuthStore } from './store'
+import { withClaudeCodeMcp } from '../testing/claude-code-host'
+
+withClaudeCodeMcp()
 
 /**
  * What a person's authorization server is sent from a Claude Code `oauth` block: the pre-registered

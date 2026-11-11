@@ -3,7 +3,7 @@ import { createGunzip } from 'node:zlib'
 
 import { UnprocessableError } from '../../lib/domain-errors'
 import { errorMessage } from '../../lib/errors'
-import { ZIP_LIMITS } from './marketplace-zip-scan'
+import { ARCHIVE_LIMITS } from './kit'
 
 /**
  * Refuse a gzipped tarball that unpacks past `maxBytes` before `tar` writes any of it: the
@@ -13,7 +13,7 @@ import { ZIP_LIMITS } from './marketplace-zip-scan'
 export async function assertGunzipWithin(
   file: string,
   what: string,
-  maxBytes: number = ZIP_LIMITS.maxTotalBytes,
+  maxBytes: number = ARCHIVE_LIMITS.maxUncompressedBytes,
 ): Promise<void> {
   const source = createReadStream(file)
   const stream = source.pipe(createGunzip())

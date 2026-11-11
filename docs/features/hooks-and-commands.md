@@ -24,25 +24,32 @@ mini app commands and user-invocable skills for the active scope.
 | ----- | -------------------- | -------------------------------------------------------------------------------------- |
 | 1     | Compatible client    | Handles client commands such as `/fork` and `/open` before an API turn.                |
 | 2     | Core API catalog     | Resolves canonical names and aliases to typed control handlers.                        |
-| 3     | Enabled extension    | Resolves `/<name>:<command>` or a collapsed same-name command such as `/review`.       |
+| 3     | Enabled extension    | Resolves a plugin's `/<plugin>:<command>`, a workflow, a mini app or mod command.      |
 | 4     | User-invocable skill | Resolves `/<skill-name>` when no earlier owner claimed it.                             |
 | 5     | Unresolved gate      | Returns an error and suggestions instead of sending command-shaped input to the model. |
 
-A core name or alias wins a collision. Plugin and mini app commands are agent prompt templates: the
-backend validates positional arguments and static choices, expands supported variables and dynamic
-content, then starts a macro run. Dynamic option scripts stay server-side; clients receive only
-their returned choices.
+A core name or alias wins a collision. A plugin's command (`commands/*.md`) and a folder's
+(`.claude/commands/*.md`) are skills, as in Claude Code: they run through the same plugin kit
+session as a skill, with its arguments, variables, `!` commands and `@` files (see
+[Skill authoring](../extending/skills-authoring.md#invocation-pipeline)). A plugin's command wins a
+skill of its plugin with the same name. There is no bare alias: a command named after its plugin is
+`/<plugin>:<plugin>`. A workflow (`.claude/workflows`, `~/.claude/workflows` or a plugin's) typed as
+`/<name>` asks the agent to run it with the `Workflow` tool; a skill of the same name runs instead.
 
-Arguments are positional. Non-final text and choice fields consume whitespace-delimited tokens; only
-a final text field captures the remainder. Static choices must match a declared value, while dynamic
-choices accept any non-empty token without checking the returned menu. A conditional argument whose
-earlier value does not match is skipped. Extra tokens are not rejected by the declared-argument
-parser; `$ARGUMENTS` can still include the complete raw input.
+Mini app commands are agent prompt templates: the backend validates positional arguments and static
+choices, expands their variables, then starts a macro run. Dynamic option scripts stay server-side;
+clients receive only their returned choices.
 
-Template-authored shell embeds and file references expand before user argument values are inserted.
-An argument containing `!` command syntax or `@path` therefore does not start another preprocessing
-pass. Template shell commands still execute local code directly before the macro runs; inline tool
-grants do not govern that preprocessing.
+A mini app command's arguments are positional. Non-final text and choice fields consume
+whitespace-delimited tokens; only a final text field captures the remainder. Static choices must
+match a declared value, while dynamic choices accept any non-empty token without checking the
+returned menu. A conditional argument whose earlier value does not match is skipped. Extra tokens
+are not rejected by the declared-argument parser; `$ARGUMENTS` can still include the complete raw
+input.
+
+An argument containing `!` command syntax or `@path` does not start another preprocessing pass. A
+skill's or command's `!` commands meet the agent's permission rules before they run; an argument
+reaches them as data, never as shell code.
 
 | Category          | Core commands                                                                                                         |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------- |
@@ -365,7 +372,8 @@ allow, but an expansion block never echoed the prompt, so there is nothing to le
 - [Turn dispatch order](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/turn-entry.ts)
 - [Plugin and skill command handlers](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers.ts)
 - [Plugin command schema](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/contracts-commands.ts)
-- [Plugin command argument parsing and rendering](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/plugin-commands.ts)
+- [Plugin command dispatch](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers-plugin-command.ts)
+- [Workflow commands](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers-workflow.ts)
 - [Command Markdown discovery](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/discovery-cc-files.ts)
 - [Manifest command precedence](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/manifest-load.ts)
 - [Dynamic option execution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/arg-options.ts)

@@ -154,38 +154,3 @@ export function parseSkillCommand(raw: string): { name: string; arg: string } | 
   if (!invocation || BUILTIN_COMMAND_NAMES.has(invocation.name)) return null
   return invocation
 }
-
-/** Shell-style token split for `$ARGUMENTS[N]` / `$N` substitutions in skill templates. */
-export function splitSkillArgs(raw: string): string[] {
-  const out: string[] = []
-  const re = /"([^"]*)"|'([^']*)'|(\S+)/g
-  let m: RegExpExecArray | null
-  while ((m = re.exec(raw)) !== null) out.push(m[1] ?? m[2] ?? m[3] ?? '')
-  return out
-}
-
-/**
- * Whether a skill's content has a placeholder that RECEIVES the arguments: `$ARGUMENTS`, an
- * indexed `$ARGUMENTS[N]` / `$N` with an argument at that position, or a declared `$name` (which
- * counts even with no argument there). Claude Code appends `ARGUMENTS: <value>` only when none
- * does; `${CLAUDE_*}` variables and a shell's own `$NAME` are not placeholders.
- * Read from the content AS AUTHORED: an injected command that consumed `$ARGUMENTS` has left the
- * rendered text by the time arguments are substituted.
- */
-export function receivesArguments(
-  template: string,
-  tokens: readonly string[],
-  argumentNames: readonly string[] = [],
-): boolean {
-  const re = /(\\*)\$(ARGUMENTS(?:\[(\d+)\])?|(\d+)|([a-zA-Z_][a-zA-Z0-9_]*))/g
-  let m: RegExpExecArray | null
-  while ((m = re.exec(template)) !== null) {
-    const [, esc, token, bracketIdx, bareIdx, name] = m
-    if (esc.length === 1) continue
-    if (token === 'ARGUMENTS') return true
-    const index = bracketIdx ?? bareIdx
-    if (index !== undefined ? tokens[Number(index)] !== undefined : argumentNames.includes(name!))
-      return true
-  }
-  return false
-}

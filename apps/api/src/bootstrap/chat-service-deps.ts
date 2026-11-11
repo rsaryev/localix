@@ -1,5 +1,4 @@
 import { claudeCodeHome } from '../features/cc-settings/config-dir'
-import { createSkillShellPolicy } from './skill-shell-policy'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { withChannelPermissionRelay } from './mcp-channels'
 import { createSessionAgentResolver } from '../features/agents/session-agent-resolver'
@@ -186,8 +185,6 @@ export function createChatServicePhase({
         await resolveCapabilities(capabilityRules, { userId, agentId }),
         NO_ROSTERS,
       ).permissions,
-    // `disableSkillShellExecution`, read from Claude Code's settings for the session's folder.
-    skillShellDisabled: createSkillShellPolicy(),
     ports: createChatFeaturePorts(db, { pluginService, miniAppService, pluginHost }),
     announceCapabilityChange,
     catalogService,

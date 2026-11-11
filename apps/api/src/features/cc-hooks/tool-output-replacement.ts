@@ -1,13 +1,10 @@
 /**
- * What a PostToolUse hook's `updatedToolOutput` / `updatedMCPToolOutput` puts in front of the
- * model in place of a tool's output (hooks.md, PostToolUse decision control).
- *
- * Claude Code's `updatedToolOutput` "must match the tool's output shape": `Bash` returns
- * `{stdout, stderr, interrupted, isImage}`, and for a built-in tool "a value that doesn't match
- * the tool's output schema is ignored and the original output is used". Read, Grep, Glob,
- * WebFetch and WebSearch records are read the same way (`shapedText`). `updatedMCPToolOutput`
- * "replaces the output for MCP tools only", and MCP output "is passed through without schema
- * validation". A plain string is read as the text the model sees, for any tool.
+ * The text the model sees in place of a tool's output once a PostToolUse hook replaced it
+ * (hooks.md, "PostToolUse decision control"). The kit decides the replacement: `updatedToolOutput`,
+ * or an MCP tool's `updatedMCPToolOutput`, and a built-in tool's value that does not match the
+ * tool's output shape is dropped (`effects.updatedToolOutput`). Localix reads the accepted value in
+ * its own tool's shape: a string is the text, a record of a built-in tool the field its result
+ * shows (`shapedText`), an MCP result its text blocks.
  *
  * Pure module.
  */
@@ -67,20 +64,13 @@ function shapedText(toolName: string, value: Record<string, unknown>): string | 
 }
 
 /**
- * The model-facing content a hook's replacement stands for, or undefined when it replaces
- * nothing (absent or not in the tool's shape). An empty replacement is one: a redaction hook
- * that answers `""` hides the output rather than letting it through.
+ * The model-facing content of the replacement the kit accepted, or undefined when there is none or
+ * Localix's tool shows nothing of it. An empty replacement is one: a redaction hook that answers
+ * `""` hides the output rather than letting it through.
  */
-export function replacementContent(
-  toolName: string,
-  output: { updatedToolOutput?: unknown; updatedMCPToolOutput?: unknown },
-): string | undefined {
-  const { updatedToolOutput: value, updatedMCPToolOutput: mcpValue } = output
-  if (isMcpTool(toolName)) {
-    const chosen = value ?? mcpValue
-    if (chosen === undefined || chosen === null) return undefined
-    return mcpText(chosen)
-  }
+export function replacementContent(toolName: string, value: unknown): string | undefined {
+  if (value === undefined) return undefined
+  if (isMcpTool(toolName)) return value === null ? undefined : mcpText(value)
   if (typeof value === 'string') return value
   if (isRecord(value)) return shapedText(toolName, value)
   return undefined

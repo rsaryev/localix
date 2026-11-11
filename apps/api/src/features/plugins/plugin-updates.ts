@@ -7,17 +7,18 @@ import { sweepOrphanedVersions } from './plugin-cache'
 import type { PluginUpdateJob, PluginUpdatesResponse } from './contracts-updates'
 import {
   candidateFor,
-  isNewer,
   listMarketplaceInstalls,
   marketplaceRecord,
+  type FetchPlugin,
   type MarketplaceInstall,
 } from './update-candidates'
 import { readKnownMarketplaces } from './kit'
 
 /**
  * PLUGIN UPDATES: what is available, the updates in flight, and the auto-update pass (Claude Code's
- * "Keep plugins updated"). Availability is computed from the marketplace listings without
- * installing (`update-candidates.ts`): on demand with a refresh of the listings, and by every pass.
+ * "Keep plugins updated"). Availability is decided by the kit on a fetch of each plugin's listing
+ * entry, without installing (`update-candidates.ts`): on demand with a refresh of the listings, and
+ * by every pass.
  * An apply runs one job at a time through checking → downloading → installing → done or failed; a
  * failed update keeps the version before, because the install only swaps a record once the new
  * version is in place. Every move tells the subscribers (the Store's plugin provider); a finished
@@ -55,7 +56,8 @@ export function createPluginUpdates(deps: {
   reinstall: (userId: string, source: string, onInstalling: () => void) => Promise<unknown>
   /** Refresh one marketplace's listing from its source. */
   refreshMarketplace: (name: string) => Promise<unknown>
-  remoteCommit: (url: string, ref?: string) => Promise<string | undefined>
+  /** Fetch an installed plugin's current entry, kept for the update that may follow. */
+  fetchPlugin: FetchPlugin
   /** Where the pass reads its switches when the caller names none. */
   env?: Record<string, string | undefined>
   now?: () => string
@@ -142,8 +144,8 @@ export function createPluginUpdates(deps: {
     const known = await readKnownMarketplaces(root)
     const found: PluginUpdatesResponse['available'] = []
     for (const install of installed) {
-      const candidate = await candidateFor(install, known, deps.remoteCommit).catch(() => null)
-      if (!candidate || !isNewer(install, candidate)) continue
+      const candidate = await candidateFor(install, known, deps.fetchPlugin).catch(() => null)
+      if (!candidate || candidate.manual) continue
       const { id, name, marketplace, version: from } = install
       found.push({ id, name, marketplace, from, to: candidate.version })
     }

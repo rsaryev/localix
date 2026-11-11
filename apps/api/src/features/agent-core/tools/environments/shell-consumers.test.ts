@@ -1,9 +1,10 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { expandSkillContent } from '../../../chat/service/skill-commands'
+import { createChatPluginSessions, invokeTypedSkills } from '../../../plugins/kit'
+import { diskPluginHost } from '../../../plugins/kit/testing'
 import { runHookCommand } from '../../../lifecycle-hooks/command'
 import { defaultSpawn } from '../../../plugins/monitor-stream'
 import { resetShellConfigCache } from './shell'
@@ -50,7 +51,23 @@ describe.skipIf(process.platform === 'win32')('host command runners use the reso
   })
 
   test('skill command expansion', async () => {
-    expect(await expandSkillContent('!`printf skill`', dir)).toBe(`${STAMP}skill`)
+    const work = join(dir, 'work')
+    mkdirSync(join(work, '.claude', 'skills', 'stamp'), { recursive: true })
+    writeFileSync(join(work, '.claude', 'skills', 'stamp', 'SKILL.md'), '!`printf skill`\n')
+    const session = createChatPluginSessions(diskPluginHost(join(dir, 'home'))).forRun({
+      chatId: 'chat-1',
+      cwd: work,
+      transcriptPath: join(dir, 'home', 'chat-1.jsonl'),
+      permissionMode: 'default',
+      trusted: true,
+      layers: [],
+      plugins: [],
+    })
+    const typed = await invokeTypedSkills(session, '/stamp', {
+      shellPermission: () => 'allow',
+      signal: AbortSignal.timeout(10_000),
+    })
+    expect(typed.ok ? typed.skills[0]?.text : typed.message).toEndWith(`\n${STAMP}skill\n`)
   })
 
   test('plugin monitors', async () => {

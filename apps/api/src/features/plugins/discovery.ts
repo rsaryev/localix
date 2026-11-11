@@ -1,6 +1,6 @@
 import { join, resolve } from 'node:path'
 
-import { mergeByPrecedence, pathExists as _pathExists } from '../ext/fs-discovery'
+import { mergeByPrecedence } from '../ext/fs-discovery'
 
 import type { DiscoveredPlugin } from './discovery-types'
 
@@ -9,7 +9,6 @@ import { scanDirsCached } from './discovery-cached-scan'
 import { discoverClaudeCodePlugins } from './claude-code-installs'
 import { discoverInPlacePlugins } from './in-place-installs'
 import { discoverCachedPlugins } from './cached-installs'
-export { findManifestPath } from './discovery-directory-scan'
 
 /**
  * Filesystem plugin discovery. A plugin is a Claude Code plugin folder (its
@@ -32,9 +31,6 @@ export { findManifestPath } from './discovery-directory-scan'
 const PLUGIN_SUBDIRS = ['.localix/plugins']
 
 export type { DiscoveredPlugin } from './discovery-types'
-
-/** Return true if the path exists and is accessible, false otherwise. */
-export const pathExists = _pathExists
 
 // Manifest parsing (loadManifest) lives in manifest-load.ts. Re-exported here so
 // the historical `./discovery` import surface stays stable for service.ts, the

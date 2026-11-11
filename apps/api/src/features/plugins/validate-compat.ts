@@ -7,7 +7,7 @@ import { pluginLspNotes, summarizePluginLspServers } from '../lsp'
  *
  * What Claude Code's own manifest rules find (an unknown field, a field of the wrong shape, a
  * path that escapes the plugin) is reported by its parser, as the plugin's `manifestIssues`
- * (`layout/compose.ts`); this adds what is particular to running the plugin in Localix.
+ * (`kit/catalog`); this adds what is particular to running the plugin in Localix.
  *
  * NOTE: `dependencies` IS honored — resolved/auto-installed on marketplace install and cascaded
  * on enable; see dependencies.ts. A plugin's `bin/` DIRECTORY is supported — an enabled plugin's
@@ -15,8 +15,8 @@ import { pluginLspNotes, summarizePluginLspServers } from '../lsp'
  */
 
 /**
- * Compatibility check against the composed runtime manifest (`layout/claude-code.ts`). Emits
- * only WARNINGS — never blocks: the author is told what runs differently in this host.
+ * Compatibility check against the plugin as the kit read it (`entrypoints`). Emits only WARNINGS —
+ * never blocks: the author is told what runs differently in this host.
  */
 export function validateCompatibility(plugin: DiscoveredPlugin): PluginValidation {
   const warnings: string[] = []

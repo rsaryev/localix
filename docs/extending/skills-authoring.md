@@ -85,12 +85,17 @@ its assets for nested skills.
 
 ### Invocation pipeline
 
-An explicit slash invocation of a filesystem or plugin skill follows this order:
+An explicit slash invocation of a filesystem or plugin skill, or of a command, follows this order:
 
 1. Resolve the skill and reject it when `user-invocable: false`.
-2. Expand bounded `!` shell commands.
-3. Expand confined `@path` file references.
-4. Substitute arguments and session placeholders.
+2. Substitute arguments, `${CLAUDE_*}` paths and `${user_config.*}` options; a sensitive option is a
+   placeholder.
+3. Run the bounded `!` shell commands, each checked against the agent's permission rules with the
+   skill's `allowed-tools`. A command the rules would deny or ask about aborts the invocation. An
+   argument reaches a command as a shell variable, so it is printed, never run, whatever quoting the
+   author put around it.
+4. Attach the files `@path` names after the text, each read only inside the working directory or the
+   skill's directory, at most 32 KiB per file and 128 KiB in all. The `@path` stays in the text.
 5. Run inline with tool overrides, or start a child session for `context: fork`.
 
 A skill the agent loads with the `Skill` tool goes through the same steps, its commands checked
@@ -259,7 +264,7 @@ and non-zero-exit behavior. For a forked skill, verify the invoking agent has ev
 - [The `SKILL.md` format as the kit reads it](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/skill-files.ts)
 - [Writing skills to a scope's folder](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/skill-files.ts)
 - [Slash-command dispatch](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers.ts)
-- [Dynamic command expansion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/skill-commands.ts)
-- [File-reference expansion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/file-references.ts)
-- [Tool override mapping](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/tool-override-options.ts)
+- [Typed skill and command expansion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers-skill.ts)
+- [The agent's rules for injected commands](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/skill-command-authorize.ts)
+- [File-reference attachment](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/file-references.ts)
 - [Model roster and pinned-skill prompt sections](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/prompt/sections/features.ts)

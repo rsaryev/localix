@@ -108,9 +108,31 @@ When the API cannot answer, the frame loads the URL as given. The UI half is
 The pane does not track whether the page's own server is up. It shows whatever the URL returns; a
 stopped server shows the browser's own error page, and the toolbar's reload remounts the frame.
 
-A site that refuses framing is never mounted directly: the desktop shell's navigation guard hands a
-non-loopback document in any frame to the system browser. The pane shows its card and mounts the
-loopback strip-proxy only on request.
+A site that refuses framing is never mounted directly: the desktop shell's navigation guard cancels
+a non-loopback document in any frame. The pane shows its card and mounts the loopback strip-proxy
+only on request.
+
+### A frame that leaves for another site
+
+A preview page that navigates to a non-loopback document, such as an OAuth provider's sign-in page,
+is moved to its tab's native page. The desktop shell cannot tell which frame is navigating: wry
+passes its navigation handler the URL alone, for the top document and every frame alike
+(`workspace_navigation.rs` cites the sources). So the shell decides only by address, and the UI
+decides by focus.
+
+| Step     | Owner                                                     | Rule                                                                                                                                                                                                                                                                                              |
+| -------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Decide   | `decide` in `workspace_navigation.rs`                     | The app, loopback pages, `about:`, `blob:` and `data:` load; `mailto:` and `tel:` go to the OS; other schemes are refused. An HTTP(S) page is cancelled and handed to the UI where the handler sees frames (macOS, Linux). On Windows it sees the top document only, so the page opens in the OS. |
+| Tell     | `hand_to_ui`                                              | `browser:frame-navigation` with `{ url }`, emitted to the workspace that owns the webview only.                                                                                                                                                                                                   |
+| Validate | `frameNavigationUrl` in `previewFrameNavigation.ts`       | HTTP(S) with a host, not loopback, not `tauri.localhost`. Anything else is dropped.                                                                                                                                                                                                               |
+| Route    | `routeFrameNavigation`                                    | The preview frame that is `document.activeElement` is the page the person is working in. If its tab still shows a frame, that one tab becomes the native page at the URL (`nativePage: true`). Otherwise the URL goes to the system browser after the person confirms.                            |
+| Register | `PreviewTab` → `registerPreviewFrame`, `RootLayout` start | A mounted foreground tab registers its iframe; a background host, which only the agent drives, does not.                                                                                                                                                                                          |
+
+The native page applies its own rules (`native_browser.rs`): HTTP(S) only, never the app's origin,
+no IPC. The provider's redirect back to the app lands in the same native tab, at the app's real
+origin. A page cannot take over another tab: only the focused frame's tab is switched, it switches
+once, since it is a native page afterwards, and with no focused frame it gets one confirmation at a
+time.
 
 A terminal's served URL, shown on its tab and offered as "Open preview", comes from its own output:
 `createServedUrlScanner` finalizes complete lines, strips terminal controls, validates URLs and
@@ -309,9 +331,19 @@ that timed out might already have executed. Required unperformed checks remain b
 - The proxied page's origin is not the app's. An OAuth `redirect_uri` returns the frame to the app's
   real address, and a PKCE verifier kept in session storage does not reach it. The toolbar's **Open
   directly** (desktop only) switches the tab to the native page, which keeps the real origin.
-- In the desktop shell, a frame navigation to a non-loopback document opens the system browser,
-  including a sign-in provider's page. Handing that navigation to the tab's native page instead
-  needs the shell's `on_navigation` handler to tell the UI; it does not yet.
+- A frame's navigation to another site reaches its tab's native page only while the person works in
+  that frame (it has the focus) and only on macOS and Linux. A page that redirects by itself on
+  load, a click the agent synthesizes, or a link in the app's own UI asks before the system browser.
+  On Windows WebView2 does not show a frame's navigations to the shell; the frame shows the
+  provider's refusal to be framed, and **Open directly** is the way through.
+- The native page loads the provider's URL afresh with `GET`. A form `POST` to the provider loses
+  its body. State the frame stored for the flow under the proxy's origin, such as a PKCE verifier in
+  session storage, does not reach the native page. A cookie the app set from the proxied page
+  reaches it only if the engine stored it in the frame's third-party context.
+- `window.open` from a frame (a popup sign-in) still opens the system browser.
+- Focus is a proxy for the frame's identity, not proof of it. Another frame of the window (a mini
+  app view beside the preview) that navigates to a web page while a preview frame has the focus
+  moves that preview's tab to the page.
 - Probe dialog handling changes preview behavior: `confirm` returns `true`, `prompt` returns `null`,
   and `alert` returns immediately while the probe is mounted.
 - A single `evaluate` that mutates state and immediately reads it can run before an asynchronous
@@ -348,6 +380,8 @@ that timed out might already have executed. Required unperformed checks remain b
 - [Terminal service](../../../apps/api/src/features/terminal/service.ts)
 - [UI relay](../../../apps/ui/src/features/inspector/ui/PreviewTab.tsx) ·
   [Visual Feedback bridge](../../../apps/ui/src/features/inspector/ui/useVisualFeedback.ts)
+- [Frame navigation policy](../../../apps/desktop-tauri/src-tauri/src/workspace_navigation.rs) ·
+  [its routing to a tab](../../../apps/ui/src/features/inspector/model/previewFrameNavigation.ts)
 - [Probe protocol](../../../packages/visual-feedback/src/protocol/index.ts)
 - [Actuation and recovery](../../../packages/visual-feedback/src/actuate/index.ts) ·
   [target recovery](../../../packages/visual-feedback/src/actuate/target.ts)

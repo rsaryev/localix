@@ -34,11 +34,10 @@ describe('workflow commands', () => {
     const command = plugin!.commands.find((entry) => entry.name === 'release-audit')
     expect(command).toMatchObject({
       description: 'Audit the release',
-      activateTools: ['Workflow'],
       argumentHint: '[input]',
     })
     expect(command!.prompt).toContain('`acme:release-audit` now with the `Workflow` tool')
-    expect(command!.prompt).toContain('$ARGUMENTS')
+    expect(command!.prompt).toEndWith('Input: ')
     expect(command!.prompt).not.toContain('budget')
     expect(plugin!.provides.commands).toEqual(['ship', 'release-audit'])
 

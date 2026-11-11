@@ -146,7 +146,3 @@ export function readSkillMarkdownFileSync(path: string): string {
     closeSync(fd)
   }
 }
-
-export function skillFileErrorDetail(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}

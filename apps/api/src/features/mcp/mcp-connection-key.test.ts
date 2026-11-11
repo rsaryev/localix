@@ -1,6 +1,9 @@
 import { expect, test } from 'bun:test'
 import { mcpConnectionKey } from './mcp-connection-key'
 import type { McpServerRecord } from './repository'
+import { withClaudeCodeMcp } from './testing/claude-code-host'
+
+withClaudeCodeMcp()
 
 const server: McpServerRecord = {
   id: 'server-1',

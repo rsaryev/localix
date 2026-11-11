@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
-import { connectServerConfig } from '../mcp/expand'
+import { connectServerConfig } from './kit/settings/mcp-connect'
 import { loadManifest } from './manifest-load'
 import { pluginDataDir } from './mcp'
 import { pluginMcpRecords } from './testing/test-mcp-records'
@@ -106,7 +106,8 @@ describe("a plugin's MCP server records", () => {
       { SECRET: '${GITHUB_TOKEN}', REGION: '${HOME}' },
     )
     const connect = connectServerConfig(record!, {
-      env: { GITHUB_TOKEN: 'ghp_HOSTSECRET', HOME: '/Users/someone' },
+      GITHUB_TOKEN: 'ghp_HOSTSECRET',
+      HOME: '/Users/someone',
     })
     expect(JSON.stringify(connect)).not.toContain('ghp_HOSTSECRET')
     expect((connect.headers as Record<string, string>)['X-Key']).toBe('${GITHUB_TOKEN}')

@@ -76,9 +76,7 @@ export function createToolEvents({ fire, cwd, stop }: EventDeps): ToolEvents {
         ...(durationMs === undefined ? {} : { duration_ms: durationMs }),
       })
       const additionalContext = claudeText(outcome)
-      const replaced =
-        outcome &&
-        replacementContent(call.name, { updatedToolOutput: outcome.effects.updatedToolOutput })
+      const replaced = outcome && replacementContent(call.name, outcome.effects.updatedToolOutput)
       return {
         ...(additionalContext ? { additionalContext } : {}),
         ...(replaced === undefined ? {} : { updatedToolOutput: replaced }),

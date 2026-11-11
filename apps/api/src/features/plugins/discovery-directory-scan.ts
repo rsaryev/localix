@@ -3,15 +3,9 @@ import { listSubdirs, pathExists } from '../ext/fs-discovery'
 import { isExtensionPublicationArtifact } from '../ext/publish-tree'
 import { isPluginFolder } from './kit'
 import { MINI_APP_FILE } from './layout/read'
-import { locateManifest, PLUGIN_MANIFEST_CANDIDATES } from './manifest-locate'
 import { loadManifest } from './manifest-load'
 import { withWorkflowCommands } from './workflow-commands'
 import type { DiscoveredPlugin } from './discovery-types'
-
-/** Locate a plugin's manifest (`.claude-plugin/plugin.json`), or null. */
-export async function findManifestPath(dir: string): Promise<string | null> {
-  return locateManifest(dir, PLUGIN_MANIFEST_CANDIDATES)
-}
 
 /**
  * What makes a directory a plugin, as the kit classifies one (the manifest is optional). A mini

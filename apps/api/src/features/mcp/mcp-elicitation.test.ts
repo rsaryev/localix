@@ -15,6 +15,9 @@ import type {
 import { answerElicitation, createElicitingClient } from './mcp-elicitation'
 import { buildToolForServer } from './mcp-tools'
 import type { McpServerRecord } from './repository'
+import { withClaudeCodeMcp } from './testing/claude-code-host'
+
+withClaudeCodeMcp()
 
 type ElicitParams = ElicitRequest['params']
 

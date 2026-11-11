@@ -7,14 +7,13 @@ import type { PermissionRule } from '../../agent-core/permission-engine'
  * own leaf so the dispatcher file (command-handlers.ts) stays focused on dispatch.
  */
 import type { ChatServiceDeps } from './context'
-import type { SkillShellPolicy } from './skill-commands'
+import type { WorkflowEntry } from '../../agent-core/tools/workflow/workflow'
 import type { createChatRepository, SessionRecord } from '../repository'
 import type { AvailabilityWriter } from '../../capabilities/availability'
 import type { createUsageRepository } from '../../usage/repository'
 import type { createMcpRepository, McpServerRecord } from '../../mcp/repository'
 import type { createPluginService } from '../../plugins/service'
 import type { MiniAppService } from '../../mini-apps/service'
-import type { PluginCommand } from '../../plugins/contracts'
 import type { AgentRunner } from '../runtime/agent-runner'
 import type {
   MessageMutationResponse,
@@ -105,8 +104,6 @@ export interface CommandHandlerContext {
   gatherSessionSkills: (userId: string, session: SessionRecord) => Promise<readonly SessionSkill[]>
   /** The agent's permission rules a typed skill's commands meet; absent, none are checked. */
   loadSkillCommandRules?: (userId: string, agentId: string) => Promise<PermissionRule[]>
-  /** `disableSkillShellExecution` for a skill or command about to render (`plugin-commands.ts`). */
-  skillShellDisabled?: SkillShellPolicy
   /**
    * Skill visibility for a scope: one shared settings seam for slash invocation and `/skills`
    * listing. Takes the project because visibility is a scope fact — the global-only read this
@@ -119,12 +116,8 @@ export interface CommandHandlerContext {
     projectId: string | null,
     names: readonly string[],
   ) => Promise<SkillOverrides>
-  gatherEnabledPluginCommands: (
-    userId: string,
-    session: SessionRecord,
-  ) => Promise<
-    Array<{ plugin: string; command: PluginCommand; pluginDir: string; dataDir?: string }>
-  >
+  /** The workflows a session runs: its folders' (`/<name>`), then its enabled plugins'. */
+  enabledWorkflows: (userId: string, session: SessionRecord) => Promise<WorkflowEntry[]>
   resolveSessionWorkingDir: (userId: string, session: SessionRecord) => Promise<string>
   /**
    * Spawn a delegated session from the skill task and agent selection;

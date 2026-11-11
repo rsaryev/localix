@@ -4,7 +4,6 @@ import {
   parseSlashInvocation,
   parseSkillCommand,
   splitCommandArg,
-  splitSkillArgs,
 } from './slash-commands'
 import { SLASH_COMMANDS } from '../slash-catalog'
 
@@ -43,19 +42,6 @@ describe('splitCommandArg', () => {
   })
   it('keeps multiline rest', () => {
     expect(splitCommandArg('/loop 5m line1\nline2')).toEqual({ value: '5m', rest: 'line1\nline2' })
-  })
-})
-
-describe('splitSkillArgs', () => {
-  it('splits on whitespace', () => {
-    expect(splitSkillArgs('a b c')).toEqual(['a', 'b', 'c'])
-  })
-  it('honours double and single quotes as single tokens', () => {
-    expect(splitSkillArgs('"hello world" foo')).toEqual(['hello world', 'foo'])
-    expect(splitSkillArgs("'single quoted' bar")).toEqual(['single quoted', 'bar'])
-  })
-  it('empty string → no tokens', () => {
-    expect(splitSkillArgs('')).toEqual([])
   })
 })
 

@@ -9,7 +9,6 @@ import { join } from 'node:path'
 
 import type { PermissionMode } from '../../../../contracts/permission-modes'
 import { GENERAL_PURPOSE_TYPE } from '../../../agent-core/tools/agent/agent-type'
-import { ccSessionEnvFiles, type CcSessionEnvFiles } from '../../../cc-hooks'
 import { sessionDataDir } from '../../../mini-apps/session-storage'
 import type { SessionRecord } from '../../repository'
 
@@ -41,14 +40,13 @@ export function ccSubagentOf(
 }
 
 /**
- * The session tree's `CLAUDE_ENV_FILE`s: kept with the root's session data, so a delegated child's
- * commands see what the conversation's SessionStart hooks exported, and removed with the session.
+ * The folder of the session tree's `CLAUDE_ENV_FILE`s: kept with the root's session data, so a
+ * delegated child's commands see what the conversation's SessionStart hooks exported, and removed
+ * with the session.
  */
-export function ccSessionEnvFilesOf(
+export function ccSessionEnvDirOf(
   session: Pick<SessionRecord, 'id' | 'rootSessionId'>,
   dataRoot?: string,
-): CcSessionEnvFiles {
-  return ccSessionEnvFiles(
-    join(sessionDataDir(session.rootSessionId ?? session.id, dataRoot), '.claude-code'),
-  )
+): string {
+  return join(sessionDataDir(session.rootSessionId ?? session.id, dataRoot), '.claude-code')
 }

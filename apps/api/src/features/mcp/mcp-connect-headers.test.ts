@@ -5,11 +5,15 @@ import { tempDirPerTest } from '@localixai/testing'
 
 import { connectClient, isMcpAuthenticationRequiredError } from './mcp-connect'
 import type { McpServerRecord } from './repository'
+import { withClaudeCodeMcp } from './testing/claude-code-host'
+
+withClaudeCodeMcp()
 
 /**
  * What a remote server RECEIVES from a Claude Code `.mcp.json` entry: its static headers with a
- * `headersHelper`'s output over them, the helper run again (once) after a 401 or 403, and no OAuth
- * fallback once the helper has supplied an `Authorization`.
+ * `headersHelper`'s output over them, a 401 or 403 while connecting a failed connection (the helper
+ * runs again only on a call, `kit/settings/mcp-remote.test.ts`), and no OAuth fallback once an
+ * `Authorization` is supplied.
  */
 const scratch = tempDirPerTest('mcp-connect-headers-')
 
@@ -102,12 +106,16 @@ describe('a remote server with a headersHelper', () => {
     expect(tokens).toContain('Bearer t1')
   })
 
-  test('after a 401 the helper runs again and the request is retried once with its headers', async () => {
+  test('a 401 while connecting fails the connection, the helper is not run again', async () => {
     const { url, seen } = mcpEndpoint((h) => h.get('authorization') === 'Bearer t1')
-    const client = await connectClient(record({ url, headersHelper: COUNTING }), scratch())
-    await client.close()
+    const error = await connectClient(record({ url, headersHelper: COUNTING }), scratch()).catch(
+      (e: unknown) => e,
+    )
+    expect(String(error)).toContain(
+      'Server rejected the Authorization header minted by the configured headersHelper (HTTP 401)',
+    )
     const posts = seen.filter((s) => s.method === 'POST').map((s) => s.headers.get('authorization'))
-    expect(posts.slice(0, 2)).toEqual(['Bearer t0', 'Bearer t1'])
+    expect(posts).toEqual(['Bearer t0'])
   })
 
   test('a rejected helper credential is a plain connect failure, not a request to sign in', async () => {

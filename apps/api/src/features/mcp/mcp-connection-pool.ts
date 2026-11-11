@@ -12,6 +12,7 @@ import type { ToolMetadataStore } from './mcp-tool-metadata-store'
 import type { CacheEntry, ClientConnection, McpLogger } from './client-manager-types'
 import type { ChannelRouter } from './mcp-channels'
 import { isMcpAuthenticationRequiredError } from './mcp-connect'
+import { resolveConnectTimeoutMs } from './mcp-timeouts'
 import type { McpClientLike } from './mcp-client-contracts'
 
 /** CC caps server instructions at 2KB before they reach the model. */
@@ -24,7 +25,8 @@ export interface ConnectionPoolDeps {
   promptsChanged(): (() => void) | undefined
   connect: (server: McpServerRecord, cwd: string) => Promise<McpClientLike>
   metadata: ToolMetadataStore
-  startupTimeoutMs: number
+  /** The startup deadline; else the server's own (`MCP_TIMEOUT`, `mcp-timeouts.ts`). */
+  startupTimeoutMs?: number
   promptListTimeoutMs?: number
   /** Read on every connect outcome; set once by the composition root. */
   observer: () => McpConnectionObserver | undefined
@@ -53,7 +55,7 @@ function capInstructions(raw: string | undefined): string | undefined {
 
 /** Connection lifecycle: single-flight connect, startup deadline, health, eviction. */
 export function createConnectionPool(deps: ConnectionPoolDeps): ConnectionPool {
-  const { connect, metadata, startupTimeoutMs } = deps
+  const { connect, metadata } = deps
   const promptListTimeoutMs = deps.promptListTimeoutMs ?? DEFAULT_PROMPT_LIST_TIMEOUT_MS
   const cache = new Map<string, CacheEntry>()
 
@@ -82,6 +84,7 @@ export function createConnectionPool(deps: ConnectionPoolDeps): ConnectionPool {
   ): CacheEntry {
     let startupClient: McpClientLike | undefined
     let startupExpired = false
+    const startupTimeoutMs = Math.max(1, deps.startupTimeoutMs ?? resolveConnectTimeoutMs(server))
     const timeoutMessage = `MCP server "${server.name}" startup timed out after ${startupTimeoutMs}ms`
     // `entry` is declared below; `run` only touches it after its first await.
     const run = async (): Promise<ClientConnection> => {

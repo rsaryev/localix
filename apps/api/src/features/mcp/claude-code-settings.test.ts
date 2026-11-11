@@ -2,6 +2,7 @@ import { afterEach, expect, test } from 'bun:test'
 import { claudeCodeMcpServers } from './claude-code-servers'
 import { folderSettingsEnv, installMcpSettingsReader } from './claude-code-settings'
 import type { McpServerRecord } from './repository'
+import { mcpSettingsReader } from '../plugins/kit/settings/mcp'
 
 afterEach(() => installMcpSettingsReader(undefined))
 
@@ -32,6 +33,7 @@ test('until the host installs a reader no Claude Code file is read: one server p
 
 test('the installed reader answers for every folder', () => {
   installMcpSettingsReader({
+    ...mcpSettingsReader,
     servers: () => [record('x', 'x')],
     folderEnv: (cwd) => ({ CWD: cwd }),
   })

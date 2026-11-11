@@ -63,13 +63,12 @@ import {
 import { removePlugin } from './service-remove'
 import { resolveFreshMarketplaceInstall } from './marketplace-refresh'
 import { createDeclaredMarketplaceSync } from './declared-marketplaces'
-import { installNodeDependencies } from './plugin-node-deps'
+import { installNodeDependencies } from './kit/marketplace/node-deps'
 import { userDefaultNpmRegistry } from './marketplace-npm-registry'
 import { inPlaceInstallFor, inPlacePublication } from './install-in-place'
 import { createPluginUpdates } from './plugin-updates'
 import { ensureDefaultMarketplaces } from './default-marketplaces'
 import { setInstallRecord } from './plugin-cache'
-import { readRemoteCommit } from './git-fetch'
 import {
   claimCachedRecord,
   existingVersion,
@@ -510,10 +509,10 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         )
         // A copied plugin's Node.js packages install from its lockfile, scripts off (loading.md).
         if (!inPlace) {
-          const packages = await installNodeDependencies(directory, {
+          const note = await installNodeDependencies(directory, {
             defaultRegistry: await userDefaultNpmRegistry(),
           })
-          if (packages.skipped) installNotes.push(packages.skipped)
+          if (note) installNotes.push(note)
         }
       }
       if (resolvedMarket)
@@ -640,7 +639,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
           { replace: true, onPhase: onInstalling },
         ),
       refreshMarketplace: (name) => updateMarketplace(name, registryDeps),
-      remoteCommit: deps.remoteCommit ?? readRemoteCommit,
+      fetchPlugin: (ref) => resolveMarketplaceInstall(ref, registryDeps, { prefetch: true }),
       env: deps.env ?? process.env,
       now,
     }),

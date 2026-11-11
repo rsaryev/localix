@@ -46,52 +46,22 @@ export const miniAppCommandArgSchema = z.object({
 export type MiniAppCommandArg = z.infer<typeof miniAppCommandArgSchema>
 
 /**
- * An inline slash-command a plugin declares in its manifest. `prompt` is an
- * agent-macro template with `${argName}` placeholders filled from the parsed args;
- * the rendered prompt is dispatched generically by the backend (no per-plugin code).
+ * A plugin's command as the catalog lists it: what the composer's menu, the store's contents and
+ * the validator read. It runs as the skill it is in the chat's kit session
+ * (`command-handlers-plugin-command.ts`), which reads the command file itself.
  */
 export const pluginCommandSchema = z.object({
   // Accepts a namespaced `foo:bar` name (nested `commands/foo/bar.md`), of which a plain
   // single-segment name is the common case.
   name: z.string().regex(PLUGIN_QUALIFIED_NAME_RE),
   description: z.string().default(''),
-  args: z.array(miniAppCommandArgSchema).default([]),
-  prompt: z.string(), // agent-macro template; ${argName} placeholders
-  /**
-   * CC `arguments` — names for the positional arguments, filling `$name` in the prompt
-   * (`arguments: [env, branch]` → `$env` is the first word, `$branch` the second).
-   */
-  arguments: z.array(z.string().regex(/^[a-zA-Z_][a-zA-Z0-9_-]*$/)).optional(),
-  /** CC `argumentHint` — placeholder shown in the composer when this command is selected. */
+  /** The command's text as written: the validator warns when it is empty. */
+  prompt: z.string(),
+  /** CC `argument-hint` — placeholder shown in the composer when this command is selected. */
   argumentHint: z.string().optional(),
-  /** Shown first in the slash menu, under "Suggested". */
-  featured: z.boolean().optional(),
-  /**
-   * Deferred tools the command's work needs for the rest of the chat, activated when it runs, as
-   * if the agent had called `ToolSearch` (e.g. a board tool for a command that plans on it).
-   */
-  activateTools: z.array(z.string().min(1)).max(8).optional(),
-  /**
-   * CC `model` — preferred model alias/id for this command's macro run (e.g. "opus",
-   * a full catalog id). Best-effort: applied as a per-run session model override; the
-   * id must be valid for a configured provider (an unknown id fails that run, same as CC).
-   */
-  model: z.string().optional(),
-  /**
-   * CC `disable-model-invocation` — user-invocable only, excluded from any model-facing
-   * command listing. Plugin commands are not exposed to the model in this host, so today
-   * this is honored trivially; the flag is carried for forward-compatibility + tooling.
-   */
-  disableModelInvocation: z.boolean().optional(),
-  /**
-   * CC `allowedTools` — tools auto-approved during this command's run (same as skill frontmatter).
-   * Comma/space/YAML-inline-array format; CC tool names are normalized to engine names.
-   */
+  /** CC `allowed-tools`, checked by the validator against the engine's tools. */
   allowedTools: z.array(z.string()).optional(),
-  /**
-   * CC `disallowedTools` — tools removed from the pool during this command's run.
-   * Comma/space/YAML-inline-array format; CC tool names are normalized to engine names.
-   */
+  /** CC `disallowed-tools`, checked by the validator against the engine's tools. */
   disallowedTools: z.array(z.string()).optional(),
 })
 export type PluginCommand = z.infer<typeof pluginCommandSchema>

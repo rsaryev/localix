@@ -9,6 +9,9 @@ import {
 } from './mcp-prompts'
 import type { McpServerRecord } from './repository'
 import type { McpClientLike } from './mcp-client-contracts'
+import { withClaudeCodeMcp } from './testing/claude-code-host'
+
+withClaudeCodeMcp()
 
 const review: McpPromptDef = {
   name: 'code-review',

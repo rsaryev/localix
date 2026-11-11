@@ -144,6 +144,11 @@ preview is opened again. Where the app keeps sign-in state in local or session s
 cookie, a flow started on the proxied page cannot finish there. In the desktop app, **Open
 directly** shows the page at its real address, outside the proxy, for flows like these.
 
+In the desktop app on macOS and Linux, when the page you are using leaves for another site, such as
+the provider's sign-in page, the tab becomes a native page at that address, without Visual Feedback,
+so the sign-in shows inside Localix and returns to the app in the same tab. Links in the chat and
+the rest of the app are not affected.
+
 The probe and host UI establish a per-load `postMessage` channel. Turning Visual Feedback on sends a
 mode change through that channel, so it does not reload a connected preview. A page reload creates a
 new handshake; a comment being written survives it, and the new page is asked to find its element
@@ -252,8 +257,11 @@ attached is reviewed in the composer's attached-context list.
 - Browsers block `SameSite=Lax` and `Strict` cookies in a frame whose site differs from the Localix
   window's, for example a `localhost` app while Localix runs on `127.0.0.1`. Sign-in then fails in
   the frame, with or without the proxy. Use **Open directly** in the desktop app.
-- Hosted sign-in providers refuse to be framed. In the desktop app, a frame that navigates to one
-  opens it in the system browser.
+- Hosted sign-in providers refuse to be framed. In the desktop app on macOS and Linux, a page you
+  are using that navigates to one switches its tab to the native page at the provider's address, and
+  the provider's redirect back lands in that tab. A page that redirects by itself, or a click made
+  by the agent, asks before it opens the system browser. On Windows the frame shows the provider's
+  refusal; use **Open directly**.
 - The Localix API refuses every request that arrives through a preview proxy.
 - A probe build or handshake failure leaves the page viewable but removes element picking and agent
   control from that preview.

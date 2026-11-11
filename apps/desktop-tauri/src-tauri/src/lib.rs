@@ -179,6 +179,7 @@ mod workspace_drag_tracking;
 mod workspace_lifecycle;
 #[cfg(target_os = "macos")]
 mod workspace_menu;
+mod workspace_navigation;
 #[cfg(target_os = "macos")]
 mod workspace_open;
 #[cfg(all(debug_assertions, target_os = "macos"))]

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import { act } from 'react'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { usePreviewStore } from '../model/previewStore'
@@ -194,6 +194,71 @@ describe('BrowserWorkspace roster for the agent', () => {
         previewTabsBySession: previous.previewTabsBySession,
       })
       usePersonActions.setState({ bySession: {} })
+    }
+  })
+})
+
+describe('BrowserWorkspace — a framed page leaving for a sign-in provider', () => {
+  test('the tab the person is using becomes the native page at that address', async () => {
+    const { createRoot } = await import('react-dom/client')
+    const { startPreviewFrameNavigation } = await import('../model/previewFrameNavigation')
+    const previous = usePreviewStore.getState()
+    const previousTauri = Object.getOwnPropertyDescriptor(window, '__TAURI__')
+    const callbacks: Array<(event: { payload: unknown }) => void> = []
+    Object.defineProperty(window, '__TAURI__', {
+      configurable: true,
+      value: {
+        event: {
+          listen: (name: string, callback: (event: { payload: unknown }) => void) => {
+            if (name === 'browser:frame-navigation') callbacks.push(callback)
+            return Promise.resolve(() => {})
+          },
+        },
+      },
+    })
+    // The live API says where the page is served from; the frame mounts once it has.
+    const fetch = spyOn(globalThis, 'fetch').mockImplementation((async () =>
+      Response.json({
+        url: 'http://localhost:3000/',
+        injectUrl: 'http://localhost:61001/',
+      })) as unknown as typeof globalThis.fetch)
+    const page = { previewId: 'tab-app', url: 'http://localhost:3000/', version: 1 }
+    usePreviewStore.setState({
+      previewBySession: { 'session-1': page },
+      previewTabsBySession: { 'session-1': [page] },
+    })
+    const container = document.createElement('div')
+    document.body.append(container)
+    const root = createRoot(container)
+    const stop = startPreviewFrameNavigation()
+    try {
+      await act(async () => root.render(<BrowserWorkspace sessionId="session-1" />))
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+      const frame = container.querySelector('iframe')
+      expect(frame).not.toBeNull()
+      // The person clicked "Sign in" inside the page.
+      frame!.focus()
+      expect(document.activeElement).toBe(frame)
+      const signIn = 'https://accounts.example.com/o/oauth2/auth?state=xyz'
+      await act(async () => {
+        for (const callback of callbacks) callback({ payload: { url: signIn } })
+      })
+      const tabs = usePreviewStore.getState().previewTabsBySession['session-1']
+      expect(tabs).toHaveLength(1)
+      expect(tabs?.[0]).toMatchObject({ previewId: 'tab-app', url: signIn, nativePage: true })
+    } finally {
+      stop()
+      await act(async () => root.unmount())
+      container.remove()
+      fetch.mockRestore()
+      if (previousTauri) Object.defineProperty(window, '__TAURI__', previousTauri)
+      else delete (window as { __TAURI__?: unknown }).__TAURI__
+      usePreviewStore.setState({
+        previewBySession: previous.previewBySession,
+        previewTabsBySession: previous.previewTabsBySession,
+      })
     }
   })
 })

@@ -17,7 +17,6 @@ import { watchSettingsDirs } from './status-line-watch'
 import { readStatusLineWorkspace } from './status-line-workspace'
 import type { Timers } from './subagent-rows-live'
 
-export { statusLineInput } from './status-line-input'
 export type { StatusLineDeps } from './status-line-deps'
 export type { StatusLineUsage } from './status-line-usage'
 

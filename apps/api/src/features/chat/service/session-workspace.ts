@@ -2,9 +2,7 @@ import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { buildPluginCatalog, type PluginCatalog } from '../../plugins/catalog'
 import { loadEnabledPlugins } from '../../plugins/loader'
 import type { McpServerRecord } from '../../mcp/repository'
-import type { PluginCommand } from '../../plugins/contracts'
-import { folderWorkflowCommands } from '../../plugins/workflow-commands'
-import { catalogPluginCommands } from '../../plugins/plugin-skills'
+import { listEnabledPluginWorkflows } from '../../plugins/workflow-commands'
 import type { createProjectsRepository } from '../../projects/repository'
 import type { SessionRecord } from '../repository'
 import { projectWorkingDirPort, resolveBaseSessionCwd } from '../session-cwd'
@@ -94,36 +92,20 @@ export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
     })
   }
 
-  /**
-   * Slash-commands declared by every ENABLED plugin visible to a session, flattened
-   * with their owning plugin name. Mirrors the enable rule the loader/service use:
-   * a DB row wins; absent one, bundled command-only plugins are on by default.
-   */
-  const gatherEnabledPluginCommands = async (
-    userId: string,
-    session: SessionRecord,
-  ): Promise<
-    Array<{ plugin: string; command: PluginCommand; pluginDir: string; dataDir?: string }>
-  > => {
-    const projectId = session.projectId ?? ''
+  /** The workflows the session's `Workflow` tool runs, which a person types as commands. */
+  const enabledWorkflows = async (userId: string, session: SessionRecord) => {
     const [cwd, availability] = await Promise.all([
       resolveSessionWorkingDir(userId, session),
       availabilityFor(userId, agentOf(session)),
     ])
-    const catalog = await buildPluginCatalog({
+    return listEnabledPluginWorkflows({
       repo: pluginRepo,
       availability,
       userId,
-      projectId,
+      projectId: session.projectId ?? '',
       cwd,
       homeDir: userHome(),
     })
-    // Each command's text takes the plugin's saved `${user_config.KEY}` values, as a skill's does.
-    return [
-      ...catalogPluginCommands(catalog, { projectDir: cwd, homeDir: userHome() }),
-      // Saved workflows (`.claude/workflows`, `~/.claude/workflows`) run as `/<name>`.
-      ...(await folderWorkflowCommands({ cwd, homeDir: userHome() })),
-    ]
   }
 
   const buildSessionPluginCatalog = async (
@@ -215,7 +197,7 @@ export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
     resolveProjectWorkingDir,
     resolveSessionWorkingDir,
     gatherSessionSkills,
-    gatherEnabledPluginCommands,
+    enabledWorkflows,
     buildSessionPluginCatalog,
     loadSessionPluginMcpServers,
   }

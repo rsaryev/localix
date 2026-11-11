@@ -4,10 +4,6 @@ import type { ClaudeSettings } from './read'
 
 /** Single settings values a Localix feature reads, each as the kit decides it. */
 
-/** `disableSkillShellExecution` for the skills Localix runs (the person's, a project's, a plugin's). */
-export const skillShellDisabled = (settings: ClaudeSettings): boolean =>
-  !settings.policy().skills.shell('user').run
-
 const trimmed = (value: string | undefined) => value?.trim() || undefined
 
 /** `outputStyle`: the style a chat speaks in when none is chosen. */

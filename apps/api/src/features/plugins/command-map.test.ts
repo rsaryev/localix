@@ -42,7 +42,6 @@ describe('the commands object map', () => {
     expect(commands[0]).toMatchObject({
       description: 'Show the current deployment status',
       argumentHint: '[env]',
-      model: 'haiku',
       allowedTools: ['Bash(kubectl get:*)'],
       prompt: 'Report the status of $ARGUMENTS.',
     })

@@ -4,7 +4,6 @@
 import type { AgentToolResult } from '@localixai/agent/agents'
 
 import { isRecord } from '../../lib/record'
-import { CC_POST_APPEND_CAP_BYTES } from './contracts'
 
 /** An exact reminder tag inside the hook's text; Claude Code escapes its `<` (hooks.md). */
 const REMINDER_TAG = /<(\/?system-reminder>)/g
@@ -12,11 +11,12 @@ const REMINDER_TAG = /<(\/?system-reminder>)/g
 /**
  * A tool hook's `additionalContext` beside the tool result: Claude Code "wraps the string in a
  * system reminder and inserts it into the conversation at the point where the hook fired" — for
- * the tool events, "next to the tool result". Capped at {@link CC_POST_APPEND_CAP_BYTES}.
+ * the tool events, "next to the tool result". The kit already capped each hook's string at 10,000
+ * characters (a longer one is saved to a file), so the joined notes are not cut again.
  */
 export function withContextReminder(content: string, note: string | undefined): string {
   if (!note?.trim()) return content
-  const body = note.slice(0, CC_POST_APPEND_CAP_BYTES).replace(REMINDER_TAG, '&lt;$1')
+  const body = note.replace(REMINDER_TAG, '&lt;$1')
   return `${content}\n\n<system-reminder>\n${body}\n</system-reminder>`
 }
 

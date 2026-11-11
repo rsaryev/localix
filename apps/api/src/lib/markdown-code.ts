@@ -1,6 +1,6 @@
 /**
  * Where Markdown code sits on a line or in a document, for the `@`-reference scanners
- * (`agent-core/context-imports.ts`, `chat/service/file-references.ts`): a reference inside a
+ * (`agent-core/context-imports.ts`, `chat/file-references.ts`): a reference inside a
  * code span or a fenced block is shown literally rather than expanded.
  */
 
