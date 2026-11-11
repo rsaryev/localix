@@ -5,6 +5,7 @@ import {
   issueLine,
   scopeMcpServers,
   scopePluginErrors,
+  unmetDependencies,
   type LocalixPluginHost,
   type ScopePlugin,
 } from './kit'
@@ -58,12 +59,20 @@ export async function catalogMcpServers(
 
 /**
  * The kit's error against each plugin of a catalog, by `pluginIdOf` (a dependency not installed,
- * disabled or outside its range keeps the plugin off): what its record shows.
+ * disabled or outside its range keeps the plugin off): what its record shows. None without a host.
  */
-export function catalogPluginErrors(
-  host: LocalixPluginHost,
+export async function catalogPluginErrors(
+  host: LocalixPluginHost | undefined,
   catalog: Pick<PluginCatalog, 'all'>,
   scope: { readonly cwd: string; readonly homeDir: string },
 ): Promise<ReadonlyMap<string, string>> {
-  return scopePluginErrors(host, { ...scope, plugins: kitPluginsOf(catalog) })
+  return host ? scopePluginErrors(host, { ...scope, plugins: kitPluginsOf(catalog) }) : new Map()
 }
+
+/**
+ * The kit's dependency error against each selected plugin of a catalog, by `pluginIdOf`, judged
+ * without a session (`unmetDependencies`): what keeps a plugin the loader would start off.
+ */
+export const catalogDependencyErrors = (
+  catalog: Pick<PluginCatalog, 'all'>,
+): ReadonlyMap<string, string> => unmetDependencies(kitPluginsOf(catalog))

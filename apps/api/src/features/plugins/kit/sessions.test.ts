@@ -198,6 +198,21 @@ describe("a plugin's dependencies, as the kit judges them at load", () => {
   })
 })
 
+describe('a dependency the agent did not select but managed settings turn on', () => {
+  test('runs, so the plugin that needs it runs too and shows no error', async () => {
+    const { chats } = sessions()
+    const app = { ...(await scoped('app', true)), plugin: await plugin('app-needs-lib', ['lib']) }
+    const session = chats.forRun(
+      facts({
+        plugins: [{ ...app, id: 'app@acme' }, await scoped('lib', false)],
+        layers: [{ scope: 'managed', settings: { enabledPlugins: { 'lib@acme': true } } }],
+      }),
+    )
+    expect(enabledIn(session)).toEqual({ 'app@acme': true, 'lib@acme': true })
+    expect(pluginErrors(session)).toEqual(new Map())
+  })
+})
+
 describe('an asyncRewake wake', () => {
   // A chat's session may first open outside a run (a typed `/skill`), with no wake to bind: the
   // wake of the latest run is the one a background hook's exit 2 reaches.

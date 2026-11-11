@@ -10,6 +10,7 @@ export {
   createChatPluginSessions,
   pluginErrors,
   runningPlugins,
+  unmetDependencies,
   type ChatPluginSessions,
   type ScopePlugin,
 } from './sessions'

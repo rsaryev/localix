@@ -202,6 +202,13 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     return plugin
   }
 
+  /** The kit's error against one plugin in its scope: what its row in the list shows. */
+  const kitErrorOf = async (userId: string, plugin: DiscoveredPlugin, projectId: string) => {
+    const { catalog, runtimeCwd: cwd } = await scopeCatalog(userId, projectId)
+    const errors = await catalogPluginErrors(deps.pluginHost, catalog, { cwd, homeDir: home })
+    return errors.get(pluginIdOf(plugin))
+  }
+
   /**
    * Materialize the UI records of one already-built catalog. Without a selected
    * project, only global plugins surface. `toRecord` validates skills per plugin, so map
@@ -212,9 +219,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     projectId: string,
     cwd: string,
   ): Promise<PluginRecord[]> => {
-    const kitErrors = deps.pluginHost
-      ? await catalogPluginErrors(deps.pluginHost, catalog, { cwd, homeDir: home })
-      : new Map<string, string>()
+    const kitErrors = await catalogPluginErrors(deps.pluginHost, catalog, { cwd, homeDir: home })
     return Promise.all(
       catalog.all.flatMap(({ plugin, state, enabled, awaitingConsent }) =>
         projectId || plugin.scope !== 'project'
@@ -393,7 +398,8 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         await repo.get(userId, rowScopeOf(plugin, projectId), input.name),
       )
       deps.onChanged?.()
-      return toRecord(plugin, state, await verdictFor(userId, plugin, input.agentId))
+      const verdict = await verdictFor(userId, plugin, input.agentId)
+      return toRecord(plugin, state, verdict, false, await kitErrorOf(userId, plugin, projectId))
     },
 
     async setConfig(userId, input) {
@@ -407,7 +413,8 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         values: input.values,
       })
       deps.onChanged?.()
-      return toRecord(plugin, state, await verdictFor(userId, plugin))
+      const verdict = await verdictFor(userId, plugin)
+      return toRecord(plugin, state, verdict, false, await kitErrorOf(userId, plugin, projectId))
     },
 
     async install(userId, input, opts) {

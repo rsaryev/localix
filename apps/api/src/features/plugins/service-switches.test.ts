@@ -112,6 +112,30 @@ describe('plugin switches', () => {
     expect(listed.find((p) => p.name === 'base')?.error).toBeUndefined()
   })
 
+  test('a plugin whose installed dependency is switched off says it is disabled, also when saved', async () => {
+    const { root, service } = await setup()
+    writePlugin(join(root, 'top'), 'top', { dependencies: ['base'] })
+    writePlugin(join(root, 'base'), 'base')
+    await service.install('u1', { source: join(root, 'top'), projectId: null, enable: true })
+    await service.install('u1', { source: join(root, 'base'), projectId: null })
+    const disabled = 'Dependency "base" is disabled — enable it or remove the dependency'
+    const listed = (await service.listPlugins('u1', { projectId: null })).plugins
+    expect(listed.find((p) => p.name === 'top')?.error).toBe(disabled)
+    // The single record a save answers with says the same.
+    const saved = await service.setConfig('u1', { name: 'top', values: {} })
+    expect(saved.error).toBe(disabled)
+  })
+
+  test("enabling a plugin whose dependency is outside its range answers with the kit's error", async () => {
+    const { root, service } = await setup()
+    writePlugin(join(root, 'base'), 'base', { version: '3.0.0' })
+    writePlugin(join(root, 'top'), 'top', { dependencies: [{ name: 'base', version: '~2.1.0' }] })
+    await service.install('u1', { source: join(root, 'base'), projectId: null, enable: true })
+    await service.install('u1', { source: join(root, 'top'), projectId: null })
+    const enabled = await service.setEnabled('u1', { name: 'top', enabled: true })
+    expect(enabled.error).toBe('Requires "base" ~2.1.0, installed 3.0.0')
+  })
+
   test('a switch or an install that changes nothing says the plugin already is', async () => {
     const { root, service } = await setup()
     writePlugin(join(root, 'twice'), 'twice')

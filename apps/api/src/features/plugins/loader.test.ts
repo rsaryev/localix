@@ -150,6 +150,17 @@ beforeAll(async () => {
     join(b2Plugin, 'skills', 'b2skill', 'SKILL.md'),
     '---\nname: b2skill\ndescription: B2 skill\n---\n\nCall ${user_config.BASE_URL} with auth ${user_config.API_TOKEN}.',
   )
+  // Two plugins with a bundled CLI whose dependency is not met: one names a plugin nobody
+  // installed, the other `styler`, installed but not switched on.
+  for (const [name, dependency] of [
+    ['needs-missing', 'absent'],
+    ['needs-off', 'styler'],
+  ] as const) {
+    const root = join(dir, '.localix', 'plugins', name)
+    await fs.mkdir(join(root, 'bin'), { recursive: true })
+    await fs.writeFile(join(root, 'bin', 'tool'), '#!/bin/sh\n')
+    await writeManifest(root, { name, version: '1.0.0', dependencies: [dependency] })
+  }
 })
 
 afterAll(async () => {
@@ -180,6 +191,31 @@ describe('loadEnabledPlugins', () => {
     expect(loaded.kitPlugins.find((one) => one.id === 'demo')?.root).toBe(
       join(dir, '.localix', 'plugins', 'demo'),
     )
+  })
+})
+
+describe('a plugin whose dependency is not met', () => {
+  // As in Claude Code (plugins/troubleshooting.md, "Dependency errors"): the plugin stays off and
+  // its row says why, in the kit's words.
+  it('does not start, and its row shows the missing or disabled dependency', async () => {
+    const loaded = await loadEnabledPlugins(
+      opts(fakeRepo([]), allowing('needs-missing', 'needs-off')),
+    )
+    expect(loaded.binDirs.filter((bin) => bin.includes('needs-'))).toEqual([])
+    const rows = Object.fromEntries(loaded.loaded.map((one) => [one.name, one]))
+    expect(rows['needs-missing']).toMatchObject({ error: 'Dependency "absent" is not installed' })
+    expect(rows['needs-missing']?.binDir).toBeUndefined()
+    expect(rows['needs-off']).toMatchObject({
+      error: 'Dependency "styler" is disabled — enable it or remove the dependency',
+    })
+    expect(rows['needs-off']?.binDir).toBeUndefined()
+  })
+
+  it('starts once the dependency is switched on', async () => {
+    const loaded = await loadEnabledPlugins(opts(fakeRepo([]), allowing('needs-off', 'styler')))
+    const row = loaded.loaded.find((one) => one.name === 'needs-off')
+    expect(row?.error).toBeUndefined()
+    expect(row?.binDir).toBe(join(dir, '.localix', 'plugins', 'needs-off', 'bin'))
   })
 })
 

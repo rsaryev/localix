@@ -164,9 +164,10 @@ that cannot be checked (`bun.lockb`, `yarn.lock`, `pnpm-lock.yaml`) leaves a not
 A dependency resolves in its own marketplace, or in the one `"name@marketplace"` or
 `{ "marketplace": … }` names under the root catalog's `allowCrossMarketplaceDependenciesOn`. Its
 `version` range installs the highest `<plugin>--v<version>` tag of a git-backed plugin's repository
-(none in range fails the install), and a plugin whose installed dependency falls outside the range
-does not load. Only plugins at the install's scope count: a project's copy does not satisfy a
-user-wide install.
+(none in range fails the install). A plugin whose dependency is not installed, is switched off or
+falls outside the range does not load, nor does a plugin that needs it, and its row says why
+(`Dependency "<name>" is disabled — enable it or remove the dependency`). Only plugins at the
+install's scope count: a project's copy does not satisfy a user-wide install.
 
 ### Claude Code settings
 

@@ -6,7 +6,7 @@ import { type CapabilitySourceRepository, scalarConfig } from '../capabilities/s
 import type { AvailabilityReader } from '../capabilities/availability'
 import { pluginLoadBlockReason } from './load-block'
 import { buildPluginCatalog } from './catalog'
-import { catalogMcpServers, kitPluginsOf } from './catalog-kit'
+import { catalogDependencyErrors, catalogMcpServers, kitPluginsOf } from './catalog-kit'
 import type { LocalixPluginHost } from './kit'
 import { emptyLoadedPlugins, type LoadedPlugins } from './loader-contract'
 import { resolvePluginConfig } from './config'
@@ -69,6 +69,8 @@ export async function loadEnabledPlugins(opts: {
     logger: opts.logger,
   })
 
+  const unmet = catalogDependencyErrors(catalog)
+
   for (const { plugin, state } of catalog.enabled) {
     const summary = {
       name: plugin.manifest.name,
@@ -94,11 +96,11 @@ export async function loadEnabledPlugins(opts: {
     }
 
     // Refuse to RUN a plugin this host cannot satisfy: a fatal manifest error (broken JSON, invalid
-    // name…) or an `apiVersion` newer than this host implements. The second used to be reported in
-    // Settings and enforced nowhere, so a plugin built against a future SDK was imported anyway and
-    // failed in whatever way its missing contract happened to fail. `summary.error` carries the
-    // reason, which the plugin row already renders — a plugin that contributes nothing must say why.
-    const blocked = pluginLoadBlockReason(plugin)
+    // name…), or a dependency that is not installed, disabled or outside its range (the kit's
+    // verdict, as a session judges it; plugins/troubleshooting.md, "Dependency errors").
+    // `summary.error` carries the reason, which the plugin row already renders — a plugin that
+    // contributes nothing must say why.
+    const blocked = pluginLoadBlockReason(plugin) ?? unmet.get(pluginIdOf(plugin))
     if (blocked) {
       summary.error = blocked
       finish()
