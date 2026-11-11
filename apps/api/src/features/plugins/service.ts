@@ -1,6 +1,5 @@
 import { ConflictError, InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
 import { promises as fs } from 'node:fs'
-import { pluginLoadBlockReason } from './load-block'
 import { isAbsolute } from 'node:path'
 import {
   type CapabilitySourceRecord,
@@ -135,9 +134,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     kitError?: string,
   ): Promise<PluginRecord> => {
     const resolvedConfig = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
-    let error = plugin.error ?? kitError
-    const loadBlocked = pluginLoadBlockReason(plugin)
-    if (loadBlocked) error = error ? `${error}; ${loadBlocked}` : loadBlocked
+    const error = plugin.error ?? kitError
     const validation = await validatePluginFull(plugin, { config: resolvedConfig })
     return {
       name: plugin.manifest.name,

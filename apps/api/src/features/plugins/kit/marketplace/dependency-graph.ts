@@ -1,6 +1,5 @@
 import { startUninstall } from '@rsaryev/llx-plugin/cli'
 import {
-  checkInstalledDependency,
   disableDecision,
   enablePlan,
   normalizeDependency,
@@ -83,16 +82,4 @@ export function uninstallRequiredBy(
   const graph = { ...facts, catalog: {}, allowlists: {} }
   const start = startUninstall({ plugin: id, scope }, { graph, tty: false })
   return start.kind === 'remove' ? start.requiredBy : []
-}
-
-/**
- * Why an installed dependency does not meet the range `dependent` puts on it, as Claude Code says
- * it when the plugins load (`Requires "<dep>" <range>, installed <version>`), or `undefined`.
- */
-export function dependencyRangeIssue(
-  dependency: NormalizedDependency,
-  installedVersion: string | undefined,
-): string | undefined {
-  const installed = installedVersion === undefined ? {} : { version: installedVersion }
-  return checkInstalledDependency(dependency, { enabled: true, ...installed })?.message
 }

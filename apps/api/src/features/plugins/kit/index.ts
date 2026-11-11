@@ -128,7 +128,6 @@ export {
 } from './marketplace/installs'
 export {
   declaredDependencies,
-  dependencyRangeIssue,
   disableRefusal,
   enableCascade,
   uninstallRequiredBy,

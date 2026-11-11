@@ -112,6 +112,18 @@ describe('plugin switches', () => {
     expect(listed.find((p) => p.name === 'base')?.error).toBeUndefined()
   })
 
+  test('a plugin whose manifest stopped loading states the reason once', async () => {
+    const { root, service } = await setup()
+    writePlugin(join(root, 'solo'), 'solo')
+    await service.install('u1', { source: join(root, 'solo'), projectId: null, enable: true })
+    const installed = join(root, 'home', '.localix', 'plugins', 'solo', '.claude-plugin')
+    writeFileSync(join(installed, 'plugin.json'), '{ not json')
+    const listed = (await service.listPlugins('u1', { projectId: null })).plugins
+    const error = listed[0]?.error ?? ''
+    expect(error).not.toBe('')
+    expect(error).not.toContain('; ')
+  })
+
   test('a plugin whose installed dependency is switched off says it is disabled, also when saved', async () => {
     const { root, service } = await setup()
     writePlugin(join(root, 'top'), 'top', { dependencies: ['base'] })
