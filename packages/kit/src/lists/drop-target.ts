@@ -13,6 +13,7 @@
  * should consume one of these variants instead of inventing another border.
  */
 
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { POPOVER_MATERIAL } from '../overlays/popover-surface'
 
 export const DROP_TARGET_TRANSITION =
@@ -30,7 +31,11 @@ export const DROP_TARGET_INSET_ACTIVE =
 export const DROP_TARGET_OVERLAY_ACTIVE =
   'border-2 border-dashed border-control-border-focus lx-occluder shadow-[inset_0_0_28px_color-mix(in_oklch,var(--foreground),transparent_93%),0_0_0_1px_var(--surface-hover)]'
 
-export const DROP_TARGET_HINT = `${POPOVER_MATERIAL} rounded-lg border border-control-border-focus px-3 py-1.5 text-xs font-medium text-foreground`
+/** The raised surface with its edge at focus strength: the one place the edge carries a state. */
+export const DROP_TARGET_HINT = cn(
+  POPOVER_MATERIAL,
+  'rounded-lg border-control-border-focus px-3 py-1.5 text-xs font-medium text-foreground',
+)
 
 // The insertion line's glow is `--drop-indicator-glow` (theme tokens), not a literal: the five
 // indicators below each spelled the same arbitrary shadow, and a string constant cannot carry it

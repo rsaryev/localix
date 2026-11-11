@@ -1,13 +1,12 @@
 /** Conversation permission mode, shown as its own pill above the input. */
 import type { ImplementationMode, SessionPlan } from '@localixai/api/client'
-import { ChevronDown } from 'lucide-react'
 import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
-import { ComposerChip } from '@localixai/kit/composer-chip'
+import { ComposerChip, ComposerChipChevron } from '@localixai/kit/composer-chip'
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { ActionTooltip } from '@localixai/kit/tooltip'
 import {
@@ -110,7 +109,7 @@ export function PermissionModeControl({
           >
             <Icon className="size-3.5" />
             <span>{copy.label}</span>
-            <ChevronDown className="size-3 shrink-0 opacity-60" aria-hidden="true" />
+            <ComposerChipChevron />
           </ComposerChip>
         </DropdownMenuTrigger>
       </ActionTooltip>

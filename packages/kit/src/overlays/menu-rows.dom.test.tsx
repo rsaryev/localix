@@ -186,7 +186,7 @@ for (const family of families) {
         const trigger = items.find((el) => el.textContent === 'More')!
         expect(trigger.getAttribute('aria-haspopup')).toBe('menu')
         expect(trigger.className).toContain('pl-8')
-        expect(trigger.className).toContain('data-[state=open]:bg-popover-hover')
+        expect(trigger.className).toContain('data-[state=open]:bg-surface-hover')
         expect(trigger.querySelector('svg')).not.toBeNull()
       } finally {
         await act(async () => root.unmount())

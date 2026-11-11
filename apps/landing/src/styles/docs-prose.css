@@ -205,8 +205,6 @@
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   background: var(--glass-fill);
-  -webkit-backdrop-filter: var(--glass-backdrop);
-  backdrop-filter: var(--glass-backdrop);
 }
 .docs-code-toolbar {
   display: flex;

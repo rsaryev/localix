@@ -7,7 +7,9 @@ import { terminal as terminalBus } from '@/shared/lib/terminalBus'
 import { useGridStore, closeGridTab } from '@/entities/workspace-grid/model'
 import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
 import { useProblemReport } from '@/shared/ui/problem-report'
-import { openNewTerminal } from '../model/terminalTabs'
+import { openNewTerminal, restartTerminalTab } from '../model/terminalTabs'
+import { useChatStore } from '@/entities/chat/model/store'
+import { projectDirOf, terminalFolderMove } from '../model/terminalFolderMove'
 import type { TerminalExit } from '@/shared/lib/terminalBus'
 import { readBufferLines } from './terminalLinkProvider'
 import { collectTerminalLinks, type TerminalLinkItem } from '../model/terminalLinks'
@@ -16,7 +18,11 @@ import { useTerminalPathDrop } from '../model/useTerminalPathDrop'
 import { useTerminalFind } from '../model/useTerminalFind'
 import type { CommandMenuState } from './TerminalCommandMenu'
 import { TerminalFindWidget } from './TerminalFindWidget'
-import { TerminalConnectionState, TerminalStickyCommand } from './TerminalPaneStatus'
+import {
+  TerminalConnectionState,
+  TerminalFolderMoved,
+  TerminalStickyCommand,
+} from './TerminalPaneStatus'
 import type { PastePrompt } from './terminalInput'
 import { useTerminalConnection } from './useTerminalConnection'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'
@@ -65,6 +71,14 @@ export function TerminalPane({
   const terminalExit = useGridStore(
     (state) => state.items[paneId]?.payload?.terminalExit as TerminalExit | undefined,
   )
+  // The project this shell started in was pointed at another folder (`terminalFolderMove`). Only
+  // a shell this tab owns is offered a restart: an adopted process belongs to its launcher.
+  const startedCwd = useGridStore((state) => state.items[paneId]?.payload?.cwd)
+  const startedProjectDir = useGridStore((state) => state.items[paneId]?.payload?.projectDir)
+  const projectDir = useChatStore((state) => projectDirOf(state, sessionId))
+  const moved = owned
+    ? terminalFolderMove({ cwd: startedCwd, projectDir: startedProjectDir }, projectDir)
+    : null
   // Link quickpick (⌘/Ctrl+⇧+O): null = closed, else the buffer's detected links.
   const [linkPick, setLinkPick] = useState<TerminalLinkItem[] | null>(null)
   // Pending multi-line paste awaiting user confirmation (null = no prompt).
@@ -205,6 +219,9 @@ export function TerminalPane({
           </div>
         )}
         {sticky && <TerminalStickyCommand text={sticky.text} onJump={jumpToSticky} />}
+        {moved && !terminalExit && (
+          <TerminalFolderMoved moved={moved} onRestart={() => void restartTerminalTab(paneId)} />
+        )}
         {find.open && (
           <TerminalFindWidget
             find={find}

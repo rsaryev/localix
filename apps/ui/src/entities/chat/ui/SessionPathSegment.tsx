@@ -117,10 +117,10 @@ export function SessionPathSegment({
                     setOpen(false)
                     onSelect(child.id)
                   }}
-                  // `popover-hover` like every other menu row, not `bg-surface-sunken`: sunken is
-                  // a BLACK 45% veil, which on a row inside a frosted popover read as a black band.
+                  // `surface-hover` like every other menu row, not `bg-surface-sunken`: sunken is
+                  // a BLACK 45% veil, which on a row inside a popover read as a black band.
                   className={cn(
-                    'flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs outline-none transition-colors hover:bg-popover-hover cursor-pointer focus-ring',
+                    'flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs outline-none transition-colors hover:bg-surface-hover cursor-pointer focus-ring',
                     onPath ? 'text-foreground' : 'text-text-soft',
                   )}
                   title={sessionTitle(child)}
@@ -151,7 +151,7 @@ export function SessionPathSegment({
                   disabled
                     ? 'opacity-50'
                     : // Menu-row hover veil, not the BLACK 45% `surface-sunken`.
-                      'hover:bg-popover-hover hover:text-foreground cursor-pointer',
+                      'hover:bg-surface-hover hover:text-foreground cursor-pointer',
                 )}
               >
                 <Plus className="size-3 shrink-0" />

@@ -52,6 +52,7 @@
       "ignoreDependencies": ["@happy-dom/global-registrator"]
     },
     "apps/desktop-tauri": {
+      "ignoreBinaries": ["otool", "plutil"],
       "entry": ["scripts/**/*.test.ts", "scripts/check-*.mjs"],
       "ignoreDependencies": ["@localixai/mini-app-sdk"]
     },

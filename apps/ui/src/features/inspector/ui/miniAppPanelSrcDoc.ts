@@ -4,6 +4,7 @@
 // (collectThemeCss) and passes it in; everything here is deterministic.
 
 import { EMBEDDED_VISUAL_PREFERENCES_CSS } from '@localixai/kit/embedded-visual-preferences'
+import { frameRootAttributes } from '@/shared/theme/reducedTransparency'
 import { miniAppUiApiBootstrap } from './miniAppUiApiBootstrap'
 
 /**
@@ -46,7 +47,7 @@ export function mintPanelNonce(): string {
 /**
  * Build the full sandboxed panel document. `theme` is 'light' | 'dark'; `themeCss`
  * is the host's forwarded CSS custom properties (collected from the live DOM by the
- * caller). The mini app `html` is injected verbatim — containment is the iframe
+ * caller). `reduceTransparency` is the host's stamp, which the frame cannot query. The mini app `html` is injected verbatim — containment is the iframe
  * sandbox + the CSP above, NOT escaping. `nonce` binds the bridge to this document.
  */
 export function buildPanelSrcDoc(
@@ -54,9 +55,10 @@ export function buildPanelSrcDoc(
   theme: string,
   themeCss: string,
   nonce: string,
+  reduceTransparency: boolean,
 ): string {
   return `<!doctype html>
-<html data-theme="${theme}">
+<html ${frameRootAttributes(theme === 'light' ? 'light' : 'dark', reduceTransparency)}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">

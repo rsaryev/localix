@@ -1,16 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════
    Flat glass — floating translucent controls
    ═══════════════════════════════════════════════════════════════ */
-/* Context chips and scroll actions use the same translucent coat. A uniform
-   hairline separates the control from content without a specular highlight,
-   inset bevel or drop shadow. Hover and press change the coat, never geometry.
-   The rim is painted outside layout so existing chip measures stay stable. */
+/* A control that floats OVER content (the scroll-to-latest pill, a drop target over the grid):
+   it must hide what scrolls under it, so it is a small raised surface — the raised ground and its
+   one hairline (docs/internals/visual-system.md, "Surfaces over the window") — and never blurs:
+   a frost there is glass on glass. Controls that sit ON the window (the composer's chips) are ink
+   fills instead and do not use this. Hover and press change the fill, never the edge or geometry.
+   The rim is painted outside layout so existing measures stay stable. */
 .lx-glass {
   position: relative;
   background-color: var(--glass-fill);
   background-image: none;
-  -webkit-backdrop-filter: var(--glass-backdrop);
-  backdrop-filter: var(--glass-backdrop);
   transition-property: background-color;
   transition-duration: var(--dur-fast);
   transition-timing-function: var(--ease-soft);
@@ -20,8 +20,7 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  border: 1px solid var(--control-border);
-  transition: border-color var(--dur-fast) var(--ease-soft);
+  border: 1px solid var(--border);
   pointer-events: none;
 }
 
@@ -33,12 +32,6 @@
 .lx-glass-self:hover,
 .lx-glass-self:focus-visible {
   background-color: var(--glass-fill-hover);
-}
-.lx-glass-trigger:hover .lx-glass::before,
-.lx-glass-trigger:focus-visible .lx-glass::before,
-.lx-glass-self:hover::before,
-.lx-glass-self:focus-visible::before {
-  border-color: var(--control-border-hover);
 }
 .lx-glass-trigger:active .lx-glass,
 .lx-glass-self:active {
@@ -53,31 +46,20 @@
 }
 /* `lx-glass-self`: the control owns both its trigger and material. */
 
-/* No compositing of the backdrop at all (old WebKit, forced-colors, some Linux
-   GPU blocklists): the fill alone is far too thin to separate the control from
-   the messages behind it, so fall back to an opaque surface. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .lx-glass {
-    background-color: var(--popover);
-  }
-}
-
 /* The shared floating material (`.lx-floating-surface`: menus, tooltips, hover cards, picker
    drawers) and the modal material (`.lx-modal-surface`: dialogs) are solid with a hairline on
    every platform; window-material.css owns both fills. No blur: a frosted menu or dialog over the
    window's own material is glass on glass, and the scrim under a dialog already dims the page.
    Do not include foreign-page overlays: their deliberately opaque surface has no marker. */
 
-/* Scrim — glass's opposite number, and the ONE recipe for "dim the page behind a
-   dialog/drawer/sidebar". Same two-part material (fill + backdrop), tuned per
-   theme; every overlay previously hand-rolled its own `bg-black/50|60` plus a
-   different blur, so the same gesture dimmed by a different amount depending on
-   which surface opened it. Positioning, stacking (z-index/isolate) and the
-   enter/exit animation stay with the consumer — this owns the material only. */
+/* Scrim — the ONE recipe for "dim the page behind a dialog/drawer/sidebar". A fill tuned per
+   theme and nothing else: the dialog above it is solid, and a blur would be a second glass over
+   the window's. Every overlay previously hand-rolled its own `bg-black/50|60` plus a different
+   blur, so the same gesture dimmed by a different amount depending on which surface opened it.
+   Positioning, stacking (z-index/isolate) and the enter/exit animation stay with the consumer —
+   this owns the material only. */
 .lx-scrim {
   background-color: var(--scrim-fill);
-  -webkit-backdrop-filter: var(--scrim-backdrop);
-  backdrop-filter: var(--scrim-backdrop);
 }
 
 /* Half-weight scrim for PICKER overlays (the popover-material drawer): a picker is a quick
@@ -86,20 +68,6 @@
    `.lx-scrim` so it wins on the same element. */
 .lx-scrim-light {
   background-color: color-mix(in srgb, var(--scrim-fill) 50%, transparent);
-  -webkit-backdrop-filter: blur(6px) saturate(120%);
-  backdrop-filter: blur(6px) saturate(120%);
-}
-
-/* No backdrop compositing at all (old WebKit, forced-colors, GPU blocklists): the
-   blur that does most of the hiding is gone, so the fill has to carry it alone. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .lx-scrim {
-    background-color: rgba(0, 0, 0, 0.78);
-  }
-  /* Light re-tunes it: pure black at 78% over a near-white page is a hole punched in it. */
-  [data-theme='light'] .lx-scrim {
-    background-color: rgba(20, 26, 38, 0.5);
-  }
 }
 
 /* Respect the OS "Reduce transparency" preference. WKWebView has no
@@ -112,25 +80,8 @@
    selector therefore covers current and future host/mini app chrome without a
    second opt-in API. Low-opacity materials get an explicit readable fallback,
    while already-near-opaque 85–95% sticky chrome only loses its blur. */
-:root[data-reduce-transparency='true'] .lx-glass {
-  background-color: var(--popover);
-  background-image: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-:root[data-reduce-transparency='true'] .lx-glass::before {
-  padding: 0;
-  border: 1px solid var(--control-border);
-  background: none;
-  -webkit-mask: none;
-  mask: none;
-  opacity: 1;
-}
-
 :root[data-reduce-transparency='true'] .lx-scrim {
   background-color: rgba(0, 0, 0, 0.78);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
 }
 :root[data-reduce-transparency='true'][data-theme='light'] .lx-scrim {
   background-color: rgba(20, 26, 38, 0.5);

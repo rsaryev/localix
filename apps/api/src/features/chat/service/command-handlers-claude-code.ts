@@ -16,6 +16,7 @@ import type { SessionRecord } from '../repository'
 import { runAddDir } from './command-add-dir'
 import { gitIn } from '../../../lib/git-in'
 import { runDiff } from './command-diff'
+import { commandFolder } from './command-folder'
 import { runExport } from './command-export'
 import { INIT_INSTRUCTION } from './command-init'
 import { formatStatus } from './command-status'
@@ -135,11 +136,9 @@ export async function handleClaudeCodeControlCommand(
     case 'hooks':
       return directReply(hooksReply(ctx, session))
     case 'diff':
-      return directReply(
-        await runDiff({ git: gitIn(await ctx.resolveSessionWorkingDir(userId, session)) }),
-      )
+      return directReply(await runDiff({ git: gitIn(await commandFolder(ctx, userId, session)) }))
     case 'add-dir': {
-      const cwd = await ctx.resolveSessionWorkingDir(userId, session)
+      const cwd = await commandFolder(ctx, userId, session)
       return directReply(
         await runAddDir(
           {

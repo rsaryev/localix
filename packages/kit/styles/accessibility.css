@@ -61,8 +61,6 @@
 @media (forced-colors: active) {
   .lx-scrim {
     background: transparent;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
     forced-color-adjust: none;
   }
 

@@ -56,6 +56,8 @@ function codexSample(counters: Record<string, unknown>) {
 type Carry = {
   readonly previousTotal?: TokenUsage
   readonly currentModel?: string
+  /** The head's own title: the summary's title may be a thread name that is later cleared. */
+  readonly headTitle?: string
 }
 
 /** The records this fold reads; everything else in a rollout is skipped before it is parsed. */
@@ -76,9 +78,12 @@ export async function foldCodex(
   const resumed = await resumableFold(ref, previous)
   // The head is final once the previous fold read past it; before that, a live rollout may not yet
   // have reached its first prompt, and keeping its placeholder title would keep it for good.
+  const headTitle = (resumed?.fold?.carry as Carry | undefined)?.headTitle
   const identity =
-    resumed && (resumed.fold?.offset ?? 0) >= HEAD_BYTES ? resumed.summary : await readIdentity(ref)
-  const usage = await foldUsage(ref, resumed, walk)
+    resumed && headTitle && (resumed.fold?.offset ?? 0) >= HEAD_BYTES
+      ? { ...resumed.summary, title: headTitle }
+      : await readIdentity(ref)
+  const usage = await foldUsage(ref, resumed, identity.title, walk)
   const measured = usage?.accumulator.result()
   const summary: SessionSummary = {
     key: linkKeyOf({ provider: ID, nativeSessionId: ref.nativeSessionId }),
@@ -133,7 +138,12 @@ async function readIdentity(ref: SourceRef) {
   return { title, cwd, startedAt, parentNativeSessionId }
 }
 
-async function foldUsage(ref: SourceRef, resumed: FoldedSummary | undefined, walk: boolean) {
+async function foldUsage(
+  ref: SourceRef,
+  resumed: FoldedSummary | undefined,
+  headTitle: string,
+  walk: boolean,
+) {
   const bound = walkEnd(ref, resumed, walk)
   if (bound === undefined) return undefined
   const usage = SessionUsageAccumulator.from(resumed?.summary.usage)
@@ -190,6 +200,7 @@ async function foldUsage(ref: SourceRef, resumed: FoldedSummary | undefined, wal
       }
     },
     (): Carry => ({
+      headTitle,
       ...(previousTotal ? { previousTotal } : {}),
       ...(currentModel ? { currentModel } : {}),
     }),

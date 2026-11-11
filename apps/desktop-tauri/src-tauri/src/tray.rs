@@ -82,17 +82,21 @@ fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
                 show_main_window(tray.app_handle());
             }
         });
-    // Dedicated tray glyph: the bird on a transparent field, so the macOS template
-    // render (below) is a bird SILHOUETTE. We must NOT reuse the app icon here — its
-    // opaque squircle alpha would template-render as a solid white square. (bundled
-    // at compile time so there's no runtime path lookup.)
-    builder = builder.icon(tauri::include_image!("icons/tray.png"));
-    // macOS menu-bar icons are template images: render from the icon's alpha as a
-    // monochrome glyph that inverts with the light/dark menu bar. (Windows/Linux
-    // trays keep the colour icon.)
+    // macOS: a menu-bar extra is a template image, black and shaped by its alpha alone, which
+    // AppKit tints for a light or dark bar. The glyph is the bird cropped to its ink and drawn at
+    // 36 px, exactly 2x the 18 pt `tray-icon` sizes it to, so it is never resampled. The app icon
+    // cannot stand in: its opaque plate would template-render as a solid square. Windows and Linux
+    // trays show the app icon in colour, which a light or dark taskbar both carry. Both files come
+    // from `scripts/app-icons.mjs` and are bundled at compile time.
     #[cfg(target_os = "macos")]
     {
-        builder = builder.icon_as_template(true);
+        builder = builder
+            .icon(tauri::include_image!("icons/tray-template.png"))
+            .icon_as_template(true);
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        builder = builder.icon(tauri::include_image!("icons/64x64.png"));
     }
     builder.build(app)?;
     Ok(())

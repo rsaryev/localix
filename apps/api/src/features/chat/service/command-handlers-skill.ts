@@ -9,6 +9,7 @@ import {
   projectOrGlobal,
   typedSkills,
 } from '../../plugins/kit'
+import { commandFolder } from './command-folder'
 import { parseSkillCommand } from './slash-commands'
 import { typedSkillShellAnswer } from './skill-command-authorize'
 import type { SessionRecord } from '../repository'
@@ -62,7 +63,7 @@ export async function handleSkillCommand(
 
   // No busy refusal: a skill command sent while the session works waits in the queue whole
   // (`run-macro.ts`), like every other slash command.
-  const workingDir = await ctx.resolveSessionWorkingDir(userId, session)
+  const workingDir = await commandFolder(ctx, userId, session)
   const route = sessionRoute(session)
   // The agent's rules, which every injected command meets first; absent, the kit's own rules.
   const rules = await ctx.loadSkillCommandRules?.(userId, route.agentId)

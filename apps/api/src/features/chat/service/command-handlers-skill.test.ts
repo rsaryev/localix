@@ -107,6 +107,17 @@ describe('a typed skill', () => {
     expect(replies[0]).toStartWith('Skill `/helper`:')
   })
 
+  test('a skill typed in a chat whose folder moved meets the folder refusal, and no run starts', async () => {
+    const plugin = skill('sample', '', 'x', 'kit')
+    const gone = join(dir(), 'moved-away')
+    const { ctx, runs } = context([], [plugin], { resolveSessionWorkingDir: async () => gone })
+    await expect(typed(ctx, '/kit:sample')).rejects.toMatchObject({
+      code: 'workspace_folder_missing',
+      detail: gone,
+    })
+    expect(runs).toEqual([])
+  })
+
   test('an off skill is no skill: the final gate reports it', async () => {
     const { ctx } = context([skill('sample', '', 'x')], [], {
       loadSkillOverrides: async () => ({ sample: 'off' as const }),

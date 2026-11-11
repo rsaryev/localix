@@ -25,9 +25,7 @@ inspect it.
 
 ## How it works
 
-1. [Install and launch Localix](installation.md) with your chosen desktop or source workflow. On a
-   first launch, **Set up Localix** opens over a new conversation and covers steps 2 and 3; skip it
-   and use the surfaces below, or reopen it from the command palette.
+1. [Install and launch Localix](installation.md) with your chosen desktop or source workflow.
 2. Open the model picker under the chat composer, connect a provider with an API key or sign-in, and
    choose a model. The [providers guide](../features/providers.md) covers connections.
 3. Select **Add project folder** and choose a disposable repository or confirm that `git status` is

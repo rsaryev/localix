@@ -4,9 +4,9 @@ import { Button } from '@localixai/kit/button'
 import { StateNotice } from '@localixai/kit/state-notice'
 import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
 import { backendClient } from '@/shared/api/client'
-import { ApiError, failureSentence } from '@/shared/api/failure'
+import { ApiError } from '@/shared/api/failure'
 import { useSessionById } from '@/entities/chat/model/store'
-import { toast } from '@/shared/lib/notify'
+import { chooseProjectFolder, relocateProjectFolder } from '@/shared/lib/relocateProjectFolder'
 
 /** The refusal every folder-bound read answers when the project's folder is not usable (409). */
 export const isWorkspaceFolderGone = (error: unknown): boolean =>
@@ -63,32 +63,14 @@ export function MissingFolderNotice({
     void check()
   }, [check])
 
-  const relocate = async (path: string) => {
+  const settle = async (relocate: (projectId: string) => Promise<boolean>) => {
     if (!projectId) return
     setBusy(true)
     try {
-      const { memory, trust } = await backendClient.relocateProject(projectId, path)
-      toast.success(`The project now uses “${baseName(path)}”`, {
-        description: memory === 'copied' ? 'Its Claude Code memory was copied along.' : undefined,
-      })
-      if (trust.before && !trust.after)
-        toast.info('Claude Code has not trusted this folder yet', {
-          description:
-            'Its project hooks, MCP servers and settings stay off until you open it in Claude Code and accept the trust dialog.',
-        })
-      onResolved()
-    } catch (error) {
-      toast.error('Could not use that folder', {
-        description: failureSentence(error, 'The project still points at its old folder.'),
-      })
+      if (await relocate(projectId)) onResolved()
     } finally {
       setBusy(false)
     }
-  }
-
-  const locate = async () => {
-    const picked = await backendClient.pickDirectory().catch(() => null)
-    if (picked) await relocate(picked)
   }
 
   const copy = COPY[folder?.state === 'present' || !folder ? 'missing' : folder.state]
@@ -112,7 +94,7 @@ export function MissingFolderNotice({
               size="sm"
               disabled={busy}
               title={suggestion}
-              onClick={() => void relocate(suggestion)}
+              onClick={() => void settle((id) => relocateProjectFolder(id, suggestion))}
             >
               Use “{baseName(suggestion)}”
             </Button>
@@ -121,7 +103,7 @@ export function MissingFolderNotice({
             size="sm"
             variant={suggestion ? 'secondary' : 'default'}
             disabled={busy || !projectId}
-            onClick={() => void locate()}
+            onClick={() => void settle(chooseProjectFolder)}
           >
             Locate folder…
           </Button>

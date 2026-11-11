@@ -356,21 +356,25 @@ pub(crate) fn set_theme(
 }
 
 /// Set the dock/taskbar badge count (e.g. background HITL requests awaiting the
-/// user). `0` clears it. macOS shows a red dock badge; Linux (Unity/GNOME) shows
-/// a launcher count; Windows has no numeric badge, so a red-dot taskbar overlay
-/// icon stands in (the OS convention for "needs attention").
+/// user). `0` clears it. macOS shows the system's red Dock badge (`NSDockTile`'s
+/// badge label, drawn by the Dock at the display's scale); Linux (Unity/GNOME)
+/// shows a launcher count. Both are per app, so any window sets them. Windows has
+/// no numeric badge: a red-dot overlay (32 px, drawn for 200% scaling) stands in,
+/// and an overlay belongs to one taskbar button, so it is set on, and cleared
+/// from, every workspace window: setting it on the focused one alone left a dot
+/// on a window that had been focused before.
 #[tauri::command]
 pub(crate) fn set_badge(app: AppHandle, count: i64) {
     if let Some(w) = crate::workspace_windows::active_window(&app) {
         let _ = w.set_badge_count(if count > 0 { Some(count) } else { None });
-        #[cfg(windows)]
-        {
-            let _ = w.set_overlay_icon(if count > 0 {
-                Some(tauri::include_image!("icons/badge-overlay.png"))
-            } else {
-                None
-            });
-        }
+    }
+    #[cfg(windows)]
+    for view in crate::workspace_windows::views(&app) {
+        let _ = view.window().set_overlay_icon(if count > 0 {
+            Some(tauri::include_image!("icons/badge-overlay.png"))
+        } else {
+            None
+        });
     }
 }
 

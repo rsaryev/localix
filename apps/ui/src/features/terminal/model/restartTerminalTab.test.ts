@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, expect, spyOn, test } from 'bun:test'
 import { emptyEditorState, useGridStore } from '@/entities/workspace-grid/model'
 import { backendClient } from '@/shared/api/client'
+import type { Project, UiSession } from '@/shared/api/contracts'
+import { useChatStore } from '@/entities/chat/model/store'
 import { restartTerminalTab } from './terminalTabs'
 
 const original = useGridStore.getState()
@@ -107,4 +109,42 @@ test('closing the original tab while spawning disposes the replacement', async (
   expect(await pending).toBe(false)
   expect(request.mock.calls[0]?.[1]?.method).toBe('DELETE')
   expect(useGridStore.getState().items['terminal:orphan']).toBeUndefined()
+})
+
+test('a shell whose project moved restarts at the same place in the new folder, and the old tab goes', async () => {
+  const chat = useChatStore.getState()
+  useChatStore.setState({
+    allSessions: [{ id: 's1', projectId: 'PRJ-1' } as unknown as UiSession],
+    projects: [{ id: 'PRJ-1', workingDir: '/work/llx' } as unknown as Project],
+  })
+  useGridStore.getState().openItem({
+    id: 'terminal:live',
+    kind: 'terminal',
+    title: 'Terminal',
+    scope: 's1',
+    payload: {
+      sessionId: 's1',
+      terminalId: 'live',
+      owned: true,
+      cwd: '/work/kit/app',
+      projectDir: '/work/kit',
+    },
+  })
+  const request = spyOn(globalThis, 'fetch').mockResolvedValue(
+    Response.json({ id: 'moved-shell', cwd: '/work/llx/app', createdAt: 1 }),
+  )
+  restore = () => {
+    request.mockRestore()
+    useChatStore.setState(chat)
+  }
+  expect(await restartTerminalTab('terminal:live')).toBe(true)
+  expect(JSON.parse(request.mock.calls[0]?.[1]?.body as string)).toEqual({
+    sessionId: 's1',
+    cwd: '/work/llx/app',
+  })
+  expect(useGridStore.getState().items['terminal:live']).toBeUndefined()
+  expect(useGridStore.getState().items['terminal:moved-shell']?.payload).toMatchObject({
+    cwd: '/work/llx/app',
+    projectDir: '/work/llx',
+  })
 })

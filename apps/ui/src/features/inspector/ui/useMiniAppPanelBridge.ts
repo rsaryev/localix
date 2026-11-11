@@ -8,7 +8,8 @@ import { miniAppSessionEventBus } from '@/entities/chat/model/miniAppSessionEven
 import { createPanelActions } from '@/shared/contrib/miniAppPanelActions'
 import { createPanelBridgeHost } from './panelBridgeCore'
 import { readMiniAppViewState, writeMiniAppViewState } from './miniAppViewState'
-import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppBridgeThemePayload, PublishMessageContext } from '@localixai/mini-app-sdk/ui'
+import { hostReducesTransparency } from '@/shared/theme/reducedTransparency'
 import { backendClient } from '@/shared/api/client'
 
 /**
@@ -26,6 +27,11 @@ import { backendClient } from '@/shared/api/client'
 
 function currentThemeName(): 'light' | 'dark' {
   return (document.documentElement.dataset.theme ?? 'dark') === 'light' ? 'light' : 'dark'
+}
+
+/** The theme a bridged panel is sent: the host's name, its variables and its Reduce transparency. */
+function themePayload(vars: Record<string, string>): MiniAppBridgeThemePayload {
+  return { theme: currentThemeName(), vars, reduceTransparency: hostReducesTransparency() }
 }
 
 export function useMiniAppPanelBridge({
@@ -92,14 +98,14 @@ export function useMiniAppPanelBridge({
         setBridged(true)
         // Sync immediately: the srcDoc embedded a theme snapshot at build time;
         // if the host theme flipped before `ready`, this heals the gap.
-        core.postTheme({ theme: currentThemeName(), vars: getThemeVars() })
+        core.postTheme(themePayload(getThemeVars()))
       },
     })
     const onMessage = (e: MessageEvent) => core.handleMessage(e)
     window.addEventListener('message', onMessage)
     // Live theme streaming — a no-op inside the core until the panel is bridged.
     const unsubscribe = themeVarsBus.subscribe((vars) => {
-      core.postTheme({ theme: currentThemeName(), vars })
+      core.postTheme(themePayload(vars))
     })
     // Forward SAFE session lifecycle signals — but ONLY for the chat this view's tab belongs to
     // (the same session `sendPrompt` targets). Another chat's run finishing never reaches this

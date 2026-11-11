@@ -55,6 +55,7 @@ const PINNED = [
   'QuotaReading.usedPercent',
   'QuotaReading.windowMinutes',
   'SessionSummary.cwd',
+  'SessionSummary.empty',
   'SessionSummary.key',
   'SessionSummary.messageCount',
   'SessionSummary.model',
@@ -85,9 +86,9 @@ const PINNED = [
  * sessions began RESOLVING a `cwd` that was always declared and always absent — so the list above is
  * unchanged and only the version moved. A derivation change invalidates cached rows exactly as a
  * field addition does; the difference is that only a human notices. 9 is another: Claude Code's
- * `/rename` name became the title.
+ * `/rename` name became the title. 10 added `empty` and stopped counting tool results as messages.
  */
-const PINNED_AT_VERSION = 9
+const PINNED_AT_VERSION = 10
 
 describe('a stored summary cannot change shape without discarding the cache', () => {
   const source = [CONTRACTS, join(import.meta.dir, '..', '..', 'shared', 'quotas.ts')]

@@ -381,6 +381,8 @@ export interface ProjectsTable {
   updated_at: ColumnType<string, string | undefined, string | undefined>
   /** Soft-deleted at this time; null = live. Deletion never removes the row (see the schema). */
   deleted_at: ColumnType<string | null, string | null | undefined, string | null>
+  /** `<device>:<inode>:<birth time>` of the folder when last seen present; null until then. */
+  folder_identity: ColumnType<string | null, string | null | undefined, string | null>
 }
 
 /**

@@ -9,6 +9,7 @@ import type { createProjectsRepository, ProjectRecord } from './repository'
 import type { ClaudeCodeFolderPort } from './service-deps'
 import {
   assertWorkspaceFolder,
+  folderIdentity,
   suggestMovedFolder,
   workspaceFolderState,
   type WorkspaceFolderState,
@@ -102,7 +103,11 @@ export async function relocateProject(
   }
   const before = trusts(from)
   const updatedAt = deps.now()
-  await deps.repo.updateProject(project.userId, project.id, { workingDir: to, updatedAt })
+  await deps.repo.updateProject(project.userId, project.id, {
+    workingDir: to,
+    folderIdentity: await folderIdentity(to),
+    updatedAt,
+  })
   const memory = (await deps.claudeCode?.carryMemory(from, to)) ?? 'none'
   return {
     project: toDto({ ...project, workingDir: to, updatedAt }),
@@ -111,13 +116,24 @@ export async function relocateProject(
   }
 }
 
+/** Store which folder the project's path is, when it is there and that changed. */
+export async function noteProjectFolder(
+  repo: ProjectsRepository,
+  project: ProjectRecord,
+): Promise<void> {
+  const identity = await folderIdentity(project.workingDir)
+  if (identity && identity !== project.folderIdentity)
+    await repo.recordFolderIdentity(project.userId, project.id, identity)
+}
+
 export async function projectFolder(
   deps: RelocateDeps,
   project: ProjectRecord,
 ): Promise<ProjectFolder> {
   const path = project.workingDir
   const state = await workspaceFolderState(path)
-  const found = state === 'missing' ? await suggestMovedFolder(path) : null
+  if (state === 'present') await noteProjectFolder(deps.repo, project)
+  const found = state === 'missing' ? await suggestMovedFolder(path, project.folderIdentity) : null
   const suggestion =
     found && !(await projectAt(deps, project.userId, normalizeProjectDir(found), project.id))
       ? found

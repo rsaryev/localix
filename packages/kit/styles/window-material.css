@@ -12,10 +12,10 @@
   :root[data-theme='dark'] {
     --work-density: 85%;
     --sidebar-density: 70%;
-    --hover-density: 7%;
-    --active-density: 11%;
-    --selection-density: 13%;
-    --quiet-density: 6%;
+    --fill-density: 6%;
+    --hover-density: 9%;
+    --active-density: 12%;
+    --selection-density: 14%;
     --border-density: 14%;
     --sidebar-border-density: 12%;
     --control-density: 18%;
@@ -28,10 +28,10 @@
   :root[data-theme='light'] {
     --work-density: 92%;
     --sidebar-density: 78%;
+    --fill-density: 5%;
     --hover-density: 8%;
-    --active-density: 13%;
+    --active-density: 11%;
     --selection-density: 14%;
-    --quiet-density: 7%;
     --border-density: 16%;
     --sidebar-border-density: 14%;
     --control-density: 26%;
@@ -78,10 +78,15 @@
       transparent
     );
     --background-solid: var(--window-ground);
+    /* The ink fills: one veil of the theme's ink at four densities, so a step reads the same on
+       the clear chrome, a pane's coat and a raised surface, and the steps climb — rest, hover,
+       pressed, selected (scripts/raised-surface-guard.test.ts holds the order). A filled control
+       rests at `--field-fill`; quiet fills (`secondary`, `muted`, `accent`) are that same step. */
+    --field-fill: color-mix(in oklch, var(--foreground) var(--fill-density), transparent);
     --surface-hover: color-mix(in oklch, var(--foreground) var(--hover-density), transparent);
     --surface-active: color-mix(in oklch, var(--foreground) var(--active-density), transparent);
     --sidebar-accent: color-mix(in oklch, var(--foreground) var(--selection-density), transparent);
-    --secondary: color-mix(in oklch, var(--foreground) var(--quiet-density), transparent);
+    --secondary: var(--field-fill);
     --muted: var(--secondary);
     --accent: var(--secondary);
     --border: color-mix(in oklch, var(--foreground) var(--border-density), transparent);
@@ -106,6 +111,7 @@
     --color-background: var(--background);
     --color-sidebar: var(--sidebar);
     --color-surface-raised: var(--surface-raised);
+    --color-field-fill: var(--field-fill);
     --color-surface-hover: var(--surface-hover);
     --color-surface-active: var(--surface-active);
     --color-sidebar-accent: var(--sidebar-accent);
@@ -159,15 +165,12 @@
     background-color: transparent;
   }
 
-  /* Floating things are solid with a hairline: a menu, popover or dialog never frosts the window
-     under it, which would be a second glass over the system's. `--popover` stays the theme's
-     opaque fill. */
-  :root:is([data-theme='dark'], [data-theme='light']) :is(.bg-popover, .lx-floating-surface) {
+  /* Raised surfaces are solid with a hairline: a menu, popover, dialog or sheet never frosts the
+     window under it, which would be a second glass over the system's. All of them are cut from
+     `--popover`, the theme's opaque raised ground. */
+  :root:is([data-theme='dark'], [data-theme='light'])
+    :is(.bg-popover, .lx-floating-surface, .lx-modal-surface) {
     background-color: var(--popover);
-  }
-
-  :root:is([data-theme='dark'], [data-theme='light']) .lx-modal-surface {
-    background-color: var(--window-ground-raised);
   }
 
   :root:is([data-theme='dark'], [data-theme='light']) .lx-scrim {

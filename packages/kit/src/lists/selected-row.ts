@@ -9,8 +9,7 @@
  * (`shared/ui/command.tsx`) via `data-selected:` variants; non-cmdk menus that
  * track their own active index (e.g. AtRefMenu) apply this constant directly.
  */
-export const SELECTED_ROW =
-  'lx-selected-row bg-sidebar-accent text-sidebar-foreground shadow-(--shadow-raised)'
+export const SELECTED_ROW = 'lx-selected-row bg-sidebar-accent text-sidebar-foreground'
 
 /**
  * The shared ROW frame for non-cmdk composer menus (SlashCommandMenu, AtRefMenu)

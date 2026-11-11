@@ -41,6 +41,15 @@ function slashCommand(text: string): string | undefined {
   return args ? `${name} ${args}` : name
 }
 
+/** A `user` record that only carries tool results back: the agent's turn, not a message. */
+function isToolResults(content: unknown): boolean {
+  return (
+    Array.isArray(content) &&
+    content.length > 0 &&
+    content.every((block) => asRecord(block)?.type === 'tool_result')
+  )
+}
+
 export async function summarizeClaudeCode(ref: SourceRef): Promise<SessionSummary> {
   return (await foldClaudeCode(ref, undefined)).summary
 }
@@ -68,7 +77,9 @@ export async function foldClaudeCode(
   let startedAt = headKnown?.summary.startedAt
   let firstPrompt: string | undefined
   let firstCommand: string | undefined
+  let headMessage = false
   for (const rec of head ?? []) {
+    if (rec.type === 'assistant' || (rec.type === 'user' && rec.isMeta !== true)) headMessage = true
     cwd ??= asString(rec.cwd)
     const ts = asString(rec.timestamp)
     if (ts && startedAt === undefined) startedAt = Date.parse(ts) || undefined
@@ -110,6 +121,11 @@ export async function foldClaudeCode(
   const usage = await foldUsage(ref, resumed, headTitle, walk)
   const measured = usage?.accumulator.result()
   const messageCount = usage?.messageCount ?? 0
+  // Known empty: a walk of the whole file found no message, or a head that is the whole file did.
+  const empty =
+    messageCount === 0 &&
+    ((usage !== undefined && !usage.unwalked) ||
+      (head !== undefined && !headMessage && (ref.sourceBytes ?? Infinity) <= HEAD_BYTES))
   const summary: SessionSummary = {
     key: linkKeyOf({ provider: ID, nativeSessionId: ref.nativeSessionId }),
     provider: ID,
@@ -119,6 +135,7 @@ export async function foldClaudeCode(
     startedAt,
     updatedAt: updatedAt || Date.now(),
     ...(messageCount > 0 ? { messageCount } : {}),
+    ...(empty ? { empty: true as const } : {}),
     ...(measured ? { usage: measured } : {}),
     sourcePath: ref.sourcePath,
     parentNativeSessionId: ref.parentHint,
@@ -164,7 +181,7 @@ async function foldUsage(
       const identity =
         asString(message.id) ?? asString(rec.uuid) ?? `${type}:anonymous-${anonymous++}`
       if (type !== 'assistant') {
-        messageCount += 1
+        if (!isToolResults(message.content)) messageCount += 1
         return
       }
       const raw = asRecord(message.usage)

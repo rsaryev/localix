@@ -15,7 +15,7 @@ import type { AdapterEnv } from './types'
 const dir = tempDirPerTest('ea-codex-name')
 const ID = '019a0000-0000-7000-8000-000000000001'
 
-function fixture(): AdapterEnv {
+function fixture(padding = 0): AdapterEnv {
   const home = join(dir(), 'codex')
   const day = join(home, 'sessions', '2026', '08', '01')
   mkdirSync(day, { recursive: true })
@@ -26,6 +26,10 @@ function fixture(): AdapterEnv {
       timestamp: '2026-08-01T10:00:00Z',
     },
     { type: 'event_msg', payload: { type: 'user_message', message: 'Fix the parser please' } },
+    // A long rollout: a fold reads past its head, so a later fold keeps the head instead of re-reading it.
+    ...(padding
+      ? [{ type: 'event_msg', payload: { type: 'note', text: 'x'.repeat(padding) } }]
+      : []),
   ]
   writeFileSync(
     join(day, `rollout-2026-08-01T10-00-00-${ID}.jsonl`),
@@ -58,6 +62,35 @@ describe('a Codex thread name', () => {
     name(env, 'Parser fix')
     name(env, 'Parser rewrite')
     expect((await title(env)).title).toBe('Parser rewrite')
+  })
+
+  test('a name cleared later is no longer listed', async () => {
+    const env = fixture()
+    name(env, 'Parser fix')
+    name(env, '')
+    expect((await title(env)).title).toBe('Fix the parser please')
+  })
+
+  test('a long rollout folded under a name drops the name once it is cleared', async () => {
+    const env = fixture(300 * 1024)
+    name(env, 'Parser fix')
+    const [named] = await codexAdapter.listSources(env)
+    const first = await codexAdapter.foldSummary!(named!, undefined, env, { walk: true })
+    expect(first.summary.title).toBe('Parser fix')
+    name(env, '')
+    const [cleared] = await codexAdapter.listSources(env)
+    const second = await codexAdapter.foldSummary!(cleared!, first, env, { walk: true })
+    expect(second.summary.title).toBe('Fix the parser please')
+  })
+
+  test('the name index is a watched root, so a rename reaches an open list', async () => {
+    const env = fixture()
+    name(env, 'Parser fix')
+    const roots = await codexAdapter.probeRoots(env)
+    expect(roots).toContainEqual({
+      path: join(env.env.CODEX_HOME as string, 'session_index.jsonl'),
+      exists: true,
+    })
   })
 
   test('renaming changes the revision, so a cached row is re-read', async () => {

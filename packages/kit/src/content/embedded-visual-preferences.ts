@@ -5,6 +5,10 @@
  * document boundary. The panel document injects this build-owned CSS so
  * a mini app cannot accidentally lose the workbench's contrast, transparency and
  * forced-color behavior merely because it runs in the security sandbox.
+ *
+ * Reduce transparency is the exception to "media queries match": WKWebView never matches
+ * `prefers-reduced-transparency`, so the host stamps `data-reduce-transparency` on the frame's root
+ * when it builds the document and again with every theme it sends.
  */
 export const EMBEDDED_VISUAL_PREFERENCES_CSS = `
 @media (prefers-reduced-motion: reduce) {
@@ -44,12 +48,10 @@ export const EMBEDDED_VISUAL_PREFERENCES_CSS = `
     outline:2px solid var(--ring);outline-offset:-2px;
   }
 }
-@media (prefers-reduced-transparency: reduce) {
-  :where([class*='backdrop-blur'],[style*='backdrop-filter']) {
-    -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
-  }
-  .lx-inset { background:var(--muted); }
+:root[data-reduce-transparency='true'] :where([class*='backdrop-blur'],[style*='backdrop-filter']) {
+  -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
 }
+:root[data-reduce-transparency='true'] .lx-inset { background:var(--muted); }
 @media (forced-colors: active) {
   :where(.lx-card,.lx-panel,.lx-list) { border-color:CanvasText; }
   :where([aria-selected='true'],[aria-checked='true'],[aria-pressed='true'],[aria-current]:not([aria-current='false'])) {

@@ -33,8 +33,6 @@
   --card-foreground: oklch(0.22 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.22 0 0);
-  /* Menu-row hover, a foreground veil like dark's: it composites on whatever the panel shows. */
-  --popover-hover: color-mix(in oklch, var(--foreground) 7%, oklch(0 0 0 / 0));
 
   --primary: oklch(0.24 0 0);
   --primary-foreground: oklch(0.99 0 0);
@@ -107,33 +105,21 @@
   --control-border: oklch(0.8 0 0);
   --control-border-hover: oklch(0.66 0 0);
   --control-border-focus: oklch(0.4 0 0);
-  /* Light needs a SMALLER number for the same perceived recess: the veil mixes from light's DARK
-     `--foreground`, and a black veil on a near-white shell reads far stronger than the equivalent
-     white veil on near-black. 5% here ≈ dark's 9% by eye. */
-  --field-fill: color-mix(in oklch, var(--foreground) 5%, oklch(0 0 0 / 0));
-  /* Flat, crisp elevation — a light interface separates with borders, not big blurs. */
+  /* Flat, crisp elevation — a light interface separates with borders, not big blurs. The raised
+     surfaces carry their own hairline (`border-border`), so no shadow repeats it as a ring. */
   --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-popover: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.12);
-  --shadow-drawer: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 16px 48px -12px rgba(0, 0, 0, 0.18);
+  --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-drawer: 0 16px 48px -12px rgba(0, 0, 0, 0.18);
   --scroll-thumb: rgba(100, 100, 100, 0.28);
   --scroll-thumb-hover: rgba(100, 100, 100, 0.45);
 
-  /* Flat glass — light re-tunes the material, not the component: a whiter fill and a brighter
-     backdrop. */
-  --glass-fill: rgba(255, 255, 255, 0.28);
-  --glass-fill-hover: rgba(255, 255, 255, 0.46);
-  --glass-backdrop: blur(3px) saturate(150%) brightness(1.06);
-  --glass-depth:
-    inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 -10px 16px -14px rgba(20, 26, 38, 0.25),
-    0 6px 18px -8px rgba(20, 26, 38, 0.22);
-  --glass-depth-hover:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -10px 16px -14px rgba(20, 26, 38, 0.22),
-    0 12px 26px -10px rgba(20, 26, 38, 0.28);
+  /* Flat glass — the floating surface's fill, as in dark (see theme-dark.css). */
+  --glass-fill: var(--popover);
+  --glass-fill-hover: color-mix(in oklch, var(--popover) 94%, var(--foreground));
 
   /* Scrim — 60% pure black over a near-white shell is a hole punched in the page. The same cool
-     near-black the rim uses, at a third of the weight, once the blur has erased the content. */
+     near-black the rim uses, at a third of the weight; the solid dialog above carries the focus. */
   --scrim-fill: rgba(20, 26, 38, 0.34);
-  --scrim-backdrop: blur(16px) saturate(140%);
 
   /* Syntax palette — light. Same two families as dark, at light-readable lightness. */
   --syntax-class: #1f66c2;

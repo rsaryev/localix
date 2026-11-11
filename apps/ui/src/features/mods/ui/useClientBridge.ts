@@ -1,5 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { collectHostThemeCss } from '@/shared/lib/hostThemeVars'
+import { hostReducesTransparency } from '@/shared/theme/reducedTransparency'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { useLatestRef } from '@/shared/lib/useLatestRef'
 import type { ModClientFault } from '@/shared/api/modsApi'
@@ -17,6 +18,13 @@ const SAFE_HREF = /^(https?:|mailto:)/i
 
 export const currentTheme = (): 'light' | 'dark' =>
   document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'
+
+/** What a running frame is sent whenever the host's look changes. */
+const frameTheme = () => ({
+  theme: currentTheme(),
+  css: collectHostThemeCss(),
+  reduceTransparency: hostReducesTransparency(),
+})
 
 export function useClientBridge(input: {
   frame: RefObject<HTMLIFrameElement | null>
@@ -60,7 +68,7 @@ export function useClientBridge(input: {
       if (data.type === 'ready') {
         ready.current = true
         toFrameRef.current('props', latest.current.props)
-        toFrameRef.current('theme', { theme: currentTheme(), css: collectHostThemeCss() })
+        toFrameRef.current('theme', frameTheme())
       } else if (data.type === 'post') {
         if (inflight) waiting = { data: payload }
         else deliver(payload)
@@ -98,12 +106,11 @@ export function useClientBridge(input: {
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
-      if (ready.current)
-        toFrameRef.current('theme', { theme: currentTheme(), css: collectHostThemeCss() })
+      if (ready.current) toFrameRef.current('theme', frameTheme())
     })
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['data-theme'],
+      attributeFilter: ['data-theme', 'data-reduce-transparency'],
     })
     return () => observer.disconnect()
   }, [toFrameRef])

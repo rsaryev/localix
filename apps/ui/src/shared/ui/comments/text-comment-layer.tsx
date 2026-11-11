@@ -232,12 +232,9 @@ export function TextCommentLayer({
           }}
           style={{ top: anchor.top - 2, right: 0 }}
           size="xs"
-          // Floating-surface recipe (alpha + blur), not a bare `bg-surface-raised`: raised mixes
-          // from a darker ground than the document it floats over, so the marker read as a black dot.
-          className={cn(
-            POPOVER_MATERIAL,
-            'absolute z-(--z-controls) rounded-full border border-border text-text-soft',
-          )}
+          // The raised-surface recipe, not a bare `bg-surface-raised`: raised mixes from a darker
+          // ground than the document it floats over, so the marker read as a black dot.
+          className={cn(POPOVER_MATERIAL, 'absolute z-(--z-controls) rounded-full text-text-soft')}
           aria-label="Show comment"
         >
           <MessageSquare className="size-3.5" />

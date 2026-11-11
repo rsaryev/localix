@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { ChevronDown } from 'lucide-react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 type ComposerChipProps = React.ComponentPropsWithoutRef<'button'> & {
@@ -11,13 +12,14 @@ type ComposerChipProps = React.ComponentPropsWithoutRef<'button'> & {
  * composes this same constant, so the two can never drift — which is the whole reason it is
  * exported instead of being copied by anyone who needs the classes without the button.
  *
- * The material is the scroll-to-latest pill's (`.lx-glass`: translucent fill and a flat rim).
- * These chips float over chat, so they retain backdrop blur while hover and press change only
- * the fill. `lx-glass-self` makes the chip its own trigger. The rim replaces a layout border,
- * so tones speak through text colour alone.
+ * The chip sits ON the window, in the composer's row, so it is an ink fill and not a surface
+ * (docs/internals/visual-system.md, "Surfaces over the window"): it rests at `--field-fill` and
+ * climbs the shared steps on hover, press and while its menu is open. No outline draws its shape —
+ * an outlined pill read as a wireframe beside filled controls — and no raised material, which is
+ * for things that float over content and must hide it. Tones speak through text colour alone.
  */
 export const COMPOSER_CHIP =
-  'lx-glass lx-glass-self inline-flex cursor-pointer items-center gap-1.5 rounded-full text-xs text-text-soft outline-none transition-colors focus-ring hover:text-foreground disabled:cursor-default disabled:opacity-50'
+  'inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-field-fill text-xs text-text-soft outline-none transition-colors focus-ring hover:bg-surface-hover hover:text-foreground active:bg-surface-active aria-expanded:bg-surface-active aria-expanded:text-foreground data-[state=open]:bg-surface-active data-[state=open]:text-foreground disabled:cursor-default disabled:bg-field-fill disabled:opacity-50'
 
 /**
  * Native action/trigger for the composer's “where and how am I working?” row.
@@ -42,3 +44,12 @@ export const ComposerChip = React.forwardRef<HTMLButtonElement, ComposerChipProp
   ),
 )
 ComposerChip.displayName = 'ComposerChip'
+
+/**
+ * The chip's "opens a menu" mark. One spelling, so every chip in the row carries the same chevron:
+ * they had three (12px at 60%, 14px in the faint ink, and 12px at full strength). A chip's leading
+ * icon is `size-3.5`.
+ */
+export function ComposerChipChevron() {
+  return <ChevronDown className="size-3 shrink-0 opacity-60" aria-hidden="true" />
+}

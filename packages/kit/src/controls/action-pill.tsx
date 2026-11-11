@@ -14,8 +14,8 @@ import { FLOATING_SURFACE } from '../layout/workbench-toolbar'
  * The GROUP owns the material; the pills are transparent and only light up under the pointer,
  * which is how `IconButton` (ghost) and `chromeAction` already behave inside chrome.
  *
- * The hover fill is `--popover-hover`, not `--surface-hover`: it lands on the group's `--popover`
- * ground, and those two hover tiers are tuned against different grounds.
+ * The hover fill is `--surface-hover`, the ink step every row uses: a veil, so it reads the same
+ * on the group's raised ground as on chrome.
  *
  * `elevated` is the opt-in for the few pills that float ALONE, with no group behind them (the
  * visual-feedback comment pill over a live preview). It composes the exact same `FLOATING_SURFACE`
@@ -47,7 +47,7 @@ const ActionPill = forwardRef<HTMLButtonElement, ActionPillProps>(
       size="xs"
       data-active={active || undefined}
       className={cn(
-        'px-1.5 text-2xs hover:bg-popover-hover hover:text-foreground disabled:cursor-not-allowed',
+        'px-1.5 text-2xs hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed',
         active ? 'text-foreground' : 'text-text-faint',
         // `rounded-md` last so the shared surface's corner does not fight the control scale: the
         // group is a 2px-padded tray, so its own `rounded-md` on a lone pill would read oversized.

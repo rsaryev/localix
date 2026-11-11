@@ -160,6 +160,7 @@ mod round_trip;
 mod runtime_contract;
 mod sidecar;
 mod supervisor;
+mod titlebar_double_click;
 mod tray;
 mod updater;
 #[cfg(target_os = "macos")]
@@ -443,6 +444,8 @@ pub fn run() {
             crate::app_bundle_commands::mini_app_open,
             #[cfg(target_os = "macos")]
             crate::app_bundle_commands::mini_app_uninstall,
+            #[cfg(target_os = "macos")]
+            crate::titlebar_double_click::titlebar_double_click,
             #[cfg(all(debug_assertions, target_os = "macos"))]
             crate::workspace_probe::workspace_probe
         ])

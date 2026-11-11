@@ -190,12 +190,33 @@ test('the frame document loads nothing, connects nowhere, and carries the code a
     fit: { width: true, height: true },
     theme: 'dark',
     themeCss: '--background: #000;',
+    reduceTransparency: false,
   })
   expect(CLIENT_FRAME_CSP).toContain("default-src 'none'")
   expect(CLIENT_FRAME_CSP).toContain("connect-src 'none'")
   expect(doc).toContain(CLIENT_FRAME_CSP)
   expect(doc).not.toContain('</script><script>alert(1)')
   expect(jsonForScript('</script>\u2028')).toBe('"\\u003c/script>\\u2028"')
+})
+
+// The frame cannot query Reduce transparency (WKWebView never matches the media query): the host
+// stamps it into the document and sends it again with every theme.
+test('the frame carries the host’s Reduce transparency, at build and on each theme', () => {
+  const doc = buildClientFrameDoc({
+    code: '',
+    props: null,
+    fit: { width: false, height: false },
+    theme: 'dark',
+    themeCss: '',
+    reduceTransparency: true,
+  })
+  expect(doc).toContain('<html data-theme="dark" data-reduce-transparency="true">')
+  document.head.innerHTML = '<style id="lx-theme"></style>'
+  const { fromHost } = boot(() => null, null)
+  fromHost('theme', { theme: 'light', css: '', reduceTransparency: true })
+  expect(document.documentElement.dataset.reduceTransparency).toBe('true')
+  fromHost('theme', { theme: 'light', css: '', reduceTransparency: false })
+  expect('reduceTransparency' in document.documentElement.dataset).toBe(false)
 })
 
 // Last in the file: the tests above booted frames, and none left its boot on globalThis, which

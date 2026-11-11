@@ -9,8 +9,8 @@
  *
  * - `ready`   iframe → host. Opt-in handshake. A panel that never posts it is a
  *             static document and gets the legacy behavior (theme remount).
- * - `theme`   host → iframe. Live theme update: `{ theme, vars }` where `vars`
- *             are the host's forwarded CSS custom properties. No remount.
+ * - `theme`   host → iframe. Live theme update: `{ theme, vars, reduceTransparency }` where
+ *             `vars` are the host's forwarded CSS custom properties. No remount.
  * - `invoke`  iframe → host. `{ action, payload }` plus an envelope `id`; the
  *             host replies with a correlated `result` or `error`.
  * - `result`  host → iframe. Reply to `invoke` with the same `id`.
@@ -44,6 +44,12 @@ export interface MiniAppBridgeMessage<P = unknown> {
 export interface MiniAppBridgeThemePayload {
   theme: 'light' | 'dark'
   vars: Record<string, string>
+  /**
+   * The system's Reduce transparency, which the frame cannot query (WKWebView never matches
+   * `prefers-reduced-transparency`). The bootstrap mirrors it as `data-reduce-transparency`.
+   * Optional: a host older than this field never sends it, which reads as "off".
+   */
+  reduceTransparency?: boolean
 }
 
 /** `invoke` payload — a named host action plus its argument. */

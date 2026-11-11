@@ -25,14 +25,12 @@ export function useHistorySource({
   scopeSessions,
   activeProject,
   search,
-  normalizedSearch,
   sortMode,
 }: {
   allSessions: readonly UiSession[]
   scopeSessions: UiSession[]
   activeProject: { id: string; workingDir: string } | undefined
   search: string
-  normalizedSearch: string
   sortMode: SortMode
 }) {
   const [stored, setStored] = useState<HistorySource>(readStoredSource)
@@ -52,15 +50,11 @@ export function useHistorySource({
   const visibleSessions = useMemo(
     () =>
       source === 'external'
-        ? sortSessionsList(
-            nativeRows.sessions.filter(
-              (session) =>
-                !normalizedSearch || session.title.toLowerCase().includes(normalizedSearch),
-            ),
-            sortMode,
-          )
+        ? // The server already matched the search over title, folder and id; filtering its
+          // answer again by title hid the sessions it found by folder.
+          sortSessionsList(nativeRows.sessions, sortMode)
         : sortSessionsList(scopeSessions, sortMode),
-    [source, scopeSessions, nativeRows.sessions, normalizedSearch, sortMode],
+    [source, scopeSessions, nativeRows.sessions, sortMode],
   )
   return { source, setSource, externalAvailable, nativeHistory, nativeRows, visibleSessions }
 }

@@ -75,18 +75,13 @@
 
   --card: oklch(0.155 0 0);
   --card-foreground: oklch(0.96 0 0);
-  /* Floating chrome stays near-black; blur, a rim and shadow provide elevation,
-     not the opaque grey slab the old 0.24 fill produced in the browser. */
+  /* The RAISED ground: every menu, popover, tooltip, dialog and sheet is cut from it
+     (docs/internals/visual-system.md, "Surfaces over the window"). Dark, one small step above the
+     window's own ground, never a mid grey: a neutral grey at the glass's lightness (0.255 was
+     tried) reads as a foreign plate on a wallpaper-tinted window. It is set off by its hairline,
+     its shadow and the scrim, not by a lighter fill. Rows inside it take the ink fills. */
   --popover: oklch(0.185 0 0);
   --popover-foreground: oklch(0.96 0 0);
-  /* Hover/focus/highlighted state for anything built on --popover (MENU_ITEM) — a translucent
-     foreground veil over TRANSPARENT, the same recipe --surface-hover already uses under the mac
-     glass block below, not a color mixed INTO --popover. Painted as the item's own background it
-     composites on top of whatever the popover panel is already showing (opaque grey or frosted
-     glass), so it stays a laconic, monochrome wash in both modes instead of a flat solid grey/tint
-     baked ahead of time — and it never needs a separate value for the glass override, since it
-     never reads --popover at all. */
-  --popover-hover: color-mix(in oklch, var(--foreground) 8%, oklch(0 0 0 / 0));
 
   --primary: oklch(0.97 0 0);
   --primary-foreground: oklch(0.13 0 0);
@@ -179,13 +174,6 @@
      tokens they point at. */
   --user-message: var(--surface-active);
   --selection: color-mix(in srgb, var(--foreground) 24%, transparent);
-  /* The resting fill of anything you TYPE INTO — Input, Textarea, InputGroup, SearchInput, the
-     select trigger, a checkbox. A token rather than a per-file alpha because it was written as
-     `bg-foreground/[0.04]` in thirteen places, and 4% of the ink over a dense strip is under two
-     percent of perceived difference: on the search header the field was defined by its border
-     alone and read as a black hole punched through the bar. 9% is the smallest step that still
-     reads as a recessed field on every ground the app has — the pane, an occluder, a dialog. */
-  --field-fill: color-mix(in oklch, var(--foreground) 9%, oklch(0 0 0 / 0));
   --text-strong: oklch(0.96 0 0);
   --text-soft: oklch(0.72 0 0);
   /* 0.62 (was 0.56) → clears WCAG AA (4.5:1) for the small/2xs text this tier is used on;
@@ -201,7 +189,7 @@
      with it so the tall consumers keep the same weight. */
   --shadow-soft: 0 8px 24px -14px rgba(0, 0, 0, 0.85);
   --shadow-popover: 0 8px 30px rgba(0, 0, 0, 0.5);
-  --shadow-drawer: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+  --shadow-drawer: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
   /* A control or card lifted one step off its pane (a selected segment, a raised chip). It was
      Tailwind's stock `shadow-sm` at ten call sites — a value no theme could re-tune — and it keeps
      that exact value here, so adopting the token moves no pixel. */
@@ -217,29 +205,17 @@
 
   /* Liquid glass — see the `.lx-glass` section for the recipe. Four tokens so a
      theme re-tunes the material instead of the component. */
-  /* A LENS, not a lid. Blur radius is what decides whether you still recognise
-     what is behind: at 14px a 14px-tall line of text is smeared into a flat
-     tone, so the pill reads as opaque even at 3% fill. 2–4px is the tier where
-     the backdrop stays legible — a `blur(2px)` radius is what production overlays use whenever
-     the content underneath must still be readable. The frosted 12–25px tier
-     belongs to dialogs and scrims, whose
-     whole job is to HIDE the page. */
-  --glass-fill: rgba(255, 255, 255, 0.025);
-  --glass-fill-hover: rgba(255, 255, 255, 0.06);
-  --glass-backdrop: blur(3px) saturate(150%) brightness(0.85);
-  --glass-depth:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(255, 255, 255, 0.05),
-    inset 0 -10px 16px -12px rgba(0, 0, 0, 0.4), 0 8px 22px -10px rgba(0, 0, 0, 0.7);
-  --glass-depth-hover:
-    inset 0 1px 0 rgba(255, 255, 255, 0.24), inset 0 -1px 0 rgba(255, 255, 255, 0.07),
-    inset 0 -10px 16px -12px rgba(0, 0, 0, 0.36), 0 14px 30px -12px rgba(0, 0, 0, 0.75);
+  /* Flat glass is a fill, not a lens. A chip floats over the transcript, which already sits on the
+     window's own material, so a blur there is glass on glass (docs/internals/visual-system.md, "The
+     Mac window"). The chip takes the floating surface's own fill, solid like a menu. `--popover`
+     comes first in the mix so a build that drops `color-mix` keeps the fill, not the ink. */
+  --glass-fill: var(--popover);
+  --glass-fill-hover: color-mix(in oklch, var(--popover) 94%, var(--foreground));
 
-  /* Scrim — the OTHER side of the tier the glass note above draws: a scrim's job
-     is to HIDE the page, so it sits in the frosted 12–25px band rather than the
-     3px lens band. Two tokens so the material is a theme decision, like glass.
-     Dark keeps the rgba(0, 0, 0, 0.6) every overlay already hand-rolled. */
+  /* Scrim — dims the page behind a dialog. A fill only: the dialog above it is solid, so nothing
+     needs frosting, and a blur would be a second glass over the window's. Dark keeps the
+     rgba(0, 0, 0, 0.6) every overlay already hand-rolled. */
   --scrim-fill: rgba(0, 0, 0, 0.6);
-  --scrim-backdrop: blur(16px) saturate(140%);
 
   /* ── Syntax palette ─────────────────────────────────────────────────────────
      ONE source for code colours, so a theme can restyle the editor and not just

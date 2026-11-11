@@ -3,6 +3,8 @@ import { StateNotice } from '@localixai/kit/state-notice'
 import { PaneStateOverlay } from '@localixai/kit/pane-state-overlay'
 import { Button } from '@localixai/kit/button'
 import { ProblemLine, type useProblemReport } from '@/shared/ui/problem-report'
+import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
+import type { TerminalFolderMove } from '../model/terminalFolderMove'
 
 /** Sticky-scroll header: the command whose prompt scrolled off the top; click jumps back. */
 export function TerminalStickyCommand({ text, onJump }: { text: string; onJump: () => void }) {
@@ -61,5 +63,32 @@ export function TerminalConnectionState({
         labelClassName="min-w-0"
       />
     </PaneStateOverlay>
+  )
+}
+
+/**
+ * The project this shell started in was pointed at another folder: the shell is still in the old
+ * path, which is gone. Said once, at the top, and the restart opens a shell at the same place in
+ * the new folder; nothing restarts on its own, since the shell may be running something.
+ */
+export function TerminalFolderMoved({
+  moved,
+  onRestart,
+}: {
+  moved: TerminalFolderMove
+  onRestart: () => void
+}) {
+  return (
+    <div
+      role="status"
+      className="absolute inset-x-0 top-0 z-(--z-controls) flex items-center gap-2 border-b border-border-soft bg-popover px-2 py-1 text-xs text-text-soft"
+    >
+      <span className="min-w-0 flex-1 truncate">
+        This terminal is still in {moved.from}, which moved to {moved.to}.
+      </span>
+      <Button type="button" variant="secondary" size="sm" title={moved.cwd} onClick={onRestart}>
+        Restart in “{baseName(moved.to)}”
+      </Button>
+    </div>
   )
 }

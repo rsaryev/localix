@@ -55,7 +55,7 @@ apiVersion: 2
 - @localixai/kit/combobox: Combobox
 - @localixai/kit/command: Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator, CommandShortcut, useCommandState
 - @localixai/kit/comments: CommentsManager, TextCommentLayer
-- @localixai/kit/composer-chip: COMPOSER_CHIP, ComposerChip
+- @localixai/kit/composer-chip: COMPOSER_CHIP, ComposerChip, ComposerChipChevron
 - @localixai/kit/composer-command-button: ComposerCommandButton
 - @localixai/kit/confirm-dialog: ConfirmDialog
 - @localixai/kit/context-links: linksInText
@@ -2710,7 +2710,7 @@ export declare const TextCommentLayer: (props: {
 ### COMPOSER_CHIP
 
 ```ts
-export declare const COMPOSER_CHIP: "lx-glass lx-glass-self inline-flex cursor-pointer items-center gap-1.5 rounded-full text-xs text-text-soft outline-none transition-colors focus-ring hover:text-foreground disabled:cursor-default disabled:opacity-50";
+export declare const COMPOSER_CHIP: "inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-field-fill text-xs text-text-soft outline-none transition-colors focus-ring hover:bg-surface-hover hover:text-foreground active:bg-surface-active aria-expanded:bg-surface-active aria-expanded:text-foreground data-[state=open]:bg-surface-active data-[state=open]:text-foreground disabled:cursor-default disabled:bg-field-fill disabled:opacity-50";
 ```
 
 ### ComposerChip
@@ -2719,6 +2719,12 @@ export declare const COMPOSER_CHIP: "lx-glass lx-glass-self inline-flex cursor-p
 export declare const ComposerChip: (props: {
     tone?: "danger" | "default" | "strong";
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "tone"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
+```
+
+### ComposerChipChevron
+
+```ts
+export declare const ComposerChipChevron: () => React.ReactElement | null;
 ```
 
 ## module @localixai/kit/composer-command-button
@@ -3415,7 +3421,7 @@ export declare const DROP_TARGET_FOCUS_GLOW: "border-control-border-focus shadow
 ### DROP_TARGET_HINT
 
 ```ts
-export declare const DROP_TARGET_HINT: "lx-floating-surface bg-popover text-popover-foreground shadow-(--shadow-popover) ring-1 ring-foreground/10 rounded-lg border border-control-border-focus px-3 py-1.5 text-xs font-medium text-foreground";
+export declare const DROP_TARGET_HINT: string;
 ```
 
 ### DROP_TARGET_INDICATOR
@@ -3669,7 +3675,7 @@ export declare const DropdownMenuTrigger: (props: {
 ### EMBEDDED_VISUAL_PREFERENCES_CSS
 
 ```ts
-export declare const EMBEDDED_VISUAL_PREFERENCES_CSS: "\n@media (prefers-reduced-motion: reduce) {\n  *,*::before,*::after {\n    animation-duration:0.01ms!important;\n    animation-delay:0s!important;\n    animation-iteration-count:1!important;\n    transition-duration:0.01ms!important;\n    transition-delay:0s!important;\n    scroll-behavior:auto!important;\n  }\n}\n@media (prefers-contrast: more) {\n  :root {\n    --muted-foreground:color-mix(in oklch,var(--foreground) 88%,var(--background))!important;\n    --border:color-mix(in oklch,var(--foreground) 28%,var(--background))!important;\n    --border-subtle:color-mix(in oklch,var(--foreground) 20%,var(--background))!important;\n    --border-strong:color-mix(in oklch,var(--foreground) 46%,var(--background))!important;\n    --input:color-mix(in oklch,var(--foreground) 38%,var(--background))!important;\n    --surface-hover:color-mix(in oklch,var(--foreground) 14%,var(--background))!important;\n    --surface-active:color-mix(in oklch,var(--foreground) 22%,var(--background))!important;\n    --text-soft:color-mix(in oklch,var(--foreground) 88%,var(--background))!important;\n    --text-faint:color-mix(in oklch,var(--foreground) 78%,var(--background))!important;\n    --control-border:color-mix(in oklch,var(--foreground) 38%,var(--background))!important;\n    --control-border-hover:color-mix(in oklch,var(--foreground) 55%,var(--background))!important;\n    --control-border-focus:color-mix(in oklch,var(--foreground) 82%,var(--background))!important;\n    --scroll-thumb:color-mix(in oklch,var(--foreground) 55%,transparent)!important;\n    --scroll-thumb-hover:color-mix(in oklch,var(--foreground) 78%,transparent)!important;\n  }\n  :where(.lx-card,.lx-panel,.lx-list,[role='dialog'],[role='menu'],[role='listbox']) {\n    outline:1px solid var(--border-strong);outline-offset:-1px;\n  }\n  :where([aria-selected='true'],[aria-checked='true'],[aria-pressed='true'],[aria-current]:not([aria-current='false'])) {\n    outline:2px solid var(--ring);outline-offset:-2px;\n  }\n  :where(button,input,textarea,select,[role='button'],[role='menuitem'],[role='option'],[role='tab']):focus-visible {\n    outline:2px solid var(--ring);outline-offset:-2px;\n  }\n}\n@media (prefers-reduced-transparency: reduce) {\n  :where([class*='backdrop-blur'],[style*='backdrop-filter']) {\n    -webkit-backdrop-filter:none!important;backdrop-filter:none!important;\n  }\n  .lx-inset { background:var(--muted); }\n}\n@media (forced-colors: active) {\n  :where(.lx-card,.lx-panel,.lx-list) { border-color:CanvasText; }\n  :where([aria-selected='true'],[aria-checked='true'],[aria-pressed='true'],[aria-current]:not([aria-current='false'])) {\n    outline:2px solid Highlight;outline-offset:-2px;\n  }\n  :where(button,input,textarea,select,[role='button'],[role='menuitem'],[role='option'],[role='tab']):focus-visible {\n    outline:2px solid Highlight;outline-offset:-2px;\n  }\n}\n";
+export declare const EMBEDDED_VISUAL_PREFERENCES_CSS: "\n@media (prefers-reduced-motion: reduce) {\n  *,*::before,*::after {\n    animation-duration:0.01ms!important;\n    animation-delay:0s!important;\n    animation-iteration-count:1!important;\n    transition-duration:0.01ms!important;\n    transition-delay:0s!important;\n    scroll-behavior:auto!important;\n  }\n}\n@media (prefers-contrast: more) {\n  :root {\n    --muted-foreground:color-mix(in oklch,var(--foreground) 88%,var(--background))!important;\n    --border:color-mix(in oklch,var(--foreground) 28%,var(--background))!important;\n    --border-subtle:color-mix(in oklch,var(--foreground) 20%,var(--background))!important;\n    --border-strong:color-mix(in oklch,var(--foreground) 46%,var(--background))!important;\n    --input:color-mix(in oklch,var(--foreground) 38%,var(--background))!important;\n    --surface-hover:color-mix(in oklch,var(--foreground) 14%,var(--background))!important;\n    --surface-active:color-mix(in oklch,var(--foreground) 22%,var(--background))!important;\n    --text-soft:color-mix(in oklch,var(--foreground) 88%,var(--background))!important;\n    --text-faint:color-mix(in oklch,var(--foreground) 78%,var(--background))!important;\n    --control-border:color-mix(in oklch,var(--foreground) 38%,var(--background))!important;\n    --control-border-hover:color-mix(in oklch,var(--foreground) 55%,var(--background))!important;\n    --control-border-focus:color-mix(in oklch,var(--foreground) 82%,var(--background))!important;\n    --scroll-thumb:color-mix(in oklch,var(--foreground) 55%,transparent)!important;\n    --scroll-thumb-hover:color-mix(in oklch,var(--foreground) 78%,transparent)!important;\n  }\n  :where(.lx-card,.lx-panel,.lx-list,[role='dialog'],[role='menu'],[role='listbox']) {\n    outline:1px solid var(--border-strong);outline-offset:-1px;\n  }\n  :where([aria-selected='true'],[aria-checked='true'],[aria-pressed='true'],[aria-current]:not([aria-current='false'])) {\n    outline:2px solid var(--ring);outline-offset:-2px;\n  }\n  :where(button,input,textarea,select,[role='button'],[role='menuitem'],[role='option'],[role='tab']):focus-visible {\n    outline:2px solid var(--ring);outline-offset:-2px;\n  }\n}\n:root[data-reduce-transparency='true'] :where([class*='backdrop-blur'],[style*='backdrop-filter']) {\n  -webkit-backdrop-filter:none!important;backdrop-filter:none!important;\n}\n:root[data-reduce-transparency='true'] .lx-inset { background:var(--muted); }\n@media (forced-colors: active) {\n  :where(.lx-card,.lx-panel,.lx-list) { border-color:CanvasText; }\n  :where([aria-selected='true'],[aria-checked='true'],[aria-pressed='true'],[aria-current]:not([aria-current='false'])) {\n    outline:2px solid Highlight;outline-offset:-2px;\n  }\n  :where(button,input,textarea,select,[role='button'],[role='menuitem'],[role='option'],[role='tab']):focus-visible {\n    outline:2px solid Highlight;outline-offset:-2px;\n  }\n}\n";
 ```
 
 ## module @localixai/kit/empty-hint
@@ -5544,19 +5550,19 @@ export declare const PopoverTrigger: (props: {
 ### POPOVER_MATERIAL
 
 ```ts
-export declare const POPOVER_MATERIAL: "lx-floating-surface bg-popover text-popover-foreground shadow-(--shadow-popover) ring-1 ring-foreground/10";
+export declare const POPOVER_MATERIAL: "lx-floating-surface border border-border bg-popover text-popover-foreground shadow-(--shadow-popover)";
 ```
 
 ### POPOVER_SURFACE
 
 ```ts
-export declare const POPOVER_SURFACE: "lx-floating-surface bg-popover text-popover-foreground shadow-(--shadow-popover) ring-1 ring-foreground/10 rounded-xl border border-control-border";
+export declare const POPOVER_SURFACE: "lx-floating-surface border border-border bg-popover text-popover-foreground shadow-(--shadow-popover) rounded-xl";
 ```
 
 ### POPOVER_SURFACE_OVER_FOREIGN
 
 ```ts
-export declare const POPOVER_SURFACE_OVER_FOREIGN: "rounded-xl border border-control-border bg-background-solid text-foreground shadow-(--shadow-popover) ring-1 ring-foreground/10";
+export declare const POPOVER_SURFACE_OVER_FOREIGN: "rounded-xl border border-border bg-background-solid text-foreground shadow-(--shadow-popover)";
 ```
 
 ## module @localixai/kit/progress-bar
@@ -5822,7 +5828,7 @@ export declare const MENU_ROW: "flex w-full cursor-pointer items-center gap-2.5 
 ### SELECTED_ROW
 
 ```ts
-export declare const SELECTED_ROW: "lx-selected-row bg-sidebar-accent text-sidebar-foreground shadow-(--shadow-raised)";
+export declare const SELECTED_ROW: "lx-selected-row bg-sidebar-accent text-sidebar-foreground";
 ```
 
 ## module @localixai/kit/selection-tile
@@ -6877,7 +6883,7 @@ export declare const statusStripBudget: (containerWidth: number, breadcrumbDepth
 ### FLOATING_SURFACE
 
 ```ts
-export declare const FLOATING_SURFACE: "lx-floating-surface bg-popover text-popover-foreground shadow-(--shadow-popover) ring-1 ring-foreground/10 rounded-md border border-control-border";
+export declare const FLOATING_SURFACE: "lx-floating-surface border border-border bg-popover text-popover-foreground shadow-(--shadow-popover) rounded-md";
 ```
 
 ### FloatingActionDivider
@@ -13352,6 +13358,7 @@ export interface MiniAppBridgeSessionEventData {
 export interface MiniAppBridgeThemePayload {
     theme: 'dark' | 'light';
     vars: Record<string, string>;
+    reduceTransparency?: boolean;
 }
 ```
 

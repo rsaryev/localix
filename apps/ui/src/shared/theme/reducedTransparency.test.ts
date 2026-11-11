@@ -1,6 +1,10 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
-import { mirrorReducedTransparency } from './reducedTransparency'
+import {
+  frameRootAttributes,
+  hostReducesTransparency,
+  mirrorReducedTransparency,
+} from './reducedTransparency'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -35,5 +39,27 @@ describe('reduced transparency in a browser', () => {
     const root = document.createElement('html')
     mirrorReducedTransparency(fakeQuery(false), root)
     expect('reduceTransparency' in root.dataset).toBe(false)
+  })
+})
+
+/**
+ * A frame the host builds (a mini app view, a mod's surface) is its own document: the stamp on the
+ * host's root does not reach it, and its own `prefers-reduced-transparency` never matches in
+ * WKWebView. So the host reads its stamp and writes it into the frame.
+ */
+describe('reduced transparency passed into a frame', () => {
+  test('the host reads its own stamp', () => {
+    delete document.documentElement.dataset.reduceTransparency
+    expect(hostReducesTransparency()).toBe(false)
+    document.documentElement.dataset.reduceTransparency = 'true'
+    expect(hostReducesTransparency()).toBe(true)
+    delete document.documentElement.dataset.reduceTransparency
+  })
+
+  test("the frame's root carries the theme, and the stamp only when the setting is on", () => {
+    expect(frameRootAttributes('dark', false)).toBe('data-theme="dark"')
+    expect(frameRootAttributes('light', true)).toBe(
+      'data-theme="light" data-reduce-transparency="true"',
+    )
   })
 })

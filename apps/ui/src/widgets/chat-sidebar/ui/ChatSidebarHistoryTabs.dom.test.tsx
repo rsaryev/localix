@@ -12,11 +12,32 @@ import { toUiSessionSummary } from '@/shared/api/converters'
 import type { Project, SessionSummary } from '@/shared/api/contracts'
 
 let teardown: () => Promise<void>
+let restoreHeight: () => void
 beforeAll(() => {
   teardown = registerDom()
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+  // The External list is virtualized and happy-dom has no layout: the virtualizer sizes its
+  // viewport by `clientHeight` and each row by `offsetHeight`.
+  const keys = ['offsetHeight', 'clientHeight'] as const
+  const originals = keys.map((key) => Object.getOwnPropertyDescriptor(HTMLElement.prototype, key))
+  for (const key of keys)
+    Object.defineProperty(HTMLElement.prototype, key, {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.getAttribute('aria-label') === 'Session history' ? 640 : 32
+      },
+    })
+  restoreHeight = () =>
+    keys.forEach((key, index) => {
+      const original = originals[index]
+      if (original) Object.defineProperty(HTMLElement.prototype, key, original)
+      else Reflect.deleteProperty(HTMLElement.prototype, key)
+    })
 })
-afterAll(async () => teardown())
+afterAll(async () => {
+  restoreHeight()
+  await teardown()
+})
 
 const original = useChatStore.getState()
 const spies: { mockRestore: () => void }[] = []
@@ -80,9 +101,12 @@ function setup({ workingDir = '/work/default', rows = [native('a', 'Parser CLI')
   spies.push(
     spyOn(agents, 'useAgents').mockReturnValue({ agents: [] } as unknown as agents.AgentsData),
     spyOn(historySearch, 'useHistorySearch').mockReturnValue({ hits: [], loading: false }),
-    spyOn(history, 'useExternalHistory').mockImplementation((_text, enabled) => ({
+    // The server answers the search (`roster.ts`); the sidebar lists what it returns.
+    spyOn(history, 'useExternalHistory').mockImplementation((text, enabled) => ({
       agents: [{ id: 'codex', name: 'Codex', command: 'codex' }],
-      sessions: enabled ? rows : [],
+      sessions: enabled
+        ? rows.filter((row) => row.title.toLowerCase().includes(text.trim().toLowerCase()))
+        : [],
       loading: false,
       loadingMore: false,
       error: undefined,
@@ -229,5 +253,33 @@ test('without external history the tabs are hidden and Localix chats show', asyn
     ])
   } finally {
     await view.unmount()
+  }
+})
+
+/**
+ * A long CLI history is thousands of rows. The External tab renders only the rows near the
+ * viewport, so opening it and scrolling cost the same at 200 sessions as at 2000.
+ */
+test('the External tab renders a window of a long history, not every row', async () => {
+  for (const count of [200, 2000]) {
+    setup({
+      rows: Array.from({ length: count }, (_, index) => ({
+        ...native(`s${index}`, `Session ${index}`),
+        updatedAt: Date.now() - index * 3_600_000,
+      })),
+    })
+    localStorage.setItem(HISTORY_SOURCE_KEY, 'external')
+    const started = performance.now()
+    const view = await mount()
+    const elapsed = performance.now() - started
+    try {
+      const rendered = view.rows().length
+      console.info(`External tab, ${count} sessions: ${rendered} rows in ${elapsed.toFixed(1)} ms`)
+      expect(rendered).toBeGreaterThan(0)
+      expect(rendered).toBeLessThanOrEqual(60)
+    } finally {
+      await view.unmount()
+      for (const spy of spies.splice(0)) spy.mockRestore()
+    }
   }
 })

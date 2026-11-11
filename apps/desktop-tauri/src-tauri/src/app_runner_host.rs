@@ -88,8 +88,9 @@ pub(crate) fn page_globals(mini_app: &str, name: &str, project: &Path, port: u16
 }
 
 /// Tauri's title-row contract, for a page with no Tauri: a press on an element that itself carries
-/// `data-tauri-drag-region` moves the window, and a double press zooms it (`chrome.css`).
-pub(crate) const DRAG_SCRIPT: &str = "document.addEventListener('mousedown',(e)=>{if(e.button!==0||!(e.target instanceof Element)||!e.target.hasAttribute('data-tauri-drag-region'))return;e.preventDefault();window.webkit.messageHandlers.localixApp.postMessage(JSON.stringify({type:e.detail===2?'zoom':'drag'}))},true);";
+/// `data-tauri-drag-region` moves the window, and a double press does what System Settings says
+/// (`titlebar_double_click`).
+pub(crate) const DRAG_SCRIPT: &str = "document.addEventListener('mousedown',(e)=>{if(e.button!==0||!(e.target instanceof Element)||!e.target.hasAttribute('data-tauri-drag-region'))return;e.preventDefault();window.webkit.messageHandlers.localixApp.postMessage(JSON.stringify({type:e.detail===2?'double-click':'drag'}))},true);";
 
 /// The file a `localix-app://app/<path>` request names inside the UI build. A path that climbs out
 /// of it is refused; a route without an extension is the single-page app's own `index.html`.

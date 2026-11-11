@@ -3,7 +3,12 @@ import { chmod, mkdir, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
-import { assertWorkspaceFolder, suggestMovedFolder, workspaceFolderState } from './workspace-folder'
+import {
+  assertWorkspaceFolder,
+  folderIdentity,
+  suggestMovedFolder,
+  workspaceFolderState,
+} from './workspace-folder'
 
 const temp = tempDirPerTest('workspace-folder-')
 
@@ -75,38 +80,37 @@ describe('finding a moved folder', () => {
     const after = join(temp(), 'work', 'llx-plugin')
     await mkdir(before, { recursive: true })
     await mkdir(join(temp(), 'work', 'other'))
-    await assertWorkspaceFolder(before)
+    const identity = await folderIdentity(before)
     await rename(before, after)
-    expect(await suggestMovedFolder(before)).toBe(after)
+    expect(await suggestMovedFolder(before, identity)).toBe(after)
   })
 
   test('a folder moved one level away, under a renamed parent, is suggested', async () => {
     const before = join(temp(), 'jobs', 'acme', 'app')
     await mkdir(before, { recursive: true })
-    await assertWorkspaceFolder(before)
+    const identity = await folderIdentity(before)
     await rename(join(temp(), 'jobs', 'acme'), join(temp(), 'jobs', 'acme-inc'))
-    expect(await suggestMovedFolder(before)).toBe(join(temp(), 'jobs', 'acme-inc', 'app'))
+    expect(await suggestMovedFolder(before, identity)).toBe(join(temp(), 'jobs', 'acme-inc', 'app'))
   })
 
   test('nothing is suggested for a folder Localix never saw, or a look-alike with the same name', async () => {
     const before = join(temp(), 'never-seen')
     await mkdir(join(temp(), 'never-seen-2'))
-    expect(await suggestMovedFolder(before)).toBeNull()
+    expect(await suggestMovedFolder(before, null)).toBeNull()
 
     const seen = join(temp(), 'repo')
     await mkdir(seen)
-    await assertWorkspaceFolder(seen)
+    const identity = await folderIdentity(seen)
     // Deleted, and a different folder made at a sibling path: same name, not the same folder.
     await rm(seen, { recursive: true })
     await mkdir(join(temp(), 'repo-copy'))
     await mkdir(join(temp(), 'nested', 'repo'), { recursive: true })
-    expect(await suggestMovedFolder(seen)).toBeNull()
+    expect(await suggestMovedFolder(seen, identity)).toBeNull()
   })
 
   test('a folder still where it was is not "moved"', async () => {
     const here = join(temp(), 'here')
     await mkdir(here)
-    await assertWorkspaceFolder(here)
-    expect(await suggestMovedFolder(here)).toBeNull()
+    expect(await suggestMovedFolder(here, await folderIdentity(here))).toBeNull()
   })
 })

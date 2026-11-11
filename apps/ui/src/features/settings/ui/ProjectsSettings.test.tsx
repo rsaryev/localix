@@ -143,4 +143,51 @@ describe('project settings presentation', () => {
     await act(async () => root.unmount())
     update.mockRestore()
   })
+
+  test('Change folder… re-points the project at the picked folder, as a missing folder does', async () => {
+    const React = await import('react')
+    const { act } = React
+    const { createRoot } = await import('react-dom/client')
+    const notify = await import('@/shared/lib/notify')
+    const pick = spyOn(backendClient, 'pickDirectory').mockResolvedValue(null)
+    const relocate = spyOn(backendClient, 'relocateProject').mockResolvedValue({
+      project: { ...project, workingDir: '/workspace/localix-next' },
+      memory: 'none',
+      trust: { before: false, after: false },
+    } as never)
+    const success = spyOn(notify.toast, 'success').mockImplementation(() => '' as never)
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    await act(async () => {
+      root.render(<ProjectSettingsForm project={project} />)
+    })
+    const button = [...container.querySelectorAll('button')].find(
+      (b) => b.textContent === 'Change folder…',
+    )
+    expect(button).toBeDefined()
+    await act(async () => {
+      button?.click()
+      await settle()
+    })
+    expect(relocate).not.toHaveBeenCalled()
+
+    pick.mockResolvedValue('/workspace/localix-next')
+    await act(async () => {
+      button?.click()
+      await settle()
+    })
+    expect(relocate).toHaveBeenCalledWith('project-1', '/workspace/localix-next')
+    expect(success).toHaveBeenCalledWith('The project now uses “localix-next”', expect.anything())
+    await act(async () => root.unmount())
+    pick.mockRestore()
+    relocate.mockRestore()
+    success.mockRestore()
+  })
+
+  test('the default project offers no folder change: its folder is what makes it the default', () => {
+    const html = renderToStaticMarkup(
+      <ProjectSettingsForm project={{ ...project, isDefault: true }} />,
+    )
+    expect(html).not.toContain('Change folder…')
+  })
 })

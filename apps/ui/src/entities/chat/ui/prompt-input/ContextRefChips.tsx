@@ -9,7 +9,7 @@
  * used by sent-message metadata.
  */
 import { useMemo, useState, type ReactNode } from 'react'
-import { ChevronDown, Cpu, Link2, Plus, TriangleAlert, X } from 'lucide-react'
+import { Cpu, Link2, Plus, TriangleAlert, X } from 'lucide-react'
 import { useRefLabelSources } from '../refKindPresentation'
 import type { ContextRefChip, UseContextRefsResult } from '../../model/useContextRefs'
 import { attachmentManifestRows, type ManifestAsset } from '../../model/composerContextManifest'
@@ -32,7 +32,7 @@ import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Chip } from '@localixai/kit/chip'
-import { ComposerChip } from '@localixai/kit/composer-chip'
+import { ComposerChip, ComposerChipChevron } from '@localixai/kit/composer-chip'
 
 /** Stable empty default: a fresh literal would re-run the manifest memo on every render. */
 const NO_ATTACHMENTS: readonly PendingAttachment[] = []
@@ -163,12 +163,12 @@ export function ContextRefChips({
                 aria-label={`Review ${total} included context ${total === 1 ? 'item' : 'items'}`}
                 className="max-w-full"
               >
-                <Link2 className="size-3 shrink-0" />
+                <Link2 className="size-3.5 shrink-0" />
                 <span className="font-medium">Context</span>
-                <Chip tone="accent" size="dense">
+                <Chip tone="active" size="counter">
                   {total}
                 </Chip>
-                <ChevronDown className="size-3 shrink-0" />
+                <ComposerChipChevron />
               </ComposerChip>
             </PopoverTrigger>
             <PopoverContent

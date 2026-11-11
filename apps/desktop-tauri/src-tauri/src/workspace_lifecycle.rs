@@ -22,11 +22,9 @@ pub(crate) fn register(window: &WebviewWindow) {
             #[cfg(target_os = "macos")]
             crate::native_header::refresh_after_focus(&app, &label);
             // Reduce transparency is changed in System Settings, so it can only have changed while
-            // this window was not key.
+            // this window was not key. Every window is told, the island included.
             #[cfg(target_os = "macos")]
-            if let Some(webview) = app.get_webview_window(&label) {
-                let _ = webview.eval(crate::display_options::script());
-            }
+            crate::display_options::restamp(&app);
             #[cfg(target_os = "macos")]
             {
                 let restore_hidden = {

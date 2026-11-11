@@ -1,4 +1,4 @@
-// A first run (no stored layout) opens one empty group, which holds a new chat under setup; a saved
+// A first run (no stored layout) opens one empty group, which shows the workspace tips; a saved
 // layout is restored as left.
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import type { PersistedGrid } from './persistence'

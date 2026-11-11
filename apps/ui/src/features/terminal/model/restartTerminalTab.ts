@@ -6,8 +6,13 @@ import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { closeTerminal, createTerminal } from '../api'
 import { closeDeadTerminalTabs } from './deadTerminalTabs'
 import { makeTerminalItem, placeTerminal } from './terminalTabPlacement'
+import { projectDirOf, terminalFolderMove } from './terminalFolderMove'
+import { useChatStore } from '@/entities/chat/model/store'
 
-/** Spawn first: a failed restart must leave the original output available. */
+/**
+ * Spawn first: a failed restart must leave the original output available. The original tab closes
+ * once the new one is placed; a live shell restarted because its folder moved ends with it.
+ */
 export async function restartTerminalTab(paneId: string): Promise<boolean> {
   if (workItemTransferState.pending(paneId)) return false
   const item = useGridStore.getState().items[paneId]
@@ -27,7 +32,13 @@ export async function restartTerminalTab(paneId: string): Promise<boolean> {
   }))
   const exit = item.payload?.terminalExit as { command?: string; cwd?: string } | undefined
   const command = exit?.command ?? item.payload?.command
-  const cwd = exit?.cwd ?? item.payload?.cwd
+  const started = exit?.cwd ?? item.payload?.cwd
+  // A terminal whose project moved restarts at the same place in the project's new folder.
+  const moved = terminalFolderMove(
+    { cwd: started, projectDir: item.payload?.projectDir },
+    projectDirOf(useChatStore.getState(), sessionId),
+  )
+  const cwd = moved?.cwd ?? started
   const directory = typeof cwd === 'string' ? { cwd } : {}
   try {
     const terminalId =

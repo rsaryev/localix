@@ -32,6 +32,8 @@ import { mapConcurrent } from './usage'
 import { ID, summarizeCodex as summarize, foldCodex } from './codex-summary'
 
 const SESSION_DIRS = ['sessions', 'archived_sessions']
+/** Codex's thread names, beside the session folders. */
+const THREAD_INDEX = 'session_index.jsonl'
 const SUMMARY_CONCURRENCY = 8
 /** About 40,000 namings; the real index is 140 lines. */
 const THREAD_INDEX_BYTES = 4 * 1024 * 1024
@@ -70,12 +72,15 @@ async function walkJsonl(dir: string, depth: number, out: string[]): Promise<voi
  */
 async function threadNames(root: string): Promise<Map<string, string>> {
   const names = new Map<string, string>()
-  const path = join(root, 'session_index.jsonl')
+  const path = join(root, THREAD_INDEX)
   if (!(await pathExists(path))) return names
   for (const rec of parseWindowLines(await readTail(path, THREAD_INDEX_BYTES), 'tail')) {
     const id = asString(rec.id)
+    if (!id) continue
+    // An empty latest name clears the thread's name; an earlier one must not outlive it.
     const name = asString(rec.thread_name)?.trim()
-    if (id && name) names.set(id, name)
+    if (name) names.set(id, name)
+    else names.delete(id)
   }
   return names
 }
@@ -209,8 +214,9 @@ export const codexAdapter: ProviderAdapter = {
   resumeCommand: (id) => `codex resume ${shellQuote(id)}`,
   async probeRoots(env: AdapterEnv): Promise<readonly RootProbe[]> {
     const root = homeFor(env)
+    // The name index too: a `/rename` writes only there, and an open list must show it.
     return Promise.all(
-      SESSION_DIRS.map(async (sub) => {
+      [...SESSION_DIRS, THREAD_INDEX].map(async (sub) => {
         const path = join(root, sub)
         return { path, exists: await pathExists(path) }
       }),

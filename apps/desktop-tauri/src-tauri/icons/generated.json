@@ -1,0 +1,15 @@
+{
+  "generator": "scripts/app-icons.mjs",
+  "source": "0eba2796b0306d9d8f155bf3675898731dcc43e296daab61463bd7a25c84759b",
+  "files": {
+    "128x128.png": "e60f89ee2d62cd36b2f26835b12c99d287d7d7bcc0aab3e02a2bc79f858dbaaa",
+    "128x128@2x.png": "fec44de13faba35c6f46c23b6fac0a1ee39567bf77e1e92742658960869a9e23",
+    "32x32.png": "09af0d20966c11c8d38654feab0193d79744db7b254275a5a868cd5c360c72a3",
+    "64x64.png": "91c9b838326bd09142b979ee60116a75e7757102a1165b097bc5505959294e47",
+    "badge-overlay.png": "dc66cc0f4feb219de079e91863a885b2a5fdf23d6a1e6b9eb3fd43d1c2176861",
+    "icon.icns": "80b4d9474424c290fd97fb73eb36bcc9c5890efc712375626cdd3ba42615475d",
+    "icon.ico": "9712000042e847dd27c45cbaeaf081270646487de03c8132b6a86299e1a753b1",
+    "icon.png": "c3418d8e8fb93ffffc2449dd30e38d8ccb4615a0a68df6bd861623885fca3d3a",
+    "tray-template.png": "f7310f4fe27edded7feab0075a0cfa23b4bb707d53a40af7317624b917665ccb"
+  }
+}

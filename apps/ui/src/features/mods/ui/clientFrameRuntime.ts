@@ -187,6 +187,8 @@ function applyTheme(theme) {
   if (!theme || typeof theme.css !== 'string') return;
   document.getElementById('lx-theme').textContent = ':root{' + theme.css + '}';
   document.documentElement.dataset.theme = theme.theme === 'light' ? 'light' : 'dark';
+  if (theme.reduceTransparency === true) document.documentElement.dataset.reduceTransparency = 'true';
+  else delete document.documentElement.dataset.reduceTransparency;
 }
 window.addEventListener('message', function (event) {
   var data = event.data;

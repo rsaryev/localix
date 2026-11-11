@@ -26,6 +26,11 @@ export interface SessionSummary {
   readonly updatedAt: number
   readonly messageCount?: number
   /**
+   * The transcript holds no message: a session opened and left, or one with only bookkeeping. Its
+   * agent cannot resume it and its own picker does not list it, so the roster does not either.
+   */
+  readonly empty?: true
+  /**
    * Provider-reported model consumption.
    *
    * This is measured from the provider's own history, never estimated from characters. Input is

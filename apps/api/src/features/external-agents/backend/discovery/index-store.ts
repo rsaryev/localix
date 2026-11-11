@@ -16,6 +16,9 @@ import type { SessionSummary } from '../../shared/contracts'
 /**
  * Bumped when the summary shape or a parser changes in a way that invalidates stored rows.
  *
+ * 10: summaries carry `empty`, and a Claude Code tool result is no longer counted as a message. A
+ * row cached under 9 kept its inflated count and listed a transcript with no message at all.
+ *
  * 9: a Claude Code session's title is the name set with `/rename` when there is one. A row cached
  * under 8 kept the generated title until its file changed. Since the two-depth index a bump costs a
  * cold LIST (under a second on a 10 GB history), and the usage walk again only when statistics ask.
@@ -29,7 +32,7 @@ import type { SessionSummary } from '../../shared/contracts'
  *
  * `unwalked` needed none: a document without it was written by a build that walked everything.
  */
-export const CACHE_VERSION = 9
+export const CACHE_VERSION = 10
 
 export interface CacheFile {
   version: number

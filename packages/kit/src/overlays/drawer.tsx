@@ -4,7 +4,6 @@ import { Drawer as DrawerPrimitive } from 'vaul'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { useOverlayFocus } from '@localixai/mini-app-sdk/ui/focus'
 import { modalBody, modalDescription, modalShell, modalSurface, modalTitle } from './modal-surface'
-import { POPOVER_MATERIAL } from './popover-surface'
 import {
   ModalFooterRegion,
   ModalHeaderRegion,
@@ -37,27 +36,25 @@ DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName
 const DrawerContent = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content> & {
-    /** `popover` renders the drawer in the floating-menu material (the frosted `--popover`
-     *  panel every dropdown/context-menu uses) instead of the denser modal surface — for
-     *  drawers that ARE pickers (the model browser), so picking a model looks like picking
-     *  a session. Default stays the modal material. */
+    /** `popover` is for a sheet that IS a picker (the model browser): a quick in-and-out, so
+     *  the page behind dims by half and stays readable for context. The sheet itself is cut
+     *  from the one raised material either way (docs/internals/visual-system.md, "Surfaces
+     *  over the window"); it used to switch to the menu material, a second dark slab. */
     material?: 'modal' | 'popover'
   }
 >(({ className, children, material = 'modal', ...props }, ref) => {
   const claimRef = useOverlayFocus('dialog', ref)
   return (
     <DrawerPortal>
-      {/* A picker-material drawer dims by half (`lx-scrim-light`): it is a quick in-and-out,
-          so the page behind stays readable for context instead of going dark. */}
       <DrawerOverlay className={material === 'popover' ? 'lx-scrim-light' : undefined} />
       <DrawerPrimitive.Content
         ref={claimRef}
         data-slot="drawer-content"
         className={cn(
-          material === 'popover' ? POPOVER_MATERIAL : modalSurface,
+          modalSurface,
           modalShell,
           'fixed inset-x-0 bottom-0 z-(--z-modal) mt-24 h-auto max-h-[calc(100dvh-0.5rem)] overscroll-contain focus:outline-none',
-          'rounded-t-2xl border-t border-control-border',
+          'rounded-t-2xl',
           'md:max-w-205 md:mx-auto md:w-full',
           className,
         )}

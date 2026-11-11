@@ -1,4 +1,4 @@
-import { createHashRouter } from 'react-router'
+import { createHashRouter, type RouteObject } from 'react-router'
 import { ChatPage } from '@/pages/chat'
 import { GridPreviewPage } from '@/pages/grid-preview'
 import { RootLayout } from '../RootLayout'
@@ -12,6 +12,18 @@ import { ROUTE_PATTERNS } from '@/shared/routing/routes'
 // at the same slot), while `useParams` exposes the active session/section.
 const chatElement = <ChatPage />
 
+// Dev-only kit gallery (every primitive and surface in every state, for visual review and the
+// surface captures). `lazy` keeps it out of the production bundle entirely: the branch is dead
+// there and the import never resolves.
+const devRoutes: RouteObject[] = import.meta.env.DEV
+  ? [
+      {
+        path: 'kit-gallery',
+        lazy: async () => ({ Component: (await import('@/pages/kit-gallery')).KitGalleryPage }),
+      },
+    ]
+  : []
+
 export const router = createHashRouter([
   {
     element: <RootLayout />,
@@ -20,6 +32,7 @@ export const router = createHashRouter([
       { path: ROUTE_PATTERNS.index, element: chatElement },
       // Dev-only harness for the editor grid (Phase 3) — listed before catchAll.
       { path: 'grid-preview', element: <GridPreviewPage /> },
+      ...devRoutes,
       { path: ROUTE_PATTERNS.projectChat, element: chatElement },
       { path: ROUTE_PATTERNS.catchAll, element: chatElement },
     ],

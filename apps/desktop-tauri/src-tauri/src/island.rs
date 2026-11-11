@@ -155,7 +155,8 @@ pub(crate) fn show(app: &AppHandle) -> Result<(), String> {
             tauri::Theme::Light
         }
     });
-    let builder = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("index.html".into()))
+    let builder = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("index.html".into()));
+    let builder = crate::display_options::stamped(builder)
         .title("Localix Agent Island")
         .inner_size(geometry::CANVAS_WIDTH, geometry::CANVAS_HEIGHT)
         .resizable(false)

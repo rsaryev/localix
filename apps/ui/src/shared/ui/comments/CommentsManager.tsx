@@ -138,11 +138,10 @@ export function CommentsManager({
           {description && <p className="px-2.5 py-2 text-xs text-text-soft">{description}</p>}
           {groups.map((g) => (
             <div key={g.groupId}>
-              {/* Popover-hue, not `bg-surface-raised`: raised mixes from a darker ground than the
-                  frosted popover, so under glass this sticky label read as an abrupt black strip.
-                  `bg-popover` restates the panel's own material; the blur keeps the rows sliding
-                  under it illegible (the popover already pays for its frost). */}
-              <div className="sticky top-0 z-(--z-sticky) truncate bg-popover backdrop-blur px-2.5 py-1 text-2xs font-medium text-text-faint">
+              {/* `bg-popover` restates the panel's own opaque ground, so rows scroll under the
+                  sticky label without showing through; `bg-surface-raised` mixes from a darker
+                  ground and read as an abrupt black strip. */}
+              <div className="sticky top-0 z-(--z-sticky) truncate bg-popover px-2.5 py-1 text-2xs font-medium text-text-faint">
                 {g.groupLabel}
               </div>
               {g.items.map((c) => (

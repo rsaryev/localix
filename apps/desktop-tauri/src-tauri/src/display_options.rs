@@ -8,6 +8,9 @@
 //!
 //! Stamped twice: by an initialization script, so the first paint is already right, and whenever a
 //! workspace becomes key, which is the first moment after the person changed it in System Settings.
+//! Every window goes through here: a Tauri window is built with [`stamped`] and re-told by
+//! [`restamp`] (the workspaces and the agent island alike); a standalone mini app's window, which is
+//! plain AppKit, adds [`script`] to its page scripts and evaluates it again when it becomes key.
 
 // Only the macOS build reads the setting; elsewhere the page mirrors the engine's media query.
 #![cfg_attr(not(target_os = "macos"), allow(dead_code))]
@@ -32,6 +35,24 @@ pub(crate) fn script() -> String {
         workspace.accessibilityDisplayShouldReduceTransparency()
             || workspace.accessibilityDisplayShouldIncreaseContrast(),
     )
+}
+
+/// A Tauri window's builder with the stamp in its initialization scripts.
+#[cfg(target_os = "macos")]
+pub(crate) fn stamped<'a, R: tauri::Runtime, M: tauri::Manager<R>>(
+    builder: tauri::WebviewWindowBuilder<'a, R, M>,
+) -> tauri::WebviewWindowBuilder<'a, R, M> {
+    builder.initialization_script(script())
+}
+
+/// Tell every open Tauri window again: the setting can only have changed while the app was not key.
+#[cfg(target_os = "macos")]
+pub(crate) fn restamp<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
+    use tauri::Manager;
+    let script = script();
+    for window in app.webview_windows().values() {
+        let _ = window.eval(script.clone());
+    }
 }
 
 #[cfg(test)]

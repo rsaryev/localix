@@ -51,6 +51,9 @@ function bootstrapFixture() {
       setAttribute(name: string, value: string) {
         attributes.set(name, value)
       },
+      removeAttribute(name: string) {
+        attributes.delete(name)
+      },
     },
   }
 
@@ -160,6 +163,24 @@ describe('host-injected mini app UI API', () => {
     ).toContain('timed out after 100ms')
   })
 
+  // WKWebView never matches `prefers-reduced-transparency` inside the frame either, so the host
+  // passes its Reduce transparency with the theme and the frame's root carries it.
+  test('carries the host’s Reduce transparency onto the frame root, both ways', () => {
+    const fixture = bootstrapFixture()
+    fixture.acquire()
+    const theme = (reduceTransparency: boolean) =>
+      fixture.dispatch({
+        lx: 'mini-app-ui',
+        v: 1,
+        type: 'theme',
+        payload: { theme: 'dark', vars: {}, reduceTransparency },
+      })
+    theme(true)
+    expect(fixture.attributes.get('data-reduce-transparency')).toBe('true')
+    theme(false)
+    expect(fixture.attributes.has('data-reduce-transparency')).toBe(false)
+  })
+
   test('applies themes, publishes safe events, and exposes persisted-state helpers', async () => {
     const fixture = bootstrapFixture()
     const api = fixture.acquire()
@@ -172,7 +193,11 @@ describe('host-injected mini app UI API', () => {
       lx: 'mini-app-ui',
       v: 1,
       type: 'theme',
-      payload: { theme: 'light', vars: { '--background': '#fff', color: 'ignored' } },
+      payload: {
+        theme: 'light',
+        vars: { '--background': '#fff', color: 'ignored' },
+        reduceTransparency: false,
+      },
     })
     fixture.dispatch({
       lx: 'mini-app-ui',

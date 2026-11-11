@@ -60,7 +60,7 @@ export const themeVarsBus = {
       observer = new MutationObserver(refreshAndBroadcast)
       observer.observe(document.documentElement, {
         attributes: true,
-        attributeFilter: ['data-theme', 'data-theme-preset'],
+        attributeFilter: ['data-theme', 'data-theme-preset', 'data-reduce-transparency'],
       })
     }
     return () => {

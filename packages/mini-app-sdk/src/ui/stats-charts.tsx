@@ -86,10 +86,10 @@ export function TrendChart({
               className="group/bar relative flex h-full flex-1 flex-col justify-end"
               title={`${formatBucketLabel(p.key)}: ${formatValue(p.value)}`}
             >
-              {/* `bg-popover` + frost, the app's floating-panel material: this is a tooltip over
-                  chart bars, and the raised ground token read as a black box on the glass theme. */}
+              {/* The app's raised-surface material (ground, one hairline, popover shadow, no
+                  frost): this is a tooltip over chart bars. */}
               <div
-                className={`pointer-events-none absolute -top-1 z-10 -translate-y-full whitespace-nowrap rounded-md border border-border/40 bg-popover px-2 py-1 text-2xs opacity-0 shadow-(--shadow-popover) backdrop-blur transition-opacity duration-150 group-hover/bar:opacity-100 ${anchor}`}
+                className={`pointer-events-none absolute -top-1 z-10 -translate-y-full whitespace-nowrap rounded-md border border-border bg-popover px-2 py-1 text-2xs opacity-0 shadow-(--shadow-popover) transition-opacity duration-150 group-hover/bar:opacity-100 ${anchor}`}
               >
                 <div className="font-mono font-medium text-foreground">{formatValue(p.value)}</div>
                 <div className="text-text-soft">

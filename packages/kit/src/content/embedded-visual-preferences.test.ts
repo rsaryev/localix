@@ -21,10 +21,11 @@ describe('sandboxed UI visual preferences', () => {
     expect(EMBEDDED_VISUAL_PREFERENCES_CSS).toContain('outline:2px solid var(--ring)')
   })
 
-  test('turns off authored backdrop compositing inside the sandbox', () => {
-    expect(EMBEDDED_VISUAL_PREFERENCES_CSS).toContain(
-      '@media (prefers-reduced-transparency: reduce)',
-    )
+  // WKWebView never matches `prefers-reduced-transparency`, so the frame is told by the host,
+  // which stamps the frame's root the way the shell stamps its own.
+  test('turns off authored backdrop compositing when the host says Reduce transparency', () => {
+    expect(EMBEDDED_VISUAL_PREFERENCES_CSS).not.toContain('prefers-reduced-transparency')
+    expect(EMBEDDED_VISUAL_PREFERENCES_CSS).toContain(":root[data-reduce-transparency='true']")
     expect(EMBEDDED_VISUAL_PREFERENCES_CSS).toContain("[style*='backdrop-filter']")
     expect(EMBEDDED_VISUAL_PREFERENCES_CSS).toContain('backdrop-filter:none!important')
   })

@@ -112,6 +112,10 @@ export function buildRoster(input: RosterInput): Bounded<RosterRow> {
     awaited.has(row.key) ? { ...row, awaited: true } : row,
   )
 
+  // A transcript with no message is one its agent neither lists nor resumes; a live one is a
+  // session just started, which is the row the person is looking for.
+  rows = rows.filter((r) => !r.empty || r.terminalId)
+
   // Asking for a parent's children is asking for children: the default that hides them cannot also
   // apply, or the filter has exactly one answer and it is the empty one.
   if (!input.includeChildren && !query.parentKey) {

@@ -40,9 +40,15 @@ impl Controller {
         let title_row = crate::native_chrome::measure(window)
             .map(crate::native_chrome::apply_script)
             .unwrap_or_default();
+        let display = crate::display_options::script();
         let content = unsafe { web_view.configuration().userContentController() };
         unsafe { content.removeAllUserScripts() };
-        for source in [globals.as_str(), title_row.as_str(), host::DRAG_SCRIPT] {
+        for source in [
+            globals.as_str(),
+            title_row.as_str(),
+            host::DRAG_SCRIPT,
+            display.as_str(),
+        ] {
             let script = unsafe {
                 WKUserScript::initWithSource_injectionTime_forMainFrameOnly(
                     WKUserScript::alloc(mtm),
@@ -69,6 +75,19 @@ impl Controller {
         };
         if let Some(geometry) = crate::native_chrome::measure(window) {
             let script = NSString::from_str(&crate::native_chrome::apply_script(geometry));
+            unsafe { web_view.evaluateJavaScript_completionHandler(&script, None) };
+        }
+    }
+
+    /// The window became key, the first moment after Reduce transparency could have changed in
+    /// System Settings: tell the page on screen, and the next load.
+    pub(crate) fn follow_display_options(&self) {
+        let (Some(mtm), Some(port)) = (MainThreadMarker::new(), self.ivars().port.get()) else {
+            return;
+        };
+        self.set_page_scripts(mtm, port);
+        if let Some(web_view) = self.ivars().web_view.get() {
+            let script = NSString::from_str(&crate::display_options::script());
             unsafe { web_view.evaluateJavaScript_completionHandler(&script, None) };
         }
     }

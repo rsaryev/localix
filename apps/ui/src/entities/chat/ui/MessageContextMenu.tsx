@@ -84,14 +84,9 @@ export function MessageContextMenu({
           menu rather than as its first row. */}
       <ContextMenuContent className="border-0 bg-transparent p-0 shadow-none ring-0 backdrop-blur-none">
         {/* Each slab is the shared floating material, cut to its own shape — a pill for the
-            strip, a panel for the actions — so both frost and rim like every other menu. They
-            were a hand-mixed `bg-popover` + `shadow-lg`, the only menu slabs without either. */}
-        <div
-          className={cn(
-            POPOVER_MATERIAL,
-            'mb-1.5 flex items-center gap-0.5 rounded-full border border-control-border p-1',
-          )}
-        >
+            strip, a panel for the actions — so both take the ground and edge of every other
+            menu. They were a hand-mixed `bg-popover` + `shadow-lg`, the only menu slabs without. */}
+        <div className={cn(POPOVER_MATERIAL, 'mb-1.5 flex items-center gap-0.5 rounded-full p-1')}>
           {Object.entries(MESSAGE_REACTIONS).map(([emoji, meaning]) => {
             const on = mine?.includes(emoji)
             return (

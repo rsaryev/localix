@@ -60,17 +60,22 @@ trail.
 A project remembers its folder by path. Rename, move or delete the folder and the project's chats
 still open with their history, but nothing that works in the folder runs: the Files pane, file reads
 and writes, search, a new terminal, the language servers and the next chat turn each answer with the
-same `409` error. Its code names what is wrong with the folder: `workspace_folder_missing`,
-`workspace_folder_not_a_directory` or `workspace_folder_unreadable`. The Files pane shows **Project
-folder not found** with the old path and three actions:
+same `409` error, and so does a slash command that works in the folder, such as `/diff`. Its code
+names what is wrong with the folder: `workspace_folder_missing`, `workspace_folder_not_a_directory`
+or `workspace_folder_unreadable`. The Files pane shows **Project folder not found** with the old
+path and three actions:
 
 - **Locate folder…** picks the folder's new place and points the project there. Every chat in the
   project follows, with its history.
 - **Use "_folder_"** appears when Localix can tell for certain that a folder nearby is the same one,
-  moved or renamed. It is only a suggestion: nothing changes until you click it. Localix recognizes
-  a folder only if it saw it before the move while it was running, so after a restart there is no
-  suggestion and you locate the folder yourself.
+  moved or renamed. It is only a suggestion: nothing changes until you click it. Localix stores
+  which folder the project is (its disk, file number and creation time) each time it sees it, so a
+  folder renamed while Localix was closed is still suggested after the restart. A different folder
+  made with the old name is not.
 - **Try again** looks again, for a folder put back or a disk plugged in.
+
+**Settings → Projects → Folder → Change folder…** does what **Locate folder…** does, for a project
+whose folder is still there but should point somewhere else.
 
 What follows the project to the new folder:
 
@@ -85,7 +90,8 @@ What does not:
   folder's hooks, MCP servers and settings run", and a path does not prove it is the same folder.
   Localix reads that answer and never writes it. If the old folder was trusted and the new one is
   not, Localix says so; open the folder in Claude Code once to trust it.
-- A terminal that is already open keeps its old directory. Open a new one.
+- A terminal that is already open keeps its old directory. It says the folder moved and offers
+  **Restart in "_folder_"**, which opens a new shell in the same place inside the new folder.
 
 A project cannot move into a folder another project already uses, into your home folder or a disk
 root, or into the default project's folder.

@@ -36,6 +36,11 @@ export interface ProjectRecord {
    * rules come back with it.
    */
   deletedAt: string | null
+  /**
+   * Which folder `workingDir` was when last seen there (`folderIdentity` in `workspace-folder.ts`):
+   * what recognises it after a rename, across restarts. Null until it is first seen.
+   */
+  folderIdentity?: string | null
 }
 
 const mapProject = (row: {
@@ -48,6 +53,7 @@ const mapProject = (row: {
   created_at: string
   updated_at: string
   deleted_at: string | null
+  folder_identity: string | null
 }): ProjectRecord => ({
   id: row.id,
   seq: row.seq,
@@ -58,6 +64,7 @@ const mapProject = (row: {
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   deletedAt: row.deleted_at,
+  folderIdentity: row.folder_identity,
 })
 
 export function createProjectsRepository(db: Kysely<AppDatabase>) {
@@ -128,6 +135,7 @@ export function createProjectsRepository(db: Kysely<AppDatabase>) {
             created_at: record.createdAt,
             updated_at: record.updatedAt,
             deleted_at: record.deletedAt,
+            folder_identity: record.folderIdentity ?? null,
           })
           .execute()
         await announce(trx, record.userId, record.id, record.deletedAt ? 'deleted' : 'upserted')
@@ -148,6 +156,9 @@ export function createProjectsRepository(db: Kysely<AppDatabase>) {
             ...(patch.settings !== undefined ? { settings: patch.settings } : {}),
             ...(patch.updatedAt !== undefined ? { updated_at: patch.updatedAt } : {}),
             ...(patch.deletedAt !== undefined ? { deleted_at: patch.deletedAt } : {}),
+            ...(patch.folderIdentity !== undefined
+              ? { folder_identity: patch.folderIdentity }
+              : {}),
           })
           .where('user_id', '=', userId)
           .where('id', '=', id)
@@ -165,6 +176,19 @@ export function createProjectsRepository(db: Kysely<AppDatabase>) {
             ref: { id, userId },
           })
       })
+    },
+
+    /**
+     * Note which folder the project's path is. Not announced: nothing a client shows changes, and
+     * it is written whenever the folder is seen, which a client listing projects does.
+     */
+    async recordFolderIdentity(userId: string, id: string, identity: string): Promise<void> {
+      await db
+        .updateTable('projects')
+        .set({ folder_identity: identity })
+        .where('user_id', '=', userId)
+        .where('id', '=', id)
+        .execute()
     },
 
     /**

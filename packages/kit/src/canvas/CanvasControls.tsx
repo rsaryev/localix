@@ -39,7 +39,7 @@ export function CanvasControls({
           data-canvas-chrome=""
           className={cn(
             POPOVER_MATERIAL,
-            'absolute bottom-3 left-3 z-(--z-controls) flex items-center gap-2 rounded-lg border border-border-soft py-1 pl-3 pr-1 text-2xs text-text-soft',
+            'absolute bottom-3 left-3 z-(--z-controls) flex items-center gap-2 rounded-lg py-1 pl-3 pr-1 text-2xs text-text-soft',
           )}
         >
           <span>{gestureHint(interaction, formatModifierText('mod'))}</span>
@@ -52,7 +52,7 @@ export function CanvasControls({
         data-canvas-chrome=""
         className={cn(
           POPOVER_MATERIAL,
-          'absolute bottom-3 right-3 z-(--z-controls) flex items-center gap-0.5 rounded-lg border border-border-soft p-0.5',
+          'absolute bottom-3 right-3 z-(--z-controls) flex items-center gap-0.5 rounded-lg p-0.5',
         )}
       >
         <IconButton

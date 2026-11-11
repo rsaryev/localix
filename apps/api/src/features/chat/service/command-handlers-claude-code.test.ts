@@ -142,3 +142,18 @@ describe('/diff and /export', () => {
     expect(h.replies[1]).toContain('already exists')
   })
 })
+
+describe('a command that works in the folder, when the folder moved', () => {
+  test('/diff and /add-dir refuse as every folder-bound read does, rather than report no repository', async () => {
+    const gone = join(root(), 'moved-away')
+    const h = harness({ resolveSessionWorkingDir: async () => gone })
+    for (const command of ['/diff', `/add-dir ${root()}`]) {
+      await expect(h.run(command)).rejects.toMatchObject({
+        status: 409,
+        code: 'workspace_folder_missing',
+        detail: gone,
+      })
+    }
+    expect(h.replies).toEqual([])
+  })
+})

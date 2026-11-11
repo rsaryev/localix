@@ -171,9 +171,8 @@ pub(crate) fn build(
     let context = serde_json::json!({"id": label, "route": route});
     #[cfg(target_os = "macos")]
     {
-        builder = builder
-            .initialization_script("if(document.documentElement){document.documentElement.dataset.nativeTitlebar='true';}else{document.addEventListener('DOMContentLoaded',()=>{document.documentElement.dataset.nativeTitlebar='true';},{once:true});}")
-            .initialization_script(crate::display_options::script());
+        builder = crate::display_options::stamped(builder
+            .initialization_script("if(document.documentElement){document.documentElement.dataset.nativeTitlebar='true';}else{document.addEventListener('DOMContentLoaded',()=>{document.documentElement.dataset.nativeTitlebar='true';},{once:true});}"));
     }
     builder = builder.initialization_script(format!(
     "window.__LOCALIX_WORKSPACE={context};if(!location.hash && window.__LOCALIX_WORKSPACE.route) location.hash=window.__LOCALIX_WORKSPACE.route;"

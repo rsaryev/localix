@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { collectHostThemeCss } from '@/shared/lib/hostThemeVars'
+import { hostReducesTransparency } from '@/shared/theme/reducedTransparency'
 import { StateNotice } from '@localixai/kit/state-notice'
 import { ProblemLine, useProblemReport } from '@/shared/ui/problem-report'
 import { LoadingHint } from '@localixai/kit/empty-hint'
@@ -30,10 +31,15 @@ import { Button } from '@localixai/kit/button'
 
 interface HostThemeKey {
   appearance: string
+  /** The host's Reduce transparency, which the frame cannot query and is stamped with. */
+  reduceTransparency: boolean
 }
 
 function readHostThemeKey(): HostThemeKey {
-  return { appearance: document.documentElement.dataset.theme ?? 'dark' }
+  return {
+    appearance: document.documentElement.dataset.theme ?? 'dark',
+    reduceTransparency: hostReducesTransparency(),
+  }
 }
 
 /**
@@ -51,7 +57,7 @@ function useHostTheme(): HostThemeKey {
     })
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['data-theme'],
+      attributeFilter: ['data-theme', 'data-reduce-transparency'],
     })
     return () => observer.disconnect()
   }, [])
@@ -146,6 +152,7 @@ export function BridgedMiniAppView({
             docTheme.appearance === 'light' ? 'light' : 'dark',
             collectHostThemeCss(),
             nonce,
+            docTheme.reduceTransparency,
           )
         : null,
     [html, docTheme, nonce],
@@ -213,7 +220,7 @@ export function BridgedMiniAppView({
       </WorkbenchToolbar>
       <iframe
         ref={iframeRef}
-        key={`${reloadKey}:${docTheme.appearance}`}
+        key={`${reloadKey}:${docTheme.appearance}:${docTheme.reduceTransparency}`}
         title={title ?? `${miniAppName}:${viewName}`}
         sandbox="allow-scripts"
         srcDoc={srcDoc}

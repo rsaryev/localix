@@ -1,10 +1,11 @@
 /**
- * Shared material for app-level modal surfaces. Shape, border edges, layout and
- * animation remain specific to a centered dialog, confirmation or bottom drawer;
- * elevation and theme material must not drift between those form factors.
+ * The material of every modal: dialog, pane dialog, confirmation, bottom sheet. It is the raised
+ * surface (`POPOVER_MATERIAL`'s ground and single hairline) at modal elevation, so a menu and the
+ * dialog it opens are visibly one material. Shape, layout and motion stay with each form factor;
+ * the edge does not — callers add none (scripts/raised-surface-guard.test.ts).
  */
 export const modalSurface =
-  'lx-modal-surface bg-surface-raised text-popover-foreground shadow-(--shadow-drawer)'
+  'lx-modal-surface border border-border bg-popover text-popover-foreground shadow-(--shadow-drawer)'
 /** Modal shells clip; exactly one nested Body owns overflow. */
 export const modalShell = 'flex min-h-0 flex-col overflow-hidden'
 

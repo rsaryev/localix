@@ -160,7 +160,7 @@ export function ModelTaskColumn({
                   // is marked by its fill alone — the rail beside it never had a second marker.
                   'relative isolate flex w-full select-none flex-col items-start gap-0.5 rounded-md px-1.5 py-1.5 text-left transition-colors duration-(--dur-fast)',
                   CONTROL_FOCUS_WITHIN,
-                  isActive ? cn(SELECTED_ROW, 'shadow-none') : 'hover:bg-surface-hover',
+                  isActive ? SELECTED_ROW : 'hover:bg-surface-hover',
                 )}
               >
                 <button

@@ -35,31 +35,26 @@ default project's newest untouched chat instead of creating another empty one, s
 landing at once share one chat. **New chat** always starts a new conversation.
 
 A first run, with no saved layout, starts calm: the chat sidebar is collapsed, no file, Browser or
-terminal tab is open, a new chat fills the main column, and the setup dialog opens over it. The left
-rail and top bar stay visible, and the default project is selected. Opening the sidebar or a tab
-works as usual and is remembered, so later launches restore the layout you left.
+terminal tab is open, a new chat fills the main column, and the setup dialog opens over it with the
+workspace tips. Setup opens at launch until you close it once on this device; open it again from the
+command palette with **Set up Localix**. The left rail and top bar stay visible, and the default
+project is selected. Opening the sidebar or a tab works as usual and is remembered, so later
+launches restore the layout you left.
 
-**Set up Localix** has four steps, listed on the left with **Back** and **Next** below:
+The setup dialog pages through the workspace tips in setup order: appearance, the agent island (in
+the macOS app), connecting a model, connecting OpenRouter for decision models, mini apps, approvals
+and permission modes, project folders, `@` references, base keymaps, and the command palette. Each
+tip animates the real surface; all but three (approvals, `@` references and the command palette) end
+in the control itself. The appearance tip offers the window transparency only where the window has a
+material, in the macOS app.
 
-1. **Connect a model**: connect a provider, or **Use a local model** to run an open model on this
-   computer, then choose the model new conversations start on. It opens the message box's model
-   picker.
-2. **Choose a folder**: the folder the agent reads, edits and runs commands in; without one, each
-   conversation works in a scratch folder of its own. The step also lists the four permission modes.
-3. **Preferences**: theme and base keymap, and in the macOS app the window transparency and the
-   agent island.
-4. **How it works**: the command palette, `@` context, `/` commands, the Store, the Claude Code
-   files Localix reads where they are (with the number of Claude Code permission rules it found),
-   and decision models through OpenRouter.
+The OpenRouter tip opens the model picker on OpenRouter's **Sign in with OpenRouter**, the same
+sign-in the picker uses. With OpenRouter connected, Localix uses small, inexpensive decision models
+to drive the Browser toward a goal, and play games in mini apps. Once a connection exists, the tip
+shows **Connected**.
 
-Every step is optional, and a step setup finds already done (a model chosen, a folder open) shows a
-check. **Enter** moves to the next step unless a control has focus; each step's **Later** line links
-to the Settings page that changes the same thing. **Start chatting** closes setup onto the
-conversation.
-
-Setup opens at launch until you close it once on this device. Closing it any other way keeps the
-step you were on: **Set up Localix** in the command palette reopens it there. In a phone-sized
-window the step list becomes one menu above the step.
+Each opening starts at the first tip, and its last step, **Start chatting**, closes it onto the
+chat.
 
 An editor group with nothing open, such as one whose chat tab you closed, shows the Localix bird.
 

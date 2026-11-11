@@ -393,6 +393,17 @@ describe('roster — filtering', () => {
     const result = buildRoster({ summaries: [...rows, child], live, query: {} })
     expect(result.items.some((r) => r.key === child.key)).toBe(true)
   })
+
+  it('lists no empty transcript, which its agent cannot resume, unless it is live', () => {
+    const blank = summary('claude-code', 'blank', { empty: true })
+    const listed = buildRoster({ summaries: [...rows, blank], live, query: {} })
+    expect(listed.items.map((r) => r.key)).not.toContain(blank.key)
+    expect(listed.total).toBe(rows.length)
+    live.open({ terminalId: 't1', localixSessionId: 'lx-1', provider: 'claude-code' })
+    live.adopt('t1', 'blank')
+    const running = buildRoster({ summaries: [...rows, blank], live, query: {} })
+    expect(running.items.map((r) => r.key)).toContain(blank.key)
+  })
 })
 
 describe('a parent selects the sub-agents it spawned', () => {

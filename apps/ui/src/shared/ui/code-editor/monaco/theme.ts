@@ -52,10 +52,6 @@ export function defineLocalixMonacoTheme(monaco: MonacoApi): string {
   const border = cssColor('--control-border', light ? '#d4d4d4' : '#3f3f3f')
   const hover = cssColor('--surface-hover', light ? '#ededed' : '#252525')
   const active = cssColor('--surface-active', light ? '#e4e4e4' : '#303030')
-  // The highlighted-row state for anything sitting ON `elevated` (suggest widget, hover-doc status
-  // bar, the right-click menu) rather than on the editor body — `--popover-hover` stays lighter
-  // than `elevated` in every theme/mode the same way `hover` stays lighter than `background`.
-  const elevatedHover = cssColor('--popover-hover', light ? '#e9e9e9' : '#333333')
   const info = cssColor('--status-info', light ? '#2563eb' : '#60a5fa')
   const error = cssColor('--status-error', light ? '#c62828' : '#ef6b73')
   const warning = cssColor('--status-warning', light ? '#986700' : '#e5b454')
@@ -97,18 +93,18 @@ export function defineLocalixMonacoTheme(monaco: MonacoApi): string {
       'editorHoverWidget.background': elevated,
       'editorHoverWidget.foreground': foreground,
       'editorHoverWidget.border': border,
-      'editorHoverWidget.statusBarBackground': elevatedHover,
+      'editorHoverWidget.statusBarBackground': hover,
       'editorLink.activeForeground': info,
       'editorSuggestWidget.background': elevated,
       'editorSuggestWidget.foreground': foreground,
       'editorSuggestWidget.border': border,
-      'editorSuggestWidget.selectedBackground': elevatedHover,
+      'editorSuggestWidget.selectedBackground': hover,
       'editorSuggestWidget.selectedForeground': foreground,
       'editorSuggestWidget.highlightForeground': info,
       'editorSuggestWidget.focusHighlightForeground': info,
       'editorActionList.background': elevated,
       'editorActionList.foreground': foreground,
-      'editorActionList.focusBackground': elevatedHover,
+      'editorActionList.focusBackground': hover,
       'editorActionList.focusForeground': foreground,
       'editorStickyScroll.background': background,
       'editorStickyScrollGutter.background': background,
@@ -177,7 +173,7 @@ export function defineLocalixMonacoTheme(monaco: MonacoApi): string {
       'widget.shadow': '#00000047',
       'menu.background': elevated,
       'menu.foreground': foreground,
-      'menu.selectionBackground': elevatedHover,
+      'menu.selectionBackground': hover,
       'menu.selectionForeground': foreground,
       'menu.selectionBorder': border,
       'menu.separatorBackground': border,
@@ -188,17 +184,17 @@ export function defineLocalixMonacoTheme(monaco: MonacoApi): string {
       // `list.hoverBackground` / `list.hoverForeground` instead (see `defaultMenuStyles` in
       // vs/platform/theme/browser/defaultStyles.js). The `menu.*` pair stays because the standalone
       // select/dropdown widgets DO read it.
-      'list.hoverBackground': elevatedHover,
+      'list.hoverBackground': hover,
       'list.hoverForeground': foreground,
       // The command palette and Monaco's own `<select>` replacements, which otherwise fall back to
       // Monaco's built-in greys — a fixed colour that belongs to neither of this app's themes.
       'quickInput.background': elevated,
       'quickInput.foreground': foreground,
-      'quickInputTitle.background': elevatedHover,
+      'quickInputTitle.background': hover,
       'dropdown.background': elevated,
       'dropdown.foreground': foreground,
       'dropdown.border': border,
-      'keybindingLabel.background': elevatedHover,
+      'keybindingLabel.background': hover,
       'keybindingLabel.foreground': foreground,
       'keybindingLabel.border': border,
       'keybindingLabel.bottomBorder': border,

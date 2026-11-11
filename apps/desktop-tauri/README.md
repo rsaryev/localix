@@ -100,6 +100,15 @@ explicitly, so a capability file dropped into the directory does not widen the a
 corollary is the thing to remember: **a new capability file is inert until it is added to that
 list.**
 
+Capabilities gate **plugin** commands. The app's own `#[tauri::command]`s are not gated by them:
+with no `AppManifest` in `build.rs`, Tauri checks an app command only for a remote origin (`tauri`
+2.11.5, `webview/mod.rs:1823`), so every webview serving the app's own origin may call every app
+command. What keeps a browser page out is that its origin is remote and no capability has `remote`
+URLs, and that `native_browser::navigable` never loads the app's origin. Plugin views are
+opaque-origin `sandbox="allow-scripts"` frames with no invoke key. A standalone mini app runs in a
+plain `WKWebView` with no Tauri IPC at all.
+[`tauri-security.test.ts`](./scripts/tauri-security.test.ts) holds these lines.
+
 ### Who hands what to the OS
 
 | Target                                                    | Owner                                                                        | Why it is the owner                                                                                                                                         |
@@ -181,6 +190,63 @@ from release builds. It checks the native + action, close, clean quit, and tab o
 outer geometry after restart. Manual visual checks still cover vibrancy in both appearances,
 fullscreen, mouse-driven tab reordering and detaching, and the native + button's appearance.
 
+## The app icon
+
+One vector, `assets/logo.svg` (the bird), and one generator,
+[`scripts/app-icons.mjs`](../../scripts/app-icons.mjs), make every file in `src-tauri/icons/`. Never
+edit them by hand: `bun scripts/app-icons.mjs --write` redraws the set (macOS: it packs the `.icns`
+with `iconutil`), and `check:generated` fails when the set is stale or edited. `generated.json`
+records the digests that check compares.
+
+- **macOS** follows Apple's grid: an 824 px plate, 100 px from each edge of the 1024 canvas, with
+  corner radius 185.4. It has no baked shadow, because the system draws the shadow (HIG, "App
+  icons"). macOS 26 masks an `.icns` of that shape to its own rounded rectangle (WWDC25 session
+  220). The icon tested masked cleanly on 26.6, without the gray backing a full-bleed square gets.
+  macOS 13 to 15 show it as drawn. SVG `rx` is a circular corner, not Apple's continuous one; the
+  difference is visible only before 26. LLX Desk drew the same bird on a larger 896 plate, and that
+  plate stays for Windows and Linux, which mask nothing.
+- **Every raster** is drawn at its own size from the vector by `tauri icon`, so nothing is scaled up
+  from a smaller raster. `icon.png` (512) comes first in `bundle.icon`, because Linux takes its
+  window icon from the first PNG there.
+- **Menu bar**: `tray-template.png` is the bird alone in black, 36 px for an 18 pt bar at 2x, set
+  with `icon_as_template` so AppKit tints it for the bar. Windows and Linux trays show `64x64.png`
+  in colour.
+- **Badge**: the macOS Dock badge is the system's own (`NSDockTile` badge label, via
+  `set_badge_count`), as in LLX Desk. A count goes there; it never bounces or animates. Windows has
+  no numeric badge, so `badge-overlay.png` (a 32 px red dot) is set on every workspace window.
+- **Icon Composer (`.icon`)**: the bundler (2.10) accepts a `.icon` in `bundle.icon`. It compiles
+  the file with `actool` into `Assets.car` and sets `CFBundleIconName`, and the `.icns` stays as the
+  fallback for macOS before 26. To adopt it: author the layered icon in Icon Composer (the format is
+  undocumented, so never generate it), commit it next to the `.icns`, add it to `bundle.icon`, and
+  build releases with Xcode 26 or later selected (`xcode-select`), so `actool` is on `PATH`.
+
+## Tauri practices
+
+Rules this shell follows, checked against the Tauri 2 docs for the installed versions (`tauri`
+2.11.5, CLI 2.12.4):
+
+- **IPC**: a capability names its webviews explicitly and never matches `browser-*`. No capability
+  has `remote` URLs. Plugins the shell drives from Rust (`shell`, `updater`, `deep-link`,
+  `window-state`, `dialog`, `fs`) get no permission, and `removeUnusedCommands` stays on. An app
+  command that acts on a window checks its calling webview. A command that takes a path, URL or
+  label validates it in Rust: the page's checks are not the boundary.
+- **Content**: the CSP stays present, with `default-src 'self'`, `object-src 'none'`,
+  `base-uri 'self'` and no `'unsafe-eval'`. Tauri's nonce and hash injection stays on, and the asset
+  protocol stays off: files reach the page through the API sidecar. `withGlobalTauri` is read only
+  by `apps/ui/src/shared/lib/tauri.ts`.
+- **Navigation**: every Tauri webview gets `on_navigation` and `on_new_window`. App URLs stay;
+  loopback stays, for the Preview frame; `http(s)`, `mailto` and `tel` go to the system handler;
+  anything else is denied.
+- **Process**: the Bun sidecar binds `127.0.0.1` on a reserved port and receives only its port,
+  parent pid and launch id. It is stopped gracefully, then killed with its tree, on every exit path.
+  The updater is compiled only into release builds (`cfg(localix_updater)`), with its public key
+  from `updater.release.json`.
+- **Build**: the release profile is `lto = "fat"`, `codegen-units = 1`, `opt-level = "s"`,
+  `panic = "abort"` and `strip = true`. Devtools are not a `tauri` feature, so a release build has
+  none.
+
+`scripts/tauri-security.test.ts` guards the IPC and content rules.
+
 ## Source of truth
 
 - [Package scripts](./package.json)
@@ -189,6 +255,8 @@ fullscreen, mouse-driven tab reordering and detaching, and the native + button's
 - [Application composition](./src-tauri/src/lib.rs)
 - [Sidecar staging](./scripts/prepare-sidecar.mjs)
 - [Main-window capabilities](./src-tauri/capabilities/default.json)
+- [IPC and content guards](./scripts/tauri-security.test.ts)
+- [App icon generator](../../scripts/app-icons.mjs)
 - [Native chrome measurement](./src-tauri/src/native_chrome.rs)
 - [Window material](./src-tauri/src/window_material.rs)
 - [Native tab controls](./src-tauri/src/native_tab_controls.rs)

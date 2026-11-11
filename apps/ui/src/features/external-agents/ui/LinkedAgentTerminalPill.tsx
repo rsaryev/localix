@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
-import { ChevronDown, Terminal } from 'lucide-react'
-import { ComposerChip } from '@localixai/kit/composer-chip'
+import { Terminal } from 'lucide-react'
+import { ComposerChip, ComposerChipChevron } from '@localixai/kit/composer-chip'
 import { ActionTooltip } from '@localixai/kit/tooltip'
 import { useChatStore } from '@/entities/chat/model/store'
 import { findSessionInState } from '@/entities/chat/model/findSession'
@@ -81,7 +81,7 @@ export function LinkedAgentTerminalPill({ sessionId }: { sessionId: string | nul
             <ComposerChip aria-label="Link a coding agent" aria-busy={opening} disabled={opening}>
               <LocalixMark className="size-3.5 shrink-0" />
               <span>Localix</span>
-              <ChevronDown className="size-3.5 shrink-0 text-text-faint" aria-hidden="true" />
+              <ComposerChipChevron />
             </ComposerChip>
           </DropdownMenuTrigger>
         </ActionTooltip>

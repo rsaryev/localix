@@ -50,33 +50,19 @@ export class WorkspaceFolderUnavailableError extends ConflictError {
   }
 }
 
-/** What identifies a folder across a rename on its volume: its device, inode and birth time. */
-interface FolderIdentity {
-  dev: number
-  ino: number
-  birthtimeMs: number
-}
-
 /**
- * Identities of folders seen present, by path, in this process only.
+ * What identifies a folder across a rename on its volume: `<device>:<inode>:<birth time>`.
  *
- * Kept in memory on purpose: it is enough to recognise a folder renamed while the app runs (the
- * common case: a rename in Finder with the app open), and it never writes the person's database.
- * After a restart a folder that was already gone has no identity, and nothing is suggested.
+ * Stored with the project each time its folder is seen (`noteProjectFolder` in `relocate.ts`), so a
+ * folder renamed while the app was closed is still recognised on the next start. A file system with
+ * no birth time reports 0, and an inode reused by a new folder has a later birth time.
  */
-const seen = new Map<string, FolderIdentity>()
-const SEEN_LIMIT = 512
+const identityOf = (info: Stats): string => `${info.dev}:${info.ino}:${info.birthtimeMs}`
 
-const identityOf = (info: Stats): FolderIdentity => ({
-  dev: info.dev,
-  ino: info.ino,
-  birthtimeMs: info.birthtimeMs,
-})
-
-function remember(dir: string, identity: FolderIdentity): void {
-  seen.delete(dir)
-  seen.set(dir, identity)
-  if (seen.size > SEEN_LIMIT) seen.delete(seen.keys().next().value as string)
+/** The identity of the folder at `dir`, or null when no folder is there. */
+export async function folderIdentity(dir: string): Promise<string | null> {
+  const info = await stat(dir).catch(() => null)
+  return info?.isDirectory() ? identityOf(info) : null
 }
 
 const denied = (error: unknown) => {
@@ -98,7 +84,6 @@ export async function workspaceFolderState(dir: string): Promise<WorkspaceFolder
   } catch {
     return 'unreadable'
   }
-  remember(dir, identityOf(info))
   return 'present'
 }
 
@@ -113,17 +98,10 @@ const SEARCH_BUDGET = 2_000
 /** Folders the search never descends into: they are never a project's new home. */
 const SKIPPED = new Set(['node_modules', 'Library', 'Applications'])
 
-const sameFolder = (info: Stats, identity: FolderIdentity) =>
-  info.dev === identity.dev &&
-  info.ino === identity.ino &&
-  // A file system with no birth time reports 0 on both sides; an inode reused by a new folder
-  // has a later one.
-  info.birthtimeMs === identity.birthtimeMs
-
 const isDirectory = async (dir: string) => (await stat(dir).catch(() => null))?.isDirectory()
 
 /**
- * Where a folder this process saw went, when it can be told for certain: the same folder (same
+ * Where the folder with `identity` went, when it can be told for certain: the same folder (same
  * device, inode and birth time) among the children and grandchildren of the nearest ancestor that
  * still exists. That covers a rename in place and a move under a renamed parent; a move across
  * disks makes a new folder and is not found.
@@ -132,8 +110,10 @@ const isDirectory = async (dir: string) => (await stat(dir).catch(() => null))?.
  * remote, and a folder of the same name is not the same folder. The caller offers the answer; it
  * never re-points a project on its own.
  */
-export async function suggestMovedFolder(dir: string): Promise<string | null> {
-  const identity = seen.get(dir)
+export async function suggestMovedFolder(
+  dir: string,
+  identity: string | null | undefined,
+): Promise<string | null> {
   if (!identity || (await workspaceFolderState(dir)) !== 'missing') return null
   let base = path.dirname(dir)
   while (!(await isDirectory(base))) {
@@ -153,7 +133,7 @@ export async function suggestMovedFolder(dir: string): Promise<string | null> {
         if (!entry.isDirectory()) continue
         const candidate = path.join(parent, entry.name)
         const info = await stat(candidate).catch(() => null)
-        if (info && sameFolder(info, identity)) return candidate
+        if (info && identityOf(info) === identity) return candidate
         if (!entry.name.startsWith('.') && !SKIPPED.has(entry.name)) next.push(candidate)
       }
     }

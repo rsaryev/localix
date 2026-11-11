@@ -72,6 +72,11 @@ define_class!(
     }
 
     unsafe impl NSWindowDelegate for Controller {
+        #[unsafe(method(windowDidBecomeKey:))]
+        fn did_become_key(&self, _notification: &objc2_foundation::NSNotification) {
+            self.follow_display_options();
+        }
+
         #[unsafe(method(windowDidEnterFullScreen:))]
         fn did_enter_full_screen(&self, _notification: &objc2_foundation::NSNotification) {
             self.lay_out_title_row();
@@ -171,7 +176,8 @@ impl Controller {
             return;
         };
         match message.get("type").and_then(|kind| kind.as_str()) {
-            // The page's title row (`DRAG_SCRIPT`): move the window with the press, or zoom it.
+            // The page's title row (`DRAG_SCRIPT`): move the window with the press, or do what
+            // System Settings says a double-click does.
             Some("drag") => {
                 let app = NSApplication::sharedApplication(mtm);
                 if let (Some(window), Some(event)) = (self.ivars().window.get(), app.currentEvent())
@@ -179,9 +185,9 @@ impl Controller {
                     window.performWindowDragWithEvent(&event);
                 }
             }
-            Some("zoom") => {
+            Some("double-click") => {
                 if let Some(window) = self.ivars().window.get() {
-                    window.performZoom(None);
+                    crate::titlebar_double_click::perform(window);
                 }
             }
             Some("badge") => {

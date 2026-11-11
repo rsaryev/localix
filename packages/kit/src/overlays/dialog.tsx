@@ -112,16 +112,14 @@ function DialogContent({
         data-slot="dialog-content"
         data-layout={layout}
         className={cn(
-          // One modal surface family app-wide: the same raised surface + border +
-          // shadow the model-picker drawer uses (bg-surface-raised over the theme
-          // tokens), so dialogs and drawers read as one system.
+          // One modal material app-wide (ground, hairline, shadow), shared with the pane
+          // dialog, the confirmation and the bottom sheet.
           appearance === 'surface' ? modalSurface : 'text-popover-foreground',
           modalShell,
           // The shell never scrolls. Standard dialogs put content in DialogBody,
           // leaving Header/Footer pinned; edge-to-edge dialogs intentionally own
           // their internal viewport. `min-h-0` is required for nested flex scroll.
           'fixed top-1/2 left-1/2 z-(--z-modal) max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl p-0 text-xs/relaxed outline-none',
-          appearance === 'surface' && 'border border-control-border',
           // A working dialog arrives like every dialog; an edge-to-edge one (the command palette,
           // a quick input) answers a keystroke and keeps the quick overlay entrance.
           appearance === 'surface' &&
@@ -260,7 +258,7 @@ function PaneDialogContent({
         className={cn(
           modalSurface,
           modalShell,
-          'absolute top-[10%] left-1/2 z-(--z-overlay) max-h-[80%] w-[34rem] max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-xl border border-control-border p-0 text-xs/relaxed outline-none ring-1 ring-foreground/10',
+          'absolute top-[10%] left-1/2 z-(--z-overlay) max-h-[80%] w-[34rem] max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-xl p-0 text-xs/relaxed outline-none',
           OVERLAY_ENTER_EXIT,
           className,
         )}

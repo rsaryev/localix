@@ -25,3 +25,19 @@ export function mirrorReducedTransparency(
   if (query.matches) stamp(true)
   query.addEventListener('change', (event) => stamp(event.matches))
 }
+
+/** Whether the host page is stamped: the one fact a frame the host builds is told. */
+export function hostReducesTransparency(): boolean {
+  return document.documentElement.dataset.reduceTransparency === 'true'
+}
+
+/**
+ * The attributes of a host-built frame's `<html>`: its theme, and the stamp when the host has it.
+ * A frame is its own document, so the host's stamp does not reach it, and its own media query is as
+ * dead as the host's in WKWebView.
+ */
+export function frameRootAttributes(theme: 'light' | 'dark', reduceTransparency: boolean): string {
+  return reduceTransparency
+    ? `data-theme="${theme}" data-reduce-transparency="true"`
+    : `data-theme="${theme}"`
+}

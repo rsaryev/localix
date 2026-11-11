@@ -59,7 +59,7 @@ export function ConfirmDialog({
           className={cn(
             modalSurface,
             modalShell,
-            'fixed left-1/2 top-1/2 z-(--z-modal) max-h-[calc(100dvh-2rem)] w-[min(360px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-control-border p-0',
+            'fixed left-1/2 top-1/2 z-(--z-modal) max-h-[calc(100dvh-2rem)] w-[min(360px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl p-0',
             MODAL_ENTER_EXIT,
           )}
         >

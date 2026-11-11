@@ -4,7 +4,10 @@ import type { UiSession } from '@/shared/api/contracts'
 import { useChatStore } from '@/entities/chat/model/store'
 import { useAllSessions } from '@/entities/chat/model/useAllSessions'
 import { ChatSidebarHeader, HistorySearchField } from '@/entities/chat/ui/ChatSidebarHeader'
-import { ActivitySessionList } from '@/entities/chat/ui/ActivitySessionList'
+import {
+  ActivitySessionList,
+  VirtualActivitySessionList,
+} from '@/entities/chat/ui/ActivitySessionList'
 import { useSidebarSessions, type SortMode } from '@/entities/chat/model/useSidebarSessions'
 import { useSidebarDisclosure } from '@/entities/chat/model/useSidebarDisclosure'
 import { useSessionSelection, stepId } from '@/entities/chat/model/useSessionSelection'
@@ -121,7 +124,6 @@ export function ChatSidebar({
     scopeSessions,
     activeProject,
     search,
-    normalizedSearch,
     sortMode,
   })
   const { nativeHistory, nativeRows, visibleSessions } = history
@@ -326,22 +328,25 @@ export function ChatSidebar({
           >
             {visibleSessions.length > 0 && (
               <div className="flex flex-col gap-0.5">
-                <ActivitySessionList
-                  sessions={visibleSessions}
-                  renderSession={(session) => {
-                    const source = nativeRows.sources.get(session.id)
-                    return source
-                      ? [
-                          <NativeSessionRow
-                            key={session.id}
-                            session={session}
-                            source={source}
-                            onSelect={onSelect}
-                          />,
-                        ]
-                      : renderSessionTree(session)
-                  }}
-                />
+                {isExternal ? (
+                  <VirtualActivitySessionList
+                    sessions={visibleSessions}
+                    scrollRef={rosterRef}
+                    renderSession={(session) => {
+                      const source = nativeRows.sources.get(session.id)
+                      return (
+                        source && (
+                          <NativeSessionRow session={session} source={source} onSelect={onSelect} />
+                        )
+                      )
+                    }}
+                  />
+                ) : (
+                  <ActivitySessionList
+                    sessions={visibleSessions}
+                    renderSession={renderSessionTree}
+                  />
+                )}
               </div>
             )}
 

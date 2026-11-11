@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 /**
- * Whether the setup dialog (`widgets/setup`) is open. Shared, so the
+ * Whether the setup dialog (the workspace tips, `widgets/workspace-tips`) is open. Shared, so the
  * update dialog can wait while it is: two dialogs at once would hide one behind the other.
  */
 export const SETUP_DONE_KEY = 'localix.setup.done'

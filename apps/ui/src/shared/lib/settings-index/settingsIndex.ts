@@ -69,8 +69,17 @@ export const SETTINGS_INDEX: SettingsIndexEntry[] = [
     tabLabel: 'Project',
     title: 'Display name',
     description: 'Rename the selected project.',
-    keywords: ['project', 'name', 'folder'],
+    keywords: ['project', 'name'],
     anchor: 'project-name',
+  },
+  {
+    id: 'project.folder',
+    tab: 'project',
+    tabLabel: 'Project',
+    title: 'Folder',
+    description: 'Point the selected project at another folder, such as the one it moved to.',
+    keywords: ['project', 'folder', 'directory', 'path', 'moved', 'renamed', 'relocate'],
+    anchor: 'project-folder',
   },
   {
     id: 'project.instructions',

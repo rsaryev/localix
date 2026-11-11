@@ -51,7 +51,7 @@ export function createMenuRows(P: MenuRowPrimitives, subContentClass: string) {
   >(({ className, inset, children, ...props }, ref) => (
     <P.SubTrigger
       ref={ref}
-      className={cn(MENU_ITEM, 'data-[state=open]:bg-popover-hover', inset && 'pl-8', className)}
+      className={cn(MENU_ITEM, 'data-[state=open]:bg-surface-hover', inset && 'pl-8', className)}
       {...props}
     >
       {children}

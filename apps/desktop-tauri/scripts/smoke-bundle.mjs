@@ -6,6 +6,9 @@
 //   bun scripts/smoke-bundle.mjs [--bun <path>] [--resources <dir>] [--timeout <seconds>]
 //   bun scripts/smoke-bundle.mjs --root <dir>   find both inside a built or extracted app
 //
+// Given a macOS `.app` as `--root`, it first checks that the main binary and the bundled Bun load
+// on the macOS the app declares (`minimum-os.mjs`).
+//
 // It needs no Rust and no Tauri: only what `prepare-sidecar.mjs` stages. The runtime runs against a
 // throwaway home directory, so it never touches the user's `~/.localix`.
 import { spawn } from 'node:child_process'
@@ -222,6 +225,16 @@ async function main() {
       console.error(`[smoke-bundle] ${path} is missing; run scripts/prepare-sidecar.mjs first`)
       process.exit(2)
     }
+  }
+  if (root?.endsWith('.app') && process.platform === 'darwin') {
+    const { bundleMinimumOsProblems, declaredMinimumOs } = await import('./minimum-os.mjs')
+    const declared = declaredMinimumOs(join(staging.srcTauri, 'tauri.macos.conf.json'))
+    const problems = bundleMinimumOsProblems({ app: root, bun, declared })
+    if (problems.length > 0) {
+      for (const problem of problems) console.error(`[smoke-bundle] ${problem}`)
+      process.exit(1)
+    }
+    console.log(`[smoke-bundle] main binary and bundled Bun load on macOS ${declared}`)
   }
   const seconds = Number(option(args, '--timeout') ?? 30)
   const started = Date.now()

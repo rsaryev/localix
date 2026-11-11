@@ -1,3 +1,4 @@
+import { frameRootAttributes } from '@/shared/theme/reducedTransparency'
 import { EMBEDDED_VISUAL_PREFERENCES_CSS } from '@localixai/kit/embedded-visual-preferences'
 import { CLIENT_FRAME_DRAW } from './clientFrameDraw'
 import { CLIENT_FRAME_RUNTIME } from './clientFrameRuntime'
@@ -67,12 +68,14 @@ export interface ClientFrameInput {
   theme: 'light' | 'dark'
   /** The host's theme variables, as `name: value;` declarations. */
   themeCss: string
+  /** The host's Reduce transparency, which the frame cannot query. */
+  reduceTransparency: boolean
 }
 
 export function buildClientFrameDoc(input: ClientFrameInput): string {
   const boot = jsonForScript({ code: input.code, props: input.props ?? null })
   return `<!doctype html>
-<html data-theme="${input.theme}">
+<html ${frameRootAttributes(input.theme, input.reduceTransparency)}>
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="${CLIENT_FRAME_CSP}">

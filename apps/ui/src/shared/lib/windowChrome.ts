@@ -7,10 +7,14 @@
 // - `data-fullscreen="true"` in native fullscreen — the traffic lights
 //   auto-hide there, so the titlebar drops its reserved left padding.
 //
+// And on macOS, a double-click on the title row does what System Settings says
+// (`titlebarDoubleClick.ts`), not Tauri's unconditional maximize.
+//
 // Installed once from main.tsx; no-op outside the desktop shell.
 
-import { isDesktop } from '@localixai/kit/environment'
-import { tauriCurrentWindow, tauriListen } from './tauri'
+import { IS_MAC, isDesktop } from '@localixai/kit/environment'
+import { tauriCurrentWindow, tauriInvoke, tauriListen } from './tauri'
+import { installTitlebarDoubleClick } from './titlebarDoubleClick'
 
 /** Install window focus/blur + fullscreen tracking. Call once at startup. */
 export function installWindowChromeState(): void {
@@ -43,4 +47,7 @@ export function installWindowChromeState(): void {
   }
   stampFullscreen()
   tauriListen()?.('tauri://resize', stampFullscreen).catch(() => {})
+
+  const invoke = tauriInvoke()
+  if (IS_MAC && invoke) installTitlebarDoubleClick(window, invoke)
 }

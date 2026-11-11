@@ -52,7 +52,7 @@ export function Chip({
 /**
  * The chip that acts: the same pill as {@link Chip}, as a native button with the focus ring and a
  * hover fill. A tag that opens what else carries it, a category to browse instead.
- * Not ComposerChip (the glass pill floating over chat) and not TogglePill (it holds a pressed
+ * Not ComposerChip (the filled chip in the composer's row) and not TogglePill (it holds a pressed
  * state): a ChipButton just does something.
  */
 export function ChipButton({

@@ -271,13 +271,93 @@ under `prefers-reduced-motion: reduce`.
 
 ### One material, cut to several shapes
 
-`POPOVER_MATERIAL` is the floating glass — fill, frost marker, shadow and rim ring — with no
-geometry. `POPOVER_SURFACE` cuts it to a panel (`rounded-xl`), `FLOATING_SURFACE` to a strip at
-control radius (a toolbar over content, a tooltip), and the picker drawer takes it bare. They used
-to transcribe the material, and each copy dropped a different piece of it: the tooltip lost the rim
-ring, the toolbar the text colour. The fields have the same shape of rule in the SDK:
-`FIELD_SURFACE` is what makes a field look like a field, and `CONTROL_INVALID` is the one invalid
-state.
+`POPOVER_MATERIAL` is the raised material — fill, one hairline and shadow — with no geometry.
+`POPOVER_SURFACE` cuts it to a panel (`rounded-xl`), `FLOATING_SURFACE` to a strip at control radius
+(a toolbar over content, a tooltip), and `modalSurface` is the same recipe with the deeper shadow
+for dialogs and sheets. They used to transcribe the material, and each copy dropped or added a
+different piece of it: the tooltip lost the rim, the toolbar the text colour, and four dialogs added
+a second edge. The fields have the same shape of rule in the SDK: `FIELD_SURFACE` is what makes a
+field look like a field, and `CONTROL_INVALID` is the one invalid state.
+
+### Surfaces over the window
+
+Everything over the window is one of two things, and the two never mix.
+
+**On the glass: an ink fill.** A control that sits on the window (a composer chip, a secondary
+button, a field, a list row) is a veil of `--foreground` over whatever is under it, never an outline
+and never a ground. Its states are one ladder of densities in `window-material.css`, and each step
+must be denser than the last (`scripts/raised-surface-guard.test.ts` reads them):
+
+| Step     | Token                                                      | Dark | Light |
+| -------- | ---------------------------------------------------------- | ---- | ----- |
+| Rest     | `--field-fill` (also `--secondary`, `--muted`, `--accent`) | 6%   | 5%    |
+| Hover    | `--surface-hover`                                          | 9%   | 8%    |
+| Pressed  | `--surface-active` (also an open trigger)                  | 12%  | 11%   |
+| Selected | `--sidebar-accent`, through `SELECTED_ROW`                 | 14%  | 14%   |
+
+Before, a field rested at 9% and hovered at 7%, so hovering made it lighter. Selection carries no
+shadow; it is the densest fill and nothing else. The dark steps are kept low (6% to 14%) so a
+selected row inside a dark sheet is a soft lift of that sheet, not a grey bar. Focus-visible is the
+one `focus-ring` recipe on top of whatever fill the control has. Disabled keeps the rest fill at 50%
+opacity and loses hover. An inactive window changes nothing: selection is already neutral, never
+accent, so there is no emphasis to withdraw. A chip's counter badge (`Chip size="counter"`) is the
+same logic one step up: an `active` chip inside a composer chip is a denser fill, not a coloured
+dot. Composer chips share one metric (`COMPOSER_CHIP`: `text-xs`, `gap-1.5`, a `size-3.5` icon,
+`ComposerChipChevron` at `size-3`).
+
+**Raised: one opaque recipe.** A menu, popover, tooltip, dialog, palette or sheet hides what it
+covers. It is `--popover` (in dark, one small step above the window's ground and never a mid grey),
+one `border border-border` hairline, a shadow from the scale and the radius of its shape, with inner
+dividers in `--border-soft`. No ring, no second border and no blur: the recipe owns the edge, and a
+caller composing it adds geometry only (the guard refuses a `cn()` that composes a recipe and adds a
+border or ring).
+
+| Piece         | Token                                                                      | Dark                               | Light                               |
+| ------------- | -------------------------------------------------------------------------- | ---------------------------------- | ----------------------------------- |
+| Ground        | `--popover`                                                                | `oklch(0.185 0 0)`                 | `oklch(1 0 0)`                      |
+| Hairline      | `--border` (a 14% / 16% veil under glass)                                  | `oklch(0.235 0 0)` solid           | `oklch(0.88 0 0)` solid             |
+| Shadow, float | `--shadow-popover`: menu, popover, tooltip                                 | `0 8px 30px rgba(0,0,0,.5)`        | `0 4px 16px rgba(0,0,0,.12)`        |
+| Shadow, modal | `--shadow-drawer`: dialog, palette, sheet                                  | `0 24px 60px -20px rgba(0,0,0,.7)` | `0 16px 48px -12px rgba(0,0,0,.18)` |
+| Radius        | the shape's: panel `rounded-xl`, strip `rounded-md`, sheet `rounded-t-2xl` |                                    |                                     |
+| Row hover     | `--surface-hover` (`MENU_ITEM`)                                            | 9%                                 | 8%                                  |
+
+The shadows used to bake a 1px ring in, so a dialog that also had a border showed two edges. A pill
+that floats over scrolling content (`.lx-glass`, the scroll-to-latest pill) is a small raised
+surface: the same ground and hairline, hover changes the fill only.
+
+**Scrim: a dim fill, no blur.** `.lx-scrim` is `--scrim-fill` (dark `rgba(0,0,0,.6)`, light
+`rgba(20,26,38,.34)`); a picker sheet takes `.lx-scrim-light`, half of it, so the page stays
+readable for context.
+
+**Glass and solid are the same recipes.** Without the material (browsers, other desktops, Reduce
+transparency, full screen, Off) the veils resolve over an opaque ground and the hairline is the
+theme's solid `--border`; nothing else changes.
+
+**What an opaque surface cannot do.** A native menu, popover or sheet on macOS is a material: it is
+dark and takes the wallpaper's tint (a Dock tooltip over a dusk wallpaper measures about
+`rgb(39 41 50)`), and Apple says menus and sheets adopt Liquid Glass and popovers get their
+background from the system. An opaque `--popover` has no tint to take, so on a strongly tinted
+window it reads as a neutral plate however its lightness is tuned; translucency without a blur lets
+the content under it ghost through. The one recipe that matches native is a translucent dark fill
+with a `backdrop-filter` blur, which is a decision about the "no glass on glass" rule above and is
+not taken here.
+
+Contrast, computed for the solid grounds (the glass ground varies with the wallpaper):
+
+| Pair                                      | Dark | Light |
+| ----------------------------------------- | ---- | ----- |
+| `--foreground` on `--popover`             | 16.6 | 17.3  |
+| `--text-soft` on `--popover`              | 7.5  | 8.5   |
+| `--text-faint` on `--popover`             | 5.1  | 6.0   |
+| `--text-soft` on the selected fill        | 5.9  | 5.9   |
+| Selected fill against the ground          | 1.37 | 1.33  |
+| Rest fill against the ground              | 1.10 | 1.10  |
+| Glass hairline against `--popover`        | 1.45 | 1.39  |
+| Field edge (`--control-border`) on ground | 1.85 | 1.90  |
+
+Text clears 4.5:1 everywhere. Fills and hairlines are below 3:1 by design: none is the only cue. A
+selected row also changes text colour and weight, a hovered control is under the pointer, and a
+focused one carries the focus ring, which is what WCAG 1.4.11 measures.
 
 ### A pick is a menu, not a form
 
@@ -334,6 +414,7 @@ last column is what the corresponding check found on its first run.
 | A class that names a kit colour or radius names one the theme declares             | `scripts/ui-token-existence-guard.test.ts`         | 33    |
 | An overlay takes its motion from one recipe                                        | `packages/kit/src/overlays/overlay-motion.test.ts` | 7     |
 | The window ground paints no picture; floats do not frost; no dead media query      | `scripts/window-glass-guard.test.ts`               | 12    |
+| A raised surface has one edge and no frost; the ink fills climb                    | `scripts/raised-surface-guard.test.ts`             | 10    |
 
 The token-drift rules have one owner, `apps/api/src/contracts/ui-token-rules.ts`, and two readers:
 the guard above, over the app, and the style step of the authoring plugin's check (through the kit's

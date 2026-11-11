@@ -111,7 +111,13 @@ html[data-island='true'] #root {
     transition: opacity var(--dur-instant) var(--ease-soft);
   }
 }
-@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+/* Reduce transparency is told, not queried: WKWebView never matches its media query, so the shell
+   stamps `data-reduce-transparency` on this window as on every other (`display_options.rs`). */
+:root[data-reduce-transparency='true'] .lx-island-material {
+  background: var(--popover);
+  background-image: none;
+}
+@media (forced-colors: active) {
   .lx-island-material {
     background: var(--popover);
     background-image: none;

@@ -17,7 +17,12 @@ The External tab lists conversations. Sub-agent transcripts that a conversation 
 listed beside it. A sibling folder whose name only begins the same way, such as `app-old` next to
 `app`, is not part of the folder's history. Each row has the title the agent itself shows: a name
 set with `/rename` (or Codex's thread name), then the agent's generated title, then the first
-prompt.
+prompt. A rename appears in an open list without a rescan, and a cleared Codex name gives the row
+back its first prompt. A Claude Code transcript with no message, one that Claude Code itself neither
+lists nor resumes, is not listed unless it is running; its message count leaves out tool results.
+
+Search on the External tab matches the title, the folder and the session id, as the server reads
+them, so a session found by the folder it ran in stays in the list.
 
 The list reads only the start and end of each transcript, so it appears in about a second even on a
 history of several gigabytes. Localix keeps an index of what it read, so the next start reads only

@@ -4,12 +4,17 @@ import { CUSTOM_PRESET_ID, KEYMAP_PRESETS } from '@/shared/lib/keybindings'
 import { useKeybindingsEditor } from '../model/useKeybindings'
 
 /**
- * The base keymap picker, for Settings → Keyboard shortcuts and setup's Preferences step: the real
- * presets, plus a read-only "Custom" entry surfaced only while the live overrides match no preset
- * (e.g. a hand-edit). Each says what it is under its name: a line beside the field described only
- * the CURRENT preset, so comparing two meant applying one — which rewrites the whole keymap.
+ * The base keymap choice, for Settings → Keyboard shortcuts and the setup tips' keymap slide: the
+ * real presets, plus a read-only "Custom" entry surfaced only while the live overrides match no
+ * preset (e.g. a hand-edit). Each says what it is under its name: a line beside the field
+ * described only the CURRENT preset, so comparing two meant applying one — which rewrites the
+ * whole keymap. Choosing the current preset, or Custom, changes nothing.
  */
-export function BaseKeymapSelect() {
+export function useBaseKeymapChoice(): {
+  activePreset: string
+  options: SelectOption[]
+  choose: (id: string) => void
+} {
   const { activePreset, applyPreset } = useKeybindingsEditor()
   const options: SelectOption[] = useMemo(() => {
     const opts: SelectOption[] = KEYMAP_PRESETS.map((p) => ({
@@ -25,14 +30,21 @@ export function BaseKeymapSelect() {
       })
     return opts
   }, [activePreset])
+  const choose = (id: string) => {
+    if (id !== CUSTOM_PRESET_ID && id !== activePreset) applyPreset(id)
+  }
+  return { activePreset, options, choose }
+}
+
+/** The base keymap picker of Settings → Keyboard shortcuts. */
+export function BaseKeymapSelect() {
+  const { activePreset, options, choose } = useBaseKeymapChoice()
   return (
     <Select
       size="xl"
       aria-label="Base keymap"
       value={activePreset}
-      onValueChange={(id) => {
-        if (id !== CUSTOM_PRESET_ID && id !== activePreset) applyPreset(id)
-      }}
+      onValueChange={choose}
       options={options}
       className="w-52 shrink-0 @max-xl:w-full"
       contentClassName="w-80"

@@ -2,7 +2,8 @@
 /**
  * A generated file that is COMMITTED must match what its generator produces right now.
  *
- * There are two in this repository. The Rust half of the shell <-> runtime contract is the second
+ * There are three in this repository. The desktop icon set (`scripts/app-icons.mjs`) is the third.
+ * The Rust half of the shell <-> runtime contract is the second
  * (`scripts/runtime-contract.mjs`). The first is `apps/landing/public/sitemap.xml`, written by
  * `apps/landing/scripts/build-docs.mjs` from `docs/public-nav.json`. The rest of that generator's
  * output lives under `apps/landing/src/generated/`, which is gitignored — a build artifact, rebuilt
@@ -17,6 +18,7 @@
  * So the check is not "did you run the generator" but "does the generator still produce what is
  * committed": run it, then look for a dirty tree.
  */
+import { checkAppIcons } from './app-icons.mjs'
 import { checkRuntimeContract } from './runtime-contract.mjs'
 import { run } from './lib/run.mjs'
 
@@ -37,12 +39,20 @@ if (contractProblem) {
   process.exit(1)
 }
 
+// The desktop icon set is drawn from assets/logo.svg; its manifest's digests say whether the
+// committed rasters are still what that vector draws, without redrawing them (no renderer needed).
+const iconProblem = checkAppIcons()
+if (iconProblem) {
+  console.error(`[generated] ${iconProblem}`)
+  process.exit(1)
+}
+
 const status = run('git', ['status', '--porcelain', '--', ...GENERATED_PATHS])
 const dirty = status.stdout.trim()
 
 if (dirty === '') {
   console.log(
-    `[generated] ${GENERATED_PATHS.length + 1} committed generated file(s) match their generators.`,
+    `[generated] ${GENERATED_PATHS.length + 2} committed generated file(s) and sets match their generators.`,
   )
   process.exit(0)
 }

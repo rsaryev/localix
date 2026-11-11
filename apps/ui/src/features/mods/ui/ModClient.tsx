@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { hostReducesTransparency } from '@/shared/theme/reducedTransparency'
 import type { CSSProperties } from 'react'
 import useSWR from 'swr'
 import { collectHostThemeCss } from '@/shared/lib/hostThemeVars'
@@ -108,6 +109,7 @@ function ClientRegion({ scope, element }: { scope: ModClientScopeValue; element:
             fit,
             theme: currentTheme(),
             themeCss: collectHostThemeCss(),
+            reduceTransparency: hostReducesTransparency(),
           }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- a new document only for new code.
     [code],

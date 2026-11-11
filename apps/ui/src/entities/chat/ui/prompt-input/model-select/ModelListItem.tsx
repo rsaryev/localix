@@ -49,9 +49,9 @@ export function ModelListItem({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className={cn(
-        'group/model-row min-h-(--chrome-control-lg) cursor-pointer gap-2 rounded-md px-1.5 py-1 text-xs shadow-none transition-colors duration-(--dur-fast) data-selected:bg-surface-hover data-selected:text-foreground data-selected:shadow-none',
+        'group/model-row min-h-(--chrome-control-lg) cursor-pointer gap-2 rounded-md px-1.5 py-1 text-xs transition-colors duration-(--dur-fast) data-selected:bg-surface-hover data-selected:text-foreground',
         selected
-          ? cn(SELECTED_ROW, 'font-medium shadow-none data-selected:bg-sidebar-accent')
+          ? cn(SELECTED_ROW, 'font-medium data-selected:bg-sidebar-accent')
           : 'text-foreground',
       )}
     >

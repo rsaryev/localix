@@ -6,6 +6,7 @@ import { Textarea } from '@localixai/kit/textarea'
 import { backendClient } from '@/shared/api/client'
 import { PROJECT_CUSTOM_SYSTEM_PROMPT_MAX_CHARS, type Project } from '@/shared/api/contracts'
 import { inlineFailure } from '@/shared/lib/notifications/inlineReport'
+import { chooseProjectFolder } from '@/shared/lib/relocateProjectFolder'
 import { SettingsPage, SettingsSection, SettingsSurface } from './SettingsScaffold'
 import { SettingsActionActivity } from './SettingsActionActivity'
 
@@ -31,6 +32,7 @@ export function ProjectSettingsForm({ project, onDeleted, picker }: ProjectSetti
   const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [moving, setMoving] = useState(false)
   const [mutationError, setMutationError] = useState<string | null>(null)
   // Blur-driven name/prompt saves can happen back-to-back while tabbing through
   // the form. Preserve their intent order instead of racing two project patches,
@@ -110,6 +112,37 @@ export function ProjectSettingsForm({ project, onDeleted, picker }: ProjectSetti
           />
         </SettingsSurface>
       </SettingsSection>
+
+      {/* The default project's folder is what makes it the default; the server refuses a move. */}
+      {!project.isDefault && (
+        <SettingsSection
+          title="Folder"
+          anchor="project-folder"
+          scope="project"
+          description="Where the project works. Its chats follow with their history when it changes."
+        >
+          <SettingsSurface>
+            <div className="flex items-center justify-between gap-3">
+              <p className="min-w-0 truncate font-mono text-xs" title={project.workingDir}>
+                {project.workingDir}
+              </p>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="shrink-0"
+                disabled={moving}
+                aria-busy={moving || undefined}
+                onClick={() => {
+                  setMoving(true)
+                  void chooseProjectFolder(project.id).finally(() => setMoving(false))
+                }}
+              >
+                Change folder…
+              </Button>
+            </div>
+          </SettingsSurface>
+        </SettingsSection>
+      )}
 
       <SettingsSection
         title="Project instructions"

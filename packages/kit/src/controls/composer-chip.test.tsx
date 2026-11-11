@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { ComposerChip } from './composer-chip'
+import { COMPOSER_CHIP, ComposerChip } from './composer-chip'
 
 describe('ComposerChip', () => {
   test('owns one native context-control geometry and safe button semantics', () => {
@@ -14,9 +14,24 @@ describe('ComposerChip', () => {
     expect(html).toContain('max-w-[14rem]')
     expect(html).toContain('rounded-full')
     expect(html).toContain('focus-ring')
-    // The scroll-pill's glass material: the chip is its own trigger and holds still in a row.
-    expect(html).toContain('lx-glass lx-glass-self')
     expect(html).toContain('disabled:opacity-50')
+  })
+
+  test('is an ink fill on the window, with no outline as structure', () => {
+    const classes = COMPOSER_CHIP.split(' ')
+    // Rest, hover, pressed and open climb the shared ink steps.
+    expect(classes).toEqual(
+      expect.arrayContaining([
+        'bg-field-fill',
+        'hover:bg-surface-hover',
+        'active:bg-surface-active',
+        'aria-expanded:bg-surface-active',
+        'data-[state=open]:bg-surface-active',
+      ]),
+    )
+    // Not the floating pill's raised material, and no border or ring drawing the shape.
+    expect(classes.some((c) => c.startsWith('lx-glass'))).toBe(false)
+    expect(classes.some((c) => /^(?:border|ring)(?:-|$)/u.test(c))).toBe(false)
   })
 
   test('keeps strong and urgent states inside the same physical control', () => {
@@ -30,7 +45,7 @@ describe('ComposerChip', () => {
     )
 
     expect(html).toContain('data-tone="strong"')
-    // The glass rim replaces the border, so tones speak through text colour only.
+    // Tones speak through text colour only; the fill is the same for every tone.
     expect(html).toContain('text-foreground')
     expect(html).toContain('data-tone="danger"')
     expect(html).toContain('text-status-error')

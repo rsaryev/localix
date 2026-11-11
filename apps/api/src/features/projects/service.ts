@@ -20,7 +20,8 @@ import {
   resolveDefaultProject,
 } from './default-project'
 import { assertAbsolutePath, inspectPath } from './inspect-path'
-import { projectFolder, relocateProject } from './relocate'
+import { noteProjectFolder, projectFolder, relocateProject } from './relocate'
+import { folderIdentity } from './workspace-folder'
 import type { ProjectsServiceDeps } from './service-deps'
 
 export type { ProjectsServiceDeps } from './service-deps'
@@ -60,6 +61,7 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
       createdAt: timestamp,
       updatedAt: timestamp,
       deletedAt: null,
+      folderIdentity: await folderIdentity(input.workingDir.trim()),
     }
     await repo.insertProject(record)
     return toDto(record)
@@ -87,6 +89,8 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
     async listProjects(userId: string): Promise<{ projects: Project[] }> {
       await resolveDefaultProject(repo, userId, now)
       const rows = await repo.listProjects(userId)
+      // Each list notes which folder every project is, so one renamed later is recognised.
+      await Promise.all(rows.map((row) => noteProjectFolder(repo, row)))
       return { projects: rows.map(toDto) }
     },
 

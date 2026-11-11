@@ -75,6 +75,8 @@ const BOOTSTRAP_SOURCE = String.raw`
       });
     }
     root.setAttribute('data-theme', payload.theme);
+    if (payload.reduceTransparency === true) root.setAttribute('data-reduce-transparency', 'true');
+    else root.removeAttribute('data-reduce-transparency');
     root.style.colorScheme = payload.theme;
     return true;
   }

@@ -56,15 +56,14 @@ export const PICKER_ROW_META = 'shrink-0 text-2xs tabular-nums text-text-faint'
 /**
  * A single-line row of the picker, 32px — the `compact` row rung.
  *
- * Selected is the shared `SELECTED_ROW` fill made flat: the picker's columns separate by
- * dividers, so a selected row is a fill, never a lifted card (`shadow-none` drops the lift the
- * recipe carries for floating lists). Hover is `surface-hover`, the one 7% veil every list uses.
+ * Selected is the shared `SELECTED_ROW` fill and hover is `surface-hover`, the ink steps every
+ * list uses (docs/internals/visual-system.md, "Surfaces over the window").
  */
 export function pickerRow(active: boolean, className?: string) {
   return cn(
     'flex min-h-(--chrome-control-lg) w-full min-w-0 cursor-pointer select-none items-center gap-2 rounded-md px-1.5 text-left text-xs outline-none transition-colors duration-(--dur-fast) focus-ring',
     active
-      ? cn(SELECTED_ROW, 'font-medium shadow-none')
+      ? cn(SELECTED_ROW, 'font-medium')
       : 'text-text-soft hover:bg-surface-hover hover:text-foreground',
     className,
   )
