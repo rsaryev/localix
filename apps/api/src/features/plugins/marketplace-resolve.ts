@@ -1,20 +1,11 @@
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
-import { resolveEntryName, type MarketplaceEntry } from './marketplace'
-import {
-  hashString,
-  marketplacesRoot,
-  resolveEntrySource,
-  sourceMatchesRef,
-} from './marketplace-source'
+import { readMarketplace, resolveEntryName, resolveEntrySource, type MarketplaceEntry } from './kit'
+import { hashString, marketplacesRoot, sourceMatchesRef } from './marketplace-source'
 import { fetchEntryPlugin } from './marketplace-materialize'
 import { readsInPlace } from './marketplace-in-place'
-import {
-  findMarketplacesWithPlugin,
-  readKnownMarketplaces,
-  readMarketplace,
-} from './marketplace-catalog'
+import { findMarketplacesWithPlugin, readKnownMarketplaces } from './marketplace-catalog'
 import { withSourceHeaders } from './marketplace-headers'
 import { withEntryHelperHeaders } from './entry-headers-helper'
 import { assertMarketplaceAllowed, readManagedPolicy } from './claude-code-policy'
@@ -88,7 +79,7 @@ export async function resolveMarketplaceInstall(
 
   const registered = (byName ?? bySource?.[1])?.source
   if (registered) await assertMarketplaceAllowed(registered, deps.managedSettingsDir)
-  const market = await readMarketplace(marketplaceDir)
+  const market = await readMarketplace(marketplaceDir, registered)
   // Apply the catalog's `renames` map first: an old name redirects to its successor;
   // a null mapping throws "removed from marketplace" (informative, not "not found").
   const requested = resolveEntryName(market, ref.plugin)
@@ -100,26 +91,18 @@ export async function resolveMarketplaceInstall(
   if (!((await readManagedPolicy(deps.managedSettingsDir)).enabledPlugins[id] ?? true))
     throw new Error(`Plugin "${id}" is blocked by managed settings (enabledPlugins)`)
 
-  // Honor the catalog's `metadata.pluginRoot` so relative entry sources resolve
-  // against the declared plugins subdir (e.g. `./plugins`), not the marketplace root.
-  const resolved = resolveEntrySource(marketplaceDir, entry, {
-    pluginRoot: market.metadata?.pluginRoot,
-  })
+  // The kit resolves a bare name under `metadata.pluginRoot`, and refuses a relative source of a
+  // marketplace that brought only its marketplace.json (one added by URL or from settings).
+  const resolved = resolveEntrySource(marketplaceDir, entry, registered)
   const base = {
     entry,
     marketplace: ref.marketplace,
-    ...(market.allowCrossMarketplaceDependenciesOn
-      ? { allowCrossMarketplaceDependenciesOn: market.allowCrossMarketplaceDependenciesOn }
+    ...(market.allowCrossMarketplaceDependenciesOn.length
+      ? { allowCrossMarketplaceDependenciesOn: [...market.allowCrossMarketplaceDependenciesOn] }
       : {}),
     ...(renamedFrom ? { renamedFrom } : {}),
   }
   if ('localPath' in resolved) {
-    // A hosted catalog brought only its marketplace.json: there is no tree to resolve against.
-    const hosted = known[ref.marketplace]?.source
-    if (hosted?.source === 'url')
-      throw new Error(
-        `Marketplace "${ref.marketplace}" was added from a URL, so its relative source "${typeof entry.source === 'string' ? entry.source : JSON.stringify(entry.source)}" cannot be fetched; the entry needs a github, url or git-subdir source`,
-      )
     if (!(await fs.stat(resolved.localPath).catch(() => null))?.isDirectory())
       throw new Error(`Source path does not exist: ${resolved.localPath}`)
     const inPlace = readsInPlace(byName ?? bySource?.[1], root) ? { inPlace: true } : {}

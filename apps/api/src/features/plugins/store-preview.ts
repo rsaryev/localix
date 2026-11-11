@@ -6,7 +6,8 @@ import { InvalidRequestError } from '../../lib/domain-errors'
 import { errorMessage } from '../../lib/errors'
 import { rmrf } from '../ext/install-tree'
 import { defaultMarketplaceOf } from './default-marketplaces'
-import { readKnownMarketplaces, readMarketplace } from './marketplace-catalog'
+import { parseMarketplace, readCatalogJson } from './kit'
+import { readKnownMarketplaces } from './marketplace-catalog'
 import { materializeMarketplace } from './marketplace-materialize'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
 import { hashString, parseMarketplaceInput } from './marketplace-source'
@@ -28,14 +29,13 @@ export async function previewMarketplace(
   const staging = join(deps.root, `.preview-${Math.abs(hashString(input))}`)
   try {
     await materializeMarketplace(source, staging, deps)
-    const market = await readMarketplace(staging)
+    const raw = await readCatalogJson(staging)
+    const market = parseMarketplace(raw, source)
     const known = await readKnownMarketplaces(deps.root)
-    const view = marketView(market.name, { source, installLocation: staging }, market)
+    const view = marketView(market.name, { source, installLocation: staging }, raw, market)
     const publishers = [
-      ...market.plugins.map((entry) =>
-        typeof entry.author === 'string' ? entry.author : entry.author?.name,
-      ),
-      typeof market.owner === 'string' ? market.owner : market.owner?.name,
+      ...market.plugins.map((entry) => entry.display.author?.name),
+      market.owner.name,
     ].filter((name): name is string => !!name)
     return {
       kind: 'plugin',

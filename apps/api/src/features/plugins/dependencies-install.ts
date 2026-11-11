@@ -91,7 +91,7 @@ function toDependencyStep(
   // The DECLARED plugin.json version wins over the entry's (Claude Code), so the raw manifest is
   // read (zod defaults to "0.0.0"); entry dependencies take precedence over the manifest's.
   const rawVersion = probe?.rawManifest?.version
-  const entryDeps = (r.entry as Record<string, unknown>).dependencies
+  const entryDeps = r.entry.dependencies
   return {
     name: r.entry.name,
     marketplace: r.marketplace,

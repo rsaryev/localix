@@ -3,11 +3,10 @@ import { resolve } from 'node:path'
 import { isPathBelow, isPathWithin } from '../../lib/path-containment'
 import { rmrf } from '../ext/install-tree'
 import { marketplaceNameProblem } from './claude-code-marketplace'
-import type { Marketplace } from './marketplace'
+import { readMarketplace, type Marketplace } from './kit'
 import {
   keptPreferences,
   readKnownMarketplaces,
-  readMarketplace,
   writeKnownMarketplaces,
   type KnownMarketplace,
 } from './marketplace-catalog'

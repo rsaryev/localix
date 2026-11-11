@@ -6,7 +6,7 @@ import { tempDirPerTest, writeTree } from '@localixai/testing'
 
 import { fetchUrl, stubFetch } from '../../testing/fetch-stub'
 import { addMarketplace, readKnownMarketplaces } from './marketplace-registry'
-import { readMarketplace } from './marketplace-catalog'
+import { readMarketplace } from './kit'
 import { parseMarketplaceInput } from './marketplace-source'
 
 /**

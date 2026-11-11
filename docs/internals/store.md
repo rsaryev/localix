@@ -753,4 +753,4 @@ and sends back the ids it showed.
 - [Store UI](../../apps/ui/src/features/store/ui/StoreView.tsx)
 - [Mini app store service](../../apps/api/src/features/mini-apps/store.ts)
 - [Plugin marketplaces](../../apps/api/src/features/plugins/service-marketplaces.ts)
-- [Marketplace entry schema](../../apps/api/src/features/plugins/marketplace.ts)
+- [Marketplace entry schema](../../apps/api/src/features/plugins/kit/marketplace/catalog.ts)

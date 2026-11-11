@@ -3,8 +3,8 @@ import { join } from 'node:path'
 
 import { tempDirPerTest } from '@localixai/testing'
 
-import type { MarketplaceEntry } from './marketplace'
-import { resolveEntrySource } from './marketplace-entry-source'
+import type { MarketplaceEntry } from './kit'
+import { resolveEntrySource } from './kit'
 import { gitRefProblem, gitUrlProblem } from './marketplace-git-args'
 import { fetchEntryPlugin, materializeMarketplace } from './marketplace-materialize'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'

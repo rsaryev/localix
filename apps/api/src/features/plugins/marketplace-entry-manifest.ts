@@ -4,7 +4,7 @@ import { join, posix } from 'node:path'
 import { MANIFEST_DIR, MANIFEST_FILE } from '@localixai/claude-plugin'
 
 import { findManifestPath } from './discovery'
-import type { MarketplaceEntry } from './marketplace'
+import type { MarketplaceEntry } from './kit'
 import { isRecord } from '../../lib/record'
 import { rmrf } from '../ext/install-tree'
 
@@ -60,8 +60,19 @@ const ENTRY_WINS = [
   'defaultEnabled',
 ] as const
 
+/** The entry's manifest fields as one object, as plugin.json writes them (the kit reads them apart). */
 const raw = (entry: MarketplaceEntry): Record<string, unknown> =>
-  entry as unknown as Record<string, unknown>
+  Object.fromEntries(
+    Object.entries({
+      ...entry.components,
+      ...entry.display,
+      displayName: entry.displayName,
+      description: entry.description,
+      version: entry.version,
+      defaultEnabled: entry.defaultEnabled,
+      dependencies: entry.dependencies,
+    }).filter(([, value]) => value !== undefined),
+  )
 
 /** The inline component fields present on an entry (raw passthrough values). */
 export function entryComponentOverrides(entry: MarketplaceEntry): Record<string, unknown> {
@@ -118,7 +129,7 @@ function combineHooks(existing: unknown, added: Record<string, unknown>): unknow
 /** A `strict: false` entry that declares components conflicts with the plugin's plugin.json. */
 function assertCombinable(entry: MarketplaceEntry): void {
   const declared = [...COMBINED_FIELDS, 'hooks'].filter((f) => raw(entry)[f] !== undefined)
-  if (entry.strict === false && declared.length)
+  if (!entry.strict && declared.length)
     throw new Error(
       `Plugin ${entry.name} has conflicting manifests: both plugin.json and marketplace entry specify components`,
     )
@@ -151,7 +162,7 @@ export function mergeEntryOverrides(
 
 /** True when the entry's source is the marketplace root itself (`.` or `./`). */
 const sourceIsRoot = (entry: MarketplaceEntry): boolean =>
-  typeof entry.source === 'string' && ['.', './', ''].includes(entry.source.trim())
+  entry.source.kind === 'relative' && entry.source.path === '.'
 
 const listedSkills = (entry: MarketplaceEntry): string[] =>
   toList(raw(entry).skills)
@@ -176,8 +187,8 @@ async function keepListedSkills(dir: string, entry: MarketplaceEntry): Promise<M
     children.filter((name) => !keep.has(name)).map((name) => rmrf(join(dir, 'skills', name))),
   )
   const outside = listed.filter((p) => !underDefault(p)).map((p) => `./${p}`)
-  const { skills: _listed, ...rest } = raw(entry)
-  return (outside.length ? { ...rest, skills: outside } : rest) as unknown as MarketplaceEntry
+  const { skills: _listed, ...rest } = entry.components
+  return { ...entry, components: outside.length ? { ...rest, skills: outside } : rest }
 }
 
 /** True when installing the entry trims its copy's skills, which a folder read in place cannot. */

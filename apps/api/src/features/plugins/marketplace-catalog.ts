@@ -1,20 +1,8 @@
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
-import {
-  marketplaceSchema,
-  usableEntries,
-  validateMarketplace,
-  type Marketplace,
-  type MarketplaceRelevance,
-} from './marketplace'
+import { catalogKnows, readMarketplace, type Marketplace } from './kit'
 import { marketplacesRoot, type MarketplaceSource } from './marketplace-source'
-import {
-  locateManifest,
-  MARKETPLACE_CATALOG_FILE,
-  MARKETPLACE_MANIFEST_CANDIDATES,
-} from './manifest-locate'
-import { CLAUDE_CODE_MARKETPLACE } from './claude-code-marketplace'
 import { errorMessage } from '../../lib/errors'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
 
@@ -65,31 +53,10 @@ export async function writeKnownMarketplaces(
   await fs.rename(aside, knownFile(root))
 }
 
-/** Locate a marketplace catalog: `.localix-plugin/marketplace.json`, else Claude Code's. */
-export async function findMarketplaceManifest(dir: string): Promise<string | null> {
-  return locateManifest(dir, MARKETPLACE_MANIFEST_CANDIDATES)
-}
-
-/**
- * Read + deterministically validate a marketplace catalog from a materialized dir. As in Claude
- * Code, each entry is validated on its own: an invalid one is left out, not the marketplace.
- */
-export async function readMarketplace(dir: string): Promise<Marketplace> {
-  const manifestPath = await findMarketplaceManifest(dir)
-  if (!manifestPath)
-    throw new Error(`No ${MARKETPLACE_CATALOG_FILE} or ${CLAUDE_CODE_MARKETPLACE} found in ${dir}`)
-  const raw = usableEntries(JSON.parse(await fs.readFile(manifestPath, 'utf8')) as unknown)
-  const { errors } = validateMarketplace(raw)
-  if (errors.length) throw new Error(`Invalid marketplace.json: ${errors.join('; ')}`)
-  return marketplaceSchema.parse(raw)
-}
-
 /** Per-entry summary carried on a marketplace listing row (UI/agent surfaces). */
 export interface MarketplaceListingPlugin {
   name: string
   description?: string
-  /** CC `relevance` hints, parsed + typed. Suggestion ranking is deferred (unused yet). */
-  relevance?: MarketplaceRelevance
 }
 
 /** One row in the merged marketplace listing. */
@@ -113,7 +80,6 @@ function toListingPlugins(market: Marketplace): MarketplaceListingPlugin[] {
   return market.plugins.map((p) => ({
     name: p.name,
     ...(p.description ? { description: p.description } : {}),
-    ...(p.relevance ? { relevance: p.relevance } : {}),
   }))
 }
 
@@ -125,7 +91,7 @@ export async function listMarketplaces(
   return Promise.all(
     Object.entries(known).map(async ([name, rec]): Promise<MarketplaceListing> => {
       try {
-        const marketplace = await readMarketplace(rec.installLocation)
+        const marketplace = await readMarketplace(rec.installLocation, rec.source)
         return { name, count: marketplace.plugins.length, plugins: toListingPlugins(marketplace) }
       } catch (err) {
         return { name, count: 0, plugins: [], unsupported: errorMessage(err) }
@@ -143,10 +109,12 @@ export async function marketplaceDependencyAllowList(
   deps: MarketplaceRegistryDeps,
 ): Promise<string[]> {
   try {
-    const dir = (await readKnownMarketplaces(deps.root ?? marketplacesRoot()))[name]
-      ?.installLocation
-    if (!dir) return []
-    return (await readMarketplace(dir)).allowCrossMarketplaceDependenciesOn ?? []
+    const known = (await readKnownMarketplaces(deps.root ?? marketplacesRoot()))[name]
+    if (!known) return []
+    return [
+      ...(await readMarketplace(known.installLocation, known.source))
+        .allowCrossMarketplaceDependenciesOn,
+    ]
   } catch {
     return []
   }
@@ -161,19 +129,12 @@ export async function findMarketplacesWithPlugin(
   deps: MarketplaceRegistryDeps,
 ): Promise<string[]> {
   const root = deps.root ?? marketplacesRoot()
-  const dirs: Array<[string, string]> = Object.entries(await readKnownMarketplaces(root)).map(
-    ([mName, rec]) => [mName, rec.installLocation],
-  )
   const probed = await Promise.all(
-    dirs.map(async ([mName, dir]) => {
+    Object.entries(await readKnownMarketplaces(root)).map(async ([mName, rec]) => {
       try {
-        const market = await readMarketplace(dir)
-        // A rename KEY also counts as "has the plugin": resolution then follows the
-        // redirect (old→new) or surfaces the informative "removed" error (null).
-        const has =
-          market.plugins.some((p) => p.name === name) ||
-          (market.renames ? name in market.renames : false)
-        return has ? mName : null
+        // A renamed name counts too: resolution then follows it or says it was removed.
+        const market = await readMarketplace(rec.installLocation, rec.source)
+        return catalogKnows(market, name) ? mName : null
       } catch {
         // unreadable catalog — skip
         return null

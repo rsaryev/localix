@@ -2,7 +2,7 @@ import { basename } from 'node:path'
 import { readCatalog } from '@rsaryev/llx-plugin'
 import { loadPlugin, type Plugin } from '@rsaryev/llx-plugin/loading'
 import type { PluginIssue } from '@rsaryev/llx-plugin/format'
-import { parsePluginSource, readEntry } from '@rsaryev/llx-plugin/marketplace'
+import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
 import { CC_INERT_HOOK_EVENTS, isInertCcHookEvent } from '../../../cc-hooks/contracts'
 import type { DiscoveredPlugin } from '../../discovery-types'
 import { diskFiles } from '../ports/files'
@@ -20,18 +20,14 @@ const MINI_APP = '.localix-mini-app/mini-app.json'
 const MINI_APP_REFUSAL =
   'This folder is a mini app (.localix-mini-app/mini-app.json), not a plugin: add it from the Store'
 
-/** What else names the plugin: its marketplace entry (raw, as the marketplace lists it), a name. */
+/** What else names the plugin: its marketplace entry (as the kit read the catalog), a name. */
 export interface FolderSource {
-  readonly entry?: unknown
+  readonly entry?: MarketplaceEntry
   /** The name of a plugin with neither a manifest nor an entry; the folder's name otherwise. */
   readonly name?: string
 }
 
 export type CatalogPlugin = Omit<DiscoveredPlugin, 'scope' | 'projectId'>
-
-/** The marketplace entry as the kit reads it; one it cannot read leaves the plugin to its own manifest. */
-const entryOf = (raw: unknown) =>
-  raw === undefined ? undefined : readEntry(raw, { index: 0, context: {} }, parsePluginSource).entry
 
 /** An issue as one line: its message, then where it is unless the message already says so. */
 export const issueLine = ({ message, path }: PluginIssue): string =>
@@ -120,7 +116,7 @@ export async function readPluginFolder(
   const disk = diskFiles(dir)
   const fallbackName = from.name ?? basename(dir)
   if (await disk.exists(MINI_APP)) return empty(dir, fallbackName, MINI_APP_REFUSAL, [])
-  const entry = entryOf(from.entry)
+  const { entry } = from
   // The kit merges the entry with `plugin.json` itself (`mergeEntryWithManifest`).
   const loaded = await loadPlugin({
     files: disk,

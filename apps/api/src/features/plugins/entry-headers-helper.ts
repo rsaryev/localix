@@ -9,7 +9,7 @@ import { errorMessage } from '../../lib/errors'
 import { isCredentialEnvName } from '../../lib/credential-env-name'
 import { childEnvNonInteractive } from '../../lib/login-shell-env'
 import { claudeConfigDir } from '../cc-settings/config-dir'
-import { stringHeaders } from './marketplace-entry-source'
+import { withoutRoutingHeaders } from './kit'
 import { helperCommandProblem } from './marketplace-headers'
 
 const execFileAsync = promisify(execFile)
@@ -76,10 +76,12 @@ export async function entryHelperHeaders(input: {
   } catch {
     parsed = undefined
   }
-  const headers = stringHeaders(parsed)
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
     throw new Error(`headersHelper "${input.command}" did not print a JSON object`)
-  return headers ?? {}
+  const strings = Object.entries(parsed).filter(
+    (entry): entry is [string, string] => typeof entry[1] === 'string',
+  )
+  return { ...withoutRoutingHeaders(Object.fromEntries(strings)) }
 }
 
 /** An archive source with its accepted helper's headers merged in (the helper's win a name). */

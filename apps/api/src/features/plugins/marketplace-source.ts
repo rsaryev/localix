@@ -154,7 +154,6 @@ export function parseMarketplaceRef(ref: string): { plugin: string; marketplace:
 }
 
 // Entry-source resolution lives in its own module; re-exported for the existing import surface.
-export { resolveEntrySource, type ResolvedEntrySource } from './marketplace-entry-source'
 
 /** Tiny stable hash for temp-dir names (avoids Date.now()/Math.random() in resumable paths). */
 export function hashString(s: string): number {

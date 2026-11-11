@@ -11,9 +11,13 @@ import {
 } from '@localixai/store'
 
 import { defaultMarketplaceOf } from './default-marketplaces'
-import type { Marketplace, MarketplaceEntry } from './marketplace'
+import {
+  parseMarketplace,
+  resolveEntrySource,
+  type Marketplace,
+  type MarketplaceEntry,
+} from './kit'
 import type { KnownMarketplace } from './marketplace-catalog'
-import { resolveEntrySource } from './marketplace-entry-source'
 import type { PluginContents } from './store-contents'
 import { entryCuration } from './store-editorial'
 
@@ -28,27 +32,33 @@ export interface MarketView {
   name: string
   record: KnownMarketplace
   market: Marketplace
+  /** The catalog as written, for the keys only Localix reads (`store-editorial.ts`). */
+  raw: unknown
   trust: Trust
   weight: number
   editorial: boolean
   label: string
 }
 
-export function marketView(name: string, record: KnownMarketplace, market: Marketplace) {
+export function marketView(
+  name: string,
+  record: KnownMarketplace,
+  raw: unknown,
+  market: Marketplace = parseMarketplace(raw, record.source),
+) {
   const known = defaultMarketplaceOf(name, record.source)
   const { trust, weight, editorial } = known?.entry ?? COMMUNITY_SOURCE
   return {
     name,
     record,
     market,
+    raw,
     trust,
     weight,
     editorial,
     label: known?.entry.label ?? name,
   } satisfies MarketView
 }
-
-const nameOf = (who: Marketplace['owner']) => (typeof who === 'string' ? who : who?.name)
 
 /** Where the marketplace's own repository is, for an entry that lives inside it. */
 function repositoryOf(record: KnownMarketplace): string | null {
@@ -61,9 +71,7 @@ function repositoryOf(record: KnownMarketplace): string | null {
 /** The entry's normalized origin (`identity.ts`), or none when it cannot be resolved. */
 export function entryOrigin(view: MarketView, entry: MarketplaceEntry): string | undefined {
   try {
-    const at = resolveEntrySource(view.record.installLocation, entry, {
-      pluginRoot: view.market.metadata?.pluginRoot,
-    })
+    const at = resolveEntrySource(view.record.installLocation, entry, view.record.source)
     if ('localPath' in at) {
       const path = relative(view.record.installLocation, at.localPath)
       const repo = repositoryOf(view.record)
@@ -71,7 +79,7 @@ export function entryOrigin(view: MarketView, entry: MarketplaceEntry): string |
     }
     if ('git' in at) {
       // A branch or tag names the package; a pinned commit (`sha`) is one version of it.
-      const ref = (entry.source as { ref?: unknown }).ref
+      const ref = 'ref' in entry.source ? entry.source.ref : undefined
       return gitOrigin({
         url: at.git.url,
         ...(at.git.subdir ? { path: at.git.subdir } : {}),
@@ -102,13 +110,7 @@ export function pluginListing(
   },
 ): Listing {
   const id = `${entry.name}@${view.name}`
-  const keywords = (entry as Record<string, unknown>).keywords
-  const tags = [
-    ...(entry.tags ?? []),
-    ...(Array.isArray(keywords)
-      ? keywords.filter((word): word is string => typeof word === 'string')
-      : []),
-  ]
+  const tags = [...(entry.tags ?? []), ...(entry.display.keywords ?? [])]
   const origin = entryOrigin(view, entry)
   const curation = entryCuration(view, entry)
   return {
@@ -119,12 +121,12 @@ export function pluginListing(
     ...(entry.category ? { category: entry.category } : {}),
     tags: [...new Set(tags)],
     publisher: {
-      name: nameOf(entry.author) ?? nameOf(view.market.owner) ?? view.name,
+      name: entry.display.author?.name ?? view.market.owner.name,
       verified: view.trust !== 'community',
     },
     source: { id: view.name, label: view.label, trust: view.trust, weight: view.weight },
     ...(entry.version ? { version: entry.version } : {}),
-    ...(entry.homepage ? { homepage: entry.homepage } : {}),
+    ...(entry.display.homepage ? { homepage: entry.display.homepage } : {}),
     ...(origin ? { origin } : {}),
     ...(curation.suggestFor ? { suggestFor: curation.suggestFor } : {}),
     contents: state.contents ? countsOf(state.contents) : 'unknown',

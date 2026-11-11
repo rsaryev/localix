@@ -376,5 +376,5 @@ Code unchanged: panes, the band above the message box, buttons and their hotkeys
 - [Hook events and the inert ones](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/contracts.ts)
 - [MCP variable expansion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/ext/user-config-substitute.ts)
 - [Claude Code marketplace names](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/claude-code-marketplace.ts)
-- [Marketplace entry sources](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/marketplace-entry-source.ts)
+- [Marketplace entry sources](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/marketplace/entry-source.ts)
 - [Layout tests](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/claude-code-layout.test.ts)

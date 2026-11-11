@@ -1,6 +1,7 @@
 import { readCollections, readCuration, type Curation, type Editorial } from '@localixai/store'
 
-import type { MarketplaceEntry } from './marketplace'
+import { isRecord } from '../../lib/record'
+import type { MarketplaceEntry } from './kit'
 import type { MarketView } from './store-listing'
 
 /**
@@ -13,12 +14,16 @@ import type { MarketView } from './store-listing'
 
 /** An entry's curation, or none when its marketplace is not editorial. */
 export function entryCuration(view: MarketView, entry: MarketplaceEntry): Curation {
-  return view.editorial ? readCuration((entry as Record<string, unknown>).localix) : {}
+  if (!view.editorial) return {}
+  const plugins = isRecord(view.raw) && Array.isArray(view.raw.plugins) ? view.raw.plugins : []
+  const written = plugins.find((one) => isRecord(one) && one.name === entry.name)
+  return readCuration(isRecord(written) ? written.localix : undefined)
 }
 
 export function marketEditorial(view: MarketView): Editorial | null {
   if (!view.editorial) return null
-  const localix = (view.market.metadata as Record<string, unknown> | undefined)?.localix
+  const metadata = isRecord(view.raw) ? view.raw.metadata : undefined
+  const localix = isRecord(metadata) ? metadata.localix : undefined
   const collections = readCollections(
     (localix as Record<string, unknown> | undefined)?.collections,
     (name) => ({

@@ -137,3 +137,28 @@ export {
 } from './skill-catalog'
 export { preloadedSkillTexts, skillTexts, type SkillText } from './skill-texts'
 export { scopeSkills, type ScopeSkills } from './scope-skills'
+export { skillPromptInput, type SkillOrigin, type SkillPromptInput } from './mods/skill-prompt'
+export {
+  catalogKnows,
+  marketplaceOrigin,
+  parseMarketplace,
+  readCatalogJson,
+  readMarketplace,
+  relativeEntryPath,
+  resolveEntryName,
+  type Marketplace,
+  type MarketplaceEntry,
+  type PluginSource,
+} from './marketplace/catalog'
+export { resolveEntrySource, type ResolvedEntrySource } from './marketplace/entry-source'
+export { withoutRoutingHeaders } from '@rsaryev/llx-plugin/marketplace'
+export {
+  clampReason,
+  contextUsage,
+  MOD_LIMITS,
+  modNameProblem,
+  promptDroppedText,
+  unansweredCommandReply,
+  withheldResultText,
+  type ToolCallEnd,
+} from './mods/values'

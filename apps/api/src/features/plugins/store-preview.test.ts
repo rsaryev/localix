@@ -32,8 +32,9 @@ describe('a marketplace read before it is added', () => {
       kind: 'plugin',
       id: 'acme',
       label: 'acme',
-      publishers: ['Ada', 'Grace', 'Acme'],
-      count: 3,
+      // The kit leaves out an entry whose author is a string (its schema takes { name }).
+      publishers: ['Ada', 'Acme'],
+      count: 2,
       icons: [],
       verified: false,
       added: false,

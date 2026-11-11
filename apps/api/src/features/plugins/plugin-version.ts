@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 
-import type { MarketplaceEntry } from './marketplace'
+import type { MarketplaceEntry } from './kit'
 
 /**
  * THE VERSION OF AN INSTALLED PLUGIN, computed as Claude Code computes it (loading.md, "How Claude
@@ -52,26 +52,36 @@ export function resolvePluginVersion(input: {
 
 const FULL_SHA = /^[0-9a-f]{7,40}$/i
 
-/**
- * What an entry's `source` tells about its version before anything is fetched. A git source pinned
- * to a commit (`sha`, or a `commit`/`ref` that is one) knows its commit and never moves; an unpinned
- * one learns it from the remote. The caller fills a relative entry's commit from its marketplace.
- */
-export function entryVersionFacts(
-  entry: Pick<MarketplaceEntry, 'name' | 'source'>,
-): VersionSourceFacts {
-  const src = entry.source
-  if (typeof src === 'string') return { kind: 'relative' }
-  const obj = src as Record<string, unknown>
-  if (obj.source === 'npm' || typeof obj.npm === 'string' || typeof obj.package === 'string')
-    return { kind: 'npm' }
-  if (obj.source === 'archive')
-    return typeof obj.sha256 === 'string'
-      ? { kind: 'archive', sha256: obj.sha256 }
-      : { kind: 'archive' }
-  const pin = [obj.sha, obj.commit, obj.ref].find(
-    (value): value is string => typeof value === 'string' && FULL_SHA.test(value),
-  )
-  const subdir = typeof obj.path === 'string' ? { subdir: obj.path } : {}
+type Source = MarketplaceEntry['source']
+type FactsOf<K extends Source['kind']> = (
+  source: Extract<Source, { kind: K }>,
+) => VersionSourceFacts
+
+/** A git source pinned to a commit (`sha`, or a `ref` that is one) knows it and never moves. */
+const gitFacts = (source: { sha?: string; ref?: string; path?: string }): VersionSourceFacts => {
+  const pin = [source.sha, source.ref].find((value) => value !== undefined && FULL_SHA.test(value))
+  const subdir = source.path === undefined ? {} : { subdir: source.path }
   return pin ? { kind: 'git', commitSha: pin, ...subdir, pinned: true } : { kind: 'git', ...subdir }
 }
+
+const FACTS: { readonly [K in Source['kind']]: FactsOf<K> } = {
+  relative: () => ({ kind: 'relative' }),
+  github: (source) => gitFacts({ ...source, path: undefined }),
+  url: (source) => gitFacts({ ...source, path: undefined }),
+  'git-subdir': gitFacts,
+  npm: () => ({ kind: 'npm' }),
+  archive: (source) =>
+    source.sha256 === undefined ? { kind: 'archive' } : { kind: 'archive', sha256: source.sha256 },
+  command: () => ({ kind: 'relative' }),
+}
+
+const factsOf = <K extends Source['kind']>(source: Extract<Source, { kind: K }>) =>
+  (FACTS[source.kind] as FactsOf<K>)(source)
+
+/**
+ * What an entry's `source` tells about its version before anything is fetched: a git source
+ * pinned to a commit knows it, an unpinned one learns it from the remote. The caller fills a
+ * relative entry's commit from its marketplace.
+ */
+export const entryVersionFacts = (entry: Pick<MarketplaceEntry, 'source'>): VersionSourceFacts =>
+  factsOf(entry.source)

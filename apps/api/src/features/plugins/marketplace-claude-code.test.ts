@@ -10,12 +10,11 @@ import {
   addMarketplace,
   listMarketplaces,
   parseMarketplaceInput,
-  resolveEntrySource,
   resolveMarketplaceInstall,
   updateMarketplace,
   type MarketplaceRegistryDeps,
 } from './marketplace-registry'
-import type { MarketplaceEntry } from './marketplace'
+import { kitEntry } from './kit/testing'
 import { loadManifest } from './manifest-load'
 import { fetchUrl, stubFetch } from '../../testing/fetch-stub'
 
@@ -174,7 +173,7 @@ describe('Claude Code catalogs through the registry', () => {
 
     await expect(
       resolveMarketplaceInstall({ plugin: 'local-one', marketplace: 'acme-tools' }, deps),
-    ).rejects.toThrow('was added from a URL')
+    ).rejects.toThrow('cannot resolve')
     const res = await resolveMarketplaceInstall({ plugin: 'mono', marketplace: 'acme-tools' }, deps)
     expect(clones).toEqual([
       { url: 'https://github.com/acme/monorepo.git', ref: 'a'.repeat(40), sparse: 'tools/mono' },
@@ -188,36 +187,14 @@ describe('Claude Code catalogs through the registry', () => {
     const upstream = join(dir(), 'up')
     writeTree(upstream, {
       '.claude-plugin/marketplace.json': catalog([
-        { name: 'evil', source: { source: 'url', url: 'https://h/r.git', path: '/etc' } },
+        { name: 'evil', source: { source: 'git-subdir', url: 'https://h/r.git', path: '/etc' } },
       ]),
     })
     const { deps } = registry(join(dir(), 'up'))
     await addMarketplace({ source: 'local', path: upstream }, deps)
     await expect(
       resolveMarketplaceInstall({ plugin: 'evil', marketplace: 'acme-tools' }, deps),
-    ).rejects.toThrow('escapes the repository')
-  })
-})
-
-describe('plugin source kinds', () => {
-  it('git-subdir takes owner/repo shorthand; archive and command are recognized', () => {
-    const entry = (source: unknown) => ({ name: 'p', source }) as unknown as MarketplaceEntry
-    expect(
-      resolveEntrySource('/m', entry({ source: 'git-subdir', url: 'o/r', path: 'p' })),
-    ).toEqual({ git: { url: 'https://github.com/o/r.git', subdir: 'p' } })
-    expect(
-      resolveEntrySource(
-        '/m',
-        entry({ source: 'archive', url: 'https://x.example/p.zip', sha256: 'AB' }),
-      ),
-    ).toEqual({ archive: { url: 'https://x.example/p.zip', sha256: 'ab' } })
-    expect(() =>
-      resolveEntrySource('/m', entry({ source: 'archive', url: 'http://x.example/p.zip' })),
-    ).toThrow('https://')
-    expect(() => resolveEntrySource('/m', entry({ source: 'command', command: 'x' }))).toThrow(
-      'does not run',
-    )
-    expect(resolveEntrySource('/m', entry('.'))).toEqual({ localPath: '/m' })
+    ).rejects.toThrow('must be inside the repository')
   })
 })
 
@@ -228,12 +205,12 @@ describe('an entry whose source is the marketplace root', () => {
       'skills/xlsx/SKILL.md': '---\nname: xlsx\ndescription: Sheets\n---\nBody\n',
       'skills/pdf/SKILL.md': '---\nname: pdf\ndescription: PDFs\n---\nBody\n',
     })
-    const entry = {
+    const entry = kitEntry({
       name: 'document-skills',
       source: './',
       strict: false,
       skills: ['./skills/xlsx'],
-    } as unknown as MarketplaceEntry
+    })
     await applyEntryManifestOverrides(plugin, entry)
     const loaded = await loadManifest(plugin, 'global', '')
     expect(loaded.error).toBeUndefined()

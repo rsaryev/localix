@@ -9,14 +9,15 @@ import { pathExists } from '../ext/fs-discovery'
 import { isRecord } from '../../lib/record'
 import type { DiscoveredPlugin } from './discovery-types'
 import {
+  parseMarketplace,
   readClaudeSettings,
+  resolveEntrySource,
   type ClaudeSettingsInput,
   type FolderSource,
+  type MarketplaceEntry,
   type SettingsFile,
 } from './kit'
 import { loadManifest } from './manifest-load'
-import { resolveEntrySource } from './marketplace-entry-source'
-import type { MarketplaceEntry } from './marketplace'
 import { withWorkflowCommands } from './workflow-commands'
 
 /**
@@ -122,6 +123,7 @@ function applicable(records: InstallRecord[], cwd: string | null): InstallRecord
 }
 
 interface Listing {
+  /** The entry as the kit read the catalog; the kit merges it with the plugin's manifest. */
   entry: MarketplaceEntry
   /** Where a relative-path entry loads from, inside the marketplace's folder. */
   localPath?: string
@@ -133,19 +135,16 @@ async function marketplaceListing(known: unknown, id: string): Promise<Listing |
   const record = at > 0 && isRecord(known) ? known[id.slice(at + 1)] : undefined
   if (!isRecord(record) || typeof record.installLocation !== 'string') return undefined
   const catalog = await readJsonFile(join(record.installLocation, MARKETPLACE_FILE))
-  if (!isRecord(catalog) || !Array.isArray(catalog.plugins)) return undefined
-  const entry = catalog.plugins.find(
-    (item): item is MarketplaceEntry => isRecord(item) && item.name === id.slice(0, at),
-  )
-  if (!entry) return undefined
-  if (typeof entry.source !== 'string') return { entry }
-  const pluginRoot = isRecord(catalog.metadata) ? catalog.metadata.pluginRoot : undefined
+  const name = id.slice(0, at)
+  let entry: MarketplaceEntry | undefined
   try {
-    const resolved = resolveEntrySource(
-      record.installLocation,
-      entry,
-      typeof pluginRoot === 'string' ? { pluginRoot } : {},
-    )
+    entry = parseMarketplace(catalog, record.source).plugins.find((one) => one.name === name)
+  } catch {
+    return undefined
+  }
+  if (!entry) return undefined
+  try {
+    const resolved = resolveEntrySource(record.installLocation, entry, record.source)
     return 'localPath' in resolved ? { entry, localPath: resolved.localPath } : { entry }
   } catch {
     return { entry }
@@ -156,8 +155,8 @@ async function marketplaceListing(known: unknown, id: string): Promise<Listing |
  * What names the plugin besides its folder: its marketplace entry, merged into its manifest by the
  * kit (`kit/catalog`), and the id's name for a plugin with neither (not its cache folder, a version).
  */
-export const entrySource = (id: string, entry: MarketplaceEntry | undefined): FolderSource => ({
-  ...(entry ? { entry } : {}),
+export const entrySource = (id: string, entry?: MarketplaceEntry): FolderSource => ({
+  ...(entry === undefined ? {} : { entry }),
   name: id.slice(0, id.lastIndexOf('@')) || id,
 })
 

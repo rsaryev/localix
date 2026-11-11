@@ -35,7 +35,7 @@ test('an unreadable registered catalog stays listed but contributes no plugins o
         name: 'broken',
         count: 0,
         plugins: [],
-        unsupported: expect.stringContaining('No .localix-plugin/marketplace.json'),
+        unsupported: expect.stringContaining('No .claude-plugin/marketplace.json'),
       },
     ])
     expect(await findMarketplacesWithPlugin('anything', deps)).toEqual([])

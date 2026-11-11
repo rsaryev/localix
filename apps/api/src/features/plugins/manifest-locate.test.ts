@@ -3,17 +3,12 @@ import { promises as fs } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import {
-  locateManifest,
-  MARKETPLACE_MANIFEST_CANDIDATES,
-  PLUGIN_MANIFEST_CANDIDATES,
-} from './manifest-locate'
+import { locateManifest, PLUGIN_MANIFEST_CANDIDATES } from './manifest-locate'
 import { MANIFEST_FILE as CLAUDE_CODE_PLUGIN_MANIFEST } from '@localixai/claude-plugin'
-import { CLAUDE_CODE_MARKETPLACE } from './claude-code-marketplace'
 
 /**
  * Shared manifest-locating core: first existing candidate wins, candidate order is the
- * precedence order, and each caller reads exactly one branded location.
+ * precedence order.
  */
 
 let dir: string
@@ -35,7 +30,6 @@ async function touch(rel: string): Promise<void> {
 describe('locateManifest', () => {
   it('returns null when no candidate exists', async () => {
     expect(await locateManifest(dir, PLUGIN_MANIFEST_CANDIDATES)).toBeNull()
-    expect(await locateManifest(dir, MARKETPLACE_MANIFEST_CANDIDATES)).toBeNull()
   })
 
   it('candidate order is the precedence order (first existing wins)', async () => {
@@ -52,19 +46,6 @@ describe('locateManifest', () => {
     await touch(CLAUDE_CODE_PLUGIN_MANIFEST)
     expect(await locateManifest(dir, PLUGIN_MANIFEST_CANDIDATES)).toBe(
       join(dir, CLAUDE_CODE_PLUGIN_MANIFEST),
-    )
-  })
-
-  it("marketplace candidates: .localix-plugin/marketplace.json, then Claude Code's", async () => {
-    await touch('marketplace.json')
-    expect(await locateManifest(dir, MARKETPLACE_MANIFEST_CANDIDATES)).toBeNull()
-    await touch(CLAUDE_CODE_MARKETPLACE)
-    expect(await locateManifest(dir, MARKETPLACE_MANIFEST_CANDIDATES)).toBe(
-      join(dir, CLAUDE_CODE_MARKETPLACE),
-    )
-    await touch('.localix-plugin/marketplace.json')
-    expect(await locateManifest(dir, MARKETPLACE_MANIFEST_CANDIDATES)).toBe(
-      join(dir, '.localix-plugin', 'marketplace.json'),
     )
   })
 })

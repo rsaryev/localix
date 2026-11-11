@@ -8,7 +8,6 @@ import {
   marketplaceAutoUpdate,
   setMarketplaceAutoUpdate,
 } from './marketplace-auto-update'
-import { readMarketplace } from './marketplace-catalog'
 import {
   addMarketplace,
   listMarketplaces,
@@ -26,7 +25,7 @@ import {
   rememberDefaultMarketplaceRemoval,
 } from './default-marketplaces'
 import type { PluginService } from './service-types'
-import { resolveEntryName, type Marketplace } from './marketplace'
+import { readMarketplace, resolveEntryName, type Marketplace } from './kit'
 
 /** What became of an installed plugin's entry: still listed, renamed, or removed. */
 function entryFate(
@@ -80,11 +79,13 @@ export function createMarketplaceMethods(deps: {
     )
   /** The entries an update leaves for the person: Claude Code skips a `headersHelper` entry. */
   const manualEntries = async (name: string): Promise<Set<string>> => {
-    const dir = (await readKnownMarketplaces(root))[name]?.installLocation
-    const market = dir ? await readMarketplace(dir).catch(() => null) : null
+    const known = (await readKnownMarketplaces(root))[name]
+    const market = known
+      ? await readMarketplace(known.installLocation, known.source).catch(() => null)
+      : null
     return new Set(
       (market?.plugins ?? [])
-        .filter((entry) => (entry as Record<string, unknown>).headersHelper !== undefined)
+        .filter((entry) => entry.headersHelper !== undefined)
         .map((entry) => entry.name),
     )
   }
@@ -145,7 +146,9 @@ export function createMarketplaceMethods(deps: {
       const warnings: string[] = []
       const root = registryDeps.root ?? marketplacesRoot()
       const known = (await readKnownMarketplaces(root))[refreshed.name]
-      const market = known ? await readMarketplace(known.installLocation).catch(() => null) : null
+      const market = known
+        ? await readMarketplace(known.installLocation, known.source).catch(() => null)
+        : null
       for (const row of await owned(userId, refreshed.name)) {
         if (manualNames.has(parseMarketplaceRef(row.source)?.plugin ?? row.name)) {
           manual.push(row.name)

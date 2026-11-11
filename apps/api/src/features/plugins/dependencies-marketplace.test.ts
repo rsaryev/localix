@@ -4,6 +4,7 @@
  * `{ name, marketplace }` resolves in that marketplace, still under the root's allowlist.
  */
 import { describe, expect, it } from 'bun:test'
+import { kitEntry } from './kit/testing'
 
 import { isApiError } from '../../lib/errors'
 import {
@@ -19,7 +20,7 @@ const step = (name: string, marketplace: string): ResolvedDependencyStep => ({
   name,
   marketplace,
   dir: `/mkt/${marketplace}/${name}`,
-  entry: { name, source: `./${name}` },
+  entry: kitEntry({ name, source: `./${name}` }),
   dependencies: [],
 })
 

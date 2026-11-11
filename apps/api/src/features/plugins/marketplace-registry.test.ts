@@ -13,7 +13,6 @@ import {
   readKnownMarketplaces,
   removeMarketplace,
   resolveBareInstall,
-  resolveEntrySource,
   resolveMarketplaceInstall,
   updateMarketplace,
   type MarketplaceRegistryDeps,
@@ -117,145 +116,6 @@ describe('parseMarketplaceRef', () => {
   })
 })
 
-describe('resolveEntrySource', () => {
-  it('resolves a relative source inside the marketplace dir', () => {
-    expect(resolveEntrySource('/mkt', { name: 'x', source: './plugins/x' })).toEqual({
-      localPath: '/mkt/plugins/x',
-    })
-  })
-  it('rejects a .. escape', () => {
-    expect(() => resolveEntrySource('/mkt', { name: 'x', source: '../escape' })).toThrow()
-  })
-  it('returns git coordinates for an object git-subdir source', () => {
-    const r = resolveEntrySource('/mkt', {
-      name: 'x',
-      source: {
-        source: 'git-subdir',
-        url: 'https://h/r.git',
-        path: 'plugins/x',
-        ref: 'v1',
-      } as never,
-    })
-    expect(r).toEqual({ git: { url: 'https://h/r.git', subdir: 'plugins/x', ref: 'v1' } })
-  })
-  it('prefers a sha pin over a ref for git sources', () => {
-    const r = resolveEntrySource('/mkt', {
-      name: 'x',
-      source: { url: 'https://h/r.git', ref: 'main', sha: 'deadbeef' } as never,
-    })
-    expect(r).toEqual({ git: { url: 'https://h/r.git', ref: 'deadbeef' } })
-  })
-  it('resolves a bare-name source under the catalog pluginRoot; ./ paths stay at the root', () => {
-    expect(
-      resolveEntrySource('/mkt', { name: 'x', source: 'x' }, { pluginRoot: './plugins' }),
-    ).toEqual({ localPath: '/mkt/plugins/x' })
-    // Claude Code: pluginRoot has no effect on a source that already starts with `./`.
-    expect(
-      resolveEntrySource('/mkt', { name: 'x', source: './plugins/x' }, { pluginRoot: './plugins' }),
-    ).toEqual({ localPath: '/mkt/plugins/x' })
-  })
-  it('a pluginRoot cannot let an entry escape the marketplace root', () => {
-    expect(() =>
-      resolveEntrySource('/mkt', { name: 'x', source: '../../etc' }, { pluginRoot: './plugins' }),
-    ).toThrow()
-  })
-  it('resolves an npm source to registry coordinates', () => {
-    const r = resolveEntrySource('/mkt', {
-      name: 'x',
-      source: { source: 'npm', package: '@scope/pkg', version: '^2.0.0' } as never,
-    })
-    expect(r).toEqual({ npm: { package: '@scope/pkg', version: '^2.0.0' } })
-  })
-  it('rejects an npm source with an invalid package name', () => {
-    expect(() =>
-      resolveEntrySource('/mkt', {
-        name: 'x',
-        source: { source: 'npm', package: 'https://github.com/o/r/x.tgz' } as never,
-      }),
-    ).toThrow(/git host/)
-  })
-
-  // Source-variant coverage over representative entries from the official
-  // official public marketplace schema.
-  describe('real marketplace.json source variants', () => {
-    it('github {repo, commit, sha} — sha wins, repo → https url', () => {
-      // entry: fullstory
-      const r = resolveEntrySource('/mkt', {
-        name: 'fullstory',
-        source: {
-          source: 'github',
-          repo: 'fullstorydev/fullstory-skills',
-          commit: '1ec5865e',
-          sha: 'b20614e2',
-        } as never,
-      })
-      expect(r).toEqual({
-        git: { url: 'https://github.com/fullstorydev/fullstory-skills.git', ref: 'b20614e2' },
-      })
-    })
-    it('github {repo, commit} with no sha — commit is the checkout target', () => {
-      const r = resolveEntrySource('/mkt', {
-        name: 'gh-commit-only',
-        source: { source: 'github', repo: 'owner/repo', commit: 'abc123' } as never,
-      })
-      expect(r).toEqual({ git: { url: 'https://github.com/owner/repo.git', ref: 'abc123' } })
-    })
-    it('url {url, path, sha} — subdir + sha pin (atomic-agents)', () => {
-      const r = resolveEntrySource('/mkt', {
-        name: 'atomic-agents',
-        source: {
-          source: 'url',
-          url: 'https://github.com/BrainBlend-AI/atomic-agents.git',
-          path: 'plugin/atomic-agents',
-          sha: '94220182',
-        } as never,
-      })
-      expect(r).toEqual({
-        git: {
-          url: 'https://github.com/BrainBlend-AI/atomic-agents.git',
-          subdir: 'plugin/atomic-agents',
-          ref: '94220182',
-        },
-      })
-    })
-    it('url {url, sha} — whole-repo, sha pin (agentforce-adlc)', () => {
-      const r = resolveEntrySource('/mkt', {
-        name: 'agentforce-adlc',
-        source: {
-          source: 'url',
-          url: 'https://github.com/SalesforceAIResearch/agentforce-adlc.git',
-          sha: 'f17012bd',
-        } as never,
-      })
-      expect(r).toEqual({
-        git: {
-          url: 'https://github.com/SalesforceAIResearch/agentforce-adlc.git',
-          ref: 'f17012bd',
-        },
-      })
-    })
-    it('git-subdir {url, path, ref, sha} — sha wins over ref (42crunch)', () => {
-      const r = resolveEntrySource('/mkt', {
-        name: '42crunch-api-security-testing',
-        source: {
-          source: 'git-subdir',
-          url: 'https://github.com/42Crunch-AI/agent-plugins.git',
-          path: 'plugins/api-security-testing',
-          ref: 'v1.5.5',
-          sha: '0f325999',
-        } as never,
-      })
-      expect(r).toEqual({
-        git: {
-          url: 'https://github.com/42Crunch-AI/agent-plugins.git',
-          subdir: 'plugins/api-security-testing',
-          ref: '0f325999',
-        },
-      })
-    })
-  })
-})
-
 describe('marketplace registry (add / list / resolve / remove)', () => {
   let root: string
   let upstream: string
@@ -266,17 +126,17 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     root = join(base, 'marketplaces')
     // A fake "upstream" marketplace repo our cloneRepo stub copies from.
     upstream = join(base, 'upstream')
-    await fs.mkdir(join(upstream, '.localix-plugin'), { recursive: true })
+    await fs.mkdir(join(upstream, '.claude-plugin'), { recursive: true })
     await fs.mkdir(join(upstream, 'plugins', 'cool', '.claude-plugin'), { recursive: true })
     await fs.writeFile(
       join(upstream, 'plugins', 'cool', '.claude-plugin', 'plugin.json'),
       JSON.stringify({ name: 'cool', version: '1.0.0', description: 'cool' }),
     )
     await fs.writeFile(
-      join(upstream, '.localix-plugin', 'marketplace.json'),
+      join(upstream, '.claude-plugin', 'marketplace.json'),
       JSON.stringify({
         name: 'acme',
-        owner: 'acme',
+        owner: { name: 'acme' },
         plugins: [{ name: 'cool', source: './plugins/cool' }],
       }),
     )
@@ -306,7 +166,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
   })
 
   it('registers a Claude Code-only marketplace (.claude-plugin/marketplace.json)', async () => {
-    await fs.rm(join(upstream, '.localix-plugin'), { recursive: true })
+    await fs.rm(join(upstream, '.claude-plugin'), { recursive: true })
     await fs.mkdir(dirname(join(upstream, CLAUDE_CODE_MARKETPLACE)), { recursive: true })
     await fs.writeFile(
       join(upstream, CLAUDE_CODE_MARKETPLACE),
@@ -327,10 +187,10 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
   it('restores the previous marketplace when activation fails', async () => {
     await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
     await fs.writeFile(
-      join(upstream, '.localix-plugin', 'marketplace.json'),
+      join(upstream, '.claude-plugin', 'marketplace.json'),
       JSON.stringify({
         name: 'acme',
-        owner: 'acme',
+        owner: { name: 'acme' },
         plugins: [{ name: 'cool', source: './plugins/cool', description: 'updated' }],
       }),
     )
@@ -355,7 +215,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     expect((activationError as Error).message).toContain('simulated activation failure')
 
     expect(
-      JSON.parse(await fs.readFile(join(installDir, '.localix-plugin/marketplace.json'), 'utf8')),
+      JSON.parse(await fs.readFile(join(installDir, '.claude-plugin/marketplace.json'), 'utf8')),
     ).toMatchObject({ plugins: [{ name: 'cool' }] })
     expect((await readKnownMarketplaces(root)).acme?.installLocation).toBe(installDir)
   })
@@ -369,7 +229,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
       [first, 'first'],
       [second, 'second'],
     ] as const) {
-      const manifestPath = join(dir, '.localix-plugin', 'marketplace.json')
+      const manifestPath = join(dir, '.claude-plugin', 'marketplace.json')
       const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8')) as Record<
         string,
         unknown
@@ -409,28 +269,20 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     ])
   })
 
-  it('listing rows carry typed per-entry relevance + description (round-trip)', async () => {
-    const relevance = {
-      filePatterns: ['**/*.tf'],
-      directoryNames: ['terraform'],
-      keywords: ['infra'],
-    }
+  it("listing rows carry each entry's description", async () => {
     await fs.writeFile(
-      join(upstream, '.localix-plugin', 'marketplace.json'),
+      join(upstream, '.claude-plugin', 'marketplace.json'),
       JSON.stringify({
         name: 'acme',
-        owner: 'acme',
-        plugins: [{ name: 'cool', source: './plugins/cool', description: 'cool infra', relevance }],
+        owner: { name: 'acme' },
+        plugins: [{ name: 'cool', source: './plugins/cool', description: 'cool infra' }],
       }),
     )
     await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
     const list = await listMarketplaces(deps)
     expect(list.find((m) => m.name === 'acme')?.plugins).toEqual([
-      { name: 'cool', description: 'cool infra', relevance },
+      { name: 'cool', description: 'cool infra' },
     ])
-    // …and the resolved entry exposes the same typed block for installers.
-    const resolved = await resolveMarketplaceInstall({ plugin: 'cool', marketplace: 'acme' }, deps)
-    expect(resolved.entry.relevance).toEqual(relevance)
   })
 
   it('resolves plugin@marketplace from a registered marketplace', async () => {
@@ -467,10 +319,10 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
   /** Register acme with its one entry carrying `extra`. */
   async function addAcmeEntry(extra: Record<string, unknown>): Promise<void> {
     await fs.writeFile(
-      join(upstream, '.localix-plugin', 'marketplace.json'),
+      join(upstream, '.claude-plugin', 'marketplace.json'),
       JSON.stringify({
         name: 'acme',
-        owner: 'acme',
+        owner: { name: 'acme' },
         plugins: [{ name: 'cool', source: './plugins/cool', ...extra }],
       }),
     )
@@ -499,10 +351,10 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     /** Rewrite the acme upstream with a renames map, then register it. */
     async function addAcmeWithRenames(renames: Record<string, string | null>): Promise<void> {
       await fs.writeFile(
-        join(upstream, '.localix-plugin', 'marketplace.json'),
+        join(upstream, '.claude-plugin', 'marketplace.json'),
         JSON.stringify({
           name: 'acme',
-          owner: 'acme',
+          owner: { name: 'acme' },
           plugins: [{ name: 'cool', source: './plugins/cool' }],
           renames,
         }),
@@ -557,12 +409,12 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
       globalThis.fetch = realFetch
     })
 
-    /** Build a real npm-shaped tarball whose root carries `.localix-plugin/marketplace.json`. */
+    /** Build a real npm-shaped tarball whose root carries `.claude-plugin/marketplace.json`. */
     async function makeMarketTarball(pluginNames: string[]): Promise<Uint8Array> {
       const work = await fs.mkdtemp(join(tmpdir(), 'npm-mkt-'))
       try {
         const pkg = join(work, 'package')
-        await fs.mkdir(join(pkg, '.localix-plugin'), { recursive: true })
+        await fs.mkdir(join(pkg, '.claude-plugin'), { recursive: true })
         const plugins = []
         for (const name of pluginNames) {
           await fs.mkdir(join(pkg, 'plugins', name, '.claude-plugin'), { recursive: true })
@@ -573,8 +425,8 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
           plugins.push({ name, source: `./plugins/${name}` })
         }
         await fs.writeFile(
-          join(pkg, '.localix-plugin', 'marketplace.json'),
-          JSON.stringify({ name: 'npmmkt', owner: 'acme', plugins }),
+          join(pkg, '.claude-plugin', 'marketplace.json'),
+          JSON.stringify({ name: 'npmmkt', owner: { name: 'acme' }, plugins }),
         )
         const tgz = join(work, 'm.tgz')
         await Bun.spawn(['tar', '-czf', tgz, '-C', work, 'package']).exited

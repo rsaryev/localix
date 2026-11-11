@@ -16,7 +16,6 @@ import { createPluginService } from './service'
  * plugins installed from it, naming any it leaves for the person; `marketplace update` with no
  * name refreshes the listings only; removing the official `localix` marketplace is remembered.
  */
-const previous = process.env.CLAUDE_CONFIG_DIR
 let root: string
 let home: string
 let db: ReturnType<typeof createDatabase>
@@ -54,14 +53,14 @@ beforeAll(async () => {
   })
   setVersion('1.0.0')
   home = join(root, 'home')
-  process.env.CLAUDE_CONFIG_DIR = join(root, 'claude')
   db = createDatabase()
   await migrateToLatest(db)
   service = createPluginService({
     db,
     capabilityStores,
     homeDir: home,
-    env: {},
+    // Hermetic: Claude Code's folder is the test's own, never the real home's `~/.claude`.
+    env: { CLAUDE_CONFIG_DIR: join(root, 'claude') },
     // Hermetic: the machine's managed settings may declare marketplaces of their own.
     managedSettingsDir: join(root, 'managed'),
   })
@@ -73,8 +72,6 @@ beforeAll(async () => {
 afterAll(async () => {
   await destroyDatabase(db)
   removeDir(root)
-  if (previous === undefined) delete process.env.CLAUDE_CONFIG_DIR
-  else process.env.CLAUDE_CONFIG_DIR = previous
 })
 
 describe('marketplace auto-update and updates', () => {

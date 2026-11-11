@@ -4,9 +4,9 @@ import { join } from 'node:path'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import { isRecord } from '../../lib/record'
 import type { DiscoveredPlugin } from './discovery-types'
-import { resolveEntryName } from './marketplace'
-import { readMarketplace, type KnownMarketplace } from './marketplace-catalog'
-import { resolveEntrySource } from './marketplace-entry-source'
+import { resolveEntryName } from './kit'
+import { readMarketplace, resolveEntrySource } from './kit'
+import type { KnownMarketplace } from './marketplace-catalog'
 import { parseMarketplaceRef, sourceMatchesRef } from './marketplace-source'
 import { readInstallRecords } from './plugin-cache'
 import {
@@ -105,7 +105,7 @@ export async function candidateFor(
   const found = marketplaceRecord(known, install.marketplace)
   if (!found) return null
   const [, record] = found
-  const market = await readMarketplace(record.installLocation).catch(() => null)
+  const market = await readMarketplace(record.installLocation, record.source).catch(() => null)
   if (!market) return null
   let name: string
   try {
@@ -115,15 +115,13 @@ export async function candidateFor(
   }
   const entry = market.plugins.find((plugin) => plugin.name === name)
   if (!entry) return null
-  if ((entry as Record<string, unknown>).headersHelper !== undefined)
+  if (entry.headersHelper !== undefined)
     return { version: install.version, manual: 'its marketplace entry sets a headersHelper' }
   let facts: VersionSourceFacts = entryVersionFacts(entry)
   let declared: string | undefined
   const resolved = (() => {
     try {
-      return resolveEntrySource(record.installLocation, entry, {
-        pluginRoot: market.metadata?.pluginRoot,
-      })
+      return resolveEntrySource(record.installLocation, entry, record.source)
     } catch {
       return null
     }

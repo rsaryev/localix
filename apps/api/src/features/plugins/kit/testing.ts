@@ -22,6 +22,7 @@ import { readPluginFolder } from './catalog/read-folder'
 import { sessionLspServers, type SessionLspServers } from './lsp-servers'
 import type { CcHooksRuntime } from '../../cc-hooks/runtime-contracts'
 import type { LocalixKitPorts } from './ports/host-ports'
+import { parseMarketplace, type Marketplace, type MarketplaceEntry } from './marketplace/catalog'
 
 /**
  * The plugin kit boundary in memory, for other features' tests: every port of `createHostPorts`
@@ -215,4 +216,15 @@ export async function testLspServers(
     plugins: [plugin],
   })
   return { ...(await sessionLspServers(session)), root, cwd }
+}
+
+/** A marketplace as the kit reads it, from catalog fields (`name` and `owner` filled in). */
+export const kitMarketplace = (fields: Record<string, unknown>): Marketplace =>
+  parseMarketplace({ name: 'm', owner: { name: 'o' }, plugins: [], ...fields })
+
+/** One marketplace entry as the kit reads it, from the fields a catalog writes. */
+export function kitEntry(fields: Record<string, unknown>): MarketplaceEntry {
+  const entry = kitMarketplace({ plugins: [fields] }).plugins[0]
+  if (!entry) throw new Error(`The kit leaves this entry out: ${JSON.stringify(fields)}`)
+  return entry
 }

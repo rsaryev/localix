@@ -5,6 +5,7 @@
  * installed as it was.
  */
 import { describe, expect, it } from 'bun:test'
+import { kitEntry } from './kit/testing'
 
 import {
   resolveDependencyPlan,
@@ -36,7 +37,7 @@ function resolver(opts: {
         name,
         marketplace,
         dir: `/m/${name}`,
-        entry: { name, source: `./${name}` },
+        entry: kitEntry({ name, source: `./${name}` }),
         dependencies: [],
         ...(version ? { version } : {}),
       } satisfies ResolvedDependencyStep

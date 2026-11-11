@@ -5,7 +5,8 @@ import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
 import type { CapabilitySourceRecord } from '../capabilities/source-repository'
-import { resolveEntryName } from './marketplace'
+import { resolveEntryName } from './kit'
+import { kitMarketplace } from './kit/testing'
 import { addMarketplace } from './marketplace-registry'
 import { createMarketplaceMethods } from './service-marketplaces'
 
@@ -21,14 +22,17 @@ const dir = tempDirPerTest('mkt-update-entries-')
 
 describe('renames', () => {
   it('follows the chain from the oldest name', () => {
-    const market = { name: 'm', renames: { a: 'b', b: 'c' } }
+    const market = kitMarketplace({
+      plugins: [{ name: 'c', source: './c' }],
+      renames: { a: 'b', b: 'c' },
+    })
     expect(resolveEntryName(market, 'a')).toEqual({ name: 'c', renamedFrom: 'a' })
   })
 
-  it('refuses a chain that cycles', () => {
-    expect(() => resolveEntryName({ name: 'm', renames: { a: 'b', b: 'a' } }, 'a')).toThrow(
-      /chain does not resolve/,
-    )
+  it('leaves a chain that cycles unresolved, as Claude Code does', () => {
+    expect(resolveEntryName(kitMarketplace({ renames: { a: 'b', b: 'a' } }), 'a')).toEqual({
+      name: 'a',
+    })
   })
 })
 

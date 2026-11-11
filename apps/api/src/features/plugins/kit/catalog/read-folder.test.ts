@@ -3,6 +3,7 @@ import { realpathSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { readPluginFolder } from './read-folder'
+import { kitEntry } from '../testing'
 
 const dir = tempDirPerTest('kit-catalog')
 const manifest = (json: Record<string, unknown>) => ({
@@ -189,7 +190,14 @@ describe('a plugin folder read by the kit', () => {
   test('a marketplace entry is merged into the manifest the plugin loads with', async () => {
     const found = await read(
       { ...manifest({ name: 'fmt', description: 'Own' }) },
-      { entry: { name: 'fmt', source: './fmt', description: 'From the entry', version: '2.0.0' } },
+      {
+        entry: kitEntry({
+          name: 'fmt',
+          source: './fmt',
+          description: 'From the entry',
+          version: '2.0.0',
+        }),
+      },
     )
     expect(found.manifest.version).toBe('2.0.0')
   })
@@ -197,7 +205,7 @@ describe('a plugin folder read by the kit', () => {
   test('an entry stands in for a missing manifest and names the plugin', async () => {
     const found = await read(
       { 'skills/a/SKILL.md': '---\ndescription: A\n---\nA' },
-      { entry: { name: 'gopls-lsp', source: './x', description: 'Go' } },
+      { entry: kitEntry({ name: 'gopls-lsp', source: './x', description: 'Go' }) },
     )
     expect(found.manifest.name).toBe('gopls-lsp')
     expect(found.manifest.description).toBe('Go')
@@ -210,7 +218,7 @@ describe('a plugin folder read by the kit', () => {
         ...manifest({ name: 'fmt' }),
         'hooks/hooks.json': JSON.stringify({ hooks: { Stop: hook('from-file') } }),
       },
-      { entry: { name: 'fmt', source: './fmt', hooks: { Stop: hook('from-entry') } } },
+      { entry: kitEntry({ name: 'fmt', source: './fmt', hooks: { Stop: hook('from-entry') } }) },
     )
     expect(found.entrypoints.hookConfigs).toEqual([{ hooks: { Stop: hook('from-entry') } }])
   })

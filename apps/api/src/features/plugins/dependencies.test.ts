@@ -11,6 +11,7 @@ import type {
   CapabilitySourceRecord,
   CapabilitySourceRepository,
 } from '../capabilities/source-repository'
+import { kitEntry } from './kit/testing'
 
 import {
   dependencyVersionWarning,
@@ -61,7 +62,7 @@ function step(name: string, marketplace: string, extra?: Partial<ResolvedDepende
     name,
     marketplace,
     dir: `/mkt/${marketplace}/${name}`,
-    entry: { name, source: `./${name}` },
+    entry: kitEntry({ name, source: `./${name}` }),
     dependencies: [],
     ...extra,
   } satisfies ResolvedDependencyStep
@@ -311,9 +312,9 @@ describe('prepareDependenciesForInstall', () => {
     extra: Record<string, unknown> = {},
   ) => {
     const dir = join(root, name)
-    await fs.mkdir(join(dir, '.localix-plugin'), { recursive: true })
+    await fs.mkdir(join(dir, '.claude-plugin'), { recursive: true })
     await fs.writeFile(
-      join(dir, '.localix-plugin', 'marketplace.json'),
+      join(dir, '.claude-plugin', 'marketplace.json'),
       JSON.stringify({ name, owner: { name: 't' }, plugins, ...extra }),
     )
     return dir

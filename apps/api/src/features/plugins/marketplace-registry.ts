@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
-import type { Marketplace } from './marketplace'
+import { readMarketplace, type Marketplace } from './kit'
 import { rmrf } from '../ext/install-tree'
 import { hashString, marketplacesRoot, type MarketplaceSource } from './marketplace-source'
 import type { NpmEntrySource } from './marketplace-source-npm'
@@ -20,7 +20,6 @@ import {
   keptPreferences,
   readKnownMarketplaces,
   writeKnownMarketplaces,
-  readMarketplace,
 } from './marketplace-catalog'
 import { assertMarketplaceAllowed } from './claude-code-policy'
 
@@ -39,15 +38,14 @@ export {
   marketplacesRoot,
   parseMarketplaceInput,
   parseMarketplaceRef,
-  resolveEntrySource,
   type MarketplaceSource,
 } from './marketplace-source'
 
 /**
  * Marketplace registry — the Claude Code `/plugin marketplace add` + `install
  * name@marketplace` flow. A marketplace is a git repo, local dir, catalog file or hosted
- * catalog holding a `.localix-plugin/marketplace.json` or Claude Code
- * `.claude-plugin/marketplace.json` catalog. We materialize it under
+ * catalog holding Claude Code's `.claude-plugin/marketplace.json`, read by the kit
+ * (`kit/marketplace`). We materialize it under
  * `~/.localix/marketplaces/<name>/` (a local folder is read in place, see
  * `marketplace-in-place.ts`) and track the set in `known.json` (keyed by name,
  * mirroring CC's `known_marketplaces.json`: `{ source, installLocation }`).
@@ -101,7 +99,7 @@ async function addMarketplaceUnlocked(
   let fetched: { commitSha?: string }
   try {
     fetched = await materializeMarketplace(source, staging, deps)
-    market = await readMarketplace(staging)
+    market = await readMarketplace(staging, source)
     await assertRegistrable(market, source, root)
   } catch (err) {
     await rmrf(staging)

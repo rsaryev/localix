@@ -5,11 +5,8 @@ import { MANIFEST_DIR, MARKETPLACE_FILE } from '@localixai/claude-plugin'
 
 import { isPathWithin } from '../../lib/path-containment'
 import { copyExtensionTree, rmrf, stripDotGit } from '../ext/install-tree'
-import {
-  sourceCloneUrl,
-  type MarketplaceSource,
-  type ResolvedEntrySource,
-} from './marketplace-source'
+import type { ResolvedEntrySource } from './kit'
+import { sourceCloneUrl, type MarketplaceSource } from './marketplace-source'
 import { assertGitArgs } from './marketplace-git-args'
 import { fetchNpmPlugin } from './marketplace-source-npm'
 import { fetchArchivePlugin, fetchCatalogText } from './marketplace-source-archive'

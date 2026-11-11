@@ -145,21 +145,10 @@ export const updatePluginRequestSchema = removePluginRequestSchema.extend({
 })
 export type UpdatePluginRequest = z.infer<typeof updatePluginRequestSchema>
 
-/**
- * Per-entry summary on a marketplace listing row. `relevance` is the CC 2.1.152+
- * project-affinity hint block (filePatterns/directoryNames/keywords), parsed + typed
- * so UI/agent surfaces can consume it; suggestion RANKING is deferred (no scorer yet).
- */
+/** Per-entry summary on a marketplace listing row. */
 export const marketplaceListingPluginSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
-  relevance: z
-    .object({
-      filePatterns: z.array(z.string()).optional(),
-      directoryNames: z.array(z.string()).optional(),
-      keywords: z.array(z.string()).optional(),
-    })
-    .optional(),
 })
 
 /** One row in the marketplace listing: every registered marketplace. */

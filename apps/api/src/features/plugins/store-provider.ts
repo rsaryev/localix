@@ -162,7 +162,7 @@ export function createPluginStoreProvider(deps: {
         ['Version', entry.version],
         ['Author', listing.publisher.name],
         ['Category', entry.category],
-        ['Homepage', entry.homepage],
+        ['Homepage', entry.display.homepage],
         ['Marketplace', view.label],
       ]
       return {

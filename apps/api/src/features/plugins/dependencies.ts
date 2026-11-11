@@ -1,5 +1,5 @@
 import { InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
-import type { MarketplaceEntry } from './marketplace'
+import type { MarketplaceEntry } from './kit'
 import type { DiscoveredPlugin } from './discovery'
 
 /**

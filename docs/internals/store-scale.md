@@ -279,7 +279,7 @@ re-indexing a 2,300-entry source well under a second.
 
 - [Hybrid catalog search](../../apps/api/src/features/search/catalog-hybrid.ts)
 - [Catalog semantic source](../../apps/api/src/features/embeddings/list-source.ts)
-- [Plugin marketplace schema](../../apps/api/src/features/plugins/marketplace.ts)
+- [Plugin marketplace schema](../../apps/api/src/features/plugins/kit/marketplace/catalog.ts)
 - [Store index](../../apps/api/src/features/store/index-repository.ts) and
   [its schema](../../apps/api/src/features/store/index-repository-open.ts)
 - [Store search provider](../../apps/api/src/features/store/search-provider.ts)

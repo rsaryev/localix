@@ -3,7 +3,6 @@ import { join } from 'node:path'
 import { MARKETPLACE_FILE } from '@localixai/claude-plugin'
 
 import { pathExists } from '../ext/fs-discovery'
-import { MARKETPLACE_CATALOG_FILE } from './manifest-locate'
 import type { MarketplaceSource } from './marketplace-source'
 
 /**
@@ -18,11 +17,7 @@ export const CLAUDE_CODE_MARKETPLACE = MARKETPLACE_FILE
  * Claude Code installs a marketplace's plugins by name, never the marketplace folder itself.
  */
 export async function marketplaceOnlyHint(dir: string): Promise<string | null> {
-  const [native, foreign] = await Promise.all([
-    pathExists(join(dir, MARKETPLACE_CATALOG_FILE)),
-    pathExists(join(dir, CLAUDE_CODE_MARKETPLACE)),
-  ])
-  if (!native && !foreign) return null
+  if (!(await pathExists(join(dir, CLAUDE_CODE_MARKETPLACE)))) return null
   return 'This is a plugin marketplace: add it with /plugin marketplace add <source>, then install its plugins with /plugin install <name>@<marketplace>'
 }
 
