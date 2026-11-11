@@ -8,6 +8,7 @@ import {
 } from '@rsaryev/llx-plugin/marketplace'
 import { isPathWithin } from '../../../../lib/path-containment'
 import { issueLine } from '../catalog/read-folder'
+import { hostPlatform } from '../ports/host-io'
 import { cloneUrl } from './sources'
 
 /**
@@ -93,7 +94,7 @@ export function resolveEntrySource(
   origin?: MarketplaceSource,
 ): ResolvedEntrySource {
   const { plan, issues } = planPluginFetch(entry.source, {
-    platform: process.platform === 'win32' ? 'windows' : 'posix',
+    platform: hostPlatform(),
     ...(origin === undefined ? {} : { marketplaceOrigin: origin }),
   })
   if (!plan)

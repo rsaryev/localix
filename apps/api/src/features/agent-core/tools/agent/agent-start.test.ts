@@ -4,6 +4,7 @@ import { __resetExpectedReports, deliverHeldReport } from '../../delegation-awai
 import type { AgentRequest } from './agent-tool'
 import { delegationFraming, launchAgent } from './agent-start'
 import type { TaskDelegationOptions } from '../task-delegation'
+import { taskAgent } from '../../testing/task-agent'
 
 afterEach(() => __resetExpectedReports())
 
@@ -25,7 +26,7 @@ function host(overrides: Partial<TaskDelegationOptions> = {}) {
         ? {
             kind: 'agent',
             agent,
-            type: { fullName: agent.name, name: agent.name, description: '' },
+            type: taskAgent(agent.name),
           }
         : { kind: 'unavailable' }
     },

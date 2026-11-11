@@ -1,6 +1,7 @@
 import type { TrustClass } from '../ext/trust'
 import type { BoundAgent } from './bindings/bindings'
-import type { CatalogAgent } from './catalog/agent-file'
+import { catalogTier } from '../plugins/kit'
+import { agentFileOf, sourceKeyOf, type CatalogAgent } from './catalog/agent-file'
 import type { AgentRecord, AgentSummary } from './contracts'
 
 /**
@@ -10,14 +11,15 @@ import type { AgentRecord, AgentSummary } from './contracts'
  */
 export function recordOf(agent: CatalogAgent, id: string): AgentRecord {
   // Which of them preload is planned when the agent runs (`prompt-pinned-skills.ts`).
-  const preload = [...new Set(agent.pinnedSkills ?? [])]
+  const { description, prompt, maxTurns, skills } = agent.definition
+  const preload = [...new Set(skills ?? [])]
   return {
     id,
-    name: agent.fullName,
-    description: agent.description,
+    name: agent.name,
+    description,
     // A type with no prompt of its own (`general-purpose` runs as the delegator) reads as its description.
-    instructions: agent.prompt.trim() || agent.description,
-    ...(agent.maxTurns ? { maxTurns: agent.maxTurns } : {}),
+    instructions: prompt.trim() || description,
+    ...(maxTurns ? { maxTurns } : {}),
     ...(preload.length ? { skills: preload } : {}),
   }
 }
@@ -28,11 +30,11 @@ export function recordOf(agent: CatalogAgent, id: string): AgentRecord {
  * The class travels into the rule lookup, so `agent:* untrusted ask` is a row a person could write.
  */
 export const agentTrustClass = (agent: Pick<CatalogAgent, 'source'>): TrustClass =>
-  agent.source === 'project' ? 'untrusted' : 'bundled'
+  catalogTier(agent.source) === 'project' ? 'untrusted' : 'bundled'
 
 /** Only a file the person owns is edited in place; the rest is read-only or copied to Yours. */
-export const isEditableSource = (source: CatalogAgent['source']): boolean =>
-  source === 'user' || source === 'project'
+const isEditable = (agent: Pick<CatalogAgent, 'source'>): boolean =>
+  ['user', 'project'].includes(catalogTier(agent.source))
 
 export function summaryOf(
   entry: BoundAgent,
@@ -45,8 +47,8 @@ export function summaryOf(
     scope: agent.projectId ? 'project' : 'global',
     enabled: state.enabled,
     invocations: state.invocations,
-    source: agent.source === 'plugin' ? `plugin:${agent.pluginName}` : agent.source,
-    path: agent.path,
-    editable: isEditableSource(agent.source),
+    source: sourceKeyOf(agent),
+    path: agentFileOf(agent),
+    editable: isEditable(agent),
   }
 }

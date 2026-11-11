@@ -1,4 +1,4 @@
-import type { ChatSkill } from '../../../plugins/kit'
+import type { SessionSkill } from '@rsaryev/llx-plugin'
 
 /**
  * A SessionStart hook's `reloadSkills` (hooks.md, "Reload skills that a hook installs"): the run
@@ -7,18 +7,18 @@ import type { ChatSkill } from '../../../plugins/kit'
  * the Skill tool finds them either way.
  */
 export function reloadedSkillsNote(
-  skills: readonly ChatSkill[],
+  skills: readonly SessionSkill[],
   frozenListing: string | undefined,
 ): string | undefined {
   const listed = new Set(
     (frozenListing ?? '').split('\n').map((line) => line.replace(/^- /, '').split(':')[0]),
   )
   const added = skills.filter(
-    (skill) => skill.modelInvocable && !skill.dormant && !listed.has(skill.name),
+    (skill) => skill.policy.model && !skill.dormant && !listed.has(skill.invocable.command),
   )
   if (!added.length) return undefined
   return [
     'Skills a SessionStart hook installed, available with the Skill tool:',
-    ...added.map((skill) => `- ${skill.name}: ${skill.description}`),
+    ...added.map(({ invocable }) => `- ${invocable.command}: ${invocable.description ?? ''}`),
   ].join('\n')
 }

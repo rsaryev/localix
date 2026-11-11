@@ -8,9 +8,9 @@ import {
   DEFAULT_MARKETPLACE_PATH,
   cloneUrl,
   marketplaceFetchPlan,
-  type MarketplaceSource,
   type ResolvedEntrySource,
 } from './kit'
+import type { MarketplaceSource } from '@rsaryev/llx-plugin/marketplace'
 import { assertGitArgs } from './marketplace-git-args'
 import { fetchNpmPlugin } from './marketplace-source-npm'
 import { fetchArchivePlugin, fetchCatalogText } from './marketplace-source-archive'

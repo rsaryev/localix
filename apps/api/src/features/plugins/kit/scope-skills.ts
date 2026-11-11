@@ -1,11 +1,12 @@
 import type { PluginIssue } from '@rsaryev/llx-plugin'
 import type { LocalixPluginHost } from './host'
 import { openScopeSession, type PluginScope } from './scope-session'
-import { reloadSessionSkills, sessionSkills, type ChatSkill } from './skill-catalog'
+import type { SessionSkill } from '@rsaryev/llx-plugin'
+import { sessionSkills } from './skill-catalog'
 
 /** A scope's skills and commands, and what the kit found wrong reading them. */
 export interface ScopeSkills {
-  readonly skills: readonly ChatSkill[]
+  readonly skills: readonly SessionSkill[]
   /** The folders' issues (a frontmatter that does not parse, a refused name), by file. */
   readonly issues: readonly PluginIssue[]
   /**
@@ -28,7 +29,7 @@ export async function scopeSkills(
   signal: AbortSignal = new AbortController().signal,
 ): Promise<ScopeSkills> {
   const session = await openScopeSession(host, scope, 'skills')
-  const reload = await reloadSessionSkills(session, signal)
+  const reload = await session.reloadSkills({ signal })
   return {
     skills: sessionSkills(session),
     issues: [...reload.issues, ...session.skillCatalog().issues],

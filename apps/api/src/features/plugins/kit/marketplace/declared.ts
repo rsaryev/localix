@@ -2,10 +2,11 @@ import { OFFICIAL_NAMES, type MarketplaceSource } from '@rsaryev/llx-plugin/mark
 import {
   createMarketplaceRegistry,
   createPolicyView,
+  type FileScope,
   type Registration,
 } from '@rsaryev/llx-plugin/settings'
 import { isRecord } from '../../../../lib/record'
-import { readClaudeSettings, type ClaudeSettings } from '../settings/read'
+import { isFileScope, readClaudeSettings } from '../settings/read'
 import { marketplacePolicy } from './policy'
 import { parseDeclaredSource } from './sources'
 
@@ -18,35 +19,16 @@ import { parseDeclaredSource } from './sources'
  * in comes back refused, with the policy's message. Registering them is the caller's.
  */
 
-export type DeclaredFrom = 'user' | 'project' | 'local' | 'managed'
-
 export interface DeclaredMarketplace {
   name: string
   source: MarketplaceSource
-  from: DeclaredFrom
+  from: FileScope
   /** The `autoUpdate` the winning entry sets. */
   autoUpdate?: boolean
   /** An inline (`settings`) source's catalog, as the settings write it. */
   inline?: unknown
   /** The managed policy does not let the source in: why. */
   refused?: string
-}
-
-const FROM: Readonly<Record<string, DeclaredFrom>> = {
-  user: 'user',
-  project: 'project',
-  local: 'local',
-  managed: 'managed',
-}
-
-/** The `autoUpdate` the winning file writes; the kit's registration gives the resolved value only. */
-function statedAutoUpdate(settings: ClaudeSettings, reg: Registration): boolean | undefined {
-  for (const file of settings.files.toReversed()) {
-    if (file.scope !== reg.from) continue
-    const entry: unknown = file.settings.extraKnownMarketplaces?.[reg.name]
-    if (isRecord(entry)) return typeof entry.autoUpdate === 'boolean' ? entry.autoUpdate : undefined
-  }
-  return undefined
 }
 
 /** The catalog an inline source writes: its name, owner and plugins as declared. */
@@ -57,14 +39,15 @@ function inlineCatalog(raw: unknown, name: string) {
   }
 }
 
-function declared(settings: ClaudeSettings, reg: Registration): DeclaredMarketplace[] {
-  const from = FROM[reg.from]
-  if (!from) return []
+function declared(reg: Registration): DeclaredMarketplace[] {
+  const { from } = reg
+  if (!isFileScope(from)) return []
   const refused = reg.status === 'refusedByAllowlist' ? reg.issues[0]?.message : undefined
   if (reg.status !== 'register' && refused === undefined) return []
   const source = parseDeclaredSource(reg.entry.source, reg.name)
   if ('error' in source) return []
-  const autoUpdate = statedAutoUpdate(settings, reg)
+  // The `autoUpdate` the winning entry writes (`autoUpdateFrom`); none when it leaves it unset.
+  const autoUpdate = reg.autoUpdateFrom ? reg.entry.autoUpdate : undefined
   return [
     {
       name: reg.name,
@@ -99,6 +82,6 @@ export async function declaredMarketplaces(opts: {
   })
   return registry
     .registrations()
-    .flatMap((reg) => declared(settings, reg))
+    .flatMap(declared)
     .sort((a, b) => a.name.localeCompare(b.name))
 }

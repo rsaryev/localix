@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
-import type { ModsApi } from '@localixai/claude-plugin/mods'
+import type { ModsApi } from '@rsaryev/llx-plugin/mods'
 import { hostWithMod } from './testing/testing-host'
 
 /** What `tool.call`'s `next(e)` resolves to, per tool, and what a hook's answer becomes. */

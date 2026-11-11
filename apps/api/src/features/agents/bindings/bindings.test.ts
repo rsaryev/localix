@@ -43,7 +43,9 @@ describe('agent bindings', () => {
     )
   const names = async (b: ReturnType<typeof bindings>) =>
     (await b.snapshot('u', '')).agents
-      .filter((entry) => entry.agent.source === 'user')
+      .filter(
+        (entry) => entry.agent.source.kind === 'folder' && entry.agent.source.scope === 'user',
+      )
       .map((entry) => [entry.agent.name, entry.id])
 
   beforeEach(async () => {
@@ -124,14 +126,14 @@ describe('agent bindings', () => {
     const b = bindings()
     plugins = [{ plugin: 'acme', enabled: true, agents: [{ name: 'lead' }] }]
     const first = await b.snapshot('u', '')
-    expect(first.agents.find((entry) => entry.agent.fullName === 'acme:lead')?.id).toBe('cc:test-1')
+    expect(first.agents.find((entry) => entry.agent.name === 'acme:lead')?.id).toBe('cc:test-1')
     plugins = [{ plugin: 'acme', enabled: false, agents: [] }]
     const off = await b.snapshot('u', '')
-    expect(off.agents.some((entry) => entry.agent.fullName === 'acme:lead')).toBe(false)
+    expect(off.agents.some((entry) => entry.agent.name === 'acme:lead')).toBe(false)
     expect((await notices()).filter(([op]) => op === 'deleted')).toEqual([])
     plugins = [{ plugin: 'acme', enabled: true, agents: [{ name: 'lead' }] }]
     const on = await b.snapshot('u', '')
-    expect(on.agents.find((entry) => entry.agent.fullName === 'acme:lead')?.id).toBe('cc:test-1')
+    expect(on.agents.find((entry) => entry.agent.name === 'acme:lead')?.id).toBe('cc:test-1')
     plugins = []
     await b.snapshot('u', '')
     expect((await notices()).at(-1)).toEqual([

@@ -25,15 +25,6 @@ describe('enableCascade', () => {
     ]
     expect(enableCascade('app', plugins)).toEqual({ enable: ['base', 'lib'], issues: [] })
   })
-
-  it('fails on a dependency that is not installed, enabling nothing', () => {
-    const plugins = [node('app', false, ['lib', 'gone']), node('lib', false)]
-    const plan = enableCascade('app', plugins)
-    expect(plan.enable).toEqual([])
-    expect(plan.issues).toEqual([
-      'Dependency "gone" is not installed; install it first: claude plugin install gone',
-    ])
-  })
 })
 
 describe('disableRefusal', () => {

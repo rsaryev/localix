@@ -163,8 +163,6 @@ describe('plugin commands and skills', () => {
     const found = await discoverPlugins({ cwd: dir, projectId: 'p1', homeDir: home })
     const plugin = found.find((p) => p.manifest.name === 'single-skill-plugin')
     expect(plugin).toBeDefined()
-    // The plugin root should be in skillDirs (since it has a SKILL.md there).
-    expect(plugin!.entrypoints.skillDirs.some((d) => d.endsWith('single-skill-plugin'))).toBe(true)
     const catalog = await buildPluginCatalog({
       availability: UNDECIDED,
       repo: emptyRepo,

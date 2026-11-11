@@ -5,15 +5,15 @@ import { skillOverridesOf } from '../../capabilities/resolve'
 import type { ResolvedRunAgent } from '../../agents/invocation-service'
 import {
   preloadedSkillTexts,
-  reloadSessionSkills,
   sessionSkills,
   skillListing,
   skillTexts,
+  skillKeywords,
+  skillPlugin,
   touchSessionFiles,
-  type ChatSkill,
-  type KitSession,
   type SkillText,
 } from '../../plugins/kit'
+import type { PluginSession as KitSession, SessionSkill } from '@rsaryev/llx-plugin'
 import type { PersistedMessage } from '../contracts'
 import type { SessionRecord } from '../repository'
 import { triggeringKeywords, type TriggeredSkill } from './prompt-skill-triggers'
@@ -22,7 +22,7 @@ import { touchedFilesOf } from './touched-files'
 /** What a run's prompt and tools take from the chat's skills. */
 export interface RunSkills {
   /** Every skill and command of the chat, as the kit lists them. */
-  readonly skills: readonly ChatSkill[]
+  readonly skills: readonly SessionSkill[]
   /** The model's listing, less what the agent's `skill:` rules deny. */
   readonly skillsContext?: string
   /** The agent's `skill:` denials, in the shape the Skill tool takes. */
@@ -62,20 +62,21 @@ export async function resolveRunSkills(
 ): Promise<RunSkills> {
   if (!kitSession) return NONE
   const { session, signal } = input
-  await reloadSessionSkills(kitSession, signal)
+  await kitSession.reloadSkills({ signal })
   await touchSessionFiles(kitSession, touchedFilesOf([...input.history], input.cwd), signal)
   const skills = sessionSkills(kitSession)
   // A skill its rule denies, and the skills of a plugin the agent may not use (`plugins/narrow.ts`).
-  const pluginNames = [...new Set(skills.flatMap((skill) => skill.plugin?.name ?? []))]
+  const pluginNames = [...new Set(skills.flatMap((skill) => skillPlugin(skill)?.name ?? []))]
   const deniedPlugins = new Set(input.capabilities.denied('plugin', pluginNames))
   const deniedNames = [
     ...input.capabilities.denied(
       'skill',
-      skills.map((skill) => skill.name),
+      skills.map((skill) => skill.invocable.command),
     ),
-    ...skills.flatMap((skill) =>
-      skill.plugin && deniedPlugins.has(skill.plugin.name) ? [skill.name] : [],
-    ),
+    ...skills.flatMap((skill) => {
+      const plugin = skillPlugin(skill)
+      return plugin && deniedPlugins.has(plugin.name) ? [skill.invocable.command] : []
+    }),
   ]
   const denied = new Set(deniedNames)
   const allowed = (text: { name: string }) => !denied.has(text.name)
@@ -92,7 +93,12 @@ export async function resolveRunSkills(
   ).filter(allowed)
   const pinnedSet = new Set(pinned.map((text) => text.name))
   const hits = triggeringKeywords(
-    skills.filter((skill) => allowed(skill) && !pinnedSet.has(skill.name)),
+    skills.flatMap((skill) => {
+      const name = skill.invocable.command
+      return allowed({ name }) && !pinnedSet.has(name)
+        ? [{ name, keywords: skillKeywords(skill) }]
+        : []
+    }),
     latestUserText(input.history),
   )
   const keywordOf = new Map(hits.map((hit) => [hit.name, hit.keyword]))

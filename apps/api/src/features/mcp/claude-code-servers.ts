@@ -1,3 +1,4 @@
+import type { FileScope } from '@rsaryev/llx-plugin/settings'
 import type { ClaudeSettingsInput } from '../plugins/kit'
 import { installedMcpSettingsReader } from './claude-code-settings'
 import { normalizeMcpServerEntry } from './normalize'
@@ -26,9 +27,6 @@ export interface ClaudeCodeMcpInput extends ClaudeSettingsInput {
   projectId: string
 }
 
-/** The Claude Code scope a configured server was read from. */
-export type ClaudeCodeScope = 'managed' | 'local' | 'project' | 'user'
-
 /**
  * The servers a run in the folder connects: what Claude Code would load there, decided by the kit
  * (`plugins/kit/settings/mcp-plan.ts`, installed at boot), with Localix's own and the subagent's.
@@ -49,7 +47,8 @@ export function claudeCodeMcpServers(input: ClaudeCodeMcpInput): McpServerRecord
  * entry Localix cannot connect.
  */
 export function claudeCodeServerRecord(
-  scope: ClaudeCodeScope,
+  /** The Claude Code scope a configured server was read from. */
+  scope: FileScope,
   name: string,
   raw: Record<string, unknown>,
   input: ClaudeCodeMcpInput,

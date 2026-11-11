@@ -146,9 +146,10 @@ describe('tools through the mods', () => {
     expect(
       await port.review!({ ...call, toolName: 'Read', input: {} }, { decision: 'ask' }),
     ).toEqual({ decision: 'ask' })
-    // The mod's own query passes its own hooks by, as in Claude Code: core is the gate's verdict.
+    // The mod's query skips only the hook that asks it (the kit's frames): its own `tool.check`
+    // hook for Bash answers.
     expect((await tools[2]!.execute('t2', {})).content).toBe(
-      JSON.stringify({ decision: 'ask', reason: 'rule' }),
+      JSON.stringify({ decision: 'deny', reason: 'no shell' }),
     )
   })
 
@@ -224,8 +225,9 @@ describe('the turn and the conversation through the mods', () => {
   test('turn.step observes the response, or sends the request on another model', async () => {
     const seen: unknown[] = []
     const { scope } = await hostWithMod((on) => {
-      on('turn.step', async ($, e: any, next) => {
-        const response = await next(e.index === 0 ? e : { ...e, model: 'model-b', effort: 'low' })
+      // A `turn.step` hook is an async generator, as Claude Code's are.
+      on('turn.step', async function* ($: any, e: any, next: any) {
+        const response = yield* next(e.index === 0 ? e : { ...e, model: 'model-b', effort: 'low' })
         seen.push(response)
         return response
       })
@@ -248,10 +250,10 @@ describe('the turn and the conversation through the mods', () => {
 
   test('turn.step answered without next sends no request', async () => {
     const { scope } = await hostWithMod((on) => {
-      on('turn.step', () => ({
-        answer: 'Offline.',
-        toolUses: [{ name: 'Bash', input: { command: 'ls' } }],
-      }))
+      // oxlint-disable-next-line eslint/require-yield -- a turn.step hook answers as a generator, here at once
+      on('turn.step', async function* () {
+        return { answer: 'Offline.', toolUses: [{ name: 'Bash', input: { command: 'ls' } }] }
+      })
     })
     const message = await scope.modelStep('turn-1')!(
       { index: 0, modelId: 'model-a', messageCount: 1 },

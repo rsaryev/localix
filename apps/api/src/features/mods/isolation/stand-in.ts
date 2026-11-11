@@ -1,7 +1,11 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import type { Hook, ModsApi, Next } from '@localixai/claude-plugin/mods'
-import type { Endpoint } from './endpoint'
-import type { ApiShape, CallMeta, CallReply } from './call-protocol'
+import {
+  describeApi,
+  type ApiShape,
+  type CallMeta,
+  type CallReply,
+  type Endpoint,
+} from '../../plugins/kit'
 
 /**
  * The host's side of each call into a mod's VM: the stand-in the engine runs for a hook the
@@ -13,9 +17,32 @@ import type { ApiShape, CallMeta, CallReply } from './call-protocol'
 
 type Run = <T>(work: () => T) => T
 
+/** A hook's `$` as the host lends it: namespaces of methods and values. */
+export type DollarApi = Readonly<Record<string, Readonly<Record<string, unknown>>>>
+
+/** The `next` a hook run gets from the chain, as far as a VM's call mirrors it. */
+export interface HookNext {
+  (e: unknown): unknown
+  to(e: unknown, tier: never): unknown
+  readonly signal: AbortSignal
+  readonly origin: unknown
+  readonly event: string
+  readonly budget: { readonly ms: number; readonly remainingMs: number }
+  readonly trace: unknown
+  readonly error?: unknown
+  readonly called?: boolean
+}
+
+/** A hook as the chain runs it: the module's hook, run in the VM. */
+export type StandIn = (
+  $: DollarApi,
+  e: unknown,
+  next: HookNext,
+) => Promise<unknown> | AsyncGenerator<unknown, unknown, unknown>
+
 export interface OpenCall {
-  api: ModsApi
-  next: Next
+  api: DollarApi
+  next: HookNext
   streams: Map<number, AsyncGenerator<unknown, unknown, unknown> & { result?: unknown }>
 }
 
@@ -36,7 +63,7 @@ export function createCalls(endpoint: Endpoint) {
     }
   }
 
-  function begin(hook: number, $: ModsApi, e: unknown, next: Next) {
+  function begin(hook: number, $: DollarApi, e: unknown, next: HookNext) {
     const call = ++lastCall
     open.set(call, { api: $, next, streams: new Map() })
     contexts.set(call, AsyncLocalStorage.snapshot() as Run)
@@ -60,15 +87,16 @@ export function createCalls(endpoint: Endpoint) {
   }
 
   /** A stand-in for the module's hook `spec`: one run of it in the VM per call. */
-  function standIn(spec: { id: number; generator: boolean }): Hook {
-    const start = ($: ModsApi, e: unknown, next: Next) => begin(spec.id, $, e, next)
+  function standIn(spec: { id: number; generator: boolean }): StandIn {
+    const start = ($: DollarApi, e: unknown, next: HookNext) => begin(spec.id, $, e, next)
     if (spec.generator)
-      return async function* ($: ModsApi, e: unknown, next: Next) {
+      return async function* ($: DollarApi, e: unknown, next: HookNext) {
         const { payload, close, signal } = start($, e, next)
         let id: number | undefined
         try {
           const reply = (await endpoint.request('call', payload, signal)) as CallReply
-          if ('absent' in reply) return undefined
+          // Its matcher missed in the VM: the hook passes the event on, as if it had not matched.
+          if ('absent' in reply) return yield* next(e) as AsyncGenerator<unknown, unknown, unknown>
           id = (reply as { stream: number }).stream
           for (;;) {
             const step = (await endpoint.request('step', { id }, signal)) as {
@@ -90,7 +118,7 @@ export function createCalls(endpoint: Endpoint) {
       const { payload, close, signal } = start($, e, next)
       try {
         const reply = (await endpoint.request('call', payload, signal)) as CallReply
-        return 'absent' in reply ? undefined : (reply as { value: unknown }).value
+        return 'absent' in reply ? next(e) : (reply as { value: unknown }).value
       } finally {
         close()
       }
@@ -113,13 +141,16 @@ export function createCalls(endpoint: Endpoint) {
   }
 }
 
-/** `$` as the VM rebuilds it: which members are methods, and the values of the rest. */
-function shapeOf(api: ModsApi): ApiShape {
+/** `$` as the VM rebuilds it: how each method answers (`describeApi`), and the values of the rest. */
+function shapeOf(api: DollarApi): ApiShape {
   const shape: ApiShape = {}
-  for (const [namespace, members] of Object.entries(api)) {
+  for (const { name: namespace, members } of describeApi(api as never)) {
     const own: ApiShape[string] = {}
-    for (const [name, member] of Object.entries(members))
-      own[name] = typeof member === 'function' ? { fn: true } : { value: member }
+    for (const { name, kind, ownTime } of members)
+      own[name] =
+        kind === 'value'
+          ? { value: api[namespace]![name] }
+          : { fn: kind, ...(ownTime ? { ownTime } : {}) }
     shape[namespace] = own
   }
   return shape

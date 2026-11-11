@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  agentSpawnRefusal,
   agentToolCandidates,
   agentToolsRefusal,
   namesBuiltinTool,
@@ -87,5 +88,25 @@ describe('namesBuiltinTool', () => {
     expect(namesBuiltinTool('Bash(git *)', BUILTINS)).toBe(true)
     expect(namesBuiltinTool('Task', BUILTINS)).toBe(true)
     expect(namesBuiltinTool('TodoWrite', BUILTINS)).toBe(false)
+  })
+})
+
+// sub-agents.md, "Restrict which subagents can be spawned": `tools: Agent(worker, researcher)` is
+// an allowlist, compared exactly; an omitted type is `general-purpose` and a fork is `fork`.
+describe('agentSpawnRefusal', () => {
+  const refusal = agentSpawnRefusal(undefined, ['tester'])
+
+  test('a listed type passes', () => {
+    expect(refusal('tester')).toBeUndefined()
+  })
+
+  test('any other type, an omitted one and a fork are refused with the kit message', () => {
+    expect(refusal('sec:reviewer')).toContain("Agent type 'sec:reviewer' not found")
+    expect(refusal(undefined)).toContain('subagent_type is required')
+    expect(refusal('fork')).toContain("Agent type 'fork' not found")
+  })
+
+  test('general-purpose passes an omitted type when it is listed', () => {
+    expect(agentSpawnRefusal(undefined, ['general-purpose'])(undefined)).toBeUndefined()
   })
 })

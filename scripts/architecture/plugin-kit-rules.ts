@@ -46,25 +46,29 @@ export const X6_PLUGIN_SEMANTICS_IN_THE_KIT: Rule = {
 }
 
 /**
- * X7: only the boundary imports the kit, tests included, so the rest of Localix depends on what
- * the boundary exports and a kit change lands in one folder. The UI may import the subpaths that
- * are plain data or elements a screen renders (an elicitation form, the standard layout, the
- * elements a mod's view is made of).
+ * X7: only the boundary runs the kit, tests included, so a kit behaviour Localix depends on lands in
+ * one folder. Its TYPES are the one definition of the format's shapes everywhere: a file outside the
+ * boundary names them with `import type` straight from the kit's public entries (never a Localix
+ * look-alike, never a re-export), and only the boundary imports a value or re-exports. The UI may
+ * import the subpaths that are plain data or elements a screen renders (an elicitation form, the
+ * standard layout, the elements a mod's view is made of).
  */
 const UI_SUBPATHS = new Set([`${KIT}/elicitation`, `${KIT}/layout`, `${KIT}/mods/elements`])
 const isKit = (spec: string) => spec === KIT || spec.startsWith(`${KIT}/`)
 
 export const X7_KIT_THROUGH_THE_BOUNDARY: Rule = {
   id: 'X7',
-  fix: `import what you need from ${BOUNDARY}index.ts; add it there when it is missing`,
+  fix: `name a kit type with \`import type\` from ${KIT}; call a kit value through ${BOUNDARY}index.ts, adding it there when it is missing`,
   detect(sources) {
     const found: string[] = []
     for (const source of sources) {
       if (source.file.startsWith(BOUNDARY)) continue
       const ui = source.file.startsWith('apps/ui/')
-      for (const { spec } of importsOf(source))
-        if (isKit(spec) && !(ui && UI_SUBPATHS.has(spec)))
-          found.push(`${source.file} imports ${spec}`)
+      for (const { spec, typeOnly, kind } of importsOf(source)) {
+        if (!isKit(spec) || (ui && UI_SUBPATHS.has(spec))) continue
+        if (kind === 'import' && typeOnly) continue
+        found.push(`${source.file} ${kind === 'export' ? 're-exports' : 'imports'} ${spec}`)
+      }
     }
     return found
   },

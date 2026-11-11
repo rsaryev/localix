@@ -114,7 +114,7 @@ export async function startWorkflowAgent(
     const runAs = {
       ...agent,
       agentType: type ? agent.name : GENERAL_PURPOSE_TYPE,
-      maxTurns: type?.maxTurns ?? agent.maxTurns,
+      maxTurns: type?.definition.maxTurns ?? agent.maxTurns,
     }
     const text = await runChild(child.id, runAs, delegator.name, workflow, request, deps, signal)
     const spent = await deps.spend?.(child.id).catch(() => null)

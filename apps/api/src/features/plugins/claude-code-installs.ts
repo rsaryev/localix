@@ -8,18 +8,19 @@ import { pathExists } from '../ext/fs-discovery'
 import type { DiscoveredPlugin } from './discovery-types'
 import {
   catalogAt,
-  claudeCodeInstallRecords,
   claudeCodePluginSettings,
+  hostPlatform,
+  installsAt,
+  parseInstalledPlugins,
   readKnownMarketplaces,
   readMarketplace,
   resolveEntrySource,
   type KnownMarketplaces,
   type ClaudeSettingsInput,
   type FolderSource,
-  type MarketplaceEntry,
-  type ClaudeCodeEnabledBy,
-  type InstallRecord,
 } from './kit'
+import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
+import type { FileScope } from '@rsaryev/llx-plugin/settings'
 import { loadManifest } from './manifest-load'
 import { withWorkflowCommands } from './workflow-commands'
 
@@ -28,7 +29,7 @@ import { withWorkflowCommands } from './workflow-commands'
  *
  * Claude Code records an install in `~/.claude/plugins/installed_plugins.json` (the files under
  * `cache/`) and decides what loads from `enabledPlugins` across its settings files, both read by
- * the kit (`claudeCodeInstallRecords`, `claudeCodePluginSettings` in `./kit`). A plugin listed by relative path in a marketplace
+ * the kit (`parseInstalledPlugins`, `claudeCodePluginSettings` in `./kit`). A plugin listed by relative path in a marketplace
  * loads from the marketplace's folder (`known_marketplaces.json` → `installLocation`) with no
  * install record. This module answers the same question Claude Code does at session start, from
  * the same files, without the network.
@@ -45,28 +46,15 @@ export interface ClaudeCodeInstall {
   /** `project` when the install or the setting that turns it on belongs to the project. */
   scope: 'global' | 'project'
   /** The settings file that turned it on, or undefined when only the manifest's default does. */
-  enabledBy?: ClaudeCodeEnabledBy
+  enabledBy?: FileScope
   /** Its marketplace entry, which Claude Code combines with the plugin's own manifest. */
   entry?: MarketplaceEntry
 }
 
 type InstallsInput = Pick<ClaudeSettingsInput, 'homeDir' | 'cwd' | 'env' | 'managed'>
 
-/** The record that applies here: one made for this project first, else the user's. */
-function applicable(
-  records: readonly InstallRecord[],
-  cwd: string | null,
-): InstallRecord | undefined {
-  const here = cwd ? resolve(cwd) : null
-  const forProject = records.filter(
-    (r) => r.scope !== 'user' && here !== null && r.projectPath && resolve(r.projectPath) === here,
-  )
-  return (
-    forProject.find((r) => r.scope === 'local') ??
-    forProject[0] ??
-    records.find((r) => r.scope === 'user')
-  )
-}
+/** The scopes whose record applies here, in order: one made for this project first, else the user's. */
+const PICK = ['local', 'project', 'user'] as const
 
 interface Listing {
   /** The entry as the kit read the catalog; the kit merges it with the plugin's manifest. */
@@ -114,19 +102,24 @@ export async function readClaudeCodeInstalls(opts: InstallsInput): Promise<Claud
   const pluginsRoot =
     (opts.env ?? process.env).CLAUDE_CODE_PLUGIN_CACHE_DIR?.trim() ||
     join(claudeConfigDir(opts.homeDir, opts.env), 'plugins')
-  const [records, settings, known] = await Promise.all([
-    fs
-      .readFile(join(pluginsRoot, 'installed_plugins.json'), 'utf8')
-      .then(claudeCodeInstallRecords, () => claudeCodeInstallRecords(undefined)),
+  const [file, settings, known] = await Promise.all([
+    fs.readFile(join(pluginsRoot, 'installed_plugins.json'), 'utf8').catch(() => undefined),
     claudeCodePluginSettings(opts),
     readKnownMarketplaces(pluginsRoot),
   ])
+  // A file this version cannot read is no installs.
+  const { records } = parseInstalledPlugins(file)
+  const here = installsAt(records, {
+    ...(opts.cwd ? { projectPath: resolve(opts.cwd) } : {}),
+    platform: hostPlatform(),
+  })
   const ids = [...new Set([...Object.keys(records), ...settings.ids])].sort()
   const installs = await Promise.all(
     ids.map(async (id): Promise<ClaudeCodeInstall | null> => {
       const setting = settings.enabled(id)
       if (setting?.on === false) return null
-      const record = applicable(records[id] ?? [], opts.cwd)
+      const applying = here[id] ?? []
+      const record = PICK.map((scope) => applying.find((r) => r.scope === scope)).find(Boolean)
       if (!record && !setting?.on) return null
       const listing = await marketplaceListing(known, id)
       const dir =

@@ -1,3 +1,4 @@
+import type { CatalogAgent } from '@rsaryev/llx-plugin/agents'
 import type { RuntimeSection } from '../../../agent-core/prompt/runtime-sections'
 import type { PersistedMessage } from '../../contracts'
 
@@ -7,10 +8,10 @@ import type { PersistedMessage } from '../../contracts'
  * chat's first turn as that turn's leading instruction; later turns do not carry it.
  */
 export function initialPromptSection(
-  mainAgent: { initialPrompt?: string } | null | undefined,
+  mainAgent: Pick<CatalogAgent, 'definition'> | null | undefined,
   history: readonly PersistedMessage[],
 ): RuntimeSection | null {
-  const text = mainAgent?.initialPrompt?.trim()
+  const text = mainAgent?.definition.initialPrompt?.trim()
   if (!text) return null
   const turns = history.filter((m) => m.payload.role === 'user' && !m.payload.isInternal).length
   if (turns !== 1) return null

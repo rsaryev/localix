@@ -29,10 +29,13 @@ describe('the conversation’s events between turns', () => {
 
   test('session.receive rewrites a delivery, or consumes it', async () => {
     const { host } = await hostWithMod((on) => {
-      on('session.receive', { origin: { kind: 'scheduled-trigger' } }, () => ({
-        consumed: 'muted',
-      }))
-      on('session.receive', ($, e: any, next) => next({ ...e, text: e.text.toUpperCase() }))
+      // A matcher compares an event's own fields, so a nested one is read in the hook; one
+      // event has one unfiltered hook per mod.
+      on('session.receive', ($, e: any, next) =>
+        e.origin.kind === 'scheduled-trigger'
+          ? { consumed: 'muted' }
+          : next({ ...e, text: e.text.toUpperCase() }),
+      )
     })
     const delivery = { userId: 'u', sessionId: 's1', text: 'build failed' }
     expect(await receiveDelivery(host, { ...delivery, source: 'external' })).toEqual({

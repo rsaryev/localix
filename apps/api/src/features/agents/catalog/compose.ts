@@ -1,4 +1,4 @@
-import type { ScopeAgent, ScopeAgents } from '../../plugins/kit'
+import { catalogTier, type ScopeAgent, type ScopeAgents } from '../../plugins/kit'
 import { bodyHashOf, type CatalogAgent, type ResolvedAgent } from './agent-file'
 import { LOCALIX_AGENT, localixBuiltin } from './builtin-types'
 
@@ -47,29 +47,30 @@ export function composeCatalog(scope: ScopeCatalog, projectId: string): Composed
   const own = (agent: ScopeAgent): CatalogAgent => {
     const known = shaped.get(agent)
     if (known) return known
-    const local = agent.source === 'project' || agent.plugin?.scope === 'project'
+    const tier = catalogTier(agent.source)
+    const local = tier === 'project' || agent.plugin?.scope === 'project'
     const made = localixBuiltin({
       ...agent,
       projectId: local ? projectId : '',
-      bodyHash: agent.source === 'builtin' ? '' : bodyHashOf(agent.prompt),
+      bodyHash: tier === 'builtin' ? '' : bodyHashOf(agent.definition.prompt.trim()),
     })
     shaped.set(agent, made)
     return made
   }
   const active = scope.agents.agents.map(own)
   const lost = new Map(scope.agents.shadowed.map(({ agent, by }) => [own(agent), own(by)]))
-  const mainShadow = active.find((agent) => agent.fullName === LOCALIX_AGENT.fullName)
+  const mainShadow = active.find((agent) => agent.name === LOCALIX_AGENT.name)
   if (mainShadow) lost.set(LOCALIX_AGENT, mainShadow)
   const all = [...active, ...lost.keys()]
 
   return {
-    found: all.filter((agent) => agent.source !== 'builtin'),
-    builtins: [...all.filter((agent) => agent.source === 'builtin'), LOCALIX_AGENT],
+    found: all.filter((agent) => agent.source.kind !== 'builtin'),
+    builtins: [...all.filter((agent) => agent.source.kind === 'builtin'), LOCALIX_AGENT],
     shadowedBy: (agent) => lost.get(agent),
     resolve: (reference) => {
       const found = scope.agents.resolve(reference)
       if (found) return 'agent' in found ? { agent: own(found.agent) } : found
-      return reference.trim() === LOCALIX_AGENT.fullName ? { agent: LOCALIX_AGENT } : null
+      return reference.trim() === LOCALIX_AGENT.name ? { agent: LOCALIX_AGENT } : null
     },
     main: scope.agents.main ? own(scope.agents.main) : null,
   }

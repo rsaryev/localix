@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
+import { testCatalogAgent } from '../../../plugins/kit/testing'
 import { subagentRunOptions } from './subagent-file-options'
 
 // sub-agents.md, "Frontmatter reference": `autoCompactWindow` lowers its auto-compact window;
@@ -21,7 +22,7 @@ describe('an agent file’s run options', () => {
     await fs.mkdir(memoryDir, { recursive: true })
     const lines = Array.from({ length: 250 }, (_, i) => `line ${i + 1}`)
     await fs.writeFile(join(memoryDir, 'MEMORY.md'), lines.join('\n'))
-    const agent = { name: 'reviewer', autoCompactWindow: 150000, memory: 'project' as const }
+    const agent = testCatalogAgent('reviewer', { autoCompactWindow: 150000, memory: 'project' })
     const options = await subagentRunOptions(agent, context())
     expect(options.contextLimit).toBe(150000)
     expect(options.memoryDir).toBe(memoryDir)
@@ -31,14 +32,17 @@ describe('an agent file’s run options', () => {
   })
 
   test('a user memory lives in the configuration folder, named by the full agent type', async () => {
-    const agent = { name: 'kit:reviewer', memory: 'user' as const }
+    const agent = testCatalogAgent('kit:reviewer', { memory: 'user' })
     const options = await subagentRunOptions(agent, context())
     expect(options.memoryDir).toBe(join(dir(), 'config', 'agent-memory', 'kit-reviewer'))
     expect(options.instructions).toContain('MEMORY.md does not exist yet.')
   })
 
   test('with auto memory off the agent has no memory', async () => {
-    const options = await subagentRunOptions({ name: 'r', memory: 'user' as const }, context(false))
+    const options = await subagentRunOptions(
+      testCatalogAgent('r', { memory: 'user' }),
+      context(false),
+    )
     expect(options).toEqual({ enableTools: [] })
   })
 })

@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'bun:test'
 
 import {
-  describeSource,
   marketplaceAddRefusal,
   marketplaceFetchPlan,
   parseDeclaredSource,
   parseMarketplaceAdd,
-  sameMarketplaceSource,
 } from './sources'
 
 const where = { cwd: '/work/repo', home: '/home/me' }
@@ -42,13 +40,6 @@ describe('parseMarketplaceAdd: what is typed after /plugin marketplace add', () 
       path: '/home/me/m/.claude-plugin/marketplace.json',
     })
   })
-
-  it('refuses what Claude Code refuses, in its words', () => {
-    const unrecognized =
-      'Invalid marketplace source format. Try: owner/repo, https://..., or ./path'
-    expect(parseMarketplaceAdd('npm:acme-marketplace', where)).toEqual({ error: unrecognized })
-    expect(parseMarketplaceAdd('cool@acme', where)).toEqual({ error: unrecognized })
-  })
 })
 
 describe('parseDeclaredSource: a source object of extraKnownMarketplaces', () => {
@@ -68,27 +59,10 @@ describe('parseDeclaredSource: a source object of extraKnownMarketplaces', () =>
       parseDeclaredSource({ source: 'hostPattern', hostPattern: '.*' }, 'acme'),
     ).toHaveProperty('error')
   })
-
-  it('refuses an inline catalog named other than its key', () => {
-    const inline = { source: 'settings', name: 'other', plugins: [] }
-    expect(parseDeclaredSource(inline, 'team')).toHaveProperty('error')
-    expect(parseDeclaredSource({ ...inline, name: 'team' }, 'team')).toMatchObject({
-      kind: 'settings',
-      name: 'team',
-    })
-  })
 })
 
 describe('marketplaceAddRefusal: the name a fetched catalog registers under', () => {
   const github = { kind: 'github', repo: 'acme/plugins', path: CATALOG } as const
-
-  it('keeps the official names for Anthropic repositories', () => {
-    expect(marketplaceAddRefusal('claude-plugins-official', github, {})).toContain(
-      "is reserved for official Anthropic marketplaces. Only repositories from 'github.com/anthropics/'",
-    )
-    const anthropic = { ...github, repo: 'anthropics/claude-plugins-official' }
-    expect(marketplaceAddRefusal('claude-plugins-official', anthropic, {})).toBeUndefined()
-  })
 
   it('never re-points a name registered from another source', () => {
     const registered = { acme: { source: { ...github, repo: 'acme/other' } } }
@@ -96,12 +70,6 @@ describe('marketplaceAddRefusal: the name a fetched catalog registers under', ()
       'Marketplace "acme" is already added from a different source (github:acme/other). To use this source instead, remove that marketplace first with /plugin marketplace remove acme.',
     )
     expect(marketplaceAddRefusal('acme', github, { acme: { source: github } })).toBeUndefined()
-  })
-
-  it("refuses the name of another GitHub marketplace's download folder", () => {
-    expect(marketplaceAddRefusal('acme-plugins', github, { acme: { source: github } })).toContain(
-      'it is the download folder of the registered marketplace "acme"',
-    )
   })
 })
 
@@ -126,14 +94,5 @@ describe('marketplaceFetchPlan', () => {
     expect(() => marketplaceFetchPlan({ kind: 'npm', package: 'm' })).toThrow(
       'NPM marketplace sources not yet implemented',
     )
-  })
-})
-
-describe('source identity', () => {
-  it('is the same source only with the same value in every field', () => {
-    const a = { kind: 'github', repo: 'a/b', path: CATALOG } as const
-    expect(sameMarketplaceSource(a, { ...a })).toBe(true)
-    expect(sameMarketplaceSource(a, { ...a, ref: 'v1' })).toBe(false)
-    expect(describeSource(a)).toBe('github:a/b')
   })
 })

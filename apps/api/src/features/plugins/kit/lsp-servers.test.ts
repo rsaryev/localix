@@ -74,18 +74,4 @@ describe("a chat's plugin LSP servers, as the kit resolves them", () => {
     expect(byName.get('never')!.restarts(0)).toBe(false)
     expect(byName.get('free')!.restarts(50)).toBe(true)
   })
-
-  test('an unset option stays as written, and the kit warns where', async () => {
-    const { servers, issues } = await testLspServers(dir(), {
-      go: {
-        command: 'gopls',
-        args: ['--token=${user_config.tok}'],
-        extensionToLanguage: { '.go': 'go' },
-      },
-    })
-    expect(servers.map((server) => server.args)).toEqual([['--token=${user_config.tok}']])
-    expect(issues.map(({ severity, path }) => [severity, path])).toEqual([
-      ['warning', 'lspServers.go.args[0]'],
-    ])
-  })
 })

@@ -1,6 +1,6 @@
 import type { SessionDetail } from '../contracts'
 import type { SessionRecord } from '../repository'
-import { filterDisabledSkills } from '../../agent-core/skill-overrides'
+import { isSkillDisabled } from '../../agent-core/skill-overrides'
 import type { createAuxProviderHelpers } from './aux-provider'
 import type { createChatRepository } from '../repository'
 import type { createSessionWorkspace } from './session-workspace'
@@ -71,14 +71,9 @@ export function createChatSkillFacade({
     ): Promise<SessionDetail> {
       const session = await requireSession(userId, sessionId)
       const skills = await gatherSessionSkills(userId, session)
-      const skillOverrides = await loadSkillOverrides(
-        userId,
-        session.projectId,
-        skills.map((skill) => skill.name),
-      )
-      const available = new Set(
-        filterDisabledSkills(skills, skillOverrides).map((skill) => skill.name),
-      )
+      const listed = skills.map((skill) => skill.invocable.command)
+      const skillOverrides = await loadSkillOverrides(userId, session.projectId, listed)
+      const available = new Set(listed.filter((name) => !isSkillDisabled(skillOverrides, name)))
       const pinned = [...new Set(names)].filter((n) => available.has(n))
       const updated: SessionRecord = {
         ...session,

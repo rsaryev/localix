@@ -81,19 +81,3 @@ export function claudeCodeToolNames(tool: NamedTool): readonly string[] {
 export function localToolName(name: string): string {
   return localixToolNames.hostNames(name)[0] ?? name
 }
-
-/**
- * The names with a run's MCP tools added: Localix registers `mcp_<server>_<tool>` and Claude Code
- * names it `mcp__<server>__<tool>` (the tool's alias), which `HostToolNames` cannot know ahead.
- */
-export function withRunTools(tools: readonly NamedTool[]): HostToolNames {
-  const extra = tools.flatMap((tool) =>
-    tool.aliases?.length ? [[tool.name, tool.aliases[0]!] as const] : [],
-  )
-  return extra.length
-    ? {
-        ...LOCALIX_TOOL_NAMES,
-        toClaude: { ...LOCALIX_TOOL_NAMES.toClaude, ...Object.fromEntries(extra) },
-      }
-    : LOCALIX_TOOL_NAMES
-}

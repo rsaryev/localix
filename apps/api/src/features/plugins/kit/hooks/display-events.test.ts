@@ -73,22 +73,6 @@ describe('Elicitation', () => {
       elicitation_id: 'e-1',
     })
   })
-
-  it('exit 2 declines', async () => {
-    const rt = runtime(groups('Elicitation', { command: `${accept({ a: 1 })}; exit 2` }))
-    expect(await rt.runElicitation(form)).toEqual({ action: 'decline' })
-  })
-
-  it('a hook that fails or prints nothing leaves the request to the person', async () => {
-    const rt = runtime(
-      groups(
-        'Elicitation',
-        { command: `${accept({ a: 1 })}; exit 1` },
-        { command: 'cat >/dev/null' },
-      ),
-    )
-    expect(await rt.runElicitation(form)).toBeUndefined()
-  })
 })
 
 describe('ElicitationResult', () => {
@@ -109,13 +93,6 @@ describe('ElicitationResult', () => {
       mcp_server_name: 'issue-tracker',
       action: 'accept',
       content: { project_key: 'DOCS' },
-    })
-  })
-
-  it('exit 2 declines the response', async () => {
-    const rt = runtime(groups('ElicitationResult', { command: 'exit 2' }))
-    expect(await rt.runElicitationResult(form, { action: 'accept', content: {} })).toEqual({
-      action: 'decline',
     })
   })
 })

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
-import { reloadSessionSkills, sessionSkills } from './skill-catalog'
+import { sessionSkills, skillKeywords } from './skill-catalog'
 import { preloadedSkillTexts, skillTexts } from './skill-texts'
 import { scopeSkills } from './scope-skills'
 import { diskPluginHost, skillTestSession, writeTestPlugin } from './testing'
@@ -16,7 +16,7 @@ const skillFile = (frontmatter: string, body = 'Do it') => `---\n${frontmatter}\
 async function session(files: Record<string, string>) {
   writeTree(work(), { '.git/HEAD': 'ref: refs/heads/main\n', ...files })
   const chat = await skillTestSession(home(), work())
-  await reloadSessionSkills(chat, signal)
+  await chat.reloadSkills({ signal })
   return chat
 }
 
@@ -54,10 +54,8 @@ describe('the text of a skill a host puts in the prompt', () => {
         'description: Deploys\nkeywords: deploy to prod, rollback',
       ),
     })
-    expect(sessionSkills(chat).find((one) => one.name === 'deploy')?.keywords).toEqual([
-      'deploy to prod',
-      'rollback',
-    ])
+    const deploy = sessionSkills(chat).find((one) => one.invocable.command === 'deploy')
+    expect(deploy && skillKeywords(deploy)).toEqual(['deploy to prod', 'rollback'])
   })
 })
 
@@ -83,7 +81,11 @@ describe('the skills of a scope outside any chat', () => {
       managed: null,
       plugins: [tools, off],
     })
-    expect(read.skills.map((one) => one.name).sort()).toEqual(['broken', 'deploy', 'tools:fancy'])
+    expect(read.skills.map((one) => one.invocable.command).sort()).toEqual([
+      'broken',
+      'deploy',
+      'tools:fancy',
+    ])
     expect(read.issues.some((issue) => issue.path.endsWith('broken/SKILL.md'))).toBe(true)
   })
 })

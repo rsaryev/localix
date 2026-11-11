@@ -17,11 +17,6 @@
       "@localixai/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./mods": {
-      "@localixai/source": "./src/mods/index.ts",
-      "types": "./dist/mods/index.d.ts",
-      "import": "./dist/mods/index.js"
     }
   },
   "scripts": {

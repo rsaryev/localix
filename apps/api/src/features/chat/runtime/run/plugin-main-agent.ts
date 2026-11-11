@@ -1,6 +1,6 @@
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 
-import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
+import type { CatalogAgent } from '@rsaryev/llx-plugin/agents'
 
 /**
  * The `agent` setting (`settings.json` of the person, the project or a plugin), as Claude Code
@@ -14,9 +14,9 @@ import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
  */
 export function applyMainAgent<Agent extends { id: string; instructions?: string | null }>(
   input: { agent: Agent; disabledTools: readonly string[] },
-  mainAgent: LoadedPluginAgent | null,
+  mainAgent: CatalogAgent | null,
   run: { agentId: string; host: string },
-): { agent: Agent; disabledTools: string[]; mainAgent: LoadedPluginAgent | null } {
+): { agent: Agent; disabledTools: string[]; mainAgent: CatalogAgent | null } {
   const applies = mainAgent !== null && run.host === 'chat' && run.agentId === DEFAULT_AGENT_ID
   if (!applies) return { ...input, disabledTools: [...input.disabledTools], mainAgent: null }
   return { ...runAsPluginAgent(input, mainAgent), mainAgent }
@@ -25,10 +25,10 @@ export function applyMainAgent<Agent extends { id: string; instructions?: string
 /** A run as a plugin agent: its prompt is the identity (its tools: `runToolsAgent`). */
 export function runAsPluginAgent<Agent extends { instructions?: string | null }>(
   input: { agent: Agent; disabledTools: readonly string[] },
-  pluginAgent: Pick<LoadedPluginAgent, 'prompt'>,
+  pluginAgent: Pick<CatalogAgent, 'definition'>,
 ): { agent: Agent; disabledTools: string[] } {
   return {
-    agent: { ...input.agent, instructions: pluginAgent.prompt },
+    agent: { ...input.agent, instructions: pluginAgent.definition.prompt },
     disabledTools: [...input.disabledTools],
   }
 }
@@ -38,9 +38,9 @@ export function runAsPluginAgent<Agent extends { instructions?: string | null }>
  * plugin agent the chat runs as, which is the main thread.
  */
 export function runToolsAgent(
-  subagent: LoadedPluginAgent | null | undefined,
-  mainAgent: LoadedPluginAgent | null | undefined,
-): { agent: LoadedPluginAgent; asMainThread: boolean } | null {
+  subagent: CatalogAgent | null | undefined,
+  mainAgent: CatalogAgent | null | undefined,
+): { agent: CatalogAgent; asMainThread: boolean } | null {
   if (subagent) return { agent: subagent, asMainThread: false }
   return mainAgent ? { agent: mainAgent, asMainThread: true } : null
 }

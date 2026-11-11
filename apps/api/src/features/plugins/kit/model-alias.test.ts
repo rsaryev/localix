@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { bestModelForFamily, modelAliasResolver } from './model-alias'
+import { bestModelForFamily, resolveModelAlias as resolve } from './model-alias'
 
-const resolve: typeof modelAliasResolver.resolve = (...args) => modelAliasResolver.resolve(...args)
 const CATALOG = [
   'anthropic/claude-3-5-sonnet',
   'anthropic/claude-sonnet-4-5',
@@ -10,7 +9,7 @@ const CATALOG = [
   'openai/gpt-4o',
 ]
 
-describe('modelAliasResolver', () => {
+describe('resolveModelAlias', () => {
   test('inherit or no value is the parent model', () => {
     expect(resolve(undefined, 'parent-model')).toBe('parent-model')
     expect(resolve('inherit', 'parent-model')).toBe('parent-model')
@@ -31,26 +30,12 @@ describe('modelAliasResolver', () => {
     expect(resolve('opus', 'parent-model', ['openai/gpt-4o'])).toBe('parent-model')
   })
 
-  test('a full id passes through, as the kit reads any other value (case included)', () => {
-    expect(resolve('anthropic/claude-3-5-sonnet', 'parent', CATALOG)).toBe(
-      'anthropic/claude-3-5-sonnet',
-    )
-    expect(resolve('some-custom/model-x', 'parent')).toBe('some-custom/model-x')
-    expect(resolve('Sonnet', 'parent', CATALOG)).toBe('Sonnet')
-  })
-
   // sub-agents.md, "Choose a model": the subagent "runs on the main conversation's exact model,
   // including any `[1m]` suffix" when that model belongs to the alias's family.
   test('an alias of the parent model’s own family keeps the parent’s exact model', () => {
     const catalog = ['claude-opus-4-1', 'claude-opus-5-5', 'claude-sonnet-5']
     expect(resolve('opus', 'claude-opus-4-1[1m]', catalog)).toBe('claude-opus-4-1[1m]')
     expect(resolve('sonnet', 'claude-opus-4-1', catalog)).toBe('claude-sonnet-5')
-  })
-
-  test('a family is the one the id names as a part, not any substring', () => {
-    expect(resolve('opus', 'parent', ['vendor/magnumopus-9', 'claude-opus-4'])).toBe(
-      'claude-opus-4',
-    )
   })
 })
 

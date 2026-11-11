@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { deliverHeldReport } from '../../delegation-awaits'
 import type { TaskDelegationOptions } from '../task-delegation'
+import { taskAgent } from '../../testing/task-agent'
 import { startWorkflowAgent, type WorkflowAgentDeps } from './agent-start'
 
 /**
@@ -29,18 +30,16 @@ function options(
         reviewer: {
           kind: 'agent' as const,
           agent: { agentId: 'agent:reviewer', name: 'reviewer' },
-          type: { fullName: 'reviewer', name: 'reviewer', description: '' },
+          type: taskAgent('reviewer'),
         },
         'sec-kit:reviewer': {
           kind: 'agent' as const,
           agent: { agentId: 'cc:sec-reviewer', name: 'sec-kit:reviewer' },
-          type: {
-            fullName: 'sec-kit:reviewer',
-            name: 'reviewer',
+          type: taskAgent('sec-kit:reviewer', {
             description: 'Reviews code for security problems',
             maxTurns: 4,
-            pinnedSkills: ['threat-model'],
-          },
+            skills: ['threat-model'],
+          }),
         },
       })[reference] ?? { kind: 'unavailable' as const },
     // Many agents run in one workflow: the per-turn delegation budget is never asked.

@@ -1,7 +1,7 @@
 import { readCollections, readCuration, type Curation, type Editorial } from '@localixai/store'
 
 import { isRecord } from '../../lib/record'
-import type { MarketplaceEntry } from './kit'
+import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
 import type { MarketView } from './store-listing'
 
 /**
@@ -22,8 +22,8 @@ export function entryCuration(view: MarketView, entry: MarketplaceEntry): Curati
 
 export function marketEditorial(view: MarketView): Editorial | null {
   if (!view.editorial) return null
-  const metadata = isRecord(view.raw) ? view.raw.metadata : undefined
-  const localix = isRecord(metadata) ? metadata.localix : undefined
+  // `metadata.localix` is a key Claude Code does not read: the kit keeps it in `metadata.extra`.
+  const localix = view.market.metadata?.extra?.localix
   const collections = readCollections(
     (localix as Record<string, unknown> | undefined)?.collections,
     (name) => ({

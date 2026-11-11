@@ -1,6 +1,5 @@
 import {
   autoUpdatePassAllowed as passAllowed,
-  marketplaceAutoUpdate,
   toggleDecision,
 } from '@rsaryev/llx-plugin/marketplace'
 import { processEnvironment } from '../ports/host-io'
@@ -16,10 +15,6 @@ type Env = Record<string, string | undefined>
 
 export const autoUpdatePassAllowed = (env: Env): boolean =>
   passAllowed(processEnvironment(() => env))
-
-/** The record's `autoUpdate`, else the kit's default for the name (on for Claude Code's official ones). */
-export const recordedAutoUpdate = (name: string, recorded: boolean | undefined): boolean =>
-  marketplaceAutoUpdate({ name, ...(recorded === undefined ? {} : { recorded }) })
 
 export type ToggleRefusal = { reason: 'paused' } | { reason: 'managed'; message: string }
 

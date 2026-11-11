@@ -5,13 +5,13 @@ import type { SkillEntry, SkillToolPorts } from '../../../agent-core/tools/skill
 import {
   findSessionSkill,
   invokeSkill,
-  reloadSessionSkills,
   sessionSkills,
+  skillPlugin,
+  skillScope,
   typedSkills,
-  type ChatSkill,
-  type KitSession,
   type SkillShellAnswer,
 } from '../../../plugins/kit'
+import type { PluginSession as KitSession, SessionSkill } from '@rsaryev/llx-plugin'
 import type { SessionRecord } from '../../repository'
 import { claudeCodeHome } from '../../../cc-settings/config-dir'
 import { runOuterRules } from './claude-code-permissions'
@@ -82,13 +82,13 @@ export function skillToolPorts(input: {
   const permitted = latestUserText ? typedSkills(kitSession, latestUserText).permitted : new Set()
   return {
     findSkill: async (name, signal) => {
-      await reloadSessionSkills(kitSession, signal ?? new AbortController().signal)
+      await kitSession.reloadSkills({ signal: signal ?? new AbortController().signal })
       const found = findSessionSkill(kitSession, name)
       return {
         ...(found ? { skill: entryOf(found) } : {}),
         names: sessionSkills(kitSession)
-          .filter((one) => one.modelInvocable && !one.dormant)
-          .map((one) => one.name),
+          .filter((one) => one.policy.model && !one.dormant)
+          .map((one) => one.invocable.command),
       }
     },
     userNamed: (name) => permitted.has(name),
@@ -120,13 +120,14 @@ export function skillToolPorts(input: {
   }
 }
 
-function entryOf(skill: ChatSkill): SkillEntry {
+function entryOf(skill: SessionSkill): SkillEntry {
+  const plugin = skillPlugin(skill)
   return {
-    name: skill.name,
-    ownName: skill.ownName,
-    scope: skill.scope,
-    ...(skill.path ? { path: skill.path } : {}),
-    ...(skill.dir ? { dir: skill.dir } : {}),
-    ...(skill.plugin ? { pluginName: skill.plugin.name } : {}),
+    name: skill.invocable.command,
+    ownName: skill.invocable.name,
+    scope: skillScope(skill),
+    ...(skill.file ? { path: skill.file } : {}),
+    ...(skill.directory ? { dir: skill.directory } : {}),
+    ...(plugin ? { pluginName: plugin.name } : {}),
   }
 }

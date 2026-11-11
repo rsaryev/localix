@@ -16,14 +16,6 @@ export function isSkillDisabled(overrides: SkillOverrides, name: string): boolea
   return overrides[name] === 'off'
 }
 
-/** Preserve discovery order while removing skills disabled by user policy. */
-export function filterDisabledSkills<T extends { name: string }>(
-  skills: readonly T[],
-  overrides: SkillOverrides,
-): T[] {
-  return skills.filter((skill) => !isSkillDisabled(overrides, skill.name))
-}
-
 /** Stable marker used to make next-run visibility changes bypass a frozen roster. */
 export function skillOverridesRevision(overrides: SkillOverrides): string | undefined {
   const entries = Object.entries(overrides).sort(([left], [right]) => left.localeCompare(right))

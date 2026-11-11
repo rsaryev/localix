@@ -13,11 +13,17 @@ const user = (content: string, isInternal = false): PersistedMessage =>
   }) as never
 
 test('the main agent’s initial prompt leads the chat’s first turn only', () => {
-  const agent = { initialPrompt: 'Read the open issues first.' }
+  const agent = {
+    definition: { description: 'd', prompt: 'p', initialPrompt: 'Read the open issues first.' },
+  }
   const first = initialPromptSection(agent, [user('Fix the build')])
   expect(first?.scope).toBe('turn')
   expect(first?.text).toContain('Read the open issues first.')
   expect(initialPromptSection(agent, [user('Fix the build'), user('And the tests')])).toBeNull()
-  expect(initialPromptSection({}, [user('Fix the build')])).toBeNull()
+  expect(
+    initialPromptSection({ definition: { description: 'd', prompt: 'p' } }, [
+      user('Fix the build'),
+    ]),
+  ).toBeNull()
   expect(initialPromptSection(null, [user('Fix the build')])).toBeNull()
 })

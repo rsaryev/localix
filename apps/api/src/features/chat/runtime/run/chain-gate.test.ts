@@ -3,13 +3,12 @@ import os from 'node:os'
 import path from 'node:path'
 import { z } from 'zod'
 import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
-import type { On } from '@localixai/claude-plugin/mods'
 
 import type { PermissionRule } from '../../../agent-core/permission-engine'
 import type { ConfirmOutcome } from '../../../agent-core/permission-gate'
 import type { CcHooksRuntime } from '../../../cc-hooks'
 import { EMPTY_RUNTIME } from '../../../cc-hooks/runtime-results'
-import { hostWithMod } from '../../../mods/testing/testing-host'
+import { hostWithMod, type On } from '../../../mods/testing/testing-host'
 import { createChainGate } from './chain-gate'
 import { applyToolWrapperChain } from './tool-wrapper-chain'
 import { createPermissionGate } from '../../../agent-core/permission-gate'
@@ -236,10 +235,11 @@ describe('the permission gate inside tool.call', () => {
     expect(result.content).not.toContain('SECRET-TOKEN')
   })
 
-  test('with no mod hearing tool.call or tool.check the gate stays at the loop', async () => {
+  test('with mods running, the gate sits in the chain though none hears tool.call', async () => {
+    // A mod's `$.tool.call` runs the turn's tools: in the chain, it meets the gate as the loop's do.
     const { log, call, chainGate } = await run({ register: () => {} })
-    expect(chainGate.inChain).toBe(false)
+    expect(chainGate.inChain).toBe(true)
     await call('t1', 'make')
-    expect(log).toEqual(['card make', 'PreToolUse make', 'run make'])
+    expect(log).toEqual(['PreToolUse make', 'card make', 'run make'])
   })
 })

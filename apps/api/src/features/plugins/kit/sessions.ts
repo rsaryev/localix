@@ -3,6 +3,7 @@ import {
   type Locations,
   type OptionValues,
   type PluginSession,
+  type SessionOptions,
 } from '@rsaryev/llx-plugin'
 import { createPolicyView, type PolicyLayer } from '@rsaryev/llx-plugin/settings'
 import { keepUnchanged, samePlugins, type LoadedKitPlugin, type LocalixPluginHost } from './host'
@@ -37,6 +38,8 @@ export interface ChatSessionFacts {
   readonly layers: readonly PolicyLayer[]
   /** Every plugin the run's catalog found. */
   readonly plugins: readonly ScopePlugin[]
+  /** A sub-agent's: the chat it runs in, whose session it shares one monitor ledger with (`parentSession`). */
+  readonly parentChatId?: string
   /** An `asyncRewake` hook exited 2: wake the chat with this text (the latest run's wake). */
   readonly onWake?: (text: string) => void
 }
@@ -86,6 +89,28 @@ export function sessionLocations(
 }
 
 /**
+ * A kit session on a run's own plugins, values and settings (`sessionOwn`) under Localix's tool
+ * names: the one opener of a chat's session and of a scope's outside any chat (`./scope-session`).
+ * `homeDir`, given, is the home its user files are read from.
+ */
+export function openOwnSession(
+  host: LocalixPluginHost,
+  own: ReturnType<typeof sessionOwn>,
+  options: Omit<SessionOptions, 'settings' | 'plugins' | 'userConfig' | 'locations' | 'toolNames'>,
+  homeDir?: string,
+): PluginSession {
+  const locations = sessionLocations(host, options.cwd, own.plugins)
+  return host.kit.openSession({
+    ...options,
+    settings: createPolicyView(own.layers),
+    plugins: own.plugins.map(({ id, plugin }) => ({ id, plugin })),
+    userConfig: own.userConfig,
+    locations: homeDir === undefined ? locations : { ...locations, homeDir: () => homeDir },
+    toolNames: LOCALIX_TOOL_NAMES,
+  })
+}
+
+/**
  * One kit session per chat (`host.openSession`): opened at the chat's first run, the same session
  * for its later runs, each run a turn of it (`withTurn`), so its `once` keys and session hooks
  * live as long as the chat. A change of trust, of the added folders, of the settings (the files,
@@ -101,7 +126,6 @@ export function createChatPluginSessions(host: LocalixPluginHost) {
       readonly key: string
       readonly own: readonly LoadedKitPlugin[]
       readonly session: PluginSession
-      readonly locations: Locations
     }
   >()
   // The wake of each chat's latest run: a session may open outside a run (a typed `/skill`).
@@ -127,23 +151,23 @@ export function createChatPluginSessions(host: LocalixPluginHost) {
       }
       if (held?.key === key && samePlugins(held.own, own.plugins))
         return held.session.withTurn(turn)
-      const locations = sessionLocations(host, facts.cwd, own.plugins)
-      const session = host.kit.openSession({
+      const parent = facts.parentChatId ? open.get(facts.parentChatId)?.session : undefined
+      const session = openOwnSession(host, own, {
         ...turn,
         sessionId: facts.chatId,
         transcriptPath: facts.transcriptPath,
         trusted: facts.trusted,
         addedDirectories: facts.addedDirectories,
-        settings: createPolicyView(own.layers),
-        plugins: own.plugins.map(({ id, plugin }) => ({ id, plugin })),
-        userConfig: own.userConfig,
-        locations,
-        toolNames: LOCALIX_TOOL_NAMES,
-        ...(held ? { monitorLedger: held.session.monitorLedger() } : {}),
+        // A sub-agent's shares its chat's ledger; a reopened chat's continues the replaced one's.
+        ...(parent
+          ? { parentSession: parent }
+          : held
+            ? { monitorLedger: held.session.monitorLedger() }
+            : {}),
       })
       const { chatId } = facts
       session.onBackground((delivered) => delivered.wake && wakes.get(chatId)?.(delivered.wake))
-      open.set(facts.chatId, { key, own: own.plugins, session, locations })
+      open.set(facts.chatId, { key, own: own.plugins, session })
       return session
     },
     get: (chatId: string): PluginSession | undefined => open.get(chatId)?.session,

@@ -8,7 +8,6 @@ import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
 import type { HostAgents } from '../plugins/kit'
-import { modAgentDefinition } from '../mods/agent-definition'
 import { createAgentsService } from './service'
 import { testAgentScopes } from './testing'
 
@@ -65,19 +64,23 @@ async function fixture(
 
 describe('resolving who a task goes to', () => {
   test('an agent a mod registered runs as its definition: tools, turn limit, model', async () => {
-    const { name, definition } = modAgentDefinition({
-      name: 'runner',
+    // `$.agent.register({ name, ...definition })`, as the kit keeps it (`registered.agents()`).
+    const definition = {
       description: 'Runs a spec',
       prompt: 'You run specs.',
       tools: ['Read'],
       maxTurns: 4,
       model: 'haiku',
-    })
-    const t = await fixture({}, { [name]: definition })
+    }
+    const t = await fixture({}, { runner: definition })
     const target = await t.service.resolveDelegation('u', 'runner')
     expect(target).toMatchObject({
       kind: 'agent',
-      definition: { fullName: 'runner', source: 'flag', tools: ['Read'], maxTurns: 4 },
+      definition: {
+        name: 'runner',
+        source: { kind: 'flag' },
+        definition: { tools: ['Read'], maxTurns: 4 },
+      },
     })
   })
 
@@ -87,7 +90,10 @@ describe('resolving who a task goes to', () => {
     expect(target).toMatchObject({
       kind: 'agent',
       agent: { id: 'builtin:Explore', name: 'Explore' },
-      definition: { omitClaudeMd: true, disallowedTools: ['Write', 'Edit'] },
+      definition: {
+        startsWith: { claudeMd: false },
+        definition: { disallowedTools: ['Write', 'Edit'] },
+      },
     })
   })
 
@@ -108,9 +114,9 @@ describe('resolving who a task goes to', () => {
   test('the other built-in types are catalog agents, with Localix’s prompts', async () => {
     const t = await fixture()
     const found = await t.service.resolveDelegation('u', 'statusline-setup')
-    expect(found).toMatchObject({ kind: 'agent', definition: { source: 'builtin' } })
-    expect(found.kind === 'agent' && found.definition.prompt).toContain('status line')
-    expect(found.kind === 'agent' && found.definition.tools).toBeUndefined()
+    expect(found).toMatchObject({ kind: 'agent', definition: { source: { kind: 'builtin' } } })
+    expect(found.kind === 'agent' && found.definition.definition.prompt).toContain('status line')
+    expect(found.kind === 'agent' && found.definition.definition.tools).toBeUndefined()
     expect(await t.service.resolveDelegation('u', 'claude-code-guide')).toMatchObject({
       kind: 'agent',
     })
@@ -132,17 +138,20 @@ describe('resolving who a task goes to', () => {
     const t = await fixture()
     await t.userFile('general-purpose', 'tools: Read\n')
     const target = await t.service.resolveDelegation('u', 'general-purpose')
-    expect(target).toMatchObject({ kind: 'agent', definition: { tools: ['Read'], source: 'user' } })
+    expect(target).toMatchObject({
+      kind: 'agent',
+      definition: { definition: { tools: ['Read'] }, source: { kind: 'folder', scope: 'user' } },
+    })
     await t.projectFile('Explore')
     // A file that came with the repository waits to be allowed.
     expect(await t.service.resolveDelegation('u', 'Explore', 'p')).toEqual({ kind: 'unavailable' })
     await t.service.setAgentEnabled('u', 'Explore', true, 'p')
     expect(await t.service.resolveDelegation('u', 'Explore', 'p')).toMatchObject({
       kind: 'agent',
-      definition: { source: 'project' },
+      definition: { source: { kind: 'folder', scope: 'project' } },
     })
     expect(await t.service.resolveDelegation('u', 'Explore')).toMatchObject({
-      definition: { source: 'builtin' },
+      definition: { source: { kind: 'builtin' } },
     })
   })
 
@@ -209,11 +218,16 @@ describe('the definition a run is admitted with', () => {
     const explore = await t.service.resolveRunAgent('u', 'builtin:Explore', 'delegation')
     expect(explore).toMatchObject({
       status: 'allowed',
-      agent: { spec: { omitClaudeMd: true, disallowedTools: ['Write', 'Edit'] } },
+      agent: {
+        spec: {
+          startsWith: { claudeMd: false },
+          definition: { disallowedTools: ['Write', 'Edit'] },
+        },
+      },
     })
     const id = (await t.service.getAgent('u', 'scribe'))!.record.id
     expect(await t.service.resolveRunAgent('u', id, 'delegation')).toMatchObject({
-      agent: { spec: { tools: ['Read', 'Grep'], maxTurns: 4 } },
+      agent: { spec: { definition: { tools: ['Read', 'Grep'], maxTurns: 4 } } },
     })
     await t.projectFile('Explore')
     await t.service.setAgentEnabled('u', 'Explore', true, 'p')
@@ -253,12 +267,12 @@ describe('the agent the main thread runs as', () => {
     await t.userFile('reviewer')
     await t.settings({ agent: 'reviewer' })
     expect(await t.service.resolveMainAgent('u')).toMatchObject({
-      fullName: 'reviewer',
-      prompt: expect.stringContaining('Body of reviewer'),
+      name: 'reviewer',
+      definition: { prompt: expect.stringContaining('Body of reviewer') },
     })
     // A plugin agent by its qualified or its unique bare name, as Claude Code resolves it.
     await t.settings({ agent: 'auditor' })
-    expect(await t.service.resolveMainAgent('u')).toMatchObject({ fullName: 'sec:auditor' })
+    expect(await t.service.resolveMainAgent('u')).toMatchObject({ name: 'sec:auditor' })
     // Nothing by that name, the default agent itself and `general-purpose` change nothing.
     for (const agent of ['nobody', 'localix', 'general-purpose']) {
       await t.settings({ agent })
@@ -268,10 +282,10 @@ describe('the agent the main thread runs as', () => {
 
   test("an enabled plugin's default agent, under the settings' own", async () => {
     const t = await fixture({ sec: ['auditor'] }, {}, { sec: { agent: 'auditor' } })
-    expect(await t.service.resolveMainAgent('u')).toMatchObject({ fullName: 'sec:auditor' })
+    expect(await t.service.resolveMainAgent('u')).toMatchObject({ name: 'sec:auditor' })
     await t.userFile('reviewer')
     await t.settings({ agent: 'reviewer' })
-    expect(await t.service.resolveMainAgent('u')).toMatchObject({ fullName: 'reviewer' })
+    expect(await t.service.resolveMainAgent('u')).toMatchObject({ name: 'reviewer' })
   })
 
   test('a switched-off agent is not run as', async () => {

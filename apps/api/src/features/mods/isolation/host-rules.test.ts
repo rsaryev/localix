@@ -27,7 +27,7 @@ describe('loading a mod', () => {
     await host.stop()
   })
 
-  test('an event name that is no string refuses the load; a RegExp matcher is matched by the mod', async () => {
+  test('an event name that is no string literal refuses the load; a RegExp matcher is matched by the mod', async () => {
     const { command, host } = await hostWithVms(
       {
         numbered: `export function register(on) { on(123, async () => ({ text: 'never' })) }`,
@@ -37,13 +37,15 @@ describe('loading a mod', () => {
       },
       { vms },
     )
-    expect(host.failures().get('numbered')).toContain('takes an event name')
+    expect(host.failures().get('numbered')).toContain(
+      'the event name passed to on() is not a string literal',
+    )
     expect(await command('pattern', 're-x')).toEqual({ text: 'matched re-x' })
     expect(await command('pattern', 'other')).toEqual({})
     await host.stop()
   })
 
-  test('a module that reaches for import.meta.require does not load; one that calls import() loads, and it rejects', async () => {
+  test('a module that reaches for import.meta.require does not load; nor does one that calls import()', async () => {
     const { command, host } = await hostWithVms(
       {
         meta: `export function register(on) { on('command.run', async () => ({ text: import.meta.require('fs') })) }`,
@@ -56,9 +58,9 @@ describe('loading a mod', () => {
       { vms },
     )
     expect(host.failures().get('meta')).toContain('import.meta')
-    expect(await command('dynamic', 'import')).toEqual({
-      text: "refused: could not load module 'node:fs'",
-    })
+    // The kit refuses a dynamic import() when the module loads, before it can run.
+    expect(host.failures().get('dynamic')).toContain('a dynamic import()')
+    expect(await command('dynamic', 'import')).toEqual({})
     await host.stop()
   })
 
@@ -78,7 +80,7 @@ describe('loading a mod', () => {
     expect(host.failures().get('stuck')).toContain('did not finish loading within 2000 ms')
     expect(host.loaded()).toEqual(['fine'])
     expect(reports).toEqual([
-      'stuck: the hooks module did not load: the hooks module did not finish loading within 2000 ms',
+      'stuck: hooks module did not load: hooks/register.js: the hooks module did not finish loading within 2000 ms',
     ])
     await host.stop()
   })

@@ -1,13 +1,8 @@
 import { scalarConfig } from '../capabilities/source-repository'
 import type { PluginCatalog } from './catalog'
 import { storedOptionValues } from './config'
-import {
-  issueLine,
-  scopeMcpServers,
-  type LocalixPluginHost,
-  type ScopeMcpServers,
-  type ScopePlugin,
-} from './kit'
+import { issueLine, scopeMcpServers, type LocalixPluginHost, type ScopePlugin } from './kit'
+import type { Resolved, ResolvedMcpServer } from '@rsaryev/llx-plugin'
 import { pluginLoadBlockReason } from './load-block'
 import { pluginIdOf } from './plugin-data-id'
 
@@ -45,7 +40,7 @@ export async function catalogMcpServers(
     readonly homeDir: string
     readonly logger?: { warn: (msg: string, meta?: unknown) => void }
   },
-): Promise<ScopeMcpServers> {
+): Promise<Resolved<ResolvedMcpServer>> {
   const servers = await scopeMcpServers(host, {
     cwd: scope.cwd,
     homeDir: scope.homeDir,

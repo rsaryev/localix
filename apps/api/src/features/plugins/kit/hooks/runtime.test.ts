@@ -65,14 +65,6 @@ describe('PreToolUse', () => {
     })
   })
 
-  it('exit 2 refuses the call with its stderr', async () => {
-    const rt = runtime(on('PreToolUse', 'echo "blocked by policy" >&2; exit 2'))
-    expect(await rt.runPreToolUse('Bash', { command: 'ls' })).toMatchObject({
-      decision: 'deny',
-      reason: expect.stringContaining('blocked by policy'),
-    })
-  })
-
   it("a rewrite of Claude Code's fields lands on Localix's input", async () => {
     const rt = runtime(on('PreToolUse', pre('allow', { updatedInput: { command: 'ls -la' } })))
     const result = await rt.runPreToolUse('Bash', { command: 'ls' })

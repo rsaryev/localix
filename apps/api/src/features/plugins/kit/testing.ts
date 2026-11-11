@@ -2,7 +2,14 @@ import { createHash } from 'node:crypto'
 import { rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { writeTree } from '@localixai/testing'
-import type { EnvFileStore, HooksSettings, PluginFiles, PluginSession } from '@rsaryev/llx-plugin'
+import type {
+  AgentDefinition,
+  EnvFileStore,
+  HooksSettings,
+  PluginFiles,
+  PluginSession,
+  SessionSkill,
+} from '@rsaryev/llx-plugin'
 import type { PluginStateStore, StagedDirectory } from '@rsaryev/llx-plugin/marketplace'
 import {
   fakeEnvironment,
@@ -15,6 +22,9 @@ import {
   recordingHttp,
   scriptedRunner,
 } from '@rsaryev/llx-plugin/testing'
+import { readSkill } from '@rsaryev/llx-plugin/format'
+import { invocationPolicy } from '@rsaryev/llx-plugin/skills'
+import type { ScopeAgent } from './agents'
 import { createLocalixPluginHost, type LocalixPluginHost } from './host'
 import { createKitHooksRuntime } from './hooks/runtime'
 import { createChatPluginSessions, type ScopePlugin } from './sessions'
@@ -22,7 +32,8 @@ import { readPluginFolder } from './catalog/read-folder'
 import { sessionLspServers, type SessionLspServers } from './lsp-servers'
 import type { CcHooksRuntime } from '../../cc-hooks/runtime-contracts'
 import type { LocalixKitPorts } from './ports/host-ports'
-import { parseMarketplace, type Marketplace, type MarketplaceEntry } from './marketplace/catalog'
+import type { Marketplace, MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
+import { parseMarketplace } from './marketplace/catalog'
 
 /**
  * The plugin kit boundary in memory, for other features' tests: every port of `createHostPorts`
@@ -219,6 +230,59 @@ export async function testLspServers(
 }
 
 /** A marketplace as the kit reads it, from catalog fields (`name` and `owner` filled in). */
+/**
+ * A subagent as the kit's catalog holds it, for other features' tests: a personal agent file of
+ * `name` unless `more` says otherwise, its `definition` given as far as the test cares.
+ */
+export function testCatalogAgent(
+  name: string,
+  definition: Partial<AgentDefinition> = {},
+  more: Partial<ScopeAgent> = {},
+): ScopeAgent {
+  return {
+    name,
+    ownName: name.split(':').at(-1) ?? name,
+    source: { kind: 'folder', scope: 'user' },
+    definition: { description: `${name} agent`, prompt: `You are ${name}.`, ...definition },
+    extras: {},
+    hooks: undefined,
+    path: `/home/.claude/agents/${name}.md`,
+    startsWith: { claudeMd: true, gitStatus: true },
+    ...more,
+  }
+}
+
+/**
+ * One row of a session's skill catalog, read by the kit from `frontmatter` (YAML lines): a personal
+ * skill unless `plugin` names the plugin that ships it (`<plugin>:<name>`, the plugin's id `<plugin>@m`).
+ */
+export function testSessionSkill(
+  name: string,
+  frontmatter = '',
+  more: { plugin?: string; scope?: 'user' | 'project' } = {},
+): SessionSkill {
+  const path = `/skills/${name}/SKILL.md`
+  const origin = more.plugin
+    ? ({ kind: 'plugin', plugin: more.plugin } as const)
+    : { kind: 'user' as const }
+  const text = `---\nname: ${name}\ndescription: About ${name}\n${frontmatter}\n---\nDo ${name}.`
+  const { body: _body, ...invocable } = readSkill(path, text, { origin, dirName: name }).skill
+  const policy = invocationPolicy(invocable)
+  return {
+    invocable,
+    names: [invocable.command],
+    source: more.plugin
+      ? { kind: 'plugin', pluginId: `${more.plugin}@m` }
+      : { kind: 'folder', scope: more.scope ?? 'user' },
+    override: 'on',
+    policy,
+    listed: policy.listedToModel,
+    dormant: false,
+    file: path,
+    directory: `/skills/${name}`,
+  }
+}
+
 export const kitMarketplace = (fields: Record<string, unknown>): Marketplace =>
   parseMarketplace({ name: 'm', owner: { name: 'o' }, plugins: [], ...fields })
 
@@ -228,3 +292,6 @@ export function kitEntry(fields: Record<string, unknown>): MarketplaceEntry {
   if (!entry) throw new Error(`The kit leaves this entry out: ${JSON.stringify(fields)}`)
   return entry
 }
+
+/** The kit's mods test kit: fake ports and interface a mods host is built over in a test. */
+export { modsTesting } from '@rsaryev/llx-plugin/mods'

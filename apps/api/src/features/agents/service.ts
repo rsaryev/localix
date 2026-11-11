@@ -36,7 +36,7 @@ interface Catalog {
  * writes for it comes after and decides.
  */
 const shippedInvocations = (entry: BoundAgent): Rule[] =>
-  entry.agent.source === 'builtin' && entry.id !== DEFAULT_AGENT_ID
+  entry.agent.source.kind === 'builtin' && entry.id !== DEFAULT_AGENT_ID
     ? [{ action: 'invocation:delegation', resource: entry.id, effect: 'allow' }]
     : []
 

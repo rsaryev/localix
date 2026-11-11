@@ -3,8 +3,8 @@ import type { OutputStyle } from '@localixai/claude-plugin'
 import type { ClaudeTheme } from '@localixai/claude-plugin'
 import { readCatalog } from '@rsaryev/llx-plugin'
 import type { Plugin } from '@rsaryev/llx-plugin/loading'
-import { themeColorToHex, type AgentRecord, type Command } from '@rsaryev/llx-plugin/format'
-import type { PluginAgent, PluginCommand } from '../../contracts'
+import { themeColorToHex, type Command } from '@rsaryev/llx-plugin/format'
+import type { PluginCommand } from '../../contracts'
 
 /**
  * A loaded plugin's Markdown and JSON components as the kit's sessions read them (`readCatalog`,
@@ -49,49 +49,6 @@ export function readSkillDescriptions(plugin: Plugin): Map<string, string> {
 
 export function readCommands(plugin: Plugin) {
   return { commands: readCatalog(plugin).commands.map(commandOf) }
-}
-
-/** An agent as the kit read it: a file's record, or a catalog entry under its scoped name. */
-export type AgentEntry = Pick<
-  AgentRecord,
-  'scopedName' | 'name' | 'definition' | 'extras' | 'hooks'
->
-
-/** An agent of the plugin, named below it (`team:security` for `<plugin>:team:security`). */
-export function agentOf(record: AgentEntry, prefix: string): PluginAgent {
-  const { definition, extras } = record
-  const pinned = [...new Set(definition.skills ?? [])]
-  const fields: PluginAgent = {
-    name:
-      prefix && record.scopedName.startsWith(`${prefix}:`)
-        ? record.scopedName.slice(prefix.length + 1)
-        : record.name,
-    description: definition.description,
-    prompt: definition.prompt.trim(),
-    // As written: the kit resolves them against the run's tools (`kit/subagent-tools.ts`).
-    ...(definition.tools === undefined ? {} : { tools: [...definition.tools] }),
-    ...(definition.disallowedTools?.length
-      ? { disallowedTools: [...definition.disallowedTools] }
-      : {}),
-    ...(definition.model ? { model: definition.model } : {}),
-    ...(pinned.length ? { pinnedSkills: pinned } : {}),
-    ...(definition.maxTurns ? { maxTurns: definition.maxTurns } : {}),
-    ...(definition.background === undefined ? {} : { background: definition.background }),
-    ...(definition.memory ? { memory: definition.memory } : {}),
-    ...(definition.autoCompactWindow ? { autoCompactWindow: definition.autoCompactWindow } : {}),
-    ...(extras.isolation === 'worktree' ? { isolation: 'isolated' as const } : {}),
-    ...(definition.omitClaudeMd ? { omitClaudeMd: true } : {}),
-    ...(extras.cacheTtl ? { cacheTtl: extras.cacheTtl } : {}),
-    ...(extras.color ? { color: extras.color } : {}),
-    ...(definition.initialPrompt ? { initialPrompt: definition.initialPrompt } : {}),
-    ...(record.hooks ? { hooks: record.hooks } : {}),
-    ...(definition.mcpServers ? { mcpServers: definition.mcpServers } : {}),
-  }
-  return fields
-}
-
-export function readAgents(plugin: Plugin) {
-  return { agents: readCatalog(plugin).agents.map((record) => agentOf(record, plugin.name)) }
 }
 
 const stylesOf = (plugin: Plugin): OutputStyle[] =>

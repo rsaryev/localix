@@ -10,8 +10,8 @@ import {
   readInstalled,
   versionsToOrphan,
   writeInstalled,
-  type InstallRecord,
 } from './kit'
+import type { InstallRecord } from '@rsaryev/llx-plugin/marketplace'
 
 /**
  * THE VERSIONED PLUGIN CACHE, laid out as Claude Code lays out `~/.claude/plugins` (loading.md,

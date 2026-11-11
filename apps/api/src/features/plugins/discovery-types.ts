@@ -1,5 +1,7 @@
-import type { PluginAgent, PluginCommand, PluginManifest, PluginProvides } from './contracts'
-import type { KitPlugin, PluginIssue, ResolvedEntrypoints } from './kit'
+import type { PluginCommand, PluginManifest, PluginProvides } from './contracts'
+import type { ResolvedEntrypoints } from './kit'
+import type { Plugin as KitPlugin } from '@rsaryev/llx-plugin/loading'
+import type { AgentRecord, PluginIssue } from '@rsaryev/llx-plugin/format'
 
 export interface DiscoveredPlugin {
   manifest: PluginManifest
@@ -21,8 +23,8 @@ export interface DiscoveredPlugin {
   provides: PluginProvides
   /** Resolved slash-commands: inline manifest objects + Claude Code flat `.md` files. */
   commands: PluginCommand[]
-  /** Resolved worker roles: inline manifest objects + Claude Code `agents/*.md` files. */
-  agents: PluginAgent[]
+  /** Its agents as the kit read their files. */
+  agents: readonly AgentRecord[]
   /**
    * Claude Code's `<name>@<marketplace>` when the folder is one Claude Code installed and Localix
    * reads in place (`claude-code-installs.ts`). Claude Code owns it: Localix may turn it off here,

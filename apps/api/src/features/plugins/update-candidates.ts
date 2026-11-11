@@ -6,17 +6,17 @@ import { isRecord } from '../../lib/record'
 import type { DiscoveredPlugin } from './discovery-types'
 import {
   catalogAt,
+  isUpdate,
   pluginVersion,
   readMarketplace,
   resolveEntryName,
   resolveEntrySource,
   UNKNOWN_VERSION,
   type KnownMarketplace,
-  type VersionSourceFacts,
 } from './kit'
 import { parseMarketplaceRef, sourceMatchesRef } from './marketplace-source'
 import { readInstallRecords } from './plugin-cache'
-import { entryVersionFacts } from './plugin-version'
+import { entryVersionInput, isGitInput, RELATIVE_INPUT, withCommit } from './plugin-version'
 
 /**
  * WHAT AN UPDATE WOULD INSTALL, computed without installing: the version of each user-scope plugin
@@ -119,7 +119,7 @@ export async function candidateFor(
   if (!entry) return null
   if (entry.headersHelper !== undefined)
     return { version: install.version, manual: 'its marketplace entry sets a headersHelper' }
-  let facts: VersionSourceFacts = entryVersionFacts(entry)
+  let input = entryVersionInput(entry)
   let declared: string | undefined
   const resolved = (() => {
     try {
@@ -130,24 +130,26 @@ export async function candidateFor(
   })()
   if (resolved && 'localPath' in resolved) {
     declared = await manifestVersion(resolved.localPath)
-    if (record.gitCommitSha) facts = { kind: 'relative', commitSha: record.gitCommitSha }
-  } else if (resolved && 'git' in resolved && facts.kind === 'git' && !facts.commitSha) {
-    const commitSha = await remoteCommit(resolved.git.url, resolved.git.ref)
-    if (commitSha) facts = { ...facts, commitSha }
+    if (record.gitCommitSha) input = withCommit(RELATIVE_INPUT, record.gitCommitSha)
+  } else if (resolved && 'git' in resolved && isGitInput(input) && !input.commitSha) {
+    input = withCommit(input, await remoteCommit(resolved.git.url, resolved.git.ref))
   }
   const version = await pluginVersion({
-    manifestVersion: declared,
-    entryVersion: entry.version,
-    source: facts,
+    ...input,
+    ...(declared === undefined ? {} : { manifestVersion: declared }),
+    ...(entry.version === undefined ? {} : { entryVersion: entry.version }),
   })
-  const commitSha = 'commitSha' in facts ? facts.commitSha : undefined
+  const { commitSha } = input
   return { version, ...(commitSha ? { commitSha } : {}) }
 }
 
-/** Whether installing the candidate would change the install, as far as can be known now. */
+/**
+ * Whether installing the candidate would change the install, as far as can be known now: the kit's
+ * one comparison (`isUpdate`), before any fetch.
+ */
 export function isNewer(install: MarketplaceInstall, candidate: UpdateCandidate): boolean {
   if (candidate.manual || candidate.version === UNKNOWN_VERSION) return false
-  if (candidate.version === install.version) return false
+  if (isUpdate(install.version, candidate.version) === 'unchanged') return false
   // A remote git source whose commit is the installed one has nothing new, whatever the version
   // string the listing alone can compute.
   return !(candidate.commitSha && install.commitSha === candidate.commitSha)

@@ -136,7 +136,7 @@ describe.skipIf(!present)('Claude Code’s sample mods, unchanged', () => {
 
   test('Replay Theater records a turn’s edits, hints in the band, and steps through them in a pane', async () => {
     const { host, scope, band } = await start('replay-theater')
-    const write = tool('write', () => 'Wrote 1 file')
+    const write = tool('Write', () => 'Wrote 1 file')
     const [wrapped] = scope.wrapTools([write])
     await scope.turnStart('Write two notes', 't1')
     await wrapped!.execute('w1', {
@@ -150,7 +150,7 @@ describe.skipIf(!present)('Claude Code’s sample mods, unchanged', () => {
     expect(textOf(hint)).toContain('Replay: 2 edits')
     expect(await host.band.interact('s1', { kind: 'press', element: 'open-replay' })).toBe(true)
     const pane = await until(
-      async () => host.registry.panes().find((open) => open.id === 'replay-theater'),
+      async () => host.panes.list().find((open) => open.id === 'replay-theater'),
       'the pane',
     )
     expect(pane.focusRequest).toBe(1)
@@ -167,12 +167,12 @@ describe.skipIf(!present)('Claude Code’s sample mods, unchanged', () => {
     mkdirSync(join(dir, 'build'))
     writeFileSync(join(dir, 'build/out.js'), 'x')
     let ran = 0
-    const [bash] = scope.wrapTools([tool('bash', () => (ran++, 'removed'))])
+    const [bash] = scope.wrapTools([tool('Bash', () => (ran++, 'removed'))])
     const held = bash!
       .execute('b1', { command: 'rm -rf build' })
       .catch((error: Error) => error.message)
     const pane = await until(
-      async () => host.registry.panes().find((open) => open.id === 'blast-radius'),
+      async () => host.panes.list().find((open) => open.id === 'blast-radius'),
       'the hold',
     )
     const drawn = await until(async () => {
@@ -189,7 +189,7 @@ describe.skipIf(!present)('Claude Code’s sample mods, unchanged', () => {
       .execute('b2', { command: 'rm -rf build' }, stop.signal)
       .catch((error: Error) => error.message)
     await until(
-      async () => host.registry.panes().find((open) => open.id === 'blast-radius'),
+      async () => host.panes.list().find((open) => open.id === 'blast-radius'),
       'the second hold',
     )
     stop.abort()

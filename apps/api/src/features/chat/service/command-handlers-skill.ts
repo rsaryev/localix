@@ -1,13 +1,13 @@
 import { sessionRoute } from '../../../contracts/session-route'
 import { recordSkillUse } from '../../agent-core/skill-usage-recorder'
 import { announceSessionActive } from '../../agent-core/session-activity'
-import { resolveModelAlias } from '../../agent-core/model-alias'
 import { resolveDeclaredReasoningEffort } from '../../../db/types'
 import {
   invokeTypedSkills,
-  reloadSessionSkills,
+  resolveModelAlias,
+  skillPlugin,
+  skillScope,
   typedSkills,
-  type ChatSkill,
 } from '../../plugins/kit'
 import { parseSkillCommand } from './slash-commands'
 import { typedSkillShellAnswer } from './skill-command-authorize'
@@ -16,11 +16,6 @@ import type { MessageMutationResponse } from '../contracts'
 import { skillPrompt } from '../../mods/conversation-events'
 import type { CommandHandlerContext } from './command-handlers-context'
 import { isSkillDisabled } from '../../agent-core/skill-overrides'
-
-/** The skill's plugin, for a forked child's hooks (`${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`). */
-function pluginOf(skill: ChatSkill) {
-  return skill.plugin ? { id: skill.plugin.id, name: skill.plugin.name } : undefined
-}
 
 /**
  * Handles user skill slash commands (`/<skill-name>`). A `/name` that isn't a built-in and that
@@ -46,26 +41,24 @@ export async function handleSkillCommand(
   if (!kitSession) return null
   const signal = AbortSignal.timeout(10 * 60_000)
   // The skill folders read again first: a skill written since is a skill.
-  await reloadSessionSkills(kitSession, signal)
+  await kitSession.reloadSkills({ signal })
   const named = typedSkills(kitSession, prompt)
   const [skill] = named.leading
   // No skill by the name — let the final unresolved-slash gate report it.
   if (!skill) return null
+  const name = skill.invocable.command
+  const scope = skillScope(skill)
+  // The skill's plugin, for a forked child's hooks (`${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`).
+  const plugin = skillPlugin(skill)
   const skillOverrides = await ctx.loadSkillOverrides(
     userId,
     session.projectId,
-    named.leading.map((one) => one.name),
+    named.leading.map((one) => one.invocable.command),
   )
-  if (named.leading.some((one) => isSkillDisabled(skillOverrides, one.name))) return null
+  if (named.leading.some((one) => isSkillDisabled(skillOverrides, one.invocable.command)))
+    return null
   const fail = (reason: string) =>
-    insertDirectReply(
-      userId,
-      sessionId,
-      prompt,
-      `Skill \`/${skill.name}\`: ${reason}`,
-      now(),
-      'error',
-    )
+    insertDirectReply(userId, sessionId, prompt, `Skill \`/${name}\`: ${reason}`, now(), 'error')
 
   // No busy refusal: a skill command sent while the session works waits in the queue whole
   // (`run-macro.ts`), like every other slash command.
@@ -86,40 +79,35 @@ export async function handleSkillCommand(
   const instruction = await skillPrompt(
     ctx.deps?.mods,
     { userId, sessionId, cwd: workingDir },
-    skill.name,
+    name,
     expanded,
     {
-      scope: skill.scope,
-      ...(skill.path ? { path: skill.path } : {}),
-      ...(skill.plugin ? { pluginName: skill.plugin.name } : {}),
+      scope,
+      ...(skill.file ? { path: skill.file } : {}),
+      ...(plugin ? { pluginName: plugin.name } : {}),
     },
   )
   // Curator usage telemetry — a slash-command invocation counts as a use. The curator tends the
   // person's own skills; a plugin's are the plugin's.
-  if (!skill.plugin)
-    recordSkillUse(
-      skill.name,
-      skill.scope,
-      skill.scope === 'project' ? (session.projectId ?? '') : '',
-    )
+  if (!plugin) recordSkillUse(name, scope, scope === 'project' ? (session.projectId ?? '') : '')
   // The session recorded the skill: a plugin monitor waiting for it starts now.
   announceSessionActive({ userId, chatId: session.rootSessionId ?? sessionId, sessionId })
 
   // CC `context: fork` — run the skill in a child session, started as the invoking agent and run
   // as the agent the expansion names.
   if (first.fork && spawnForkSkill) {
-    const plugin = pluginOf(skill)
+    const { hooks } = skill.invocable
     const childId = await spawnForkSkill(userId, sessionId, instruction, {
       agent: first.fork.agent,
-      title: `/${skill.name}${arg ? ' ' + arg : ''}`,
+      title: `/${name}${arg ? ' ' + arg : ''}`,
       // CC skill frontmatter `hooks` — activated for the forked sub-agent run.
-      ...(skill.hooks ? { hooks: skill.hooks, ...(plugin ? { hooksPlugin: plugin } : {}) } : {}),
+      ...(hooks ? { hooks, ...(plugin ? { hooksPlugin: plugin } : {}) } : {}),
     })
     return insertDirectReply(
       userId,
       sessionId,
       prompt,
-      `Skill \`/${skill.name}\` started in a fork (session \`${childId.slice(0, 8)}…\`). Results will appear in the runtime panel.`,
+      `Skill \`/${name}\` started in a fork (session \`${childId.slice(0, 8)}…\`). Results will appear in the runtime panel.`,
       now(),
     )
   }
@@ -150,11 +138,11 @@ export async function handleSkillCommand(
         source: 'slash',
         invocation: {
           kind: 'skill',
-          name: skill.name,
+          name,
           ...(arg ? { arguments: arg } : {}),
           lifetime: 'turn',
         },
-        presentation: { label: `/${skill.name}`, token: `/${skill.name}` },
+        presentation: { label: `/${name}`, token: `/${name}` },
       },
     },
   )

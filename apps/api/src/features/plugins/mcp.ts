@@ -2,19 +2,19 @@ import { errorMessage } from '../../lib/errors'
 import type { McpServerRecord } from '../mcp/repository'
 import { normalizeMcpServerEntry } from '../mcp/normalize'
 import type { DiscoveredPlugin } from './discovery'
-import type { ScopeMcpServers } from './kit'
+import type { Resolved, ResolvedMcpServer } from '@rsaryev/llx-plugin'
 
 // `pluginDataDir` lives in `../ext/user-config-substitute` (shared with cc-hooks).
 export { mcpShellFieldReferencingOption, pluginDataDir } from '../ext/user-config-substitute'
 
 /**
  * The MCP server records of one enabled plugin, from the servers its scope's kit session resolved
- * (`kit/mcp-servers.ts`): each keyed `plugin:<plugin>:<server>`, named `<plugin>_<server>` so its
+ * (`kit/scope-session.ts`): each keyed `plugin:<plugin>:<server>`, named `<plugin>_<server>` so its
  * tools surface as `mcp_<plugin>_<server>_<tool>` and never collide with the user's own servers.
  */
 export function buildMcpRecords(
   plugin: DiscoveredPlugin,
-  servers: ScopeMcpServers,
+  servers: Resolved<ResolvedMcpServer>,
   userId: string,
   timestamp: string,
   logger?: { warn: (msg: string, meta?: unknown) => void },

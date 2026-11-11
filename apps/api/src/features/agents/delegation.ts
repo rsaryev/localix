@@ -71,7 +71,7 @@ export function createAgentDelegation(deps: DelegationDeps) {
         (candidate) => candidate.record.id === entry.id,
       )
       if (!delegates(summary)) return { kind: 'unavailable' }
-      if (entry.agent.self) return { kind: 'self', type: entry.agent.fullName }
+      if (entry.agent.self) return { kind: 'self', type: entry.agent.name }
       return { kind: 'agent', agent: summary!.record, definition: entry.agent }
     },
 
@@ -104,7 +104,7 @@ export function createAgentDelegation(deps: DelegationDeps) {
           description: summary.record.description,
           enabled: summary.enabled,
           delegable: delegates(summary) && !isForkName(summary.record.name),
-          ...(definition?.tools ? { tools: definition.tools } : {}),
+          ...(definition?.definition.tools ? { tools: definition.definition.tools } : {}),
           ...(definition?.self ? { self: true } : {}),
         }
       })

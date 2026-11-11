@@ -7,13 +7,8 @@ import { resolvePluginConfig } from './config'
 import type { PluginCommand, PluginCommandSpec } from './contracts'
 import { makePluginSubstituter } from './loader-runtime-declarations'
 import { kitPluginsOf } from './catalog-kit'
-import { scopeSkills, type ChatSkill, type LocalixPluginHost } from './kit'
-
-/** A plugin's skill or command as the kit lists it: what the composer shows of it. */
-export type PluginSkillRow = Pick<
-  ChatSkill,
-  'name' | 'description' | 'argumentHint' | 'inMenu' | 'plugin'
->
+import type { SessionSkill } from '@rsaryev/llx-plugin'
+import { scopeSkills, skillPlugin, type LocalixPluginHost } from './kit'
 
 /**
  * The commands of every ENABLED plugin, with their text read as a skill's is (a command is a skill
@@ -49,7 +44,7 @@ export function catalogPluginCommands(
  * full name keeps its entry.
  */
 export function pluginSkillCommandSpecs(
-  skills: readonly PluginSkillRow[],
+  skills: readonly SessionSkill[],
   taken: readonly PluginCommandSpec[],
 ): PluginCommandSpec[] {
   // A command named after its plugin is listed bare (`/feature-dev`) yet also answers
@@ -64,16 +59,17 @@ export function pluginSkillCommandSpecs(
   )
   const specs: PluginCommandSpec[] = []
   for (const skill of skills) {
-    const plugin = skill.plugin?.name
-    if (!plugin || !skill.inMenu || seen.has(skill.name.toLowerCase())) continue
-    seen.add(skill.name.toLowerCase())
+    const plugin = skillPlugin(skill)?.name
+    const { command, description, argumentHint } = skill.invocable
+    if (!plugin || !skill.policy.inMenu || seen.has(command.toLowerCase())) continue
+    seen.add(command.toLowerCase())
     specs.push({
       pluginName: plugin,
-      name: skill.name.startsWith(`${plugin}:`) ? skill.name.slice(plugin.length + 1) : skill.name,
-      fullName: skill.name,
-      description: skill.description,
+      name: command.startsWith(`${plugin}:`) ? command.slice(plugin.length + 1) : command,
+      fullName: command,
+      description: description ?? '',
       args: [],
-      ...(skill.argumentHint ? { argumentHint: skill.argumentHint } : {}),
+      ...(argumentHint ? { argumentHint } : {}),
     })
   }
   return specs

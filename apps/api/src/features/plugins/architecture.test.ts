@@ -20,9 +20,7 @@ import { copyExtensionTree } from '../ext/install-tree'
  */
 function mkEntrypoints(over: Partial<ResolvedEntrypoints> = {}): ResolvedEntrypoints {
   return {
-    skillDirs: [],
     mcpServers: {},
-    commandFiles: [],
     hookConfigs: [],
     lspServers: {},
     monitors: [],

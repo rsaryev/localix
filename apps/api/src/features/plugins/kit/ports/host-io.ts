@@ -8,6 +8,10 @@ import { pluginDataDir } from '../../../ext/user-config-substitute'
  * the plain effect; the kit owns what it means.
  */
 
+/** The platform paths and commands are read for: WSL counts as `posix`. */
+export const hostPlatform = (): 'posix' | 'windows' =>
+  process.platform === 'win32' ? 'windows' : 'posix'
+
 /** The real clock. A timer never holds the process open. */
 export const systemClock: Clock = {
   now: () => Date.now(),

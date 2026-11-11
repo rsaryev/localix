@@ -1,8 +1,7 @@
 import { expect, test } from 'bun:test'
 import { AsyncLocalStorage } from 'node:async_hooks'
-import type { ModsApi, Next } from '@localixai/claude-plugin/mods'
-import type { Endpoint } from './endpoint'
-import { createCalls } from './stand-in'
+import type { Endpoint } from '../../plugins/kit'
+import { createCalls, type DollarApi, type HookNext } from './stand-in'
 
 /** The host's side of calls into a mod's instance: abandoned calls, and whose context runs. */
 
@@ -22,13 +21,13 @@ function endpointNeverAnswering() {
   return { endpoint, notes, waiting }
 }
 
-function nextWith(controller: AbortController): Next {
+function nextWith(controller: AbortController): HookNext {
   return Object.assign(() => Promise.resolve(undefined), {
     signal: controller.signal,
     origin: { plugin: 'p', tier: 'user' as const },
     budget: { ms: 1000, remainingMs: 1000 },
     to: () => Promise.resolve(undefined),
-  }) as unknown as Next
+  }) as unknown as HookNext
 }
 
 test('an abandoned call stops waiting on the instance at once, and is closed', async () => {
@@ -36,7 +35,7 @@ test('an abandoned call stops waiting on the instance at once, and is closed', a
   const calls = createCalls(endpoint)
   const controller = new AbortController()
   const hook = calls.standIn({ id: 1, generator: false })
-  const running = hook({} as ModsApi, {}, nextWith(controller)) as Promise<unknown>
+  const running = hook({} as DollarApi, {}, nextWith(controller)) as Promise<unknown>
   expect(calls.get(1)).toBeDefined()
   expect(waiting).toHaveLength(1)
   controller.abort(new Error('the hook was skipped'))
@@ -51,7 +50,7 @@ test("what an instance asks runs in its call's own context, whichever call is ru
   const scene = new AsyncLocalStorage<string>()
   const hook = calls.standIn({ id: 1, generator: false })
   const open = (name: string) =>
-    scene.run(name, () => void hook({} as ModsApi, {}, nextWith(new AbortController())))
+    scene.run(name, () => void hook({} as DollarApi, {}, nextWith(new AbortController())))
   open('conversation A')
   open('conversation B')
   const seen = scene.run('conversation B', () => [
@@ -69,11 +68,11 @@ test('a call still running keeps its context however many calls answer meanwhile
   const calls = createCalls(endpoint)
   const scene = new AsyncLocalStorage<string>()
   const hook = calls.standIn({ id: 1, generator: false })
-  scene.run('long call', () => void hook({} as ModsApi, {}, nextWith(new AbortController())))
+  scene.run('long call', () => void hook({} as DollarApi, {}, nextWith(new AbortController())))
   for (let i = 0; i < 600; i++) {
     const controller = new AbortController()
     const running = scene.run('short call', () =>
-      hook({} as ModsApi, {}, nextWith(controller)),
+      hook({} as DollarApi, {}, nextWith(controller)),
     ) as Promise<unknown>
     controller.abort(new Error('done'))
     await running.catch(() => {})

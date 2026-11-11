@@ -1,5 +1,5 @@
 import { basename, join } from 'node:path'
-import { readSkill, resolveSkillName, type PluginIssue } from '@rsaryev/llx-plugin/format'
+import { resolveSkillName } from '@rsaryev/llx-plugin/format'
 import { scanSkillContainer } from '@rsaryev/llx-plugin/skills'
 import { diskFolderScan } from './ports/folder-scan'
 
@@ -17,7 +17,7 @@ export type SkillFolderKind = 'user' | 'project'
  * Where a new skill named `name` of a `.claude` folder lives (skills.md, "Where skills live":
  * `~/.claude/skills/<skill-name>/SKILL.md`, `.claude/skills/<skill-name>/SKILL.md`). The kit keeps
  * the same rule as `SCOPE_RULES` (`skills/scan/locations.ts`) but exports no function for it, so the
- * path is written here once.
+ * path is written here once. Kit gap: no exported skill-path function.
  */
 export function skillFilePath(claudeFolder: string, name: string): string {
   return join(claudeFolder, 'skills', name, 'SKILL.md')
@@ -27,16 +27,6 @@ export function skillFilePath(claudeFolder: string, name: string): string {
 export function skillNameRefusal(kind: SkillFolderKind, name: string): string | undefined {
   const { issues } = resolveSkillName({ origin: { kind }, dirName: name }, name)
   return issues.find((issue) => issue.severity === 'error')?.message
-}
-
-/** What the kit finds wrong with a `SKILL.md` text: a bad field, a refused name. */
-export function skillFileIssues(
-  path: string,
-  text: string,
-  kind: SkillFolderKind,
-): readonly PluginIssue[] {
-  const dirName = basename(join(path, '..'))
-  return readSkill(path, text, { origin: { kind }, dirName }).issues
 }
 
 /** A skill folder of a container, without its body. */

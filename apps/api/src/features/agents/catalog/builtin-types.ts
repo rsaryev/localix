@@ -32,25 +32,29 @@ const DELEGATORS = new Set(['general-purpose', 'claude'])
 
 /** A built-in subagent as Localix runs it; any other agent as it is. */
 export function localixBuiltin(agent: CatalogAgent): CatalogAgent {
-  if (agent.source !== 'builtin') return agent
+  if (agent.source.kind !== 'builtin') return agent
+  const { definition } = agent
   return {
     ...agent,
-    prompt: agent.prompt || (PROMPTS[agent.fullName] ?? ''),
-    ...(DELEGATORS.has(agent.fullName) ? { self: true } : {}),
+    definition: { ...definition, prompt: definition.prompt || (PROMPTS[agent.name] ?? '') },
+    ...(DELEGATORS.has(agent.name) ? { self: true } : {}),
   }
 }
 
 /** Localix's main agent: what a chat runs as while the person has chosen no other. */
 export const LOCALIX_AGENT: CatalogAgent = {
-  pluginName: 'builtin',
   name: DEFAULT_AGENT_NAME,
-  fullName: DEFAULT_AGENT_NAME,
-  label: DEFAULT_AGENT_NAME,
-  source: 'builtin',
+  ownName: DEFAULT_AGENT_NAME,
+  source: { kind: 'builtin' },
+  definition: {
+    description: 'The general assistant: any task, directly or with a team.',
+    prompt:
+      'You are Localix Agent, a general-purpose assistant. Keep the user’s decisions with the user.',
+  },
+  extras: {},
+  hooks: undefined,
+  path: undefined,
+  startsWith: { claudeMd: true, gitStatus: true },
   projectId: '',
-  path: '',
   bodyHash: '',
-  description: 'The general assistant: any task, directly or with a team.',
-  prompt:
-    'You are Localix Agent, a general-purpose assistant. Keep the user’s decisions with the user.',
 }

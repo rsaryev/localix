@@ -26,8 +26,9 @@ export function register(on) {
       Worker: typeof Worker,
       setTimeout: typeof setTimeout,
       globalProcess: probe(() => globalThis.process),
-      require: probe(() => require(['node', 'fs'].join(':'))),
-      dynamicImport: await import(['node', 'fs'].join(':')).then(() => 'loaded', () => 'refused'),
+      // The kit refuses a written require() or import() at load (host-rules.test.ts); reached
+      // by name, there is none.
+      require: probe(() => globalThis['requ' + 'ire'](['node', 'fs'].join(':'))),
       functionThis: probe(() => Function('return this')()),
       constructorThis: probe(() => (function () {}).constructor('return this')()),
       asyncConstructor: probe(() => (async function () {}).constructor('return 1')),
@@ -52,7 +53,9 @@ export function register(on) {
 describe('a mod in its VM', () => {
   test('reaches no process, Bun, fetch, require, import, timers or code generation; $ and web APIs work', async () => {
     const { command, host, reports } = await hostWithVms({ probes: PROBES }, { vms })
-    expect(JSON.parse((await command('probes', 'probe')).text!)).toEqual({
+    const probed = await command('probes', 'probe')
+    expect(reports).toEqual([])
+    expect(JSON.parse(probed.text!)).toEqual({
       process: 'undefined',
       Bun: 'undefined',
       fetch: 'undefined',
@@ -60,7 +63,6 @@ describe('a mod in its VM', () => {
       setTimeout: 'undefined',
       globalProcess: 'undefined',
       require: 'refused',
-      dynamicImport: 'refused',
       functionThis: 'refused',
       constructorThis: 'refused',
       asyncConstructor: 'refused',
@@ -98,10 +100,9 @@ describe('a mod in its VM', () => {
     expect(await command('forger', 'own')).toEqual({})
     expect(await command('forger', 'fine')).toEqual({ text: 'fine' })
     expect(reports).toEqual([
-      'forger: command.run: hook skipped: throw a value sent to or from a mod uses a reserved key',
-      'forger: command.run: hook skipped: throw a value sent to or from a mod uses a reserved key',
+      'forger: command.run hook skipped: threw WireError: a value sent to or from a mod uses a reserved key',
     ])
-    expect(host.instances().size).toBe(1)
+    expect(host.loaded()).toEqual(['forger'])
     await host.stop()
   })
 
@@ -134,13 +135,12 @@ describe('a mod in its VM', () => {
     // The VM crashed before it could answer: the hook is skipped.
     expect(await command('fragile', 'crash')).toEqual({})
     expect(await crashed).toContain('fragile: the hooks module crashed: boom')
-    expect(host.instances().size).toBe(0)
     // Started again by the next event: new module state, and session.start heard once more.
     expect(await command('fragile', 'count')).toEqual({ text: '1/0' })
     expect(host.failures()).toEqual(new Map())
     expect(reports).toEqual([
       'fragile: the hooks module crashed: boom; it starts again on its next event',
-      'fragile: command.run: hook skipped: throw the hooks module crashed: boom',
+      'fragile: command.run hook skipped: threw Error: the hooks module crashed: boom',
     ])
     await host.stop()
   })
@@ -170,8 +170,9 @@ describe('a mod in its VM', () => {
             $.ui.log(kinds.join(',') + ' ' + result.answer)
             return result
           })
-          on('turn.step', {}, async function* () {
+          on('turn.step', { model: 'model-a' }, async function* () {
             yield { kind: 'text', index: 0, text: 'Offline.' }
+            return { answer: 'Offline.' }
           })
         }
       `,
@@ -186,9 +187,9 @@ describe('a mod in its VM', () => {
       },
     )
     expect(message.content).toEqual([{ type: 'text', text: 'Offline.' }])
-    expect(logged).toEqual(['text Offline.'])
+    expect(logged).toEqual(['● relay: text Offline.'])
 
-    const pane = [...host.instances().keys()][0]!
+    const pane = host.panes.list()[0]!.instance
     expect((await host.panes.render(pane, 'p'))?.tree).toEqual([
       { type: 'Button', props: { key: 'b', label: 'Pressed 0' }, children: [] },
     ])

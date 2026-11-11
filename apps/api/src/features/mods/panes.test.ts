@@ -1,17 +1,16 @@
 import { describe, expect, test } from 'bun:test'
-import type { ModsApi } from '@localixai/claude-plugin/mods'
 import { hostWithMod } from './testing/testing-host'
 
 /** A mod's panes: `$.ui.open`'s answer, focus and Escape, and where their events run. */
 
 type Fn = (props: Record<string, unknown>) => unknown
-const call = ($: ModsApi, path: string, ...args: unknown[]) => {
+const call = ($: any, path: string, ...args: unknown[]) => {
   const [namespace, name] = path.split('.') as [string, string]
   return ($[namespace]![name] as (...rest: unknown[]) => Promise<unknown>)(...args)
 }
 
 describe('mod panes', () => {
-  test('$.ui.open with focus is placed and brought forward; without it, it waits listed', async () => {
+  test('$.ui.open places a pane, and focus brings it forward on the screen', async () => {
     const answers: unknown[] = []
     const { host, scope } = await hostWithMod((on) => {
       on('turn.start', async ($, e, next) => {
@@ -23,16 +22,17 @@ describe('mod panes', () => {
       })
     })
     await scope.turnStart('hi', 't1')
+    // The desktop app docks every pane a mod opens: none waits listed.
     expect(answers[0]).toEqual({ isPlaced: true })
-    expect(answers[1]).toMatchObject({ isPlaced: false, reason: expect.any(String) })
+    expect(answers[1]).toEqual({ isPlaced: true })
     expect(String(answers[2])).toContain('focus is true or left out')
     expect(answers[3]).toEqual([
-      { id: 'held', title: 'held', isShown: true, isFocused: false, isPlaced: true },
-      { id: 'quiet', title: 'Quiet', isShown: false, isFocused: false, isPlaced: false },
+      { id: 'held', isPlaced: true },
+      { id: 'quiet', title: 'Quiet', isPlaced: true },
     ])
-    const held = host.registry.panes().find((pane) => pane.id === 'held')
-    expect(held).toMatchObject({ sessionId: 's1', closeOnEscape: true, focusRequest: 1 })
-    expect(host.registry.panes().find((pane) => pane.id === 'quiet')?.focusRequest).toBe(0)
+    const held = host.panes.list().find((pane) => pane.id === 'held')
+    expect(held).toMatchObject({ plugin: 'm', closeOnEscape: true, focusRequest: 1 })
+    expect(host.panes.list().find((pane) => pane.id === 'quiet')?.focusRequest).toBe(0)
   })
 
   test('a pane’s button runs in the conversation that opened it', async () => {
@@ -50,7 +50,7 @@ describe('mod panes', () => {
       })
     })
     await scope.turnStart('hi', 't1')
-    const [pane] = host.registry.panes()
+    const [pane] = host.panes.list()
     await host.panes.render(pane!.instance, 'p')
     expect(await host.panes.interact(pane!.instance, 'p', { kind: 'press', element: 'Use' })).toBe(
       true,
@@ -72,12 +72,12 @@ describe('mod panes', () => {
       })
     })
     await scope.turnStart('hi', 't1')
-    const [pane] = host.registry.panes()
+    const [pane] = host.panes.list()
     await host.panes.close(pane!.instance, 'p')
-    expect(host.registry.panes()).toHaveLength(1)
+    expect(host.panes.list()).toHaveLength(1)
     refuse = false
     await host.panes.close(pane!.instance, 'p')
-    expect(host.registry.panes()).toHaveLength(0)
+    expect(host.panes.list()).toHaveLength(0)
     expect(origins).toEqual([{ kind: 'person' }, { kind: 'person' }])
   })
 })

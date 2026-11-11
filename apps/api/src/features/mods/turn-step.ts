@@ -8,7 +8,7 @@ import { claudeCodeToolName, localToolName, toolCallEvent, toolInputOf } from '.
  * async generator, and `next(e)` sends the request and is the stream of the response, whose
  * result (`yield* next(e)`, or `await next(e)` in a plain hook) is the whole response
  * (`{ turnId, index, answer, toolUses, stopReason, usage }`); the engine drives the generators
- * (`@localixai/claude-plugin/mods` `stream.ts`), and the chunks a hook yields without `next` make
+ * (the kit's chain), and the chunks a hook yields without `next` make
  * its answer. `next` with
  * another `model` (of the conversation's provider) or `effort` sends that instead, and a hook
  * that answers without `next` sends nothing — its answer is the response the turn goes on with.

@@ -1,5 +1,6 @@
-import type { ChatSkill } from '../features/plugins/kit'
+import type { SessionSkill } from '@rsaryev/llx-plugin'
 import type { ModCommandInfo } from '../features/mods/contracts'
+import { skillPlugin } from '../features/plugins/kit'
 
 /**
  * What `$.command.list()` lists beside the mods' own commands: Localix's built-in slash commands
@@ -9,7 +10,7 @@ import type { ModCommandInfo } from '../features/mods/contracts'
  */
 export function localixCommands(input: {
   builtins: readonly { name: string; description: string; hidden?: boolean }[]
-  skills: readonly Pick<ChatSkill, 'name' | 'description' | 'plugin'>[]
+  skills: readonly SessionSkill[]
 }): ModCommandInfo[] {
   const seen = new Set<string>()
   const listed: ModCommandInfo[] = []
@@ -21,16 +22,15 @@ export function localixCommands(input: {
   for (const command of input.builtins)
     if (!command.hidden)
       add({ name: command.name, description: command.description, source: 'builtin' })
-  for (const skill of input.skills)
+  for (const skill of input.skills) {
+    const { command: name } = skill.invocable
+    const description = skill.invocable.description ?? ''
+    const plugin = skillPlugin(skill)
     add(
-      skill.plugin
-        ? {
-            name: skill.name,
-            description: skill.description,
-            source: 'plugin',
-            plugin: skill.plugin.name,
-          }
-        : { name: skill.name, description: skill.description, source: 'user' },
+      plugin
+        ? { name, description, source: 'plugin', plugin: plugin.name }
+        : { name, description, source: 'user' },
     )
+  }
   return listed
 }

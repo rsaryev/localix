@@ -11,11 +11,11 @@ import { withMarketplaceMutationLock } from './marketplace-lock'
 import {
   DEFAULT_MARKETPLACE_PATH,
   describeSource,
-  type MarketplaceSource,
   readKnownMarketplaces,
   sameMarketplaceSource,
   writeKnownMarketplaces,
 } from './kit'
+import type { MarketplaceSource } from '@rsaryev/llx-plugin/marketplace'
 
 /**
  * THE DEFAULT MARKETPLACES (`docs/internals/store-scale.md`, "Default sources"): the Store's

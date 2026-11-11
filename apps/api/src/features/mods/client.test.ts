@@ -6,7 +6,7 @@ import { defaultErrorHandler } from '@localixai/mini-app-sdk/backend'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { INERT_MOD_PORTS, type ModSource, type ModsPorts } from './contracts'
 import { createModsHost } from './host'
-import { instanceIdOf } from './instance-id'
+import { paneInstanceOf } from './panes'
 import { createModRoutes } from './routes'
 
 const scratch = tempDirPerTest('mods-client', {})
@@ -65,14 +65,19 @@ function setup(files: Record<string, string>, extra: Record<string, string> = {}
     workspaceDir: dir,
     submitPrompt: async () => {},
     complete: (...args) => INERT_MOD_PORTS.complete(...args),
-    log: (_scene, line) => heard.push(JSON.parse(line.text)),
+    // The kit's log line names the mod first (`● spinner: {…}`).
+    log: (_scene, line) => heard.push(JSON.parse(line.text.slice(line.text.indexOf('{')))),
     notify: () => {},
     changed: () => changes.push(1),
     report: (plugin, message) => reports.push(`${plugin}: ${message}`),
   }
   const sourceOf = (plugin: string, tree: Record<string, string>): ModSource => {
     const root = join(dir, plugin)
-    writeTree(root, tree)
+    writeTree(root, {
+      '.claude-plugin/plugin.json': JSON.stringify({ name: plugin }),
+      'hooks/hooks.json': JSON.stringify({ modules: ['./register.tsx'] }),
+      ...tree,
+    })
     return { plugin, root, module: join(root, 'hooks/register.tsx'), options: {}, revision: '1' }
   }
   const sources = [sourceOf('spinner', files)]
@@ -101,7 +106,7 @@ describe('Client', () => {
     )
     await host.reconcile(sources)
     expect(host.failures()).toEqual(new Map())
-    const instance = instanceIdOf('spinner', dir)
+    const instance = paneInstanceOf('spinner', `workspace:${dir}`)
 
     const drawing = await (await app.request(`/panes/${instance}/spin`)).json()
     const client = drawing.tree[0].children[0]
@@ -130,17 +135,11 @@ describe('Client', () => {
     )
     expect(await answered.json()).toEqual({ props: { speed: 9 } })
     expect(heard).toEqual([
+      // The kit's `ui.message` carries the post alone, sent by the host to the mod that drew it.
       {
         plugin: 'spinner',
-        event: {
-          surface: 'desktop',
-          component: 'Pane',
-          requestId: 'spin',
-          element: 'wheel',
-          module: 'hooks/client/wheel.tsx',
-          data: { faster: true },
-        },
-        origin: { plugin: 'client', tier: 'user' },
+        event: { data: { faster: true } },
+        origin: { plugin: 'engine', tier: 'core' },
       },
     ])
 
@@ -157,7 +156,7 @@ describe('Client', () => {
     )
     expect(faulted.status).toBe(200)
     expect(heard.at(-1)).toMatchObject({
-      fault: { element: 'wheel', phase: 'render', reason: 'boom' },
+      fault: { phase: 'render', reason: 'boom' },
     })
     // Drawn again, so the mod's `ui.render` can leave the failed Client out.
     expect(changes.length).toBeGreaterThan(before)
@@ -171,7 +170,7 @@ describe('Client', () => {
       'hooks/client/frames.ts': 'export const frames = ["|"]',
     })
     await host.reconcile(sources)
-    const instance = instanceIdOf('spinner', dir)
+    const instance = paneInstanceOf('spinner', `workspace:${dir}`)
     await app.request(`/panes/${instance}/spin`)
     const deep = JSON.parse('['.repeat(40) + ']'.repeat(40))
     const refused = await app.request(
@@ -214,7 +213,7 @@ describe('Client', () => {
     })
     await host.reconcile(sources)
     expect(host.failures()).toEqual(new Map())
-    const instance = instanceIdOf('spinner', dir)
+    const instance = paneInstanceOf('spinner', `workspace:${dir}`)
     const bundle = await (
       await app.request(`/clients/${instance}?module=hooks/client/wheel.tsx`)
     ).json()

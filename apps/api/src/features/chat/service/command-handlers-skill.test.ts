@@ -1,6 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { installModelAliasResolver } from '../../agent-core/model-alias'
-import { modelAliasResolver } from '../../plugins/kit/model-alias'
+import { describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
@@ -18,8 +16,6 @@ type Written = { readonly pluginDir?: string }
 import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 
 // A `model:` value is read as the app reads it, through the kit (`bootstrap/domain-services.ts`).
-beforeAll(() => installModelAliasResolver(modelAliasResolver))
-afterAll(() => installModelAliasResolver(undefined))
 
 /**
  * A typed `/name` runs the skill as the chat's kit session expands it (skills.md); the kit says

@@ -3,18 +3,14 @@ import { describe, expect, test } from 'bun:test'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 
 import { applyMainAgent, runAsPluginAgent, runToolsAgent } from './plugin-main-agent'
-import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
+import { testCatalogAgent } from '../../../plugins/kit/testing'
 
-const reviewer: LoadedPluginAgent = {
-  pluginName: 'sec',
-  name: 'security-reviewer',
-  fullName: 'sec:security-reviewer',
-  label: 'security-reviewer',
+const reviewer = testCatalogAgent('sec:security-reviewer', {
   description: 'Reviews for vulnerabilities',
   prompt: 'You are a security reviewer.',
   tools: ['Read', 'Grep'],
   disallowedTools: ['WebFetch'],
-}
+})
 const input = {
   agent: { id: DEFAULT_AGENT_ID, instructions: 'You are Localix.' },
   disabledTools: ['Loops'],
@@ -49,6 +45,6 @@ describe('the agent setting', () => {
 test('whose tools narrow the run', () => {
   expect(runToolsAgent(null, reviewer)).toEqual({ agent: reviewer, asMainThread: true })
   expect(runToolsAgent(null, null)).toBeNull()
-  const child = { ...reviewer, tools: ['Read'] }
+  const child = testCatalogAgent('worker', { tools: ['Read'] })
   expect(runToolsAgent(child, reviewer)).toEqual({ agent: child, asMainThread: false })
 })

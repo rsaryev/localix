@@ -36,7 +36,8 @@ import type { RunPolicy } from '../../policy/run-policy'
 import type { WorkflowEntry } from '../../../agent-core/tools/workflow/workflow'
 import type { AgentModelChoice } from '../../../agent-core/agent-model-route'
 import type { SkillCommandPolicyRef } from './skill-tool-ports'
-import type { KitSession, PluginLspServer } from '../../../plugins/kit'
+import type { PluginLspServer } from '../../../plugins/kit'
+import type { PluginSession as KitSession } from '@rsaryev/llx-plugin'
 import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 
 export interface RuntimeToolWiringContext {
@@ -67,7 +68,7 @@ export function buildRunToolRegistry(
     /** What a fork of this run is made from; empty until the request is built. */
     forkLive?: () => ForkLiveRun | undefined
     /** The agent types the run's agent may delegate to (`tools: Agent(a, b)`); absent: any. */
-    allowedAgentTypes?: readonly string[]
+    spawnTypes?: readonly string[]
     /** The tools the run offers, once built (a child's agent type is refused when none fits). */
     parentTools?: () => readonly AgentTool[]
     session: SessionRecord

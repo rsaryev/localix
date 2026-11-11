@@ -1,6 +1,10 @@
 import { promises as fs } from 'node:fs'
 import { readClientModules } from './client-source'
-import { STATE_LIBRARY_SOURCE } from '../plugins/kit'
+import type { ModCompiler } from '@rsaryev/llx-plugin/mods'
+import type { PluginFiles } from '@rsaryev/llx-plugin'
+import { STATE_LIBRARY_SOURCE, type DiskFiles } from '../plugins/kit'
+import { errorMessage } from '../../lib/errors'
+import { VM_FORMAT } from './isolation/vm-runtime'
 
 /**
  * A hooks module as Claude Code loads it: an ES module (`.js` … `.tsx`) importing only files of its
@@ -32,7 +36,7 @@ export class ModBuildError extends Error {}
  */
 export async function bundleHooksModule(
   input: { module: string; root: string },
-  options: { clients?: Set<string> } = {},
+  options: { clients?: Set<string>; format?: 'cjs' | 'esm' } = {},
 ): Promise<string> {
   const build = await Bun.build({
     // The build's own messages name the file and line; a thrown `Bundle failed` names neither.
@@ -41,7 +45,7 @@ export async function bundleHooksModule(
     // Plain CommonJS statements the VM evaluates as a function body: no `import.meta` or
     // `require('node:module')` of a Bun or Node runtime helper.
     target: 'browser',
-    format: 'cjs',
+    format: options.format ?? 'cjs',
     jsx: { runtime: 'classic', factory: 'h', fragment: 'Fragment' },
     plugins: [
       {
@@ -81,4 +85,78 @@ export async function bundleHooksModule(
   if (!build.success)
     throw new ModBuildError(build.logs.map((log) => log.message).join('\n') || 'build failed')
   return build.outputs[0]!.text()
+}
+
+const SCAN_LOADERS = { '.ts': 'ts', '.tsx': 'tsx', '.jsx': 'jsx', '.mts': 'ts' } as const
+
+/** The entry as the scan reads it: one ES module, as written but for its types and JSX. */
+async function scanSource(module: string): Promise<string> {
+  const source = await fs.readFile(module, 'utf8')
+  const extension = module.slice(module.lastIndexOf('.')) as keyof typeof SCAN_LOADERS
+  const loader = SCAN_LOADERS[extension] ?? 'js'
+  const transpiler = new Bun.Transpiler({
+    loader,
+    tsconfig: {
+      compilerOptions: { jsx: 'react', jsxFactory: 'h', jsxFragmentFactory: 'Fragment' },
+    },
+  })
+  return transpiler.transformSync(source)
+}
+
+const isDiskFiles = (files: PluginFiles): files is DiskFiles =>
+  typeof (files as Partial<DiskFiles>).hostPath === 'function'
+
+export interface ModuleCompilerOptions {
+  /**
+   * The revision of the plugin at `root` (`ModSource.revision`): a module is built once per
+   * revision however many conversations load it. Without one it is built at every load.
+   */
+  revisionOf?: (root: string) => string | undefined
+  /** The surface modules a build read off the hooks module's source (`client-source.ts`). */
+  clients?: (root: string, modules: ReadonlySet<string>) => void
+}
+
+type Compiled = Awaited<ReturnType<ModCompiler['compile']>>
+
+/**
+ * The kit's `ModCompiler`: the entry module as the ES module the kit's scan reads (its TypeScript
+ * and JSX compiled away, its imports and exports as written), and the module bundled from the
+ * plugin's folder on the disk as the CommonJS the VM runs (`isolation/vm-runtime.ts`).
+ * A build that fails is the module's issue, naming the file and why.
+ */
+export function createModuleCompiler(options: ModuleCompilerOptions = {}): ModCompiler {
+  const built = new Map<string, Promise<Compiled>>()
+  async function compile(files: DiskFiles, entry: string): Promise<Compiled> {
+    const input = { module: files.hostPath(entry), root: files.root }
+    const clients = new Set<string>()
+    try {
+      const [scan, run] = await Promise.all([
+        scanSource(input.module),
+        bundleHooksModule(input, { clients }),
+      ])
+      options.clients?.(files.root, clients)
+      return { scan: { code: scan }, run: { code: run, format: VM_FORMAT }, issues: [] }
+    } catch (error) {
+      return { issues: [{ severity: 'error', path: entry, message: errorMessage(error) }] }
+    }
+  }
+  return {
+    compile({ files, entry }) {
+      if (!isDiskFiles(files))
+        return Promise.resolve({
+          issues: [{ severity: 'error', path: entry, message: `${entry}: not on the disk` }],
+        })
+      const revision = options.revisionOf?.(files.root)
+      if (revision === undefined) return compile(files, entry)
+      const key = `${files.root}\u0000${entry}`
+      const kept = built.get(`${key}\u0000${revision}`)
+      if (kept) return kept
+      // A new revision of the module: the old build goes.
+      for (const old of Array.from(built.keys()))
+        if (old.startsWith(`${key}\u0000`)) built.delete(old)
+      const next = compile(files, entry)
+      built.set(`${key}\u0000${revision}`, next)
+      return next
+    },
+  }
 }

@@ -48,9 +48,10 @@ function chats(plugins: readonly ScopePlugin[], cwd = join(dir(), 'work')) {
   mkdirSync(join(cwd, '.git'), { recursive: true })
   const sessions = createChatPluginSessions(diskPluginHost(join(dir(), 'home')))
   type Layers = Parameters<typeof sessions.forRun>[0]['layers']
-  const open = (chatId: string, layers: Layers = []) =>
+  const open = (chatId: string, layers: Layers = [], parentChatId?: string) =>
     sessions.forRun({
       chatId,
+      ...(parentChatId ? { parentChatId } : {}),
       cwd,
       transcriptPath: join(dir(), `${chatId}.jsonl`),
       permissionMode: 'default',
@@ -136,10 +137,10 @@ describe('the plugin monitor host', () => {
     const host = hostOver(sessions, { spawn: spawner.spawn })
     open('chat-1')
     await host.sessionMoved(moved('chat-1'))
-    const child = open('child-1')
+    const child = open('child-1', [], 'chat-1')
     await invokeSkill(child, 'ops:deploy', { invoker: 'model', signal })
     await host.sessionMoved(moved('chat-1', 'child-1'))
-    // The child's session hands out `watch` too: the chat already runs it.
+    // The child's session shares the chat's ledger: `watch` is not handed out again.
     expect(host.running('chat-1')).toEqual(['ops:watch', 'ops:deploy-status'])
     expect(host.running('child-1')).toEqual([])
     await host.stop()

@@ -86,57 +86,55 @@ export function validatePluginAgents(plugin: DiscoveredPlugin): FieldValidation 
   const errors: string[] = []
   const warnings: string[] = []
   const seenAgentNames = new Set<string>()
-  for (const agent of plugin.agents) {
-    if (!agent.name) {
+  for (const { name, definition: agent } of plugin.agents) {
+    if (!name) {
       errors.push('A declared agent role is missing a name.')
       continue
     }
-    if (seenAgentNames.has(agent.name)) {
-      errors.push(`Duplicate agent role "${agent.name}" — names must be unique within a plugin.`)
+    if (seenAgentNames.has(name)) {
+      errors.push(`Duplicate agent role "${name}" — names must be unique within a plugin.`)
     }
-    seenAgentNames.add(agent.name)
-    if (agent.name.startsWith(`${plugin.manifest.name}:`)) {
+    seenAgentNames.add(name)
+    if (name.startsWith(`${plugin.manifest.name}:`)) {
       // Dispatch resolves `<plugin>:<agent>` by splitting on the FIRST colon, so a
       // manifest name that repeats the plugin prefix becomes `<plugin>:<plugin>:<agent>`
       // and silently never matches — delegate degrades to a general-purpose agent.
       warnings.push(
-        `Agent role "${agent.name}" repeats the plugin prefix — it is dispatched as "${plugin.manifest.name}:${agent.name}" and will never resolve. Name it "${agent.name.slice(plugin.manifest.name.length + 1)}" instead.`,
+        `Agent role "${name}" repeats the plugin prefix — it is dispatched as "${plugin.manifest.name}:${name}" and will never resolve. Name it "${name.slice(plugin.manifest.name.length + 1)}" instead.`,
       )
     }
     if (!agent.description.trim()) {
       warnings.push(
-        `Agent role "${agent.name}" has no description — add one so users know what this role does in the Store.`,
+        `Agent role "${name}" has no description — add one so users know what this role does in the Store.`,
       )
     }
     if (!agent.prompt || agent.prompt.trim().length === 0) {
-      warnings.push(`Agent role "${agent.name}" has an empty prompt.`)
+      warnings.push(`Agent role "${name}" has an empty prompt.`)
     }
     // In Claude Code's names (`Grep`, `Bash(git *)`), as the kit reads them (`kit/subagent-tools.ts`).
     for (const tool of agent.tools ?? []) {
       if (tool !== '*' && !namesBuiltinTool(tool, BUILTIN_TOOL_NAMES))
-        warnings.push(`Agent role "${agent.name}" lists tool ${unknownToolNote(tool, 'lists')}`)
+        warnings.push(`Agent role "${name}" lists tool ${unknownToolNote(tool, 'lists')}`)
     }
     for (const tool of agent.disallowedTools ?? []) {
       if (!namesBuiltinTool(tool, BUILTIN_TOOL_NAMES))
-        warnings.push(
-          `Agent role "${agent.name}" disallows tool ${unknownToolNote(tool, 'disallows')}`,
-        )
+        warnings.push(`Agent role "${name}" disallows tool ${unknownToolNote(tool, 'disallows')}`)
     }
     // Pinned skill names should look like valid skill names (letters/numbers/dashes/underscores).
-    // Namespaced forms like "plugin:skill" are not supported — pinnedSkills takes bare names.
+    // Namespaced forms like "plugin:skill" are not supported — `skills` takes bare names.
     const seenPinnedSkills = new Set<string>()
-    for (const skill of agent.pinnedSkills ?? []) {
+    for (const skill of agent.skills ?? []) {
       if (skill.includes(':')) {
         warnings.push(
-          `Agent role "${agent.name}" pinnedSkills includes "${skill}" with a colon — use bare skill names (e.g., "deploy-guide"), not namespaced forms.`,
+          `Agent role "${name}" skills includes "${skill}" with a colon — use bare skill names (e.g., "deploy-guide"), not namespaced forms.`,
         )
       } else if (!/^[a-z0-9][a-z0-9_-]*$/i.test(skill)) {
         warnings.push(
-          `Agent role "${agent.name}" pinnedSkills includes "${skill}" which isn't a valid skill name — use letters, digits, dashes, and underscores.`,
+          `Agent role "${name}" skills includes "${skill}" which isn't a valid skill name — use letters, digits, dashes, and underscores.`,
         )
       } else if (seenPinnedSkills.has(skill)) {
         warnings.push(
-          `Agent role "${agent.name}" pinnedSkills has duplicate "${skill}" — remove the duplicate.`,
+          `Agent role "${name}" skills has duplicate "${skill}" — remove the duplicate.`,
         )
       }
       seenPinnedSkills.add(skill)

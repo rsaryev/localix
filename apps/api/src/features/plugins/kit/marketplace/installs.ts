@@ -22,8 +22,6 @@ import { diskPluginStateStore, nodeSha256 } from '../ports/marketplace-io'
  * leaves behind marked and swept as the kit says (`dirsToOrphan`, `orphanSweep`).
  */
 
-export type { InstallRecord, InstalledRecords }
-
 export const pluginStore = (root: string): StoreLayout => createStoreLayout(root, join)
 
 /**

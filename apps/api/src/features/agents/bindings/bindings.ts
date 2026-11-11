@@ -8,7 +8,12 @@ import { inheritedAgentPreset } from '../../capabilities/builtin-agent-presets'
 import type { CapabilitySourceRecord } from '../../capabilities/source-repository'
 import type { CapabilityStores } from '../../capabilities/store-factory'
 import { recordCoreChanges, type CoreChange } from '../../changes/core-entities'
-import type { CatalogAgent, ResolvedAgent } from '../catalog/agent-file'
+import {
+  agentFileOf,
+  sourceKeyOf,
+  type CatalogAgent,
+  type ResolvedAgent,
+} from '../catalog/agent-file'
 import { composeCatalog, type ScopeCatalog } from '../catalog/compose'
 import {
   GRACE_MS,
@@ -63,9 +68,6 @@ const toBoundRow = (record: CapabilitySourceRecord): BoundRow => ({
   bodyHash: text(record.config.bodyHash),
   ...(text(record.config.missingSince) ? { missingSince: text(record.config.missingSince) } : {}),
 })
-
-const sourceOf = (agent: CatalogAgent): string =>
-  agent.source === 'plugin' ? `plugin:${agent.pluginName}` : agent.source
 
 export const newAgentId = () => `cc:${randomUUID()}`
 
@@ -152,9 +154,9 @@ export function createAgentBindings(deps: BindingDeps) {
     const catalog = composeCatalog(scope, projectId)
     const found: FoundAgent[] = catalog.found.map((agent) => ({
       projectId: agent.projectId,
-      source: sourceOf(agent),
-      name: agent.fullName,
-      path: agent.path,
+      source: sourceKeyOf(agent),
+      name: agent.name,
+      path: agentFileOf(agent),
       bodyHash: agent.bodyHash,
     }))
     // A plugin that is no longer installed and a row of the retired registry are gone for good.

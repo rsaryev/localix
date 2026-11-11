@@ -76,7 +76,7 @@ describe('architecture rules against the repository', () => {
     TIMEOUT,
   )
   test(
-    'X7 the llx-plugin kit only through the boundary',
+    'X7 kit values only through the boundary; kit types imported directly',
     () =>
       enforce(
         X7_KIT_THROUGH_THE_BOUNDARY,
@@ -139,7 +139,7 @@ describe('positive and negative controls', () => {
     ])
   })
 
-  test('X7 fires on the kit imported outside the boundary, UI allowed three subpaths', () => {
+  test('X7 fires on a kit value or re-export outside the boundary, never on a type import', () => {
     const hits = X7_KIT_THROUGH_THE_BOUNDARY.detect([
       planted(
         'apps/api/src/features/chat/x.ts',
@@ -147,7 +147,7 @@ describe('positive and negative controls', () => {
       ),
       planted(
         'apps/api/src/features/chat/x.test.ts',
-        "import type { Ports } from '@rsaryev/llx-plugin/testing'",
+        "import { createMemoryPorts } from '@rsaryev/llx-plugin/testing'",
       ),
       planted('apps/ui/src/a.ts', "export { readPlugin } from '@rsaryev/llx-plugin/loading'"),
       planted('packages/x/src/b.ts', "const m = await import('@rsaryev/llx-plugin/hooks')"),
@@ -159,14 +159,38 @@ describe('positive and negative controls', () => {
       planted('apps/ui/src/f.ts', "import { Box } from '@rsaryev/llx-plugin/mods/elements'"),
       planted('apps/api/src/g.ts', "import { Box } from '@rsaryev/llx-plugin/mods/elements'"),
       planted('apps/ui/src/h.ts', "import { createModHost } from '@rsaryev/llx-plugin/mods'"),
+      // A type is named straight from the kit, in any file, tests included.
+      planted(
+        'apps/api/src/features/chat/t.ts',
+        "import type { Plugin } from '@rsaryev/llx-plugin/loading'",
+      ),
+      planted(
+        'apps/api/src/features/mcp/u.ts',
+        "import { type Resolved } from '@rsaryev/llx-plugin'",
+      ),
+      planted(
+        'packages/x/src/v.test.ts',
+        "import type { Ports } from '@rsaryev/llx-plugin/testing'",
+      ),
+      // A type import that also brings a value is a value import; a type re-export is a second home.
+      planted(
+        'apps/api/src/features/chat/w.ts',
+        "import { type Plugin, loadPlugin } from '@rsaryev/llx-plugin/loading'",
+      ),
+      planted(
+        'apps/api/src/features/chat/types.ts',
+        "export type { Plugin } from '@rsaryev/llx-plugin/loading'",
+      ),
     ])
     expect(hits).toEqual([
       'apps/api/src/features/chat/x.ts imports @rsaryev/llx-plugin',
       'apps/api/src/features/chat/x.test.ts imports @rsaryev/llx-plugin/testing',
-      'apps/ui/src/a.ts imports @rsaryev/llx-plugin/loading',
+      'apps/ui/src/a.ts re-exports @rsaryev/llx-plugin/loading',
       'packages/x/src/b.ts imports @rsaryev/llx-plugin/hooks',
       'apps/api/src/g.ts imports @rsaryev/llx-plugin/mods/elements',
       'apps/ui/src/h.ts imports @rsaryev/llx-plugin/mods',
+      'apps/api/src/features/chat/w.ts imports @rsaryev/llx-plugin/loading',
+      'apps/api/src/features/chat/types.ts re-exports @rsaryev/llx-plugin/loading',
     ])
   })
 

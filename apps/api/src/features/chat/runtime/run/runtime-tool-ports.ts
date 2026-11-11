@@ -18,6 +18,7 @@ import { buildDirectToolInstances } from './runtime-tool-instances'
 import { buildBrowserOptions } from './browser-options'
 import { buildTaskDelegationOptions } from './task-delegation-options'
 import { buildAgentOptions } from './agent-options'
+import { agentSpawnRefusal } from '../../../plugins/kit'
 import { agentLaunchPorts } from './catalog-agent'
 import { buildWorkflowOptions } from './workflow-options'
 import { buildStoreOptions } from './store-options'
@@ -125,7 +126,9 @@ export function buildOptionalToolPorts(
       : {}),
     defaultCwd,
     rootSessionId: session.rootSessionId ?? session.id,
-    ...(params.allowedAgentTypes ? { allowedAgentTypes: params.allowedAgentTypes } : {}),
+    ...(params.spawnTypes
+      ? { spawnRefusal: agentSpawnRefusal(params.kitSession, params.spawnTypes) }
+      : {}),
     ...(params.parentTools ? { parentTools: params.parentTools } : {}),
     ...(worktreeHook ? { worktreeHook } : {}),
   })

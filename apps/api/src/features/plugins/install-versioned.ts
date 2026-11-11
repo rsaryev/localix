@@ -5,7 +5,7 @@ import { ConflictError } from '../../lib/domain-errors'
 import { isRecord } from '../../lib/record'
 import { pathExists } from '../ext/fs-discovery'
 import type { InPlaceInstall } from './install-in-place'
-import { pluginVersion, type VersionSourceFacts } from './kit'
+import { pluginVersion } from './kit'
 import type { ResolvedMarketplaceInstall } from './marketplace-registry'
 import {
   cachedPluginDir,
@@ -16,7 +16,7 @@ import {
   setInstallRecord,
   type CachedInstallRecord,
 } from './plugin-cache'
-import { entryVersionFacts } from './plugin-version'
+import { entryVersionInput, withCommit } from './plugin-version'
 
 /**
  * A user-scope install from a marketplace that Localix copies goes into the version cache
@@ -51,15 +51,12 @@ const manifestName = (dir: string) => manifestField(dir, 'name')
 
 /** The version a resolved marketplace plugin installs at, computed as Claude Code computes it. */
 export async function resolvedVersion(resolved: ResolvedMarketplaceInstall): Promise<string> {
-  const facts = entryVersionFacts(resolved.entry)
-  const source: VersionSourceFacts =
-    facts.kind === 'relative' || facts.kind === 'git'
-      ? { ...facts, ...(resolved.commitSha ? { commitSha: resolved.commitSha } : {}) }
-      : facts
+  const declared = await manifestVersion(resolved.dir)
+  const { version } = resolved.entry
   return pluginVersion({
-    manifestVersion: await manifestVersion(resolved.dir),
-    entryVersion: resolved.entry.version,
-    source,
+    ...withCommit(entryVersionInput(resolved.entry), resolved.commitSha),
+    ...(declared === undefined ? {} : { manifestVersion: declared }),
+    ...(version === undefined ? {} : { entryVersion: version }),
   })
 }
 

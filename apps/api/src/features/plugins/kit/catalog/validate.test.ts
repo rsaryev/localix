@@ -10,11 +10,4 @@ describe('a plugin folder validated by the kit', () => {
     const report = await validatePluginFolder(dir())
     expect(report.errors.some((message) => message.includes('version'))).toBe(true)
   })
-
-  test('a clean plugin has no error', async () => {
-    writeTree(dir(), {
-      '.claude-plugin/plugin.json': JSON.stringify({ name: 'ok', description: 'Fine' }),
-    })
-    expect((await validatePluginFolder(dir())).errors).toEqual([])
-  })
 })

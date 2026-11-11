@@ -33,7 +33,7 @@ import {
 import {
   MOD_RUNTIME_FILE,
   buildModRuntime,
-} from '../../api/src/features/mods/isolation/guest-file.ts'
+} from '../../api/src/features/plugins/kit/mods/guest/runtime-file.ts'
 import {
   stageSidecarBun,
   binariesDir,

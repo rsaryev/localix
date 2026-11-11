@@ -1,14 +1,7 @@
-import {
-  PLAIN_DATA_LIMITS,
-  isHookBody,
-  type BudgetClock,
-  type ModsApi,
-  type RegisterFunction,
-} from '@localixai/claude-plugin/mods'
-import { createEndpoint, type Handler } from './endpoint'
-import { readHookSpecs } from './hook-specs'
+import { createEndpoint, isHookBody, type Handler } from '../../plugins/kit'
+import { readHookSpecs, type HookSpec } from './hook-specs'
 import { createRateLimit, truncated } from './rate-limit'
-import { createCalls } from './stand-in'
+import { createCalls, type DollarApi, type StandIn } from './stand-in'
 
 /**
  * THE HOST SIDE of one mod instance's VM: a QuickJS VM of its own, in a worker thread, running the
@@ -42,22 +35,36 @@ export interface ModVmPort {
   }): { send(json: string): void; stop(): void }
 }
 
+/** The clock a VM's load is timed on: real time, or a test's. */
+export interface VmClock {
+  now(): number
+  setTimer(fire: () => void, ms: number): () => void
+}
+
+/** A hook the module registered, as its stand-in on the host runs it, with its `.catch` handler's. */
+export interface VmHook extends Omit<HookSpec, 'onError'> {
+  run: StandIn
+  catch?: StandIn
+}
+
 export interface ModVmOptions {
   vms: ModVmPort
-  /** The mods runtime the VM runs first (`guest-file.ts`). */
+  /** The mods runtime the VM runs first (`plugins/kit/mods/guest/runtime-file.ts`). */
   runtime: string
   /** The bundled hooks module, sent to the VM as text (`module-build.ts`). */
   code: string
   /** What the module's stack traces name it. */
   name: string
+  /** The mod, as a refusal inside the VM names it (`next()` with no event). */
+  plugin?: string
   /** An unsettled `register`, or a turn that holds the VM's thread, for this long: the VM goes. */
   hangMs: number
   /** The VM's heap. */
   memoryLimitBytes: number
   /** The clock a load's budget runs on; tests drive their own. */
-  clock: BudgetClock
+  clock: VmClock
   /** The instance's `$` for a call a closure makes after its hook ended. */
-  apiOf: () => ModsApi | undefined
+  apiOf: () => DollarApi | undefined
   /** What the VM reports and survives: a rejection nothing handled. */
   report: (message: string) => void
   /** Where the module's `console` lines go, cut and bounded. */
@@ -67,7 +74,8 @@ export interface ModVmOptions {
 }
 
 export interface ModVm {
-  register: RegisterFunction
+  /** Runs the module's `register(on, options)` in the VM: the hooks it registered. */
+  load(options: unknown): Promise<VmHook[]>
   /** The element tables `$.ui.resolve` answers in the VM, by component. */
   setTables(tables: ReadonlyMap<string, unknown>): void
   alive(): boolean
@@ -79,7 +87,7 @@ export interface ModVm {
  * What one value from a VM may hold. The nesting is plain data's; the count is ten times plain
  * data's, since a whole conversation's messages cross it (`session.compact`).
  */
-export const WIRE_LIMITS = { depth: PLAIN_DATA_LIMITS.depth, values: 10 * PLAIN_DATA_LIMITS.values }
+export const WIRE_LIMITS = { depth: 32, values: 200_000 }
 /** `$` calls, `next`s and invocations one VM may have waiting on the host at once. */
 export const MAX_PENDING = 1_024
 /** A VM's reports: at most so many a minute, each cut to so many characters. */
@@ -221,7 +229,7 @@ export function startModVm(options: ModVmOptions): ModVm {
   }
 
   return {
-    async register(on, registerOptions) {
+    async load(registerOptions) {
       // Loading is a hook's work too: past the budget, the VM goes and the load fails.
       const cancel = clock.setTimer(
         () => die(`did not finish loading within ${options.hangMs} ms`),
@@ -232,13 +240,13 @@ export function startModVm(options: ModVmOptions): ModVm {
           code: options.code,
           name: options.name,
           options: registerOptions,
+          ...(options.plugin === undefined ? {} : { plugin: options.plugin }),
         })
-        for (const spec of readHookSpecs(answer)) {
-          const hook = calls.standIn(spec)
-          const registration =
-            spec.matcher === undefined ? on(spec.event, hook) : on(spec.event, spec.matcher, hook)
-          if (spec.onError) registration.catch(calls.standIn(spec.onError))
-        }
+        return readHookSpecs(answer).map(({ onError, ...spec }) => ({
+          ...spec,
+          run: calls.standIn(spec),
+          ...(onError ? { catch: calls.standIn(onError) } : {}),
+        }))
       } finally {
         cancel()
       }
@@ -258,4 +266,12 @@ function ownMember(owner: object, key: unknown): Record<string, unknown> | undef
   return typeof key === 'string' && Object.hasOwn(owner, key)
     ? (owner as Record<string, Record<string, unknown>>)[key]
     : undefined
+}
+
+/** No VM: a host with nothing to run (an app built without mods) starts none. */
+export const NO_MOD_VMS: ModVmPort = {
+  start(input) {
+    queueMicrotask(() => input.onExit('No mods run here'))
+    return { send() {}, stop() {} }
+  },
 }

@@ -11,14 +11,8 @@ import {
 } from '@localixai/store'
 
 import { defaultMarketplaceOf } from './default-marketplaces'
-import {
-  catalogAt,
-  type KnownMarketplace,
-  type Marketplace,
-  type MarketplaceEntry,
-  parseMarketplace,
-  resolveEntrySource,
-} from './kit'
+import { catalogAt, type KnownMarketplace, parseMarketplace, resolveEntrySource } from './kit'
+import type { Marketplace, MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
 import type { PluginContents } from './store-contents'
 import { entryCuration } from './store-editorial'
 
@@ -33,7 +27,7 @@ export interface MarketView {
   name: string
   record: KnownMarketplace
   market: Marketplace
-  /** The catalog as written, for the keys only Localix reads (`store-editorial.ts`). */
+  /** The catalog as written, for each entry's `localix` key, which the kit does not keep (`store-editorial.ts`). */
   raw: unknown
   trust: Trust
   weight: number

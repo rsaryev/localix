@@ -1,4 +1,4 @@
-import type { KitSession } from './kit'
+import type { PluginSession as KitSession } from '@rsaryev/llx-plugin'
 import type { PluginConditions } from '../notifications/conditions/plugins'
 import type { MonitorSpawner } from './monitor-stream'
 

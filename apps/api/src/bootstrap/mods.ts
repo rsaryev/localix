@@ -21,7 +21,7 @@ import { submittedContent, type ModsPorts } from '../features/mods/contracts'
 import { receiveDelivery } from '../features/mods/conversation-events'
 import { createModsHost, type ModsHost } from '../features/mods/host'
 import { loadEnabledPluginMods } from '../features/plugins/loader-declarative'
-import { SLASH_COMMANDS } from '../features/chat/slash-catalog'
+import { BUILTIN_COMMAND_NAMES, SLASH_COMMANDS } from '../features/chat/slash-catalog'
 import type { ProviderConnectionsService } from '../features/provider-connections/service'
 import { publishResourcesChanged, type RealtimeResource } from '../features/realtime/resources'
 import type { BootstrapServiceRefs } from './chat-service-deps'
@@ -185,7 +185,7 @@ export function createModsPhase(input: {
       }).catch(() => null)
       return localixCommands({
         builtins: SLASH_COMMANDS,
-        skills: (listed?.skills ?? []).filter((skill) => skill.inMenu),
+        skills: (listed?.skills ?? []).filter((skill) => skill.policy.inMenu),
       })
     },
     async readSession(scene) {
@@ -204,12 +204,15 @@ export function createModsPhase(input: {
     report: (plugin, message) => logger.warn({ event: 'mod.problem', plugin, message }),
   }
 
-  // Each mod instance runs in a QuickJS VM of the script sandbox's. A bundled server carries the
+  // Each mod runs in a QuickJS VM of the script sandbox's. A bundled server carries the
   // sandbox's files and the mods runtime beside it; from source, both are this tree's.
   const here = dirname(fileURLToPath(import.meta.url))
   const modsHost = createModsHost(ports, {
     vms: createScriptVms(bundledScriptSandboxOptions(here)),
     runtimeDir: here,
+    homeDir: userHome(),
+    // A mod's command may not take a built-in's name (`$.command.register`).
+    builtIns: () => [...BUILTIN_COMMAND_NAMES],
   })
   const debounce = createDebouncer(REFRESH_DEBOUNCE_MS)
   const reconcile = async () => {
@@ -238,8 +241,12 @@ export function createModsPhase(input: {
   infra.serviceRefs.modsHost = modsHost
   hostRefs.mods = {
     refresh: refreshMods,
-    commands: () => modsHost.registry.commands(),
-    agentGroups: () => modsHost.registry.agentGroups(),
+    commands: () =>
+      modsHost.commands().map((command) => ({
+        ...command,
+        description: command.description ?? '',
+      })),
+    agentGroups: () => modsHost.agentGroups(),
     receive: (delivery) => receiveDelivery(modsHost, delivery),
   }
   return { modsHost, refreshMods }

@@ -6,20 +6,20 @@ import {
   type AgentToolRun,
   type NamedTool,
 } from '../../../plugins/kit'
-import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
+import type { CatalogAgent } from '@rsaryev/llx-plugin/agents'
 
 /** Whose `tools` and `disallowedTools` narrow the run (`plugin-main-agent.ts` `runToolsAgent`). */
 export interface RunToolsAgent {
-  readonly agent: LoadedPluginAgent
+  readonly agent: CatalogAgent
   readonly asMainThread: boolean
 }
 
 /** What an agent's tool fields do to one run, before and after its tools are built. */
 export interface RunAgentTools {
-  /** The agent as the run profile reads it: `tools` the built-ins its list names. */
-  readonly profileAgent?: LoadedPluginAgent
+  /** What the run profile reads of the agent: `tools`, the built-ins its list names (none: it inherits). */
+  readonly profileAgent?: { readonly tools?: readonly string[] }
   /** `tools: Agent(a, b)` of a main-thread agent: the only types `Agent` may start. */
-  readonly allowedAgentTypes?: readonly string[]
+  readonly spawnTypes?: readonly string[]
   /** The run's tools its agent's fields leave it. */
   readonly narrow?: <T extends NamedTool>(tools: readonly T[]) => T[]
 }
@@ -38,15 +38,15 @@ export function runAgentTools(
   const run: AgentToolRun = {
     asMainThread,
     // Localix records no `run_in_background` on the child: an agent file's `background` says it.
-    background: agent.background === true,
+    background: agent.definition.background === true,
     atDepthLimit: !asMainThread && !delegatesAt(MAX_DELEGATION_DEPTH),
     permissionMode,
   }
-  const { declared, spawnTypes } = agentToolCandidates(agent, BUILTIN_TOOL_NAMES, run)
-  const { tools: _written, ...rest } = agent
+  const fields = { ...agent.definition, name: agent.name }
+  const { declared, spawnTypes } = agentToolCandidates(fields, BUILTIN_TOOL_NAMES, run)
   return {
-    profileAgent: declared === null ? rest : { ...rest, tools: declared },
-    ...(spawnTypes ? { allowedAgentTypes: spawnTypes } : {}),
-    narrow: (tools) => narrowAgentTools(agent, tools, run),
+    profileAgent: declared === null ? {} : { tools: declared },
+    ...(spawnTypes ? { spawnTypes } : {}),
+    narrow: (tools) => narrowAgentTools(fields, tools, run),
   }
 }

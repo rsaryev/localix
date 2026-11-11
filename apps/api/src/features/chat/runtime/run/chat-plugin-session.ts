@@ -11,15 +11,17 @@ import type { PermissionMode } from '../../../../contracts/permission-modes'
 import {
   settingsAdditionalDirectories,
   type ChatPluginSessions,
-  type KitSession,
   type ClaudeSettings,
   type ScopePlugin,
 } from '../../../plugins/kit'
+import type { PluginSession as KitSession } from '@rsaryev/llx-plugin'
 import { ccPermissionMode } from './cc-hook-session-facts'
 
 /** What the run's hooks already read: the folder and Claude Code's settings there. */
 export interface ChatPluginSessionFacts {
   readonly chatId: string
+  /** A sub-agent session's root chat (`SessionRecord.rootSessionId`); null or absent for a chat. */
+  readonly rootChatId?: string | null
   readonly cwd: string
   readonly settings: ClaudeSettings
   /** The plugins of the run's catalog, with this agent's selection (`LoadedPlugins.kitPlugins`). */
@@ -35,6 +37,9 @@ export function openChatPluginSession(
 ): KitSession | undefined {
   return sessions?.forRun({
     chatId: facts.chatId,
+    ...(facts.rootChatId && facts.rootChatId !== facts.chatId
+      ? { parentChatId: facts.rootChatId }
+      : {}),
     cwd: facts.cwd,
     transcriptPath,
     permissionMode: ccPermissionMode(permissionMode ?? 'default'),

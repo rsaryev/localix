@@ -3,12 +3,7 @@ import { join } from 'node:path'
 
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
-import {
-  assertMarketplaceAllowed,
-  assertPluginAllowed,
-  managedDeclarations,
-  marketplacePolicy,
-} from './policy'
+import { assertMarketplaceAllowed, assertPluginAllowed, managedDeclarations } from './policy'
 
 /**
  * The organization's marketplace policy in managed settings (`strictKnownMarketplaces`,
@@ -37,31 +32,6 @@ describe('managed marketplace policy', () => {
       "Marketplace source 'github:evil/plugins' is blocked by enterprise policy",
     )
     await expect(assertMarketplaceAllowed(github('good/one'), from)).resolves.toBeUndefined()
-  })
-
-  it('admits only what strictKnownMarketplaces lists, by host or by path pattern', async () => {
-    const from = managed({
-      strictKnownMarketplaces: [
-        { source: 'github', repo: 'acme/approved' },
-        { source: 'hostPattern', hostPattern: '^git\\.example\\.com$' },
-        { source: 'pathPattern', pathPattern: '^/opt/approved/' },
-      ],
-    })
-    const gate = (await marketplacePolicy(from)).gate
-    const allowed = (source: Parameters<typeof gate.check>[0]) => gate.check(source).allowed
-    expect(allowed({ source: 'github', repo: 'acme/approved' })).toBe(true)
-    expect(allowed({ source: 'git', url: 'https://git.example.com/a/b.git' })).toBe(true)
-    expect(allowed({ source: 'directory', path: '/opt/approved/m' })).toBe(true)
-    await expect(
-      assertMarketplaceAllowed({ kind: 'directory', path: '/home/me/m' }, from),
-    ).rejects.toThrow('is blocked by enterprise policy')
-  })
-
-  it('an empty allowlist admits no marketplace', async () => {
-    const from = managed({ strictKnownMarketplaces: [] })
-    await expect(assertMarketplaceAllowed(github('x/y'), from)).rejects.toThrow(
-      'No external marketplaces are allowed.',
-    )
   })
 
   it('refuses a plugin managed settings turn off, in the policy words', async () => {

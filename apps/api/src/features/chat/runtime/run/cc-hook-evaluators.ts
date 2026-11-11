@@ -8,9 +8,8 @@
  */
 import { agentRoute, sessionRoute } from '../../../../contracts/session-route'
 import { TOOL } from '../../../agent-core/tool-names'
-import { resolveModelAlias } from '../../../agent-core/model-alias'
 import { resolveRunProfile, type RunProfile } from '../../../agent-core/run-shape'
-import type { ModelBackend } from '../../../plugins/kit'
+import { resolveModelAlias, type ModelBackend } from '../../../plugins/kit'
 import type { SessionRecord } from '../../repository'
 import { resolveLanguageModel } from '../model-resolution'
 import { getAgentService } from '../agent-service-binding'

@@ -1,12 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import type { ModsApi } from '@localixai/claude-plugin/mods'
 import { hostWithMod, hostWithMods } from './testing/testing-host'
 
 /** The band above a conversation's prompt box (`AbovePrompt`), as a mod draws in it. */
 
 type Ui = { Box: Fn; Text: Fn; Button: Fn }
 type Fn = (props: Record<string, unknown>) => unknown
-const ui = ($: ModsApi, e: unknown) => ($.ui.resolve as (e: unknown) => Ui)(e)
+const ui = ($: any, e: unknown) => ($.ui.resolve as (e: unknown) => Ui)(e)
 
 describe('the AbovePrompt band', () => {
   test('a mod draws the band with the site’s props; nobody drawing leaves no band', async () => {
@@ -78,14 +77,8 @@ describe('the AbovePrompt band', () => {
     const drawing = await host.band.render('s1', { columns: 80, rows: 10 })
     expect(drawing.tree?.[0]).toMatchObject({ props: { key: 'Fill', hotkey: '1' } })
     expect(await host.band.interact('s1', { kind: 'press', element: 'Fill' })).toBe(true)
-    expect(pressed).toEqual([
-      expect.objectContaining({
-        element: 'Fill',
-        component: 'AbovePrompt',
-        surface: 'desktop',
-        plugin: 'm',
-      }),
-    ])
+    // The kit hands a press's callback the surface it was used on.
+    expect(pressed).toEqual([{ surface: 'desktop' }])
     expect(host.composer.view('s1').fills.map((fill) => fill.text)).toEqual(['run the tests'])
     expect(await host.band.interact('s1', { kind: 'press', element: 'gone' })).toBe(false)
   })

@@ -7,7 +7,7 @@ import type { ModsHost } from './host'
 import { MOD_LIMITS } from '../plugins/kit'
 
 /**
- * The screen side of mods: which panes are open (each a mod instance's, in one project), what a
+ * The screen side of mods: which panes are open (each a mod's, in one conversation's host), what a
  * pane draws, and the controls a person uses in it. Clients re-read on the `mods` topic, which the host pokes when a mod opens or closes
  * a pane or asks for a redraw.
  */
@@ -49,17 +49,9 @@ export function createModRoutes(
         c.json({
           // Each mod: its version, what it hooks, its panes, and whether it runs or why not.
           mods: host.summary(),
-          panes: host.registry.panes().map((pane) => ({
-            instance: pane.instance,
-            plugin: pane.plugin,
-            id: pane.id,
-            title: pane.title,
-            closeOnEscape: pane.closeOnEscape === true,
-            // Grows each time the mod asks for the keyboard: the screen brings the pane forward.
-            focusRequest: pane.focusRequest,
-            // The project the pane belongs to: a mod runs once per working directory.
-            cwd: host.instances().get(pane.instance)?.cwd ?? null,
-          })),
+          // Each open pane: `focusRequest` grows each time the mod asks for the keyboard, and
+          // `cwd` is the folder of the conversation (or the workspace) whose mods opened it.
+          panes: host.panes.list(),
           failures: Object.fromEntries(host.failures()),
         }),
       )

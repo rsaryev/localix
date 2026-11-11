@@ -1,17 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import type { ScopeAgent, ScopeAgents } from '../../plugins/kit'
+import { testCatalogAgent } from '../../plugins/kit/testing'
 import { composeCatalog, type ScopeCatalog } from './compose'
 
-const agent = (fullName: string, fields: Partial<ScopeAgent> = {}): ScopeAgent => ({
-  pluginName: fullName.includes(':') ? fullName.split(':')[0]! : 'user',
-  name: fullName.split(':').at(-1)!,
-  fullName,
-  label: fullName,
-  description: fullName,
-  prompt: `You are ${fullName}.`,
-  source: fullName.includes(':') ? 'plugin' : 'user',
-  path: '',
-  ...fields,
+const BUILTIN = { source: { kind: 'builtin' } } as const
+const plugin = (name: string, scope: 'user' | 'project'): Partial<ScopeAgent> => ({
+  source: { kind: 'plugin', pluginId: `${name}@x` },
+  plugin: { name, scope },
 })
 
 /** The kit's answer for a scope, with a lookup by exact name. */
@@ -27,7 +22,7 @@ function scope(
       issues: [],
       watch: [],
       resolve: (reference) => {
-        const found = agents.find((one) => one.fullName === reference)
+        const found = agents.find((one) => one.name === reference)
         return found ? { agent: found } : null
       },
       main: null,
@@ -42,14 +37,14 @@ describe("a scope's catalog with Localix's additions", () => {
   test('a project file and a project install belong to the project; the rest to no project', () => {
     const catalog = composeCatalog(
       scope([
-        agent('mine', { source: 'project', path: '/p/.claude/agents/mine.md' }),
-        agent('home'),
-        agent('lab:own', { plugin: { id: 'lab@x', scope: 'project' } }),
-        agent('acme:lead', { plugin: { id: 'acme@x', scope: 'user' } }),
+        testCatalogAgent('mine', {}, { source: { kind: 'folder', scope: 'project' } }),
+        testCatalogAgent('home'),
+        testCatalogAgent('lab:own', {}, plugin('lab', 'project')),
+        testCatalogAgent('acme:lead', {}, plugin('acme', 'user')),
       ]),
       'p',
     )
-    expect(catalog.found.map((one) => [one.fullName, one.projectId])).toEqual([
+    expect(catalog.found.map((one) => [one.name, one.projectId])).toEqual([
       ['mine', 'p'],
       ['home', ''],
       ['lab:own', 'p'],
@@ -61,30 +56,37 @@ describe("a scope's catalog with Localix's additions", () => {
   test("the built-ins run on Localix's prompts; general-purpose is the delegator; localix is added", () => {
     const catalog = composeCatalog(
       scope([
-        agent('Explore', { source: 'builtin', prompt: '' }),
-        agent('general-purpose', { source: 'builtin', prompt: '' }),
+        testCatalogAgent('Explore', { prompt: '' }, BUILTIN),
+        testCatalogAgent('general-purpose', { prompt: '' }, BUILTIN),
       ]),
       '',
     )
-    expect(catalog.builtins.map((one) => [one.fullName, Boolean(one.prompt), one.self])).toEqual([
+    const shown = catalog.builtins.map((one) => [
+      one.name,
+      Boolean(one.definition.prompt),
+      one.self,
+    ])
+    expect(shown).toEqual([
       ['Explore', true, undefined],
       ['general-purpose', false, true],
       ['localix', true, undefined],
     ])
-    expect(catalog.resolve('localix')).toMatchObject({ agent: { source: 'builtin' } })
+    expect(catalog.resolve('localix')).toMatchObject({ agent: BUILTIN })
   })
 
   test('a file named localix takes the main agent’s name; a shadowed definition names its winner', () => {
-    const lost = agent('helper', { description: 'mine' })
-    const winner = agent('helper', { source: 'managed', description: 'org' })
+    const managed = { source: { kind: 'folder', scope: 'managed' } } as const
+    const lost = testCatalogAgent('helper', { description: 'mine' })
+    const winner = testCatalogAgent('helper', { description: 'org' }, managed)
     const catalog = composeCatalog(
-      scope([agent('localix'), winner], {}, [{ agent: lost, by: winner }]),
+      scope([testCatalogAgent('localix'), winner], {}, [{ agent: lost, by: winner }]),
       '',
     )
-    const main = catalog.builtins.find((one) => one.fullName === 'localix')!
-    expect(catalog.shadowedBy(main)?.source).toBe('user')
-    const shadowed = catalog.found.find((one) => one.description === 'mine')!
-    expect(catalog.shadowedBy(shadowed)?.description).toBe('org')
-    expect(catalog.resolve('localix')).toMatchObject({ agent: { source: 'user' } })
+    const user = { kind: 'folder', scope: 'user' } as const
+    const main = catalog.builtins.find((one) => one.name === 'localix')!
+    expect(catalog.shadowedBy(main)?.source).toEqual(user)
+    const shadowed = catalog.found.find((one) => one.definition.description === 'mine')!
+    expect(catalog.shadowedBy(shadowed)?.definition.description).toBe('org')
+    expect(catalog.resolve('localix')).toMatchObject({ agent: { source: user } })
   })
 })

@@ -6,7 +6,7 @@ import {
   type WorktreeHook,
 } from '../../../agent-core/tools/workflow/hook-worktree'
 import { createAgentWorktree } from '../../../agent-core/tools/workflow/worktree'
-import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
+import type { CatalogAgent } from '@rsaryev/llx-plugin/agents'
 import {
   agentToolsRefusal,
   subagentModelRoute,
@@ -30,8 +30,8 @@ export function agentLaunchPorts(input: {
   rootSessionId: string
   /** The run's WorktreeCreate hooks, which replace `git worktree add` when present (CC). */
   worktreeHook?: WorktreeHook
-  /** `tools: Agent(a, b)` of the agent the run is: the only types it may delegate to. */
-  allowedAgentTypes?: readonly string[]
+  /** `tools: Agent(a, b)` of the agent the run is refusing a type (`agentSpawnRefusal`). */
+  spawnRefusal?: AgentLaunchPorts['spawnRefusal']
   /** The run's model and the models its providers offer: what an agent file's `model` routes to. */
   models?: SubagentModelContext
   /** The tools this run offers, once built: what a child's agent type chooses among. */
@@ -41,7 +41,7 @@ export function agentLaunchPorts(input: {
   return {
     ...(parentTools ? { toolsRefusal: (type) => childToolsRefusal(type, parentTools()) } : {}),
     ...(models ? { subagentRoute: (ask) => subagentModelRoute(ask, models) } : {}),
-    ...(input.allowedAgentTypes ? { allowedAgentTypes: input.allowedAgentTypes } : {}),
+    ...(input.spawnRefusal ? { spawnRefusal: input.spawnRefusal } : {}),
     ...(input.choices ? { choices: input.choices } : {}),
     isolate: async (name) => {
       const made = await input.worktreeHook?.(name)
@@ -53,12 +53,13 @@ export function agentLaunchPorts(input: {
 
 /** A child of `type` is refused when its `tools` resolve to nothing among the run's tools. */
 function childToolsRefusal(type: TaskAgentType, pool: readonly NamedTool[]): string | undefined {
-  if (type.tools === undefined) return undefined
-  return agentToolsRefusal({ name: type.fullName, tools: type.tools }, pool, {
+  const { tools, background } = type.definition
+  if (tools === undefined) return undefined
+  return agentToolsRefusal({ name: type.name, tools }, pool, {
     asMainThread: false,
-    background: type.background === true,
+    background: background === true,
     atDepthLimit: true,
-    permissionMode: type.permissionMode ?? 'default',
+    permissionMode: type.askedMode ?? 'default',
   })
 }
 
@@ -69,8 +70,8 @@ function childToolsRefusal(type: TaskAgentType, pool: readonly NamedTool[]): str
  */
 export function applyCatalogAgent<Agent extends { instructions?: string | null }>(
   input: { agent: Agent; disabledTools: readonly string[] },
-  spec: LoadedPluginAgent | undefined,
-): { agent: Agent; disabledTools: string[]; subagent: LoadedPluginAgent } | null {
+  spec: CatalogAgent | undefined,
+): { agent: Agent; disabledTools: string[]; subagent: CatalogAgent } | null {
   return spec ? { ...runAsPluginAgent(input, spec), subagent: spec } : null
 }
 
@@ -80,17 +81,18 @@ const INSTRUCTION_FILE = /(^|[\\/])(AGENTS|CLAUDE)(\.local)?\.md$/
 /** The context files a run as `subagent` reads: none of the instruction files with `omitClaudeMd`. */
 export function contextFilesFor<File extends { path: string }>(
   files: readonly File[],
-  subagent: Pick<LoadedPluginAgent, 'omitClaudeMd'> | null,
+  subagent: Pick<CatalogAgent, 'startsWith'> | null,
 ): File[] {
-  return subagent?.omitClaudeMd
+  return subagent && !subagent.startsWith.claudeMd
     ? files.filter((file) => !INSTRUCTION_FILE.test(file.path))
     : [...files]
 }
 
 /** The prompt cache a run as `subagent` asks for: `1h` the long-lived one, `5m` the default. */
 export function promptCacheRetentionFor(
-  subagent: Pick<LoadedPluginAgent, 'cacheTtl'> | null,
+  subagent: Pick<CatalogAgent, 'extras'> | null,
 ): 'short' | 'long' | undefined {
-  if (subagent?.cacheTtl === '1h') return 'long'
-  return subagent?.cacheTtl === '5m' ? 'short' : undefined
+  const ttl = subagent?.extras.cacheTtl
+  if (ttl === '1h') return 'long'
+  return ttl === '5m' ? 'short' : undefined
 }

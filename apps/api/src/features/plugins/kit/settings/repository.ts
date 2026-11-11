@@ -1,5 +1,5 @@
 import { readFileSync, statSync, type Stats } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join, resolve, sep } from 'node:path'
 import type { RepositoryFacts } from '@rsaryev/llx-plugin/settings'
 
 /**
@@ -34,7 +34,7 @@ const textOf = (path: string): string => {
 function mainOf(checkout: string, marker: string): string {
   const gitdir = /^gitdir:\s*(.+)$/m.exec(textOf(marker))?.[1]?.trim()
   const linked = gitdir ? resolve(checkout, gitdir) : ''
-  const at = linked.lastIndexOf('/.git/worktrees/')
+  const at = linked.lastIndexOf(`${sep}.git${sep}worktrees${sep}`)
   return at > 0 ? linked.slice(0, at) : checkout
 }
 

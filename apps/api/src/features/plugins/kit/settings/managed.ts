@@ -90,13 +90,6 @@ export async function readManagedComposition(
   return composeManagedSource(source, mdm)
 }
 
-/** The managed settings alone, as the kit composed them (the source's own by default). */
-export async function readManagedSettings(
-  source: ManagedSettingsSource = systemManagedSource(),
-): Promise<ManagedComposition['layer']['settings']> {
-  return (await readManagedComposition(source)).layer.settings
-}
-
 /** The macOS configuration profile for Claude Code, converted to JSON by `plutil`. */
 export function macosMdmReader(
   file = '/Library/Managed Preferences/com.anthropic.claudecode.plist',

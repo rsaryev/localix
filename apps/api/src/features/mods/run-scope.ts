@@ -2,10 +2,10 @@ import type { ModelStepHook } from '@localixai/agent'
 import type { AgentTool } from '@localixai/agent/agents'
 import { clampReason, promptDroppedText } from '../plugins/kit'
 import { offerAgents, wrapAgent, type DirectoryAgent } from './agent-events'
-import type { RunSurface } from './api/run-api'
+import type { RunSurface } from './session/run-tools'
 import type { ModelUsage, ModScene } from './contracts'
 import { skillPromptIn, wrapSkillTool } from './conversation-events'
-import { agentOf, type ModEventScope } from './event-scope'
+import { agentOf, fireIn, hearsIn, type ModEventScope } from './event-scope'
 import type { ModsHost } from './host'
 import { runtimeContext, type ContextSection } from './run-context'
 import { composeSystemPrompt, type ComposeFacts } from './run-prompt'
@@ -26,9 +26,10 @@ import { modelStepHook } from './turn-step'
  * `turn.step`, `turn.complete`, `tool.call`, `tool.check`, `tool.describe`, the prompt's
  * `prompt.section`, `prompt.compose`, `prompt.context`, `prompt.attachment` and
  * `attribution.text`, `agent.offer`, `agent.spawn`, `session.append` and `session.compact` — sent
- * to the instances of the mods enabled there that run in the conversation's project, started for
- * it when they are not running yet. Every method is cheap and inert when no such mod hooks the
- * event.
+ * through the chain of the conversation's kit host (`session/session-host.ts`), loaded with the
+ * mods enabled there when it is not yet. A delegated child's run goes to its parent's host, as a
+ * Claude Code subagent runs in its session's mods. Every method is cheap and inert when no such
+ * mod hooks the event.
  */
 
 export type PromptOutcome =
@@ -40,7 +41,8 @@ export interface ModRunScope {
   readonly active: boolean
   /**
    * Whether the run's calls meet the permission gate inside `tool.call`, after the `PreToolUse`
-   * hooks, as in Claude Code: true when a mod hears `tool.call` or `tool.check`.
+   * hooks, as in Claude Code: true whenever mods run, so a call a mod makes through the tools
+   * the turn lends (`$.tool.call`, `$.mcp.call`, `$.agent.spawn`) meets the gate too.
    */
   readonly gateInChain: boolean
   /** `prompt.submit`: the prompt as the model will read it, notes for it, or a drop. */
@@ -100,13 +102,17 @@ export async function createModRunScope(
   scene: ModScene,
   enabled: ReadonlySet<string>,
   /** The model the run's requests name, for the events that carry it. */
-  run: { model: string; agentId?: string } = { model: '' },
+  run: { model: string; agentId?: string; parentSessionId?: string } = { model: '' },
 ): Promise<ModRunScope> {
-  const plugins = await host.instancesFor(scene, enabled)
-  const active = plugins.size > 0
-  const scope: ModEventScope = { host, scene, plugins, ...agentOf(run) }
+  // A delegated child's run reaches its parent conversation's mods.
+  const hostScene = run.parentSessionId ? { ...scene, sessionId: run.parentSessionId } : scene
+  const kit = await host.hostFor(hostScene, enabled)
+  const active = kit !== undefined
+  const scope: ModEventScope | undefined = kit ? { host, kit, scene, ...agentOf(run) } : undefined
+  /** The scope when a loaded mod hears `event`. */
+  const hearing = (event: string) => (scope && hearsIn(scope, event) ? scope : undefined)
   // Between turns, the conversation's events go to the mods this turn runs with.
-  if (active) host.conversations.joined(scene, plugins)
+  if (active) host.conversations.joined(hostScene, enabled)
   // What the turn lends `$.tool`, `$.mcp` and `$.tool.check` while it runs.
   const surface: RunSurface = { tools: [] }
   let directory: readonly DirectoryAgent[] = []
@@ -115,46 +121,40 @@ export async function createModRunScope(
   async function complete(input: TurnEnd & { answer: string; turnId: string }) {
     open = undefined
     if (scene.sessionId) host.band.runs.detach(scene.sessionId)
-    await host.measure(scene, plugins).catch(() => {})
-    if (!active || !host.hears('turn.complete', plugins)) return undefined
-    const answer = (await host.dispatch(
+    if (scope) await host.measure(scope).catch(() => {})
+    const on = hearing('turn.complete')
+    if (!on) return undefined
+    const answer = (await fireIn(
+      on,
       'turn.complete',
-      { ...input, isAborted: input.reason === 'aborted', ...agentOf(scope) },
+      { ...input, isAborted: input.reason === 'aborted', ...agentOf(on) },
       () => ({ text: input.answer, ...(input.usage ? { usage: input.usage } : {}) }),
-      scene,
-      plugins,
     )) as { text?: unknown } | undefined
     const text = typeof answer?.text === 'string' ? answer.text.trim() : ''
     return text && text !== input.answer.trim() ? text : undefined
   }
   return {
     active,
-    gateInChain: active && (host.hears('tool.call', plugins) || host.hears('tool.check', plugins)),
+    gateInChain: active,
     async submit(text, turnId) {
       // Rows a mod appended since the last prompt reach the model with this one.
       const appended = scene.sessionId ? host.composer.takeNotes(scene.sessionId) : []
       // A prompt a mod submitted met its hooks as that call, with the plugin as its origin. Taken
       // on every submit, whoever listens, so the entry cannot outlive its turn.
       const heard = scene.sessionId ? host.composer.takeSubmitted(scene.sessionId, text) : false
-      if (!active || heard || !host.hears('prompt.submit', plugins))
-        return { dropped: false, text, context: appended }
+      const on = hearing('prompt.submit')
+      if (!on || heard) return { dropped: false, text, context: appended }
       // The turn's id is `turn.start`'s to carry, as in Claude Code.
       void turnId
       const input = { text, wait: false, origin: { kind: 'composer' } }
-      const answer = (await host.dispatch(
-        'prompt.submit',
-        input,
-        (e) => {
-          const { context } = e as { context?: unknown }
-          return {
-            text: (e as typeof input).text,
-            ...(Array.isArray(context) ? { context } : {}),
-            origin: (e as typeof input).origin,
-          }
-        },
-        scene,
-        plugins,
-      )) as { drop?: unknown; text?: unknown; context?: unknown } | undefined
+      const answer = (await fireIn(on, 'prompt.submit', input, (e) => {
+        const { context } = e as { context?: unknown }
+        return {
+          text: (e as typeof input).text,
+          ...(Array.isArray(context) ? { context } : {}),
+          origin: (e as typeof input).origin,
+        }
+      })) as { drop?: unknown; text?: unknown; context?: unknown } | undefined
       if (typeof answer?.drop === 'string') {
         const reason = clampReason(answer.drop)
         return { dropped: true, reason, notice: promptDroppedText(reason) }
@@ -167,14 +167,8 @@ export async function createModRunScope(
     },
     async turnStart(text, turnId) {
       open = { turnId, at: Date.now() }
-      if (active && host.hears('turn.start', plugins))
-        await host.dispatch(
-          'turn.start',
-          { text, turnId, ...agentOf(scope) },
-          () => ({ turnId }),
-          scene,
-          plugins,
-        )
+      const on = hearing('turn.start')
+      if (on) await fireIn(on, 'turn.start', { text, turnId, ...agentOf(on) }, () => ({ turnId }))
     },
     turnComplete: complete,
     async turnFailed(input) {
@@ -183,7 +177,7 @@ export async function createModRunScope(
       await complete({ ...input, durationMs, answer: '', turnId: open.turnId })
     },
     wrapTools(tools) {
-      if (!active) return [...tools]
+      if (!scope) return [...tools]
       // The turn's tools, before the mods wrap them: `$.tool.call` fires `tool.call` itself.
       surface.tools = [...tools, ...modTools(scope)]
       if (scene.sessionId) host.band.runs.attach(scene.sessionId, surface)
@@ -195,22 +189,22 @@ export async function createModRunScope(
       })
       return wrapToolResults(wrapInToolCall(wrapSkillTool(spawning, scope), scope), scope)
     },
-    skillPrompt: async (skill, text) => (active ? skillPromptIn(scope, skill, text) : text),
-    tools: () => (active ? modTools(scope) : []),
+    skillPrompt: async (skill, text) => (scope ? skillPromptIn(scope, skill, text) : text),
+    tools: () => (scope ? modTools(scope) : []),
     describeTools: (tools, placement) =>
-      active
+      scope
         ? describeTools(scope, tools, placement)
         : Promise.resolve({ tools: [...tools], placed: new Map() }),
-    composePrompt: async (facts) => (active ? composeSystemPrompt(scope, facts) : undefined),
-    runtimeContext: async (sections) => (active ? runtimeContext(scope, sections) : [...sections]),
+    composePrompt: async (facts) => (scope ? composeSystemPrompt(scope, facts) : undefined),
+    runtimeContext: async (sections) => (scope ? runtimeContext(scope, sections) : [...sections]),
     async offerAgents(agents) {
       // The registry's agents and the plugins' subagent types are offered apart; both are listed.
       const names = new Set(agents.map((agent) => agent.name))
       directory = [...directory.filter((agent) => !names.has(agent.name)), ...agents]
-      return active ? offerAgents(scope, agents) : [...agents]
+      return scope ? offerAgents(scope, agents) : [...agents]
     },
     toolCheck: (facts) =>
-      active
+      scope
         ? toolCheckPort(
             scope,
             () => surface.tools,
@@ -218,10 +212,10 @@ export async function createModRunScope(
             facts,
           )
         : undefined,
-    modelStep: (turnId) => (active ? modelStepHook(scope, turnId) : undefined),
-    compaction: async (due) => (active ? reviewCompaction(scope, due) : 'keep'),
+    modelStep: (turnId) => (scope ? modelStepHook(scope, turnId) : undefined),
+    compaction: async (due) => (scope ? reviewCompaction(scope, due) : 'keep'),
     async storeResponse(payload) {
-      if (!active || typeof payload.content !== 'string') return payload
+      if (!scope || typeof payload.content !== 'string') return payload
       const text = await appendResponse(scope, payload.content, run.model)
       return text === payload.content ? payload : withResponse(payload, text)
     },

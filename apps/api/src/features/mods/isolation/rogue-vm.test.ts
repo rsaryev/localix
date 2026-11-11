@@ -59,11 +59,9 @@ function start(vms: ModVmPort, options: Partial<ModVmOptions> = {}) {
     ...options,
   })
   const registered: Array<[unknown, unknown]> = []
-  const on = (event: unknown, matcher: unknown) => {
-    registered.push([event, matcher])
-    return { catch: () => ({}) as never }
+  const register = async () => {
+    for (const hook of await vm.load({})) registered.push([hook.event, hook.matcher])
   }
-  const register = () => vm.register(on as never, {})
   return { vm, reports, printed, deaths, registered, register }
 }
 

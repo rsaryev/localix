@@ -5,8 +5,9 @@ import { describe, mergeShape, REJECTED, sameShape } from './shape.js'
  * event's input `e`, what `next(e)` resolves to, and the answers of cheap `$` calls — as shape
  * descriptors (`shape.js`), never values. Entries are `{ kind, name, shape }`, one per name, shapes
  * merged, written with `$.fs.write` as JSON to the path in the `output` option or the
- * `CC_PARITY_OUT` environment variable; an existing file is merged into, so the file is stable
- * across runs. The same module runs in Claude Code (`claude --plugin-dir`) and in Localix's mod
+ * `CC_PARITY_OUT` environment variable; an existing file is merged into on every write, so the
+ * file is stable across runs and every instance's entries are kept when several write it (a host
+ * runs one per session). The same module runs in Claude Code (`claude --plugin-dir`) and in Localix's mod
  * host (`scripts/cc-parity/localix`), so their recordings compare one to one.
  *
  * Model calls (`$.model.*`) spend the person's usage: they run only when `CC_PARITY_ALLOW_MODEL`
@@ -22,7 +23,6 @@ const entries = new Map()
 let config = {}
 let output
 let writing = Promise.resolve()
-let merged = false
 let surveyed = false
 
 async function outputPath($) {
@@ -61,10 +61,7 @@ function save($) {
 async function write($) {
   const path = await outputPath($)
   if (!path) return
-  if (!merged) {
-    merged = true
-    if (await $.fs.exists(path)) mergeFile(await $.fs.read(path))
-  }
+  if (await $.fs.exists(path)) mergeFile(await $.fs.read(path))
   const list = [...entries.values()].sort((a, b) =>
     (a.kind + ':' + a.name).localeCompare(b.kind + ':' + b.name),
   )

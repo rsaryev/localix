@@ -20,10 +20,6 @@ export type {
   PluginCommandSpec,
   ListPluginCommandsResponse,
 } from './contracts-commands'
-export { pluginAgentSchema } from './contracts-agents'
-export type { PluginAgent } from './contracts-agents'
-
-export type { PluginMonitor } from './contracts-monitors'
 
 /** Structured validation outcome for a plugin (or one of its skills). */
 export const pluginValidationSchema = z.object({

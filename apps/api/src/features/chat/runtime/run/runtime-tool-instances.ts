@@ -25,7 +25,7 @@ import {
 import type { createContextStoreRepository } from '../../../context-store/repository'
 import type { ChatRepository, SessionRecord } from '../../repository'
 import type { SkillOverrides } from '../../../agent-core/skill-overrides'
-import type { KitSession } from '../../../plugins/kit'
+import type { PluginSession as KitSession } from '@rsaryev/llx-plugin'
 import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 
 export interface DirectToolInstanceDeps {

@@ -10,9 +10,8 @@ import {
   readKnownMarketplaces,
   readMarketplace,
   writeKnownMarketplaces,
-  type Marketplace,
-  type MarketplaceSource,
 } from './kit'
+import type { Marketplace, MarketplaceSource } from '@rsaryev/llx-plugin/marketplace'
 import { rmrf } from '../ext/install-tree'
 import { hashString, marketplacesRoot } from './marketplace-source'
 import type { NpmEntrySource } from './marketplace-source-npm'

@@ -16,12 +16,8 @@ import { createHookModels } from './cc-hook-evaluators'
 import type { RunCatalog, RunEnv, RunParams } from './types'
 import { ccSubagentOf } from './cc-hook-session-facts'
 import { claudeCodeHome } from '../../../cc-settings/config-dir'
-import {
-  openRunHooks,
-  readClaudeSettingsSync,
-  type KitSession,
-  type ScopedHooksBlock,
-} from '../../../plugins/kit'
+import { openRunHooks, readClaudeSettingsSync, type ScopedHooksBlock } from '../../../plugins/kit'
+import type { PluginSession as KitSession } from '@rsaryev/llx-plugin'
 import { ccBackgroundWork, ccRunFacts } from './cc-hook-run-facts'
 import { createCcTranscript } from './cc-transcript'
 import { publishAgentPhase } from '../session-stream-registry'
@@ -123,7 +119,13 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
       .catch(() => undefined)
   const kitSession = openChatPluginSession(
     deps.pluginSessions,
-    { chatId: session.id, cwd: defaultCwd, settings, plugins: loadedPlugins.kitPlugins },
+    {
+      chatId: session.id,
+      rootChatId: session.rootSessionId,
+      cwd: defaultCwd,
+      settings,
+      plugins: loadedPlugins.kitPlugins,
+    },
     transcript.path,
     input.permissionMode,
     wake,

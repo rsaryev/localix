@@ -31,6 +31,8 @@ export interface ImportRef {
   typeOnly: boolean
   /** Named bindings the import brings in (local names). */
   names: string[]
+  /** A static `import`, an `export … from` or a dynamic `import()`. */
+  kind: 'import' | 'export' | 'dynamic'
 }
 
 const SOURCE_FILE = /\.(?:[cm]?[jt]sx?)$/u
@@ -75,18 +77,23 @@ export function importsOf(source: Source): ImportRef[] {
   for (const entry of parsed.module.staticImports) {
     const names = entry.entries.map((item) => item.localName.value)
     const typeOnly = entry.entries.length > 0 && entry.entries.every((item) => item.isType)
-    refs.push({ spec: entry.moduleRequest.value, typeOnly, names })
+    refs.push({ spec: entry.moduleRequest.value, typeOnly, names, kind: 'import' })
   }
   for (const entry of parsed.module.staticExports) {
     for (const item of entry.entries) {
       if (item.moduleRequest)
-        refs.push({ spec: item.moduleRequest.value, typeOnly: item.isType, names: [] })
+        refs.push({
+          spec: item.moduleRequest.value,
+          typeOnly: item.isType,
+          names: [],
+          kind: 'export',
+        })
     }
   }
   for (const { moduleRequest } of parsed.module.dynamicImports) {
     const literal = source.raw.slice(moduleRequest.start, moduleRequest.end)
     if (/^['"].*['"]$/u.test(literal))
-      refs.push({ spec: literal.slice(1, -1), typeOnly: false, names: [] })
+      refs.push({ spec: literal.slice(1, -1), typeOnly: false, names: [], kind: 'dynamic' })
   }
   return refs
 }

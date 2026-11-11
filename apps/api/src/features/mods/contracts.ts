@@ -1,6 +1,3 @@
-import { AsyncLocalStorage } from 'node:async_hooks'
-import type { DispatchOptions, HookOrigin } from '@localixai/claude-plugin/mods'
-
 /**
  * The mods host's contracts: where an event happens, and the ports the host reaches the rest of
  * Localix through. The composition root (`bootstrap/mods.ts`) binds every port; this feature
@@ -160,54 +157,6 @@ export interface ModsPorts {
  */
 export const submittedContent = (input: { text: string; asUser: boolean; plugin: string }) =>
   input.asUser ? input.text : `[${input.plugin}] ${input.text}`
-
-const scenes = new AsyncLocalStorage<ModScene>()
-
-/** Run `work` with `scene` as the place every mods API call in it acts. */
-export function inScene<T>(scene: ModScene, work: () => T): T {
-  return scenes.run(scene, work)
-}
-
-/**
- * A host's dispatch: an event through the chain of the instances `ids`, its `$` calls acting in
- * `scene`; `signal` aborts when the event is abandoned (the run stopped), every `next.signal`.
- */
-export const sceneDispatch =
-  (engine: {
-    dispatch(
-      event: string,
-      input: unknown,
-      core: (event: unknown) => unknown,
-      opts: Pick<DispatchOptions, 'plugins' | 'origin' | 'signal' | 'onTrace'>,
-    ): Promise<unknown>
-  }) =>
-  (
-    event: string,
-    input: unknown,
-    core: (event: unknown) => unknown,
-    scene: ModScene,
-    ids?: ReadonlySet<string>,
-    origin?: HookOrigin,
-    signal?: AbortSignal,
-    onTrace?: DispatchOptions['onTrace'],
-  ) =>
-    inScene(scene, () =>
-      engine.dispatch(event, input, core, {
-        plugins: ids,
-        origin,
-        ...(signal ? { signal } : {}),
-        ...(onTrace ? { onTrace } : {}),
-      }),
-    )
-
-/** The scene of the call in hand, else the one the host falls back to. */
-export function currentScene(fallback: ModScene): ModScene {
-  return scenes.getStore() ?? fallback
-}
-
-/** A field a mod passed, as text when it is text: `$` calls take `'key'` or `{ key }`. */
-export const stringOr = (value: unknown, fallback = ''): string =>
-  typeof value === 'string' ? value : fallback
 
 /** Ports for a host with nothing to run: a harness that builds the app without mods. */
 export const INERT_MOD_PORTS: ModsPorts = {

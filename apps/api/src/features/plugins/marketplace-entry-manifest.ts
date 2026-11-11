@@ -4,7 +4,7 @@ import { join, posix } from 'node:path'
 import { MANIFEST_DIR, MANIFEST_FILE } from '@localixai/claude-plugin'
 
 import { findManifestPath } from './discovery'
-import type { MarketplaceEntry } from './kit'
+import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
 import { isRecord } from '../../lib/record'
 import { rmrf } from '../ext/install-tree'
 

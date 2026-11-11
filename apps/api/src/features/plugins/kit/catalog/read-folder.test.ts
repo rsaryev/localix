@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { realpathSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { readPluginFolder } from './read-folder'
@@ -61,7 +60,6 @@ describe('a plugin folder read by the kit', () => {
     expect(found.manifest.name).toBe(dir().split('/').pop()!)
     expect(found.manifest.version).toBe('0.0.0')
     expect(found.provides.skills).toEqual(['review'])
-    expect(found.entrypoints.skillDirs).toEqual([join(dir(), 'skills')])
   })
 
   test('a mini app folder is refused with the Store hint', async () => {
@@ -94,9 +92,6 @@ describe('a plugin folder read by the kit', () => {
       },
     ])
     expect(found.provides.commands).toEqual(['db:migrate'])
-    expect(found.entrypoints.commandFiles).toEqual([
-      { file: join(realpathSync(dir()), 'commands/db/migrate.md'), name: 'db:migrate' },
-    ])
   })
 
   test('a commands object map entry with inline content is a command without a file', async () => {
@@ -106,10 +101,9 @@ describe('a plugin folder read by the kit', () => {
     expect(found.commands.map((c) => [c.name, c.description, c.prompt.trim()])).toEqual([
       ['hello', 'Hi', 'Say hi'],
     ])
-    expect(found.entrypoints.commandFiles).toEqual([])
   })
 
-  test('agents are named below the plugin, their tools as the file wrote them, worktree isolation as isolated', async () => {
+  test('agents are named below the plugin, their tools as the file wrote them, worktree isolation kept', async () => {
     const found = await read({
       ...manifest({ name: 'review' }),
       'agents/team/security.md':
@@ -117,13 +111,16 @@ describe('a plugin folder read by the kit', () => {
     })
     expect(found.agents).toHaveLength(1)
     expect(found.agents[0]).toMatchObject({
-      name: 'team:security',
-      description: 'Checks',
-      prompt: 'Be careful',
-      tools: ['Read', 'Bash', 'Agent(worker)'],
-      pinnedSkills: ['audit'],
-      isolation: 'isolated',
-      maxTurns: 5,
+      name: 'security',
+      scopedName: 'review:team:security',
+      definition: {
+        description: 'Checks',
+        prompt: 'Be careful',
+        tools: ['Read', 'Bash', 'Agent(worker)'],
+        skills: ['audit'],
+        maxTurns: 5,
+      },
+      extras: { isolation: 'worktree' },
     })
     expect(found.provides.agents).toEqual(['review:team:security'])
   })
@@ -159,8 +156,13 @@ describe('a plugin folder read by the kit', () => {
     expect(Object.keys(entry.lspServers)).toEqual(['go'])
     expect(found.provides.lspServers).toEqual(['go'])
     expect(entry.monitors).toEqual([
-      { name: 'tail', command: 'tail -f log', description: 'Log' },
-      { name: 'w', command: 'watch', description: 'W' },
+      { name: 'tail', command: 'tail -f log', description: 'Log', when: { kind: 'always' } },
+      {
+        name: 'w',
+        command: 'watch',
+        description: 'W',
+        when: { kind: 'on-skill-invoke', skill: 'deploy' },
+      },
     ])
     expect(entry.components?.outputStyles).toEqual([
       {

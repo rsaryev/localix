@@ -1,41 +1,18 @@
 /**
- * The plugin kit boundary: the only folder that imports `@rsaryev/llx-plugin` (rule X7,
- * `docs/internals/plugins-and-mini-apps.md`). Everything Localix knows about the Claude Code
- * plugin format and its semantics comes from the kit through this file; the rest of the API calls
- * what it exports, never the kit itself. In-memory ports for other features' tests are in
- * `./testing`.
+ * The plugin kit boundary: the only folder that imports a value of `@rsaryev/llx-plugin` (rule X7,
+ * `docs/internals/plugins-and-mini-apps.md`). Everything Localix does with the Claude Code plugin
+ * format and its semantics runs through this file; the rest of the API calls what it exports, and
+ * names the kit's types with `import type` straight from the kit (this file re-exports none of
+ * them). In-memory ports for other features' tests are in `./testing`.
  */
-export {
-  createLocalixPluginHost,
-  type LoadedKitPlugin,
-  type LocalixPluginHost,
-  type PluginHostDeps,
-} from './host'
-export {
-  createChatPluginSessions,
-  type ChatPluginSessions,
-  type ChatSessionFacts,
-  type ScopePlugin,
-} from './sessions'
-export { scopeMcpServers, type McpScope, type ScopeMcpServers } from './mcp-servers'
-export { sessionLspServers, type PluginLspServer, type SessionLspServers } from './lsp-servers'
-export { monitorsToLaunch, type MonitorLaunch, type MonitorLaunches } from './monitors'
-export {
-  scopeAgents,
-  type AgentReference,
-  type AgentsRead,
-  type HostAgents,
-  type ScopeAgent,
-  type ScopeAgents,
-  type ScopeAgentSource,
-} from './agents'
-export type { PluginScope } from './scope-session'
-export {
-  issueLine,
-  readPluginFolder,
-  type CatalogPlugin,
-  type FolderSource,
-} from './catalog/read-folder'
+export { createLocalixPluginHost, type LocalixPluginHost } from './host'
+export { createChatPluginSessions, type ChatPluginSessions, type ScopePlugin } from './sessions'
+export { sessionLspServers, type PluginLspServer } from './lsp-servers'
+export { monitorsToLaunch, type MonitorLaunch } from './monitors'
+export { scopeAgents, type HostAgents, type ScopeAgent, type ScopeAgents } from './agents'
+export { catalogTier } from '@rsaryev/llx-plugin/agents'
+export { scopeMcpServers } from './scope-session'
+export { issueLine, readPluginFolder, type FolderSource } from './catalog/read-folder'
 export type { ResolvedEntrypoints } from './catalog/entrypoints'
 export { validatePluginFolder } from './catalog/validate'
 export {
@@ -43,55 +20,30 @@ export {
   agentMcpSpecs,
   agentMemory,
   askedPermissionMode,
-  preloadedSkillNames,
   subagentModelRoute,
   subagentPermissionMode,
   type SubagentModelContext,
-  type AgentMcpSpecs,
-  type AgentMemory,
   type AgentMemoryContext,
-  type AgentMemoryScope,
-  type PreloadableSkill,
 } from './spawn'
-export type { PluginCcComponents, PluginWorkflow } from './catalog/components'
+export { resolveModelAlias } from './model-alias'
+export type { PluginWorkflow } from './catalog/components'
 export { readSkillDescriptions } from './catalog/components'
-export type { Plugin as KitPlugin } from '@rsaryev/llx-plugin/loading'
-export type { PluginIssue } from '@rsaryev/llx-plugin/format'
-export { createHostPorts, type HostPortsDeps, type LocalixKitPorts } from './ports/host-ports'
-export {
-  lateMcpCaller,
-  lateModelRunner,
-  type CcMcpToolResult,
-  type McpCallByName,
-  type ModelBackend,
-} from './ports/session-ports'
+export { lateModelRunner, type CcMcpToolResult, type ModelBackend } from './ports/session-ports'
 export {
   readClaudeSettings,
   readClaudeSettingsSync,
   mergedSettings,
   type ClaudeSettings,
   type ClaudeSettingsInput,
+  isFileScope,
   type Settings,
-  type SettingsFile,
-  type SettingsFileScope,
 } from './settings/read'
-export {
-  managedSettingsDir,
-  readManagedSettings,
-  systemManagedSource,
-  type ManagedSettingsSource,
-} from './settings/managed'
-export { claudeCodeTrusts, trustedFolders } from './settings/trust'
+export { managedSettingsDir, type ManagedSettingsSource } from './settings/managed'
+export { claudeCodeTrusts } from './settings/trust'
 export { claudeCodeSettingsEnv, settingsEnvOf } from './settings/env'
 export { installKitPorts } from './install-ports'
-export { settingsCommandLine, type SettingsCommandLine } from './settings/hooks'
-export {
-  customizationLocks,
-  outputStyleSetting,
-  settingsModes,
-  skillShellDisabled,
-  type SettingsModes,
-} from './settings/values'
+export { settingsCommandLine } from './settings/hooks'
+export { outputStyleSetting, settingsModes, skillShellDisabled } from './settings/values'
 export {
   describeClaudeCodePermissions,
   type ClaudeCodePermissionsView,
@@ -104,42 +56,27 @@ export {
   settingsVerdict,
   withRealDirectories,
   withSessionRules,
-  type SessionRuleSpec,
   type SettingsRules,
-  type SettingsVerdict,
 } from './permissions'
-export type { PluginSession as KitSession } from '@rsaryev/llx-plugin'
 export { openRunHooks } from './hooks/run-hooks'
 export type { ScopedHooksBlock } from './hooks/scoped'
 export { formatHookEntries } from './hooks/listing'
-export {
-  settingsAdditionalDirectories,
-  settingsRuleEntries,
-  type SettingsRuleEntry,
-} from './settings/permissions'
-export {
-  invokeSkill,
-  invokeTypedSkills,
-  type InvokedSkill,
-  type InvokeSkillOptions,
-  type SkillInvocation,
-  type SkillShellAnswer,
-} from './skills'
+export { settingsAdditionalDirectories, settingsRuleEntries } from './settings/permissions'
+export { invokeSkill, invokeTypedSkills, type SkillShellAnswer } from './skills'
 export {
   findSessionSkill,
-  reloadSessionSkills,
   sessionSkills,
+  skillKeywords,
   skillListing,
+  skillPlugin,
+  skillScope,
   touchSessionFiles,
   typedSkills,
-  type ChatSkill,
-  type TypedSkills,
 } from './skill-catalog'
 export { preloadedSkillTexts, skillTexts, type SkillText } from './skill-texts'
 export { scopeSkills, type ScopeSkills } from './scope-skills'
 export {
   readSkillFolder,
-  skillFileIssues,
   skillFilePath,
   skillNameRefusal,
   type FolderSkill,
@@ -151,12 +88,7 @@ export {
   parseMarketplace,
   readCatalogJson,
   readMarketplace,
-  relativeEntryPath,
   resolveEntryName,
-  type Marketplace,
-  type MarketplaceAt,
-  type MarketplaceEntry,
-  type PluginSource,
 } from './marketplace/catalog'
 export {
   asRecorded,
@@ -174,27 +106,18 @@ export {
   readInstalled,
   versionsToOrphan,
   writeInstalled,
-  type InstallRecord,
-  type InstalledRecords,
 } from './marketplace/installs'
-export { disableRefusal, enableCascade, type PluginNode } from './marketplace/dependency-graph'
-export {
-  autoUpdatePassAllowed,
-  autoUpdateToggleRefusal,
-  recordedAutoUpdate,
-} from './marketplace/updates'
-export { pluginVersion, UNKNOWN_VERSION, type VersionSourceFacts } from './marketplace/versions'
+export { disableRefusal, enableCascade } from './marketplace/dependency-graph'
+export { autoUpdatePassAllowed, autoUpdateToggleRefusal } from './marketplace/updates'
+export { pluginVersion, UNKNOWN_VERSION } from './marketplace/versions'
 export {
   cloneUrl,
   describeSource,
   isLocalSource,
   marketplaceAddRefusal,
   marketplaceFetchPlan,
-  parseDeclaredSource,
   parseMarketplaceAdd,
   sameMarketplaceSource,
-  type MarketplaceFetchPlan,
-  type MarketplaceSource,
 } from './marketplace/sources'
 export {
   assertMarketplaceAllowed,
@@ -202,24 +125,17 @@ export {
   managedDeclarations,
 } from './marketplace/policy'
 export { resolveEntrySource, type ResolvedEntrySource } from './marketplace/entry-source'
+export { archiveHeaders, catalogHeaders, type UrlSourceHeaders } from './marketplace/headers'
+export { claudeCodePluginSettings } from './marketplace/claude-code'
+export { declaredMarketplaces, type DeclaredMarketplace } from './marketplace/declared'
 export {
-  archiveHeaders,
-  catalogHeaders,
-  type ArchiveHeadersRequest,
-  type UrlSourceHeaders,
-} from './marketplace/headers'
-export {
-  claudeCodeInstallRecords,
-  claudeCodePluginSettings,
-  type ClaudeCodePluginSettings,
-  type EnabledBy as ClaudeCodeEnabledBy,
-} from './marketplace/claude-code'
-export {
-  declaredMarketplaces,
-  type DeclaredFrom,
-  type DeclaredMarketplace,
-} from './marketplace/declared'
-export { DEFAULT_MARKETPLACE_PATH, withoutRoutingHeaders } from '@rsaryev/llx-plugin/marketplace'
+  DEFAULT_MARKETPLACE_PATH,
+  installsAt,
+  isUpdate,
+  marketplaceAutoUpdate,
+  parseInstalledPlugins,
+} from '@rsaryev/llx-plugin/marketplace'
+export { hostPlatform } from './ports/host-io'
 export {
   clampReason,
   contextUsage,
@@ -230,22 +146,14 @@ export {
   withheldResultText,
   type ToolCallEnd,
 } from './mods/values'
-export {
-  claudeCodeToolName,
-  claudeCodeToolNames,
-  LOCALIX_TOOL_NAMES,
-  localixToolNames,
-  localToolName,
-  withRunTools,
-  type NamedTool,
-} from './tool-names'
+export { claudeCodeToolName, localToolName, type NamedTool } from './tool-names'
 export { claudeCodeHookCall, localInputFromHook, toolCallEvent, toolInputOf } from './tool-calls'
 export {
+  agentSpawnRefusal,
   agentToolCandidates,
   agentToolsRefusal,
   namesBuiltinTool,
   narrowAgentTools,
-  type AgentToolFields,
   type AgentToolRun,
 } from './subagent-tools'
 export {
@@ -262,3 +170,11 @@ export {
   type ToolCheckContext,
   type ToolDecision,
 } from './mods/tool-check'
+export { createEndpoint, type Endpoint, type Handler } from './mods/guest/endpoint'
+export type { ApiShape, CallMeta, CallReply } from './mods/guest/call-protocol'
+export { loadModRuntime } from './mods/guest/runtime-file'
+export { defaultElementTable, describeApi, isHookBody } from '@rsaryev/llx-plugin/mods'
+export { diskFiles, type DiskFiles } from './ports/files'
+export { createModsHost } from '@rsaryev/llx-plugin/mods'
+export { hostCommandRunner } from './ports/command-runner'
+export { hostLocations, systemClock } from './ports/host-io'

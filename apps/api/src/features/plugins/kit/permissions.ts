@@ -13,7 +13,7 @@ import {
 import type { PolicyScope } from '@rsaryev/llx-plugin/settings'
 import { singleCalls } from '../../ext/cc-tool-shapes'
 import { claudeCodeHookCall } from './tool-calls'
-import { claudeCodeToolNames } from './tool-names'
+import { claudeCodeToolNames, LOCALIX_TOOL_NAMES, type NamedTool } from './tool-names'
 import { realPathResolver } from './ports/session-files'
 import type { SettingsRuleEntry } from './settings/permissions'
 
@@ -56,8 +56,6 @@ export interface SessionRuleSpec {
 export type ResolvedPaths = readonly (readonly string[] | undefined)[]
 
 type RunPaths = { cwd: string; homeDir: string; additionalDirectories: readonly string[] }
-
-type LocalTool = { readonly name: string; readonly aliases?: readonly string[] }
 
 /** Where each settings scope's rules were written, in the rules module's terms. */
 const SOURCE_OF: { readonly [S in PolicyScope]: (file: string) => RuleSource | undefined } = {
@@ -106,7 +104,7 @@ export function withSessionRules(base: SettingsRules, specs: SessionRuleSpec): S
  * One Localix call as the calls Claude Code's tools would make (`own`), and the files a shell line
  * names, as the `Read` and `Edit` rules see them (`files`).
  */
-function claudeCodeCalls(tool: LocalTool, input: unknown, paths: PathContext) {
+function claudeCodeCalls(tool: NamedTool, input: unknown, paths: PathContext) {
   const own: ToolCall[] = []
   const files: ToolCall[] = []
   for (const one of singleCalls(tool.name, input)) {
@@ -128,7 +126,7 @@ function claudeCodeCalls(tool: LocalTool, input: unknown, paths: PathContext) {
  */
 export async function settingsResolvedPaths(
   rules: SettingsRules,
-  tool: LocalTool,
+  tool: NamedTool,
   input: unknown,
   signal?: AbortSignal,
 ): Promise<ResolvedPaths> {
@@ -153,7 +151,7 @@ export async function withRealDirectories(rules: SettingsRules): Promise<Setting
  */
 export function settingsVerdict(
   rules: SettingsRules,
-  tool: LocalTool,
+  tool: NamedTool,
   input: unknown,
   resolved?: ResolvedPaths,
 ): SettingsVerdict | undefined {
@@ -178,13 +176,19 @@ export function settingsVerdict(
 }
 
 /**
- * Whether bare deny rules take every Claude Code name of the tool away (`WebFetch`, `mcp__*`).
- * `availableTools` reads Claude Code's names only, so the tool's names come from `tool-names.ts`.
+ * Whether bare deny rules take the tool away (`availableTools` over Localix's names: a tool goes
+ * when any of its Claude Code names is removed). An MCP tool goes by its `mcp__<server>__<tool>`
+ * address, which the names leave as it is; `--tools` lists the tool's own names, so no built-in
+ * default (Glob and Grep absent on posix) removes it.
  */
-export function settingsRemovesTool(rules: SettingsRules, tool: LocalTool): boolean {
-  const names = claudeCodeToolNames(tool)
-  const session = { platform: 'posix' as const, rules: rules.rules, toolsFlag: names }
-  return availableTools(names, session).length === 0
+export function settingsRemovesTool(rules: SettingsRules, tool: NamedTool): boolean {
+  const session = {
+    platform: 'posix' as const,
+    rules: rules.rules,
+    toolsFlag: claudeCodeToolNames(tool),
+    names: LOCALIX_TOOL_NAMES,
+  }
+  return availableTools([tool.aliases?.[0] ?? tool.name], session).length === 0
 }
 
 /** Whether an `Agent(<type>)` deny rule keeps a subagent type from the model. */

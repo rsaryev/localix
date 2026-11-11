@@ -109,7 +109,8 @@ export async function writeKnownMarketplaces(
 /**
  * The source as the registry file gives it back once written. The kit writes an inline (`settings`)
  * catalog's parsed entries and reads them back as no entries, so a source is compared with its
- * record, and recorded, in this form.
+ * record, and recorded, in this form. Kit gap: the kit's write/read round trip drops an inline
+ * catalog's entries.
  */
 export function asRecorded(source: MarketplaceSource): MarketplaceSource {
   const text = serializeKnownMarketplaces({ one: { source, installLocation: '', lastUpdated: '' } })
@@ -119,7 +120,8 @@ export function asRecorded(source: MarketplaceSource): MarketplaceSource {
 /**
  * Where a registered marketplace's catalog is, and the folder its relative plugins resolve in: a
  * catalog file added where it is, its marketplace two folders up (the kit's `read-file` plan);
- * every other one at `.claude-plugin/marketplace.json` of its folder.
+ * every other one at `.claude-plugin/marketplace.json` of its folder. Kit gap: the kit exports no
+ * function from a registered record to its catalog file.
  */
 export function catalogAt(record: { source: MarketplaceSource; installLocation: string }): {
   file: string

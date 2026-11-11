@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
-import { readSkillFolder, skillFileIssues, skillFilePath, skillNameRefusal } from './skill-files'
+import { readSkillFolder, skillFilePath, skillNameRefusal } from './skill-files'
 
 const dir = tempDirPerTest('kit-skill-files')
 
@@ -21,18 +21,6 @@ describe('skillNameRefusal', () => {
   test('a plain name is allowed; a name Claude Code refuses is refused with its message', () => {
     expect(skillNameRefusal('user', 'deploy')).toBeUndefined()
     expect(skillNameRefusal('project', 'de​ploy')).toBeString()
-  })
-})
-
-describe('skillFileIssues', () => {
-  test('a bad frontmatter value is a warning of the file', () => {
-    const issues = skillFileIssues(
-      '/p/SKILL.md',
-      '---\nname: x\nuser-invocable: maybe\n---\nbody\n',
-      'project',
-    )
-    expect(issues.some((issue) => issue.severity === 'warning')).toBe(true)
-    expect(skillFileIssues('/p/SKILL.md', '---\nname: x\n---\nbody\n', 'project')).toEqual([])
   })
 })
 

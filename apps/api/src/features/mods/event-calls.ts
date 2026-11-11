@@ -54,7 +54,9 @@ export function createEventCalls(host: () => ModsHost) {
       if (!conversation || !facts)
         throw new Error('prompt.compose: no system prompt was composed in this conversation yet')
       const model = fieldOf(args, 'model')
-      const scope = { host: host(), scene: conversation.scene, plugins: conversation.plugins }
+      const kit = await host().hostFor(conversation.scene, conversation.plugins)
+      if (!kit) throw new Error('prompt.compose: no mod runs in this conversation')
+      const scope = { host: host(), kit, scene: conversation.scene }
       return {
         sections: await coreSections(scope, {
           ...facts,

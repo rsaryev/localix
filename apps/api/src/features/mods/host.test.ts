@@ -6,7 +6,7 @@ import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
 import { createScriptVms } from '@localixai/engine-scripts'
 import { INERT_MOD_PORTS, type ModScene, type ModSource, type ModsPorts } from './contracts'
 import { createModsHost } from './host'
-import { instanceIdOf } from './instance-id'
+import { paneInstanceOf } from './panes'
 import { createModRunScope } from './run-scope'
 
 const scratch = tempDirPerTest('mods-host', {})
@@ -67,7 +67,11 @@ async function loadFirstMod() {
   const dir = scratch()
   const root = join(dir, 'first-mod')
   writeTree(root, {
-    '.claude-plugin/plugin.json': JSON.stringify({ name: 'first-mod' }),
+    // The kit hands a module only the options its manifest declares (`userConfig`).
+    '.claude-plugin/plugin.json': JSON.stringify({
+      name: 'first-mod',
+      userConfig: { reason: { type: 'string', title: 'Reason', description: 'Why Bash is off' } },
+    }),
     'hooks/hooks.json': JSON.stringify({ modules: ['./register.jsx'] }),
     'hooks/register.jsx': FIRST_MOD,
   })
@@ -89,7 +93,8 @@ async function loadFirstMod() {
     source,
     changes,
     reports,
-    pane: instanceIdOf('first-mod', dir),
+    // The conversation's own host opened the pane at its session.start.
+    pane: paneInstanceOf('first-mod', 's1'),
     scope: await createModRunScope(host, scene, new Set(['first-mod'])),
   }
 }
@@ -99,7 +104,7 @@ describe('mods host', () => {
     const { host, dir, scope, reports } = await loadFirstMod()
     expect(reports).toEqual([])
     expect(host.loaded()).toEqual(['first-mod'])
-    expect(host.registry.commands().map((command) => command.name)).toEqual(['tally'])
+    expect(host.commands().map((command) => command.name)).toEqual(['tally'])
 
     const [read, bash] = scope.wrapTools([tool('Read'), tool('Bash')])
     expect((await read!.execute('t1', {})).content).toBe('Read ran')
@@ -117,7 +122,7 @@ describe('mods host', () => {
     expect(
       await host.runCommand(
         { command: 'tally' },
-        { userId: 'u1', cwd: dir },
+        { userId: 'u1', sessionId: 's1', cwd: dir },
         new Set(['first-mod']),
       ),
     ).toEqual({ text: 'Claude has made 1 tool calls' })
@@ -154,7 +159,7 @@ describe('mods host', () => {
     })
   })
 
-  test('each project runs its own instance of the mod, with its own state', async () => {
+  test('each conversation runs its own instance of the mod, with its own state', async () => {
     const { host, dir, scope } = await loadFirstMod()
     await scope.wrapTools([tool('Read')])[0]!.execute('t1', {})
     const other = await createModRunScope(
@@ -162,22 +167,28 @@ describe('mods host', () => {
       { userId: 'u1', sessionId: 's2', cwd: join(dir, 'other') },
       new Set(['first-mod']),
     )
-    expect(host.instances().size).toBe(2)
-    const tally = (cwd: string) =>
-      host.runCommand({ command: 'tally' }, { userId: 'u1', cwd }, new Set(['first-mod']))
-    expect(await tally(dir)).toEqual({ text: 'Claude has made 1 tool calls' })
-    expect(await tally(join(dir, 'other'))).toEqual({ text: 'Claude has made 0 tool calls' })
+    expect(host.panes.list().map((pane) => pane.instance)).toContain(
+      paneInstanceOf('first-mod', 's2'),
+    )
+    const tally = (sessionId: string, cwd: string) =>
+      host.runCommand(
+        { command: 'tally' },
+        { userId: 'u1', sessionId, cwd },
+        new Set(['first-mod']),
+      )
+    expect(await tally('s1', dir)).toEqual({ text: 'Claude has made 1 tool calls' })
+    expect(await tally('s2', join(dir, 'other'))).toEqual({ text: 'Claude has made 0 tool calls' })
     expect(other.active).toBe(true)
-    // The palette lists a command once, whichever projects run the mod.
-    expect(host.registry.commands().map((command) => command.name)).toEqual(['tally'])
+    // The palette lists a command once, whichever conversations run the mod.
+    expect(host.commands().map((command) => command.name)).toEqual(['tally'])
   })
 
   test('unloading takes the mod’s commands, tools and panes with it; a broken module is reported', async () => {
     const { host, source } = await loadFirstMod()
     await host.reconcile([])
     expect(host.loaded()).toEqual([])
-    expect(host.registry.commands()).toEqual([])
-    expect(host.registry.panes()).toEqual([])
+    expect(host.commands()).toEqual([])
+    expect(host.panes.list()).toEqual([])
     writeTree(source.root, { 'hooks/register.jsx': 'export const nothing = 1' })
     await host.reconcile([{ ...source, revision: '2' }])
     expect(host.failures().get('first-mod')).toContain('register')
@@ -267,7 +278,7 @@ describe('mods host', () => {
     await host.reconcile([
       mod(
         'gate',
-        `on('plugin.register', ($, e, next) => e.name === 'bad' ? { refuse: 'not here' } : next(e))
+        `on('plugin.register', ($, e, next) => e.plugin === 'bad' ? { refuse: 'not here' } : next(e))
          on('ui.resolve', { component: 'Pane' }, async ($, e, next) => {
            const table = await next(e)
            return { ...table, Text: (props) => table.Text({ ...props, bold: true }) }
@@ -281,9 +292,9 @@ describe('mods host', () => {
       ),
     ])
     expect(host.loaded()).toEqual(['gate', 'drawer'])
-    expect(host.failures().get('bad')).toContain('refused by a mod: not here')
+    expect(host.failures().get('bad')).toContain('refused by gate: not here')
     expect(reports.some((line) => line.startsWith('bad:'))).toBe(true)
-    const drawing = await host.panes.render(instanceIdOf('drawer', dir), 'p')
+    const drawing = await host.panes.render(paneInstanceOf('drawer', `workspace:${dir}`), 'p')
     expect(drawing?.tree).toEqual([{ type: 'Text', props: { bold: true }, children: ['hi'] }])
   })
 })

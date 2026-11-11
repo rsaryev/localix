@@ -10,15 +10,12 @@ import {
   type ConfiguredCandidate,
   type McpCandidate,
   type PlanSource,
+  type FileScope,
 } from '@rsaryev/llx-plugin/settings'
 import { readJsonRecordSync } from '../../../../lib/json'
 import { isRecord } from '../../../../lib/record'
 import { claudeStateFile } from '../../../cc-settings/config-dir'
-import {
-  claudeCodeServerRecord,
-  type ClaudeCodeMcpInput,
-  type ClaudeCodeScope,
-} from '../../../mcp/claude-code-servers'
+import { claudeCodeServerRecord, type ClaudeCodeMcpInput } from '../../../mcp/claude-code-servers'
 import type { McpServerRecord } from '../../../mcp/repository'
 import { settingsEnvOf } from './env'
 import { managedSettingsDir } from './managed'
@@ -72,7 +69,7 @@ function projectKey(state: unknown, cwd: string, root: string | undefined): stri
   return claudeJsonProject(state, cwd) === undefined && root ? root : cwd
 }
 
-const SCOPE_OF: { readonly [S in PlanSource]?: ClaudeCodeScope } = {
+const SCOPE_OF: { readonly [S in PlanSource]?: FileScope } = {
   managedFile: 'managed',
   managedSettings: 'managed',
   local: 'local',
@@ -136,7 +133,7 @@ export function claudeCodeMcpPlan(
         isRecord(one.settings.managedMcpServers) ? one.settings.managedMcpServers : {},
       )
       .find((servers) => name in servers)?.[name]
-  const rawOf: { readonly [S in ClaudeCodeScope]: (name: string) => unknown } = {
+  const rawOf: { readonly [S in FileScope]: (name: string) => unknown } = {
     managed: managedRaw,
     local: (name) => serversOf(claudeJsonProject(state, key))[name],
     project: (name) => serversOf(mcpJson)[name],

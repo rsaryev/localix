@@ -3,7 +3,8 @@ import { claudeCodeHome } from '../../cc-settings/config-dir'
 import type { SessionRecord } from '../repository'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext, DirectReply } from './command-handlers'
-import { filterDisabledSkills } from '../../agent-core/skill-overrides'
+import { isSkillDisabled } from '../../agent-core/skill-overrides'
+import { skillPlugin, skillScope } from '../../plugins/kit'
 import { commandRemainder } from './slash-commands'
 import {
   commandUsage,
@@ -133,9 +134,9 @@ export async function handleSkillsControlCommand(
   const overrides = await ctx.loadSkillOverrides(
     userId,
     session.projectId,
-    discoveredSkills.map((s) => s.name),
+    discoveredSkills.map((s) => s.invocable.command),
   )
-  const skills = filterDisabledSkills(discoveredSkills, overrides)
+  const skills = discoveredSkills.filter((s) => !isSkillDisabled(overrides, s.invocable.command))
   const reply =
     skills.length === 0
       ? 'No skills yet. Create one in the Store (Skills), drop a `SKILL.md` in `.claude/skills/`, or ask me to save a procedure as a skill.'
@@ -143,8 +144,10 @@ export async function handleSkillsControlCommand(
           '**Available skills** — run with `/<name>`:',
           '',
           ...skills.map((s) => {
-            const tags = s.plugin ? `plugin ${s.plugin.name}` : s.scope
-            return `- \`/${s.name}\` _(${tags})_ — ${s.description || 'No description'}`
+            const plugin = skillPlugin(s)
+            const tags = plugin ? `plugin ${plugin.name}` : skillScope(s)
+            const { command, description } = s.invocable
+            return `- \`/${command}\` _(${tags})_ — ${description || 'No description'}`
           }),
           '',
           'Switch a skill on or off from its page in the Store.',

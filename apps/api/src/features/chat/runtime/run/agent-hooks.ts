@@ -1,12 +1,7 @@
+import type { CatalogAgent } from '@rsaryev/llx-plugin/agents'
 import { agentHooksRun } from '../../../plugins/kit'
 import type { SessionRecord } from '../../repository'
 import type { ScopedCcHooks } from '../run-contract'
-
-/** What a run needs of the agent it runs as to find its frontmatter hooks. */
-export interface HookedAgent {
-  source?: string
-  hooks?: unknown
-}
 
 /**
  * The hooks in a delegated agent's frontmatter, as run-scoped hooks of the child's runs: active
@@ -16,7 +11,7 @@ export interface HookedAgent {
  */
 export function agentScopedHooks(
   session: Pick<SessionRecord, 'provenance'>,
-  agent: HookedAgent | undefined,
+  agent: Pick<CatalogAgent, 'source' | 'hooks'> | undefined,
   options: { projectTrusted: boolean },
 ): ScopedCcHooks[] {
   const { provenance } = session

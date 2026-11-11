@@ -1,12 +1,15 @@
 import {
   parseToolEntry,
   resolveSubagentTools,
+  spawnRefusal,
+  type AgentCatalog,
+  type AgentToolFields,
   type SubagentRun,
   type ToolsOutcome,
 } from '@rsaryev/llx-plugin/agents'
-import { normalizePermissionMode } from '@rsaryev/llx-plugin'
+import { normalizePermissionMode, type PluginSession } from '@rsaryev/llx-plugin'
 import { normalizeMcpToolAlias } from '../../agent-core/mcp-tool-alias'
-import { localixToolNames, withRunTools, type NamedTool } from './tool-names'
+import { LOCALIX_TOOL_NAMES, localixToolNames, type NamedTool } from './tool-names'
 
 /**
  * WHICH TOOLS AN AGENT FILE'S `tools` AND `disallowedTools` LEAVE A RUN: the kit's
@@ -15,20 +18,11 @@ import { localixToolNames, withRunTools, type NamedTool } from './tool-names'
  * `Agent` may start; after (`narrowAgentTools`) it is the run's exact roster.
  */
 
-/** An agent as far as its tools go: the two fields as its file wrote them. */
-export interface AgentToolFields {
-  readonly name: string
-  readonly tools?: readonly string[]
-  readonly disallowedTools?: readonly string[]
-}
-
-/** How the run starts, as far as its tools go. */
-export interface AgentToolRun {
-  /** The agent is the main thread (a plugin's `agent` setting), not a subagent. */
-  readonly asMainThread: boolean
-  readonly background: boolean
-  /** The run may start no subagent of its own. */
-  readonly atDepthLimit: boolean
+/**
+ * How the run starts, as far as its tools go: the kit's `SubagentRun` of a subagent, with the
+ * permission mode as Localix spells it (the kit normalizes it).
+ */
+export type AgentToolRun = Pick<SubagentRun, 'asMainThread' | 'background' | 'atDepthLimit'> & {
   readonly permissionMode: string
 }
 
@@ -49,22 +43,20 @@ const subagentRun = (run: AgentToolRun): SubagentRun => ({
 
 const serverOf = (address: string) => address.split('__')[1] ?? ''
 
+/** The name the kit reads a tool by: an MCP tool's `mcp__<server>__<tool>`, which the names leave as it is. */
+const kitName = (tool: NamedTool) => tool.aliases?.[0] ?? tool.name
+
 function resolve(agent: AgentToolFields, pool: readonly NamedTool[], run: AgentToolRun) {
   const [mcp, builtin] = [
     pool.filter((t) => t.aliases?.length),
     pool.filter((t) => !t.aliases?.length),
   ]
-  const fields = {
-    name: agent.name,
-    ...(agent.tools ? { tools: [...agent.tools] } : {}),
-    ...(agent.disallowedTools ? { disallowedTools: [...agent.disallowedTools] } : {}),
-  }
   return resolveSubagentTools(
-    fields,
+    agent,
     {
       builtin: builtin.map((tool) => tool.name),
-      mcp: mcp.map((tool) => ({ server: serverOf(tool.aliases![0]!), name: tool.name })),
-      names: withRunTools(pool),
+      mcp: mcp.map((tool) => ({ server: serverOf(kitName(tool)), name: kitName(tool) })),
+      names: LOCALIX_TOOL_NAMES,
     },
     subagentRun(run),
   )
@@ -107,7 +99,7 @@ export function narrowAgentTools<T extends NamedTool>(
 ): T[] {
   const outcome = resolve(agent, pool, run)
   const kept = new Set(outcome.ok ? outcome.tools : [])
-  return pool.filter((tool) => kept.has(tool.name) || RUN_PLUMBING.has(tool.name))
+  return pool.filter((tool) => kept.has(kitName(tool)) || RUN_PLUMBING.has(tool.name))
 }
 
 /** Claude Code's refusal to start an agent whose `tools` resolve to nothing, else none. */
@@ -127,4 +119,26 @@ export function agentToolsRefusal(
 export function namesBuiltinTool(entry: string, builtins: readonly string[]): boolean {
   const { name } = parseToolEntry(entry)
   return localixToolNames.hostNames(name).some((host) => builtins.includes(host))
+}
+
+/** A run with no session lists no agents in a refusal; the allowlist alone decides. */
+const NO_AGENTS: AgentCatalog = {
+  agents: [],
+  disabled: [],
+  shadowed: [],
+  issues: [],
+  delegation: true,
+}
+
+/**
+ * The `Agent` calls `tools: Agent(a, b)` of the run's agent refuses (`spawnTypes` of
+ * `agentToolCandidates`): the kit's `spawnRefusal`, whose message lists the allowed agents of the
+ * session's catalog. An omitted type is `general-purpose`, a fork the type `fork`.
+ */
+export function agentSpawnRefusal(
+  session: PluginSession | undefined,
+  spawnTypes: readonly string[],
+): (subagentType: string | undefined) => string | undefined {
+  return (subagentType) =>
+    spawnRefusal(session?.agentCatalog() ?? NO_AGENTS, spawnTypes, subagentType)
 }

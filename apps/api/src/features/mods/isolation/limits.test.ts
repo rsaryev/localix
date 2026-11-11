@@ -38,7 +38,7 @@ for (const kind of ['spin', 'jobs'])
   test(`a hook that holds its thread (${kind}) is stopped, the host answers meanwhile, and the mod starts again`, async () => {
     const { command, host, reported, reports } = await hostWithVms(
       { spinner: SPINNER, other: OTHER },
-      { vms, hangMs: 300, engine: { budgetMs: 150 } },
+      { vms, hangMs: 300 },
     )
     const stopped = reported('held its thread')
     const spinning = command('spinner', kind)
@@ -48,11 +48,11 @@ for (const kind of ['spin', 'jobs'])
     await stopped
     expect(await command('spinner', 'starts')).toEqual({ text: 'starts 1' })
     expect(reports).toEqual([
-      'spinner: command.run: hook skipped: timeout ran out of time',
       'spinner: the hooks module held its thread for 300 ms; it starts again on its next event',
+      'spinner: command.run hook skipped: threw Error: the hooks module held its thread for 300 ms',
     ])
     await host.stop()
-  }, 20_000)
+  })
 
 test('memory past the limit fails the hook inside the VM; the mod and the host go on', async () => {
   const { command, host, reports } = await hostWithVms(
@@ -81,8 +81,8 @@ test('memory past the limit fails the hook inside the VM; the mod and the host g
   expect(await command('hungry', 'eat')).toEqual({})
   expect(await command('hungry', 'careful')).toEqual({ text: 'InternalError: out of memory' })
   expect(await command('hungry', 'ping')).toEqual({ text: 'pong' })
-  expect(reports).toEqual(['hungry: command.run: hook skipped: throw out of memory'])
-  expect(host.instances().size).toBe(1)
+  expect(reports).toEqual(['hungry: command.run hook skipped: threw InternalError: out of memory'])
+  expect(host.loaded()).toEqual(['hungry'])
   await host.stop()
 })
 

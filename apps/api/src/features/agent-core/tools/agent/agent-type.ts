@@ -32,10 +32,11 @@ export interface AgentLaunchPorts {
   /** The model and effort the person chose for each agent (`agentSettings.agentModelChoices`). */
   choices?: readonly AgentModelChoice[]
   /**
-   * The agent types this run may start: `tools: Agent(worker, researcher)` of the agent it
-   * runs as. Absent means any type. An omitted `agent` is `general-purpose`.
+   * Claude Code's refusal of a type `tools: Agent(worker, researcher)` of the agent the run is
+   * leaves out (the kit's `spawnRefusal`), given the type as the call names it: an omitted `agent`
+   * is `undefined`, a fork `fork`. Absent means any type.
    */
-  allowedAgentTypes?: readonly string[]
+  spawnRefusal?: (subagentType: string | undefined) => string | undefined
   /** A fresh worktree of the chat's repository, for `isolation: worktree`. */
   isolate?: (name: string) => Promise<AgentWorktree>
   /** The route an agent file's `model` gives a child the person chose no model for. */
@@ -71,21 +72,6 @@ export async function resolveAgentTarget(
       return refusal ? { refusal } : { agent: found.agent, type: found.type }
     }
   }
-}
-
-/**
- * The refusal when the run's `Agent(...)` allowlist leaves out every name the target answers to
- * (its name, full name, name; `general-purpose` for the delegator itself and a fork), else none.
- */
-export function agentTypeRefusal(
-  ports: Pick<AgentLaunchPorts, 'allowedAgentTypes'> | undefined,
-  names: readonly string[],
-): string | undefined {
-  const allowed = ports?.allowedAgentTypes
-  if (!allowed) return undefined
-  const lower = new Set(allowed.map((type) => type.toLowerCase()))
-  if (names.some((name) => lower.has(name.toLowerCase()))) return undefined
-  return `This agent may start only these subagent types: ${allowed.join(', ') || 'none'}. ${names[0]} is not one of them.`
 }
 
 /** What a child is created with besides its agent. */
@@ -157,7 +143,7 @@ export async function prepareAgentChild(
   const choice: AgentRoute = call.agentId ? agentChoiceRoute(ports?.choices, call.agentId) : {}
   // The person's model for the agent, else the kit's model order (`plugins/kit/spawn.ts`).
   const ask = {
-    ...(type?.model ? { definition: type.model } : {}),
+    ...(type?.definition.model ? { definition: type.definition.model } : {}),
     ...(call.model ? { invocation: call.model } : {}),
   }
   const fromFile = call.agentId && !choice.modelId ? (ports?.subagentRoute?.(ask) ?? {}) : {}
@@ -165,9 +151,9 @@ export async function prepareAgentChild(
   const provenance: AgentChild['provenance'] = {}
   let worktree: AgentChild['worktree']
   // The mode the agent asks for; the run weighs it against the conversation's (`plugins/kit/spawn.ts`).
-  const asked = type?.permissionMode
+  const asked = type?.askedMode
   if (asked) provenance.agentPermissionMode = asked
-  if ((type?.isolation && !call.isolated) || call.isolate) {
+  if ((type?.extras.isolation === 'worktree' && !call.isolated) || call.isolate) {
     const isolated = await isolateChild(ports, call.toolCallId, who)
     Object.assign(provenance, isolated.provenance)
     notes.push(isolated.note)
@@ -177,7 +163,7 @@ export async function prepareAgentChild(
     provenance,
     ...(worktree ? { worktree } : {}),
     route: chosen,
-    ...(type?.pinnedSkills?.length ? { pinnedSkills: [...type.pinnedSkills] } : {}),
+    ...(type?.definition.skills?.length ? { pinnedSkills: [...type.definition.skills] } : {}),
     notes,
   }
 }

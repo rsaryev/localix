@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test'
+import { testSessionSkill } from '../features/plugins/kit/testing'
 import { localixCommands } from './mods-commands'
 
 test('$.command.list names Localix’s commands and the skills a person runs, by source', () => {
@@ -9,18 +10,15 @@ test('$.command.list names Localix’s commands and the skills a person runs, by
         { name: 'secret', description: 'x', hidden: true },
       ],
       skills: [
-        { name: 'commit', description: 'Commit the work' },
-        {
-          name: 'vercel:deploy',
-          description: 'Ship it',
-          plugin: { id: 'vercel@m', name: 'vercel' },
-        },
-        { name: 'clear', description: 'A skill shadowed by the command' },
+        testSessionSkill('commit'),
+        testSessionSkill('deploy', '', { plugin: 'vercel' }),
+        // A skill shadowed by the command.
+        testSessionSkill('clear'),
       ],
     }),
   ).toEqual([
     { name: 'clear', description: 'Start over', source: 'builtin' },
-    { name: 'commit', description: 'Commit the work', source: 'user' },
-    { name: 'vercel:deploy', description: 'Ship it', source: 'plugin', plugin: 'vercel' },
+    { name: 'commit', description: 'About commit', source: 'user' },
+    { name: 'vercel:deploy', description: 'About deploy', source: 'plugin', plugin: 'vercel' },
   ])
 })

@@ -4,7 +4,6 @@ import {
   readMarketplace as readCatalog,
   resolveRename,
   type Marketplace,
-  type MarketplaceEntry,
   type MarketplaceSource,
 } from '@rsaryev/llx-plugin/marketplace'
 import { issueLine } from '../catalog/read-folder'
@@ -15,8 +14,6 @@ import { catalogAt } from './records'
  * field or the name refuses the catalog, an entry with an error is left out alone. Localix keeps
  * which folder holds it and where it was added from; everything about the format is the kit's.
  */
-
-export type { Marketplace, MarketplaceEntry, PluginSource } from '@rsaryev/llx-plugin/marketplace'
 
 /** A registered marketplace, or one being added: where it was added from and where it is. */
 export interface MarketplaceAt {
@@ -68,7 +65,3 @@ export function resolveEntryName(
 /** True when the catalog lists `name` or renames it (a request for it resolves or explains). */
 export const catalogKnows = (market: Marketplace, name: string): boolean =>
   market.plugins.some((entry) => entry.name === name) || Object.hasOwn(market.renames, name)
-
-/** The entry's folder inside the marketplace, for a relative source. */
-export const relativeEntryPath = (entry: MarketplaceEntry): string | undefined =>
-  entry.source.kind === 'relative' ? entry.source.path : undefined

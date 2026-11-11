@@ -2,7 +2,29 @@ import { expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { bundleHooksModule } from './module-build'
-import { runBundle } from './testing/testing-bundle'
+
+/**
+ * The bundle's exports, run in this process as its VM runs it — a function body with the CommonJS
+ * wrapper's names — with a plain `h` that keeps each element as data.
+ */
+function runBundle(code: string): Record<string, unknown> {
+  const h = (type: unknown, props: unknown, ...children: unknown[]) => ({ type, props, children })
+  const Fragment = 'Fragment'
+  const runtime = { [Symbol.for('localix.mods.claude-code')]: { h, Fragment } }
+  const module = { exports: {} as Record<string, unknown> }
+  // oxlint-disable-next-line typescript/no-implied-eval -- running the bundle's code is this helper's purpose
+  const compiled = new Function(
+    'globalThis',
+    'exports',
+    'require',
+    'module',
+    'h',
+    'Fragment',
+    `"use strict";\n{\n${code}\n}`,
+  ) as (...args: unknown[]) => void
+  compiled(runtime, module.exports, undefined, module, h, Fragment)
+  return module.exports
+}
 
 const scratch = tempDirPerTest('mods-build', {})
 

@@ -1,6 +1,6 @@
 /**
  * The drawing half of a `Client`'s frame: the element factory a surface module's JSX compiles to
- * (`h`, `Fragment` and `surface.elements`, built as `@localixai/claude-plugin/mods` builds them),
+ * (`h`, `Fragment` and `surface.elements`, built as the plugin kit (`@rsaryev/llx-plugin/mods`) builds them),
  * the bounds every tree keeps, and the elements drawn as plain DOM styled with the host's theme.
  *
  * Plain JavaScript, self-contained: it runs inside the opaque-origin frame (`clientFrameDoc.ts`),

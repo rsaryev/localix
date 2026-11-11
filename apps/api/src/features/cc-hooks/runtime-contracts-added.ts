@@ -2,7 +2,7 @@
  * The per-run runtime surface of the events added after the first eleven. Each method fires
  * one Claude Code event and folds its handlers into the answer its dispatch point applies.
  */
-import type { CcHookEvent } from './contracts'
+import type { HookEvent } from '@rsaryev/llx-plugin'
 import type { CcHookToolRef, StopResult } from './runtime-contracts'
 
 /** A typed command that expanded into its prompt (UserPromptExpansion). */
@@ -67,7 +67,7 @@ export interface PreModelSwitchResult {
 
 export interface CcAddedHooksRuntime {
   /** Whether any handler is registered for the event (skips work done only to feed it). */
-  hasHooks(event: CcHookEvent): boolean
+  hasHooks(event: HookEvent): boolean
   /** A typed slash command expanded; may block it (stops at the first block) or add context. */
   runUserPromptExpansion(expansion: CcPromptExpansion): Promise<{
     blocked: boolean

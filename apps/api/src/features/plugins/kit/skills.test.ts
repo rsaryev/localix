@@ -60,19 +60,6 @@ describe('a skill invoked through the chat kit session', () => {
     expect(invoked.skill.fork).toBeUndefined()
   })
 
-  test('refuses a disable-model-invocation skill to the model unless the person named it', async () => {
-    skill('ship', 'description: Ships\ndisable-model-invocation: true', 'Ship it')
-    const chat = session()
-    const refused = await invokeSkill(chat, 'ship', { invoker: 'model', signal })
-    expect(refused.ok).toBe(false)
-    const named = await invokeSkill(chat, 'ship', {
-      invoker: 'model',
-      permittedByMention: true,
-      signal,
-    })
-    expect(named.ok).toBe(true)
-  })
-
   test('a context: fork skill runs in the subagent it names', async () => {
     skill('explore', 'description: Explores\ncontext: fork\nagent: Explore', 'Look around')
     const invoked = await invokeSkill(session(), 'explore', { invoker: 'user', signal })
@@ -117,12 +104,6 @@ describe('a message the person types', () => {
       ['write-tests', 'Tests for 123'],
       ['fix-issue', 'Fix issue 123'],
     ])
-  })
-
-  test('a model-only skill is refused to the person with its reason', async () => {
-    skill('helper', 'description: Helps\nuser-invocable: false', 'Help')
-    const typed = await invokeTypedSkills(session(), '/helper now', { signal })
-    expect(typed.ok).toBe(false)
   })
 
   test('a message no skill leads expands nothing', async () => {

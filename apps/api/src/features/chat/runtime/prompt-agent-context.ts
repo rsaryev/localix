@@ -1,7 +1,7 @@
 import type { AgentDefinition } from '@localixai/agent/agents'
 import { skillOverridesRevision } from '../../agent-core/skill-overrides'
 import type { ResolvedRunAgent } from '../../agents/invocation-service'
-import type { KitSession } from '../../plugins/kit'
+import type { PluginSession as KitSession } from '@rsaryev/llx-plugin'
 import { loadMemoryProviderContext } from '../../mini-apps/memory-hooks'
 import type { LoadedMiniApps } from '../../mini-apps/loader-contract'
 import type { SessionRecord } from '../repository'

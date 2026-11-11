@@ -9,9 +9,8 @@ import {
   readMarketplace,
   writeKnownMarketplaces,
   type KnownMarketplace,
-  type Marketplace,
-  type MarketplaceSource,
 } from './kit'
+import type { Marketplace, MarketplaceSource } from '@rsaryev/llx-plugin/marketplace'
 import { keptPreferences } from './marketplace-catalog'
 
 /**

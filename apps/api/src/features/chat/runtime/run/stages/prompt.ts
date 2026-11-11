@@ -114,13 +114,14 @@ export async function buildRunPrompt(
     })
   }
   // A subdirectory's instruction files and path-scoped rules, once the work reaches them.
-  const touchedInstructions = inputs.pluginSubagent?.omitClaudeMd
-    ? null
-    : await touchedInstructionsSection({
-        cwd: inputs.defaultCwd,
-        history: historyMessages,
-        loaded: inputs.contextFiles ?? [],
-      })
+  const touchedInstructions =
+    inputs.pluginSubagent?.startsWith.claudeMd === false
+      ? null
+      : await touchedInstructionsSection({
+          cwd: inputs.defaultCwd,
+          history: historyMessages,
+          loaded: inputs.contextFiles ?? [],
+        })
   if (touchedInstructions) baseSections.push(touchedInstructions)
   const initialPrompt = initialPromptSection(inputs.mainAgent, historyMessages)
   if (initialPrompt) baseSections.push(initialPrompt)

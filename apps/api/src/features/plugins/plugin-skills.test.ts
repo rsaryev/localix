@@ -6,7 +6,7 @@ import { tempDirPerTest, writeTree } from '@localixai/testing'
 import type { PluginCatalog, PluginCatalogEntry } from './catalog'
 import type { PluginCommandSpec } from './contracts'
 import { loadManifest } from './manifest-load'
-import { diskPluginHost } from './kit/testing'
+import { diskPluginHost, testSessionSkill } from './kit/testing'
 import { listCatalogCommandSpecs, pluginSkillCommandSpecs } from './plugin-skills'
 
 /**
@@ -92,17 +92,12 @@ describe('plugin skills as slash commands', () => {
   })
 
   test('a command of the same full name keeps its entry; a command named after its plugin too', () => {
-    const row = (name: string) => ({
-      name,
-      description: 'skill',
-      inMenu: true,
-      plugin: { id: 'kit@local', name: 'kit' },
-    })
+    const row = (name: string) => testSessionSkill(name, '', { plugin: 'kit' })
     const taken: PluginCommandSpec[] = [
       { pluginName: 'kit', name: 'fancy', fullName: 'kit:fancy', description: 'cmd', args: [] },
       { pluginName: 'kit', name: 'kit', fullName: 'kit', description: 'cmd', args: [] },
     ]
-    const specs = pluginSkillCommandSpecs([row('kit:fancy'), row('kit:kit'), row('kit:x')], taken)
+    const specs = pluginSkillCommandSpecs([row('fancy'), row('kit'), row('x')], taken)
     expect(specs.map((spec) => spec.fullName)).toEqual(['kit:x'])
     expect(specs[0]).toMatchObject({ pluginName: 'kit', name: 'x' })
   })

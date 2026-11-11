@@ -13,15 +13,13 @@ import type { AvailabilityReader } from '../../capabilities/availability'
 import type { CapabilitySourceRepository } from '../../capabilities/source-repository'
 import {
   readClaudeSettingsSync,
-  reloadSessionSkills,
   scopeSkills,
   sessionSkills,
-  type ChatSkill,
   type ScopeSkills,
   type ChatPluginSessions,
-  type KitSession,
   type LocalixPluginHost,
 } from '../../plugins/kit'
+import type { PluginSession as KitSession, SessionSkill } from '@rsaryev/llx-plugin'
 import { kitPluginsOf } from '../../plugins/catalog-kit'
 import { claudeCodeHome } from '../../cc-settings/config-dir'
 import { openChatPluginSession } from '../runtime/run/chat-plugin-session'
@@ -190,6 +188,7 @@ export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
       pluginSessions,
       {
         chatId: session.id,
+        rootChatId: session.rootSessionId,
         cwd,
         settings: readClaudeSettingsSync({ homeDir: claudeCodeHome(), cwd }),
         plugins: kitPluginsOf(catalog),
@@ -203,10 +202,10 @@ export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
   const gatherSessionSkills = async (
     userId: string,
     session: SessionRecord,
-  ): Promise<ChatSkill[]> => {
+  ): Promise<readonly SessionSkill[]> => {
     const kit = await chatPluginSession(userId, session)
     if (!kit) return []
-    await reloadSessionSkills(kit, AbortSignal.timeout(60_000))
+    await kit.reloadSkills({ signal: AbortSignal.timeout(60_000) })
     return sessionSkills(kit)
   }
 

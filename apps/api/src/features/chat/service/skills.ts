@@ -1,4 +1,5 @@
-import type { ChatSkill } from '../../plugins/kit'
+import type { SessionSkill } from '@rsaryev/llx-plugin'
+import { skillScope } from '../../plugins/kit'
 import type { SkillCatalogEntry } from '../contracts/skills'
 
 export interface SkillRecord {
@@ -40,26 +41,28 @@ export interface SkillInput {
  * `content` when read (one skill's, when the editor opens it), '' in a listing.
  */
 export function toSkillRecord(
-  skill: ChatSkill,
+  skill: SessionSkill,
   projectId: string,
   extra: { content?: string; validation?: SkillRecord['validation'] } = {},
 ): SkillRecord {
+  const { invocable, policy, file } = skill
+  const scope = skillScope(skill)
   return {
-    id: `file:${skill.path ?? skill.name}`,
-    name: skill.name,
-    description: skill.description,
+    id: `file:${file ?? invocable.command}`,
+    name: invocable.command,
+    description: invocable.description ?? '',
     content: extra.content ?? '',
     tags: [],
-    projectId: skill.scope === 'project' ? projectId : '',
-    scope: skill.scope,
+    projectId: scope === 'project' ? projectId : '',
+    scope,
     source: 'file',
-    ...(skill.path ? { path: skill.path } : {}),
+    ...(file ? { path: file } : {}),
     updatedAt: '',
     ...(extra.validation ? { validation: extra.validation } : {}),
-    ...(skill.modelInvocable ? {} : { disableModelInvocation: true }),
-    ...(skill.userInvocable ? {} : { userInvocable: false }),
-    ...(skill.argumentHint ? { argumentHint: skill.argumentHint } : {}),
-    ...(skill.argumentNames.length ? { argumentNames: [...skill.argumentNames] } : {}),
+    ...(policy.model ? {} : { disableModelInvocation: true }),
+    ...(policy.user ? {} : { userInvocable: false }),
+    ...(invocable.argumentHint ? { argumentHint: invocable.argumentHint } : {}),
+    ...(invocable.arguments.length ? { argumentNames: [...invocable.arguments] } : {}),
   }
 }
 

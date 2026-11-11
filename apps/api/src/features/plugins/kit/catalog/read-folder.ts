@@ -7,7 +7,7 @@ import { CC_INERT_HOOK_EVENTS, isInertCcHookEvent } from '../../../cc-hooks/cont
 import type { DiscoveredPlugin } from '../../discovery-types'
 import { diskFiles } from '../ports/files'
 import { mcpBundleReader } from '../ports/mcp-bundle'
-import { readAgents, readCommands } from './components'
+import { readCommands } from './components'
 import { entrypointsOf } from './entrypoints'
 import { localixManifest } from './manifest'
 
@@ -45,9 +45,7 @@ function empty(
     manifest: { name, version: '0.0.0', description: '' },
     dir,
     entrypoints: {
-      skillDirs: [],
       mcpServers: {},
-      commandFiles: [],
       hookConfigs: [],
       lspServers: {},
       monitors: [],
@@ -78,9 +76,9 @@ async function catalogOf(
 ): Promise<CatalogPlugin> {
   const mapped = localixManifest(plugin.name, plugin.manifest, fallbackName, plugin.mcpBundles)
   const commands = readCommands(plugin)
-  const agents = readAgents(plugin)
+  const { agents } = readCatalog(plugin)
   const entrypoints = await entrypointsOf(plugin, dir)
-  const agentNames = [...new Set(agents.agents.map((agent) => `${plugin.name}:${agent.name}`))]
+  const agentNames = [...new Set(agents.map((agent) => agent.scopedName))]
   const lspNames = Object.keys(entrypoints.lspServers)
   const manifestIssues = [
     ...loadIssues,
@@ -102,7 +100,7 @@ async function catalogOf(
       ...(lspNames.length ? { lspServers: lspNames } : {}),
     },
     commands: commands.commands,
-    agents: agents.agents,
+    agents,
     ...(mapped.error ? { error: mapped.error } : {}),
     ...(manifestIssues.length ? { manifestIssues } : {}),
   }

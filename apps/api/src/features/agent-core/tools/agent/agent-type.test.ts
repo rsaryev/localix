@@ -6,17 +6,16 @@ import type { AgentLaunchPorts } from './agent-type'
 import { launchAgent } from './agent-start'
 import type { TaskDelegationOptions } from '../task-delegation'
 import type { TaskAgentType, DelegateResolution } from '../task-delegation-contracts'
+import { taskAgent } from '../../testing/task-agent'
 
 afterEach(() => __resetExpectedReports())
 
-const REVIEWER: TaskAgentType = {
-  fullName: 'sec:reviewer',
-  name: 'reviewer',
-  description: 'Reviews code for security issues',
-  pinnedSkills: ['threat-model'],
-  maxTurns: 7,
-}
-const TESTER: TaskAgentType = { fullName: 'tester', name: 'tester', description: 'Tests' }
+const REVIEWER = taskAgent(
+  'sec:reviewer',
+  { description: 'Reviews code for security issues', skills: ['threat-model'], maxTurns: 7 },
+  { source: { kind: 'plugin', pluginId: 'sec' } },
+)
+const TESTER = taskAgent('tester', { description: 'Tests' })
 
 /** The catalog as `resolveDelegation` answers: the agent with its own session, `self`, or nothing. */
 const CATALOG: Record<string, DelegateResolution> = {
@@ -129,7 +128,10 @@ test.each([
   async (choices, want) => {
     const typed = {
       ...CATALOG,
-      'sec:reviewer': { ...CATALOG['sec:reviewer'], type: { ...REVIEWER, model: 'haiku' } },
+      'sec:reviewer': {
+        ...CATALOG['sec:reviewer'],
+        type: { ...REVIEWER, definition: { ...REVIEWER.definition, model: 'haiku' } },
+      },
     }
     const subagentRoute = ({ definition }: { definition?: string }) =>
       definition === 'haiku' ? { modelId: 'claude-haiku-4-5', providerConnectionId: null } : {}
@@ -166,7 +168,11 @@ test('background never holds the call; isolation works in a worktree kept for th
       tester: {
         kind: 'agent',
         agent: { agentId: 'cc:tester', name: 'tester' },
-        type: { ...TESTER, background: true, isolation: 'isolated' },
+        type: {
+          ...TESTER,
+          definition: { ...TESTER.definition, background: true },
+          extras: { isolation: 'worktree' },
+        },
       },
     },
   )
@@ -225,14 +231,15 @@ test('a host names a worktree for the child, never a model', async () => {
 // sub-agents.md, `tools`: "If no entry in the list resolves to a tool, the subagent usually fails
 // to launch with an error naming the entries."
 test('an agent whose tools list resolves to nothing is refused', async () => {
-  const toolsRefusal = (type: TaskAgentType) => (type.tools?.length ? undefined : 'zero tools')
+  const toolsRefusal = (type: TaskAgentType) =>
+    type.definition.tools?.length ? undefined : 'zero tools'
   const { opts, ports, calls } = host(
     { toolsRefusal },
     {
       tester: {
         kind: 'agent',
         agent: { agentId: 'cc:tester', name: 'tester' },
-        type: { ...TESTER, tools: [] },
+        type: { ...TESTER, definition: { ...TESTER.definition, tools: [] } },
       },
     },
   )
@@ -245,23 +252,16 @@ test('an agent whose tools list resolves to nothing is refused', async () => {
 // sub-agents.md, `permissionMode`: the mode the kit resolved for the agent rides onto the child
 // (`plugins/kit/spawn.ts`; a plugin's agent and a mode Localix lacks carry none).
 test.each([
-  ['user', 'plan', 'plan'],
-  ['project', 'default', 'default'],
-  ['flag', 'plan', 'plan'],
-  ['user', undefined, undefined],
+  ['plan', 'plan'],
+  ['default', 'default'],
+  [undefined, undefined],
 ] as const)(
-  'a %s agent file with permissionMode %s leaves %s on the child',
-  async (source, permissionMode, carried) => {
+  'an agent asking permissionMode %s leaves %s on the child',
+  async (askedMode, carried) => {
     const planner: DelegateResolution = {
       kind: 'agent',
       agent: { agentId: 'cc:planner', name: 'planner' },
-      type: {
-        fullName: 'planner',
-        name: 'planner',
-        description: 'Plans',
-        source,
-        ...(permissionMode ? { permissionMode } : {}),
-      },
+      type: taskAgent('planner', { description: 'Plans' }, askedMode ? { askedMode } : {}),
     }
     const { opts, ports, calls } = host({}, { planner })
     await launchAgent('c', request({ agent: 'planner' }), opts, undefined, ports)
@@ -273,7 +273,11 @@ test.each([
 // sub-agents.md, `Agent(worker, researcher)` in `tools`: an allowlist of the types the agent may
 // spawn; an omitted `agent` is `general-purpose`, which is then refused unless it is listed.
 describe('an agent type allowlist on the delegator', () => {
-  const allowing = (...types: string[]) => ({ allowedAgentTypes: types })
+  // The run's `spawnRefusal` is the kit's (`plugins/kit/subagent-tools.ts`); this one compares alike.
+  const allowing = (...types: string[]) => ({
+    spawnRefusal: (type: string | undefined) =>
+      types.includes(type ?? 'general-purpose') ? undefined : `Only ${types.join(', ')}.`,
+  })
 
   test('only a listed type may be delegated to, and a refusal creates nothing', async () => {
     const { opts, ports, calls } = host(allowing('tester'))
@@ -298,6 +302,19 @@ describe('an agent type allowlist on the delegator', () => {
     await launchAgent('c', request(), opts, undefined, ports)
     await launchAgent('c', request({ agent: 'sec:reviewer' }), opts, undefined, ports)
     expect(calls.create).toHaveLength(2)
+  })
+
+  test('the allowlist is asked about the type as the call names it, a fork as `fork`', async () => {
+    const asked: (string | undefined)[] = []
+    const { opts, ports } = host({
+      spawnRefusal: (type: string | undefined) => {
+        asked.push(type)
+        return 'refused'
+      },
+    })
+    for (const call of [{ agent: 'reviewer' }, {}, { context: 'fork' }])
+      await launchAgent('c', request(call as Partial<AgentRequest>), opts, undefined, ports)
+    expect(asked).toEqual(['reviewer', undefined, 'fork'])
   })
 
   test('with no list every type is allowed', async () => {

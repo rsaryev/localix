@@ -80,7 +80,7 @@ describe('Claude Code installs and the settings around them', () => {
       managed: { dir: managedDir() },
     })
     expect(installs.map(({ id, enabledBy }) => ({ id, enabledBy }))).toEqual([
-      { id: 'required@mkt', enabledBy: 'policy' },
+      { id: 'required@mkt', enabledBy: 'managed' },
     ])
   })
 

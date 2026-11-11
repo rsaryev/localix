@@ -5,12 +5,12 @@ import {
   assertMarketplaceAllowed,
   assertPluginAllowed,
   catalogAt,
-  type MarketplaceEntry,
   readKnownMarketplaces,
   readMarketplace,
   resolveEntryName,
   resolveEntrySource,
 } from './kit'
+import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
 import { hashString, marketplacesRoot, sourceMatchesRef } from './marketplace-source'
 import { fetchEntryPlugin } from './marketplace-materialize'
 import { readsInPlace } from './marketplace-in-place'

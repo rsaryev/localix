@@ -12,7 +12,8 @@ import type { AvailabilityReader } from '../../capabilities/availability'
 import type { SessionPromptSnapshotRepository } from '../session-prompt-snapshot-repository'
 import type { RuntimeState } from './agent-runner-state'
 import type { createProjectsRepository } from '../../projects/repository'
-import type { KitSession, LocalixPluginHost } from '../../plugins/kit'
+import type { LocalixPluginHost } from '../../plugins/kit'
+import type { PluginSession as KitSession } from '@rsaryev/llx-plugin'
 import type { resolveAgentPromptContext } from './prompt-agent-context'
 
 export interface PromptContextDeps {

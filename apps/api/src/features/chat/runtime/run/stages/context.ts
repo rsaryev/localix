@@ -229,7 +229,9 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
           model: turn.model.rawModelId,
           // A delegated child's turn reaches the mods as Claude Code's subagent turns do: its
           // events carry the child's id as `agentId`.
-          ...(session.parentSessionId ? { agentId: session.id } : {}),
+          ...(session.parentSessionId
+            ? { agentId: session.id, parentSessionId: session.parentSessionId }
+            : {}),
         },
       )
     : NO_MODS

@@ -8,12 +8,12 @@ import {
   autoUpdatePassAllowed as kitPassAllowed,
   autoUpdateToggleRefusal,
   managedDeclarations,
-  recordedAutoUpdate,
+  marketplaceAutoUpdate as kitAutoUpdate,
   type KnownMarketplace,
-  type MarketplaceSource,
   readKnownMarketplaces,
   writeKnownMarketplaces,
 } from './kit'
+import type { MarketplaceSource } from '@rsaryev/llx-plugin/marketplace'
 
 /**
  * WHICH MARKETPLACES AUTO-UPDATE, by Claude Code's rule as the kit judges it (loading.md, "Which
@@ -56,10 +56,7 @@ export function marketplaceAutoUpdate(
   name: string,
   record: Pick<KnownMarketplace, 'source' | 'autoUpdate'>,
 ): boolean {
-  return (
-    record.autoUpdate ??
-    (isOfficialMarketplace(name, record) || recordedAutoUpdate(name, undefined))
-  )
+  return record.autoUpdate ?? (isOfficialMarketplace(name, record) || kitAutoUpdate({ name }))
 }
 
 /**

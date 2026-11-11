@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test'
 import type { AssistantMessage } from '@localixai/agent'
-import type { Hook } from '@localixai/claude-plugin/mods'
 import { hostWithMod } from './testing/testing-host'
 
 /** `turn.step` hooks written as Claude Code documents them: async generators over the stream. */
@@ -24,7 +23,7 @@ describe('turn.step as an async generator', () => {
         }
         if (result.usage) logged.push(`cache read ${result.usage.cache_read_input_tokens}`)
         return result
-      } as Hook)
+      })
     })
     let sent = 0
     const message = await scope.modelStep('turn-1')!(
@@ -36,11 +35,13 @@ describe('turn.step as an async generator', () => {
     expect(logged).toEqual(['cache read 7'])
   })
 
-  test('a generator that yields its own response sends no request', async () => {
+  test('a generator that streams and returns its own response sends no request', async () => {
     const { scope } = await hostWithMod((on) => {
+      // The kit's rule: a streaming hook that never calls `next` returns its result.
       on('turn.step', async function* () {
         yield { kind: 'text', index: 0, text: 'Offline.' }
-      } as Hook)
+        return { answer: 'Offline.' }
+      })
     })
     const message = await scope.modelStep('turn-1')!(
       { index: 0, modelId: 'model-a', messageCount: 1 },

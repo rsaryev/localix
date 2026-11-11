@@ -24,12 +24,12 @@ import {
 } from './default-marketplaces'
 import type { PluginService } from './service-types'
 import {
-  type Marketplace,
   parseMarketplaceAdd,
   readKnownMarketplaces,
   readMarketplace,
   resolveEntryName,
 } from './kit'
+import type { Marketplace } from '@rsaryev/llx-plugin/marketplace'
 
 /** What became of an installed plugin's entry: still listed, renamed, or removed. */
 function entryFate(

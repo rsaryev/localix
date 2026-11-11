@@ -22,6 +22,7 @@ import {
 } from '../features/chat/service/delegated-runs'
 import { recordChildStopped } from '../features/chat/service/delegation-stop'
 import { createUsageRepository } from '../features/usage/repository'
+import { askedPermissionMode } from '../features/plugins/kit'
 
 export interface AgentFacadePhaseInput {
   db: ReturnType<typeof createDatabase>
@@ -138,6 +139,7 @@ export async function createAgentFacadePhase({
       if (target.kind === 'ambiguous') return target
       if (target.kind !== 'agent') return target
       const { agent, definition } = target
+      const askedMode = askedPermissionMode(definition.definition.permissionMode)
       return {
         kind: 'agent',
         agent: {
@@ -146,7 +148,7 @@ export async function createAgentFacadePhase({
           maxTurns: agent.maxTurns,
           pinnedSkills: agent.skills,
         },
-        type: definition,
+        type: { ...definition, ...(askedMode ? { askedMode } : {}) },
       }
     },
   })

@@ -9,12 +9,8 @@ import {
   forgetDefaultMarketplaceRemoval,
   rememberDefaultMarketplaceRemoval,
 } from './default-marketplaces'
-import {
-  type KnownMarketplace,
-  type MarketplaceSource,
-  readKnownMarketplaces,
-  writeKnownMarketplaces,
-} from './kit'
+import { type KnownMarketplace, readKnownMarketplaces, writeKnownMarketplaces } from './kit'
+import type { MarketplaceSource } from '@rsaryev/llx-plugin/marketplace'
 
 const dir = tempDirPerTest('default-marketplaces-')
 const CATALOG = '.claude-plugin/marketplace.json'

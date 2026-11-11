@@ -154,7 +154,7 @@ test('a module with no component fails to load', () => {
   expect(sent.at(-1)).toMatchObject({ type: 'fault', payload: { phase: 'load' } })
 })
 
-test('the frame builds elements as `@localixai/claude-plugin/mods` does: frozen plain data', () => {
+test('the frame builds elements as the plugin kit does: frozen plain data', () => {
   const scope: Record<string, unknown> = {}
   // oxlint-disable-next-line typescript/no-implied-eval -- the frame script is source text for an iframe; running it is what the test exercises
   new Function('scope', `${CLIENT_FRAME_DRAW}\nscope.h = h; scope.elements = elements;`)(scope)

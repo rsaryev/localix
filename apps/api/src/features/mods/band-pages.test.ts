@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { ModsApi, On } from '@localixai/claude-plugin/mods'
-import { hostWithMods } from './testing/testing-host'
+import { hostWithMods, type On } from './testing/testing-host'
 
 /**
  * The band's pages: a mod that draws without calling `next(e)` hides the mods after it, as in
@@ -8,7 +7,7 @@ import { hostWithMods } from './testing/testing-host'
  */
 
 type Fn = (props: Record<string, unknown>) => unknown
-const ui = ($: ModsApi, e: unknown) =>
+const ui = ($: { ui: { resolve: unknown } }, e: unknown) =>
   ($.ui.resolve as (e: unknown) => { Text: Fn; Box: Fn; Button: Fn })(e)
 const VIEW = { columns: 80, rows: 10 }
 

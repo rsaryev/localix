@@ -1,6 +1,10 @@
 import { client, unwrap } from './internal'
 
-/** One element of a mod's drawing, as the server serializes it (`@localixai/claude-plugin/mods`). */
+/**
+ * One element of a mod's drawing, as the server serializes it from the plugin kit's
+ * (`@rsaryev/llx-plugin/mods`): the elements the desktop draws (`Raster` and `Image` are the
+ * terminal's).
+ */
 export interface ModElement {
   type:
     | 'Box'
@@ -28,7 +32,7 @@ export type ModClientModule = { module: string; revision: string } & (
 export type ModClientFault = { phase: 'load' | 'render' | 'run'; reason: string }
 
 export interface ModPaneDrawing {
-  /** The mod instance the pane belongs to: a mod runs once per project. */
+  /** The mods host the pane belongs to: a conversation's mods run in a host of their own. */
   instance: string
   plugin: string
   id: string
@@ -37,7 +41,7 @@ export interface ModPaneDrawing {
   problem?: string
 }
 
-/** An open pane: its mod instance, plugin and the project that instance runs in. */
+/** An open pane: the mods host it belongs to, its plugin and the project its conversation runs in. */
 export interface ModPaneRef {
   instance: string
   plugin: string

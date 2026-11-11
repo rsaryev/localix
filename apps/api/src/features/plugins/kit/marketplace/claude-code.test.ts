@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
-import { claudeCodeInstallRecords, claudeCodePluginSettings } from './claude-code'
+import { claudeCodePluginSettings } from './claude-code'
 
 /**
  * What Claude Code's own files say about the plugins a person installed there, read by the kit:
@@ -39,20 +39,9 @@ describe('claudeCodePluginSettings', () => {
     expect(settings.ids).toEqual(['a@m', 'b@m', 'c@m'])
     expect(settings.enabled('a@m')).toEqual({ on: true, by: 'user' })
     expect(settings.enabled('b@m')).toEqual({ on: false, by: 'project' })
-    expect(settings.enabled('c@m')).toEqual({ on: false, by: 'policy' })
+    expect(settings.enabled('c@m')).toEqual({ on: false, by: 'managed' })
     expect(settings.enabled('d@m')).toBeUndefined()
     expect(settings.options('a@m')).toEqual({ level: 2 })
     expect(settings.options('b@m')).toEqual({})
-  })
-})
-
-describe('claudeCodeInstallRecords', () => {
-  it('the records the file holds; a file that cannot be read is no installs', () => {
-    const record = { scope: 'user' as const, installPath: '/c/p/1.0.0', version: '1.0.0' }
-    expect(
-      claudeCodeInstallRecords(JSON.stringify({ version: 2, plugins: { 'p@m': [record] } })),
-    ).toEqual({ 'p@m': [record] })
-    expect(claudeCodeInstallRecords('not json')).toEqual({})
-    expect(claudeCodeInstallRecords(undefined)).toEqual({})
   })
 })

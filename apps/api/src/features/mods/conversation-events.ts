@@ -14,15 +14,18 @@ import type { ModsHost } from './host'
  * The mods' events outside a running turn: a skill typed as `/name` (`skill.prompt`), a delivery
  * reaching a conversation (`session.receive`), a window attaching to or leaving one
  * (`session.attach`, `session.detach`), and the command listing (`command.describe`). A
- * conversation's events go to the instances its latest turn ran with; one that never ran a turn
- * goes to the mods enabled in the workspace, running in its project.
+ * conversation's events go to its host with the mods its latest turn ran with; one that never ran
+ * a turn gets a host of every loaded mod. The command listing is the workspace host's.
  */
 
-/** Where a conversation's events go now. */
-async function conversationScope(host: ModsHost, scene: ModScene): Promise<ModEventScope> {
+/** Where a conversation's events go now; undefined when no mod runs there. */
+async function conversationScope(
+  host: ModsHost,
+  scene: ModScene,
+): Promise<ModEventScope | undefined> {
   const joined = host.conversations.of(scene.sessionId)
-  if (joined) return { host, scene: { ...joined.scene, ...scene }, plugins: joined.plugins }
-  return { host, scene, plugins: await host.instancesFor(scene, new Set(host.loaded())) }
+  const kit = joined ? await host.hostFor(joined.scene, joined.plugins) : await host.hostFor(scene)
+  return kit ? { host, kit, scene: joined ? { ...joined.scene, ...scene } : scene } : undefined
 }
 
 /** `skill.prompt`: the text the model reads for a skill typed as `/name`. */
@@ -33,8 +36,8 @@ export async function skillPrompt(
   text: string,
   origin?: SkillOrigin,
 ): Promise<string> {
-  if (!host || !host.hears('skill.prompt')) return text
-  return skillPromptIn(await conversationScope(host, scene), skill, text, origin)
+  const scope = host ? await conversationScope(host, scene) : undefined
+  return scope ? skillPromptIn(scope, skill, text, origin) : text
 }
 
 /** The event is the kit's (`skillPromptInput`); absent an origin, the skill reads as built in. */
@@ -74,8 +77,8 @@ export async function receiveDelivery(
 ): Promise<Received> {
   const { text } = delivery
   const joined = host?.conversations.of(delivery.sessionId)
-  if (!host || !joined || !host.hears('session.receive', joined.plugins)) return { text }
-  const scope = { host, scene: joined.scene, plugins: joined.plugins }
+  const scope = host && joined ? await conversationScope(host, joined.scene) : undefined
+  if (!host || !joined || !scope || !hearsIn(scope, 'session.receive')) return { text }
   const input = {
     origin: { kind: ORIGINS[delivery.source ?? ''] ?? 'unclassified' },
     text,
@@ -96,19 +99,19 @@ export async function receiveDelivery(
 }
 
 /** `session.attach` / `session.detach`: a window joining or leaving a conversation's stream. */
-export function clientEvent(
+export async function clientEvent(
   host: ModsHost | undefined,
   change: { sessionId: string; clientId: string; attached: boolean; reason?: 'detach' | 'end' },
 ): Promise<void> {
   const joined = host?.conversations.of(change.sessionId)
   const event = change.attached ? 'session.attach' : 'session.detach'
-  if (!host || !joined || !host.hears(event, joined.plugins)) return Promise.resolve()
+  const scope = host && joined ? await conversationScope(host, joined.scene) : undefined
+  if (!scope || !hearsIn(scope, event)) return
   const input = {
     surface: 'desktop',
     clientId: change.clientId,
     ...(change.attached ? {} : { reason: change.reason ?? 'detach' }),
   }
-  const scope = { host, scene: joined.scene, plugins: joined.plugins }
   // Observed only: a hook's answer changes nothing, and a failing one costs the window nothing.
   return fireIn(scope, event, input, () => ({ clientId: change.clientId })).then(
     () => {},
@@ -132,12 +135,9 @@ export async function describeCommands<C extends ListedCommand>(
   host: ModsHost | undefined,
   commands: readonly C[],
 ): Promise<C[]> {
-  if (!host) return [...commands]
-  const workspace = host.ports.workspaceDir
-  const plugins = new Set(
-    [...host.instances()].filter(([, { cwd }]) => cwd === workspace).map(([id]) => id),
-  )
-  const scope: ModEventScope = { host, scene: { userId: '', cwd: workspace }, plugins }
+  const kit = host ? await host.workspace() : undefined
+  if (!host || !kit) return [...commands]
+  const scope: ModEventScope = { host, kit, scene: { userId: '', cwd: host.ports.workspaceDir } }
   if (!hearsIn(scope, 'command.describe')) return [...commands]
   const described = await Promise.all(
     commands.map(async (command): Promise<C | null> => {

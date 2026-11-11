@@ -23,7 +23,7 @@ export async function handleModCommand(
   const token = firstToken.match(/^\/([A-Za-z0-9_-]+)(?::([A-Za-z0-9_-]+))?$/)
   if (!token) return null
   const [, first, second] = token
-  const command = mods.registry
+  const command = mods
     .commands()
     .find((entry) =>
       second ? entry.plugin === first && entry.name === second : entry.name === first,
@@ -37,11 +37,13 @@ export async function handleModCommand(
     new Set([command.plugin]),
   )
   const text = result.text?.trim()
+  // The kit answers a command no hook answered with how to answer it: that reply is not the mod's.
+  const unanswered = unansweredCommandReply(command.plugin, command.name)
   return ctx.insertDirectReply(
     userId,
     sessionId,
     prompt,
-    text ? `${command.plugin}: ${text}` : unansweredCommandReply(command.plugin, command.name),
+    text && text !== unanswered ? `${command.plugin}: ${text}` : unanswered,
     ts,
     'neutral',
   )

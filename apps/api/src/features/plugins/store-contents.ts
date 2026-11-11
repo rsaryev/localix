@@ -7,7 +7,7 @@ import { isRecord } from '../../lib/record'
 import { readSkillDescriptions } from './kit'
 import { entrySource } from './claude-code-installs'
 import type { DiscoveredPlugin } from './discovery-types'
-import type { MarketplaceEntry } from './kit'
+import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
 import { loadManifest } from './manifest-load'
 
 /**
@@ -68,7 +68,9 @@ export function contentsOfPlugin(
     ...plugin.commands.map((command) =>
       described('command', { ...command, name: `/${name}:${command.name}` }),
     ),
-    ...plugin.agents.map((agent) => described('agent', agent)),
+    ...plugin.agents.map(({ name, definition }) =>
+      described('agent', { name, description: definition.description }),
+    ),
   ]
   const runs: InstallPlan['runs'] = []
   const network = new Set<string>()
@@ -82,16 +84,15 @@ export function contentsOfPlugin(
   }
   for (const [server, config] of Object.entries(plugin.entrypoints.mcpServers)) {
     components.push({ kind: 'mcp-server', name: server })
-    if (typeof config.command === 'string') {
-      const args = Array.isArray(config.args) ? config.args.map(String) : []
-      runs.push({ kind: 'mcp-server', name: server, command: [config.command, ...args].join(' ') })
+    if ('command' in config) {
+      const command = [config.command, ...(config.args ?? [])].join(' ')
+      runs.push({ kind: 'mcp-server', name: server, command })
     }
-    const host = hostOf(config.url)
+    const host = 'url' in config ? hostOf(config.url) : undefined
     if (host) network.add(host)
   }
-  for (const [server, config] of Object.entries(plugin.entrypoints.lspServers)) {
+  for (const [server, { command }] of Object.entries(plugin.entrypoints.lspServers)) {
     components.push({ kind: 'lsp-server', name: server })
-    const command = isRecord(config) && typeof config.command === 'string' ? config.command : ''
     runs.push({ kind: 'lsp-server', name: server, ...(command ? { command } : {}) })
   }
   for (const style of plugin.entrypoints.components?.outputStyles ?? [])

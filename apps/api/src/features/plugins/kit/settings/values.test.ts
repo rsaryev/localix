@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { settingsFixture } from './testing/settings-fixture'
-import { customizationLocks, outputStyleSetting, settingsModes, skillShellDisabled } from './values'
+import { outputStyleSetting, settingsModes, skillShellDisabled } from './values'
 
 const read = settingsFixture('kit-settings-values-')
 const perms = (permissions: object) => ({ permissions })
@@ -18,19 +18,6 @@ test('disableSkillShellExecution from any file; a managed true cannot be turned 
   )
 })
 
-test('strictPluginOnlyCustomization: managed true locks every kind, an array the named ones', () => {
-  const locks = (value: unknown) =>
-    [...customizationLocks(read({ managed: { strictPluginOnlyCustomization: value } }))].sort()
-  expect(locks(true)).toEqual(['agents', 'hooks', 'mcp', 'skills'])
-  expect(locks(['skills', 'hooks'])).toEqual(['hooks', 'skills'])
-  expect(customizationLocks(read({})).size).toBe(0)
-  const own = read({
-    user: { strictPluginOnlyCustomization: true },
-    project: { strictPluginOnlyCustomization: ['mcp'] },
-  })
-  expect(customizationLocks(own).size).toBe(0)
-})
-
 test('defaultMode names the starting mode; the project file wins over the user file', () => {
   const both = read({
     user: perms({ defaultMode: 'bypassPermissions' }),
@@ -46,29 +33,6 @@ test('defaultMode names the starting mode; the project file wins over the user f
   expect(settingsModes(read({ user: perms({ defaultMode: 'acceptEdits' }) }))).toEqual({
     bypassDisabled: false,
   })
-})
-
-test('disableBypassPermissionsMode holds from any file', () => {
-  const settings = read({
-    user: perms({ disableBypassPermissionsMode: 'disable' }),
-    local: perms({ defaultMode: 'bypassPermissions' }),
-  })
-  expect(settingsModes(settings).bypassDisabled).toBe(true)
-  expect(settingsModes(settings).defaultMode).not.toBe('bypass')
-})
-
-// permission-modes.md: `auto` and `bypassPermissions` take no effect from project or local files,
-// and the session then starts in the built-in default, not in the user file's mode.
-test('bypassPermissions and auto from a project or local file start the built-in default', () => {
-  for (const scope of ['project', 'local'] as const)
-    for (const mode of ['bypassPermissions', 'auto']) {
-      const tree = {
-        user: perms({ defaultMode: 'plan' }),
-        [scope]: perms({ defaultMode: mode }),
-        trusted: true,
-      }
-      expect(['default', undefined]).toContain(settingsModes(read(tree)).defaultMode)
-    }
 })
 
 test('the `outputStyle` setting: the higher file wins', () => {

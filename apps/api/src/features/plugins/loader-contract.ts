@@ -1,5 +1,4 @@
 import type { McpServerRecord } from '../mcp/repository'
-import type { PluginAgent } from './contracts'
 import type { PluginOutputStyle } from './output-styles'
 import type { ScopePlugin } from './kit'
 
@@ -11,44 +10,6 @@ import type { ScopePlugin } from './kit'
  * orchestration that fills it in. A reader asking "what can a plugin contribute" should not
  * have to scroll past the import machinery to find out.
  */
-
-/** A resolved plugin agent role, namespaced `<plugin>:<name>`, ready for delegated task dispatch. */
-export interface LoadedPluginAgent {
-  pluginName: string
-  name: string
-  /** Canonical assignee key: `<plugin>:<name>` */
-  fullName: string
-  label: string
-  description: string
-  /** Worker system prompt / identity. */
-  prompt: string
-  /**
-   * Its file's `tools` and `disallowedTools`, as written in Claude Code's names (undefined
-   * `tools`: the run's own surface); the kit resolves them per run (`kit/subagent-tools.ts`).
-   */
-  tools?: readonly string[]
-  disallowedTools?: readonly string[]
-  /** CC `model:` — as written; a child with no model the person chose runs on it (`kit/spawn.ts`). */
-  model?: string
-  /** CC `skills:` — skill names to preload when this agent runs. */
-  pinnedSkills?: string[]
-  /** CC `maxTurns:` — the most turns a delegated run of it takes. */
-  maxTurns?: number
-  /** CC `background:` — a delegated run never holds the delegating call, even when asked to. */
-  background?: boolean
-  /** CC `isolation: worktree` — a delegated run works in a git worktree of its own. */
-  isolation?: 'isolated'
-  /** CC `omitClaudeMd` — its runs read no workspace instruction file (`AGENTS.md`, `CLAUDE.md`). */
-  omitClaudeMd?: boolean
-  /** CC `experimental.cacheTtl` — the prompt cache lifetime of its runs. */
-  cacheTtl?: '5m' | '1h'
-  /** CC `autoCompactWindow` — its runs compact against this window (tokens). */
-  autoCompactWindow?: number
-  /** CC `memory` — its persistent-memory scope. */
-  memory?: 'user' | 'project' | 'local'
-  /** CC `initialPrompt` — leads the chat's first turn when it runs as the main session agent. */
-  initialPrompt?: string
-}
 
 export interface LoadedPlugins {
   /**
@@ -98,46 +59,5 @@ export function emptyLoadedPlugins(): LoadedPlugins {
     loaded: [],
     awaitingConsent: [],
     kitPlugins: [],
-  }
-}
-
-/**
- * Discover plugins for the scope, intersect with the user's enabled set, and load
- * each enabled plugin's contributions. Failures are isolated per-plugin: a bad
- * import or invalid MCP entry is recorded in `loaded[].error` and never aborts the
- * turn. Disabled or undiscovered plugins contribute nothing (and their code is
- * never imported).
- */
-/**
- * Map one discovered plugin agent (manifest data or CC `agents/*.md`) into a
- * namespaced `LoadedPluginAgent`. CC tool names are normalized (Bash→bash, …);
- * `["*"]` means "all tools" → undefined (inherit the role's default tool surface).
- * `subst` substitutes plugin path vars + non-secret config into the prompt.
- */
-export function buildLoadedAgent(
-  pluginName: string,
-  agent: PluginAgent,
-  subst: (text: string) => string,
-): LoadedPluginAgent {
-  return {
-    pluginName,
-    name: agent.name,
-    fullName: `${pluginName}:${agent.name}`,
-    label: agent.label ?? agent.name,
-    // CC describes an agent whose file gives no description as `Agent from <plugin> plugin`.
-    description: agent.description || `Agent from ${pluginName} plugin`,
-    prompt: subst(agent.prompt),
-    ...(agent.tools ? { tools: [...agent.tools] } : {}),
-    ...(agent.disallowedTools ? { disallowedTools: [...agent.disallowedTools] } : {}),
-    ...(agent.model ? { model: agent.model } : {}),
-    ...(agent.pinnedSkills?.length ? { pinnedSkills: agent.pinnedSkills } : {}),
-    ...(agent.maxTurns ? { maxTurns: agent.maxTurns } : {}),
-    ...(agent.background ? { background: true } : {}),
-    ...(agent.isolation ? { isolation: agent.isolation } : {}),
-    ...(agent.omitClaudeMd ? { omitClaudeMd: true } : {}),
-    ...(agent.cacheTtl ? { cacheTtl: agent.cacheTtl } : {}),
-    ...(agent.autoCompactWindow ? { autoCompactWindow: agent.autoCompactWindow } : {}),
-    ...(agent.memory ? { memory: agent.memory } : {}),
-    ...(agent.initialPrompt ? { initialPrompt: subst(agent.initialPrompt) } : {}),
   }
 }

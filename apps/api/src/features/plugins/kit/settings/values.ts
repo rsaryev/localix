@@ -1,12 +1,8 @@
-import { readOutputStyleSetting, type PluginOnlySurface } from '@rsaryev/llx-plugin/settings'
+import { readOutputStyleSetting } from '@rsaryev/llx-plugin/settings'
 import type { PermissionMode } from '../../../../contracts/permission-modes'
 import type { ClaudeSettings } from './read'
 
 /** Single settings values a Localix feature reads, each as the kit decides it. */
-
-/** `strictPluginOnlyCustomization`: the kinds of customization only plugins (and the organization) may add. */
-export const customizationLocks = (settings: ClaudeSettings): ReadonlySet<PluginOnlySurface> =>
-  settings.policy().customization.locked
 
 /** `disableSkillShellExecution` for the skills Localix runs (the person's, a project's, a plugin's). */
 export const skillShellDisabled = (settings: ClaudeSettings): boolean =>

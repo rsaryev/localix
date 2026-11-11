@@ -5,7 +5,7 @@ import type { PluginConfigValues } from '../plugins/config'
 /**
  * `${user_config.KEY}` substitution in the shell text of a plugin's hooks and helpers, and the
  * plugin data folder. A plugin's MCP servers are resolved by the plugin kit
- * (`plugins/kit/mcp-servers.ts`).
+ * (`plugins/kit/scope-session.ts`).
  *
  * Pure module — no chat/UI imports.
  */
@@ -31,9 +31,9 @@ const SHELL_FIELDS = ['headersHelper'] as const
 const OPTION_TOKEN_RE = /\$\{(?:user_config\.|CLAUDE_PLUGIN_OPTION_)[\w.-]+(?::-[^}]*)?\}/
 
 /** The shell-run field of a raw server entry that references a plugin option, if any. */
-export function mcpShellFieldReferencingOption(raw: Record<string, unknown>): string | null {
+export function mcpShellFieldReferencingOption(raw: object): string | null {
   for (const field of SHELL_FIELDS) {
-    const value = raw[field]
+    const value: unknown = Reflect.get(raw, field)
     if (typeof value === 'string' && OPTION_TOKEN_RE.test(value)) return field
   }
   return null

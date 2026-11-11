@@ -6,7 +6,6 @@ import { ONE_SHOT_EXECUTION, PARENT_LINE } from '../../prompt/sections/subagent-
 import { reportBody } from '../child-report'
 import type { AgentRequest } from './agent-tool'
 import {
-  agentTypeRefusal,
   GENERAL_PURPOSE_TYPE,
   prepareAgentChild,
   resolveAgentTarget,
@@ -100,11 +99,8 @@ export async function launchAgent(
   try {
     const delegator = await opts.resolveAgent(self, { projectId: opts.projectId })
     if (!delegator) return refuse('Your own agent is unavailable, so it cannot start a subagent.')
-    // A fork is the delegator itself, so it counts as `general-purpose` for an allowlist.
-    const forkRefusal =
-      request.context === 'fork'
-        ? agentTypeRefusal(ports, [GENERAL_PURPOSE_TYPE, 'fork'])
-        : undefined
+    // A fork is the type `fork` for an allowlist (the SDK's `AgentInput`).
+    const forkRefusal = request.context === 'fork' ? ports?.spawnRefusal?.('fork') : undefined
     if (forkRefusal) return refuse(forkRefusal)
     const planned =
       request.context === 'fork'
@@ -240,16 +236,14 @@ async function planAgent(
   depth: number,
   ports?: AgentLaunchPorts,
 ): Promise<ChildPlan | { refusal: string }> {
+  // `tools: Agent(a, b)` refuses a type it leaves out before the catalog is asked (Claude Code).
+  const unlisted = ports?.spawnRefusal?.(request.agent)
+  if (unlisted) return { refusal: unlisted }
   const target: AgentTarget = request.agent
     ? await resolveAgentTarget(request.agent, delegator, opts, ports)
     : { agent: delegator }
   if ('refusal' in target) return target
   const { agent, type } = target
-  const unlisted = agentTypeRefusal(
-    ports,
-    type ? [agent.name, type.fullName, type.name] : [GENERAL_PURPOSE_TYPE],
-  )
-  if (unlisted) return { refusal: unlisted }
   // The model and effort are the person's choice for this agent, else the session's.
   const prepared = await prepareAgentChild(`agent ${agent.name}`, type, ports, {
     toolCallId,
@@ -261,9 +255,9 @@ async function planAgent(
     agent,
     // Claude Code's `agent_type`: the agent's name, `general-purpose` for the delegator itself.
     agentType: type ? agent.name : GENERAL_PURPOSE_TYPE,
-    maxTurns: type?.maxTurns ?? agent.maxTurns,
+    maxTurns: type?.definition.maxTurns ?? agent.maxTurns,
     // Claude Code's `background: true`: the call never holds for its report.
-    wait: request.wait && !type?.background,
+    wait: request.wait && !type?.definition.background,
     notes: prepared.notes,
     ...(prepared.worktree ? { worktree: prepared.worktree } : {}),
     create: {

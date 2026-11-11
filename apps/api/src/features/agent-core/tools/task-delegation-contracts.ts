@@ -1,3 +1,4 @@
+import type { CatalogAgent } from '@rsaryev/llx-plugin/agents'
 import type { AgentPermissionMode } from '../../../contracts/agent-permission-mode'
 import type { AgentRuntimeStatus, ReasoningEffort } from '../../../db/types'
 import type { DelegationPriority, LaneSpec } from '../delegation-lanes'
@@ -76,24 +77,12 @@ export interface TaskAgent {
   pinnedSkills?: readonly string[]
 }
 
-/** One catalog agent's definition, as delegation needs it (`CatalogAgent` is one). */
-export interface TaskAgentType {
-  fullName: string
-  name: string
-  description: string
-  pinnedSkills?: readonly string[]
-  maxTurns?: number
-  background?: boolean
-  isolation?: 'isolated'
-  /** Its `model` as written: the route of a child the person chose no model for. */
-  model?: string
-  /** Its file's `tools` as written, when it has one (`AgentLaunchPorts.toolsRefusal` reads it). */
-  tools?: readonly string[]
-  /** Where the definition comes from: `plugin` and built-in agents ignore the fields below. */
-  source?: string
-  /** The mode its `permissionMode` asks for, as the kit resolved it (none for a plugin's). */
-  permissionMode?: AgentPermissionMode
-}
+/**
+ * One catalog agent's definition, as delegation needs it: the kit's catalog entry, with the Localix
+ * mode its `permissionMode` asks for as the kit resolved it (`plugins/kit/spawn.ts`; none for a
+ * plugin's).
+ */
+export type TaskAgentType = CatalogAgent & { readonly askedMode?: AgentPermissionMode }
 
 /** Who a task goes to, as the catalog resolves it and Access admits it. */
 export type DelegateResolution =

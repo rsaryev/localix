@@ -54,7 +54,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     frame.fork
       ? { hostTools: params.scope.hostTools, profileOverride: frame.fork.seed.profile }
       : params.scope,
-    agentTools.profileAgent ?? inputs.pluginSubagent,
+    agentTools.profileAgent ?? (inputs.pluginSubagent ? {} : null),
   )
   // Protected orchestration authority comes only from the host, never from the agent.
   const toolSurface = executionToolSurface(params.scope.executionContext)
@@ -99,7 +99,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       toolDenials: inputs.toolDenials,
       agentProfile,
       // `tools: Agent(a, b)` limits the types the agent running as the main thread delegates to.
-      ...(agentTools.allowedAgentTypes ? { allowedAgentTypes: agentTools.allowedAgentTypes } : {}),
+      ...(agentTools.spawnTypes ? { spawnTypes: agentTools.spawnTypes } : {}),
       parentTools: () => offered,
       loadedPlugins,
       loadedMiniApps,

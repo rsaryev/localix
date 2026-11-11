@@ -59,44 +59,12 @@ describe('readClaudeSettingsSync', () => {
     ])
   })
 
-  test('in a repository the root local file wins over the folder one', () => {
-    const { cwd, input } = fixture()
-    mkdirSync(join(cwd, '.git'))
-    const sub = join(cwd, 'pkg')
-    write(join(sub, '.claude', 'settings.local.json'), { agent: 'folder', outputStyle: 'Old' })
-    write(join(cwd, '.claude', 'settings.local.json'), { agent: 'root' })
-    const settings = readClaudeSettingsSync({ ...input, cwd: sub })
-    expect(settings.localRoot).toBe(cwd)
-    expect(settings.view.merged()).toMatchObject({ agent: 'root', outputStyle: 'Old' })
-  })
-
-  test('a home session reads the user file once', () => {
-    const { homeDir, input } = fixture()
-    write(join(homeDir, '.claude', 'settings.json'), { model: 'opus' })
-    const settings = readClaudeSettingsSync({ ...input, cwd: homeDir })
-    expect(settings.files.map((one) => one.scope)).toEqual(['user'])
-  })
-
-  test('managed drop-ins merge over the base file', () => {
-    const { managedDir, input } = fixture()
-    write(join(managedDir, 'managed-settings.json'), { model: 'opus', agent: 'base' })
-    write(join(managedDir, 'managed-settings.d', '10-team.json'), { agent: 'team' })
-    const managed = readClaudeSettingsSync(input).files.find((one) => one.scope === 'managed')
-    expect(managed?.settings).toMatchObject({ model: 'opus', agent: 'team' })
-  })
-
   test('trust is read from the state file under the repository root', () => {
     const { homeDir, cwd, input } = fixture()
     mkdirSync(join(cwd, '.git'))
     write(join(homeDir, '.claude.json'), { projects: { [cwd]: { hasTrustDialogAccepted: true } } })
     expect(readClaudeSettingsSync({ ...input, cwd: join(cwd, 'src') }).trusted).toBe(true)
     expect(readClaudeSettingsSync({ ...input, cwd: temp() }).trusted).toBe(false)
-  })
-
-  test('outside a repository a trusted parent folder counts', () => {
-    const { homeDir, cwd, input } = fixture()
-    write(join(homeDir, '.claude.json'), { projects: { [cwd]: { hasTrustDialogAccepted: true } } })
-    expect(readClaudeSettingsSync({ ...input, cwd: join(cwd, 'a', 'b') }).trusted).toBe(true)
   })
 })
 

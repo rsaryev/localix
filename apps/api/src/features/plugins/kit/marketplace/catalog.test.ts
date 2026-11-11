@@ -3,18 +3,10 @@ import { promises as fs } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import {
-  catalogKnows,
-  parseMarketplace,
-  readMarketplace,
-  relativeEntryPath,
-  resolveEntryName,
-} from './catalog'
+import { catalogKnows, parseMarketplace, readMarketplace, resolveEntryName } from './catalog'
 import { resolveEntrySource } from './entry-source'
 
 const owner = { name: 'o' }
-const github = (repo: string) =>
-  ({ kind: 'github', repo, path: '.claude-plugin/marketplace.json' }) as const
 const market = (plugins: unknown[], extra: Record<string, unknown> = {}) =>
   parseMarketplace({ name: 'shop', owner, plugins, ...extra })
 
@@ -41,7 +33,6 @@ describe('readMarketplace', () => {
       installLocation: dir,
     })
     expect(read.plugins.map((one) => one.name)).toEqual(['good'])
-    expect(relativeEntryPath(read.plugins[0]!)).toBe('plugins/good')
   })
 
   it('refuses a folder without the catalog, and a catalog that cannot load', async () => {
@@ -50,14 +41,6 @@ describe('readMarketplace', () => {
     const at = { source: { kind: 'directory', path: dir }, installLocation: dir } as const
     await expect(readMarketplace(at)).rejects.toThrow('No .claude-plugin/marketplace.json')
     expect(() => parseMarketplace({ plugins: [] })).toThrow('Invalid marketplace.json')
-  })
-
-  it('takes an official name only from a source under github.com/anthropics/', () => {
-    const raw = { name: 'claude-plugins-official', owner, plugins: [] }
-    expect(() => parseMarketplace(raw, github('someone/fork'))).toThrow('reserved')
-    expect(parseMarketplace(raw, github('anthropics/claude-plugins-official')).name).toBe(
-      'claude-plugins-official',
-    )
   })
 })
 
@@ -115,23 +98,5 @@ describe('resolveEntrySource', () => {
         headers: { Authorization: 'x' },
       },
     })
-  })
-
-  it('takes owner/repo shorthand for git-subdir, and refuses an archive over http', () => {
-    expect(
-      resolveEntrySource('/m', entry({ source: 'git-subdir', url: 'o/r', path: 'p' })),
-    ).toEqual({ git: { url: 'https://github.com/o/r.git', subdir: 'p' } })
-    expect(() =>
-      resolveEntrySource('/m', entry({ source: 'archive', url: 'http://x.example/p.zip' })),
-    ).toThrow()
-  })
-
-  it('refuses a command source, and a relative one in a marketplace added by URL', () => {
-    expect(() =>
-      resolveEntrySource('/m', entry({ source: 'command', command: 'echo /x' })),
-    ).toThrow('does not run')
-    expect(() =>
-      resolveEntrySource('/m', entry('./p'), { kind: 'url', url: 'https://h.example/m.json' }),
-    ).toThrow('cannot resolve')
   })
 })

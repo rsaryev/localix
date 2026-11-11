@@ -1,14 +1,15 @@
 import { describe, expect, test } from 'bun:test'
 
+import { testCatalogAgent } from '../../../plugins/kit/testing'
 import { agentRunMcpServers } from './agent-run-mcp'
 
-const spec = (over: Record<string, unknown> = {}) => ({
-  source: 'user',
-  fullName: 'tester',
-  name: 'tester',
-  mcpServers: ['github', { docs: { type: 'http', url: 'https://docs.example.com/mcp' } }],
-  ...over,
-})
+const SERVERS = ['github', { docs: { type: 'http' as const, url: 'https://docs.example.com/mcp' } }]
+const spec = (over: { plugin?: boolean; mcpServers?: undefined } = {}) =>
+  testCatalogAgent(
+    'tester',
+    'mcpServers' in over ? {} : { mcpServers: SERVERS },
+    over.plugin ? { source: { kind: 'plugin', pluginId: 'acme' } } : {},
+  )
 const child = (provenance: Record<string, unknown> = {}) =>
   ({
     id: 'c',
@@ -25,7 +26,7 @@ describe('the MCP servers a delegated run takes from its agent file', () => {
   })
 
   test('not a plugin agent, a fork, an ordinary chat, or a file with none', () => {
-    expect(agentRunMcpServers(child(), spec({ source: 'plugin' }), ctx)?.inline ?? []).toEqual([])
+    expect(agentRunMcpServers(child(), spec({ plugin: true }), ctx)?.inline ?? []).toEqual([])
     expect(
       agentRunMcpServers(
         child({ fork: { baseMessageId: null, snapshotMessageId: 'm' } }),

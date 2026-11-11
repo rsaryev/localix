@@ -107,7 +107,7 @@ export function fullPrompt(
   // real record with real instructions.
   const profile = resolveRunProfile(
     { sessionKind: SHAPE_SESSION_KIND[profileKey] },
-    { prompt: LOCALIX_AGENT.prompt },
+    { prompt: LOCALIX_AGENT.definition.prompt },
   )
   // Production parity (runtime-tools.ts): a session with active loops keeps `loops`
   // direct — the loops section instructs dynamic loops to call `loops.reschedule`.

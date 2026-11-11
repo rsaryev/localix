@@ -1,8 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
-import { scopeAgents, type HostAgents, type ScopeAgents } from './agents'
+import { scopeAgents, type HostAgents, type ScopeAgent, type ScopeAgents } from './agents'
 import type { ScopePlugin } from './sessions'
 import { diskPluginHost, writeTestPlugin } from './testing'
 
@@ -37,105 +36,12 @@ async function read(
 }
 
 const own = (catalog: ScopeAgents) =>
-  catalog.agents.filter((one) => one.source !== 'builtin').map((one) => one.fullName)
+  catalog.agents.filter((one) => one.source.kind !== 'builtin').map((one) => one.name)
 
 describe("a scope's subagents, as the kit resolves them", () => {
-  test('precedence is managed, closest project, user, plugin, built in; the losers are listed', async () => {
-    const repo = join(dir(), 'repo')
-    const web = join(repo, 'packages', 'web')
-    mkdirSync(join(repo, '.git'), { recursive: true })
-    writeTree(dir(), {
-      'repo/.claude/agents/review/reviewer.md': agent('reviewer', 'root', 'tools: Read, Grep\n'),
-      'repo/packages/web/.claude/agents/reviewer.md': agent('reviewer', 'web'),
-      'home/.claude/agents/helper.md': agent('helper', 'mine'),
-      'managed/.claude/agents/helper.md': agent('helper', 'org'),
-      'repo/.claude/agents/notes.md': '# Just notes',
-    })
-    const acme = await installed('acme', { 'architect.md': agent('architect', 'plans') })
-    const catalog = await read(web, [acme])
-    expect(
-      catalog.agents
-        .filter((one) => one.source !== 'builtin')
-        .map((one) => [one.fullName, one.source, one.description]),
-    ).toEqual([
-      ['helper', 'managed', 'org'],
-      ['reviewer', 'project', 'web'],
-      ['acme:architect', 'plugin', 'plans'],
-    ])
-    expect(catalog.agents.find((one) => one.fullName === 'acme:architect')).toMatchObject({
-      name: 'architect',
-      pluginName: 'acme',
-      path: '',
-      plugin: { id: 'acme@test', scope: 'user' },
-    })
-    expect(
-      catalog.shadowed.map(({ agent: lost, by }) => [lost.description, by.description]),
-    ).toEqual([
-      ['root', 'web'],
-      ['mine', 'org'],
-    ])
-    const root = await read(repo)
-    expect(root.resolve('reviewer')).toMatchObject({
-      agent: {
-        description: 'root',
-        tools: ['Read', 'Grep'],
-        path: join(repo, '.claude/agents/review/reviewer.md'),
-      },
-    })
-  })
-
-  test('the built-ins come from the kit: Explore cannot write and starts without CLAUDE.md', async () => {
-    const catalog = await read(join(dir(), 'work'))
-    expect(catalog.resolve('Explore')).toMatchObject({
-      agent: {
-        source: 'builtin',
-        prompt: '',
-        disallowedTools: ['Write', 'Edit'],
-        omitClaudeMd: true,
-      },
-    })
-  })
-
-  test('a name is what Claude Code takes: exact, a plugin agent bare when one plugin has it, a mention', async () => {
-    const work = join(dir(), 'work')
-    writeTree(work, { '.claude/agents/reviewer.md': agent('reviewer', 'mine') })
-    const catalog = await read(work, [
-      await installed('acme', {
-        'architect.md': agent('architect', 'a'),
-        'shared.md': agent('shared', 'a'),
-      }),
-      await installed('other', { 'shared.md': agent('shared', 'o') }),
-    ])
-    const named = (reference: string) => {
-      const found = catalog.resolve(reference)
-      return found && 'agent' in found ? found.agent.fullName : found
-    }
-    expect(named('reviewer')).toBe('reviewer')
-    expect(named('@agent-reviewer')).toBe('reviewer')
-    expect(named('Reviewer')).toBeNull()
-    expect(named('acme:architect')).toBe('acme:architect')
-    expect(named('architect')).toBe('acme:architect')
-    expect(named('shared')).toEqual({ ambiguous: ['acme:shared', 'other:shared'] })
-    expect(named('nobody')).toBeNull()
-    expect(named('  ')).toBeNull()
-  })
-
   test("an unselected plugin's agents are not in the catalog", async () => {
     const off = await installed('off', { 'quiet.md': agent('quiet', 'q') }, false)
     expect(own(await read(join(dir(), 'work'), [off]))).toEqual([])
-  })
-
-  test('strictPluginOnlyCustomization agents: the personal and project files do not load', async () => {
-    const work = join(dir(), 'work')
-    writeTree(dir(), {
-      'home/.claude/agents/mine.md': agent('mine', 'm'),
-      'work/.claude/agents/proj.md': agent('proj', 'p'),
-      'managed/.claude/agents/org.md': agent('org', 'o'),
-    })
-    expect(own(await read(work)).toSorted()).toEqual(['mine', 'org', 'proj'])
-    const locked = await read(work, [], { strictPluginOnlyCustomization: ['agents'] })
-    expect(own(locked)).toEqual(['org'])
-    expect(locked.agents.some((one) => one.source === 'builtin')).toBe(true)
   })
 
   // sub-agents.md: `hooks`, `mcpServers` and `permissionMode` are the person's own agent files'
@@ -160,16 +66,19 @@ describe("a scope's subagents, as the kit resolves them", () => {
     ])
     expect(catalog.resolve('guarded')).toMatchObject({
       agent: {
-        permissionMode: 'plan',
         hooks: { Stop: [{ hooks: [{ type: 'command', command: './done.sh' }] }] },
-        mcpServers: ['github'],
-        tools: ['Agent(worker, researcher)', 'Read', 'Bash'],
+        definition: {
+          permissionMode: 'plan',
+          mcpServers: ['github'],
+          tools: ['Agent(worker, researcher)', 'Read', 'Bash'],
+        },
       },
     })
     const loose = catalog.resolve('acme:loose')
-    expect(loose && 'agent' in loose ? loose.agent : null).not.toHaveProperty('hooks')
-    expect(loose && 'agent' in loose ? loose.agent : null).not.toHaveProperty('mcpServers')
-    expect(loose && 'agent' in loose ? loose.agent : null).not.toHaveProperty('permissionMode')
+    const looseAgent = loose && 'agent' in loose ? loose.agent : null
+    expect(looseAgent?.hooks).toBeUndefined()
+    expect(looseAgent?.definition).not.toHaveProperty('mcpServers')
+    expect(looseAgent?.definition).not.toHaveProperty('permissionMode')
   })
 
   // sub-agents.md, "Choose the subagent scope": the `--agents` flag (the SDK `agents` option, what a
@@ -200,18 +109,22 @@ describe("a scope's subagents, as the kit resolves them", () => {
     )
     expect(catalog.resolve('runner')).toMatchObject({
       agent: {
-        source: 'flag',
-        description: 'registered',
-        prompt: 'You run specs.',
-        path: '',
-        permissionMode: 'plan',
-        mcpServers: ['github'],
+        source: { kind: 'flag' },
+        definition: {
+          description: 'registered',
+          prompt: 'You run specs.',
+          permissionMode: 'plan',
+          mcpServers: ['github'],
+        },
         hooks: { Stop: [{ hooks: [{ type: 'command', command: './done.sh' }] }] },
       },
     })
-    expect(catalog.resolve('@agent-runner')).toMatchObject({ agent: { source: 'flag' } })
-    expect(catalog.resolve('org')).toMatchObject({ agent: { source: 'managed' } })
-    expect(catalog.shadowed.map(({ agent: lost, by }) => [lost.source, by.source])).toEqual([
+    expect(catalog.resolve('@agent-runner')).toMatchObject({ agent: { source: { kind: 'flag' } } })
+    expect(catalog.resolve('org')).toMatchObject({
+      agent: { source: { kind: 'folder', scope: 'managed' } },
+    })
+    const tier = (one: ScopeAgent) => ('scope' in one.source ? one.source.scope : one.source.kind)
+    expect(catalog.shadowed.map(({ agent: lost, by }) => [tier(lost), tier(by)])).toEqual([
       ['flag', 'managed'],
       ['user', 'flag'],
     ])
@@ -233,13 +146,16 @@ describe("a scope's subagents, as the kit resolves them", () => {
       )
     const acme = await withDefault('acme', 'lead')
     const off = await withDefault('off', 'boss', false)
-    expect((await read(work, [acme, off])).main?.fullName).toBe('acme:lead')
+    expect((await read(work, [acme, off])).main?.name).toBe('acme:lead')
     expect((await read(work, [off])).main).toBeNull()
     writeTree(dir(), {
       'home/.claude/agents/mine.md': agent('mine', 'm'),
       'home/.claude/settings.json': '{"agent":"mine"}',
     })
-    expect((await read(work, [acme])).main).toMatchObject({ fullName: 'mine', source: 'user' })
+    expect((await read(work, [acme])).main).toMatchObject({
+      name: 'mine',
+      source: { kind: 'folder', scope: 'user' },
+    })
   })
 
   test('CLAUDE_CONFIG_DIR moves the personal agents folder', async () => {
@@ -257,7 +173,10 @@ describe("a scope's subagents, as the kit resolves them", () => {
     )
     expect(own(catalog)).toEqual(['moved'])
     expect(catalog.resolve('moved')).toMatchObject({
-      agent: { source: 'user', path: join(dir(), 'config/agents/moved.md') },
+      agent: {
+        source: { kind: 'folder', scope: 'user' },
+        path: join(dir(), 'config/agents/moved.md'),
+      },
     })
   })
 })

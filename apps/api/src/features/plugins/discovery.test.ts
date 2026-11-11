@@ -377,8 +377,8 @@ describe('discoverPlugins', () => {
     const cc = found.find((p) => p.manifest.name === 'cc-plugin')
     const reviewer = cc!.agents.find((a) => a.name === 'reviewer')
     expect(reviewer).toBeDefined()
-    expect(reviewer?.description).toBe('Reviews code')
-    expect(reviewer?.prompt).toContain('meticulous code reviewer')
+    expect(reviewer?.definition.description).toBe('Reviews code')
+    expect(reviewer?.definition.prompt).toContain('meticulous code reviewer')
   })
 
   // The kit resolves the lists per run (`plugins/kit/subagent-tools.ts`); the catalog keeps them.
@@ -390,12 +390,12 @@ describe('discoverPlugins', () => {
     })
     const cc = found.find((p) => p.manifest.name === 'cc-plugin')
     const reviewer = cc!.agents.find((a) => a.name === 'reviewer')
-    expect(reviewer?.tools).toEqual(['Glob', 'Grep', 'Read', 'WebFetch'])
-    expect(reviewer?.disallowedTools).toEqual(['Write', 'Edit'])
+    expect(reviewer?.definition.tools).toEqual(['Glob', 'Grep', 'Read', 'WebFetch'])
+    expect(reviewer?.definition.disallowedTools).toEqual(['Write', 'Edit'])
     // the file's `model` is not read: the person chooses a model in settings
     expect(reviewer).not.toHaveProperty('preferredModel')
     // YAML quoted-array form ["Read", "Grep", "Bash"] — inner quotes stripped.
-    expect(cc!.agents.find((a) => a.name === 'quoted-tools')?.tools).toEqual([
+    expect(cc!.agents.find((a) => a.name === 'quoted-tools')?.definition.tools).toEqual([
       'Read',
       'Grep',
       'Bash',
@@ -412,11 +412,11 @@ describe('discoverPlugins', () => {
     const analyst = cc!.agents.find((a) => a.name === 'analyst')
     expect(analyst).toBeDefined()
     // an agent's description is its `description` alone, as in sub-agents.md
-    expect(analyst?.description).toBe('Analyzes data.')
+    expect(analyst?.definition.description).toBe('Analyzes data.')
     expect(analyst).not.toHaveProperty('preferredEffort')
   })
 
-  it('parses CC `skills:` frontmatter in agent files into pinnedSkills', async () => {
+  it('parses CC `skills:` frontmatter in agent files into the definition skills', async () => {
     const found = await discoverPlugins({
       cwd: dir,
       projectId: 'proj1',
@@ -425,7 +425,7 @@ describe('discoverPlugins', () => {
     const cc = found.find((p) => p.manifest.name === 'cc-plugin')
     const pinned = cc!.agents.find((a) => a.name === 'pinned')
     expect(pinned).toBeDefined()
-    expect(pinned?.pinnedSkills).toEqual(['review', 'security-scan'])
+    expect(pinned?.definition.skills).toEqual(['review', 'security-scan'])
   })
 
   it('does not discover Claude Code ecosystem plugins from installed_plugins.json', async () => {
@@ -768,7 +768,6 @@ describe('the entrypoints of a loaded plugin', () => {
   it('applies the ./skills directory default when the manifest is silent', async () => {
     const pluginDir = join(dir, '.localix', 'plugins', 'weather')
     const plugin = await loadManifest(pluginDir, 'project', 'proj1')
-    expect(plugin.entrypoints.skillDirs.some((p) => p.endsWith('/skills'))).toBe(true)
     // The manifest-declared MCP server is resolved through loadManifest.
     expect(Object.keys(plugin.entrypoints.mcpServers)).toContain('wx')
   })

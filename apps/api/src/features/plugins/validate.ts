@@ -57,9 +57,7 @@ export function validatePlugin(
   const mainAgent = plugin.entrypoints.components?.settings.agent
   if (
     mainAgent &&
-    !plugin.agents.some((agent) =>
-      [agent.name, `${plugin.manifest.name}:${agent.name}`].includes(mainAgent),
-    )
+    !plugin.agents.some((agent) => [agent.name, agent.scopedName].includes(mainAgent))
   )
     warnings.push(`settings "agent" names "${mainAgent}", which is not one of this plugin's agents`)
 

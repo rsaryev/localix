@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import { tempDirPerTest } from '@localixai/testing'
 
-import type { MarketplaceEntry } from './kit'
+import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
 import { resolveEntrySource } from './kit'
 import { gitRefProblem, gitUrlProblem } from './marketplace-git-args'
 import { fetchEntryPlugin, materializeMarketplace } from './marketplace-materialize'

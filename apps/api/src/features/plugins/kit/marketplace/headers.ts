@@ -11,7 +11,7 @@ import {
 } from '@rsaryev/llx-plugin/marketplace'
 import { isRecord } from '../../../../lib/record'
 import { hostCommandRunner } from '../ports/command-runner'
-import { hostLocations, processEnvironment, systemClock } from '../ports/host-io'
+import { hostLocations, hostPlatform, processEnvironment, systemClock } from '../ports/host-io'
 import { marketplacePolicy } from './policy'
 
 /**
@@ -20,7 +20,8 @@ import { marketplacePolicy } from './policy'
  * downloads"): the fixed `headers`, the JSON a `headersHelper` command prints over them when it may
  * run, the `url` source's on its own origin under the entry's. The kit runs the command through
  * Localix's process runner from Claude Code's configuration folder, or from the home folder on a
- * computer that has none.
+ * computer that has none. Kit gap: the kit passes a `cwd` that may not exist and leaves the
+ * fallback to the host (`portsFor` below).
  */
 
 type Headers = Readonly<Record<string, string>>
@@ -46,7 +47,7 @@ async function settingFor(marketplace: string | undefined, managedDir: string | 
   const disabled = flag(settings.disableCommandPluginSources)
   const managedOnly = flag(settings.allowManagedHooksOnly)
   const setting: HeadersSetting = {
-    platform: process.platform === 'win32' ? 'windows' : 'posix',
+    platform: hostPlatform(),
     folderTrusted: false,
     settingsApproved: false,
     managedMarketplace: marketplace !== undefined && Object.hasOwn(declared, marketplace),

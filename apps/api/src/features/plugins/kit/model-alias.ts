@@ -1,5 +1,4 @@
 import { modelFamily, modelValueKind, type ModelAlias } from '@rsaryev/llx-plugin/agents'
-import type { ModelAliasResolver } from '../../agent-core/model-alias'
 
 /**
  * An agent or skill `model:` value read as Claude Code reads it (sub-agents.md, "Choose a model"),
@@ -50,15 +49,21 @@ export function bestModelForFamily(
     .sort((a, b) => compareVersionish(b, a))[0]
 }
 
-export const modelAliasResolver: ModelAliasResolver = {
-  resolve(value, parentModelId, availableModelIds = []) {
-    const text = value?.trim()
-    if (!text) return parentModelId
-    const kind = modelValueKind(text)
-    if (kind === 'inherit') return parentModelId
-    if (kind === 'full-id') return text
-    const family = text as ModelAlias
-    if (parentModelId && modelFamily(parentModelId) === family) return parentModelId
-    return bestModelForFamily(family, availableModelIds) ?? parentModelId
-  },
+/**
+ * THE ONE POINT AN AGENT OR SKILL `model:` VALUE BECOMES A MODEL ID, given the parent's model and
+ * the ids the providers offer. `undefined` only when the value inherits and no parent model is known.
+ */
+export function resolveModelAlias(
+  value: string | undefined,
+  parentModelId: string | undefined,
+  availableModelIds: readonly string[] = [],
+): string | undefined {
+  const text = value?.trim()
+  if (!text) return parentModelId
+  const kind = modelValueKind(text)
+  if (kind === 'inherit') return parentModelId
+  if (kind === 'full-id') return text
+  const family = text as ModelAlias
+  if (parentModelId && modelFamily(parentModelId) === family) return parentModelId
+  return bestModelForFamily(family, availableModelIds) ?? parentModelId
 }

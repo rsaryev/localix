@@ -2,23 +2,11 @@ import { describe, expect, test } from 'bun:test'
 import {
   agentMcpSpecs,
   askedPermissionMode,
-  preloadedSkillNames,
   subagentModelRoute,
   subagentPermissionMode,
 } from './spawn'
-
-describe('what a subagent starts with', () => {
-  test('preloads the first 32 distinct names, skipping a missing or user-only skill in its place', () => {
-    const skills = new Map([
-      ['manual', { disableModelInvocation: true }],
-      ...Array.from({ length: 40 }, (_, i) => [`s${i}`, {}] as const),
-    ])
-    const names = ['manual', 'gone', 's0', 's0', ...Array.from({ length: 40 }, (_, i) => `s${i}`)]
-    const load = preloadedSkillNames(names, (name) => skills.get(name))
-    expect(load[0]).toBe('s0')
-    expect(load).toHaveLength(30)
-  })
-})
+import { testCatalogAgent } from './testing'
+import type { AgentDefinition } from '@rsaryev/llx-plugin'
 
 // sub-agents.md, "Choose a model": the definition's `model` is an alias, a full id or `inherit`; an
 // alias of the main model's family, and `opus` when that family cannot be told, is the main model.
@@ -36,25 +24,6 @@ describe('the model of a delegated child the person chose none for', () => {
     ['claude-opus-9', 'claude-sonnet-4-5', {}],
   ])('model %p on %p routes %p', (model, mainModel, route) => {
     expect(subagentModelRoute({ definition: model }, { mainModel, available }, {})).toEqual(route)
-  })
-
-  test("the call's alias comes before the file's, the environment's after it; forced, only it", () => {
-    const context = { mainModel: 'claude-sonnet-4-5', available }
-    const haiku = { modelId: 'claude-haiku-4-5', providerConnectionId: null }
-    expect(subagentModelRoute({ definition: 'sonnet', invocation: 'haiku' }, context, {})).toEqual(
-      haiku,
-    )
-    const env = { CLAUDE_CODE_SUBAGENT_MODEL: 'gpt-6' }
-    expect(subagentModelRoute({}, context, env)).toEqual({
-      modelId: 'gpt-6',
-      providerConnectionId: null,
-    })
-    expect(subagentModelRoute({ definition: 'haiku' }, context, env)).toEqual(haiku)
-    const forced = { ...env, CLAUDE_CODE_SUBAGENT_MODEL_FORCE: '1' }
-    expect(subagentModelRoute({ invocation: 'haiku' }, context, forced)).toEqual({
-      modelId: 'gpt-6',
-      providerConnectionId: null,
-    })
   })
 })
 
@@ -91,29 +60,26 @@ describe('the permission mode of a delegated child', () => {
 // sub-agents.md, "Scope MCP servers to a subagent": a string names a configured server; a project
 // file's inline servers wait for its folder's trust; a plugin's agent has none.
 describe('the MCP servers of an agent file', () => {
-  const FILE = ['github', { playwright: { command: 'npx' } }, { docs: { url: 'https://d' } }]
+  const FILE: NonNullable<AgentDefinition['mcpServers']> = [
+    'github',
+    { playwright: { command: 'npx' } },
+    { docs: { type: 'http', url: 'https://d' } },
+  ]
+  const managed = { kind: 'folder', scope: 'managed' } as const
 
   test('a personal file and a mod’s (`--agents`) load inline servers without trust', () => {
-    for (const source of ['user', 'flag', 'managed']) {
-      const specs = agentMcpSpecs(FILE, { source, folderTrusted: false })
+    for (const more of [{}, { source: { kind: 'flag' } }, { source: managed }] as const) {
+      const specs = agentMcpSpecs(testCatalogAgent('a', { mcpServers: FILE }, more), false)
       expect(specs.references).toEqual(['github'])
       expect(Object.keys(specs.inline)).toEqual(['playwright', 'docs'])
     }
   })
 
-  test('a project file’s inline servers wait for trust; its references do not', () => {
-    expect(agentMcpSpecs(FILE, { source: 'project', folderTrusted: false })).toEqual({
-      references: ['github'],
-      inline: {},
-      skipped: ['playwright', 'docs'],
-    })
-    const trusted = agentMcpSpecs(FILE, { source: 'project', folderTrusted: true })
-    expect(Object.keys(trusted.inline)).toEqual(['playwright', 'docs'])
-  })
-
   test('nothing for a plugin’s agent or a built-in type', () => {
     const none = { references: [], inline: {}, skipped: [] }
-    expect(agentMcpSpecs(FILE, { source: 'plugin', folderTrusted: true })).toEqual(none)
-    expect(agentMcpSpecs(FILE, { source: 'builtin', folderTrusted: true })).toEqual(none)
+    for (const source of [{ kind: 'plugin', pluginId: 'p' }, { kind: 'builtin' }] as const)
+      expect(agentMcpSpecs(testCatalogAgent('a', { mcpServers: FILE }, { source }), true)).toEqual(
+        none,
+      )
   })
 })

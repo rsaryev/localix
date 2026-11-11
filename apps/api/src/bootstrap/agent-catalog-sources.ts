@@ -16,7 +16,7 @@ import { onCapabilityRevision } from '../features/capabilities/revision'
 import { buildPluginCatalog } from '../features/plugins/catalog'
 import { kitPluginsOf } from '../features/plugins/catalog-kit'
 import { managedSettingsDir, scopeAgents, type LocalixPluginHost } from '../features/plugins/kit'
-import type { ModAgentGroup } from '../features/mods/registry'
+import type { ModAgentGroup } from '../features/mods/host'
 
 type ProjectCwd = (userId: string, projectId: string) => Promise<string | null>
 

@@ -3,7 +3,7 @@ import { realpath } from 'node:fs/promises'
 import { tempDirPerTest } from '@localixai/testing'
 
 import type { TaskAgentType } from '../../../agent-core/tools/task-delegation-contracts'
-import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
+import { testCatalogAgent } from '../../../plugins/kit/testing'
 import {
   applyCatalogAgent,
   contextFilesFor,
@@ -11,16 +11,13 @@ import {
   agentLaunchPorts,
 } from './catalog-agent'
 
-const REVIEWER: LoadedPluginAgent = {
-  pluginName: 'sec',
-  name: 'reviewer',
-  fullName: 'sec:reviewer',
-  label: 'reviewer',
+const REVIEWER = testCatalogAgent('sec:reviewer', {
   description: 'Reviews code for security issues. Use after auth changes.',
   prompt: 'You are the security reviewer.',
   tools: ['Read', 'Search'],
   disallowedTools: ['Research'],
-}
+})
+const LEAN = { ...REVIEWER, startsWith: { claudeMd: false, gitStatus: true } }
 
 const scratch = tempDirPerTest('catalog-agent-hook', {})
 
@@ -49,15 +46,15 @@ test('a plugin agent with omitClaudeMd runs without the workspace instruction fi
     { path: '/repo/sub/CLAUDE.md', content: 'sub rules' },
     { path: '/repo/.localix/context.md', content: 'context' },
   ]
-  expect(contextFilesFor(files, { ...REVIEWER, omitClaudeMd: true })).toEqual([files[2]])
+  expect(contextFilesFor(files, LEAN)).toEqual([files[2]])
   expect(contextFilesFor(files, REVIEWER)).toEqual(files)
   expect(contextFilesFor(files, null)).toEqual(files)
 })
 
 // sub-agents.md, `experimental.cacheTtl`: `1h` is the longer-lived cache, `5m` the default.
 test('a plugin agent with cacheTtl asks its runs for that cache lifetime', () => {
-  expect(promptCacheRetentionFor({ ...REVIEWER, cacheTtl: '1h' })).toBe('long')
-  expect(promptCacheRetentionFor({ ...REVIEWER, cacheTtl: '5m' })).toBe('short')
+  expect(promptCacheRetentionFor({ extras: { cacheTtl: '1h' } })).toBe('long')
+  expect(promptCacheRetentionFor({ extras: { cacheTtl: '5m' } })).toBe('short')
   expect(promptCacheRetentionFor(REVIEWER)).toBeUndefined()
   expect(promptCacheRetentionFor(null)).toBeUndefined()
 })
@@ -69,9 +66,9 @@ test('a run as a catalog agent takes its prompt and instruction files', () => {
     agent: { id: 'cc:1', instructions: 'ignored' },
     disabledTools: ['AskUserQuestion'],
   }
-  const applied = applyCatalogAgent(input, { ...REVIEWER, omitClaudeMd: true })
+  const applied = applyCatalogAgent(input, LEAN)
   expect(applied?.agent.instructions).toBe('You are the security reviewer.')
-  expect(applied?.subagent.omitClaudeMd).toBe(true)
+  expect(applied?.subagent).toBe(LEAN)
   // Its `tools` and `disallowedTools` narrow the built run instead (`run-agent-tools.ts`).
   expect(applied?.disabledTools).toEqual(['AskUserQuestion'])
 })
@@ -85,16 +82,8 @@ test('the default agent, and a route with no definition behind it, keep their ow
 test('the delegate ports refuse a type whose tools the run does not offer', () => {
   const base = { catalog: [], defaultCwd: '/tmp', rootSessionId: 'root' }
   const ports = agentLaunchPorts({ ...base, parentTools: () => [{ name: 'Read' }] })
-  const type: TaskAgentType = { name: 'w', fullName: 'w', description: '' }
-  expect(ports.toolsRefusal?.({ ...type, tools: ['Bash'] })).toContain('zero tools')
-  expect(ports.toolsRefusal?.({ ...type, tools: ['Read'] })).toBeUndefined()
-  expect(ports.toolsRefusal?.(type)).toBeUndefined()
-})
-
-test('the delegate ports carry the run agent’s Agent(...) allowlist', () => {
-  const base = { catalog: [], defaultCwd: '/tmp', rootSessionId: 'root' }
-  expect(agentLaunchPorts({ ...base, allowedAgentTypes: ['worker'] }).allowedAgentTypes).toEqual([
-    'worker',
-  ])
-  expect(agentLaunchPorts(base).allowedAgentTypes).toBeUndefined()
+  const type = (tools?: string[]): TaskAgentType => testCatalogAgent('w', tools ? { tools } : {})
+  expect(ports.toolsRefusal?.(type(['Bash']))).toContain('zero tools')
+  expect(ports.toolsRefusal?.(type(['Read']))).toBeUndefined()
+  expect(ports.toolsRefusal?.(type())).toBeUndefined()
 })

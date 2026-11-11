@@ -1,9 +1,7 @@
 import { mcpInputSchema, type AgentTool, type AgentToolResult } from '@localixai/agent/agents'
 import { isBlockedThrow } from '../agent-core/tools/tool-error-result'
 import { singleCalls } from '../ext/cc-tool-shapes'
-import type { ModScene } from './contracts'
-import { agentOf } from './event-scope'
-import type { ModsHost } from './host'
+import { agentOf, fireIn, hearsIn, type ModEventScope } from './event-scope'
 import { coreAnswer, resultOf } from './tool-answers'
 import { errorMessage } from '../../lib/errors'
 import { withheldResultText, type ToolCallEnd, toolCallEvent, toolInputOf } from '../plugins/kit'
@@ -25,27 +23,17 @@ import { withheldResultText, type ToolCallEnd, toolCallEvent, toolInputOf } from
 export const modToolName = (plugin: string, name: string) =>
   `mcp__${plugin}__${name}`.replace(/[^A-Za-z0-9_-]/g, '_')
 
-/** The tools this run's mods registered. */
-const scopedTools = (scope: ModToolScope) =>
-  scope.host.registry.tools().filter((tool) => scope.plugins.has(tool.instance))
+/** The tools this run's mods registered (`$.tool.register`), as the kit names them. */
+const scopedTools = (scope: Pick<ModEventScope, 'kit'>) => scope.kit.registered.tools()
 
 type Fields = Record<string, unknown>
-
-export interface ModToolScope {
-  host: ModsHost
-  scene: ModScene
-  /** The mod instances of the project where the call happens. */
-  plugins: ReadonlySet<string>
-  /** A delegated child's call: its session id (`agentId`). */
-  agentId?: string
-}
 
 type Execute = AgentTool['execute']
 
 /** One single-file call of `tool` through `tool.call`. */
 async function callThrough(
   tool: AgentTool,
-  scope: ModToolScope,
+  scope: ModEventScope,
   args: Parameters<Execute>,
 ): Promise<AgentToolResult> {
   const [toolCallId, input, signal, onUpdate, context] = args
@@ -55,7 +43,8 @@ async function callThrough(
   let ran: AgentToolResult = { content: '' }
   let end: ToolCallEnd = 'not-run'
   let refused = undefined as { error: unknown; reason: string } | undefined
-  const answer = await scope.host.dispatch(
+  const answer = await fireIn(
+    scope,
     'tool.call',
     { ...seen, ...agentOf(scope) },
     async (event) => {
@@ -77,9 +66,6 @@ async function callThrough(
       }
       return coreAnswer(tool, local, ran, scope.scene.cwd)
     },
-    scope.scene,
-    scope.plugins,
-    undefined,
     signal,
   )
   // The refusal handed back as it came keeps its own shape (whose refusal, the sentence the
@@ -94,10 +80,10 @@ async function callThrough(
 }
 
 /** Run each tool through `tool.call`; the same array when no enabled mod hooks it. */
-export function wrapInToolCall(tools: readonly AgentTool[], scope: ModToolScope): AgentTool[] {
-  if (!scope.host.hears('tool.call', scope.plugins)) return [...tools]
+export function wrapInToolCall(tools: readonly AgentTool[], scope: ModEventScope): AgentTool[] {
+  if (!hearsIn(scope, 'tool.call')) return [...tools]
   // A mod's own tool fires `tool.call` itself (`modTools`): wrapping it again would fire it twice.
-  const own = new Set(scopedTools(scope).map((tool) => modToolName(tool.plugin, tool.name)))
+  const own = new Set(scopedTools(scope).map((tool) => tool.fullName))
   return tools.map((tool) =>
     own.has(tool.name)
       ? tool
@@ -126,9 +112,9 @@ export function wrapInToolCall(tools: readonly AgentTool[], scope: ModToolScope)
 }
 
 /** The tools the enabled mods registered, each answered by their `tool.call` hooks. */
-export function modTools(scope: ModToolScope): AgentTool[] {
+export function modTools(scope: ModEventScope): AgentTool[] {
   return scopedTools(scope).map((spec) => {
-    const name = modToolName(spec.plugin, spec.name)
+    const name = spec.fullName
     return {
       name,
       label: `${spec.plugin} · ${spec.name}`,
@@ -140,13 +126,11 @@ export function modTools(scope: ModToolScope): AgentTool[] {
           content: `No hook of ${spec.plugin} answered ${name}`,
           isError: true,
         }
-        const answer = await scope.host.dispatch(
+        const answer = await fireIn(
+          scope,
           'tool.call',
           { ...toolCallEvent({ name }, input, toolCallId), ...agentOf(scope) },
           () => ({ result: unanswered.content, text: unanswered.content, isError: true }),
-          scope.scene,
-          scope.plugins,
-          undefined,
           signal,
         )
         return resultOf(answer, unanswered)

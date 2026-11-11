@@ -1,17 +1,18 @@
+import type { ModsHost as KitModsHost } from '@rsaryev/llx-plugin/mods'
 import type { ModScene } from './contracts'
 import type { ModsHost } from './host'
 import { answerKey } from './answer-cache'
 
 /**
- * Where a run's mod events go: the conversation's scene and the instances of the mods enabled
- * there. Every event of a run is fired through these helpers, so each one is limited to the run's
- * instances and costs nothing when none of them hooks it.
+ * Where a run's mod events go: the conversation's scene and the kit's mods host that runs its mods
+ * (`session/session-host.ts`). Every event of a run is fired through these helpers, so each costs
+ * nothing when no loaded mod hooks it.
  */
 export interface ModEventScope {
   host: ModsHost
+  /** The conversation's mods host: its chain, its `$`, its interface. */
+  kit: KitModsHost
   scene: ModScene
-  /** The mod instances of the project where the run happens. */
-  plugins: ReadonlySet<string>
   /** A delegated child's run: its session id, the `agentId` its turn and tool events carry. */
   agentId?: string
 }
@@ -20,15 +21,35 @@ export interface ModEventScope {
 export const agentOf = (scope: { agentId?: string }) =>
   scope.agentId ? { agentId: scope.agentId } : {}
 
-export const hearsIn = (scope: ModEventScope, event: string): boolean =>
-  scope.plugins.size > 0 && scope.host.hears(event, scope.plugins)
+export const hearsIn = (scope: Pick<ModEventScope, 'kit'>, event: string): boolean =>
+  scope.kit.chain.hears(event)
 
+/** The kit's `fire` by an event's name alone: Localix builds each event's input itself. */
+type FireByName = (
+  name: string,
+  input: unknown,
+  options: { core: (e: unknown) => Promise<unknown>; signal?: AbortSignal },
+) => Promise<unknown>
+
+/**
+ * The event through the conversation's chain; `core` is Localix's own behaviour at its end. An
+ * event abandoned before its end (the turn stopped) runs nothing of Localix's: the kit skips a hook
+ * that failed and goes on to core, and a hook that held a tool call fails as the turn stops.
+ */
 export const fireIn = (
-  scope: ModEventScope,
+  scope: Pick<ModEventScope, 'kit'>,
   event: string,
   input: unknown,
   core: (event: unknown) => unknown,
-): Promise<unknown> => scope.host.dispatch(event, input, core, scope.scene, scope.plugins)
+  signal?: AbortSignal,
+): Promise<unknown> =>
+  (scope.kit.fire as unknown as FireByName)(event, input, {
+    core: async (e) => {
+      signal?.throwIfAborted()
+      return core(e)
+    },
+    ...(signal ? { signal } : {}),
+  })
 
 /** An answer kept for the conversation until `$.ui.invalidate(event)` (`answer-cache.ts`). */
 export const cachedIn = <T>(
@@ -39,7 +60,11 @@ export const cachedIn = <T>(
 ): Promise<T> =>
   scope.host.answers.through(
     event,
-    answerKey(scope.scene.sessionId ?? '', [...scope.plugins].sort(), ...parts),
+    answerKey(
+      scope.scene.sessionId ?? '',
+      scope.kit.active().map((mod) => mod.name),
+      ...parts,
+    ),
     compute,
   )
 

@@ -81,17 +81,15 @@ describe("Claude Code's permission rules at a Localix call", () => {
     expect(settingsVerdict(rules, tool, {})?.effect).toBe('deny')
   })
 
-  test('a bare deny takes a tool away only when it removes every Claude Code name the tool has', () => {
+  test('a bare deny of any Claude Code name the tool has takes it away, an MCP tool by its address', () => {
     expect(settingsRemovesTool(rulesOf(entry('deny', 'Write')), { name: 'Write' })).toBe(true)
     expect(settingsRemovesTool(rulesOf(entry('deny', 'Bash(rm *)')), { name: 'Bash' })).toBe(false)
-    // Localix's Research both searches and fetches: one of the two denied leaves it in place.
-    expect(settingsRemovesTool(rulesOf(entry('deny', 'WebFetch')), { name: 'Research' })).toBe(
-      false,
-    )
-    const both = rulesOf(entry('deny', 'WebFetch'), entry('deny', 'WebSearch'))
-    expect(settingsRemovesTool(both, { name: 'Research' })).toBe(true)
+    // Localix's Research both searches and fetches: one grant, gone with either name (the kit's rule).
+    expect(settingsRemovesTool(rulesOf(entry('deny', 'WebFetch')), { name: 'Research' })).toBe(true)
+    expect(settingsRemovesTool(rulesOf(entry('deny', 'Grep')), { name: 'Research' })).toBe(false)
     const mcp = { name: 'github_issue', aliases: ['mcp__github__issue'] }
     expect(settingsRemovesTool(rulesOf(entry('deny', 'mcp__*')), mcp)).toBe(true)
+    expect(settingsRemovesTool(rulesOf(entry('deny', 'mcp__other')), mcp)).toBe(false)
   })
 
   test('an Agent deny names the subagent types it keeps from the model', () => {

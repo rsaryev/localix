@@ -1,7 +1,8 @@
 import { InvalidRequestError, NotFoundError } from '../../../lib/domain-errors'
 import { basename, dirname } from 'node:path'
 
-import type { PluginIssue, ScopeSkills } from '../../plugins/kit'
+import type { ScopeSkills } from '../../plugins/kit'
+import type { PluginIssue } from '@rsaryev/llx-plugin/format'
 import { removeSkill, skillFolderOf, writeSkill } from '../skill-files'
 import { toSkillRecord, type SkillInput, type SkillRecord } from './skills'
 
@@ -28,7 +29,7 @@ function validationOf(issues: readonly PluginIssue[], path: string | undefined) 
 /** The skills of the scope's own folders (a plugin's are its plugin's page), with their issues. */
 async function folderSkills(ctx: SkillOpsContext, userId: string, projectId: string | null) {
   const listed = await ctx.scopeSkills(userId, projectId)
-  return { listed, skills: listed.skills.filter((skill) => !skill.plugin) }
+  return { listed, skills: listed.skills.filter((skill) => skill.source.kind !== 'plugin') }
 }
 
 /**
@@ -45,7 +46,7 @@ export async function listSkills(
   const { listed, skills } = await folderSkills(ctx, userId, projectId)
   return {
     skills: skills.map((skill) => {
-      const validation = validationOf(listed.issues, skill.path)
+      const validation = validationOf(listed.issues, skill.file)
       return toSkillRecord(skill, projectId ?? '', validation ? { validation } : {})
     }),
   }
@@ -67,11 +68,11 @@ export async function getSkill(
 ): Promise<SkillRecord> {
   const projectId = opts?.projectId ?? null
   const { listed, skills } = await folderSkills(ctx, userId, projectId)
-  const skill = skills.find((entry) => entry.name === name)
-  const content = skill ? await listed.content(skill.name) : undefined
+  const skill = skills.find((entry) => entry.invocable.command === name)
+  const content = skill ? await listed.content(skill.invocable.command) : undefined
   if (!skill || content === undefined)
     throw new NotFoundError('skill_not_found', `Skill "${name}" not found`)
-  const validation = validationOf(listed.issues, skill.path)
+  const validation = validationOf(listed.issues, skill.file)
   return toSkillRecord(skill, projectId ?? '', { content, ...(validation ? { validation } : {}) })
 }
 

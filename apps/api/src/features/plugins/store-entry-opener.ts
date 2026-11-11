@@ -1,5 +1,5 @@
 import { NotFoundError } from '../../lib/domain-errors'
-import type { MarketplaceEntry } from './kit'
+import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
 import { catalogAt, resolveEntrySource } from './kit'
 import { parseMarketplaceRef } from './marketplace-source'
 import { scanPluginContents, type PluginContents } from './store-contents'

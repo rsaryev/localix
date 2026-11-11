@@ -6,7 +6,8 @@ import { dirname, join } from 'node:path'
 import { MANIFEST_FILE as CLAUDE_CODE_PLUGIN_MANIFEST } from '@localixai/claude-plugin'
 
 import { CC_INERT_HOOK_EVENTS } from '../cc-hooks/contracts'
-import { CLAUDE_CODE_MARKETPLACE, marketplaceOnlyHint } from './claude-code-marketplace'
+import { marketplaceOnlyHint } from './claude-code-marketplace'
+import { DEFAULT_MARKETPLACE_PATH } from './kit'
 import { loadManifest } from './discovery'
 import { validatePlugin } from './validate'
 
@@ -42,7 +43,7 @@ async function writeAndLoad(manifest: Record<string, unknown>) {
 describe('Claude Code marketplace detection', () => {
   it('names a marketplace-only folder so installing it by path points at marketplace add', async () => {
     expect(await marketplaceOnlyHint(dir)).toBeNull()
-    await write(CLAUDE_CODE_MARKETPLACE, { name: 'm', owner: { name: 'o' }, plugins: [] })
+    await write(DEFAULT_MARKETPLACE_PATH, { name: 'm', owner: { name: 'o' }, plugins: [] })
     expect(await marketplaceOnlyHint(dir)).toContain('/plugin marketplace add')
   })
 })

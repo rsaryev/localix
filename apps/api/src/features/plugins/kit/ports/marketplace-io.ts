@@ -12,6 +12,7 @@ import type {
 } from '@rsaryev/llx-plugin/marketplace'
 import { errorMessage } from '../../../../lib/errors'
 import { scanZip, type ZipMember } from '../../marketplace-zip-scan'
+import { cloneUrl } from '../marketplace/sources'
 import { diskFiles } from './files'
 
 /**
@@ -65,10 +66,7 @@ export function gitTags(listTags: (url: string) => Promise<readonly string[]>): 
   return {
     async list(repository, signal) {
       if (signal.aborted) return { failure: 'aborted', message: 'The tag listing was cancelled' }
-      const url =
-        'shorthand' in repository
-          ? `https://github.com/${repository.shorthand}.git`
-          : repository.url
+      const url = cloneUrl(repository)
       try {
         return await listTags(url)
       } catch (error) {

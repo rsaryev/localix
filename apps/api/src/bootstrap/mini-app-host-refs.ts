@@ -2,7 +2,7 @@ import type { WakeRequest } from '../features/chat/contracts'
 import type { createAgentsService } from '../features/agents/service'
 import type { createChatService } from '../features/chat/service'
 import type { WakeDelivery } from '../features/triggers/delivery'
-import type { ModAgentGroup } from '../features/mods/registry'
+import type { ModAgentGroup } from '../features/mods/host'
 
 /**
  * The LATE-BOUND references a mini app host reads through.

@@ -12,11 +12,10 @@ import { parsePluginCommandArgs, renderPluginPrompt } from './plugin-commands'
 import type { MessageBinding } from '@localixai/agent'
 import { resolveMessageBindings } from './message-bindings'
 import type { SessionRecord } from '../repository'
-import { resolveModelAlias } from '../../agent-core/model-alias'
 import { nextActivatedTools } from '../runtime/run/tool-deferral'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext } from './command-handlers-context'
-import { findSessionSkill } from '../../plugins/kit'
+import { findSessionSkill, resolveModelAlias } from '../../plugins/kit'
 import { SkillCommandFailedError } from './skill-commands'
 
 /**
@@ -72,7 +71,7 @@ export async function handlePluginCommand(
     // later in the dispatch.
     const kitSession = await ctx.chatPluginSession?.(userId, session)
     const runs = kitSession && findSessionSkill(kitSession, `${match.plugin}:${match.command.name}`)
-    if (runs?.kind === 'skill' && runs.userInvocable) return null
+    if (runs?.invocable.kind === 'skill' && runs.policy.user) return null
     // No busy refusal: a command sent while the session works waits in the queue whole
     // (`run-macro.ts`). The session's agent answers it.
     const route = sessionRoute(session)

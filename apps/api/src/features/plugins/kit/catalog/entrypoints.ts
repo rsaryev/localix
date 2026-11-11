@@ -1,43 +1,20 @@
-import { realpath } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import type { Plugin } from '@rsaryev/llx-plugin/loading'
-import { readHooksJsonModules, type Monitor } from '@rsaryev/llx-plugin/format'
+import { readHooksJsonModules } from '@rsaryev/llx-plugin/format'
 import { readJsonFile } from '../../../../lib/json'
-import type { PluginMonitor } from '../../contracts-monitors'
 import { readComponents, type PluginCcComponents } from './components'
 
-/** Absolute paths and runtime configs of what a plugin the kit loaded contributes. */
-export interface ResolvedEntrypoints {
-  /** Skill root dirs, each holding `<name>/SKILL.md` (or the skill itself, at its root). */
-  skillDirs: string[]
-  /** MCP server configs keyed by server name, the packaged (`.mcpb`) ones among them. */
-  mcpServers: Record<string, Record<string, unknown>>
-  /** The command files, read as skills too (`plugin-command-skills.ts`). */
-  commandFiles: Array<{ file: string; name: string }>
-  /** The plugin's hooks, merged by the kit, as one settings block for the cc-hooks pipeline. */
+/**
+ * What a plugin the kit loaded contributes, as the kit read it (its MCP and LSP servers and its
+ * monitors, packaged `.mcpb` servers among the MCP ones), plus what Localix derives from it: the
+ * plugin's merged hooks as one settings block for the cc-hooks pipeline, its hooks module (the
+ * plugin is a mod) and its components.
+ */
+export type ResolvedEntrypoints = Pick<Plugin, 'mcpServers' | 'lspServers' | 'monitors'> & {
   hookConfigs: unknown[]
-  /** The hooks module (`modules` in `hooks/hooks.json`), absolute: the plugin is a mod. */
+  /** The hooks module (`modules` in `hooks/hooks.json`), absolute. */
   hookModule?: string
-  /** The LSP servers it declares, as written, keyed by name: what validation notes read. */
-  lspServers: Record<string, { command: string; extensionToLanguage: Record<string, string> }>
-  monitors: PluginMonitor[]
   components?: PluginCcComponents
-}
-
-const monitorOf = ({ name, command, description }: Monitor): PluginMonitor => ({
-  name,
-  command,
-  description,
-})
-
-/** A skill's root: its folder's parent, or the folder itself when it is the plugin's one skill. */
-function skillDirsOf(plugin: Plugin, dir: string): string[] {
-  const roots = plugin.skills.flatMap(({ directory, alone }) => {
-    if (directory === undefined) return []
-    if (directory === '.') return [dir]
-    return [alone ? join(dir, directory) : dirname(join(dir, directory))]
-  })
-  return [...new Set(roots)]
 }
 
 async function hookModuleOf(dir: string): Promise<string | undefined> {
@@ -47,21 +24,13 @@ async function hookModuleOf(dir: string): Promise<string | undefined> {
 }
 
 export async function entrypointsOf(plugin: Plugin, dir: string): Promise<ResolvedEntrypoints> {
-  const [hookModule, real] = await Promise.all([
-    hookModuleOf(dir),
-    // A command file is read as a skill confined to the plugin's real folder.
-    realpath(dir).catch(() => dir),
-  ])
+  const hookModule = await hookModuleOf(dir)
   return {
-    skillDirs: skillDirsOf(plugin, dir),
-    mcpServers: { ...(plugin.mcpServers as Record<string, Record<string, unknown>>) },
-    commandFiles: plugin.commands.flatMap(({ path, name }) =>
-      path === undefined ? [] : [{ file: join(real, path), name }],
-    ),
+    mcpServers: plugin.mcpServers,
     hookConfigs: Object.keys(plugin.hooks).length ? [{ hooks: plugin.hooks }] : [],
     ...(hookModule ? { hookModule } : {}),
-    lspServers: { ...plugin.lspServers },
-    monitors: plugin.monitors.map(monitorOf),
+    lspServers: plugin.lspServers,
+    monitors: plugin.monitors,
     components: readComponents(plugin, dir),
   }
 }

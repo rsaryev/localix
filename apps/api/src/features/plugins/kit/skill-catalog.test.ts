@@ -4,8 +4,9 @@ import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { invokeSkill } from './skills'
 import {
   findSessionSkill,
-  reloadSessionSkills,
   sessionSkills,
+  skillPlugin,
+  skillScope,
   skillListing,
   touchSessionFiles,
   typedSkills,
@@ -30,7 +31,7 @@ async function session(files: Record<string, string>, plugin: Record<string, str
     work(),
     plugins.map((one) => one.root),
   )
-  await reloadSessionSkills(chat, signal)
+  await chat.reloadSkills({ signal })
   return chat
 }
 
@@ -40,22 +41,25 @@ describe('the skills of a chat, as the kit lists and expands them', () => {
       {},
       { 'skills/fancy-folder/SKILL.md': skillFile('name: fancy\ndescription: Fancy things') },
     )
-    const row = sessionSkills(chat).find((one) => one.plugin)
+    const row = sessionSkills(chat).find((one) => one.source.kind === 'plugin')
     const root = join(dir(), 'tools')
     expect(row).toMatchObject({
-      name: 'tools:fancy-folder',
+      invocable: {
+        command: 'tools:fancy-folder',
+        name: 'fancy-folder',
+        description: 'Fancy things',
+      },
       names: ['tools:fancy-folder'],
-      ownName: 'fancy-folder',
-      description: 'Fancy things',
-      plugin: { id: 'tools@test', name: 'tools' },
-      path: join(root, 'skills/fancy-folder/SKILL.md'),
-      dir: join(root, 'skills/fancy-folder'),
+      source: { kind: 'plugin', pluginId: 'tools@test' },
+      file: join(root, 'skills/fancy-folder/SKILL.md'),
+      directory: join(root, 'skills/fancy-folder'),
     })
+    expect(row && skillPlugin(row)).toEqual({ id: 'tools@test', name: 'tools' })
     // Claude Code 2.1.319 and later: the frontmatter `name` gives a scanned plugin skill no name.
     expect(findSessionSkill(chat, 'fancy')).toBeUndefined()
     expect(findSessionSkill(chat, 'tools:fancy')).toBeUndefined()
     for (const one of sessionSkills(chat)) {
-      const invoked = await invokeSkill(chat, one.name, { invoker: 'model', signal })
+      const invoked = await invokeSkill(chat, one.invocable.command, { invoker: 'model', signal })
       expect(invoked.ok).toBe(true)
     }
   })
@@ -67,18 +71,18 @@ describe('the skills of a chat, as the kit lists and expands them', () => {
       ),
       '.claude/commands/tidy.md': skillFile('description: Tidies'),
     })
-    expect(findSessionSkill(chat, 'deploy')).toMatchObject({
-      kind: 'skill',
-      scope: 'project',
-      path: join(work(), '.claude/skills/deploy/SKILL.md'),
-      dir: join(work(), '.claude/skills/deploy'),
-      argumentHint: '[env]',
-      argumentNames: ['env'],
-      userInvocable: true,
-      modelInvocable: false,
+    const deploy = findSessionSkill(chat, 'deploy')
+    expect(deploy).toMatchObject({
+      invocable: { kind: 'skill', argumentHint: '[env]', arguments: ['env'] },
+      file: join(work(), '.claude/skills/deploy/SKILL.md'),
+      directory: join(work(), '.claude/skills/deploy'),
+      policy: { user: true, model: false },
       listed: 'hidden',
     })
-    expect(findSessionSkill(chat, 'tidy')).toMatchObject({ kind: 'command', scope: 'project' })
+    expect(deploy && skillScope(deploy)).toBe('project')
+    const tidy = findSessionSkill(chat, 'tidy')
+    expect(tidy?.invocable.kind).toBe('command')
+    expect(tidy && skillScope(tidy)).toBe('project')
     expect(findSessionSkill(chat, 'nope')).toBeUndefined()
   })
 
@@ -88,7 +92,7 @@ describe('the skills of a chat, as the kit lists and expands them', () => {
       { 'skills/fancy/SKILL.md': skillFile('description: Fancy') },
     )
     const typed = typedSkills(chat, '/tools:fancy /deploy staging')
-    expect(typed.leading.map((one) => one.name)).toEqual(['tools:fancy', 'deploy'])
+    expect(typed.leading.map((one) => one.invocable.command)).toEqual(['tools:fancy', 'deploy'])
     expect(typed.arguments).toBe('staging')
     const named = typedSkills(chat, 'go ahead and /deploy now')
     expect(named.leading).toEqual([])
@@ -119,6 +123,7 @@ describe('the skills of a chat, as the kit lists and expands them', () => {
     })
     expect(findSessionSkill(chat, 'migrate')).toBeUndefined()
     await touchSessionFiles(chat, [join(work(), 'apps/api/db.ts')], signal)
-    expect(findSessionSkill(chat, 'migrate')).toMatchObject({ scope: 'project' })
+    const migrate = findSessionSkill(chat, 'migrate')
+    expect(migrate && skillScope(migrate)).toBe('project')
   })
 })

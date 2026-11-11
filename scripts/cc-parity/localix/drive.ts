@@ -8,7 +8,7 @@ import { sessionReadOf } from '../../../apps/api/src/bootstrap/mods-session'
 import type { PersistedMessage } from '../../../apps/api/src/features/chat/contracts'
 import type { ModsPorts, ModSource } from '../../../apps/api/src/features/mods/contracts'
 import { createModsHost } from '../../../apps/api/src/features/mods/host'
-import { instanceIdOf } from '../../../apps/api/src/features/mods/instance-id'
+import { paneInstanceOf } from '../../../apps/api/src/features/mods/panes'
 import { createModRunScope } from '../../../apps/api/src/features/mods/run-scope'
 import { PROBE_PLUGIN } from './fixtures'
 
@@ -89,13 +89,13 @@ function writeTool(written: string[]): AgentTool {
   }) as AgentTool
 }
 
-async function startHost(dir: string, output: string, stored: Stored, reports: string[]) {
+async function startHost(dir: string, stored: Stored, reports: string[]) {
   const host = createModsHost(ports(dir, stored, reports), { vms })
   const source: ModSource = {
     plugin: PROBE_PLUGIN.name,
     root: PROBE_PLUGIN.root,
     module: PROBE_PLUGIN.module,
-    options: { output, allowModel: true },
+    options: {},
     revision: '1',
   }
   await host.reconcile([source])
@@ -105,26 +105,27 @@ async function startHost(dir: string, output: string, stored: Stored, reports: s
 }
 
 /** Session one: `/probe` in a conversation with no turn yet. */
-async function commandSession(dir: string, output: string, reports: string[]) {
+async function commandSession(dir: string, reports: string[]) {
   const stored: Stored = new Map([['s-command', []]])
-  const host = await startHost(dir, output, stored, reports)
+  const host = await startHost(dir, stored, reports)
   const plugins = new Set([PROBE_PLUGIN.name])
   await host.runCommand(
     { command: 'probe', args: '' },
     { userId: 'u', sessionId: 's-command', cwd: dir },
     plugins,
   )
-  await host.panes.render(instanceIdOf(PROBE_PLUGIN.name, dir), 'cc-parity-probe')
+  // The conversation's mods host is the session's: its pane is named by the session id.
+  await host.panes.render(paneInstanceOf(PROBE_PLUGIN.name, 's-command'), 'cc-parity-probe')
   // The band above the conversation's prompt box, as its composer draws it.
   await host.band.render('s-command', { columns: 100, rows: 12 })
   await host.stop()
 }
 
 /** Session two: a turn that writes one file with the Write tool, then answers in one line. */
-async function turnSession(dir: string, output: string, reports: string[]) {
+async function turnSession(dir: string, reports: string[]) {
   const sessionId = 's-turn'
   const stored: Stored = new Map([[sessionId, []]])
-  const host = await startHost(dir, output, stored, reports)
+  const host = await startHost(dir, stored, reports)
   const scene = { userId: 'u', sessionId, cwd: dir }
   const scope = await createModRunScope(host, scene, new Set([PROBE_PLUGIN.name]), {
     model: MODEL,
@@ -198,12 +199,27 @@ async function turnSession(dir: string, output: string, reports: string[]) {
   if (written.length !== 1) throw new Error('the Write tool did not run in the Localix turn')
 }
 
+function restoreEnv(name: string, value: string | undefined) {
+  if (value === undefined) delete process.env[name]
+  else process.env[name] = value
+}
+
 /** Run the probe through both sessions in `dir`, and return what it recorded. */
 export async function observeLocalix(dir: string): Promise<LocalixRecording> {
   const output = join(dir, 'probe.json')
   const reports: string[] = []
-  await commandSession(dir, output, reports)
-  await turnSession(dir, output, reports)
+  // The probe reads where to write and whether it may call the model from its environment, as
+  // Claude Code's run hands them (`lib/claude.mjs`): a mod gets only the options its manifest declares.
+  const saved = { out: process.env.CC_PARITY_OUT, model: process.env.CC_PARITY_ALLOW_MODEL }
+  process.env.CC_PARITY_OUT = output
+  process.env.CC_PARITY_ALLOW_MODEL = '1'
+  try {
+    await commandSession(dir, reports)
+    await turnSession(dir, reports)
+  } finally {
+    restoreEnv('CC_PARITY_OUT', saved.out)
+    restoreEnv('CC_PARITY_ALLOW_MODEL', saved.model)
+  }
   if (!existsSync(output))
     throw new Error(`the probe wrote nothing in Localix: ${reports.join('; ') || 'no reports'}`)
   return JSON.parse(readFileSync(output, 'utf8')) as LocalixRecording

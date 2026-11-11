@@ -9,7 +9,7 @@ import type { AgentRuntime, LanguageModelFactory, ScriptSandbox } from '@localix
 import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
 import type { ExternalAgentsPort } from '../../external-agents/contracts'
 
-import type { LoadedPluginAgent } from '../../plugins/loader-contract'
+import type { CatalogAgent } from '@rsaryev/llx-plugin/agents'
 import type { AppDatabase } from '../../../db'
 import type { CatalogService } from '../../catalog/service'
 import type { ProviderConnectionsService } from '../../provider-connections/service'
@@ -215,7 +215,7 @@ export interface ChatServiceDeps {
    * The agent the main thread runs as in a project: the `agent` of Claude Code's settings, else an
    * enabled plugin's default `agent` (the agents' catalog). Null: none, or it is not available.
    */
-  resolveMainAgent?: (userId: string, projectId: string | null) => Promise<LoadedPluginAgent | null>
+  resolveMainAgent?: (userId: string, projectId: string | null) => Promise<CatalogAgent | null>
   /** Complete scope-aware catalog roster used only to describe agents to the model. */
   listRegistryAgents?: (
     userId: string,

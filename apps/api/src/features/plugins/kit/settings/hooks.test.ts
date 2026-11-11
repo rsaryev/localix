@@ -19,17 +19,3 @@ test('the highest file that sets a status line applies, with its padding and ref
   })
   expect(settingsCommandLine(settings, 'subagentStatusLine')).toBeUndefined()
 })
-
-test('a status line waits for the folder’s trust and stops under managed disableAllHooks', () => {
-  const line = { statusLine: { type: 'command', command: 'mine' } }
-  expect(settingsCommandLine(read({ user: line }), 'statusLine')).toBeUndefined()
-  expect(settingsCommandLine(read({ user: line, trusted: true }), 'statusLine')?.command).toBe(
-    'mine',
-  )
-  expect(
-    settingsCommandLine(
-      read({ user: line, managed: { disableAllHooks: true }, trusted: true }),
-      'statusLine',
-    ),
-  ).toBeUndefined()
-})

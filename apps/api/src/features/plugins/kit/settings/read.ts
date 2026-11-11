@@ -7,6 +7,7 @@ import {
   policyContext,
   readSettingsLayer,
   resolvePolicy,
+  type FileScope,
   type GeneralView,
   type ManagedComposition,
   type PolicyLayer,
@@ -37,10 +38,14 @@ import { folderTrusted } from './trust'
  */
 
 export type Settings = PolicyLayer['settings']
-export type SettingsFileScope = 'user' | 'project' | 'local' | 'managed'
+
+const FILE_SCOPES: ReadonlySet<string> = new Set<FileScope>(['user', 'project', 'local', 'managed'])
+
+/** A settings file a person can name: the four scopes the kit's `FileScope` holds. */
+export const isFileScope = (scope: string): scope is FileScope => FILE_SCOPES.has(scope)
 
 export interface SettingsFile {
-  scope: SettingsFileScope
+  scope: FileScope
   file: string
   /** Where a `/path` permission rule of this file anchors (permissions.md, "Where a pattern anchors"). */
   anchorDir: string
@@ -84,7 +89,7 @@ const jsonOf = (file: string): unknown => {
 }
 
 interface FileRead {
-  scope: Exclude<SettingsFileScope, 'managed'>
+  scope: Exclude<FileScope, 'managed'>
   file: string
   anchorDir: string
 }
@@ -187,10 +192,7 @@ export async function readClaudeSettings(input: ClaudeSettingsInput): Promise<Cl
 }
 
 /** The settings of one scope as the kit merges that scope's files (the two local files as one), or of every scope. */
-export function mergedSettings(
-  settings: ClaudeSettings,
-  scope?: SettingsFileScope,
-): Readonly<Settings> {
+export function mergedSettings(settings: ClaudeSettings, scope?: FileScope): Readonly<Settings> {
   return scope
     ? createGeneralView(settings.layers.filter((one) => one.scope === scope)).merged()
     : settings.view.merged()

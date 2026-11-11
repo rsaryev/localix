@@ -1,10 +1,5 @@
-import {
-  catalogKnows,
-  readKnownMarketplaces,
-  readMarketplace,
-  type KnownMarketplace,
-  type Marketplace,
-} from './kit'
+import { catalogKnows, readKnownMarketplaces, readMarketplace, type KnownMarketplace } from './kit'
+import type { Marketplace } from '@rsaryev/llx-plugin/marketplace'
 import { marketplacesRoot } from './marketplace-source'
 import { errorMessage } from '../../lib/errors'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'

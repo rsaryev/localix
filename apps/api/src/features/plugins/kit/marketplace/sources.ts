@@ -15,6 +15,7 @@ import {
   type CommandOutput,
 } from '@rsaryev/llx-plugin/cli'
 import { issueLine } from '../catalog/read-folder'
+import { hostPlatform } from '../ports/host-io'
 
 /**
  * Where a marketplace comes from, as the kit reads and judges it: what is typed after
@@ -24,12 +25,9 @@ import { issueLine } from '../catalog/read-folder'
  * (`planMarketplaceFetch`). Localix places a local path and runs the plan.
  */
 
-export type { MarketplaceFetchPlan, MarketplaceSource } from '@rsaryev/llx-plugin/marketplace'
 export { describeSource, sameMarketplaceSource }
 
 export type Parsed = MarketplaceSource | { error: string }
-
-const platform = (): 'posix' | 'windows' => (process.platform === 'win32' ? 'windows' : 'posix')
 
 const lineOf = (output: CommandOutput): string =>
   output.kind === 'result' ? output.result.message : output.reason
@@ -46,7 +44,7 @@ export function parseMarketplaceAdd(
   text: string,
   where: { cwd?: string; home?: string } = {},
 ): Parsed {
-  const start = startMarketplaceAdd({ source: text, platform: platform() })
+  const start = startMarketplaceAdd({ source: text, platform: hostPlatform() })
   if (start.kind === 'done') return { error: lineOf(start.output) }
   if (start.kind !== 'fetch') return { error: 'Marketplaces hosted on claude.ai are not supported' }
   const { source } = start

@@ -1,5 +1,5 @@
 import { agentMemory, type AgentMemoryContext } from '../../../plugins/kit'
-import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
+import type { CatalogAgent } from '@rsaryev/llx-plugin/agents'
 
 /**
  * What a run as an agent type takes from the agent file beyond its prompt and tools
@@ -18,14 +18,15 @@ export interface SubagentRunOptions {
 }
 
 export async function subagentRunOptions(
-  agent: Pick<LoadedPluginAgent, 'name' | 'autoCompactWindow' | 'memory'>,
+  agent: Pick<CatalogAgent, 'name' | 'definition'>,
   context: AgentMemoryContext,
 ): Promise<SubagentRunOptions> {
+  const { autoCompactWindow, memory: scope } = agent.definition
   const options: SubagentRunOptions = {
     enableTools: [],
-    ...(agent.autoCompactWindow ? { contextLimit: agent.autoCompactWindow } : {}),
+    ...(autoCompactWindow ? { contextLimit: autoCompactWindow } : {}),
   }
-  const memory = await agentMemory(agent.memory, agent.name, context)
+  const memory = await agentMemory(scope, agent.name, context)
   if (!memory) return options
   const dir = memory.directory
   options.memoryDir = dir

@@ -86,6 +86,7 @@ import type { HostRouteContext } from '@localixai/mini-app-sdk/backend'
 import { createUiLocationCatalogRoutes } from './features/ui-locations/routes'
 import type { UiLocationCatalogService } from './features/ui-locations/service'
 import { INERT_MOD_PORTS } from './features/mods/contracts'
+import { NO_MOD_VMS } from './features/mods/isolation/mod-vm'
 
 export type AppContext = HostRouteContext
 
@@ -280,7 +281,7 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
     .route('/rpc/storage', createStorageRoutes(deps.storageService))
     .route(
       '/rpc/mods',
-      createModRoutes(deps.modsHost ?? createModsHost(INERT_MOD_PORTS), {
+      createModRoutes(deps.modsHost ?? createModsHost(INERT_MOD_PORTS, { vms: NO_MOD_VMS }), {
         sessionViewed: (...args) => deps.chatService.statusLine?.viewed(...args),
       }),
     )

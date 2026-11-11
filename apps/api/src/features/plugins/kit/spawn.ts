@@ -1,19 +1,20 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { AgentMcpServerSpec, HooksSettings } from '@rsaryev/llx-plugin'
 import {
   agentHookGroups,
+  catalogTier,
   hooksTrustGate,
   modelFamily,
   planAgentMemory,
-  planPreloadedSkills,
   resolveAgentMcpServers,
   resolveSubagentModel,
   resolveSubagentPermissionMode,
+  type CatalogAgent,
+  type CatalogSource,
   type MemoryPlan,
   type ModelAlias,
 } from '@rsaryev/llx-plugin/agents'
-import type { AgentSource } from '@rsaryev/llx-plugin/format'
+import type { AgentMemoryScope, AgentSource } from '@rsaryev/llx-plugin/format'
 import { bestModelForFamily } from './model-alias'
 import type { AgentPermissionMode } from '../../../contracts/agent-permission-mode'
 import type { PermissionMode } from '../../../contracts/permission-modes'
@@ -22,29 +23,6 @@ import type { PermissionMode } from '../../../contracts/permission-modes'
  * What a subagent starts with, as Claude Code defines it (sub-agents.md): the kit plans, Localix
  * runs the child. Each function here is the kit's rule seen through Localix's own records.
  */
-
-/** A skill as the preload plan needs it: found by the name an agent file writes. */
-export interface PreloadableSkill {
-  disableModelInvocation?: boolean
-}
-
-/**
- * The skills an agent file's `skills` preloads: the first 32 distinct names, a missing or
- * `disable-model-invocation` one skipped in its place (sub-agents.md, "Preload skills into
- * subagents").
- */
-export function preloadedSkillNames(
-  names: readonly string[],
-  skillOf: (name: string) => PreloadableSkill | undefined,
-): readonly string[] {
-  return planPreloadedSkills(names, {
-    has: (name) => skillOf(name) !== undefined,
-    isModelInvocable: (name) => skillOf(name)?.disableModelInvocation !== true,
-  }).load
-}
-
-export type AgentMemoryScope = 'user' | 'project' | 'local'
-export type AgentMemory = MemoryPlan
 
 export interface AgentMemoryContext {
   projectDir: string
@@ -64,7 +42,7 @@ export async function agentMemory(
   scope: AgentMemoryScope | undefined,
   agentType: string,
   context: AgentMemoryContext,
-): Promise<AgentMemory | undefined> {
+): Promise<MemoryPlan | undefined> {
   if (scope === undefined) return undefined
   return planAgentMemory(scope, agentType, {
     autoMemoryEnabled: context.autoMemoryEnabled(),
@@ -78,16 +56,11 @@ export async function agentMemory(
   })
 }
 
-const AGENT_SOURCES: ReadonlySet<string> = new Set<AgentSource>([
-  'managed',
-  'flag',
-  'project',
-  'user',
-  'plugin',
-])
-
-const agentSourceOf = (source: string | undefined): AgentSource | undefined =>
-  source !== undefined && AGENT_SOURCES.has(source) ? (source as AgentSource) : undefined
+/** The row of the priority table a catalog agent ranks by; none for a built-in type, which has no file. */
+const fileSourceOf = (source: CatalogSource): AgentSource | undefined => {
+  const tier = catalogTier(source)
+  return tier === 'builtin' ? undefined : tier
+}
 
 /** An agent's `mcpServers` as the kit resolves them; inline definitions kept as written. */
 export interface AgentMcpSpecs {
@@ -104,15 +77,15 @@ export interface AgentMcpSpecs {
  * run gathers its servers, as for every other server.
  */
 export function agentMcpSpecs(
-  specs: readonly unknown[] | undefined,
-  agent: { source?: string; folderTrusted: boolean },
+  agent: Pick<CatalogAgent, 'source' | 'definition'>,
+  folderTrusted: boolean,
 ): AgentMcpSpecs {
-  const source = agentSourceOf(agent.source)
+  const source = fileSourceOf(agent.source)
   if (!source) return { references: [], inline: {}, skipped: [] }
   const allowAll = { allows: () => true, managedAllows: () => true }
-  const resolved = resolveAgentMcpServers(specs as readonly AgentMcpServerSpec[] | undefined, {
+  const resolved = resolveAgentMcpServers(agent.definition.mcpServers, {
     source,
-    folderTrusted: agent.folderTrusted,
+    folderTrusted,
     policy: allowAll,
   })
   return {
@@ -128,13 +101,13 @@ export function agentMcpSpecs(
  * has no file, so no hooks.
  */
 export function agentHooksRun(
-  agent: { source?: string; hooks?: unknown },
+  agent: Pick<CatalogAgent, 'source' | 'hooks'>,
   folderTrusted: boolean,
 ): boolean {
-  const own = agentSourceOf(agent.source)
+  const own = fileSourceOf(agent.source)
   const { hooks } = agent
   if (!own || hooks === undefined) return false
-  const groups = agentHookGroups({ source: own, hooks: hooks as HooksSettings }, 'subagent')
+  const groups = agentHookGroups({ source: own, hooks }, 'subagent')
   return Object.keys(groups).length > 0 && hooksTrustGate(own, folderTrusted) === 'run'
 }
 
