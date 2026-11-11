@@ -11,10 +11,11 @@ import {
   resolveSubagentModel,
   resolveSubagentPermissionMode,
   type MemoryPlan,
+  type ModelAlias,
 } from '@rsaryev/llx-plugin/agents'
 import type { AgentSource } from '@rsaryev/llx-plugin/format'
+import { bestModelForFamily } from './model-alias'
 import type { AgentPermissionMode } from '../../../contracts/agent-permission-mode'
-import { bestModelForFamily, type ModelAliasFamily } from '../../agent-core/model-alias'
 import type { PermissionMode } from '../../../contracts/permission-modes'
 
 /**
@@ -216,7 +217,7 @@ export function subagentModelRoute(
   })
   const routed =
     kind === 'alias'
-      ? bestModelForFamily(model as ModelAliasFamily, context.available)
+      ? bestModelForFamily(model as ModelAlias, context.available)
       : kind === 'full-id' && context.available.includes(model)
         ? model
         : undefined

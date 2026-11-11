@@ -1,5 +1,4 @@
 import type { McpServerRecord } from '../mcp/repository'
-import type { DiscoveredSkill } from '../agent-core/skill-discovery'
 import type { PluginAgent } from './contracts'
 import type { PluginOutputStyle } from './output-styles'
 import type { ScopePlugin } from './kit'
@@ -61,8 +60,6 @@ export interface LoadedPlugins {
   binDirs: string[]
   /** Synthesized MCP server records to merge into the lazy per-turn gather. */
   mcpServers: McpServerRecord[]
-  /** Bundled skills to fold into the filesystem skill list. */
-  skills: DiscoveredSkill[]
   /**
    * Claude Code output styles from enabled plugins, offered as `<plugin>:<name>` (`/output-style`).
    * One marked `forceForPlugin` applies whenever its plugin is enabled; the first loaded wins.
@@ -97,7 +94,6 @@ export function emptyLoadedPlugins(): LoadedPlugins {
   return {
     binDirs: [],
     mcpServers: [],
-    skills: [],
     outputStyles: [],
     loaded: [],
     awaitingConsent: [],

@@ -7,7 +7,6 @@ import type { PermissionRule } from '../../agent-core/permission-engine'
  * own leaf so the dispatcher file (command-handlers.ts) stays focused on dispatch.
  */
 import type { ChatServiceDeps } from './context'
-import type { SkillRecord } from './skills'
 import type { SkillShellPolicy } from './skill-commands'
 import type { createChatRepository, SessionRecord } from '../repository'
 import type { AvailabilityWriter } from '../../capabilities/availability'
@@ -24,7 +23,7 @@ import type {
 } from '../contracts'
 import type { ToolSurface } from '@localixai/agent/agents'
 import type { PluginCatalog } from '../../plugins/catalog'
-import type { KitSession } from '../../plugins/kit'
+import type { ChatSkill, KitSession } from '../../plugins/kit'
 import type { SkillOverrides } from '../../agent-core/skill-overrides'
 import type { ToolRequirement } from '../../agent-core/required-tools'
 import type { StoredCommandOutput, StoredSystemNotice } from '../../../db'
@@ -102,7 +101,7 @@ export interface CommandHandlerContext {
     bindings?: MessageBinding[],
     opts?: RunAgentOptions,
   ) => Promise<MessageMutationResponse>
-  gatherSessionSkills: (userId: string, session: SessionRecord) => Promise<SkillRecord[]>
+  gatherSessionSkills: (userId: string, session: SessionRecord) => Promise<ChatSkill[]>
   /** The agent's permission rules a typed skill's commands meet; absent, none are checked. */
   loadSkillCommandRules?: (userId: string, agentId: string) => Promise<PermissionRule[]>
   /** `disableSkillShellExecution` for a skill or command about to render (`plugin-commands.ts`). */

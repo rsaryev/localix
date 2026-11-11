@@ -1,5 +1,4 @@
-import type { DiscoveredSkill } from '../../agent-core/skill-discovery'
-import type { PluginSkill } from '../../plugins/plugin-skills'
+import type { ChatSkill } from '../../plugins/kit'
 import type { SkillCatalogEntry } from '../contracts/skills'
 
 export interface SkillRecord {
@@ -21,26 +20,11 @@ export interface SkillRecord {
    */
   validation?: { errors: string[]; warnings: string[] }
 
-  // ---- CC-compatible frontmatter fields (mirror of DiscoveredSkill CC section) --
+  // The invocation shape a palette needs, as the kit reads the file.
   disableModelInvocation?: boolean
   userInvocable?: boolean
   argumentHint?: string
   argumentNames?: string[]
-  allowedTools?: string[]
-  disallowedTools?: string[]
-  contextFork?: boolean
-  forkAgent?: string
-  preferredModel?: string
-  preferredEffort?: string
-  version?: string
-  /** CC skill frontmatter `hooks` — raw CC hooks map, activated for the skill's run. */
-  hooks?: unknown
-  /** The plugin that ships this skill; its `name` is then `<plugin>:<skill>`. */
-  pluginName?: string
-  /** That plugin's directory (`CLAUDE_PLUGIN_ROOT`). */
-  pluginDir?: string
-  /** That plugin's `CLAUDE_PLUGIN_DATA`. */
-  pluginDataDir?: string
 }
 
 export interface SkillInput {
@@ -51,57 +35,32 @@ export interface SkillInput {
   projectId?: string | null
 }
 
-/** Pick CC-compat optional fields from a DiscoveredSkill (undefined = omit). */
-function pickCcFields(f: DiscoveredSkill): Partial<SkillRecord> {
-  const out: Partial<SkillRecord> = {}
-  if (f.disableModelInvocation) out.disableModelInvocation = true
-  if (f.userInvocable === false) out.userInvocable = false
-  if (f.argumentHint) out.argumentHint = f.argumentHint
-  if (f.argumentNames?.length) out.argumentNames = f.argumentNames
-  if (f.allowedTools?.length) out.allowedTools = f.allowedTools
-  if (f.disallowedTools?.length) out.disallowedTools = f.disallowedTools
-  if (f.contextFork) out.contextFork = true
-  if (f.forkAgent) out.forkAgent = f.forkAgent
-  if (f.preferredModel) out.preferredModel = f.preferredModel
-  if (f.preferredEffort) out.preferredEffort = f.preferredEffort
-  if (f.version) out.version = f.version
-  if (f.hooks !== undefined) out.hooks = f.hooks
-  return out
-}
-
-export function toFileSkillRecord(f: DiscoveredSkill, projectId: string): SkillRecord {
-  const record: SkillRecord = {
-    id: `file:${f.path}`,
-    name: f.name,
-    description: f.description,
-    // Defined as a forwarding accessor below. Runtime slash-command lookup builds
-    // records for the whole roster but should materialize only the selected body.
-    content: '',
+/**
+ * A skill of a scope's own folders as the Skills list shows it, from the kit's row. Its body is
+ * `content` when read (one skill's, when the editor opens it), '' in a listing.
+ */
+export function toSkillRecord(
+  skill: ChatSkill,
+  projectId: string,
+  extra: { content?: string; validation?: SkillRecord['validation'] } = {},
+): SkillRecord {
+  return {
+    id: `file:${skill.path ?? skill.name}`,
+    name: skill.name,
+    description: skill.description,
+    content: extra.content ?? '',
     tags: [],
-    projectId: f.scope === 'project' ? projectId : '',
-    scope: f.scope,
+    projectId: skill.scope === 'project' ? projectId : '',
+    scope: skill.scope,
     source: 'file',
-    path: f.path,
+    ...(skill.path ? { path: skill.path } : {}),
     updatedAt: '',
-    ...pickCcFields(f),
+    ...(extra.validation ? { validation: extra.validation } : {}),
+    ...(skill.modelInvocable ? {} : { disableModelInvocation: true }),
+    ...(skill.userInvocable ? {} : { userInvocable: false }),
+    ...(skill.argumentHint ? { argumentHint: skill.argumentHint } : {}),
+    ...(skill.argumentNames.length ? { argumentNames: [...skill.argumentNames] } : {}),
   }
-  Object.defineProperty(record, 'content', {
-    configurable: false,
-    enumerable: true,
-    get: () => f.content,
-  })
-  return record
-}
-
-/** A plugin's skill as a record named `<plugin>:<skill>`; its body stays lazy. */
-export function toPluginSkillRecord(entry: PluginSkill, projectId: string): SkillRecord {
-  const record = toFileSkillRecord(entry.skill, projectId)
-  record.id = `plugin:${entry.fullName}`
-  record.name = entry.fullName
-  record.pluginName = entry.pluginName
-  record.pluginDir = entry.pluginDir
-  if (entry.skill.pluginDataDir) record.pluginDataDir = entry.skill.pluginDataDir
-  return record
 }
 
 /**

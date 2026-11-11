@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { classifySkillCall, createSkillTool } from './skill'
 import { skillToolInputSchema } from './skill-call'
-import { testSkillPorts } from '../testing/skill-ports'
+import { testSavePorts, testSkillPorts } from '../testing/skill-ports'
 
 const run = (tool: ReturnType<typeof createSkillTool>, input: Record<string, unknown>) =>
   tool.execute('t', input as never)
@@ -71,7 +71,7 @@ describe('skill tool — a save announces the capability change', () => {
 
   test('a save announces once; reads and refusals do not', async () => {
     let announced = 0
-    const tool = createSkillTool(dir, {}, '', () => announced++)
+    const tool = createSkillTool(dir, {}, '', () => announced++, testSavePorts(dir))
 
     await run(tool, { action: 'save', name: NAME, description: 'd', content: 'c' })
     expect(announced).toBe(1)
@@ -81,9 +81,15 @@ describe('skill tool — a save announces the capability change', () => {
   })
 
   test('a throwing announcement never turns a written skill into an error', async () => {
-    const tool = createSkillTool(dir, {}, '', () => {
-      throw new Error('poke failed')
-    })
+    const tool = createSkillTool(
+      dir,
+      {},
+      '',
+      () => {
+        throw new Error('poke failed')
+      },
+      testSavePorts(dir),
+    )
     const saved = await run(tool, { action: 'save', name: NAME, description: 'd', content: 'c' })
     expect(saved.isError).toBeUndefined()
   })
@@ -105,19 +111,24 @@ describe('skill tool — filesystem', () => {
   })
 
   describe('skill tool (filesystem)', () => {
-    test('save writes a SKILL.md file into the project', async () => {
-      const tool = createSkillTool(dir)
-      const saved = await tool.execute('t1', {
+    test("save hands the skill to the host's port, by scope; with no port it is refused", async () => {
+      const ports = testSavePorts(dir)
+      const tool = createSkillTool(dir, {}, '', undefined, ports)
+      const draft = { name: 'deploy-staging', description: 'Deploy', content: 'Run it.' }
+      const saved = await tool.execute('t1', { action: 'save', ...draft, scope: 'project' })
+      expect(saved.content).toBe(
+        `Skill saved: "deploy-staging" → ${dir}/project/skills/deploy-staging/SKILL.md (project)`,
+      )
+      await tool.execute('t2', { action: 'save', ...draft, scope: 'global' })
+      // No project to hold it: the person's.
+      await createSkillTool(null, {}, '', undefined, ports).execute('t3', {
         action: 'save',
-        name: 'deploy-staging',
-        description: 'Deploy to staging',
-        content: 'Run the deploy script.',
+        ...draft,
         scope: 'project',
       })
-      expect(saved.content).toContain('Skill saved: "deploy-staging"')
-      const onDisk = await fs.readFile(join(dir, '.claude/skills/deploy-staging/SKILL.md'), 'utf8')
-      expect(onDisk).toContain('name: deploy-staging')
-      expect(onDisk).toContain('Run the deploy script.')
+      expect(ports.saved.map((one) => one.scope)).toEqual(['project', 'global', 'global'])
+      const refused = await createSkillTool(dir).execute('t4', { action: 'save', ...draft })
+      expect(refused.isError).toBe(true)
     })
 
     test('get returns not found for a missing skill', async () => {
@@ -207,23 +218,6 @@ describe('skill tool — filesystem', () => {
   })
 
   describe('skill tool (curator usage telemetry)', () => {
-    test('save records the skill as created in Localix, once', async () => {
-      const { setSkillAuthoredRecorder } = await import('../skill-usage-recorder')
-      const made: string[] = []
-      setSkillAuthoredRecorder((name, scope) => {
-        made.push(`${scope}:${name}`)
-      })
-      try {
-        const tool = createSkillTool(dir)
-        const save = { action: 'save', name: 'made-here', description: 'd', content: 'x' } as const
-        await tool.execute('t1', { ...save, scope: 'project' })
-        await tool.execute('t2', { ...save, scope: 'project', content: 'y' })
-        expect(made).toEqual(['project:made-here'])
-      } finally {
-        setSkillAuthoredRecorder(null)
-      }
-    })
-
     test('get fires a usage tick; misses and saves do not', async () => {
       const { setSkillUsageRecorder } = await import('../skill-usage-recorder')
       const ticks: Array<{ name: string; scope: string }> = []

@@ -4,7 +4,6 @@ import { errorMessage } from '../../lib/errors'
 import { homedir } from 'node:os'
 import { localixHome } from '../../lib/env'
 import { basename, join } from 'node:path'
-import { skillRoot } from '../agent-core/skill-discovery'
 import type { CuratorSkillRecord } from './contracts'
 import { toRecord, withSkillDir, type InventoryEntry } from './inventory-record'
 import {
@@ -189,8 +188,8 @@ export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): Skil
           `An active skill named "${input.name}" already exists`,
         )
       }
-      const { base } = skillBase(workingDir, globalBase)
-      const target = join(skillRoot(base), basename(entry.skill.dir))
+      const { root } = skillBase(workingDir, globalBase)
+      const target = join(root, basename(entry.skill.dir))
       if (
         await fs.stat(target).then(
           () => true,

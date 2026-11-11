@@ -1,32 +1,14 @@
-import { join, resolve } from 'node:path'
-
-import { readJsonRecordSync } from '../../lib/json'
-import { isRecord } from '../../lib/record'
-import { claudeStateFile } from '../cc-settings/config-dir'
-import type { ClaudeSettingsInput, SettingsFile } from '../plugins/kit'
-import { mcpFolderSettings } from './claude-code-settings'
-import { mcpServerPolicy } from './claude-code-mcp-policy'
+import type { ClaudeSettingsInput } from '../plugins/kit'
+import { installedMcpSettingsReader } from './claude-code-settings'
 import { normalizeMcpServerEntry } from './normalize'
 import type { McpServerRecord } from './repository'
 
 /**
- * THE MCP SERVERS A PERSON CONFIGURED FOR CLAUDE CODE, joined to a Localix run in that folder as
- * Claude Code loads them (mcp.md, "MCP installation scopes", "Scope hierarchy and precedence",
- * "Project server approvals and workspace trust"; managed-mcp.md):
- *
- *   user     `mcpServers` of Claude Code's state file (`~/.claude.json`)
- *   local    `projects["<folder>"].mcpServers` of that file, for the folder or its repository root
- *   project  `.mcp.json` of the folder (else the repository root), once approved: by
- *            `enableAllProjectMcpServers` or `enabledMcpjsonServers` in the person's or the
- *            organization's settings, or in the project's own once the folder is trusted;
- *            `disabledMcpjsonServers` in any file rejects one
- *   managed  `managed-mcp.json` takes exclusive control — only its servers and `managedMcpServers`
- *            load; `managedMcpServers` alone adds the organization's servers to the rest
- *
- * A name defined at several scopes loads once, from the highest: managed, local, project, user.
- * A server of Localix's own registry with that name wins over Claude Code's files, as it is the
- * one the person added here. The allow and deny lists apply to every server
- * (`claude-code-mcp-policy.ts`). Read on every run; nothing here writes.
+ * THE MCP SERVERS A PERSON CONFIGURED FOR CLAUDE CODE, joined to a Localix run in that folder. Which
+ * of them load is Claude Code's rule and the kit's (`plugins/kit/settings/mcp-plan.ts`: scopes and
+ * precedence, project approval, `managed-mcp.json`, the allow and deny lists); this module is the
+ * port it is installed behind and the Localix record each loaded entry becomes. Read on every run;
+ * nothing here writes.
  */
 
 export interface ClaudeCodeMcpInput extends ClaudeSettingsInput {
@@ -44,90 +26,30 @@ export interface ClaudeCodeMcpInput extends ClaudeSettingsInput {
   projectId: string
 }
 
-type Scope = 'managed' | 'local' | 'project' | 'user'
+/** The Claude Code scope a configured server was read from. */
+export type ClaudeCodeScope = 'managed' | 'local' | 'project' | 'user'
 
-const serversOf = (doc: Record<string, unknown> | undefined) =>
-  doc && isRecord(doc.mcpServers) ? doc.mcpServers : {}
-
-/** Approved by the honoured files, rejected by none (see the header). */
-function approval(layers: readonly SettingsFile[], trusted: boolean) {
-  const honoured = layers.filter((l) => trusted || l.scope === 'user' || l.scope === 'managed')
-  const all = honoured.some((l) => l.settings.enableAllProjectMcpServers === true)
-  const named = new Set(
-    honoured.flatMap((l) =>
-      Array.isArray(l.settings.enabledMcpjsonServers) ? l.settings.enabledMcpjsonServers : [],
-    ),
-  )
-  const rejected = new Set(
-    layers.flatMap((l) =>
-      Array.isArray(l.settings.disabledMcpjsonServers) ? l.settings.disabledMcpjsonServers : [],
-    ),
-  )
-  return (name: string) => !rejected.has(name) && (all || named.has(name))
-}
-
+/**
+ * The servers a run in the folder connects: what Claude Code would load there, decided by the kit
+ * (`plugins/kit/settings/mcp-plan.ts`, installed at boot), with Localix's own and the subagent's.
+ * Until the host installs its reader no Claude Code file is read: Localix's own servers, the
+ * plugins' and the subagent's, one per name.
+ */
 export function claudeCodeMcpServers(input: ClaudeCodeMcpInput): McpServerRecord[] {
-  const env = input.env ?? process.env
-  const settings = mcpFolderSettings(input)
-  const layers = settings.files
-  const cwd = resolve(input.cwd)
-  const root = settings.localRoot
-  const state = readJsonRecordSync(claudeStateFile(input.homeDir, env))
-  const projects = state && isRecord(state.projects) ? state.projects : {}
-  const local = [cwd, root].flatMap((dir) => {
-    const entry = dir ? projects[dir] : undefined
-    return isRecord(entry) ? [serversOf(entry)] : []
-  })
-  const exclusive = settings.managedDir
-    ? readJsonRecordSync(join(settings.managedDir, 'managed-mcp.json'))
-    : undefined
-  const provided = layers
-    .filter((l) => l.scope === 'managed')
-    .map((l) => (isRecord(l.settings.managedMcpServers) ? l.settings.managedMcpServers : {}))
-  const { trusted } = settings
-  const approved = approval(layers, trusted)
-  const mcpJson =
-    readJsonRecordSync(join(cwd, '.mcp.json')) ??
-    (root ? readJsonRecordSync(join(root, '.mcp.json')) : undefined)
-
-  // Highest scope first; the first definition of a name is the one that loads.
-  const ranked: Array<[Scope, Record<string, unknown>]> = [
-    ...(exclusive ? [['managed', serversOf(exclusive)] as [Scope, Record<string, unknown>]] : []),
-    ...provided.map((servers): [Scope, Record<string, unknown>] => ['managed', servers]),
-  ]
-  // `strictPluginOnlyCustomization` with `mcp`: `~/.claude.json` and `.mcp.json` are closed.
-  if (!exclusive && !settings.mcpLocked) {
-    for (const servers of local) ranked.push(['local', servers])
-    const project = Object.fromEntries(
-      Object.entries(serversOf(mcpJson)).filter(([name]) => approved(name)),
-    )
-    ranked.push(['project', project], ['user', serversOf(state)])
-  }
-
-  const policy = mcpServerPolicy(layers, env)
+  const planned = installedMcpSettingsReader()?.servers(input)
+  if (planned) return planned
   const taken = new Set<string>()
-  const out: McpServerRecord[] = []
-  const add = (server: McpServerRecord, organization: boolean) => {
-    if (taken.has(server.name)) return
-    taken.add(server.name)
-    if (policy.admits(server, organization)) out.push(server)
-  }
-  for (const server of exclusive ? [] : input.own) add(server, false)
-  for (const [scope, servers] of ranked)
-    for (const [name, raw] of Object.entries(servers)) {
-      if (!isRecord(raw) || taken.has(name)) continue
-      const record = recordOf(scope, name, raw, input, trusted)
-      if (record) add(record, scope === 'managed')
-    }
-  for (const server of exclusive ? [] : input.plugins) add(server, false)
-  for (const server of exclusive ? [] : (input.extra ?? [])) add(server, false)
-  // The folder's settings `env` sets the limits Claude Code reads from its environment.
-  const settingsEnv = settings.env
-  return Object.keys(settingsEnv).length > 0 ? out.map((s) => ({ ...s, settingsEnv })) : out
+  return [...input.own, ...input.plugins, ...(input.extra ?? [])].filter(
+    (server) => !taken.has(server.name) && taken.add(server.name),
+  )
 }
 
-function recordOf(
-  scope: Scope,
+/**
+ * A server of Claude Code's files as a Localix record (`normalizeMcpServerEntry`); undefined for an
+ * entry Localix cannot connect.
+ */
+export function claudeCodeServerRecord(
+  scope: ClaudeCodeScope,
   name: string,
   raw: Record<string, unknown>,
   input: ClaudeCodeMcpInput,

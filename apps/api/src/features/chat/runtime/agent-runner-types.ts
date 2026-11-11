@@ -29,7 +29,6 @@ import type { ExitNotices } from './exit-notices'
 import type { DocumentExtractPort } from '@localixai/mini-app-sdk/backend'
 import type { ConfigProposalService } from '../../config-proposals/service'
 import type { PlanService } from '../../plans/service'
-import type { SkillDiscoveryLogger } from '../../agent-core/skill-discovery'
 import type { UiLocationCatalogService } from '../../ui-locations/service'
 import type { WorkRegistry } from '../../work/registry'
 import type { AgentNotifications } from '../../notifications/producers'
@@ -75,7 +74,9 @@ export interface RunnerDeps {
   languageModelFactory: LanguageModelFactory
   uiLocationCatalog?: UiLocationCatalogService
   /** The API's structured log; `info` carries records worth reading back (`bun run logs`). */
-  logger?: SkillDiscoveryLogger & { info?: (record: Record<string, unknown>) => void }
+  logger?: { warn: (message: string, meta?: unknown) => void } & {
+    info?: (record: Record<string, unknown>) => void
+  }
   lspManager?: LspManager
   /**
    * When set, background bash jobs run in a real PTY pane (terminal feature) the

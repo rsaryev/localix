@@ -2,33 +2,46 @@ import { promises as fs } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 
 import { localixHome } from '../../lib/env'
-import { skillRoot, readSkillsFromRoot, type DiscoveredSkill } from '../agent-core/skill-discovery'
+import { claudeConfigDir } from '../cc-settings/config-dir'
+import { readSkillFolder, type FolderSkill } from '../plugins/kit'
 import type { SkillScope, SkillUsageRecord } from './repository'
+
+/** A skill the curator tends: a folder of the shelf's skills folder, or of its archive. */
+export interface CuratorSkill extends FolderSkill {
+  readonly scope: SkillScope
+}
 
 /** `~/.localix/skills-archive`: the default home of archived skills. */
 export const defaultArchiveRoot = (): string => join(localixHome(), 'skills-archive')
 
-/** The one exact skill root to scan (project or no-project home; no fallback). */
+/**
+ * The one exact skills folder of a shelf (no fallback): the project's `.claude/skills`, or the
+ * person's (`CLAUDE_CONFIG_DIR`, else `<home>/.claude`) where Localix writes their skills.
+ */
 export function skillBase(
   workingDir: string | null,
   globalBase: string,
-): { base: string; scope: SkillScope } {
+): { root: string; scope: SkillScope } {
   return workingDir && workingDir !== globalBase
-    ? { base: workingDir, scope: 'project' }
-    : { base: globalBase, scope: 'global' }
+    ? { root: join(workingDir, '.claude', 'skills'), scope: 'project' }
+    : { root: join(claudeConfigDir(globalBase), 'skills'), scope: 'global' }
 }
 
-/** Active skills of the one exact root (`.claude/skills`), first-wins by name. */
+/** A folder's skills, read as the kit reads a skills folder, first-wins by name. */
+async function readShelf(root: string, scope: SkillScope): Promise<CuratorSkill[]> {
+  const byName = new Map<string, CuratorSkill>()
+  for (const skill of await readSkillFolder(root, scope === 'project' ? 'project' : 'user'))
+    if (!byName.has(skill.name)) byName.set(skill.name, { ...skill, scope })
+  return [...byName.values()]
+}
+
+/** Active skills of the shelf's one skills folder. */
 export async function scanSkillRoots(
   workingDir: string | null,
   globalBase: string,
-): Promise<DiscoveredSkill[]> {
-  const { base, scope } = skillBase(workingDir, globalBase)
-  const byName = new Map<string, DiscoveredSkill>()
-  for (const s of await readSkillsFromRoot(skillRoot(base), scope)) {
-    if (!byName.has(s.name)) byName.set(s.name, s)
-  }
-  return [...byName.values()]
+): Promise<CuratorSkill[]> {
+  const { root, scope } = skillBase(workingDir, globalBase)
+  return readShelf(root, scope)
 }
 
 /**
@@ -46,9 +59,9 @@ export async function scanArchivedSkills(
   globalBase: string,
   archiveRoot: string,
   projectId: string,
-): Promise<DiscoveredSkill[]> {
+): Promise<CuratorSkill[]> {
   const { scope } = skillBase(workingDir, globalBase)
-  return readSkillsFromRoot(archiveDirOf(archiveRoot, projectId), scope)
+  return readShelf(archiveDirOf(archiveRoot, projectId), scope)
 }
 
 /** Renames a folder, copying then removing it when the two places are on different volumes. */
@@ -65,7 +78,7 @@ export async function moveDir(from: string, to: string): Promise<void> {
 
 /** Age basis for staleness: first recorded use, else file mtime, else now. */
 export async function skillAgeBasis(
-  skill: DiscoveredSkill,
+  skill: CuratorSkill,
   usage: SkillUsageRecord | null,
   nowMs: number,
 ): Promise<number> {
@@ -80,7 +93,7 @@ export async function skillAgeBasis(
 
 /** Moves a skill dir into the archive folder of its shelf. Never deletes the skill. */
 export async function moveToArchive(
-  skill: DiscoveredSkill,
+  skill: CuratorSkill,
   archiveRoot: string,
   projectId: string,
 ): Promise<string> {

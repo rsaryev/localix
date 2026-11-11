@@ -58,6 +58,7 @@ export function createOperationContexts(
     resolveProjectWorkingDir,
     resolveSessionWorkingDir,
     gatherSessionSkills,
+    scopeSkillsOf,
     gatherEnabledPluginCommands,
     buildSessionPluginCatalog,
     loadSessionPluginMcpServers,
@@ -215,7 +216,7 @@ export function createOperationContexts(
     resolveSessionWorkingDir,
   }
 
-  const skillOpsCtx: SkillOpsContext = { now, resolveProjectWorkingDir, logger: deps.logger }
+  const skillOpsCtx: SkillOpsContext = { now, resolveProjectWorkingDir, scopeSkills: scopeSkillsOf }
 
   const externalSessionsCtx: ExternalSessionsContext = {
     repo,

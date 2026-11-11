@@ -1,7 +1,5 @@
 import { claudeCodeHome } from '../features/cc-settings/config-dir'
 import { createSkillShellPolicy } from './skill-shell-policy'
-import { createSkillSourcePolicy } from './skill-source-lock'
-import { installSkillSourcePolicy } from '../features/agent-core/skill-source-policy'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { withChannelPermissionRelay } from './mcp-channels'
 import { createSessionAgentResolver } from '../features/agents/session-agent-resolver'
@@ -154,10 +152,6 @@ export function createChatServicePhase({
   announceCapabilityChange,
   serviceRefs,
 }: ChatServicePhaseInput): ChatServicePhase {
-  // `strictPluginOnlyCustomization` (managed settings) closes the person's and the project's skill
-  // folders for every discovery in the process; skill discovery lives in the core, so it is handed
-  // the answer here rather than reading Claude Code's settings itself.
-  installSkillSourcePolicy(createSkillSourcePolicy())
   // One resolver answers "which skills may this scope use", for the run pipeline and for the
   // `/skill` listings alike — they used to read the global settings document separately, and
   // the listing gave a project session the wrong answer.

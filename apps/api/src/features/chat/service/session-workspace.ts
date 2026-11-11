@@ -1,5 +1,4 @@
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
-import { discoverFilesystemSkills } from '../../agent-core/skill-discovery'
 import { buildPluginCatalog, type PluginCatalog } from '../../plugins/catalog'
 import { loadEnabledPlugins } from '../../plugins/loader'
 import type { McpServerRecord } from '../../mcp/repository'
@@ -10,12 +9,15 @@ import type { createProjectsRepository } from '../../projects/repository'
 import type { SessionRecord } from '../repository'
 import { projectWorkingDirPort, resolveBaseSessionCwd } from '../session-cwd'
 import { userHome } from '../../../lib/env'
-import { toFileSkillRecord, type SkillRecord } from './skills'
-import type { SkillDiscoveryLogger } from '../../agent-core/skill-discovery'
 import type { AvailabilityReader } from '../../capabilities/availability'
 import type { CapabilitySourceRepository } from '../../capabilities/source-repository'
 import {
   readClaudeSettingsSync,
+  reloadSessionSkills,
+  scopeSkills,
+  sessionSkills,
+  type ChatSkill,
+  type ScopeSkills,
   type ChatPluginSessions,
   type KitSession,
   type LocalixPluginHost,
@@ -37,7 +39,7 @@ export interface SessionWorkspaceDeps {
    * composition root is the only place that can bind the rule store.
    */
   availabilityFor: (userId: string, agentId: string) => Promise<AvailabilityReader>
-  logger?: SkillDiscoveryLogger
+  logger?: { warn: (message: string, meta?: unknown) => void }
 }
 
 /**
@@ -73,13 +75,25 @@ export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
   ): Promise<string> =>
     resolveBaseSessionCwd({ getProjectWorkingDir: resolveProjectWorkingDir }, userId, session)
 
-  const gatherSessionSkills = async (
-    userId: string,
-    session: SessionRecord,
-  ): Promise<SkillRecord[]> => {
-    const workingDir = await resolveProjectWorkingDir(userId, session.projectId)
-    const fileSkills = await discoverFilesystemSkills(workingDir, undefined, logger)
-    return fileSkills.map((f) => toFileSkillRecord(f, session.projectId ?? ''))
+  /**
+   * A scope's skills outside any chat, as the kit lists them in a session of its folder (`/` for
+   * no project, so only the person's folders are read), with the plugins the main agent has.
+   */
+  const scopeSkillsOf = async (userId: string, projectId: string | null): Promise<ScopeSkills> => {
+    const cwd = await resolveProjectWorkingDir(userId, projectId)
+    const catalog = await buildPluginCatalog({
+      repo: pluginRepo,
+      availability: await availabilityFor(userId, DEFAULT_AGENT_ID),
+      userId,
+      projectId: projectId ?? '',
+      cwd,
+      homeDir: userHome(),
+    })
+    return scopeSkills(pluginHost, {
+      cwd: cwd ?? '/',
+      homeDir: userHome(),
+      plugins: kitPluginsOf(catalog),
+    })
   }
 
   /**
@@ -185,8 +199,20 @@ export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
     )
   }
 
+  /** The chat's skills and commands as its kit session lists them, its folders read again first. */
+  const gatherSessionSkills = async (
+    userId: string,
+    session: SessionRecord,
+  ): Promise<ChatSkill[]> => {
+    const kit = await chatPluginSession(userId, session)
+    if (!kit) return []
+    await reloadSessionSkills(kit, AbortSignal.timeout(60_000))
+    return sessionSkills(kit)
+  }
+
   return {
     chatPluginSession,
+    scopeSkillsOf,
     resolveProjectWorkingDir,
     resolveSessionWorkingDir,
     gatherSessionSkills,

@@ -33,7 +33,6 @@ import type { PlanService } from '../../plans/service'
 import type { ResumeRegistry } from '../../resume/registry'
 import type { DocumentExtractPort } from '@localixai/mini-app-sdk/backend'
 import type { MessageContextBinding } from '@localixai/agent'
-import type { SkillDiscoveryLogger } from '../../agent-core/skill-discovery'
 import type { RequestSecretPayload } from '../../agent-core/tools/hitl/request-secret'
 import type { UiLocationCatalogService } from '../../ui-locations/service'
 import type { SkillOverrides } from '../../agent-core/skill-overrides'
@@ -110,7 +109,7 @@ export interface ChatServiceDeps {
   /** Immutable frontend-published UI catalogs, selected by id for each workbench run. */
   uiLocationCatalog?: UiLocationCatalogService
   /** Structured diagnostic sink; feature code must never write straight to a host's stdout. */
-  logger?: SkillDiscoveryLogger
+  logger?: { warn: (message: string, meta?: unknown) => void }
   lspManager?: LspManager
   /** One kit plugin session per chat (`features/plugins/kit/sessions.ts`). */
   pluginSessions?: ChatPluginSessions

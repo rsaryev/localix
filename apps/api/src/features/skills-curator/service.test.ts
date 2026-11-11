@@ -3,7 +3,7 @@ import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-import { discoverFilesystemSkills } from '../agent-core/skill-discovery'
+import { readSkillFolder } from '../plugins/kit'
 import { createSkillsCuratorService, CURATOR_INTERVAL_DAYS } from './service'
 import type { SkillScope, SkillUsageRecord, SkillUsageRepository } from './repository'
 
@@ -243,8 +243,9 @@ describe('skills curator service', () => {
     expect(archived.archivedAt).not.toBeNull()
     expect(await fs.exists(dir)).toBe(false)
 
-    // Discovery (what the agent, and Claude Code, see) does not reach the archive.
-    const discovered = await discoverFilesystemSkills(base)
+    // The skills folder (what the agent, and Claude Code, read) does not reach the archive.
+    const skillsFolder = () => readSkillFolder(join(base, '.claude', 'skills'), 'user')
+    const discovered = await skillsFolder()
     expect(discovered.filter((s) => s.dir.startsWith(base)).map((s) => s.name)).toEqual([])
 
     // But the curator list still shows it as archived.
@@ -254,7 +255,7 @@ describe('skills curator service', () => {
     const restored = await service.restore(USER, { name: 'to-archive' })
     expect(restored.state).toBe('active')
     expect(await fs.readFile(join(dir, 'SKILL.md'), 'utf8')).toContain('body of to-archive')
-    const after = await discoverFilesystemSkills(base)
+    const after = await skillsFolder()
     expect(after.filter((s) => s.dir.startsWith(base)).map((s) => s.name)).toEqual(['to-archive'])
 
     // Restored skill is not immediately re-archived (usage was reset).

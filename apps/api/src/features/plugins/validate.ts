@@ -4,7 +4,6 @@ import type { DiscoveredPlugin } from './discovery'
 import type { PluginValidation } from './contracts'
 import type { PluginConfigValues } from './config'
 import { validateCompatibility } from './validate-compat'
-import { validatePluginSkills } from './validate-skill'
 import { validatePluginConfig } from './validate-config'
 import { validatePluginCommands, validatePluginAgents } from './validate-fields'
 import { issueLine, validatePluginFolder } from './kit'
@@ -109,25 +108,21 @@ export function validatePlugin(
 }
 
 /**
- * The CANONICAL full validation of a plugin: what the kit's `claude plugin validate` finds, the
- * synchronous Localix checks ({@link validatePlugin}) and the async SKILL.md checks
- * ({@link validatePluginSkills}). This is the single source of truth reused by
- * BOTH the plugin service (the Store / `/plugins`) and the dev CLI
- * (`scripts/validate-plugins.ts`) — callers must not re-implement the merge. `strict`
- * promotes the COMBINED warning set (manifest + skills) to errors.
+ * The CANONICAL full validation of a plugin: what the kit's `claude plugin validate` finds (its
+ * SKILL.md files and commands included) and the synchronous Localix checks
+ * ({@link validatePlugin}). This is the single source of truth reused by BOTH the plugin service
+ * (the Store / `/plugins`) and the dev CLI (`scripts/validate-plugins.ts`) — callers must not
+ * re-implement the merge. `strict` promotes the COMBINED warning set to errors.
  */
 export async function validatePluginFull(
   plugin: DiscoveredPlugin,
   opts?: { config?: PluginConfigValues; strict?: boolean },
 ): Promise<PluginValidation> {
-  const [manifest, skills, kit] = await Promise.all([
-    Promise.resolve(validatePlugin(plugin, { config: opts?.config })),
-    validatePluginSkills(plugin),
-    validatePluginFolder(plugin.dir),
-  ])
+  const manifest = validatePlugin(plugin, { config: opts?.config })
+  const kit = await validatePluginFolder(plugin.dir)
   // The kit's validation repeats much of what its loading found: each message once.
-  const errors = [...new Set([...manifest.errors, ...skills.errors, ...kit.errors])]
-  const warnings = [...new Set([...manifest.warnings, ...skills.warnings, ...kit.warnings])]
+  const errors = [...new Set([...manifest.errors, ...kit.errors])]
+  const warnings = [...new Set([...manifest.warnings, ...kit.warnings])]
   if (opts?.strict && warnings.length > 0) return { errors: [...errors, ...warnings], warnings: [] }
   return { errors, warnings }
 }

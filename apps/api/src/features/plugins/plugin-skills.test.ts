@@ -6,12 +6,8 @@ import { tempDirPerTest, writeTree } from '@localixai/testing'
 import type { PluginCatalog, PluginCatalogEntry } from './catalog'
 import type { PluginCommandSpec } from './contracts'
 import { loadManifest } from './manifest-load'
-import {
-  listCatalogCommandSpecs,
-  pluginSkillCommandSpecs,
-  pluginSkillFullName,
-  readCatalogPluginSkills,
-} from './plugin-skills'
+import { diskPluginHost } from './kit/testing'
+import { listCatalogCommandSpecs, pluginSkillCommandSpecs } from './plugin-skills'
 
 /**
  * A plugin's `SKILL.md` skills run as `/<plugin>:<skill>`, as in Claude Code. Before this, only the
@@ -59,71 +55,61 @@ async function fixture(): Promise<PluginCatalog> {
   return catalogOf([await entry(dir, true), await entry(off, false)])
 }
 
-const read = async (catalog: PluginCatalog) =>
-  readCatalogPluginSkills(catalog, {
+const list = (catalog: PluginCatalog) =>
+  listCatalogCommandSpecs(catalog, {
     projectId: '',
     projectDir: join(root(), 'project'),
     homeDir: join(root(), 'home'),
+    modCommands: [],
+    pluginHost: diskPluginHost(join(root(), 'home')),
   })
 
 describe('plugin skills as slash commands', () => {
-  test('are named /<plugin>:<skill>, by folder or frontmatter name, never prefixed twice', async () => {
-    const skills = await read(await fixture())
-    expect(skills.map((s) => s.fullName).sort()).toEqual([
-      'kit:already',
-      'kit:fancy',
-      'kit:hidden',
-      'kit:review',
-    ])
-    expect(skills.find((s) => s.fullName === 'kit:already')?.shortName).toBe('already')
-    expect(pluginSkillFullName('kit', 'KIT:x')).toBe('KIT:x')
+  // Kit wins: a plugin skill is `/<plugin>:<folder>`, whatever its frontmatter `name` says (Localix
+  // used to take the `name`).
+  test('are named /<plugin>:<folder>', async () => {
+    const names = (await list(await fixture())).map((spec) => spec.fullName)
+    expect(names).toContain('kit:review')
+    expect(names).toContain('kit:renamed')
+    expect(names).toContain('kit:prefixed')
+    expect(names).not.toContain('kit:fancy')
   })
 
-  test('read the text the model would load, with the plugin path substituted', async () => {
-    const skills = await read(await fixture())
-    const review = skills.find((s) => s.fullName === 'kit:review')!
-    const pluginDir = join(root(), 'kit')
-    expect(review.pluginDir).toBe(pluginDir)
-    expect(review.skill.pluginName).toBe('kit')
-    expect(review.skill.content).toContain(`Run ${pluginDir}/bin/check on $ARGUMENTS.`)
-    expect(review.skill.description).toBe(`Review from ${pluginDir}`)
-    expect(review.skill.allowedTools).toEqual([`Bash(${pluginDir}/bin/check *)`])
+  test('the menu leaves out a model-only skill and a disabled plugin', async () => {
+    const names = (await list(await fixture())).map((spec) => spec.fullName)
+    expect(names).not.toContain('kit:hidden')
+    expect(names).not.toContain('off:nope')
   })
 
-  test('the composer lists them beside commands, without model-only skills or duplicates', async () => {
-    const skills = await read(await fixture())
-    const taken: PluginCommandSpec[] = [
-      { pluginName: 'kit', name: 'fancy', fullName: 'kit:fancy', description: 'cmd', args: [] },
-    ]
-    const specs = pluginSkillCommandSpecs(skills, taken)
-    expect(specs.map((spec) => spec.fullName).sort()).toEqual(['kit:already', 'kit:review'])
-    // A command named after its plugin is listed as `/kit` and also answers `/kit:kit` first.
-    const sameName = pluginSkillCommandSpecs(
-      [{ ...skills.find((s) => s.fullName === 'kit:review')!, fullName: 'kit:kit' }],
-      [{ pluginName: 'kit', name: 'kit', fullName: 'kit', description: 'cmd', args: [] }],
-    )
-    expect(sameName).toEqual([])
-    expect(specs.find((spec) => spec.fullName === 'kit:review')).toMatchObject({
+  test('a listed skill keeps its own name and the description the kit reads', async () => {
+    const specs = await list(await fixture())
+    expect(specs.find((spec) => spec.fullName === 'kit:renamed')).toMatchObject({
       pluginName: 'kit',
-      name: 'review',
+      name: 'renamed',
+      description: 'Fancy',
       args: [],
     })
   })
 
-  test("the scope's command list carries them after the plugin commands", async () => {
-    const specs = await listCatalogCommandSpecs(await fixture(), {
-      projectId: '',
-      projectDir: join(root(), 'project'),
-      homeDir: join(root(), 'home'),
-      modCommands: [],
+  test('a command of the same full name keeps its entry; a command named after its plugin too', () => {
+    const row = (name: string) => ({
+      name,
+      description: 'skill',
+      inMenu: true,
+      plugin: { id: 'kit@local', name: 'kit' },
     })
-    expect(specs.map((spec) => spec.fullName)).toContain('kit:review')
-    expect(specs.map((spec) => spec.fullName)).not.toContain('off:nope')
+    const taken: PluginCommandSpec[] = [
+      { pluginName: 'kit', name: 'fancy', fullName: 'kit:fancy', description: 'cmd', args: [] },
+      { pluginName: 'kit', name: 'kit', fullName: 'kit', description: 'cmd', args: [] },
+    ]
+    const specs = pluginSkillCommandSpecs([row('kit:fancy'), row('kit:kit'), row('kit:x')], taken)
+    expect(specs.map((spec) => spec.fullName)).toEqual(['kit:x'])
+    expect(specs[0]).toMatchObject({ pluginName: 'kit', name: 'x' })
   })
 
-  // skills.md, "Resolve skills that share a name": "A skill and a file in `.claude/commands/` |
-  // The skill" — the skill is what `/dup:review` runs, so it is the entry the menu shows.
-  test('a skill and a command of the same name list once, as the skill', async () => {
+  // Kit wins (checked against Claude Code 2.1.319): within one plugin a command file wins a name its
+  // skill shares, where Localix listed the skill.
+  test('a skill and a command of the same name list once, as the command', async () => {
     const dir = join(root(), 'dup')
     writeTree(dir, {
       '.claude-plugin/plugin.json': JSON.stringify({ name: 'dup', description: 'dup plugin' }),
@@ -139,14 +125,9 @@ describe('plugin skills as slash commands', () => {
         awaitingConsent: false,
       },
     ])
-    const specs = await listCatalogCommandSpecs(catalog, {
-      projectId: '',
-      projectDir: join(root(), 'project'),
-      homeDir: join(root(), 'home'),
-      modCommands: [],
-    })
+    const specs = await list(catalog)
     const review = specs.filter((spec) => spec.fullName === 'dup:review')
-    expect(review.map((spec) => spec.description)).toEqual(['The skill'])
+    expect(review.map((spec) => spec.description)).toEqual(['The command'])
     expect(specs.map((spec) => spec.fullName)).toContain('dup:other')
   })
 })

@@ -10,7 +10,12 @@ import { createSkillTool } from '../../../agent-core/tools/skill'
 import { createChatPluginSessions } from '../../../plugins/kit'
 import { diskPluginHost } from '../../../plugins/kit/testing'
 import type { SessionRecord } from '../../repository'
-import { skillShellAnswer, skillToolPorts, type SkillCommandPolicyRef } from './skill-tool-ports'
+import {
+  skillSavePorts,
+  skillShellAnswer,
+  skillToolPorts,
+  type SkillCommandPolicyRef,
+} from './skill-tool-ports'
 
 /**
  * The model loading a skill must not get a shell the run's rules withhold. The defect: `get`
@@ -91,7 +96,10 @@ function loadTool(_skill: string, commandPolicy: SkillCommandPolicyRef, latestUs
     commandPolicy,
     ...(latestUserText ? { latestUserText } : {}),
   })
-  return createSkillTool(join(dir(), 'work'), {}, '', undefined, ports)
+  return createSkillTool(join(dir(), 'work'), {}, '', undefined, {
+    ...ports,
+    ...skillSavePorts(join(dir(), 'work'), ''),
+  })
 }
 
 describe('the skill tool’s get runs the skill through the chat’s kit session', () => {

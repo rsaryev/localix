@@ -17,6 +17,8 @@ import { claudeCodeHome } from '../../../cc-settings/config-dir'
 import { runOuterRules } from './claude-code-permissions'
 import { withAllowedTools } from './permission-gate-build'
 import { applySkillTurnGrants } from './skill-turn-grants'
+import { skillFilePath } from '../../../plugins/kit'
+import { skillFolderOf, writeSkill } from '../../skill-files'
 
 /** The run's permission inputs, filled once its gate is built (`stages/intake.ts`). */
 export type SkillCommandPolicyRef = { current?: VerdictOptions }
@@ -36,6 +38,24 @@ export function skillShellAnswer(policy: SkillCommandPolicyRef | undefined): Ski
     return verdictOf({ ...options, outerRules: withAllowedTools(outer, grants) })(TOOL.Bash, {
       command,
     }).decision
+  }
+}
+
+/**
+ * The host half of the `Skill` tool's `save`: a project skill goes to the run's folder's `.claude`,
+ * a global one to the person's (`CLAUDE_CONFIG_DIR`, else `~/.claude`), written as the Skills list
+ * writes one (`chat/skill-files.ts`); a new one is recorded as made in Localix.
+ */
+export function skillSavePorts(
+  defaultCwd: string,
+  projectId: string,
+): Pick<SkillToolPorts, 'saveSkill' | 'skillFilePath'> {
+  const target = (scope: 'global' | 'project') =>
+    skillFolderOf(scope === 'project' ? defaultCwd : null)
+  return {
+    saveSkill: (draft, scope) =>
+      writeSkill(target(scope), draft, { projectId: scope === 'project' ? projectId : '' }),
+    skillFilePath: (name, scope) => skillFilePath(target(scope).folder, name),
   }
 }
 

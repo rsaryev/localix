@@ -1,10 +1,16 @@
-import { afterEach, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, afterEach, describe, expect, test } from 'bun:test'
+import { installModelAliasResolver } from '../../../agent-core/model-alias'
+import { modelAliasResolver } from '../../../plugins/kit/model-alias'
 
 import type { SessionRecord } from '../../repository'
 import { setAgentService, type AgentServiceBinding } from '../agent-service-binding'
 import { createHookModels, type HookModelsInput } from './cc-hook-evaluators'
 import { routedAgent, sessionFixture } from '../../../../testing/session-fixture'
 import type { RunProfile } from '../../../agent-core/run-shape'
+
+// A `model:` value is read as the app reads it, through the kit (`bootstrap/domain-services.ts`).
+beforeAll(() => installModelAliasResolver(modelAliasResolver))
+afterAll(() => installModelAliasResolver(undefined))
 
 const session: SessionRecord = sessionFixture({
   id: 'parent',

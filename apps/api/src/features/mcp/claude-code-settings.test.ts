@@ -1,34 +1,40 @@
 import { afterEach, expect, test } from 'bun:test'
-import {
-  folderSettingsEnv,
-  installMcpSettingsReader,
-  mcpFolderSettings,
-} from './claude-code-settings'
+import { claudeCodeMcpServers } from './claude-code-servers'
+import { folderSettingsEnv, installMcpSettingsReader } from './claude-code-settings'
+import type { McpServerRecord } from './repository'
 
 afterEach(() => installMcpSettingsReader(undefined))
 
-test('until the host installs a reader a folder has no settings', () => {
-  expect(mcpFolderSettings({ homeDir: '/h', cwd: '/w' })).toEqual({
-    files: [],
-    localRoot: undefined,
-    trusted: false,
-    mcpLocked: false,
-    env: {},
-    managedDir: null,
-  })
+const record = (id: string, name: string): McpServerRecord => ({
+  id,
+  userId: 'u',
+  projectId: 'P1',
+  name,
+  description: '',
+  transport: 'stdio',
+  config: { command: [name] },
+  createdAt: '',
+  updatedAt: '',
+})
+const input = {
+  homeDir: '/h',
+  cwd: '/w',
+  userId: 'u',
+  projectId: 'P1',
+  own: [record('own', 'a')],
+  plugins: [record('plugin', 'a'), record('plugin-b', 'b')],
+}
+
+test('until the host installs a reader no Claude Code file is read: one server per name', () => {
+  expect(claudeCodeMcpServers(input).map((s) => s.id)).toEqual(['own', 'plugin-b'])
   expect(folderSettingsEnv('/w')).toEqual({})
 })
 
 test('the installed reader answers for every folder', () => {
-  const settings = {
-    files: [],
-    localRoot: '/repo',
-    trusted: true,
-    mcpLocked: true,
-    env: { A: '1' },
-    managedDir: '/m',
-  }
-  installMcpSettingsReader({ read: () => settings, folderEnv: (cwd) => ({ CWD: cwd }) })
-  expect(mcpFolderSettings({ homeDir: '/h', cwd: '/w' })).toBe(settings)
+  installMcpSettingsReader({
+    servers: () => [record('x', 'x')],
+    folderEnv: (cwd) => ({ CWD: cwd }),
+  })
+  expect(claudeCodeMcpServers(input).map((s) => s.id)).toEqual(['x'])
   expect(folderSettingsEnv('/w')).toEqual({ CWD: '/w' })
 })

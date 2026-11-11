@@ -1,10 +1,11 @@
-import type { DiscoveredSkill } from '../agent-core/skill-discovery'
+import { basename, join } from 'node:path'
+import type { CuratorSkill } from './skill-fs'
 import type { SkillUsageRecord } from './repository'
 import type { Idleness } from './staleness'
 import type { CuratorSkillRecord, SkillLifecycleState } from './contracts'
 
 export interface InventoryEntry {
-  skill: DiscoveredSkill
+  skill: CuratorSkill
   usage: SkillUsageRecord | null
   archived: boolean
   state: SkillLifecycleState
@@ -31,14 +32,7 @@ export function toRecord(entry: InventoryEntry): CuratorSkillRecord {
   }
 }
 
-/**
- * Repoint an inventory snapshot without evaluating its lazy `content` getter.
- * Moving the directory first makes that getter's original path stale, while a
- * spread would eagerly read it and turn a successful archive/restore into ENOENT.
- * Curator records never expose the body; a later inventory scan creates a fresh
- * lazy getter rooted at the new path.
- */
-export function withSkillDir(skill: DiscoveredSkill, dir: string): DiscoveredSkill {
-  const { content: _content, dir: _dir, ...metadata } = Object.getOwnPropertyDescriptors(skill)
-  return Object.defineProperties({ content: '', dir }, metadata) as DiscoveredSkill
+/** The skill moved to `dir` (archived, restored); a later scan reads it there afresh. */
+export function withSkillDir(skill: CuratorSkill, dir: string): CuratorSkill {
+  return { ...skill, dir, path: join(dir, basename(skill.path)) }
 }

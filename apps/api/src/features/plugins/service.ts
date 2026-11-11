@@ -278,7 +278,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
           projectDir: runtimeCwd,
           homeDir: home,
           modCommands: deps.modCommands?.() ?? [],
-          logger: deps.logger,
+          pluginHost: deps.pluginHost,
         }),
       }
     },
@@ -297,7 +297,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
           projectDir: (projectId ? await cwdFor(userId, projectId) : null) ?? localixWorkspaceDir(),
           homeDir: home,
           modCommands: deps.modCommands?.() ?? [],
-          logger: deps.logger,
+          pluginHost: deps.pluginHost,
         }),
       }
     },

@@ -1,15 +1,12 @@
-import { diskPluginHost } from './kit/testing'
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test'
-import { UNDECIDED, type AvailabilityReader } from '../capabilities/availability'
+import { UNDECIDED } from '../capabilities/availability'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 
 import { discoverPlugins } from './discovery'
-import { loadEnabledPlugins } from './loader'
 import { buildPluginCatalog } from './catalog'
-import { validateSkillFile } from '../agent-core/skill-validate'
 import { validatePlugin } from './validate'
 
 /** A repo with NO state rows: only the availability decides. */
@@ -40,9 +37,6 @@ const emptyRepo: CapabilitySourceRepository = {
   }),
   remove: async () => {},
 }
-
-/** Every plugin switched on, as a rule allowing it would. */
-const ALL_ON: AvailabilityReader = { effectFor: () => 'allow' }
 
 let dir: string
 let home: string
@@ -145,25 +139,6 @@ describe('plugin commands and skills', () => {
     expect(catalog.enabled.some((e) => e.plugin.manifest.name === 'rooted-plugin')).toBe(false)
   })
 
-  it('loader substitutes ${CLAUDE_PLUGIN_ROOT} in skill description and content', async () => {
-    const loaded = await loadEnabledPlugins({
-      availability: ALL_ON,
-      repo: emptyRepo,
-      userId: 'u',
-      projectId: '',
-      cwd: '/',
-      homeDir: home,
-      pluginHost: diskPluginHost(home),
-    })
-    const rooted = loaded.skills.find((s) => s.name === 'rooted')
-    expect(rooted).toBeDefined()
-    // ${CLAUDE_PLUGIN_ROOT} in description should be replaced with the actual dir path.
-    expect(rooted!.description).not.toContain('${CLAUDE_PLUGIN_ROOT}')
-    expect(rooted!.description).toContain('/skills/rooted')
-    // Same substitution in content.
-    expect(rooted!.content).not.toContain('${CLAUDE_PLUGIN_ROOT}')
-  })
-
   // Behaviour change (kit wins): a skill path leaving the plugin keeps the whole plugin from
   // loading, where Localix used to drop that path and load the rest.
   it('refuses a plugin whose manifest names a skill path outside its directory', async () => {
@@ -182,78 +157,6 @@ describe('plugin commands and skills', () => {
     // Tamper with a command prompt to simulate an empty one.
     const tampered = { ...p, commands: [{ ...p.commands[0], prompt: '' }] }
     expect(validatePlugin(tampered).warnings.length).toBeGreaterThan(0)
-  })
-
-  it('validateSkillFile warns on unrecognized context: value', async () => {
-    const skillDir = await fs.mkdtemp(join(tmpdir(), 'sk-ctx-'))
-    const path = join(skillDir, 'SKILL.md')
-    await fs.writeFile(
-      path,
-      '---\nname: bad-ctx\ndescription: skill.\ncontext: isolate\n---\n\nBody here.',
-    )
-    const v = await validateSkillFile(path)
-    expect(v.errors).toHaveLength(0)
-    expect(v.warnings.some((w) => w.includes('"isolate"') && w.includes('context'))).toBe(true)
-    await fs.rm(skillDir, { recursive: true, force: true })
-  })
-
-  it('validateSkillFile warns when disable-model-invocation + user-invocable:false (dead code)', async () => {
-    const skillDir = await fs.mkdtemp(join(tmpdir(), 'sk-dead-'))
-    const path = join(skillDir, 'SKILL.md')
-    await fs.writeFile(
-      path,
-      '---\nname: dead\ndescription: dead.\ndisable-model-invocation: true\nuser-invocable: false\n---\n\nBody.',
-    )
-    const v = await validateSkillFile(path)
-    expect(v.warnings.some((w) => w.includes('dead code'))).toBe(true)
-    await fs.rm(skillDir, { recursive: true, force: true })
-  })
-
-  it('validateSkillFile warns on unrecognized effort: value', async () => {
-    const skillDir = await fs.mkdtemp(join(tmpdir(), 'sk-effort-'))
-    const path = join(skillDir, 'SKILL.md')
-    await fs.writeFile(path, '---\nname: effort\ndescription: skill.\neffort: turbo\n---\n\nBody.')
-    const v = await validateSkillFile(path)
-    expect(v.warnings.some((w) => w.includes('"turbo"') && w.includes('effort'))).toBe(true)
-    await fs.rm(skillDir, { recursive: true, force: true })
-  })
-
-  it('validateSkillFile warns when agent: is set without context: fork', async () => {
-    const skillDir = await fs.mkdtemp(join(tmpdir(), 'sk-agent-'))
-    const path = join(skillDir, 'SKILL.md')
-    await fs.writeFile(
-      path,
-      '---\nname: orphan-agent\ndescription: skill.\nagent: Explore\n---\n\nBody.',
-    )
-    const v = await validateSkillFile(path)
-    expect(v.warnings.some((w) => w.includes('agent:') && w.includes('context: fork'))).toBe(true)
-    await fs.rm(skillDir, { recursive: true, force: true })
-  })
-
-  it('validateSkillFile warns on context:fork with a very short body', async () => {
-    const skillDir = await fs.mkdtemp(join(tmpdir(), 'sk-fork-'))
-    const path = join(skillDir, 'SKILL.md')
-    await fs.writeFile(
-      path,
-      '---\nname: tiny-fork\ndescription: forks a subagent.\ncontext: fork\n---\n\nToo short.',
-    )
-    const v = await validateSkillFile(path)
-    expect(v.errors).toHaveLength(0)
-    expect(v.warnings.some((w) => w.includes('context: fork') && w.includes('short body'))).toBe(
-      true,
-    )
-    await fs.rm(skillDir, { recursive: true, force: true })
-  })
-
-  it('validateSkillFile warns on a SKILL.md without frontmatter (name/description optional per CC spec)', async () => {
-    const skillDir = await fs.mkdtemp(join(tmpdir(), 'sk-'))
-    const path = join(skillDir, 'SKILL.md')
-    await fs.writeFile(path, '# just a heading\n\nbody only')
-    const v = await validateSkillFile(path)
-    // name + description both absent → 2 warnings, but NOT an error (CC: dir basename fallback)
-    expect(v.errors).toHaveLength(0)
-    expect(v.warnings.length).toBeGreaterThan(0)
-    await fs.rm(skillDir, { recursive: true, force: true })
   })
 
   it('single-skill plugin: auto-discovers SKILL.md at the plugin root', async () => {

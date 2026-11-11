@@ -28,3 +28,25 @@ export function testSkillPorts(
     ...more,
   }
 }
+
+/**
+ * The host's `save` as a record of what the tool hands over: each draft and its scope, answered
+ * with the `SKILL.md` a host would write under `root` (`<root>/<scope>/skills/<name>/SKILL.md`).
+ * Writing the file is the host's (`chat/skill-files.ts`).
+ */
+export function testSavePorts(root: string): Required<
+  Pick<SkillToolPorts, 'saveSkill' | 'skillFilePath'>
+> & {
+  readonly saved: Array<{ name: string; description: string; content: string; scope: string }>
+} {
+  const saved: Array<{ name: string; description: string; content: string; scope: string }> = []
+  const skillFilePath = (name: string, scope: string) => `${root}/${scope}/skills/${name}/SKILL.md`
+  return {
+    saved,
+    skillFilePath,
+    saveSkill: async (draft, scope) => {
+      saved.push({ ...draft, scope })
+      return skillFilePath(draft.name, scope)
+    },
+  }
+}

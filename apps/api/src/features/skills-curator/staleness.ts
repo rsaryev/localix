@@ -1,6 +1,5 @@
-import type { DiscoveredSkill } from '../agent-core/skill-discovery'
 import type { SkillUsageRecord } from './repository'
-import { skillAgeBasis } from './skill-fs'
+import { skillAgeBasis, type CuratorSkill } from './skill-fs'
 
 /** Never used and older than this ⇒ stale. */
 export const STALE_AFTER_DAYS = 30
@@ -26,7 +25,7 @@ export interface Idleness {
  * was made. The pass, the preview and a skill's page all read this.
  */
 export async function idlenessOf(
-  skill: DiscoveredSkill,
+  skill: CuratorSkill,
   usage: SkillUsageRecord | null,
   nowMs: number,
 ): Promise<Idleness | null> {

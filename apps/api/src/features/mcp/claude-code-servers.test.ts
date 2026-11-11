@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
-import { mcpSettingsReader } from '../plugins/kit'
+import { mcpSettingsReader } from '../plugins/kit/settings/mcp'
 import { claudeCodeMcpServers } from './claude-code-servers'
 import { installMcpSettingsReader } from './claude-code-settings'
 import type { McpServerRecord } from './repository'
@@ -174,6 +174,44 @@ describe("Claude Code's MCP servers in a Localix run", () => {
       }),
     })
     expect(allowed.names).toEqual(['tool'])
+  })
+
+  test('allowManagedMcpServersOnly reads the allow list of the managed settings alone', () => {
+    const { names } = serversFor({
+      'home/.claude.json': JSON.stringify({
+        mcpServers: {
+          remote: { type: 'http', url: 'https://mcp.example.com/api' },
+          tool: { command: 'npx', args: ['-y', 'server'] },
+        },
+      }),
+      'home/.claude/settings.json': JSON.stringify({ allowedMcpServers: [{ serverName: 'tool' }] }),
+      'managed/managed-settings.json': JSON.stringify({
+        allowManagedMcpServersOnly: true,
+        allowedMcpServers: [{ serverName: 'remote' }],
+      }),
+    })
+    expect(names).toEqual(['remote'])
+  })
+
+  // Kit wins: Claude Code's `/mcp` toggles (`projects["<folder>"].disabledMcpServers`) apply.
+  test('a server turned off in /mcp for the folder does not load', () => {
+    const { names } = serversFor((project) => ({
+      'home/.claude.json': JSON.stringify({
+        mcpServers: { docs: { command: 'docs' }, other: { command: 'other' } },
+        projects: { [project]: { disabledMcpServers: ['docs'] } },
+      }),
+    }))
+    expect(names).toEqual(['other'])
+  })
+
+  // mcp.md, "Scope hierarchy and precedence": plugins are matched by endpoint, not by name.
+  test("a plugin's server at a configured server's endpoint is the configured one", () => {
+    const url = 'https://mcp.example.com/api'
+    const { names } = serversFor(
+      { 'home/.claude.json': JSON.stringify({ mcpServers: { docs: { type: 'http', url } } }) },
+      { plugins: [own('p_same', { url }), own('p_other', { url: 'https://other.example/mcp' })] },
+    )
+    expect(names.sort()).toEqual(['docs', 'p_other'])
   })
 
   /**

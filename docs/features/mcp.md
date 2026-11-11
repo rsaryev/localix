@@ -53,16 +53,20 @@ never written:
 | `projects["<folder>"].mcpServers` there (local scope)       | Loads in that folder or repository                                                                                                                                                                   |
 | `.mcp.json` of the folder or its repository (project scope) | Loads once approved: `enableAllProjectMcpServers` or `enabledMcpjsonServers` in your settings, or in the project's own after you trusted the folder in Claude Code; `disabledMcpjsonServers` rejects |
 | `managed-mcp.json` beside the managed settings              | Exclusive: only its servers and `managedMcpServers` load, none of yours or a plugin's                                                                                                                |
-| `managedMcpServers` in managed settings                     | Added to the rest, over a server of the same name                                                                                                                                                    |
+| `managedMcpServers` in managed settings                     | Added to the rest, over a server of the same name; only a remote `https` entry with no `${VAR}` loads                                                                                                |
 
-A name loads once, from the highest of managed, local, project and user; a server you added in
-Localix with that name wins over Claude Code's. `deniedMcpServers` and `allowedMcpServers`
-(`serverName`, `serverCommand`, `serverUrl`) apply to every server, plugin servers and your own
-included. Such a server is offered as `mcp_<server>_<tool>`, like your own. The Store lists the
-servers of `~/.claude.json` and the managed settings under Yours, and those of a project's
-`.mcp.json` and local entries on its Project shelf, read-only: change them in the file they come
-from. Their switch still works. A server a plugin bundles is not listed on its own: it belongs to
-the plugin and follows the plugin's switch.
+A name loads once, from the highest of managed, local, project and user; a plugin's server at the
+endpoint of one above it is that one. A server you added in Localix with that name wins over Claude
+Code's. A server turned off in Claude Code's `/mcp` for the folder (`disabledMcpServers`) does not
+load. `deniedMcpServers` and `allowedMcpServers` (`serverName`, `serverCommand`, `serverUrl`;
+`allowManagedMcpServersOnly` keeps the managed list alone) apply to every server, plugin servers and
+your own included. The plugin kit decides which servers load, as Claude Code does.
+
+Such a server is offered as `mcp_<server>_<tool>`, like your own. The Store lists the servers of
+`~/.claude.json` and the managed settings under Yours, and those of a project's `.mcp.json` and
+local entries on its Project shelf, read-only: change them in the file they come from. Their switch
+still works. A server a plugin bundles is not listed on its own: it belongs to the plugin and
+follows the plugin's switch.
 
 ### Transports
 
@@ -281,6 +285,7 @@ OAuth tokens, dynamic client data, and the pending PKCE verifier are AES-256-GCM
   and
   [secrets](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/store-secrets.ts)
 - [Server records and availability](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/service.ts)
+- [Claude Code's servers in a folder, through the plugin kit](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/settings/mcp-plan.ts)
 - [Deferred tool assembly](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/tool-assembly.ts)
 - [Transport connection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/mcp-connect.ts)
 - [Connection and metadata lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/client-manager.ts)

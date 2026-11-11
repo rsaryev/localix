@@ -71,7 +71,7 @@ export function createLocalixPluginHost(deps: PluginHostDeps): LocalixPluginHost
     envFiles: ports.envFiles,
     // Localix builds the launch environment of every process (`childEnv`).
     launchOwnsEnvironment: true,
-    // A project's portable `.agents/skills` beside its `.claude` ones (`agent-core/skill-scan.ts`).
+    // A project's portable `.agents/skills` beside its `.claude` ones.
     extraScopeFolders: ['.agents'],
   })
   return {

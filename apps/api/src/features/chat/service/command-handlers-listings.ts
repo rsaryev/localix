@@ -120,9 +120,8 @@ export async function handleMemoryControlCommand(
 }
 
 /**
- * Handles `/skills`: lists skills visible to the session with their scope/source
- * and any per-skill visibility override. Pure listing. Extracted verbatim from
- * handleControlCommand.
+ * Handles `/skills`: the skills and commands of the chat's kit session (its folders and its
+ * plugins), each with its scope or plugin, less those the person switched off. Pure listing.
  */
 export async function handleSkillsControlCommand(
   ctx: Pick<CommandHandlerContext, 'gatherSessionSkills' | 'loadSkillOverrides'>,
@@ -144,12 +143,7 @@ export async function handleSkillsControlCommand(
           '**Available skills** — run with `/<name>`:',
           '',
           ...skills.map((s) => {
-            const tags = [
-              s.scope === 'global' ? 'global' : 'project',
-              s.source === 'file' ? 'file' : null,
-            ]
-              .filter(Boolean)
-              .join(', ')
+            const tags = s.plugin ? `plugin ${s.plugin.name}` : s.scope
             return `- \`/${s.name}\` _(${tags})_ — ${s.description || 'No description'}`
           }),
           '',

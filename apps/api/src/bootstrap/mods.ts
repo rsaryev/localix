@@ -1,4 +1,6 @@
-import type { LocalixPluginHost } from '../features/plugins/kit'
+import { scopeSkills, type LocalixPluginHost } from '../features/plugins/kit'
+import { buildPluginCatalog } from '../features/plugins/catalog'
+import { kitPluginsOf } from '../features/plugins/catalog-kit'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
@@ -19,8 +21,6 @@ import { submittedContent, type ModsPorts } from '../features/mods/contracts'
 import { receiveDelivery } from '../features/mods/conversation-events'
 import { createModsHost, type ModsHost } from '../features/mods/host'
 import { loadEnabledPluginMods } from '../features/plugins/loader-declarative'
-import { loadEnabledPlugins } from '../features/plugins/loader'
-import { discoverFilesystemSkills } from '../features/agent-core/skill-discovery'
 import { SLASH_COMMANDS } from '../features/chat/slash-catalog'
 import type { ProviderConnectionsService } from '../features/provider-connections/service'
 import { publishResourcesChanged, type RealtimeResource } from '../features/realtime/resources'
@@ -169,21 +169,23 @@ export function createModsPhase(input: {
     },
     async listCommands(scene) {
       const userId = scene.userId || defaultUserId
-      const [own, plugins] = await Promise.all([
-        discoverFilesystemSkills(scene.cwd, userHome()),
-        loadEnabledPlugins({
-          repo,
-          availability: await readAvailability(deps.db, { userId, agentId: DEFAULT_AGENT_ID }),
-          userId,
-          projectId: '',
-          cwd: scene.cwd,
-          homeDir: userHome(),
-          pluginHost: input.pluginHost,
-        }).catch(() => null),
-      ])
+      const catalog = await buildPluginCatalog({
+        repo,
+        availability: await readAvailability(deps.db, { userId, agentId: DEFAULT_AGENT_ID }),
+        userId,
+        projectId: '',
+        cwd: scene.cwd,
+        homeDir: userHome(),
+      })
+      // The skills the `/` menu offers in the folder, the person's and the plugins' with them.
+      const listed = await scopeSkills(input.pluginHost, {
+        cwd: scene.cwd,
+        homeDir: userHome(),
+        plugins: kitPluginsOf(catalog),
+      }).catch(() => null)
       return localixCommands({
         builtins: SLASH_COMMANDS,
-        skills: [...own, ...(plugins?.skills ?? [])],
+        skills: (listed?.skills ?? []).filter((skill) => skill.inMenu),
       })
     },
     async readSession(scene) {

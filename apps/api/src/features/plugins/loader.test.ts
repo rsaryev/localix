@@ -167,14 +167,8 @@ describe('loadEnabledPlugins', () => {
     expect((server!.config.env as Record<string, string>).TOKEN).toBe('s3cr3t')
   })
 
-  it('folds bundled skills into the skill list', async () => {
-    const loaded = await loadEnabledPlugins(opts(fakeRepo([state('demo')]), allowing('demo')))
-    expect(loaded.skills.find((s) => s.name === 'greet')).toBeDefined()
-  })
-
   it('a plugin nothing switched on contributes nothing (the trust gate)', async () => {
     const loaded = await loadEnabledPlugins(opts(fakeRepo([state('demo')]), allowing()))
-    expect(loaded.skills).toHaveLength(0)
     expect(loaded.mcpServers).toHaveLength(0)
     expect(loaded.loaded).toHaveLength(0)
   })
@@ -189,18 +183,6 @@ describe('loadEnabledPlugins', () => {
   })
 })
 
-describe('skills paths', () => {
-  it('loads a skill from a manifest skills path that points directly at a skill dir', async () => {
-    const loaded = await loadEnabledPlugins(
-      opts(fakeRepo([state('direct-skill')]), allowing('direct-skill')),
-    )
-    const skill = loaded.skills.find((s) => s.name === 'designer')
-    expect(skill).toBeDefined()
-    expect(typeof Object.getOwnPropertyDescriptor(skill!, 'content')?.get).toBe('function')
-    expect(skill!.content).toContain('Design beautifully.')
-  })
-})
-
 /**
  * BUG B2 — CC `userConfig` `sensitive: true` must NOT leak into model-facing text.
  *
@@ -212,20 +194,6 @@ describe('skills paths', () => {
  * true → the value is NOT substituted (a placeholder instead).
  */
 describe('B2 — sensitive:true userConfig key is NOT substituted into model-facing text', () => {
-  it('keeps sensitive CC config values out of skill content', async () => {
-    const repo = fakeRepo([
-      state('b2-sensitive', { API_TOKEN: 'my-private-key', BASE_URL: 'https://service.io' }),
-    ])
-    const loaded = await loadEnabledPlugins(opts(repo, allowing('b2-sensitive')))
-    const skill = loaded.skills.find((s) => s.name === 'b2skill')
-    expect(skill).toBeDefined()
-    // Non-sensitive value substituted.
-    expect(skill!.content).toContain('https://service.io')
-    // Sensitive value NOT present anywhere in the skill text; a placeholder stands in.
-    expect(skill!.content).not.toContain('my-private-key')
-    expect(skill!.content).toContain("auth [sensitive option 'API_TOKEN' not available")
-  })
-
   it('MCP config still injects the sensitive value (secrets are allowed there)', async () => {
     // The demo plugin's TOKEN is sensitive — MCP records still get the value.
     const repo = fakeRepo([state('demo', { TOKEN: 'mcp-real-secret' })])

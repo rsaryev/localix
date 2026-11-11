@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
-import { mcpSettingsReader } from '../plugins/kit'
+import { mcpSettingsReader } from '../plugins/kit/settings/mcp'
 import { claudeCodeMcpServers } from './claude-code-servers'
 import { installMcpSettingsReader } from './claude-code-settings'
 import type { McpServerRecord } from './repository'
@@ -67,7 +67,8 @@ describe('MCP servers under strictPluginOnlyCustomization', () => {
       load(
         {
           strictPluginOnlyCustomization: ['mcp'],
-          managedMcpServers: { orgSrv: { command: 'o' } },
+          // Kit wins (Claude Code 2.1.259): a provided server is remote, over https.
+          managedMcpServers: { orgSrv: { type: 'http', url: 'https://org.example/mcp' } },
         },
         {},
       ),

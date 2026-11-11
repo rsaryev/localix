@@ -255,9 +255,9 @@ and non-zero-exit behavior. For a forked skill, verify the invoking agent has ev
 
 ## Source of truth
 
-- [Frontmatter parser](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/skill-frontmatter.ts)
-- [Discovery precedence and writes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/skill-discovery.ts)
-- [Bounded directory scanner](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/skill-scan.ts)
+- [A scope's skills, read through the plugin kit](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/scope-skills.ts)
+- [The `SKILL.md` format as the kit reads it](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/skill-files.ts)
+- [Writing skills to a scope's folder](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/skill-files.ts)
 - [Slash-command dispatch](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers.ts)
 - [Dynamic command expansion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/skill-commands.ts)
 - [File-reference expansion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/file-references.ts)

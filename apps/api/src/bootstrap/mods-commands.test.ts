@@ -10,7 +10,11 @@ test('$.command.list names Localix’s commands and the skills a person runs, by
       ],
       skills: [
         { name: 'commit', description: 'Commit the work' },
-        { name: 'deploy', description: 'Ship it', pluginName: 'vercel' },
+        {
+          name: 'vercel:deploy',
+          description: 'Ship it',
+          plugin: { id: 'vercel@m', name: 'vercel' },
+        },
         { name: 'clear', description: 'A skill shadowed by the command' },
       ],
     }),

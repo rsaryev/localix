@@ -73,7 +73,7 @@ test('memberOf keeps one member of a family per request', async () => {
   expect([await mod.scrolled($, 'pane-a'), await mod.scrolled($, 'pane-b')]).toEqual([5, 1])
 })
 
-test('update writes over a write that came between its read and its write', async () => {
+test('update applies its change again when another write came between its read and its write', async () => {
   const { mod, $ } = await load()
   let raced = false
   const racing = {
@@ -88,6 +88,6 @@ test('update writes over a write that came between its read and its write', asyn
       },
     },
   }
-  expect(await mod.add(racing)).toBe(1)
-  expect(await mod.raw($)).toBe(1)
+  expect(await mod.add(racing)).toBe(11)
+  expect(await mod.raw($)).toBe(11)
 })

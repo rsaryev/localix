@@ -2,7 +2,17 @@ import { describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { makeTempDir } from '@localixai/testing'
 import { join } from 'node:path'
-import { createSkill, skillNameFromId, updateSkill, type SkillOpsContext } from './skill-ops'
+import { writeTree } from '@localixai/testing'
+import { diskPluginHost } from '../../plugins/kit/testing'
+import { scopeSkills } from '../../plugins/kit'
+import {
+  createSkill,
+  getSkill,
+  listSkills,
+  skillNameFromId,
+  updateSkill,
+  type SkillOpsContext,
+} from './skill-ops'
 
 /**
  * `updateSkill` used to be a create-in-disguise: it ignored the id it was handed and just
@@ -21,6 +31,18 @@ const tmpBase = async (label: string): Promise<string> => makeTempDir(`localix-$
 const ctxFor = (base: string): SkillOpsContext => ({
   now: () => '2026-07-14T00:00:00.000Z',
   resolveProjectWorkingDir: async () => base,
+  // The kit's listing of the project folder, with a home and managed folder of the test's own.
+  scopeSkills: async () => {
+    const managed = join(base, 'managed')
+    writeTree(managed, { 'managed-settings.json': '{}' })
+    const home = join(base, 'home')
+    return scopeSkills(diskPluginHost(home, { managedDirectory: managed }), {
+      cwd: base,
+      homeDir: home,
+      plugins: [],
+      managed: { dir: managed },
+    })
+  },
 })
 
 const skillDir = (base: string, name: string): string => join(base, '.claude/skills', name)
@@ -40,6 +62,40 @@ describe('skillNameFromId', () => {
     expect(skillNameFromId('db:123')).toBeUndefined()
     expect(skillNameFromId('')).toBeUndefined()
     expect(skillNameFromId('file:')).toBeUndefined()
+  })
+})
+
+describe('listSkills and getSkill', () => {
+  test("list the scope's skills as the kit reads them, with each file's issues; get reads one body", async () => {
+    const base = await tmpBase('skill-list')
+    try {
+      writeTree(base, {
+        '.git/HEAD': '',
+        '.claude/skills/deploy/SKILL.md':
+          '---\ndescription: Ship it\nargument-hint: "[env]"\nuser-invocable: maybe\n---\nDeploy body\n',
+        'home/.claude/skills/mine/SKILL.md': '---\ndescription: Mine\n---\nMine body\n',
+      })
+      const ctx = ctxFor(base)
+      const { skills } = await listSkills(ctx, 'u1', { projectId: 'p1' })
+      const deploy = skills.find((one) => one.name === 'deploy')
+      expect(deploy).toMatchObject({
+        description: 'Ship it',
+        scope: 'project',
+        projectId: 'p1',
+        argumentHint: '[env]',
+        content: '',
+      })
+      expect(deploy?.validation?.warnings.length).toBeGreaterThan(0)
+      expect(skills.find((one) => one.name === 'mine')).toMatchObject({
+        scope: 'global',
+        projectId: '',
+      })
+      const full = await getSkill(ctx, 'u1', 'deploy', { projectId: 'p1' })
+      expect(full.content).toContain('Deploy body')
+      await expect(getSkill(ctx, 'u1', 'nothing', { projectId: 'p1' })).rejects.toThrow(/not found/)
+    } finally {
+      await fs.rm(base, { recursive: true, force: true })
+    }
   })
 })
 

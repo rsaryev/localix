@@ -6,6 +6,7 @@ import path from 'node:path'
 import { localixHome } from '../../lib/env'
 import { extractCallFacts, writeTargets } from './permission-facts'
 import { sessionScratchRoot } from './tools/workspace'
+import { createSkillTool } from './tools/skill'
 
 const root = '/work/project'
 
@@ -181,25 +182,30 @@ describe('mutation containment through a symlinked directory', () => {
 })
 
 describe('skill call facts', () => {
-  test('a save names the SKILL.md it writes, by scope; a get and the removed actions name nothing', () => {
-    const project = extractCallFacts(
-      'Skill',
-      { action: 'save', name: 'ship', scope: 'project' },
-      root,
-    )
-    expect(project.paths).toEqual([path.join(root, '.claude/skills/ship/SKILL.md')])
-    const global = extractCallFacts(
-      'Skill',
-      { action: 'save', name: 'ship', scope: 'global' },
-      root,
-    )
-    expect(global.paths).toEqual([path.join(os.homedir(), '.claude/skills/ship/SKILL.md')])
+  test('a save names the SKILL.md its port writes, by scope; a get and the removed actions name nothing', () => {
+    const home = path.join(root, 'home', '.claude')
+    const tool = createSkillTool(root, {}, '', undefined, {
+      skillFilePath: (name, scope) =>
+        path.join(
+          scope === 'global' ? home : path.join(root, '.claude'),
+          'skills',
+          name,
+          'SKILL.md',
+        ),
+    })
+    const facts = (input: unknown) => extractCallFacts('Skill', input, root, tool)
+    expect(facts({ action: 'save', name: 'ship', scope: 'project' }).paths).toEqual([
+      path.join(root, '.claude/skills/ship/SKILL.md'),
+    ])
+    expect(facts({ action: 'save', name: 'ship', scope: 'global' }).paths).toEqual([
+      path.join(home, 'skills/ship/SKILL.md'),
+    ])
     for (const input of [
       { action: 'get', name: 'ship' },
       // `delete` once declared both candidate folders; it is the Store's now.
       { action: 'delete', name: 'ship' },
       { action: 'list' },
     ])
-      expect(extractCallFacts('Skill', input, root).paths).toEqual([])
+      expect(facts(input).paths).toEqual([])
   })
 })

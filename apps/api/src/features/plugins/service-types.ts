@@ -23,6 +23,7 @@ import type {
 } from './contracts'
 import type { PluginThemeSpec } from './contracts-themes'
 import type { PluginUpdates } from './plugin-updates'
+import type { LocalixPluginHost } from './kit'
 import type { DefaultMarketplaceOutcome } from './default-marketplaces'
 import type { UpdateMarketplaceResponse } from './contracts-updates'
 
@@ -55,6 +56,8 @@ export interface PluginServiceDeps {
    * tests that did it staged their fixture plugins into the real home.
    */
   homeDir: string
+  /** The kit host the composer lists plugin skills through; none lists no plugin skill. */
+  pluginHost?: LocalixPluginHost
   /**
    * The commands loaded mods registered (`$.command.register`), listed beside the plugins'
    * own; a mods host supplies them (`bootstrap/mods.ts`).

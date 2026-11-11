@@ -16,7 +16,7 @@ import type { OptionalToolPorts } from '../../../agent-core/tool-registry'
 import { TOOL } from '../../../agent-core/tool-names'
 import { createSkillTool, type SkillToolPorts } from '../../../agent-core/tools/skill'
 import { createMiniAppGuideTool } from '../../../agent-core/tools/mini-app-guide'
-import { skillToolPorts, type SkillCommandPolicyRef } from './skill-tool-ports'
+import { skillSavePorts, skillToolPorts, type SkillCommandPolicyRef } from './skill-tool-ports'
 import { createToolOutputTool } from '../../../agent-core/tools/context-search/context-search'
 import {
   createGlobalSearchTool,
@@ -90,6 +90,7 @@ export function buildDirectToolInstances(
           deps.announceCapabilityChange,
           {
             ...skillPorts,
+            ...skillSavePorts(defaultCwd, session.projectId ?? ''),
             ...(deps.forkSkill ? { forkSkill: deps.forkSkill } : {}),
           },
         )

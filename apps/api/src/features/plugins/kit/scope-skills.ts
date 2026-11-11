@@ -8,6 +8,11 @@ export interface ScopeSkills {
   readonly skills: readonly ChatSkill[]
   /** The folders' issues (a frontmatter that does not parse, a refused name), by file. */
   readonly issues: readonly PluginIssue[]
+  /**
+   * A skill's body as its file holds it now (`session.skillContent`: found by every name it runs
+   * by, nothing substituted, no command run); undefined when no skill has the name.
+   */
+  readonly content: (name: string, signal?: AbortSignal) => Promise<string | undefined>
 }
 
 /**
@@ -27,5 +32,9 @@ export async function scopeSkills(
   return {
     skills: sessionSkills(session),
     issues: [...reload.issues, ...session.skillCatalog().issues],
+    content: async (name, contentSignal = signal) => {
+      const read = await session.skillContent(name, { signal: contentSignal })
+      return read.ok ? read.skill.body : undefined
+    },
   }
 }

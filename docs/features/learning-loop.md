@@ -128,6 +128,6 @@ user and assistant text.
 - [`/memory` command](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers-listings.ts)
 - [Skill tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/skill.ts)
   and
-  [filesystem discovery](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/skill-discovery.ts)
+  [skill writes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/skill-files.ts)
 - [Completion hook invocation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/finalize.ts)
 - [Memory provider lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/memory-hooks.ts)

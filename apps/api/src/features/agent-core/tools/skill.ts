@@ -1,9 +1,7 @@
 import { truncateHead } from '@localixai/agent'
 import { errorMessage } from '../../../lib/errors'
-import { homedir } from 'node:os'
 import { defineAgentTool } from '@localixai/agent/agents'
 import { TOOL } from '../tool-names'
-import { writeSkillFile } from '../skill-discovery'
 import { recordSkillUse } from '../skill-usage-recorder'
 import { MAX_OUTPUT_BYTES } from './file/read-output'
 import { truncationMarker } from './tool-output'
@@ -63,6 +61,9 @@ export function createSkillTool(
     }
   }
   const projectBase = workingDir && workingDir !== '/' ? workingDir : null
+  /** Where a `save` goes: the person's skills when asked, or with no project to hold it. */
+  const scopeOf = (input: { scope?: unknown }): 'global' | 'project' =>
+    input.scope === 'global' || !projectBase ? 'global' : 'project'
 
   const notFoundMessage = (name: string, { names }: SkillFound): string => {
     if (names.length === 0) return `Skill not found: "${name}". No skills are available.`
@@ -82,10 +83,16 @@ export function createSkillTool(
     inputSchema: skillToolInputSchema,
     prepareArguments: prepareSkillArguments,
     permissionResources: skillPermissionResources,
-    // `save` writes <base>/.claude/skills/<name>/SKILL.md. With `scope:"global"` the base is
-    // homedir(), i.e. outside the workspace — which is exactly what the confirmation prompt
-    // exists for.
+    // `save` writes <folder>/skills/<name>/SKILL.md (`ports.saveSkill`). With `scope:"global"`
+    // the folder is the person's `.claude`, outside the workspace — which is exactly what the
+    // confirmation prompt exists for, so the file is the call's path (`ports.skillFilePath`).
     mutates: true,
+    permissionPaths: (input) => {
+      const call = (input ?? {}) as { action?: unknown; name?: unknown; scope?: unknown }
+      if (call.action !== 'save' || typeof call.name !== 'string' || !call.name) return []
+      const path = ports.skillFilePath?.(call.name, scopeOf(call))
+      return path ? [path] : []
+    },
     classify: classifySkillCall,
     executionMode: 'sequential',
     // get only reads, so it overlaps other reads; save stays a barrier in its turn.
@@ -102,19 +109,16 @@ export function createSkillTool(
             return { content: 'description is required for action="save".', isError: true }
           if (!input.content)
             return { content: 'content is required for action="save".', isError: true }
-          const isGlobal = input.scope === 'global' || !projectBase
-          const base = isGlobal ? homedir() : projectBase
+          if (!ports.saveSkill)
+            return { content: 'Saving skills is not available here.', isError: true }
+          const scope = scopeOf(input)
           try {
-            const dir = await writeSkillFile(
-              base,
+            const path = await ports.saveSkill(
               { name: input.name, description: input.description, content: input.content },
-              isGlobal ? 'global' : 'project',
-              { projectId: isGlobal ? '' : projectId },
+              scope,
             )
             announce()
-            return {
-              content: `Skill saved: "${input.name}" → ${dir}/SKILL.md (${isGlobal ? 'global' : 'project'})`,
-            }
+            return { content: `Skill saved: "${input.name}" → ${path} (${scope})` }
           } catch (e) {
             return { content: `Error saving skill: ${errorMessage(e)}`, isError: true }
           }

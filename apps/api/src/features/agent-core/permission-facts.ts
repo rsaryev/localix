@@ -2,9 +2,7 @@ import { TOOL } from './tool-names'
 import type { AgentTool } from '@localixai/agent/agents'
 
 import { asStringArray } from '../../lib/coerce'
-import { homedir } from 'node:os'
 
-import { defaultSkillFilePath } from './skill-discovery'
 import { resolveFileTarget } from './tools/file/file-utils'
 import { mutationTargets } from './tools/file/mutation-input'
 import { readScopePaths } from './tools/file/read-items'
@@ -130,21 +128,6 @@ export function extractCallFacts(
       paths.push(...mutationTargets(i, root))
       break
     }
-    case TOOL.Skill: {
-      // `save` writes a real file; `get` touches nothing. With no case here at all this fell
-      // through to `paths: []`, so path-pattern rules could not inspect skill writes. Global
-      // skills live in `~/.claude/skills`, an agent-owned root (`AGENT_ALLOWED_ROOTS`) that needs
-      // no outside-workspace prompt, but the concrete path still belongs in the facts.
-      if (i.action !== 'save') break
-      if (typeof i.name !== 'string' || !i.name) break
-      // `save` honours `scope`, so its base is predictable: homedir() for a global skill,
-      // otherwise the project. `cwd`/`root` may be absent; a relative path resolves against
-      // `cwd` anyway, so '.' is the honest project base when neither is known.
-      const base = i.scope === 'global' ? homedir() : (root ?? cwd ?? '.')
-      // Path from the ONE builder the writer uses, never re-derived here.
-      paths.push(resolveFileTarget(defaultSkillFilePath(base, i.name), cwd, root).path)
-      break
-    }
     case TOOL.Bash: {
       // Mirror bash.execute's dispatch order exactly: interactive action first; otherwise a
       // non-empty `commands[]` batch wins over the single `command`. Treating ignored fields as
@@ -193,7 +176,8 @@ export function extractCallFacts(
       // A tool this switch has never heard of — every plugin tool, by construction. Core cannot add
       // a case per plugin, and a tool with no paths is invisible to the `outside-workspace` rule and
       // to every user path rule, so the TOOL declares its own targets (`AgentTool.permissionPaths`).
-      // Reached only in `default`, so a core case can never be overridden or bypassed by one.
+      // Reached only in `default`, so a core case can never be overridden or bypassed by one. The
+      // `Skill` tool's `save` declares its file here too: where it writes is the host's port.
       //
       // Plugin code runs here, on the permission path, before anything is allowed: a throw or a
       // non-array must degrade to "declared nothing" rather than become an exception in the gate,

@@ -6,7 +6,6 @@ import {
   renderFrontmatterFile,
   splitFrontmatter,
 } from './frontmatter-yaml'
-import { parseSkillFrontmatter, renderSkillFile } from './skill-frontmatter'
 
 describe('parseYamlFrontmatterBlock', () => {
   it('parses a nested hooks map from frontmatter', () => {
@@ -43,51 +42,6 @@ describe('parseYamlFrontmatterBlock', () => {
 
   it('returns undefined when the document is a scalar/array, not a map', () => {
     expect(parseYamlFrontmatterBlock('---\n- a\n- b\n---\nbody')).toBeUndefined()
-  })
-})
-
-describe('parseSkillFrontmatter hooks', () => {
-  it('carries a nested hooks block onto the parsed skill', () => {
-    const raw = [
-      '---',
-      'name: reviewer',
-      'description: reviews on stop',
-      'hooks:',
-      '  Stop:',
-      '    - hooks:',
-      '        - type: command',
-      '          command: echo done',
-      '---',
-      'Review the change.',
-    ].join('\n')
-    const fm = parseSkillFrontmatter(raw)
-    expect(fm.name).toBe('reviewer')
-    const hooks = fm.hooks as Record<string, unknown>
-    expect(Array.isArray(hooks.Stop)).toBe(true)
-  })
-
-  it('keeps flat fields intact and drops hooks when the YAML is malformed', () => {
-    // A tab in a nested value makes YAML fail; the flat line-parser still reads scalars.
-    const raw = [
-      '---',
-      'name: fallback',
-      'description: still parses',
-      'allowed-tools: Bash(git *)',
-      'hooks:',
-      '\t- broken tab indentation',
-      '---',
-      'body',
-    ].join('\n')
-    const fm = parseSkillFrontmatter(raw)
-    expect(fm.name).toBe('fallback')
-    expect(fm.description).toBe('still parses')
-    expect(fm.allowedTools).toEqual(['Bash(git *)'])
-    expect(fm.hooks).toBeUndefined()
-  })
-
-  it('leaves hooks undefined when the frontmatter declares none', () => {
-    const fm = parseSkillFrontmatter('---\nname: plain\ndescription: no hooks\n---\nbody')
-    expect(fm.hooks).toBeUndefined()
   })
 })
 
@@ -128,48 +82,6 @@ describe('one parse, two views', () => {
 })
 
 describe('renderFrontmatterFile', () => {
-  it('sets owned keys and keeps comments, order and unknown keys', () => {
-    const existing = [
-      '---',
-      '# authored by hand',
-      'name: old',
-      'license: MIT # keep this note',
-      'metadata:',
-      '  author: jane',
-      'description: old text',
-      '---',
-      'old body',
-    ].join('\n')
-    const out = renderSkillFile(existing, {
-      name: 'new',
-      description: 'Use when: deploying',
-      content: 'new body',
-    })
-    expect(out).toBe(
-      [
-        '---',
-        '# authored by hand',
-        'name: new',
-        'license: MIT # keep this note',
-        'metadata:',
-        '  author: jane',
-        // The line writer emitted this unquoted — invalid YAML every real parser rejects.
-        'description: "Use when: deploying"',
-        '---',
-        '',
-        'new body',
-        '',
-      ].join('\n'),
-    )
-    expect(parseMarkdownFrontmatter(out).fields.description).toBe('Use when: deploying')
-  })
-
-  it('writes a new file with name and description first', () => {
-    expect(renderSkillFile('', { name: 'n', description: 'd\nmore', content: ' b ' })).toBe(
-      '---\nname: n\ndescription: d more\n---\n\nb\n',
-    )
-  })
-
   it('writes lists and mappings, and removes a key given undefined', () => {
     const out = renderFrontmatterFile(
       '---\nname: a\nmodel: opus\nunknown: 1\n---\nbody',
@@ -184,5 +96,94 @@ describe('renderFrontmatterFile', () => {
   it('refuses to rewrite a block it cannot read rather than drop its keys', () => {
     const broken = '---\nname: x\nhooks:\n\t- tab\n---\nbody'
     expect(() => renderFrontmatterFile(broken, { name: 'y' }, 'body')).toThrow(/not valid YAML/)
+  })
+})
+
+describe('parseMarkdownFrontmatter', () => {
+  it('parses basic frontmatter and body', () => {
+    const { fields, body } = parseMarkdownFrontmatter(
+      '---\nname: test\ndescription: A test skill\n---\n\nBody here.',
+    )
+    expect(fields.name).toBe('test')
+    expect(fields.description).toBe('A test skill')
+    expect(body).toBe('Body here.')
+  })
+
+  it('returns empty fields + raw body when no frontmatter', () => {
+    const { fields, body } = parseMarkdownFrontmatter('Just a body.')
+    expect(Object.keys(fields)).toHaveLength(0)
+    expect(body).toBe('Just a body.')
+  })
+
+  it('strips UTF-8 BOM before parsing', () => {
+    const withBom = '﻿---\nname: bom-test\n---\n\nBody.'
+    const { fields, body } = parseMarkdownFrontmatter(withBom)
+    expect(fields.name).toBe('bom-test')
+    expect(body).toBe('Body.')
+  })
+
+  it('normalizes CRLF line endings (Windows)', () => {
+    const crlf = '---\r\nname: win-test\r\n---\r\n\r\nBody.'
+    const { fields, body } = parseMarkdownFrontmatter(crlf)
+    expect(fields.name).toBe('win-test')
+    expect(body).toBe('Body.')
+  })
+
+  it('strips quotes from values', () => {
+    const { fields } = parseMarkdownFrontmatter('---\ndescription: "quoted value"\n---\n\nb')
+    expect(fields.description).toBe('quoted value')
+  })
+
+  it('parses block-list values as string arrays', () => {
+    const src = '---\nname: my-skill\nallowed-tools:\n  - Read\n  - Bash(git *)\n---\n\nBody.'
+    const { fields, body } = parseMarkdownFrontmatter(src)
+    expect(fields.name).toBe('my-skill')
+    expect(fields['allowed-tools']).toEqual(['Read', 'Bash(git *)'])
+    expect(body).toBe('Body.')
+  })
+
+  it('parses block-list arguments as string arrays', () => {
+    const src = '---\nname: s\narguments:\n  - target\n  - branch\n---\n\nBody.'
+    const { fields } = parseMarkdownFrontmatter(src)
+    expect(fields.arguments).toEqual(['target', 'branch'])
+  })
+
+  it('scalar fields remain strings when block-list is absent', () => {
+    const src = '---\nname: plain\ndescription: A plain skill\n---\n\nBody.'
+    const { fields } = parseMarkdownFrontmatter(src)
+    expect(typeof fields.name).toBe('string')
+    expect(fields.name).toBe('plain')
+  })
+
+  it('folds a multi-line scalar (value on indented continuation lines) into one string', () => {
+    // Regression: a `description:` whose value sat on the next indented line(s) used to
+    // parse as '' — silently dropping the description in skill validation AND selection.
+    const src =
+      '---\nname: jwt\ndescription:\n  JWT and OIDC security testing covering token forgery,\n  algorithm confusion, and claim manipulation\n---\n\nBody.'
+    const { fields } = parseMarkdownFrontmatter(src)
+    expect(fields.description).toBe(
+      'JWT and OIDC security testing covering token forgery, algorithm confusion, and claim manipulation',
+    )
+    expect(fields.name).toBe('jwt')
+  })
+
+  it('preserves newlines for a `|` literal block scalar and folds a `>` block scalar', () => {
+    const literal = parseMarkdownFrontmatter('---\ntext: |\n  line one\n  line two\n---\n\nB.')
+    expect(literal.fields.text).toBe('line one\nline two')
+    const folded = parseMarkdownFrontmatter('---\ntext: >\n  line one\n  line two\n---\n\nB.')
+    expect(folded.fields.text).toBe('line one line two')
+  })
+
+  it('an empty scalar with no continuation stays an empty string', () => {
+    const { fields } = parseMarkdownFrontmatter('---\nname: n\ndescription:\n---\n\nBody.')
+    expect(fields.description).toBe('')
+    expect(fields.name).toBe('n')
+  })
+
+  it('handles block-list with BOM and CRLF', () => {
+    const src = '﻿---\r\nallowed-tools:\r\n  - Read\r\n  - Write\r\n---\r\n\r\nBody.'
+    const { fields, body } = parseMarkdownFrontmatter(src)
+    expect(fields['allowed-tools']).toEqual(['Read', 'Write'])
+    expect(body).toBe('Body.')
   })
 })

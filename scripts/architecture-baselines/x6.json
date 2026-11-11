@@ -1,11 +1,6 @@
 [
-  "apps/api/src/features/agent-core/skill-frontmatter.ts spells allowed-tools (frontmatter)",
-  "apps/api/src/features/agent-core/skill-frontmatter.ts spells disable-model-invocation (frontmatter)",
   "apps/api/src/features/agent-core/skill-tool-path-vars.ts spells CLAUDE_PLUGIN_DATA (plugin variables)",
   "apps/api/src/features/agent-core/skill-tool-path-vars.ts spells CLAUDE_SKILL_DIR (skill variables)",
-  "apps/api/src/features/agent-core/skill-validate.ts spells CLAUDE_SKILL_DIR (skill variables)",
-  "apps/api/src/features/agent-core/skill-validate.ts spells allowed-tools (frontmatter)",
-  "apps/api/src/features/agent-core/skill-validate.ts spells disable-model-invocation (frontmatter)",
   "apps/api/src/features/agent-core/tools/file/search.ts spells plugin.json (manifest reading)",
   "apps/api/src/features/chat/runtime/run/permission-gate-build.ts spells allowed-tools (frontmatter)",
   "apps/api/src/features/chat/runtime/run/skill-turn-grants.ts spells allowed-tools (frontmatter)",

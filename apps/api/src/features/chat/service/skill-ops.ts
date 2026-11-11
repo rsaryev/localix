@@ -1,44 +1,54 @@
 import { InvalidRequestError, NotFoundError } from '../../../lib/domain-errors'
-import { homedir } from 'node:os'
 import { basename, dirname } from 'node:path'
 
-import {
-  discoverFilesystemSkills,
-  writeSkillFile,
-  deleteSkillByName,
-} from '../../agent-core/skill-discovery'
-import { validateSkillFile } from '../../agent-core/skill-validate'
-import { toFileSkillRecord, type SkillInput, type SkillRecord } from './skills'
-import type { SkillDiscoveryLogger } from '../../agent-core/skill-discovery'
+import type { PluginIssue, ScopeSkills } from '../../plugins/kit'
+import { removeSkill, skillFolderOf, writeSkill } from '../skill-files'
+import { toSkillRecord, type SkillInput, type SkillRecord } from './skills'
 
 /** Closure values the skills CRUD operations need from createChatService. */
 export interface SkillOpsContext {
   now: () => string
   resolveProjectWorkingDir: (userId: string, projectId: string | null) => Promise<string | null>
-  logger?: SkillDiscoveryLogger
+  /**
+   * A scope's skills as the kit lists them (`plugins/kit` `scopeSkills`): the project's folders
+   * with `projectId`, the person's alone without one, and the plugins the scope has on.
+   */
+  scopeSkills: (userId: string, projectId: string | null) => Promise<ScopeSkills>
+}
+
+/** A file's issues as the list flags them. */
+function validationOf(issues: readonly PluginIssue[], path: string | undefined) {
+  const own = issues.filter((issue) => issue.path === path)
+  if (own.length === 0) return undefined
+  const of = (severity: PluginIssue['severity']) =>
+    own.filter((issue) => issue.severity === severity).map((issue) => issue.message)
+  return { errors: of('error'), warnings: of('warning') }
+}
+
+/** The skills of the scope's own folders (a plugin's are its plugin's page), with their issues. */
+async function folderSkills(ctx: SkillOpsContext, userId: string, projectId: string | null) {
+  const listed = await ctx.scopeSkills(userId, projectId)
+  return { listed, skills: listed.skills.filter((skill) => !skill.plugin) }
 }
 
 /**
- * Lists skills as SKILL.md files. With `projectId` it resolves that project's
- * working dir and walks up the tree (plus global home); without one, only
- * global skills. Skills are never stored in the DB.
+ * Lists the skills of a scope's own folders, as the kit reads them: with `projectId`, the
+ * project's (its working directory up to the repository root) and the person's; without one, the
+ * person's. Skills are never stored in the DB.
  */
 export async function listSkills(
   ctx: SkillOpsContext,
   userId: string,
   opts?: { projectId?: string | null },
 ): Promise<{ skills: SkillRecord[] }> {
-  const workingDir = await ctx.resolveProjectWorkingDir(userId, opts?.projectId ?? null)
-  const fileSkills = await discoverFilesystemSkills(workingDir, undefined, ctx.logger)
-  // Attach per-skill SKILL.md hygiene (parallel, independent file reads) so the
-  // settings UI can surface bad/missing frontmatter without a chat round-trip.
-  const skills = await Promise.all(
-    fileSkills.map(async (f) => ({
-      ...toFileSkillRecord(f, opts?.projectId ?? ''),
-      validation: await validateSkillFile(f.path),
-    })),
-  )
-  return { skills }
+  const projectId = opts?.projectId ?? null
+  const { listed, skills } = await folderSkills(ctx, userId, projectId)
+  return {
+    skills: skills.map((skill) => {
+      const validation = validationOf(listed.issues, skill.path)
+      return toSkillRecord(skill, projectId ?? '', validation ? { validation } : {})
+    }),
+  }
 }
 
 /**
@@ -55,30 +65,38 @@ export async function getSkill(
   name: string,
   opts?: { projectId?: string | null },
 ): Promise<SkillRecord> {
-  const { skills } = await listSkills(ctx, userId, opts)
+  const projectId = opts?.projectId ?? null
+  const { listed, skills } = await folderSkills(ctx, userId, projectId)
   const skill = skills.find((entry) => entry.name === name)
-  if (!skill) throw new NotFoundError('skill_not_found', `Skill "${name}" not found`)
-  return skill
+  const content = skill ? await listed.content(skill.name) : undefined
+  if (!skill || content === undefined)
+    throw new NotFoundError('skill_not_found', `Skill "${name}" not found`)
+  const validation = validationOf(listed.issues, skill.path)
+  return toSkillRecord(skill, projectId ?? '', { content, ...(validation ? { validation } : {}) })
 }
 
-/** Creates/overwrites a SKILL.md file (project working dir, or home for global). */
+/** The `.claude` folder a skill of the input's scope is written to. */
+async function folderFor(ctx: SkillOpsContext, userId: string, projectId: string | null) {
+  if (!projectId) return skillFolderOf(null)
+  const dir = await ctx.resolveProjectWorkingDir(userId, projectId)
+  if (!dir) throw new InvalidRequestError('no_project_dir', 'Project has no working directory')
+  return skillFolderOf(dir)
+}
+
+/** Creates/overwrites a SKILL.md file (the project's `.claude`, or the person's). */
 export async function createSkill(
   ctx: SkillOpsContext,
   userId: string,
   input: SkillInput,
 ): Promise<SkillRecord> {
-  const base = input.projectId
-    ? await ctx.resolveProjectWorkingDir(userId, input.projectId)
-    : homedir()
-  if (!base) throw new InvalidRequestError('no_project_dir', 'Project has no working directory')
-  const dir = await writeSkillFile(
-    base,
+  const target = await folderFor(ctx, userId, input.projectId ?? null)
+  const path = await writeSkill(
+    target,
     { name: input.name, description: input.description, content: input.content },
-    input.projectId ? 'project' : 'global',
     { projectId: input.projectId ?? '' },
   )
   return {
-    id: `file:${dir}/SKILL.md`,
+    id: `file:${path}`,
     name: input.name,
     description: input.description,
     content: input.content,
@@ -86,7 +104,7 @@ export async function createSkill(
     projectId: input.projectId ?? '',
     scope: input.projectId ? 'project' : 'global',
     source: 'file',
-    path: `${dir}/SKILL.md`,
+    path,
     updatedAt: ctx.now(),
   }
 }
@@ -106,14 +124,8 @@ export function skillNameFromId(id: string): string | undefined {
 
 /**
  * Edits an existing skill, identified by its `id`. A same-name edit rewrites the file in
- * place (via {@link writeSkillFile}, preserving frontmatter); a RENAME writes a fresh
- * `<newName>` directory and then removes the original `<oldName>` one — which the old
- * create-only implementation left behind as a shadowing duplicate.
- *
- * Not yet reachable from an HTTP route: the Settings UI edit still POSTs `createSkill`,
- * so a UI rename currently orphans the old skill. Wiring this in (a PUT route +
- * `updateSkill` client method + the edit form calling it with the original id) is the
- * remaining end-to-end step.
+ * place (preserving frontmatter); a RENAME writes a fresh `<newName>` directory and then
+ * removes the original `<oldName>` one, which would otherwise linger as a shadowing duplicate.
  */
 export async function updateSkill(
   ctx: SkillOpsContext,
@@ -127,23 +139,19 @@ export async function updateSkill(
   const record = await createSkill(ctx, userId, input as SkillInput)
   const oldName = skillNameFromId(id)
   if (oldName && oldName !== input.name) {
-    // The rename wrote a new `<newName>` dir; delete the original by its (old) name so it
-    // does not linger as a second, shadowing skill. Scoped exactly like deleteSkill.
-    const workingDir = input.projectId
-      ? await ctx.resolveProjectWorkingDir(userId, input.projectId)
-      : null
-    await deleteSkillByName(workingDir, oldName)
+    const { folder } = await folderFor(ctx, userId, input.projectId ?? null)
+    await removeSkill(folder, oldName)
   }
   return record
 }
 
-/** Deletes a skill by name, scoped to the given project (or global). */
+/** Deletes a skill by name from the scope's own `.claude/skills` (the project's, or the person's). */
 export async function deleteSkill(
   ctx: SkillOpsContext,
   userId: string,
-  id: string,
+  name: string,
   projectId?: string | null,
 ): Promise<void> {
-  const workingDir = projectId ? await ctx.resolveProjectWorkingDir(userId, projectId) : null
-  await deleteSkillByName(workingDir, id)
+  const { folder } = await folderFor(ctx, userId, projectId ?? null)
+  await removeSkill(folder, name)
 }

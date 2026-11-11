@@ -83,7 +83,7 @@ export {
 } from './settings/managed'
 export { claudeCodeTrusts, trustedFolders } from './settings/trust'
 export { claudeCodeSettingsEnv, settingsEnvOf } from './settings/env'
-export { mcpSettingsReader } from './settings/mcp'
+export { installKitPorts } from './install-ports'
 export { settingsCommandLine, type SettingsCommandLine } from './settings/hooks'
 export {
   customizationLocks,
@@ -137,6 +137,14 @@ export {
 } from './skill-catalog'
 export { preloadedSkillTexts, skillTexts, type SkillText } from './skill-texts'
 export { scopeSkills, type ScopeSkills } from './scope-skills'
+export {
+  readSkillFolder,
+  skillFileIssues,
+  skillFilePath,
+  skillNameRefusal,
+  type FolderSkill,
+  type SkillFolderKind,
+} from './skill-files'
 export { skillPromptInput, type SkillOrigin, type SkillPromptInput } from './mods/skill-prompt'
 export {
   catalogKnows,

@@ -98,6 +98,6 @@ Where Localix has no equivalent, the feature is not offered:
 
 - [Claude Code tool shapes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/ext/cc-tool-shapes.ts)
 - [Mods host](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mods/host.ts)
-- [Skill discovery](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/skill-scan.ts)
+- [Skill discovery](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/scope-skills.ts)
 - [Project instructions](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/context-files.ts)
 - [Parity tool](https://github.com/rsaryev/localix/blob/main/scripts/cc-parity/README.md)

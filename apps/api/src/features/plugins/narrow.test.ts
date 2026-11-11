@@ -2,8 +2,6 @@ import { expect, test } from 'bun:test'
 import { narrowLoadedPlugins } from './narrow'
 import type { LoadedPlugins } from './loader'
 
-const skill = (name: string, pluginName?: string) =>
-  ({ name, pluginName }) as LoadedPlugins['skills'][number]
 const server = (id: string, name: string) => ({ id, name }) as LoadedPlugins['mcpServers'][number]
 
 /** Two plugins that do not exist, on purpose: this is about attribution, not about any one of ours. */
@@ -17,7 +15,6 @@ function loadedFixture(): LoadedPlugins {
       server(`plugin:${DENIED}:docs`, `${DENIED}_docs`),
       server(`plugin:${KEPT}:feed`, `${KEPT}_feed`),
     ],
-    skills: [skill('write-memo', DENIED), skill('read-chart', KEPT), skill('local-only')],
     lspServers: [],
     outputStyles: [
       { pluginName: DENIED, fullName: `${DENIED}:terse` },
@@ -48,7 +45,6 @@ function loadedFixture(): LoadedPlugins {
 test('a denied plugin contributes nothing to the run', () => {
   const narrowed = narrowLoadedPlugins(loadedFixture(), [DENIED])
 
-  expect(narrowed.skills.map((s) => s.name)).toEqual(['read-chart', 'local-only'])
   expect(narrowed.mcpServers.map((s) => s.id)).toEqual([`plugin:${KEPT}:feed`])
   expect(narrowed.binDirs).toEqual([`/plugins/${KEPT}/bin`])
   expect(narrowed.outputStyles.map((s) => s.pluginName)).toEqual([KEPT])
@@ -61,14 +57,4 @@ test('an allowed plugin keeps every contribution — the positive control', () =
 
   expect(narrowed).toBe(before)
   expect(narrowLoadedPlugins(before, [])).toBe(before)
-})
-
-/**
- * A skill that never recorded its owner must survive: the filesystem walk contributes skills
- * no plugin shipped, and dropping those would let one plugin denial empty a user's own roster.
- */
-test('an unattributed skill is never subtracted', () => {
-  const narrowed = narrowLoadedPlugins(loadedFixture(), [DENIED, KEPT])
-
-  expect(narrowed.skills.map((s) => s.name)).toEqual(['local-only'])
 })

@@ -80,6 +80,16 @@ export interface SkillFound {
 
 export interface SkillToolPorts {
   /**
+   * Writes the skill a `save` hands over (`chat/skill-files.ts`): the project's
+   * `.claude/skills` or the person's. Returns its `SKILL.md`. Absent: `save` is refused.
+   */
+  saveSkill?: (
+    draft: { name: string; description: string; content: string },
+    scope: 'global' | 'project',
+  ) => Promise<string>
+  /** The `SKILL.md` a `save` of the name writes, for the permission check before it runs. */
+  skillFilePath?: (name: string, scope: 'global' | 'project') => string
+  /**
    * Finds the skill a name calls as the chat's kit session names its skills (`skill-tool-ports.ts`),
    * its folders read again first. Absent: no skill is found.
    */

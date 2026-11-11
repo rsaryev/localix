@@ -1,11 +1,9 @@
 import { existsSync } from 'node:fs'
-import { dataDirOfPlugin, pluginIdOf } from './plugin-data-id'
+import { pluginIdOf } from './plugin-data-id'
 import { join } from 'node:path'
 
 import { type CapabilitySourceRepository, scalarConfig } from '../capabilities/source-repository'
 import type { AvailabilityReader } from '../capabilities/availability'
-import { errorMessage } from '../../lib/errors'
-import { readSkillsFromRoot } from '../agent-core/skill-discovery'
 import { pluginLoadBlockReason } from './load-block'
 import { buildPluginCatalog } from './catalog'
 import { catalogMcpServers, kitPluginsOf } from './catalog-kit'
@@ -14,7 +12,6 @@ import { emptyLoadedPlugins, type LoadedPlugins } from './loader-contract'
 import { resolvePluginConfig } from './config'
 import { recordPluginLoad } from '../notifications/conditions/plugins'
 import { buildMcpRecords } from './mcp'
-import { readPluginCommandSkills } from './plugin-command-skills'
 import {
   makePluginSubstituter,
   appendPluginRuntimeDeclarations,
@@ -132,50 +129,6 @@ export async function loadEnabledPlugins(opts: {
 
     // ---- MCP servers ------------------------------------------------------
     result.mcpServers.push(...buildMcpRecords(plugin, mcp, opts.userId, now(), opts.logger))
-
-    // ---- Skills -----------------------------------------------------------
-    for (const skillDir of plugin.entrypoints.skillDirs) {
-      const scope = plugin.scope === 'project' ? 'project' : 'global'
-      try {
-        // Substitute plugin path vars + non-sensitive config only when a selected
-        // skill body is first read; spreading each skill here used to defeat the
-        // metadata-only discovery boundary by invoking every lazy content accessor.
-        const skills = await readSkillsFromRoot(skillDir, scope, opts.logger, subst)
-        for (const skill of skills) {
-          // Descriptions are roster metadata and remain eagerly substituted.
-          if (skill.description) skill.description = subst(skill.description)
-          skill.pluginName = plugin.manifest.name
-          skill.pluginRoot = plugin.dir
-          skill.pluginDataDir = dataDirOfPlugin(plugin, opts.homeDir)
-          result.skills.push(skill)
-        }
-      } catch (err) {
-        // Same treatment as the tools branch above: a plugin that contributes ZERO skills while
-        // reporting itself healthy is indistinguishable from one that declares no skills, and the
-        // skill roster is the only place the absence would ever show.
-        const message = errorMessage(err)
-        summary.error = summary.error ? `${summary.error}; ${message}` : message
-        opts.logger?.warn(
-          `plugin "${plugin.manifest.name}" failed to read skills from ${skillDir}`,
-          { error: message },
-        )
-      }
-    }
-
-    // ---- Command files, read as the skills Claude Code invokes them as ----
-    {
-      const scope = plugin.scope === 'project' ? 'project' : 'global'
-      const taken = new Set(
-        result.skills.filter((s) => s.pluginName === plugin.manifest.name).map((s) => s.name),
-      )
-      for (const skill of await readPluginCommandSkills(plugin, scope, taken, subst, opts.logger)) {
-        if (skill.description) skill.description = subst(skill.description)
-        if (skill.allowedTools) skill.allowedTools = skill.allowedTools.map(subst)
-        skill.pluginName = plugin.manifest.name
-        skill.pluginRoot = plugin.dir
-        result.skills.push(skill)
-      }
-    }
 
     appendPluginRuntimeDeclarations({ plugin, subst, result })
 

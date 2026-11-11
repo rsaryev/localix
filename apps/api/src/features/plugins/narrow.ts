@@ -38,7 +38,6 @@ export function narrowLoadedPlugins(
 
   return {
     ...loaded,
-    skills: loaded.skills.filter((skill) => !(skill.pluginName && denied.has(skill.pluginName))),
     mcpServers: loaded.mcpServers.filter(
       (server) => !deniedMcpIds.some((prefix) => server.id.startsWith(prefix)),
     ),

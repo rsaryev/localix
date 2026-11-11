@@ -1,4 +1,6 @@
-import { describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { installModelAliasResolver } from '../../agent-core/model-alias'
+import { modelAliasResolver } from '../../plugins/kit/model-alias'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
@@ -9,8 +11,15 @@ import { handleSkillCommand } from './command-handlers'
 import { handleSkillsControlCommand } from './command-handlers-listings'
 import type { CommandHandlerContext } from './command-handlers-context'
 import type { SessionRecord } from '../repository'
-import type { SkillRecord } from './skills'
+import { sessionSkills } from '../../plugins/kit'
+
+/** A skill written for a test; `pluginDir` is its plugin's folder. */
+type Written = { readonly pluginDir?: string }
 import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
+
+// A `model:` value is read as the app reads it, through the kit (`bootstrap/domain-services.ts`).
+beforeAll(() => installModelAliasResolver(modelAliasResolver))
+afterAll(() => installModelAliasResolver(undefined))
 
 /**
  * A typed `/name` runs the skill as the chat's kit session expands it (skills.md); the kit says
@@ -31,7 +40,7 @@ const session: SessionRecord = sessionFixture({
 })
 
 /** A skill folder on disk and its row in Localix's list; `plugin` puts it in that plugin. */
-function skill(name: string, frontmatter: string, body: string, plugin?: string): SkillRecord {
+function skill(name: string, frontmatter: string, body: string, plugin?: string): Written {
   const base = plugin ? join(dir(), 'plugins', plugin) : join(work(), '.claude')
   if (plugin) {
     mkdirSync(join(base, '.claude-plugin'), { recursive: true })
@@ -43,24 +52,12 @@ function skill(name: string, frontmatter: string, body: string, plugin?: string)
     join(at, 'SKILL.md'),
     `---\nname: ${name}\ndescription: d\n${frontmatter}\n---\n${body}\n`,
   )
-  return {
-    id: `file:${name}`,
-    name: plugin ? `${plugin}:${name}` : name,
-    description: 'd',
-    content: body,
-    tags: [],
-    projectId: '',
-    scope: 'project',
-    source: 'file',
-    updatedAt: 'now',
-    path: join(at, 'SKILL.md'),
-    ...(plugin ? { pluginName: plugin, pluginDir: base } : {}),
-  }
+  return plugin ? { pluginDir: base } : {}
 }
 
 function context(
-  own: SkillRecord[],
-  plugins: SkillRecord[] = [],
+  _own: Written[],
+  plugins: Written[] = [],
   over: Partial<CommandHandlerContext> = {},
 ) {
   mkdirSync(join(work(), '.git'), { recursive: true })
@@ -240,10 +237,13 @@ describe('a typed skill’s injected commands meet the agent’s rules', () => {
 describe('handleSkillsControlCommand', () => {
   test('does not reveal skills whose override is off', async () => {
     const replies: string[] = []
-    const row = skill('sample', '', 'x')
+    skill('sample', '', 'x')
+    skill('enabled', '', 'y')
+    const kit = await skillTestSession(join(dir(), 'home'), work())
+    await kit.reloadSkills({ signal: AbortSignal.timeout(10_000) })
     await handleSkillsControlCommand(
       {
-        gatherSessionSkills: async () => [row, { ...row, name: 'enabled' }],
+        gatherSessionSkills: async () => sessionSkills(kit),
         loadSkillOverrides: async () => ({ sample: 'off' }),
       },
       'u1',
