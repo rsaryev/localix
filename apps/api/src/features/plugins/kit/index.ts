@@ -18,6 +18,7 @@ export { monitorsToLaunch, type MonitorLaunch } from './monitors'
 export { scopeAgents, type HostAgents, type ScopeAgent, type ScopeAgents } from './agents'
 export { catalogTier } from '@rsaryev/llx-plugin/agents'
 export { scopeRun, type ScopeRun } from './scope-session'
+export { chosenSubagentStatusLine, type ChosenSubagentStatusLine } from './subagent-status-line'
 export { readPluginFolder, type FolderSource } from './catalog/read-folder'
 export { issueLine } from './catalog/issue-line'
 export { isPluginFolder, PLUGIN_MANIFEST } from './catalog/plugin-folder'
@@ -45,9 +46,11 @@ export {
   activeStyleId,
   builtinStyleDescription,
   DEFAULT_OUTPUT_STYLE_ID,
+  offeredStyleIndexes,
   outputStyleFile,
   type StyleBody,
 } from './catalog/output-style'
+export { outputStyleFolders } from './catalog/output-style-folders'
 export { lateModelRunner, type CcMcpToolResult, type ModelBackend } from './ports/session-ports'
 export {
   readClaudeSettings,
@@ -59,7 +62,7 @@ export {
 } from './settings/read'
 export { isFileScope } from '@rsaryev/llx-plugin/settings'
 export { managedSettingsDir, type ManagedSettingsSource } from './settings/managed'
-export { claudeCodeTrusts } from './settings/trust'
+export { claudeCodeTrust, claudeCodeTrusts } from './settings/trust'
 export { claudeCodeSettingsEnv, settingsEnvOf } from './settings/env'
 export { installKitPorts } from './install-ports'
 export { settingsCommandLine } from './settings/hooks'
@@ -140,7 +143,12 @@ export {
   type ClosureMarketplace,
   type FetchedCopy,
 } from './marketplace/install-closure'
-export { autoUpdatePassAllowed, autoUpdateToggleRefusal } from './marketplace/updates'
+export {
+  autoUpdatePassAllowed,
+  autoUpdateToggleRefusal,
+  leftByMarketplaceUpdate,
+  updateSkipOf,
+} from './marketplace/updates'
 export { pluginVersion, precheckUpdate, UNKNOWN_VERSION, updateCheck } from './marketplace/versions'
 export {
   cloneUrl,
@@ -162,8 +170,18 @@ export {
   localEntryDir,
   type EntryFetchPlan,
 } from './marketplace/entry-source'
-export { archiveHeaders, catalogHeaders, type UrlSourceHeaders } from './marketplace/headers'
-export { claudeCodePluginSettings } from './marketplace/claude-code'
+export {
+  archiveHeaders,
+  catalogHeaders,
+  helperAcceptance,
+  type UrlSourceHeaders,
+} from './marketplace/headers'
+export { assertSafeZip, judgedArchive, type JudgedArchive } from './marketplace/archive'
+export {
+  claudeCodePluginSettings,
+  claudeCodePluginStore,
+  winningInstall,
+} from './marketplace/claude-code'
 export { declaredMarketplaces, type DeclaredMarketplace } from './marketplace/declared'
 export {
   ARCHIVE_LIMITS,
@@ -216,3 +234,4 @@ export { createModsHost } from '@rsaryev/llx-plugin/mods'
 export { hostCommandRunner } from './ports/command-runner'
 export { sessionEnvScripts } from './ports/session-files'
 export { hostLocations, systemClock } from './ports/host-io'
+export { claudeCodeToolResponse, singleCalls } from './tools/cc-tool-shapes'

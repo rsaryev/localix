@@ -96,7 +96,7 @@ Where Localix has no equivalent, the feature is not offered:
 
 ## Source of truth
 
-- [Claude Code tool shapes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/ext/cc-tool-shapes.ts)
+- [Claude Code tool shapes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/tools/cc-tool-shapes.ts)
 - [Mods host](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mods/host.ts)
 - [Skill discovery](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/scope-skills.ts)
 - [Project instructions](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/context-files.ts)

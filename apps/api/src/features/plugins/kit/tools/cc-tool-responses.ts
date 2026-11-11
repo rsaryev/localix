@@ -6,7 +6,16 @@
  * as Claude Code itself does for a file too large to include). A tool or a call with no
  * Claude Code counterpart (several files in one call) keeps Localix's `{content, details}`.
  */
-import { parsePatch } from 'diff'
+import type {
+  BashOutput,
+  ExitPlanModeOutput,
+  FileEditOutput,
+  FileWriteOutput,
+  GlobOutput,
+  GrepOutput,
+  WebFetchOutput,
+} from '@rsaryev/llx-plugin'
+import { structuredPatchOf } from '@rsaryev/llx-plugin/rules'
 
 import { absolutePath, baseOf, isRecord, num, only, str, type Fields } from './cc-tool-fields'
 import { planText } from './cc-tool-inputs-agentic'
@@ -18,23 +27,9 @@ interface ToolResult {
 
 type Shaper = (result: ToolResult, details: Fields, input: Fields, cwd?: string) => unknown
 
-/** A unified diff as Claude Code's `structuredPatch` hunks. */
-function structuredPatch(diff: unknown) {
-  if (typeof diff !== 'string' || !diff) return []
-  try {
-    return parsePatch(diff).flatMap((file) =>
-      file.hunks.map((hunk) => ({
-        oldStart: hunk.oldStart,
-        oldLines: hunk.oldLines,
-        newStart: hunk.newStart,
-        newLines: hunk.newLines,
-        lines: hunk.lines,
-      })),
-    )
-  } catch {
-    return []
-  }
-}
+/** A unified diff as Claude Code's `structuredPatch` hunks (the kit's reading). */
+const structuredPatch = (diff: unknown): FileEditOutput['structuredPatch'] =>
+  typeof diff === 'string' ? [...structuredPatchOf(diff)] : []
 
 const lineCount = (text: string) => (text ? text.replace(/\n$/, '').split('\n').length : 0)
 
@@ -43,7 +38,7 @@ function oneFile(details: Fields, input: Fields, cwd?: string) {
   const file = only(details.files)
   if (!file || file.failed) return undefined
   const base = str(details.cwd) ?? baseOf(input, cwd)
-  return { file, filePath: absolutePath(file.path, base) }
+  return { file, filePath: str(absolutePath(file.path, base)) ?? '' }
 }
 
 /** The job a backgrounded command became, as its result names it (`job_id: <id>`). */
@@ -66,7 +61,7 @@ const bash: Shaper = (result, details, input) => {
     isImage: false,
     ...(jobId ? { backgroundTaskId: jobId } : {}),
     ...(details.background === 'promoted' ? { timedOutAfterMs: (timeout ?? 60) * 1000 } : {}),
-  }
+  } satisfies BashOutput
 }
 
 const read: Shaper = (_result, details, input, cwd) => {
@@ -100,13 +95,13 @@ const edit: Shaper = (_result, details, input, cwd) => {
     return { filePath: one.filePath, edits, originalFile: null, structuredPatch: patch }
   return {
     filePath: one.filePath,
-    oldString: edits[0]!.old_string,
-    newString: edits[0]!.new_string,
+    oldString: str(edits[0]!.old_string) ?? '',
+    newString: str(edits[0]!.new_string) ?? '',
     originalFile: null,
     structuredPatch: patch,
     userModified: false,
     replaceAll: edits[0]!.replace_all === true,
-  }
+  } satisfies FileEditOutput
 }
 
 const write: Shaper = (_result, details, input, cwd) => {
@@ -116,12 +111,12 @@ const write: Shaper = (_result, details, input, cwd) => {
   return {
     type: one.file.created === true ? 'create' : 'update',
     filePath: one.filePath,
-    content: entry.content,
+    content: str(entry.content) ?? '',
     structuredPatch: structuredPatch(one.file.diff),
     originalFile: null,
     // The person did not change the content before it was written (Claude Code's own record).
     userModified: false,
-  }
+  } satisfies FileWriteOutput
 }
 
 const search: Shaper = (result, details, input) => {
@@ -133,7 +128,7 @@ const search: Shaper = (result, details, input) => {
       numFiles: lines.length,
       truncated: details.truncated === true,
       durationMs: 0,
-    }
+    } satisfies GlobOutput
   const filenames = [...new Set(lines.map((line) => line.split(':')[0]!).filter(Boolean))]
   return {
     mode: 'content',
@@ -141,20 +136,20 @@ const search: Shaper = (result, details, input) => {
     filenames,
     content: output,
     numLines: lines.length,
-  }
+  } satisfies GrepOutput
 }
 
 const research: Shaper = (result, _details, input) => {
   const urls = Array.isArray(input.urls) ? input.urls : []
   if (urls.length > 0 && input.queries === undefined)
     return {
-      url: urls[0],
+      url: str(urls[0]) ?? '',
       result: result.content,
       bytes: Buffer.byteLength(result.content),
       code: 200,
       codeText: 'OK',
       durationMs: 0,
-    }
+    } satisfies WebFetchOutput
   return { query: input.question, results: [result.content], durationSeconds: 0 }
 }
 
@@ -198,7 +193,7 @@ const agent: Shaper = (result, details, input) => {
 
 const plan: Shaper = (_result, _details, input) => {
   if (input.action !== 'present') return undefined
-  return { plan: planText(input) ?? '', isAgent: false }
+  return { plan: planText(input) ?? '', isAgent: false } satisfies ExitPlanModeOutput
 }
 
 const SHAPERS: Record<string, Shaper> = {

@@ -11,7 +11,7 @@ import {
   type ToolCall,
 } from '@rsaryev/llx-plugin/rules'
 import type { PolicyScope } from '@rsaryev/llx-plugin/settings'
-import { singleCalls } from '../../ext/cc-tool-shapes'
+import { singleCalls } from './tools/cc-tool-shapes'
 import { claudeCodeHookCall } from './tool-calls'
 import { claudeCodeToolNames, LOCALIX_TOOL_NAMES, type NamedTool } from './tool-names'
 import { realPathResolver } from './ports/session-files'

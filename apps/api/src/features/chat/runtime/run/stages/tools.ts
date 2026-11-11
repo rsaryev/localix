@@ -23,7 +23,7 @@ import { resolveExecutionProfile } from '../../run-profile'
 import { buildRunToolRegistry } from '../runtime-tools'
 import type { SkillCommandPolicyRef } from '../skill-tool-ports'
 import { agentRunMcpServers } from '../agent-run-mcp'
-import { claudeCodeTrusts, settingsRemovesTool } from '../../../../plugins/kit'
+import { claudeCodeTrust, settingsRemovesTool } from '../../../../plugins/kit'
 import { resolveRunDenyPatterns, resolveRunDisabledTools } from '../run-tool-policy'
 import { runAgentTools } from '../run-agent-tools'
 import { surfaceMiniApps, surfaceTools } from '../surface-tools'
@@ -163,7 +163,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   const claudeCodeScope = { homeDir: claudeCodeHome(), cwd: defaultCwd }
   const agentServers = agentRunMcpServers(session, turn.admittedAgent.spec, {
     userId,
-    projectTrusted: claudeCodeTrusts(claudeCodeScope),
+    trust: claudeCodeTrust(claudeCodeScope),
   })
 
   const claudeCodePermissionsPromise = loadClaudeCodePermissions(claudeCodeScope)

@@ -1,6 +1,6 @@
 import { mcpInputSchema, type AgentTool, type AgentToolResult } from '@localixai/agent/agents'
 import { isBlockedThrow } from '../agent-core/tools/tool-error-result'
-import { singleCalls } from '../ext/cc-tool-shapes'
+import { singleCalls } from '../plugins/kit'
 import { agentOf, fireIn, hearsIn, type ModEventScope } from './event-scope'
 import { coreAnswer, resultOf } from './tool-answers'
 import { errorMessage } from '../../lib/errors'

@@ -22,7 +22,11 @@ const manifest = (name: string, extra: Record<string, unknown> = {}) =>
   JSON.stringify({ name, description: `${name} plugin`, ...extra })
 const skill = (name: string) => `---\nname: ${name}\ndescription: ${name}\n---\n\nDo ${name}.\n`
 
-function install(scope: 'user' | 'project' | 'local', name: string, projectPath?: string) {
+function install(
+  scope: 'user' | 'project' | 'local' | 'managed',
+  name: string,
+  projectPath?: string,
+) {
   return [
     {
       scope,
@@ -198,5 +202,46 @@ describe('plugins installed in Claude Code', () => {
     writeTree(home(), { '.localix/plugins/own/.claude-plugin/plugin.json': manifest('own') })
     const plugins = await discoverPlugins({ homeDir: home() })
     expect(plugins.map((plugin) => plugin.manifest.name)).toEqual(['own'])
+  })
+
+  // plugins/install.md, "Choose an install scope"; settings-reference.md, `enabledPlugins`: a
+  // managed record applies in every folder like a user one, and wins over the others there.
+  test('a managed install record loads everywhere, over a user one, as a global plugin', async () => {
+    const managedCopy = join(root(), 'managed-copy')
+    writeTree(managedCopy, { '.claude-plugin/plugin.json': manifest('corp') })
+    writeTree(cache('corp'), { '.claude-plugin/plugin.json': manifest('corp') })
+    writeTree(home(), {
+      '.claude/plugins/installed_plugins.json': JSON.stringify({
+        version: 2,
+        plugins: {
+          'corp@mkt': [
+            ...install('user', 'corp'),
+            { ...install('managed', 'corp')[0], installPath: managedCopy },
+          ],
+        },
+      }),
+    })
+    const installs = await readClaudeCodeInstalls({ homeDir: home(), cwd: project() })
+    expect(installs.map(({ id, dir, scope }) => ({ id, dir, scope }))).toEqual([
+      { id: 'corp@mkt', dir: managedCopy, scope: 'global' },
+    ])
+  })
+
+  // env-vars.md, `CLAUDE_CODE_PLUGIN_CACHE_DIR`: it names the plugins root itself.
+  test('CLAUDE_CODE_PLUGIN_CACHE_DIR moves the root the records are read from', async () => {
+    const moved = join(root(), 'moved')
+    writeTree(moved, {
+      'installed_plugins.json': JSON.stringify({
+        version: 2,
+        plugins: { 'alpha@mkt': install('user', 'alpha') },
+      }),
+    })
+    writeTree(cache('alpha'), { '.claude-plugin/plugin.json': manifest('alpha') })
+    const installs = await readClaudeCodeInstalls({
+      homeDir: home(),
+      cwd: null,
+      env: { CLAUDE_CODE_PLUGIN_CACHE_DIR: moved },
+    })
+    expect(installs.map(({ id }) => id)).toEqual(['alpha@mkt'])
   })
 })

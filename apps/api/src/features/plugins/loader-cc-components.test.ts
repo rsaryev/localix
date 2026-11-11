@@ -21,16 +21,14 @@ async function write(rel: string, content: string | object): Promise<void> {
 async function load() {
   const plugin = await loadManifest(dir(), 'global', '')
   const result = emptyLoadedPlugins()
-  appendPluginRuntimeDeclarations({
-    plugin,
-    subst: (text) => text.replaceAll('${CLAUDE_PLUGIN_ROOT}', '/root'),
-    result,
-  })
+  appendPluginRuntimeDeclarations({ plugin, result })
   return result
 }
 
 describe('an enabled plugin’s output styles', () => {
-  test('reach the run as `<plugin>:<name>`, their text substituted', async () => {
+  // plugins/manifest-reference.md, "Where each variable resolves": skill, command and agent content
+  // only, so a style's `${CLAUDE_PLUGIN_ROOT}` stays as written.
+  test('reach the run as `<plugin>:<name>`, their text as written', async () => {
     await write(MANIFEST_FILE, { name: 'sec' })
     await write(
       'output-styles/terse.md',
@@ -41,7 +39,9 @@ describe('an enabled plugin’s output styles', () => {
       expect.objectContaining({
         pluginName: 'sec',
         fullName: 'sec:terse',
-        style: expect.objectContaining({ instructions: 'Short replies. Notes in /root/notes.' }),
+        style: expect.objectContaining({
+          instructions: 'Short replies. Notes in ${CLAUDE_PLUGIN_ROOT}/notes.',
+        }),
       }),
     ])
   })
@@ -77,12 +77,12 @@ describe('choosing a style', () => {
     expect(activeOutputStyle(styles, null, 'a:house')?.fullName).toBe('a:house')
   })
 
-  test('a query names the default, a full name, or a bare name one plugin offers', () => {
+  test('a query names the default or a full name, never a bare plugin style name', () => {
     const styles = [entry('a', 'terse'), entry('b', 'terse'), entry('a', 'teacher')]
     expect(findOutputStyle(styles, 'Default')).toEqual({ kind: 'default' })
     expect(findOutputStyle(styles, 'B:Terse')).toMatchObject({ entry: { fullName: 'b:terse' } })
-    expect(findOutputStyle(styles, 'teacher')).toMatchObject({ entry: { fullName: 'a:teacher' } })
-    expect(findOutputStyle(styles, 'terse')).toEqual({ kind: 'ambiguous' })
+    expect(findOutputStyle(styles, 'teacher')).toEqual({ kind: 'none' })
+    expect(findOutputStyle(styles, 'terse')).toEqual({ kind: 'none' })
     expect(findOutputStyle(styles, 'loud')).toEqual({ kind: 'none' })
   })
 })

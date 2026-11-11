@@ -5,7 +5,8 @@ import { catalogTier, type ScopeAgent } from '../../plugins/kit'
  * A subagent of a scope with what Localix keeps beside it. The definition is Claude Code's, as the
  * kit resolved it (`plugins/kit/agents.ts`); Localix adds where its binding lives, a hash of its
  * body that follows a file across a rename, and what a built-in does when delegated to. Its
- * `model` and `effort` are not read: the person chooses those in Localix's settings.
+ * `model` routes a subagent only where the person chose no model for it in Localix's settings
+ * (`plugins/kit/spawn.ts`); its `effort` is not read.
  */
 export type CatalogAgent = ScopeAgent & {
   /** '' for a user, managed, built-in or user-installed plugin's agent; else the project's id. */

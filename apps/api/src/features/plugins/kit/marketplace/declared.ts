@@ -8,6 +8,7 @@ import {
 import { isRecord } from '../../../../lib/record'
 import { isFileScope } from '@rsaryev/llx-plugin/settings'
 import { readClaudeSettings } from '../settings/read'
+import { contentApplies } from '../settings/trust'
 import { marketplacePolicy } from './policy'
 import { parseDeclaredSource } from './sources'
 
@@ -77,7 +78,7 @@ export async function declaredMarketplaces(opts: {
   })
   const { gate } = await marketplacePolicy(opts.managedSettingsDir)
   const registry = createMarketplaceRegistry(createPolicyView(settings.layers), {
-    isFolderTrusted: () => settings.trusted,
+    isFolderTrusted: () => contentApplies('extra-known-marketplaces', settings.trust.situation),
     officialMarketplaces: OFFICIAL_NAMES,
     check: (source) => gate.check(source),
   })

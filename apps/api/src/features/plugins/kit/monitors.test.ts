@@ -43,7 +43,7 @@ async function chat() {
     cwd,
     transcriptPath: join(dir(), 'chat-1.jsonl'),
     permissionMode: 'default',
-    trusted: true,
+    trust: 'trusted',
     layers: [],
     plugins: [plugin],
   })

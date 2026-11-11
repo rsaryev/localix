@@ -1,5 +1,5 @@
 import type { EventFactsOf, HookEvent, HookOutcome, PluginSession } from '@rsaryev/llx-plugin'
-import type { HookSourceKind } from '@rsaryev/llx-plugin/hooks'
+import { escapeReminderTags, type HookSourceKind } from '@rsaryev/llx-plugin/hooks'
 import type { CcHooksRuntime, CcRunStop } from '../../../cc-hooks/runtime-contracts'
 import { joinContext } from '../../../cc-hooks/runtime-results'
 import type { CcTranscript } from '../../../cc-hooks/transcript'
@@ -48,14 +48,22 @@ export interface EventDeps {
 
 const STOPS_RUN = new Set<HookEvent>(['PreToolUse', 'PostToolUse', 'PostToolBatch'])
 
-/** What the outcome tells Claude: context, the stderr it is shown, and a block routed to it. */
+/**
+ * What the outcome tells Claude: context, the stderr it is shown, and a block routed to it. The kit
+ * has already escaped the reminder tags of the context (hooks.md, "JSON output"); the stderr and the
+ * block reason get the same escape here (`escapeReminderTags`). DECISION (Localix, stricter than the
+ * docs, which state the escape for the JSON strings only): this text lands inside a
+ * `<system-reminder>`, and a hook must not close it early.
+ */
 export function claudeText(outcome: HookOutcome<HookEvent> | undefined): string | undefined {
   if (!outcome) return undefined
-  return joinContext([
-    ...outcome.additionalContext,
-    ...outcome.feedback.filter((one) => one.to === 'claude').map((one) => one.text),
-    outcome.block?.to === 'claude' ? outcome.block.reason : undefined,
-  ])
+  return joinContext(
+    [
+      ...outcome.additionalContext,
+      ...outcome.feedback.filter((one) => one.to === 'claude').map((one) => one.text),
+      outcome.block?.to === 'claude' ? outcome.block.reason : undefined,
+    ].map((text) => (text === undefined ? text : escapeReminderTags(text))),
+  )
 }
 
 /**

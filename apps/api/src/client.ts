@@ -268,7 +268,6 @@ export type {
 } from './features/agent-core/tools/hitl/config-change'
 
 export type * from './features/agent-core/tools/hitl/mcp-elicitation'
-export type * from './features/agent-core/tools/hitl/mcp-elicitation-content'
 
 export type { McpServer, McpOAuthConfig } from './features/mcp/contracts'
 

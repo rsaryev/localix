@@ -1,14 +1,11 @@
-import { claudeCodeHome } from '../../cc-settings/config-dir'
 import { agentRoute } from '../../../contracts/session-route'
 import { userHome } from '../../../lib/env'
 import type { ChildRunSummary } from '../../agent-core/tools/agent/agent-control'
-import { readClaudeSettingsSync, settingsCommandLine } from '../../plugins/kit'
+import type { PluginSession } from '@rsaryev/llx-plugin'
+import { chosenSubagentStatusLine } from '../../plugins/kit'
 import type { PluginCatalog } from '../../plugins/catalog'
-import {
-  activeSubagentStatusLine,
-  runSubagentStatusLine,
-  type SubagentTask,
-} from '../../plugins/subagent-status-line'
+import { kitPluginsOf } from '../../plugins/catalog-kit'
+import { runSubagentStatusLine, type SubagentTask } from '../../plugins/subagent-status-line'
 import type { SessionRecord } from '../repository'
 import type { SessionStreamRegistry } from '../runtime/session-stream-registry'
 import {
@@ -32,7 +29,7 @@ function taskStatus(status: string): string {
 /** The agent type a row names: a built-in's handle, a registry agent's id without its scope. */
 const agentTypeOf = (agentId: string | undefined) => agentId?.replace(/^builtin:/, '') ?? 'agent'
 
-/** The rows the command rewrote; `active` is false where no enabled plugin sets a status line. */
+/** The rows the command rewrote; `active` is false where no status line runs. */
 export interface SubagentRowsView {
   active: boolean
   rows: Array<{ id: string; content: string }>
@@ -42,6 +39,11 @@ export interface SubagentRowsDeps {
   requireSession: (userId: string, id: string) => Promise<SessionRecord>
   getSession: (userId: string, id: string) => Promise<SessionRecord | null>
   buildSessionPluginCatalog: (userId: string, session: SessionRecord) => Promise<PluginCatalog>
+  /** The conversation's kit session, which picks the line that runs (`chosenSubagentStatusLine`). */
+  chatPluginSession: (
+    userId: string,
+    session: SessionRecord,
+  ) => Promise<Pick<PluginSession, 'subagentStatusLine'> | undefined>
   resolveSessionWorkingDir: (userId: string, session: SessionRecord) => Promise<string>
   listDelegatedRuns: (userId: string, sessionId: string) => Promise<ChildRunSummary[]>
   streamRegistry: Pick<SessionStreamRegistry, 'hasWatchers' | 'publish'>
@@ -53,9 +55,10 @@ export interface SubagentRowsDeps {
 }
 
 /**
- * The subagent rows a plugin's `subagentStatusLine` rewrites for one conversation, as a read model
- * the server keeps: the command runs when the rows' inputs change (`subagent-rows-live.ts`), and
- * a read serves the rows it last drew. `active` says whether any enabled plugin sets one.
+ * The subagent rows a `subagentStatusLine` rewrites for one conversation, as a read model the
+ * server keeps: the command runs when the rows' inputs change (`subagent-rows-live.ts`), and a read
+ * serves the rows it last drew. The conversation's kit session picks the line, a settings file's or
+ * a plugin's default, under its gates; `active` says whether one runs.
  */
 export function createSubagentRows(deps: SubagentRowsDeps) {
   async function compute(
@@ -65,14 +68,11 @@ export function createSubagentRows(deps: SubagentRowsDeps) {
   ): Promise<SubagentRowsComputed> {
     const session = await deps.requireSession(userId, sessionId)
     const cwd = await deps.resolveSessionWorkingDir(userId, session)
-    // The person's own Claude Code settings, a higher layer than any plugin's default.
-    const own = settingsCommandLine(
-      readClaudeSettingsSync({ homeDir: deps.homeDir ?? claudeCodeHome(), cwd }),
-      'subagentStatusLine',
-    )
-    const line = own
-      ? { pluginName: '', pluginRoot: '', command: own.command }
-      : activeSubagentStatusLine(await deps.buildSessionPluginCatalog(userId, session))
+    const [kit, catalog] = await Promise.all([
+      deps.chatPluginSession(userId, session),
+      deps.buildSessionPluginCatalog(userId, session),
+    ])
+    const line = kit && chosenSubagentStatusLine(kit, kitPluginsOf(catalog))
     if (!line) return { view: { active: false, rows: [] }, running: false, ids: [] }
     const runs = await deps.listDelegatedRuns(userId, sessionId)
     const tasks: SubagentTask[] = []

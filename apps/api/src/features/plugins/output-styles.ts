@@ -1,12 +1,11 @@
 import { BUILTIN_OUTPUT_STYLES } from './output-style-builtins'
 import type { DiscoveredPlugin } from './discovery-types'
-import { activeStyleId, DEFAULT_OUTPUT_STYLE_ID, type StyleBody } from './kit'
+import { activeStyleId, DEFAULT_OUTPUT_STYLE_ID, offeredStyleIndexes, type StyleBody } from './kit'
 
 /**
  * The output styles a chat can run in, as Claude Code lists them in `/output-style`: the built-in
- * styles, the person's own (`~/.localix/output-styles`), the project's (`.localix/output-styles`
- * from the working directory up to the repository root) and each enabled plugin's, offered as
- * `<plugin>:<name>`. The loader hands enabled plugins' styles to each run; the local ones are read
+ * styles, each enabled plugin's, offered as `<plugin>:<name>`, the project's (`.localix/output-styles`
+ * and `.claude/output-styles` from the working directory up) and the person's own. The loader hands enabled plugins' styles to each run; the local ones are read
  * per run (`output-style-files.ts`); `/output-style` and the run both resolve through here.
  */
 export type OutputStyleSource = 'builtin' | 'user' | 'project' | 'plugin'
@@ -24,39 +23,45 @@ export interface PluginOutputStyle extends NamedOutputStyle {
   pluginName: string
 }
 
-/** A plugin's styles, their instructions passed through `subst` (path and config variables). */
+/**
+ * A plugin's styles, their instructions as written: `${...}` resolves in skill, command and agent
+ * content only (plugins/manifest-reference.md, "Where each variable resolves"), and the kit reads a
+ * plugin's output style without substitution.
+ */
 export function pluginOutputStyles(
   plugin: Pick<DiscoveredPlugin, 'manifest' | 'entrypoints'>,
-  subst: (text: string) => string = (text) => text,
 ): PluginOutputStyle[] {
   return (plugin.entrypoints.components?.outputStyles ?? []).map((style) => ({
     pluginName: plugin.manifest.name,
     fullName: `${plugin.manifest.name}:${style.name}`,
     source: 'plugin',
-    style: { ...style, instructions: subst(style.instructions) },
+    style,
   }))
 }
 
+const local = (source: OutputStyleSource, styles: readonly StyleBody[] = []): NamedOutputStyle[] =>
+  styles.map((style) => ({ fullName: style.name, source, style }))
+
 /**
- * Every style a chat can pick, in the order `/output-style` lists them. A name defined at more
- * than one local level resolves to the nearest: the project's over the person's over a built-in.
- * Plugin styles carry their plugin's prefix, so they never collide with a local one.
+ * Every style a chat can pick, in the order `/output-style` lists them, as the kit decides it
+ * (`offeredStyleIndexes`): the built-ins, then the custom styles in precedence order (the enabled
+ * plugins', the project's nearest first, the person's), the first of a name winning and none
+ * shadowing a built-in.
  */
 export function outputStyleCatalog(input: {
   plugins?: readonly PluginOutputStyle[]
   user?: readonly StyleBody[]
   project?: readonly StyleBody[]
 }): NamedOutputStyle[] {
-  const local = new Map<string, NamedOutputStyle>()
-  const offer = (source: OutputStyleSource, styles: readonly StyleBody[]) => {
-    for (const style of styles)
-      if (style.name !== DEFAULT_OUTPUT_STYLE_ID)
-        local.set(style.name, { fullName: style.name, source, style })
-  }
-  offer('builtin', BUILTIN_OUTPUT_STYLES)
-  offer('user', input.user ?? [])
-  offer('project', input.project ?? [])
-  return [...local.values(), ...(input.plugins ?? [])]
+  const custom = [
+    ...(input.plugins ?? []),
+    ...local('project', input.project),
+    ...local('user', input.user),
+  ]
+  const offered = offeredStyleIndexes(
+    custom.map((entry) => ({ id: entry.fullName, style: entry.style })),
+  )
+  return [...local('builtin', BUILTIN_OUTPUT_STYLES), ...offered.map((index) => custom[index]!)]
 }
 
 /**
@@ -79,23 +84,16 @@ export function activeOutputStyle(
 }
 
 /**
- * What `/output-style <query>` names, ignoring case as Claude Code's command does: the default
- * style, a style's full name, or a bare name only one plugin offers.
+ * What `/output-style <query>` names, ignoring case as Claude Code's command does
+ * (output-styles.md, "Change your output style"): the default style or a style's full name, a
+ * plugin's as `<plugin>:<name>`.
  */
 export function findOutputStyle(
   styles: readonly NamedOutputStyle[],
   query: string,
-):
-  | { kind: 'default' }
-  | { kind: 'style'; entry: NamedOutputStyle }
-  | { kind: 'none' | 'ambiguous' } {
+): { kind: 'default' } | { kind: 'style'; entry: NamedOutputStyle } | { kind: 'none' } {
   const wanted = query.trim().toLowerCase()
   if (wanted === DEFAULT_OUTPUT_STYLE_ID) return { kind: 'default' }
-  const exact = styles.find((entry) => entry.fullName.toLowerCase() === wanted)
-  if (exact) return { kind: 'style', entry: exact }
-  const bare = styles.filter(
-    (entry) => entry.source === 'plugin' && entry.style.name.toLowerCase() === wanted,
-  )
-  if (bare.length === 1) return { kind: 'style', entry: bare[0]! }
-  return { kind: bare.length > 1 ? 'ambiguous' : 'none' }
+  const entry = styles.find((one) => one.fullName.toLowerCase() === wanted)
+  return entry ? { kind: 'style', entry } : { kind: 'none' }
 }

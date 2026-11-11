@@ -1,8 +1,9 @@
 /**
  * The model the person chose for an agent: the `agent` link of a conversation's model chain (see
  * `chat/agent-route-resolution.ts`). It is read from Localix's own settings
- * (`agentSettings.agentModelChoices`), never from the agent's file, whose `model` and `effort`
- * nothing here reads.
+ * (`agentSettings.agentModelChoices`), never from the agent's file. Where the person chose none, a
+ * subagent's model follows Claude Code's order instead (the call's `model`, the file's `model`,
+ * `CLAUDE_CODE_SUBAGENT_MODEL`: `plugins/kit/spawn.ts`); the file's `effort` is never read.
  */
 import {
   agentChoiceRoute,

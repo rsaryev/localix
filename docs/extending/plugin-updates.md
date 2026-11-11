@@ -132,10 +132,14 @@ A marketplace entry may fetch its archive with the headers a `headersHelper` com
 command runs only when you install or update that one plugin and accept it: the first
 `/plugin install <name>@<marketplace>` stops and shows the command, the archive URL and a sha256.
 Run the install again with `--accept-command <sha256>` (also on `/plugin update`) to run that
-command for that URL; a changed command or URL needs a new acceptance, each install asks again, and
-an install as another plugin's dependency or a background update leaves the plugin for you. The
-command runs through `sh` in Claude Code's configuration directory, without the variables that look
-like credentials and with `CLAUDE_CODE_PLUGIN_NAME` and `CLAUDE_CODE_PLUGIN_ARCHIVE_URL` set.
+command for that plugin of that catalog, as Claude Code does.
+
+The sha256 covers the command, the plugin and the marketplace's whole catalog, so a changed command
+or any change to the catalog needs a new acceptance (an acceptance of an earlier Localix version,
+which covered only the command and URL, is asked again once). Each install asks again, and an
+install as another plugin's dependency or a background update leaves the plugin for you. The command
+runs through `sh` in Claude Code's configuration directory, without the variables that look like
+credentials and with `CLAUDE_CODE_PLUGIN_NAME` and `CLAUDE_CODE_PLUGIN_ARCHIVE_URL` set.
 
 ## Limits
 

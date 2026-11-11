@@ -84,7 +84,7 @@ function loadTool(_skill: string, commandPolicy: SkillCommandPolicyRef, latestUs
     cwd: join(dir(), 'work'),
     transcriptPath: join(dir(), 's.jsonl'),
     permissionMode: 'default',
-    trusted: true,
+    trust: 'trusted',
     layers: [],
     plugins: [],
   })

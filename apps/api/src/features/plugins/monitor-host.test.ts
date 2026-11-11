@@ -55,7 +55,7 @@ function chats(plugins: readonly ScopePlugin[], cwd = join(dir(), 'work')) {
       cwd,
       transcriptPath: join(dir(), `${chatId}.jsonl`),
       permissionMode: 'default',
-      trusted: true,
+      trust: 'trusted',
       layers,
       plugins,
     })

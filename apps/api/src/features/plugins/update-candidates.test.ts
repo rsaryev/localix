@@ -115,14 +115,14 @@ describe('an update candidate', () => {
     ])
     expect(await candidateFor(install('1.0.0'), helper, noFetch)).toEqual({
       version: '1.0.0',
-      manual: 'its marketplace entry sets a headersHelper',
+      manual: 'headers-helper',
     })
     const command = await marketplace([
       { name: 'tool', source: { source: 'command', command: 'echo /x' } },
     ])
     expect(await candidateFor(install('1.0.0'), command, noFetch)).toEqual({
       version: '1.0.0',
-      manual: 'its marketplace entry installs with a command',
+      manual: 'command-needs-acceptance',
     })
   })
 

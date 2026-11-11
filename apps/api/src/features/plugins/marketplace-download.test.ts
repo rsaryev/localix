@@ -1,26 +1,17 @@
 import { afterEach, describe, expect, it } from 'bun:test'
-import { join } from 'node:path'
-
-import { tempDirPerTest } from '@localixai/testing'
-
 import { fetchUrl, stubFetch } from '../../testing/fetch-stub'
 import { isForbiddenHost } from './marketplace-download'
-import {
-  MAX_ARCHIVE_BYTES,
-  fetchArchivePlugin,
-  fetchCatalogText,
-} from './marketplace-source-archive'
+import { fetchCatalogText } from './marketplace-source-archive'
 
 /**
- * Claude Code's download limits for hosted files: redirects followed by hand with every hop
- * checked (at most five), a deadline per file kind, and the archive and catalog size ceilings.
+ * Claude Code's download limits for a hosted catalog: redirects followed by hand with every hop
+ * checked, its deadline and its size ceiling. An archive's are the kit's (`fetchArchive`).
  */
 
 const realFetch = globalThis.fetch
 afterEach(() => {
   globalThis.fetch = realFetch
 })
-const dir = tempDirPerTest('mkt-download')
 
 /** Serve `routes` (URL → Response factory); every requested URL and its redirect mode recorded. */
 function serve(routes: Record<string, () => Response>): { url: string; redirect?: string }[] {
@@ -37,57 +28,6 @@ function serve(routes: Record<string, () => Response>): { url: string; redirect?
 
 const redirect = (location: string, status = 302) =>
   new Response(null, { status, headers: { location } })
-
-describe('archive downloads', () => {
-  it('refuses a redirect to plain http or to a loopback / metadata host before requesting it', async () => {
-    for (const target of [
-      'http://cdn.example/p.zip',
-      'https://127.0.0.1/p.zip',
-      'https://169.254.169.254/latest/meta-data',
-      'https://[::ffff:127.0.0.1]/p.zip',
-    ]) {
-      const seen = serve({ 'https://a.example/p.zip': () => redirect(target) })
-      await expect(
-        fetchArchivePlugin({ url: 'https://a.example/p.zip' }, join(dir(), 'out')),
-      ).rejects.toThrow('is not https:// on a public host')
-      expect(seen).toEqual([{ url: 'https://a.example/p.zip', redirect: 'manual' }])
-    }
-  })
-
-  it('follows at most five redirects', async () => {
-    const hop = (n: number) => `https://a.example/${n}.zip`
-    const routes: Record<string, () => Response> = {}
-    for (let n = 0; n < 6; n++) routes[hop(n)] = () => redirect(hop(n + 1), 307)
-    routes[hop(6)] = () => new Response('not reached')
-    const seen = serve(routes)
-    await expect(fetchArchivePlugin({ url: hop(0) }, join(dir(), 'out'))).rejects.toThrow(
-      'more than 5 redirects',
-    )
-    expect(seen.map((s) => s.url)).toEqual([0, 1, 2, 3, 4, 5].map(hop))
-  })
-
-  it('gives up when the server does not answer within the deadline', async () => {
-    globalThis.fetch = stubFetch(
-      (_input, init) =>
-        new Promise((_resolve, reject) => {
-          init?.signal?.addEventListener('abort', () => reject(init.signal?.reason))
-        }),
-    )
-    await expect(
-      fetchArchivePlugin({ url: 'https://a.example/p.zip' }, join(dir(), 'out'), { timeoutMs: 5 }),
-    ).rejects.toThrow('timed out after 5 ms')
-  })
-
-  it('refuses a declared body past the archive ceiling', async () => {
-    serve({
-      'https://a.example/p.zip': () =>
-        new Response('x', { headers: { 'content-length': String(MAX_ARCHIVE_BYTES + 1) } }),
-    })
-    await expect(
-      fetchArchivePlugin({ url: 'https://a.example/p.zip' }, join(dir(), 'out')),
-    ).rejects.toThrow(`exceeds ${MAX_ARCHIVE_BYTES} bytes`)
-  })
-})
 
 describe('hosted catalog downloads', () => {
   it('follows a same-origin redirect, refuses a cross-origin one to http', async () => {

@@ -1,10 +1,10 @@
 import type { AgentToolResult } from '@localixai/agent/agents'
-import { claudeCodeToolResponse } from '../ext/cc-tool-shapes'
+import { claudeCodeToolResponse } from '../plugins/kit'
 import { clampReason } from '../plugins/kit'
 
 /**
  * What `tool.call`'s core answers and what a hook's answer becomes. Core answers Claude Code's
- * shape: the tool's own record (`result`, per tool: `ext/cc-tool-responses.ts`), the text the model
+ * shape: the tool's own record (`result`, per tool: `plugins/kit/tools/cc-tool-responses.ts`), the text the model
  * reads (`text`), a `ref` naming the call's real result, and `isError` when it failed. A hook that
  * hands that answer back gets the tool's result as it ran; its own `{ result }` is what the model
  * reads in the tool's place, and its `context` lines are read after it.

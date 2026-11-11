@@ -2,12 +2,12 @@ import {
   claudeCodeInput,
   localInputFromHook as foldHookInput,
   localInputOf,
-} from '../../ext/cc-tool-shapes'
+} from './tools/cc-tool-shapes'
 import { claudeCodeToolName, type NamedTool } from './tool-names'
 
 /**
  * A LOCALIX CALL AS CLAUDE CODE'S HOOKS AND MODS SEE IT: the Claude Code name the boundary gives
- * it (`tool-names.ts`) with its input in that tool's shape (`ext/cc-tool-shapes.ts`), and back.
+ * it (`tool-names.ts`) with its input in that tool's shape (`tools/cc-tool-shapes.ts`), and back.
  */
 
 type Fields = Record<string, unknown>
@@ -67,7 +67,7 @@ export function claudeCodeHookCall(
 
 /**
  * Localix's input from a hook's `updatedInput`, the call as the hook saw it (`seen`) with the
- * hook's fields folded back into Localix's (`ext/cc-tool-shapes.ts`).
+ * hook's fields folded back into Localix's (`tools/cc-tool-shapes.ts`).
  */
 export function localInputFromHook(
   tool: string,

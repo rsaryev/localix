@@ -7,11 +7,11 @@ import { ARCHIVE_LIMITS } from './kit'
  * central directory before anything is unpacked: entry count, any one file's uncompressed size,
  * the total uncompressed size, and the ratio of that total to the zip's own size.
  *
- * The scan reads the zip the way `unzip` will: the whole central directory (its byte range, not
- * the entry count the end record claims, which `unzip` does not stop at), which must sit right
+ * The scan reads the zip the way an extractor would: the whole central directory (its byte range,
+ * not the entry count the end record claims, which `unzip` does not stop at), which must sit right
  * before the end record so no offset is shifted, and each entry's local header, whose sizes must
- * agree with the central one. The sizes are still what the zip declares; `verifyZipMembers`
- * (`marketplace-zip-inflate.ts`) holds each entry to them.
+ * agree with the central one. The sizes are still what the zip declares; `extractZipMembers`
+ * (`marketplace-zip-extract.ts`) holds each entry to them as it writes it.
  */
 
 /** The extraction half of the kit's `ArchiveLimits` (`ARCHIVE_LIMITS`, Claude Code's own). */
@@ -30,7 +30,7 @@ const U32_MAX = 0xffffffff
 const STORED = 0
 const DEFLATED = 8
 
-/** One file as `unzip` will read it: where its data starts and what it declares. */
+/** One entry as it is written: where its data starts and what it declares. */
 export interface ZipMember {
   name: string
   method: typeof STORED | typeof DEFLATED
@@ -40,6 +40,13 @@ export interface ZipMember {
   /** The unix mode the entry was zipped with (`S_IFLNK` marks a link); absent from another system. */
   unixMode?: number
 }
+
+const S_IFMT = 0o170000
+const S_IFLNK = 0o120000
+
+/** A symbolic link: an entry zipped on unix with `S_IFLNK`; its data is the target. */
+export const isZipLink = (member: ZipMember): boolean =>
+  ((member.unixMode ?? 0) & S_IFMT) === S_IFLNK
 
 export interface ZipSummary {
   entries: number

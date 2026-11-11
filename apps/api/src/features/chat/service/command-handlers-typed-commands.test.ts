@@ -69,7 +69,7 @@ async function kitSession(withPlugin: boolean, layers: Layers) {
     cwd: work(),
     transcriptPath: join(dir(), 'home', 'chat-1.jsonl'),
     permissionMode: 'default',
-    trusted: true,
+    trust: 'trusted',
     layers,
     plugins,
   })

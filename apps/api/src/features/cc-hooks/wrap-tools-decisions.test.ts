@@ -94,16 +94,13 @@ describe('wrapToolsWithCcHooks decisions', () => {
       runtime({
         runPreToolUse: () =>
           Promise.resolve({ decision: 'proceed', didRewrite: false, additionalContext: 'pre' }),
-        runPostToolUse: () =>
-          Promise.resolve({ additionalContext: 'post <system-reminder>x</system-reminder>' }),
+        runPostToolUse: () => Promise.resolve({ additionalContext: 'post' }),
       }),
       logger,
     )
     const result = await wrapped.execute('tc1', { command: 'ls' })
-    // A reminder tag inside the hook's text has its `<` escaped.
-    expect(result.content).toBe(
-      'out\n\n<system-reminder>\npre\n\npost &lt;system-reminder>x&lt;/system-reminder>\n</system-reminder>',
-    )
+    // The runtime hands over the text with its reminder tags escaped (plugins/kit/hooks/runtime.test.ts).
+    expect(result.content).toBe('out\n\n<system-reminder>\npre\n\npost\n</system-reminder>')
   })
 
   it('continue:false refuses the call and ends the run after the batch', async () => {

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { AgentTool } from '@localixai/agent/agents'
 import { TOOL } from '../../agent-core/tool-names'
-import { claudeCodeToolResponse } from '../../ext/cc-tool-shapes'
+import { claudeCodeToolResponse } from '../../plugins/kit'
 import { claudeCodeToolName, localToolName, toolInputOf } from '../../plugins/kit'
 import type {
   ModHostPortsInput as KitModHostPorts,

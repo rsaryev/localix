@@ -1,30 +1,13 @@
 import { resolveWorktreePath } from '@rsaryev/llx-plugin/hooks'
-import type { HookOutcome } from '@rsaryev/llx-plugin'
-import type {
-  McpElicitationAnswer,
-  McpElicitationContent,
-  McpElicitationHookRequest,
-} from '../../../agent-core/tools/hitl/mcp-elicitation'
+import type { McpElicitationHookRequest } from '../../../agent-core/tools/hitl/mcp-elicitation'
 import type { CcHooksRuntime } from '../../../cc-hooks/runtime-contracts'
+import { elicitationFacts, hookElicitationAnswer, reviewedElicitationAnswer } from '../elicitation'
 import type { EventDeps } from './runtime'
 
 type DisplayEvents = Pick<
   CcHooksRuntime,
   'runElicitation' | 'runElicitationResult' | 'runMessageDisplay' | 'runWorktreeCreate'
 >
-
-/** A hook's answer to an elicitation; a block declines it. */
-function answerOf(
-  outcome: HookOutcome<'Elicitation' | 'ElicitationResult'> | undefined,
-): McpElicitationAnswer | undefined {
-  if (!outcome) return undefined
-  if (!outcome.proceed) return { action: 'decline' }
-  const said = outcome.effects.elicitation
-  if (!said) return undefined
-  const content = said.content as McpElicitationContent | undefined
-  if (said.action === 'accept') return { action: 'accept', content: content ?? {} }
-  return { action: said.action, ...(content ? { content } : {}) }
-}
 
 const requestFacts = (request: McpElicitationHookRequest) => ({
   mcp_server_name: request.server,
@@ -36,21 +19,15 @@ const requestFacts = (request: McpElicitationHookRequest) => ({
 export function createDisplayEvents({ fire, cwd }: EventDeps): DisplayEvents {
   return {
     runElicitation: async (request) =>
-      answerOf(
-        await fire('Elicitation', {
-          ...requestFacts(request),
-          message: request.message,
-          ...(request.url ? { url: request.url } : {}),
-          ...(request.requestedSchema ? { requested_schema: request.requestedSchema } : {}),
-        } as never),
-      ),
+      hookElicitationAnswer(await fire('Elicitation', elicitationFacts(request))),
     runElicitationResult: async (request, answer) =>
-      answerOf(
+      reviewedElicitationAnswer(
         await fire('ElicitationResult', {
           ...requestFacts(request),
           action: answer.action,
           ...(answer.content ? { content: answer.content } : {}),
         } as never),
+        answer,
       ),
     async runMessageDisplay(message) {
       const outcome = await fire('MessageDisplay', {

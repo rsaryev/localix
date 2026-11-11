@@ -1,4 +1,5 @@
 import type { CatalogAgent } from '@rsaryev/llx-plugin/agents'
+import type { TrustSituation } from '@rsaryev/llx-plugin/loading'
 import { agentHooksRun } from '../../../plugins/kit'
 import type { SessionRecord } from '../../repository'
 import type { ScopedCcHooks } from '../run-contract'
@@ -12,11 +13,11 @@ import type { ScopedCcHooks } from '../run-contract'
 export function agentScopedHooks(
   session: Pick<SessionRecord, 'provenance'>,
   agent: Pick<CatalogAgent, 'source' | 'hooks'> | undefined,
-  options: { projectTrusted: boolean },
+  options: { trust: TrustSituation },
 ): ScopedCcHooks[] {
   const { provenance } = session
   if (provenance.kind !== 'task-delegation' || provenance.fork) return []
-  if (!agent || !agentHooksRun(agent, options.projectTrusted)) return []
+  if (!agent || !agentHooksRun(agent, options.trust)) return []
   return [
     {
       raw: agent.hooks,

@@ -43,7 +43,7 @@ export function openChatPluginSession(
     cwd: facts.cwd,
     transcriptPath,
     permissionMode: ccPermissionMode(permissionMode ?? 'default'),
-    trusted: facts.settings.trusted,
+    trust: facts.settings.trust.situation,
     additionalDirectories: settingsAdditionalDirectories(facts.settings),
     layers: facts.settings.layers,
     plugins: facts.plugins,

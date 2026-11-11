@@ -6,6 +6,7 @@ import {
   type PolicyScope,
 } from '@rsaryev/llx-plugin/settings'
 import type { ClaudeSettings, SettingsFile } from './read'
+import { contentApplies } from './trust'
 
 /**
  * Which `permissions` rules and `additionalDirectories` of the settings files are in force, as the
@@ -36,7 +37,8 @@ function listsOf(settings: ClaudeSettings): PermissionRuleLists {
     claudeDirIsSymlink = false
   }
   // Whether git tracks the local file is not read: Localix runs no git for a settings read.
-  return permissionRuleLists(settings.policy().view, () => settings.trusted, {
+  const trusted = contentApplies('allow-rules', settings.trust.situation)
+  return permissionRuleLists(settings.policy().view, () => trusted, {
     tracked: false,
     claudeDirIsSymlink,
   })

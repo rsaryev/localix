@@ -4,7 +4,7 @@
  */
 import { homedir } from 'node:os'
 import { isAbsolute, resolve } from 'node:path'
-import { expandHome } from '../../lib/home-path'
+import { expandHome } from '../../../../lib/home-path'
 
 export type Fields = Record<string, unknown>
 

@@ -1,20 +1,21 @@
 import { promises as fs } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { resolve } from 'node:path'
 
 import { listItems } from './config-lists'
 
-import { claudeConfigDir } from '../cc-settings/config-dir'
 import { pathExists } from '../ext/fs-discovery'
 import type { DiscoveredPlugin } from './discovery-types'
 import {
   catalogAt,
   claudeCodePluginSettings,
+  claudeCodePluginStore,
   hostPlatform,
   installsAt,
   parseInstalledPlugins,
   readKnownMarketplaces,
   readMarketplace,
   entryFolder,
+  winningInstall,
   type KnownMarketplaces,
   type ClaudeSettingsInput,
   type FolderSource,
@@ -52,9 +53,6 @@ export interface ClaudeCodeInstall {
 }
 
 type InstallsInput = Pick<ClaudeSettingsInput, 'homeDir' | 'cwd' | 'env' | 'managed'>
-
-/** The scopes whose record applies here, in order: one made for this project first, else the user's. */
-const PICK = ['local', 'project', 'user'] as const
 
 interface Listing {
   /** The entry as the kit read the catalog; the kit merges it with the plugin's manifest. */
@@ -98,14 +96,11 @@ export const entrySource = (id: string, entry?: MarketplaceEntry): FolderSource 
 
 /** What Claude Code would load for a session in `cwd` (null: no project). */
 export async function readClaudeCodeInstalls(opts: InstallsInput): Promise<ClaudeCodeInstall[]> {
-  // `CLAUDE_CODE_PLUGIN_CACHE_DIR` moves Claude Code's plugins root, as in Claude Code.
-  const pluginsRoot =
-    (opts.env ?? process.env).CLAUDE_CODE_PLUGIN_CACHE_DIR?.trim() ||
-    join(claudeConfigDir(opts.homeDir, opts.env), 'plugins')
+  const store = claudeCodePluginStore(opts.homeDir, opts.env)
   const [file, settings, known] = await Promise.all([
-    fs.readFile(join(pluginsRoot, 'installed_plugins.json'), 'utf8').catch(() => undefined),
+    fs.readFile(store.installedPlugins(), 'utf8').catch(() => undefined),
     claudeCodePluginSettings(opts),
-    readKnownMarketplaces(pluginsRoot),
+    readKnownMarketplaces(store.root),
   ])
   // A file this version cannot read is no installs.
   const { records } = parseInstalledPlugins(file)
@@ -118,16 +113,14 @@ export async function readClaudeCodeInstalls(opts: InstallsInput): Promise<Claud
     ids.map(async (id): Promise<ClaudeCodeInstall | null> => {
       const setting = settings.enabled(id)
       if (setting?.on === false) return null
-      const applying = here[id] ?? []
-      const record = PICK.map((scope) => applying.find((r) => r.scope === scope)).find(Boolean)
+      const record = winningInstall(here[id] ?? [])
       if (!record && !setting?.on) return null
       const listing = await marketplaceListing(known, id)
       const dir =
         record && (await pathExists(record.installPath)) ? record.installPath : listing?.localPath
       if (!dir || !(await pathExists(dir))) return null
-      const projectOwned = record
-        ? record.scope !== 'user'
-        : setting?.by === 'project' || setting?.by === 'local'
+      const ownedBy = record?.scope ?? setting?.by
+      const projectOwned = ownedBy === 'project' || ownedBy === 'local'
       return {
         id,
         dir,

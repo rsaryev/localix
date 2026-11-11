@@ -16,7 +16,7 @@ const child = (provenance: Record<string, unknown> = {}) =>
     projectId: 'p',
     provenance: { kind: 'task-delegation', parentSessionId: 'x', toolCallId: 't', ...provenance },
   }) as never
-const ctx = { userId: 'u', projectTrusted: true }
+const ctx = { userId: 'u', trust: 'trusted' } as const
 
 describe('the MCP servers a delegated run takes from its agent file', () => {
   test('a delegated child of a person’s agent gets them', () => {

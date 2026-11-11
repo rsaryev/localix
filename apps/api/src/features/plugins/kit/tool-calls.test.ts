@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { claudeCodeHookCall, localInputFromHook, toolCallEvent, toolInputOf } from './tool-calls'
 import { claudeCodeToolName, localToolName } from './tool-names'
-import { singleCalls } from '../../ext/cc-tool-shapes'
+import { singleCalls } from './tools/cc-tool-shapes'
 
 test('a one-file edit reads as Claude Code’s Edit, and a rewrite lands on the edit', () => {
   const input = { edits: [{ path: 'a.ts', old_string: 'x', new_string: 'y' }], cwd: '/p' }

@@ -52,16 +52,10 @@ export function claudeCodeServerRecord(
   name: string,
   raw: Record<string, unknown>,
   input: ClaudeCodeMcpInput,
-  trusted: boolean,
 ): McpServerRecord | undefined {
   try {
     const parsed = normalizeMcpServerEntry(name, raw, input.projectId)
     if (parsed.enabled === false) return undefined
-    // A `headersHelper` is a shell command: a project or local server's runs only in a trusted
-    // folder, and until then the server connects with its static headers alone (mcp.md, "Trust a
-    // folder before its headersHelper runs"). Project servers are also approved above to load at all.
-    if ((scope === 'project' || scope === 'local') && !trusted && 'headersHelper' in parsed.config)
-      delete (parsed.config as { headersHelper?: string }).headersHelper
     return {
       id: `claude-code:${scope}:${name}`,
       userId: input.userId,

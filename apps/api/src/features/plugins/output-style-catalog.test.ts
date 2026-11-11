@@ -39,18 +39,28 @@ describe('the output style catalog', () => {
     )
   })
 
-  test('a local style of the same name replaces a built-in, the project over the person', () => {
-    const style = (instructions: string) => ({
-      name: 'Concise',
+  // output-styles.md, "Change your output style"; the kit's `listOutputStyles`: a custom style
+  // never shadows a built-in, and of two that share a name the first in precedence order wins.
+  test('a local style never replaces a built-in; the project wins a name over the person', () => {
+    const style = (name: string, instructions: string) => ({
+      name,
       description: '',
       keepCodingInstructions: false,
       forceForPlugin: false,
       instructions,
     })
-    const catalog = outputStyleCatalog({ user: [style('mine')], project: [style('team')] })
+    const catalog = outputStyleCatalog({
+      user: [style('Concise', 'mine'), style('shared', 'mine')],
+      project: [style('Concise', 'team'), style('shared', 'team')],
+    })
     const concise = catalog.filter((entry) => entry.fullName === 'Concise')
-    expect(concise).toHaveLength(1)
-    expect(concise[0]).toMatchObject({ source: 'project', style: { instructions: 'team' } })
+    expect(concise).toEqual([expect.objectContaining({ source: 'builtin' })])
+    expect(catalog.filter((entry) => entry.fullName === 'shared')).toEqual([
+      expect.objectContaining({
+        source: 'project',
+        style: expect.objectContaining({ instructions: 'team' }),
+      }),
+    ])
   })
 })
 
@@ -77,7 +87,7 @@ describe('choosing the style a chat runs in', () => {
 })
 
 describe("reading the person's and the project's styles", () => {
-  test('reads `.localix/output-styles` from home and from the working directory up to the repository root', async () => {
+  test('reads `.localix/output-styles` from home and from the working directory up', async () => {
     writeTree(home(), { '.localix/output-styles/plain.md': '---\nname: Plain\n---\nNo frills.' })
     writeTree(repo(), {
       '.git/HEAD': 'ref: refs/heads/main\n',
@@ -88,6 +98,7 @@ describe("reading the person's and the project's styles", () => {
     const local = await readLocalOutputStyles({
       homeDir: home(),
       cwd: `${repo()}/packages/app`,
+      env: {},
     })
     expect(local.user).toEqual([
       {
@@ -105,13 +116,27 @@ describe("reading the person's and the project's styles", () => {
     })
   })
 
-  test('outside a repository only the working directory is read', async () => {
+  // The kit's folders (`settingsLocations`): the working directory and its parents, with or without
+  // a repository, the nearest winning a name.
+  test('outside a repository the parents are read too, the nearest winning', async () => {
     writeTree(repo(), {
-      '.localix/output-styles/above.md': 'Above.',
+      '.claude/output-styles/above.md': 'Above.',
+      '.claude/output-styles/here.md': 'Far.',
       'sub/.localix/output-styles/here.md': 'Here.',
     })
-    const local = await readLocalOutputStyles({ homeDir: home(), cwd: `${repo()}/sub` })
-    expect(local.project.map((style) => style.name)).toEqual(['here'])
+    const local = await readLocalOutputStyles({ homeDir: home(), cwd: `${repo()}/sub`, env: {} })
+    expect(
+      Object.fromEntries(local.project.map((style) => [style.name, style.instructions])),
+    ).toEqual({ here: 'Here.', above: 'Above.' })
+  })
+
+  test("`CLAUDE_CONFIG_DIR` is the person's Claude Code folder, taken as written", async () => {
+    writeTree(home(), { 'work/output-styles/terse.md': 'From work.' })
+    const local = await readLocalOutputStyles({
+      homeDir: home(),
+      env: { CLAUDE_CONFIG_DIR: `${home()}/work` },
+    })
+    expect(local.user.map((style) => style.instructions)).toEqual(['From work.'])
   })
 
   test("Claude Code's `.claude/output-styles` load too; Localix's own folder wins a name", async () => {

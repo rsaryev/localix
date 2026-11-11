@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  agentHooksRun,
   agentMcpSpecs,
   askedPermissionMode,
   subagentModelRoute,
@@ -69,7 +70,7 @@ describe('the MCP servers of an agent file', () => {
 
   test('a personal file and a mod’s (`--agents`) load inline servers without trust', () => {
     for (const more of [{}, { source: { kind: 'flag' } }, { source: managed }] as const) {
-      const specs = agentMcpSpecs(testCatalogAgent('a', { mcpServers: FILE }, more), false)
+      const specs = agentMcpSpecs(testCatalogAgent('a', { mcpServers: FILE }, more), 'dialog')
       expect(specs.references).toEqual(['github'])
       expect(Object.keys(specs.inline)).toEqual(['playwright', 'docs'])
     }
@@ -78,8 +79,33 @@ describe('the MCP servers of an agent file', () => {
   test('nothing for a plugin’s agent or a built-in type', () => {
     const none = { references: [], inline: {}, skipped: [] }
     for (const source of [{ kind: 'plugin', pluginId: 'p' }, { kind: 'builtin' }] as const)
-      expect(agentMcpSpecs(testCatalogAgent('a', { mcpServers: FILE }, { source }), true)).toEqual(
-        none,
-      )
+      expect(
+        agentMcpSpecs(testCatalogAgent('a', { mcpServers: FILE }, { source }), 'trusted'),
+      ).toEqual(none)
+  })
+
+  // sub-agents.md, "Scope MCP servers to a subagent": a project file's inline servers wait for the
+  // folder itself to be trusted (the kit's `subagent-inline-mcp` row); a parent's trust is not it.
+  test('a project file’s inline servers load only once the folder itself is trusted', () => {
+    const project = { source: { kind: 'folder', scope: 'project' } } as const
+    const inline = (trust: 'trusted' | 'parent-trusted' | 'dialog') =>
+      Object.keys(agentMcpSpecs(testCatalogAgent('a', { mcpServers: FILE }, project), trust).inline)
+    expect(inline('trusted')).toEqual(['playwright', 'docs'])
+    expect(inline('parent-trusted')).toEqual([])
+    expect(inline('dialog')).toEqual([])
+  })
+})
+
+// hooks.md, "Hooks in skills and agents": a project subagent's frontmatter hooks run only once the
+// trust dialog was accepted for the folder itself (the kit's `subagent-frontmatter-hooks` row).
+describe('the frontmatter hooks of an agent file', () => {
+  const hooks = { PreToolUse: [{ hooks: [{ type: 'command' as const, command: 'true' }] }] }
+  test('a project agent’s run only in a folder trusted itself; a personal one’s always', () => {
+    const at = (scope: 'project' | 'user') =>
+      testCatalogAgent('a', {}, { source: { kind: 'folder', scope }, hooks })
+    expect(agentHooksRun(at('project'), 'trusted')).toBe(true)
+    expect(agentHooksRun(at('project'), 'parent-trusted')).toBe(false)
+    expect(agentHooksRun(at('project'), 'dialog')).toBe(false)
+    expect(agentHooksRun(at('user'), 'dialog')).toBe(true)
   })
 })

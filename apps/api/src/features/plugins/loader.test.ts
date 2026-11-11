@@ -222,14 +222,8 @@ describe('a plugin whose dependency is not met', () => {
 })
 
 /**
- * BUG B2 — CC `userConfig` `sensitive: true` must NOT leak into model-facing text.
- *
- * The substituter (`makePluginSubstituter`) replaces `${KEY}` tokens with config values
- * in promptSections, skill content, and agent prompts. Its `isSecret` predicate guards
- * this: if `manifest.config[key].secret` is true the token becomes a placeholder naming the option.
- *
- * `sensitive: true` is read as `secret: true` (`kit/catalog/manifest.ts`) → `isSecret` returns
- * true → the value is NOT substituted (a placeholder instead).
+ * BUG B2 — CC `userConfig` `sensitive: true`: model-facing text gets a placeholder (the kit's
+ * `substituteContent`), while an MCP server's config gets the value.
  */
 describe('B2 — sensitive:true userConfig key is NOT substituted into model-facing text', () => {
   it('MCP config still injects the sensitive value (secrets are allowed there)', async () => {
@@ -238,7 +232,7 @@ describe('B2 — sensitive:true userConfig key is NOT substituted into model-fac
     const loaded = await loadEnabledPlugins(opts(repo, allowing('demo')))
     const server = loaded.mcpServers.find((s) => s.name === 'demo_api')
     expect(server).toBeDefined()
-    // MCP env must receive the raw secret (isSecret passes () => false for MCP path).
+    // MCP env must receive the raw secret.
     expect((server!.config.env as Record<string, string>).TOKEN).toBe('mcp-real-secret')
   })
 })

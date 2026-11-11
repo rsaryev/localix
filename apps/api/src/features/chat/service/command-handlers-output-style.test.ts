@@ -76,8 +76,8 @@ describe('/output-style', () => {
     expect(writes).toEqual([])
   })
 
-  test('switches the chat by name, ignoring case, and announces it', async () => {
-    const { replies, writes, published } = await run('/output-style TERSE', enabled)
+  test('switches the chat by full name, ignoring case, and announces it', async () => {
+    const { replies, writes, published } = await run('/output-style My-Plugin:TERSE', enabled)
     expect(writes).toEqual([
       { outputStyle: 'my-plugin:terse', updatedAt: '2026-01-01T00:00:00.000Z' },
     ])
@@ -123,11 +123,12 @@ describe('/output-style', () => {
     expect(replies[0]).toContain('Chats without their own choice use `Concise`')
   })
 
-  test('an unknown or ambiguous name changes nothing', async () => {
-    const both = [...enabled, plugin('other', [style('terse')])]
-    const ambiguous = await run('/output-style terse', both)
-    expect(ambiguous.writes).toEqual([])
-    expect(ambiguous.replies[0]).toContain('name one as `<plugin>:<name>`')
+  // output-styles.md: a plugin style is `<plugin>:<name>`; the kit matches the whole id, so a bare
+  // name names no style even when only one plugin offers it.
+  test("an unknown name, or a plugin style's bare name, changes nothing", async () => {
+    const bare = await run('/output-style terse', enabled)
+    expect(bare.writes).toEqual([])
+    expect(bare.replies[0]).toContain('No output style "terse"')
     const unknown = await run('/output-style shouty', enabled)
     expect(unknown.writes).toEqual([])
     expect(unknown.replies[0]).toContain('No output style "shouty"')

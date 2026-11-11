@@ -62,16 +62,13 @@ these:
   `CLAUDE_PLUGIN_DATA`), a settings MCP server's environment (`mcp-settings-env.ts`) and the data
   folder a plugin server writes to (`mcp-connect.ts`).
 - The MCP record Localix stores and connects: its `headersHelper` field (`mcp/contracts.ts`,
-  `normalize.ts`, the plugin record's helper root in `plugins/mcp.ts`), the untrusted folder's
-  helper dropped before it can run (`claude-code-servers.ts`) and the Store's `.mcp.json` scope
-  label (`store-listing.ts`). The kit plans and runs the helper (`kit/settings/mcp-remote.ts`).
-- A marketplace entry's `headersHelper`, which the person accepts by its hash before it runs
-  (`entry-headers-helper.ts`, `marketplace-resolve.ts`, `marketplace-materialize.ts`) and which an
-  update leaves to them (`update-candidates.ts`, `service-marketplaces.ts`), as the kit's
-  `planUpdate` does.
-- `ext/manifest-substitute.ts`: the variables of a plugin's output style instructions. The kit's
-  catalog reads an output style without substituting it, so Localix's prompt path keeps this until
-  the kit names a surface for it.
+  `normalize.ts`, the plugin record's helper root in `plugins/mcp.ts`) and the Store's `.mcp.json`
+  scope label (`store-listing.ts`). The kit plans and runs the helper and its trust gate
+  (`kit/settings/mcp-remote.ts`), from the trust of the folder each Claude Code file's server was
+  read in, stamped on its record (`kit/settings/mcp-plan.ts`).
+- A marketplace entry's `headersHelper`, which the person accepts by the kit's digest before it runs
+  (`entry-headers-helper.ts`, `marketplace-resolve.ts`, `marketplace-materialize.ts`;
+  `decideAcceptance`).
 
 X7 reads every import in `apps/`, `packages/` and `scripts/`, tests included: an `import type` of
 the kit passes anywhere, a value import, `import()` or re-export outside the boundary fails, and its

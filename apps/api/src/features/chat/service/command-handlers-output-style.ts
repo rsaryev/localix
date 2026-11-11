@@ -104,12 +104,8 @@ export async function handleOutputStyleCommand(
   if (!query) return directReply(listing(styles, current(), defaultStyle))
 
   const found = findOutputStyle(styles, query)
-  if (found.kind === 'none' || found.kind === 'ambiguous')
-    return directReply(
-      found.kind === 'ambiguous'
-        ? `Several plugins offer "${query}" — name one as \`<plugin>:<name>\`.\n\n${listing(styles, null, defaultStyle)}`
-        : `No output style "${query}".\n\n${listing(styles, current(), defaultStyle)}`,
-    )
+  if (found.kind === 'none')
+    return directReply(`No output style "${query}".\n\n${listing(styles, current(), defaultStyle)}`)
   const outputStyle = found.kind === 'style' ? found.entry.fullName : DEFAULT_OUTPUT_STYLE_ID
   const updated: SessionRecord = { ...session, outputStyle, updatedAt: ts }
   await ctx.repo.updateSession(userId, sessionId, { outputStyle, updatedAt: ts })

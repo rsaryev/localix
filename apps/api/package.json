@@ -27,7 +27,6 @@
     "./loops-format": "./src/features/loops/format.ts",
     "./lsp-edits": "./src/features/lsp/lsp-edits.ts",
     "./notification-contracts": "./src/features/notifications/contracts.ts",
-    "./mcp-elicitation": "./src/features/agent-core/tools/hitl/mcp-elicitation-content.ts",
     "./author": "./src/db/author.ts",
     "./permission-modes": "./src/contracts/permission-modes.ts",
     "./mini-app-kit-layout": "./src/features/mini-apps/kit-layout.ts",

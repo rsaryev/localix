@@ -15,37 +15,56 @@ describe('a server config at connect time', () => {
     HTTPS_PROXY: 'http://proxy',
   }
 
-  test('expands the command array, args, env, url and headers and passes the rest', () => {
+  test('expands a stdio command array and env and passes the rest', () => {
     const out = connectServerConfig(
       {
+        transport: 'stdio',
         config: {
-          command: ['${MISSING:-node}', 'server.js'],
-          args: ['--url', '${BASE}/mcp'],
+          command: ['${MISSING:-node}', 'server.js', '--url', '${BASE}/mcp'],
           env: { TENANT: '${TENANT}' },
-          url: '${BASE}/mcp',
-          headers: { 'X-Tenant': '${TENANT}' },
           timeout: 5000,
         },
       },
       env,
     )
     expect(out).toEqual({
-      command: ['node', 'server.js'],
-      args: ['--url', 'https://x.example/mcp'],
+      command: ['node', 'server.js', '--url', 'https://x.example/mcp'],
       env: { TENANT: 'acme' },
+      timeout: 5000,
+    })
+  })
+
+  test('expands a remote url and headers and passes the rest', () => {
+    const out = connectServerConfig(
+      {
+        transport: 'http',
+        config: { url: '${BASE}/mcp', headers: { 'X-Tenant': '${TENANT}' }, timeout: 5000 },
+      },
+      env,
+    )
+    expect(out).toEqual({
       url: 'https://x.example/mcp',
       headers: { 'X-Tenant': 'acme' },
       timeout: 5000,
     })
   })
 
+  test('a url that is no URL after expansion stays as written, so connecting fails on it', () => {
+    const config = { url: '${UNSET_BASE}/mcp' }
+    expect(connectServerConfig({ transport: 'http', config }, env)).toEqual(config)
+  })
+
   test('an empty variable is set, so its default is not used, as in Claude Code', () => {
-    expect(connectServerConfig({ config: { command: ['${EMPTY:-x}'] } }, env).command).toEqual([''])
+    expect(
+      connectServerConfig({ transport: 'stdio', config: { command: ['${EMPTY:-x}'] } }, env)
+        .command,
+    ).toEqual([''])
   })
 
   test('withholds from a remote server the kit’s credential names and Localix’s wider net', () => {
     const out = connectServerConfig(
       {
+        transport: 'http',
         config: {
           url: '${BASE}/mcp?p=${HTTPS_PROXY}',
           headers: { Authorization: 'Bearer ${GITHUB_TOKEN}', 'X-Key': '${UNSET_API_KEY:-dflt}' },
@@ -59,7 +78,7 @@ describe('a server config at connect time', () => {
 
   test('still hands a local server its credentials', () => {
     const out = connectServerConfig(
-      { config: { command: ['gh-mcp', '--token', '${GITHUB_TOKEN}'] } },
+      { transport: 'stdio', config: { command: ['gh-mcp', '--token', '${GITHUB_TOKEN}'] } },
       env,
     )
     expect(out.command).toEqual(['gh-mcp', '--token', 'ghp_host'])
@@ -67,7 +86,7 @@ describe('a server config at connect time', () => {
 
   test('leaves a config resolved when it was built (a plugin server) as built', () => {
     const config = { url: 'https://x.example', headers: { X: '${TENANT}' } }
-    const out = connectServerConfig({ config, configExpanded: true }, env)
+    const out = connectServerConfig({ transport: 'http', config, configExpanded: true }, env)
     expect(out).toEqual(config)
     expect(out).not.toBe(config)
   })

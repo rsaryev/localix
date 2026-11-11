@@ -1,4 +1,5 @@
 import type { CatalogAgent } from '@rsaryev/llx-plugin/agents'
+import type { TrustSituation } from '@rsaryev/llx-plugin/loading'
 import { agentMcpServers, type AgentMcpServers } from '../../../mcp/agent-servers'
 import { agentMcpSpecs } from '../../../plugins/kit'
 import type { SessionRecord } from '../../repository'
@@ -11,12 +12,12 @@ import type { SessionRecord } from '../../repository'
 export function agentRunMcpServers(
   session: Pick<SessionRecord, 'provenance'> & { projectId?: string | null },
   agent: Pick<CatalogAgent, 'name' | 'source' | 'definition'> | undefined,
-  options: { userId: string; projectTrusted: boolean },
+  options: { userId: string; trust: TrustSituation },
 ): AgentMcpServers | undefined {
   const { provenance } = session
   if (provenance.kind !== 'task-delegation' || provenance.fork) return undefined
   if (!agent?.definition.mcpServers?.length) return undefined
-  const specs = agentMcpSpecs(agent, options.projectTrusted)
+  const specs = agentMcpSpecs(agent, options.trust)
   return agentMcpServers(specs, {
     userId: options.userId,
     projectId: session.projectId ?? '',

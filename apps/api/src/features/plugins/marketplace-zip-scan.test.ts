@@ -1,27 +1,14 @@
-import { afterEach, describe, expect, it } from 'bun:test'
-import { promises as fs } from 'node:fs'
-import { join } from 'node:path'
+import { describe, expect, it } from 'bun:test'
 
-import { tempDirPerTest } from '@localixai/testing'
-
-import { stubFetch } from '../../testing/fetch-stub'
 import { makeZip } from '../../testing/zip-fixture'
-import { fetchArchivePlugin } from './marketplace-source-archive'
-import { verifyZipMembers } from './marketplace-zip-inflate'
 import { scanZip, type ZipLimits } from './marketplace-zip-scan'
 
 /**
- * The zip pre-scan: an archive is held to Claude Code's extraction limits (entries, one file's
- * size, total size, compression ratio) before `unzip` touches it. The scan reads the whole central
- * directory the way `unzip` does, and every deflated entry is inflated into a counter so a size
- * the zip lies about cannot slip past the limits.
+ * The zip scan: the whole central directory read (its byte range, not the count the end record
+ * claims), each local header agreeing with it, held to the extraction limits it is given. What a
+ * scanned entry inflates to is held to its declared size when it is written
+ * (`marketplace-archive-install.test.ts`).
  */
-
-const realFetch = globalThis.fetch
-afterEach(() => {
-  globalThis.fetch = realFetch
-})
-const dir = tempDirPerTest('mkt-zip')
 
 const small: ZipLimits = {
   maxEntries: 3,
@@ -94,50 +81,5 @@ describe('scanZip', () => {
 
   it('refuses a file that is not a zip', () => {
     expect(() => scanZip(Buffer.from('not a zip at all, just text'))).toThrow('not a zip file')
-  })
-})
-
-describe('verifyZipMembers', () => {
-  it('passes entries that inflate to what they declare', async () => {
-    const zip = makeZip([{ name: 'a', data: 'hello '.repeat(100) }])
-    await expect(verifyZipMembers(zip, scanZip(zip).members)).resolves.toBeUndefined()
-  })
-
-  it('refuses an entry that inflates past its declared size', async () => {
-    const zip = makeZip([{ name: 'bomb', data: Buffer.alloc(1024 * 1024), declaredBytes: 10 }])
-    expect(summary(zip)).toEqual({ entries: 1, totalBytes: 10, largestBytes: 10 })
-    await expect(verifyZipMembers(zip, scanZip(zip).members)).rejects.toThrow(
-      'declares 10 bytes but inflates to more',
-    )
-  })
-
-  it('refuses an entry that inflates short of its declared size', async () => {
-    const zip = makeZip([{ name: 'a', data: 'x'.repeat(10), declaredBytes: 20 }])
-    await expect(verifyZipMembers(zip, scanZip(zip).members)).rejects.toThrow('inflates to 10')
-  })
-})
-
-describe('fetchArchivePlugin limits', () => {
-  it('stops an archive download before unzip runs', async () => {
-    const bomb = makeZip([{ name: 'p/huge.bin', data: Buffer.alloc(100 * 1024 * 1024) }])
-    globalThis.fetch = stubFetch(async () => new Response(new Uint8Array(bomb)))
-    const dest = join(dir(), 'out')
-    await expect(fetchArchivePlugin({ url: 'https://a.example/p.zip' }, dest)).rejects.toThrow(
-      'more than 50 times',
-    )
-    expect(await fs.stat(dest).catch(() => null)).toBeNull()
-  })
-
-  it('refuses an entry whose declared size understates what it inflates to', async () => {
-    const bomb = makeZip([
-      { name: 'p/.claude-plugin/plugin.json', data: '{"name":"p"}' },
-      { name: 'p/huge.bin', data: Buffer.alloc(8 * 1024 * 1024), declaredBytes: 10 },
-    ])
-    globalThis.fetch = stubFetch(async () => new Response(new Uint8Array(bomb)))
-    const dest = join(dir(), 'out')
-    await expect(fetchArchivePlugin({ url: 'https://a.example/p.zip' }, dest)).rejects.toThrow(
-      'p/huge.bin declares 10 bytes but inflates to more',
-    )
-    expect(await fs.stat(dest).catch(() => null)).toBeNull()
   })
 })

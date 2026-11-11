@@ -36,7 +36,8 @@ function serversFor(
     own?: McpServerRecord[]
     plugins?: McpServerRecord[]
     extra?: McpServerRecord[]
-    trusted?: boolean
+    /** The folder's own trust, or `'parent'`: the folder above it trusted. */
+    trusted?: boolean | 'parent'
   } = {},
 ) {
   const root = join(scratch(), `case-${case_++}`)
@@ -45,7 +46,8 @@ function serversFor(
   const state = JSON.parse(tree['home/.claude.json'] ?? '{}') as Record<string, unknown>
   if (input.trusted) {
     const projects = (state.projects ?? {}) as Record<string, Record<string, unknown>>
-    projects[project] = { ...projects[project], hasTrustDialogAccepted: true }
+    const key = input.trusted === 'parent' ? root : project
+    projects[key] = { ...projects[key], hasTrustDialogAccepted: true }
     state.projects = projects
   }
   writeTree(root, { ...tree, 'home/.claude.json': JSON.stringify(state), 'project/.keep': '' })
@@ -104,6 +106,8 @@ describe("Claude Code's MCP servers in a Localix run", () => {
     }
     expect(serversFor(selfApproved).names).toEqual([])
     expect(serversFor(selfApproved, { trusted: true }).names.sort()).toEqual(['db', 'other'])
+    // A parent folder's trust is not the folder's: its own approvals still do not count.
+    expect(serversFor(selfApproved, { trusted: 'parent' }).names).toEqual([])
     // A rejection in any file holds.
     expect(
       serversFor(
@@ -213,15 +217,18 @@ describe("Claude Code's MCP servers in a Localix run", () => {
 
   /**
    * A `headersHelper` is an arbitrary shell command. Claude Code runs the helper of a project
-   * `.mcp.json` or local-scope server only once the person trusted the folder, and connects with
-   * the static headers alone until then (mcp.md, "Trust a folder before its headersHelper runs").
+   * `.mcp.json` or local-scope server only once the person trusted the folder itself, and connects
+   * with the static headers alone until then (mcp.md, "Trust a folder before its headersHelper
+   * runs"). Each Claude Code file's server carries the trust of the folder it was read in, for the
+   * kit's gate where it connects (`kit/settings/mcp-remote.ts`); an entry cannot write its own.
    */
-  test('a project or local server’s headersHelper waits for the folder to be trusted', () => {
+  test('each server carries the trust of the folder it was read in, over any it claims', () => {
     const remote = {
       type: 'http',
       url: 'https://mcp.example.com/mcp',
       headers: { 'X-Static': 's' },
       headersHelper: './auth.sh',
+      headersHelperTrust: { source: 'persisted', key: '/elsewhere' },
     }
     const approvedProject = (project: string) => ({
       'project/.mcp.json': JSON.stringify({ mcpServers: { api: remote } }),
@@ -231,24 +238,24 @@ describe("Claude Code's MCP servers in a Localix run", () => {
         projects: { [project]: { mcpServers: { here: remote } } },
       }),
     })
-    const config = (
-      input: ReturnType<typeof serversFor>,
-      name: string,
-    ): Record<string, unknown> | undefined => input.servers.find((s) => s.name === name)?.config
-
-    const untrusted = serversFor(approvedProject)
-    // Approved to connect, but the helper does not run: the static headers are all it has.
-    expect(config(untrusted, 'api')).toEqual({
-      url: remote.url,
-      headers: remote.headers,
-    })
-    expect(config(untrusted, 'here')).toEqual({ url: remote.url, headers: remote.headers })
-    // Claude Code's own user scope is the person's own file: its helper runs without the folder.
-    expect(config(untrusted, 'mine')?.headersHelper).toBe('./auth.sh')
-
-    const trusted = serversFor(approvedProject, { trusted: true })
-    expect(config(trusted, 'api')?.headersHelper).toBe('./auth.sh')
-    expect(config(trusted, 'here')?.headersHelper).toBe('./auth.sh')
+    const stamps = (trusted?: boolean | 'parent') => {
+      const found = serversFor(approvedProject, trusted === undefined ? {} : { trusted })
+      return {
+        project: found.project,
+        stamp: Object.fromEntries(found.servers.map((s) => [s.name, s.config.headersHelperTrust])),
+        helper: found.servers.map((s) => s.config.headersHelper),
+      }
+    }
+    for (const [trusted, source] of [
+      [undefined, 'none'],
+      ['parent', 'parent-folder'],
+      [true, 'persisted'],
+    ] as const) {
+      const { project, stamp, helper } = stamps(trusted)
+      const expected = { source, key: project }
+      expect(stamp).toEqual({ api: expected, here: expected, mine: expected })
+      expect(helper).toEqual(['./auth.sh', './auth.sh', './auth.sh'])
+    }
   })
 
   test('a project server nobody approved is not connected at all, so its helper never runs', () => {

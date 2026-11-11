@@ -10,11 +10,6 @@
   "apps/api/src/features/chat/service/command-handlers-plugins-reports.ts spells plugin.json (manifest reading)",
   "apps/api/src/features/chat/service/status-line.ts spells CLAUDE_PROJECT_DIR (hook variables)",
   "apps/api/src/features/chat/skill-files.ts spells SKILL.md (skill reading)",
-  "apps/api/src/features/ext/manifest-substitute.ts spells ${CLAUDE_PLUGIN_ROOT} (path variables)",
-  "apps/api/src/features/ext/manifest-substitute.ts spells CLAUDE_PLUGIN_DATA (plugin variables)",
-  "apps/api/src/features/ext/manifest-substitute.ts spells CLAUDE_PROJECT_DIR (hook variables)",
-  "apps/api/src/features/ext/manifest-substitute.ts spells user_config. (user config references)",
-  "apps/api/src/features/mcp/claude-code-servers.ts spells headersHelper (MCP headers helper)",
   "apps/api/src/features/mcp/contracts.ts spells headersHelper (MCP headers helper)",
   "apps/api/src/features/mcp/mcp-connect.ts spells CLAUDE_PLUGIN_DATA (plugin variables)",
   "apps/api/src/features/mcp/mcp-settings-env.ts spells CLAUDE_PROJECT_DIR (hook variables)",
@@ -26,8 +21,6 @@
   "apps/api/src/features/plugins/marketplace-materialize.ts spells headersHelper (MCP headers helper)",
   "apps/api/src/features/plugins/marketplace-resolve.ts spells headersHelper (MCP headers helper)",
   "apps/api/src/features/plugins/mcp.ts spells headersHelper (MCP headers helper)",
-  "apps/api/src/features/plugins/service-marketplaces.ts spells headersHelper (MCP headers helper)",
   "apps/api/src/features/plugins/subagent-status-line.ts spells CLAUDE_PLUGIN_DATA (plugin variables)",
-  "apps/api/src/features/plugins/subagent-status-line.ts spells CLAUDE_PROJECT_DIR (hook variables)",
-  "apps/api/src/features/plugins/update-candidates.ts spells headersHelper (MCP headers helper)"
+  "apps/api/src/features/plugins/subagent-status-line.ts spells CLAUDE_PROJECT_DIR (hook variables)"
 ]

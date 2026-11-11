@@ -1,23 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 
-import type { PluginCatalog } from './catalog'
 import {
-  activeSubagentStatusLine,
   parseSubagentRows,
   plainRowText,
   runSubagentStatusLine,
   type SubagentTask,
 } from './subagent-status-line'
-
-const entry = (name: string, command?: string) => ({
-  plugin: {
-    dir: `/plugins/${name}`,
-    manifest: { name },
-    entrypoints: {
-      components: { settings: command ? { subagentStatusLine: { type: 'command', command } } : {} },
-    },
-  },
-})
 
 const task = (id: string): SubagentTask => ({
   id,
@@ -32,22 +20,7 @@ const task = (id: string): SubagentTask => ({
   cwd: '/repo',
 })
 
-describe('a plugin subagent status line', () => {
-  test('the plugin loaded last sets it', () => {
-    const catalog = {
-      enabled: [entry('a', 'a.sh'), entry('b'), entry('c', 'c.sh')],
-    } as unknown as PluginCatalog
-    expect(activeSubagentStatusLine(catalog)).toEqual({
-      pluginName: 'c',
-      pluginRoot: '/plugins/c',
-      pluginId: 'c',
-      command: 'c.sh',
-    })
-    expect(activeSubagentStatusLine({ enabled: [entry('b')] } as unknown as PluginCatalog)).toBe(
-      null,
-    )
-  })
-
+describe('running a subagent status line', () => {
   test('a row body keeps its text and drops colors and hyperlink escapes', () => {
     expect(
       plainRowText('\u001b[32mok\u001b[0m \u001b]8;;https://x.dev\u0007link\u001b]8;;\u0007'),
@@ -74,7 +47,7 @@ describe('a plugin subagent status line', () => {
   test('runs the command with the rows on stdin and the plugin roots in its environment', async () => {
     const seen: { input?: string; env?: NodeJS.ProcessEnv; cwd?: string } = {}
     const rows = await runSubagentStatusLine({
-      line: { pluginName: 'p', pluginRoot: '/plugins/p', command: 'row.sh' },
+      line: { command: 'row.sh', plugin: { id: 'p@m', name: 'p', root: '/plugins/p' } },
       tasks: [task('child-1')],
       sessionId: 's1',
       cwd: '/repo',
@@ -98,13 +71,14 @@ describe('a plugin subagent status line', () => {
       tasks: [{ id: 'child-1', type: 'local_agent', tokenCount: 1200 }],
     })
     expect(seen.env?.CLAUDE_PLUGIN_ROOT).toBe('/plugins/p')
+    expect(seen.env?.CLAUDE_PLUGIN_DATA).toContain('p-m')
     expect(seen.env?.CLAUDE_PROJECT_DIR).toBe('/repo')
     expect(seen.cwd).toBe('/repo')
   })
 
   test('a failing command rewrites nothing', async () => {
     const rows = await runSubagentStatusLine({
-      line: { pluginName: 'p', pluginRoot: '/p', command: 'false' },
+      line: { command: 'false', plugin: { id: 'p@m', name: 'p', root: '/p' } },
       tasks: [task('child-1')],
       sessionId: 's1',
       cwd: '/repo',

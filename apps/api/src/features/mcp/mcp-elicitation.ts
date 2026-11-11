@@ -13,9 +13,8 @@ import type {
   McpElicitationHookRequest,
   McpElicitationRequest,
   McpElicitationResponse,
-  McpElicitationSchema,
 } from '../agent-core/tools/hitl/mcp-elicitation'
-import { validateElicitationContent } from '../agent-core/tools/hitl/mcp-elicitation-content'
+import { claudeCodeMcp } from './claude-code-settings'
 
 /**
  * MCP ELICITATION: a server asks the person for input in the middle of a tool call, as Claude Code
@@ -28,9 +27,9 @@ import { validateElicitationContent } from '../agent-core/tools/hitl/mcp-elicita
  * With no call running, nobody can be asked, and the request is cancelled.
  *
  * Order, as in Claude Code: the `Elicitation` hooks may answer first (no card); otherwise the card
- * waits up to the HITL deadline, and the `ElicitationResult` hooks may then replace or block the
- * person's answer. Whatever comes back is checked against the requested form before the server
- * sees it; content that does not fit declines.
+ * waits up to the HITL deadline, the person's answer is checked against the requested form (content
+ * that does not fit declines), and the `ElicitationResult` hooks may then replace or block it. The
+ * kit decides each step (`plugins/kit/elicitation.ts`); a hook's answer is sent as the hook gave it.
  */
 
 export interface ElicitationCall {
@@ -74,7 +73,7 @@ function hookRequest(call: ElicitationCall, params: ElicitParams): McpElicitatio
     message: params.message,
     mode,
     ...('requestedSchema' in params && params.requestedSchema
-      ? { requestedSchema: params.requestedSchema as McpElicitationSchema }
+      ? { requestedSchema: params.requestedSchema }
       : {}),
     ...('url' in params && typeof params.url === 'string' ? { url: params.url } : {}),
     ...('elicitationId' in params && typeof params.elicitationId === 'string'
@@ -83,22 +82,20 @@ function hookRequest(call: ElicitationCall, params: ElicitParams): McpElicitatio
   }
 }
 
-/** Only an accepted form carries content, and only content its form allows reaches the server. */
-function checked(
+/**
+ * The person's answer as the server gets it, checked against the requested form by the kit; values
+ * that do not fit decline (the card does not submit them, so only a client that bypasses it gets
+ * here).
+ */
+function personAnswer(
   request: McpElicitationHookRequest,
   answer: McpElicitationAnswer,
   logger?: Logger,
-): ElicitResult {
-  if (answer.action !== 'accept') {
-    return answer.content && answer.action === 'cancel'
-      ? { action: 'cancel', content: answer.content }
-      : { action: answer.action }
-  }
-  if (request.mode === 'url') return { action: 'accept' }
-  const check = validateElicitationContent(request.requestedSchema, answer.content ?? {})
-  if (check.ok) return { action: 'accept', content: check.content }
+): McpElicitationAnswer {
+  const checked = claudeCodeMcp().elicitationAnswer(request, answer)
+  if ('result' in checked) return checked.result
   logger?.warn(
-    `MCP elicitation from "${request.server}" declined: the answer does not fit its form (${Object.keys(check.errors).join(', ')})`,
+    `MCP elicitation from "${request.server}" declined: the answer does not fit its form (${checked.problems.join('; ')})`,
   )
   return { action: 'decline' }
 }
@@ -166,11 +163,11 @@ export async function answerElicitation(
 
   // An answer from an Elicitation hook goes straight to the server; ElicitationResult is skipped.
   const fromHook = await hooks?.before(request)
-  if (fromHook) return checked(request, fromHook, logger)
+  if (fromHook) return fromHook
 
-  const answer = (await askPerson(call, request, signal)) ?? { action: 'cancel' as const }
-  const reviewed = (await hooks?.after(request, answer)) ?? answer
-  return checked(request, reviewed, logger)
+  const asked = await askPerson(call, request, signal)
+  const answer = asked ? personAnswer(request, asked, logger) : { action: 'cancel' as const }
+  return (await hooks?.after(request, answer)) ?? answer
 }
 
 /** The Localix MCP client: offers elicitation and answers it through the calls it serves. */

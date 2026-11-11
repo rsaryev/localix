@@ -127,12 +127,14 @@ in the Store starts from the Localix default; narrow it on its **Access** tab an
 
 In a new chat, the model route resolves from the choice you make in the composer, the model and
 effort you chose for the agent (its page in the Store), recent choices, the project and the primary
-route. A subagent runs on the model and effort you chose for it, else on its parent's route. Editing
-an agent therefore does not silently reroute work already delegated.
+route. A subagent runs on the model and effort you chose for it. Where you chose no model, it runs
+on the `Agent` call's `model`, its file's `model` or `CLAUDE_CODE_SUBAGENT_MODEL`, in Claude Code's
+order, else on its parent's route; its effort is otherwise its parent's (see
+[Subagents](delegation.md#model-and-effort)).
 
-The choice is kept in your Localix settings, never in the agent's file. The file's own `model` and
-`effort`, which Claude Code reads, are not read here and stay as they are. A `localix:` key in an
-agent file is not read.
+The choice is kept in your Localix settings, never in the agent's file. The file's own `effort` is
+not read, and Localix never writes your choice into the file. A `localix:` key in an agent file is
+not read.
 
 **Turn limit** (`maxTurns`) can lower a run's limit. Blank inherits the run limit, whose built-in
 default is 1,000 tool-loop turns; user settings and delegated task caps can lower it.

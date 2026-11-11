@@ -47,11 +47,21 @@ which beats an allow.
 
 ### What waits for workspace trust
 
-What a repository grants — the `allow` rules and `additionalDirectories` of its committed
-`.claude/settings.json`, its `env`, its hooks, and the approval of its own `.mcp.json` servers —
-applies once you trusted the folder in Claude Code (`hasTrustDialogAccepted` for the folder in
-`~/.claude.json`). Rules that only restrict, `deny` and `ask`, apply at once. The `statusLine` and
-`subagentStatusLine` commands, from any file, also wait for the folder's trust, as in Claude Code.
+What a repository grants applies once you trusted the folder in Claude Code
+(`hasTrustDialogAccepted` for the folder in `~/.claude.json`). Rules that only restrict, `deny` and
+`ask`, apply at once. The `statusLine` and `subagentStatusLine` commands, from any file and from a
+plugin's defaults, also wait for the folder's trust, as in Claude Code.
+
+Outside a git repository, trusting a folder above it also counts, but only for part of what the
+repository grants, as in Claude Code. Inside a repository, the trust is the repository root's.
+
+| What the repository grants                                               | Folder trusted itself | Only a folder above it trusted |
+| ------------------------------------------------------------------------ | --------------------- | ------------------------------ |
+| Hooks of its settings files, `env`, skill hooks                          | Applies               | Applies                        |
+| `allow` rules, `additionalDirectories`                                   | Applies               | Waits                          |
+| Approval of its own `.mcp.json` servers, an MCP server's `headersHelper` | Applies               | Waits                          |
+| A project subagent's frontmatter `hooks` and inline `mcpServers`         | Applies               | Waits                          |
+| `extraKnownMarketplaces`                                                 | Applies               | Waits                          |
 
 ### Keys that lock things down
 

@@ -9,7 +9,9 @@ import {
   type DownloadHeaderPorts,
   type HeadersSetting,
 } from '@rsaryev/llx-plugin/marketplace'
+import { decideAcceptance } from '@rsaryev/llx-plugin/cli'
 import { isRecord } from '../../../../lib/record'
+import { nodeSha256 } from '../ports/marketplace-io'
 import { hostCommandRunner } from '../ports/command-runner'
 import { hostLocations, hostPlatform, processEnvironment, systemClock } from '../ports/host-io'
 import { marketplacePolicy } from './policy'
@@ -118,4 +120,36 @@ export async function archiveHeaders(req: ArchiveHeadersRequest, ctx: HeaderCont
   )
   if ('severity' in read) throw new Error(read.message)
   return read.headers
+}
+
+export interface HelperAcceptanceRequest {
+  command: string
+  /** The plugin id, `plugin@marketplace`. */
+  plugin: string
+  /** The marketplace catalog the entry was read from, as written. */
+  catalog: string
+  /** The `--accept-command` value given, if any. */
+  accepted: string | undefined
+}
+
+/**
+ * Whether the person accepted an entry's `headersHelper` (the kit's `decideAcceptance`; plugins/
+ * cli-reference.md, "--accept-command"): the sha256 "counts as acceptance for exactly that command,
+ * plugin, and marketplace catalog". Localix asks no `[y/N]` here, so without the matching digest the
+ * command does not run and the digest to pass is given.
+ */
+export async function helperAcceptance(
+  req: HelperAcceptanceRequest,
+): Promise<{ run: true } | { run: false; sha256: string }> {
+  const decided = await decideAcceptance(
+    {
+      shown: { command: req.command, plugin: req.plugin, origin: 'headers-helper' },
+      catalog: req.catalog,
+      flags: req.accepted === undefined ? {} : { acceptCommand: req.accepted },
+      session: false,
+      tty: false,
+    },
+    nodeSha256,
+  )
+  return decided.run ? { run: true } : { run: false, sha256: decided.shownCommand.sha256 }
 }

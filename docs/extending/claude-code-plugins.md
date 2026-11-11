@@ -147,6 +147,12 @@ source; an entry `headersHelper` runs only once you accept it (see
 entry path must start with `./` (a bare name only under `metadata.pluginRoot`) and use `/`, and a
 catalog needs an `owner`, as in Claude Code.
 
+An archive must hold the plugin at its top or one folder down (a `__MACOSX` folder beside it is
+ignored). It is refused whole, with nothing written, when an entry would land outside the plugin,
+when a link points outside it or another entry is written through a link, when an entry repeats a
+path or inflates past the size it declares, and when the download is too large or its host is a
+loopback, link-local or cloud-metadata address.
+
 `/plugin install <name>@<marketplace>` and `/plugin update` read the marketplace again first, unless
 it was refreshed in the last 30 seconds or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` is set; when
 that fails, the install goes on from the cached catalog and says `marketplace not refreshed`.
@@ -206,10 +212,14 @@ as in Claude Code, so add a marketplace from a local folder only when you contro
 
 An output style shapes how agents answer. Localix offers Claude Code's Default, Proactive, Concise,
 Explanatory and Learning, a plugin's `output-styles/*.md` as `<plugin>:<name>`, and your own
-Markdown files in `~/.localix/output-styles/` and a project's `.localix/output-styles/` (the nearest
-folder wins), and those you wrote for Claude Code in `~/.claude/output-styles/` and a project's
-`.claude/output-styles/` (at one level, Localix's folder wins a name). Set the style every chat
-starts in under Settings → Preferences → Output style; use `/output-style <name>` for one chat and
+Markdown files in `~/.localix/output-styles/` and `.localix/output-styles/` in the working directory
+and each folder above it, and those you wrote for Claude Code in `~/.claude/output-styles/` and
+`.claude/output-styles/` in the same folders. The nearest folder wins a name, at one level Localix's
+folder wins it, and no style replaces a built-in one. A plugin style's text is used as written:
+`${CLAUDE_PLUGIN_ROOT}` and the other variables are not substituted in it.
+
+Set the style every chat starts in under Settings → Preferences → Output style. Use
+`/output-style <name>` for one chat (a plugin's style by its full `<plugin>:<name>`) and
 `/output-style default` to turn styles off there. `keep-coding-instructions` keeps the engineering
 lines of the agent's instructions, and a style marked `force-for-plugin` applies while its plugin is
 enabled. Styles shape a chat's own replies, not delegated tasks.

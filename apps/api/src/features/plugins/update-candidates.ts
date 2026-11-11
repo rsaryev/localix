@@ -1,12 +1,13 @@
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import type { DiscoveredPlugin } from './discovery-types'
-import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
+import type { SkippedBy } from '@rsaryev/llx-plugin/marketplace'
 import {
   precheckUpdate,
   readMarketplace,
   resolveEntryName,
   UNKNOWN_VERSION,
   updateCheck,
+  updateSkipOf,
   type KnownMarketplace,
 } from './kit'
 import { parseMarketplaceRef, sourceMatchesRef } from './marketplace-source'
@@ -34,8 +35,8 @@ export interface MarketplaceInstall {
 
 export interface UpdateCandidate {
   version: string
-  /** Set when the entry is one an update leaves for the person (a `headersHelper` entry). */
-  manual?: string
+  /** Set when the entry is one an update leaves for the person (the kit's `updateSkipOf`). */
+  manual?: SkippedBy
 }
 
 /** Localix's user-scope plugins that a marketplace installed and Localix updates. */
@@ -84,14 +85,6 @@ export type FetchPlugin = (ref: {
   marketplace: string
 }) => Promise<{ dir: string; commitSha?: string }>
 
-/** Entries an update leaves for the person: each runs a command they accept (`planUpdate`). */
-const leftToPerson = (entry: MarketplaceEntry): string | undefined => {
-  if (entry.headersHelper !== undefined) return 'its marketplace entry sets a headersHelper'
-  return entry.source.kind === 'command'
-    ? 'its marketplace entry installs with a command'
-    : undefined
-}
-
 /**
  * What an update of the install would bring, or null when it brings nothing or the entry is no
  * longer listed: the kit's check before the fetch (`precheckUpdate`), then on the fetched copy
@@ -115,7 +108,7 @@ export async function candidateFor(
   }
   const entry = market.plugins.find((plugin) => plugin.name === name)
   if (!entry) return null
-  const manual = leftToPerson(entry)
+  const manual = updateSkipOf(entry)
   if (manual) return { version: install.version, manual }
   const subject = { source: entry.source, origin: record.source }
   if (precheckUpdate(subject, install.version) !== 'fetch') return null

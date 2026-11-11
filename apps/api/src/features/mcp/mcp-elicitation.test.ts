@@ -141,7 +141,7 @@ describe('MCP elicitation', () => {
     const hooks: McpElicitationHooks = {
       before: async (request) => {
         expect(request.server).toBe('issue-tracker')
-        expect(request.requestedSchema?.properties.project_key).toBeDefined()
+        expect(request.requestedSchema?.properties).toHaveProperty('project_key')
         return { action: 'accept', content: { project_key: 'DOCS' } }
       },
       after: async () => {
@@ -171,6 +171,24 @@ describe('MCP elicitation', () => {
       action: 'accept',
       content: { project_key: 'DOCS-2', count: 3 },
     })
+  })
+
+  test('the person’s answer is checked before the ElicitationResult hook sees it', async () => {
+    const run = await connectedTool(FORM)
+    const { controller } = person({
+      action: 'accept',
+      content: { project_key: 'DOCS', extra: 'x' },
+    })
+    const seen: unknown[] = []
+    const hooks: McpElicitationHooks = {
+      before: async () => undefined,
+      after: async (_request, answer) => void seen.push(answer),
+    }
+    expect(await run({ humanInLoop: controller, mcpElicitationHooks: hooks })).toEqual({
+      action: 'accept',
+      content: { project_key: 'DOCS' },
+    })
+    expect(seen).toEqual([{ action: 'accept', content: { project_key: 'DOCS' } }])
   })
 
   test('a request while no call of that client runs is cancelled', async () => {

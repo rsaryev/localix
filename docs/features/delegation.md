@@ -19,23 +19,23 @@ of its own. A fork keeps `Agent` in its tool list so its tools match the parent'
 answers with an error; a fork cannot start another fork. A job or a forked skill cannot start
 subagents either. Stopping the conversation stops its subagents.
 
-## Model and effort are yours
+## Model and effort
 
-Claude Code's `Agent` lets the model pick the subagent's `model` and `effort`. Localix does not. A
-subagent's model is, in this order:
+A subagent's model is, in this order:
 
 - the model you chose for that agent (its page in the Store, **Model**), from the providers you
   connected;
-- else the `model` of its agent file or of the mod that registered it: an alias such as `sonnet`
-  runs on the newest model of that family you connected, and a full model id runs when one of your
-  providers offers it;
-- else, and for `inherit`, its chat's model.
+- else Claude Code's order: the `model` the `Agent` call names (`sonnet`, `opus`, `haiku` or
+  `fable`), else the `model` of its agent file or of the mod that registered it, else
+  `CLAUDE_CODE_SUBAGENT_MODEL`; with `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` the variable alone. An
+  alias runs on the newest model of that family you connected, and a full model id runs when one of
+  your providers offers it;
+- else, and for `inherit` or a model none of your providers offers, its chat's model.
 
-Its effort is the one you chose for it (**Effort**), else its chat's. Nothing else sets them: the
-agent file's `effort`, the `model` and `effort` of the call and of a workflow's `agent()`, recent
-choices, the project's model and environment variables such as `CLAUDE_CODE_SUBAGENT_MODEL` are
-ignored. A call that names `model`, `effort`, `isolation`, `team_name`, `mode` or `cwd` still runs;
-those fields are dropped. A fork runs on its parent's model.
+Its effort is the one you chose for it (**Effort**), else its chat's: the agent file's `effort` and
+the call's are not read. A call that names `effort`, `isolation`, `team_name`, `mode` or `cwd` still
+runs; those fields are dropped. A subagent works in a git worktree of its own when its agent file
+sets `isolation: worktree`. A fork runs on its parent's model.
 
 ## The tools
 

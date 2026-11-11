@@ -87,6 +87,6 @@ session keeps what has run, so an API restart or deleting the chat starts it ove
 
 ## Source of truth
 
-- [Tool shapes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/ext/cc-tool-shapes.ts)
-- [Tool responses](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/ext/cc-tool-responses.ts)
+- [Tool shapes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/tools/cc-tool-shapes.ts)
+- [Tool responses](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/tools/cc-tool-responses.ts)
 - [Per-file hook calls](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/hooks/file-calls.ts)

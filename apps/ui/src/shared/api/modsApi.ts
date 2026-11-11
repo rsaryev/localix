@@ -1,26 +1,16 @@
+import type { ElementNode } from '@rsaryev/llx-plugin/mods/elements'
 import { client, unwrap } from './internal'
 
 /**
  * One element of a mod's drawing, as the server serializes it from the plugin kit's
- * (`@rsaryev/llx-plugin/mods`): the elements the desktop draws (`Raster` and `Image` are the
- * terminal's).
+ * (`@rsaryev/llx-plugin/mods`): the kit's element node, of the elements the desktop draws (`Raster`
+ * and `Image` are the terminal's), with its children as the server sends them.
  */
-export interface ModElement {
-  type:
-    | 'Box'
-    | 'Text'
-    | 'Button'
-    | 'Link'
-    | 'Code'
-    | 'Markdown'
-    | 'Input'
-    | 'Select'
-    | 'Svg'
-    | 'Client'
-  props: Record<string, unknown>
-  children: Array<ModElement | string>
+export type ModElement = Omit<ElementNode, 'type' | 'children'> & {
+  readonly type: Exclude<ElementNode['type'], 'Raster' | 'Image'>
+  readonly children: Array<ModElement | string>
   /** A `Client`'s surface module as the API built it: a new revision is new code. */
-  client?: { revision: string }
+  readonly client?: { revision: string }
 }
 
 /** A `Client`'s surface module, bundled for its frame, or why it did not build. */

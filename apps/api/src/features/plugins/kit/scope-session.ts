@@ -1,7 +1,13 @@
 import type { PluginSession, Resolved, ResolvedMcpServer } from '@rsaryev/llx-plugin'
 import type { LocalixPluginHost } from './host'
 import type { ManagedSettingsSource } from './settings/managed'
-import { openOwnSession, pluginErrors, sessionOwn, type ScopePlugin } from './sessions'
+import {
+  openOwnSession,
+  pluginErrors,
+  sessionOwn,
+  sessionTrust,
+  type ScopePlugin,
+} from './sessions'
 import { readClaudeSettings } from './settings/read'
 
 /** One scope: its folder, the home its Claude Code settings are read from, its catalog. */
@@ -29,7 +35,12 @@ export async function openScopeSession(
     ...(scope.managed === undefined ? {} : { managed: scope.managed }),
   })
   const own = sessionOwn(host, { layers: settings.layers, plugins: scope.plugins })
-  const session = { sessionId, cwd: scope.cwd, transcriptPath: '', trusted: settings.trusted }
+  const session = {
+    sessionId,
+    cwd: scope.cwd,
+    transcriptPath: '',
+    ...sessionTrust(settings.trust.situation),
+  }
   return openOwnSession(host, own, { ...session, permissionMode: 'default' }, scope.homeDir)
 }
 

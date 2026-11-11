@@ -1,5 +1,6 @@
 import type { McpSettingsReader } from '../../../mcp/claude-code-settings'
 import { claudeCodeHome } from '../../../cc-settings/config-dir'
+import { personElicitationAnswer } from '../elicitation'
 import { claudeCodeSettingsEnv } from './env'
 import { connectServerConfig, serverTimeouts } from './mcp-connect'
 import { claudeCodeMcpPlan } from './mcp-plan'
@@ -11,5 +12,6 @@ export const mcpSettingsReader: McpSettingsReader = {
   folderEnv: (cwd) => claudeCodeSettingsEnv({ homeDir: claudeCodeHome(), cwd }),
   connectConfig: connectServerConfig,
   timeouts: serverTimeouts,
+  elicitationAnswer: personElicitationAnswer,
   remoteRequest,
 }

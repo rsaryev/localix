@@ -1,5 +1,6 @@
 import {
   BUILTIN_OUTPUT_STYLES,
+  listOutputStyles,
   readOutputStyle,
   resolveOutputStyle,
   type OutputStyle,
@@ -44,10 +45,27 @@ export function builtinStyleDescription(id: string): string | undefined {
  * each under the id `/output-style` lists it by; the built-ins are the kit's.
  */
 export const activeStyleId = (
-  styles: readonly { readonly id: string; readonly style: StyleBody }[],
+  styles: readonly IdentifiedStyle[],
   choice: { readonly command?: string; readonly setting?: string },
-): string =>
-  resolveOutputStyle({
-    ...choice,
-    styles: styles.map(({ id, style }) => ({ ...style, id, path: id })),
-  }).id
+): string => resolveOutputStyle({ ...choice, styles: kitStyles(styles) }).id
+
+/** A custom style under the id `/output-style` lists it by. */
+type IdentifiedStyle = { readonly id: string; readonly style: StyleBody }
+
+const kitStyles = (styles: readonly IdentifiedStyle[]): OutputStyle[] =>
+  styles.map(({ id, style }) => ({ ...style, id, path: id }))
+
+/**
+ * The indexes of the custom `styles` `/output-style` offers, as the kit lists them
+ * (`listOutputStyles`): of several that share an id the first wins, and one that reuses a built-in
+ * id (or `default`) is never offered, so a custom style never shadows a built-in one.
+ */
+export function offeredStyleIndexes(styles: readonly IdentifiedStyle[]): number[] {
+  const builtin = new Set(BUILTIN_OUTPUT_STYLES.map(({ id }) => id))
+  const listed = new Set(
+    listOutputStyles(kitStyles(styles), resolveOutputStyle({ styles: [] }))
+      .map(({ id }) => id)
+      .filter((id) => !builtin.has(id)),
+  )
+  return styles.flatMap(({ id }, index) => (listed.delete(id) ? [index] : []))
+}

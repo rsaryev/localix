@@ -711,8 +711,8 @@ describe('B1 — CC directory/file config-option types', () => {
 })
 
 /**
- * A `sensitive: true` option is a secret: it must never be substituted into model-facing text
- * (`makePluginSubstituter`'s `isSecret`).
+ * A `sensitive: true` option is a secret: the kit never substitutes it into model-facing text
+ * (`substituteContent` gives a placeholder) and the vault keeps it.
  */
 describe('B2 — CC userConfig sensitive → secret promotion', () => {
   let b2Dir: string

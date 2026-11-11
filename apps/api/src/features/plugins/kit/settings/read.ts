@@ -22,7 +22,7 @@ import {
   type ManagedSettingsSource,
 } from './managed'
 import { folderRepository, type FolderRepository } from './repository'
-import { folderTrusted } from './trust'
+import { contentApplies, folderTrustOf, type FolderTrust } from './trust'
 
 /**
  * THE CLAUDE CODE SETTINGS OF A SESSION, read where Claude Code reads them and through the kit:
@@ -66,8 +66,8 @@ export interface ClaudeSettings {
   readonly repository: FolderRepository | undefined
   /** The folder holding the local file, when the kit keeps it at the repository root. */
   readonly localRoot: string | undefined
-  /** Claude Code trusts the session's folder (false outside a project). */
-  readonly trusted: boolean
+  /** Claude Code's trust of the session's folder (`dialog` outside a project). */
+  readonly trust: FolderTrust
   readonly managed: ManagedComposition | undefined
   readonly view: GeneralView
   readonly issues: readonly PluginIssue[]
@@ -140,9 +140,11 @@ function settingsOf(
   const layers = files
     .map((one): PolicyLayer => ({ scope: one.scope, settings: one.settings }))
     .toReversed()
-  const trusted = cwd
-    ? folderTrusted({ homeDir: input.homeDir, cwd, env: input.env, repository })
-    : false
+  const trust: FolderTrust = cwd
+    ? folderTrustOf({ homeDir: input.homeDir, cwd, env: input.env, repository })
+    : { situation: 'dialog', key: input.homeDir }
+  // What Localix reads of the policy that waits for trust is the settings files' hooks.
+  const hooksTrusted = contentApplies('settings-hooks', trust.situation)
   let policy: ResolvedPolicy | undefined
   return {
     input,
@@ -154,14 +156,17 @@ function settingsOf(
       windows: input.platform === 'win32',
       repository,
     }),
-    trusted,
+    trust,
     managed,
     view: createGeneralView(layers),
     issues,
     policy: () =>
       (policy ??= resolvePolicy({
         layers,
-        context: policyContext({ isFolderTrusted: () => trusted, env: input.env ?? process.env }),
+        context: policyContext({
+          isFolderTrusted: () => hooksTrusted,
+          env: input.env ?? process.env,
+        }),
         ...(managed ? { managed } : {}),
       })),
   }

@@ -75,6 +75,33 @@ describe('Elicitation', () => {
   })
 })
 
+describe('the kit decides a hook’s answer (autoRespondElicitation, overrideElicitationResult)', () => {
+  it('a blocking Elicitation hook declines; its content is sent as the hook gave it', async () => {
+    const blocked = runtime(groups('Elicitation', { command: 'echo no >&2; exit 2' }))
+    expect(await blocked.runElicitation(form)).toEqual({ action: 'decline' })
+    const off = runtime(groups('Elicitation', { command: accept({ project_key: 1, other: 'x' }) }))
+    expect(await off.runElicitation(form)).toEqual({
+      action: 'accept',
+      content: { project_key: 1, other: 'x' },
+    })
+  })
+
+  it('an ElicitationResult cancel goes with the values the person submitted', async () => {
+    const rt = runtime(
+      groups('ElicitationResult', {
+        command: json({
+          hookSpecificOutput: { hookEventName: 'ElicitationResult', action: 'cancel' },
+        }),
+      }),
+    )
+    const answer = { action: 'accept' as const, content: { project_key: 'DOCS' } }
+    expect(await rt.runElicitationResult(form, answer)).toEqual({
+      action: 'cancel',
+      content: { project_key: 'DOCS' },
+    })
+  })
+})
+
 describe('ElicitationResult', () => {
   it("reports the person's answer and may replace it", async () => {
     const rt = runtime(

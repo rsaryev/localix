@@ -125,6 +125,7 @@ export function createChatService(deps: ChatServiceDeps) {
       requireSession,
       getSession: (userId, id) => repo.getSession(userId, id),
       buildSessionPluginCatalog: core.buildSessionPluginCatalog,
+      chatPluginSession: core.chatPluginSession,
       resolveSessionWorkingDir: core.resolveSessionWorkingDir,
       listDelegatedRuns: (userId, id) => listDelegatedRuns(deps.db, usageRepo, userId, id),
       streamRegistry,

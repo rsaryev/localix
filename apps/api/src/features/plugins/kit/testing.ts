@@ -130,7 +130,7 @@ export function hookTestSession(homeDir: string, cwd: string, hooks: HooksSettin
     cwd,
     transcriptPath: join(homeDir, 'chat-1.jsonl'),
     permissionMode: 'default',
-    trusted: true,
+    trust: 'trusted',
     layers: [{ scope: 'user', settings: { hooks } }],
     plugins: [],
   })
@@ -161,7 +161,7 @@ export async function skillTestSession(
     cwd,
     transcriptPath: join(homeDir, 'chat-1.jsonl'),
     permissionMode: 'default',
-    trusted: true,
+    trust: 'trusted',
     layers: [],
     plugins,
   })
@@ -220,7 +220,7 @@ export async function testLspServers(
     cwd,
     transcriptPath: join(dir, 'chat-1.jsonl'),
     permissionMode: 'default',
-    trusted: true,
+    trust: 'trusted',
     layers: [],
     plugins: [plugin],
   })

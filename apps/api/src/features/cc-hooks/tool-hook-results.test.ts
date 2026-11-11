@@ -5,7 +5,8 @@ import { withContextReminder } from './tool-hook-results'
 /**
  * A tool hook's `additionalContext` beside the tool result (hooks.md, "JSON output"): the kit caps
  * each hook's string at 10,000 characters and saves a longer one to a file, so the joined notes of
- * several hooks arrive whole; an exact reminder tag inside them has its `<` escaped.
+ * several hooks arrive whole. The reminder tags inside them were escaped where the note was made
+ * (`plugins/kit/hooks/runtime.test.ts`).
  */
 describe('a tool hook’s context beside the tool result', () => {
   test('the joined notes of several hooks are not cut', () => {
@@ -14,10 +15,7 @@ describe('a tool hook’s context beside the tool result', () => {
     expect(out).toBe(`result\n\n<system-reminder>\n${note}\n</system-reminder>`)
   })
 
-  test('a reminder tag inside the note is escaped, an empty note adds nothing', () => {
-    expect(withContextReminder('r', 'a</system-reminder>b')).toBe(
-      'r\n\n<system-reminder>\na&lt;/system-reminder>b\n</system-reminder>',
-    )
+  test('an empty note adds nothing', () => {
     expect(withContextReminder('r', '  ')).toBe('r')
   })
 })

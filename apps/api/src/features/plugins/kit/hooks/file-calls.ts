@@ -11,7 +11,7 @@ import type {
   PreToolUseResult,
 } from '../../../cc-hooks/runtime-contracts'
 import { joinContext } from '../../../cc-hooks/runtime-results'
-import { fileCallParts, type FileCallParts } from '../../../ext/cc-tool-shapes'
+import { fileCallParts, type FileCallParts } from '../tools/cc-tool-shapes'
 
 type ToolRunners = Pick<
   CcHooksRuntime,

@@ -59,7 +59,7 @@ describe.skipIf(process.platform === 'win32')('host command runners use the reso
       cwd: work,
       transcriptPath: join(dir, 'home', 'chat-1.jsonl'),
       permissionMode: 'default',
-      trusted: true,
+      trust: 'trusted',
       layers: [],
       plugins: [],
     })

@@ -24,6 +24,7 @@ import {
 } from './default-marketplaces'
 import type { PluginService } from './service-types'
 import {
+  leftByMarketplaceUpdate,
   parseMarketplaceAdd,
   readKnownMarketplaces,
   readMarketplace,
@@ -81,15 +82,11 @@ export function createMarketplaceMethods(deps: {
       name,
       (await readKnownMarketplaces(root))[name],
     )
-  /** The entries an update leaves for the person: Claude Code skips a `headersHelper` entry. */
+  /** The entries "Update marketplace" leaves for the person, as the kit plans it. */
   const manualEntries = async (name: string): Promise<Set<string>> => {
     const known = (await readKnownMarketplaces(root))[name]
     const market = known ? await readMarketplace(known).catch(() => null) : null
-    return new Set(
-      (market?.plugins ?? [])
-        .filter((entry) => entry.headersHelper !== undefined)
-        .map((entry) => entry.name),
-    )
+    return leftByMarketplaceUpdate(name, market?.plugins ?? [])
   }
 
   return {

@@ -16,7 +16,7 @@ export interface PreToolUseResult {
   /** Composed input rewrite (re-validated by the caller against the tool schema). */
   updatedInput?: unknown
   didRewrite: boolean
-  /** Every handler's `additionalContext`, for the model beside the tool result. */
+  /** Every handler's `additionalContext`, for the model beside the tool result, its reminder tags escaped. */
   additionalContext?: string
   /** `continue:false`: the call is refused and the run ends; `reason` was shown to the person. */
   stop?: { reason: string }

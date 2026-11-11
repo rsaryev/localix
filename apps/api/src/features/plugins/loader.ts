@@ -1,20 +1,15 @@
 import { existsSync } from 'node:fs'
-import { pluginIdOf } from './plugin-data-id'
 import { join } from 'node:path'
 
-import { type CapabilitySourceRepository, scalarConfig } from '../capabilities/source-repository'
+import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import type { AvailabilityReader } from '../capabilities/availability'
 import { buildPluginCatalog } from './catalog'
 import { catalogRun, kitPluginsOf } from './catalog-kit'
 import { issueLine, type LocalixPluginHost, type ManagedSettingsSource } from './kit'
 import { emptyLoadedPlugins, type LoadedPlugins } from './loader-contract'
-import { resolvePluginConfig } from './config'
 import { recordPluginLoad } from '../notifications/conditions/plugins'
 import { buildMcpRecords } from './mcp'
-import {
-  makePluginSubstituter,
-  appendPluginRuntimeDeclarations,
-} from './loader-runtime-declarations'
+import { appendPluginRuntimeDeclarations } from './loader-runtime-declarations'
 
 export type { LoadedPlugins } from './loader-contract'
 
@@ -74,7 +69,7 @@ export async function loadEnabledPlugins(opts: {
   const mcp = await run.mcpServers()
   for (const issue of mcp.issues) opts.logger?.warn(issueLine(issue))
 
-  for (const { plugin, state, error } of run.entries) {
+  for (const { plugin, error } of run.entries) {
     const summary = {
       name: plugin.manifest.name,
       scope: plugin.scope,
@@ -108,18 +103,6 @@ export async function loadEnabledPlugins(opts: {
       continue
     }
 
-    // Resolve config + build context only for plugins that successfully loaded their manifest.
-    const config = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
-    // Per-plugin text substituter — created once, reused for agents/skills/promptSections.
-    const subst = makePluginSubstituter(
-      plugin.dir,
-      pluginIdOf(plugin),
-      config,
-      plugin.manifest,
-      opts.cwd || '',
-      opts.homeDir,
-    )
-
     // ---- Executable `bin/` dir (Claude Code convention) -------------------
     // An enabled plugin's `<dir>/bin` goes onto the bash tool's PATH so its bundled
     // CLIs (referenced by bare name in commands/skills) resolve. Directory
@@ -133,7 +116,7 @@ export async function loadEnabledPlugins(opts: {
     // ---- MCP servers ------------------------------------------------------
     result.mcpServers.push(...buildMcpRecords(plugin, mcp, opts.userId, now(), opts.logger))
 
-    appendPluginRuntimeDeclarations({ plugin, subst, result })
+    appendPluginRuntimeDeclarations({ plugin, result })
 
     finish()
   }

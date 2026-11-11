@@ -103,12 +103,13 @@ describe('the MCP elicitation card', () => {
     try {
       await card.click(card.button('Submit'))
       expect(card.answers).toEqual([])
-      expect(card.host.textContent).toContain('Required')
+      // The kit's wording (`elicitationFieldProblems`).
+      expect(card.host.textContent).toContain('project_key is required')
 
       await card.type(card.field('Project key'), 'D')
       await card.click(card.button('Submit'))
       expect(card.answers).toEqual([])
-      expect(card.host.textContent).toContain('At least 2 characters')
+      expect(card.host.textContent).toContain('project_key must have at least 2 characters')
 
       await card.type(card.field('Project key'), 'DOCS')
       await card.type(card.field('Copies'), '3')

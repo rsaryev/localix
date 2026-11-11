@@ -64,7 +64,7 @@ const facts = (over: Partial<ChatSessionFacts> = {}): ChatSessionFacts => ({
   cwd: '/work/app',
   transcriptPath: '/data/chat-1.jsonl',
   permissionMode: 'default',
-  trusted: true,
+  trust: 'trusted',
   layers: [],
   plugins: [],
   ...over,
@@ -86,9 +86,9 @@ describe('one kit session per chat', () => {
     const { chats } = sessions()
     chats.forRun(facts())
     const first = chats.get('chat-1')
-    chats.forRun(facts({ trusted: false }))
+    chats.forRun(facts({ trust: 'dialog' }))
     const untrusted = chats.get('chat-1')
-    chats.forRun(facts({ trusted: false, addedDirectories: ['/shared'] }))
+    chats.forRun(facts({ trust: 'dialog', addedDirectories: ['/shared'] }))
     expect(new Set([first, untrusted, chats.get('chat-1')]).size).toBe(3)
   })
 
@@ -172,6 +172,27 @@ describe('one kit session per chat', () => {
       }),
     )
     expect(enabledIn(session)).toEqual({ 'fmt@acme': false })
+  })
+
+  /**
+   * The agent's selection is the session's `--settings` layer, which the kit ranks above the user,
+   * project and local files and below managed settings (settings.md, "Settings precedence"): a
+   * file's `false` does not turn off a plugin the agent selected, and a file's `true` does not turn
+   * on one it did not.
+   */
+  test("a settings file's enabledPlugins yields to the agent's selection", async () => {
+    const { chats } = sessions()
+    for (const scope of ['user', 'project', 'local'] as const)
+      for (const selected of [true, false]) {
+        chats.forget('chat-1')
+        const session = chats.forRun(
+          facts({
+            plugins: [await scoped('fmt', selected)],
+            layers: [{ scope, settings: { enabledPlugins: { 'fmt@acme': !selected } } }],
+          }),
+        )
+        expect(enabledIn(session)).toEqual({ 'fmt@acme': selected })
+      }
   })
 })
 

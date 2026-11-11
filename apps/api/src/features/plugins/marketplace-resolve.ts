@@ -144,7 +144,11 @@ export async function resolveMarketplaceInstall(
             }
           : {}),
       },
-      { accepted: opts?.acceptCommand, managedSettingsDir: deps.managedSettingsDir },
+      {
+        accepted: opts?.acceptCommand,
+        managedSettingsDir: deps.managedSettingsDir,
+        catalog: () => fs.readFile(catalogAt(record).file, 'utf8'),
+      },
     )
   // Remote sources stage into a stable temp dir under the marketplaces root; git, npm and
   // archives land the same shape (a plain plugin dir handed to `installFromLocal`).

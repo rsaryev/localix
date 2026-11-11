@@ -5,10 +5,10 @@
  * required and has no saved value keeps the server from starting.
  */
 import { afterEach, describe, expect, test } from 'bun:test'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
-import { makeZip } from '../../testing/zip-fixture'
+import { makeZip, type ZipFixtureEntry } from '../../testing/zip-fixture'
 
 import { loadManifest } from './manifest-load'
 import { pluginMcpRecords } from './testing/test-mcp-records'
@@ -43,8 +43,8 @@ const BUNDLE_MANIFEST = {
   },
 }
 
-/** A `.mcpb` zip holding the bundle manifest and its server, at `out`. */
-function makeBundle(out: string) {
+/** A `.mcpb` zip holding the bundle manifest, its server and any `extra` entries, at `out`. */
+function makeBundle(out: string, extra: ZipFixtureEntry[] = []) {
   // Built in-process: a `zip` binary is not on every machine that runs the tests.
   mkdirSync(dirname(out), { recursive: true })
   writeFileSync(
@@ -52,6 +52,7 @@ function makeBundle(out: string) {
     makeZip([
       { name: 'manifest.json', data: JSON.stringify(BUNDLE_MANIFEST) },
       { name: 'server/index.js', data: 'console.log("hi")' },
+      ...extra,
     ]),
   )
 }
@@ -105,5 +106,20 @@ describe('a packaged MCP server in a plugin', () => {
     expect(asked).toEqual(['https://example.com/db.mcpb'])
     const server = discovered.entrypoints.mcpServers['db-server'] as { args: string[] }
     expect(server.args[0]).toStartWith(join(root, '.mcpb-cache'))
+  })
+
+  test('a bundle with a link out of its folder is refused and nothing of it is unpacked', async () => {
+    const root = plugin('./servers/db.mcpb')
+    makeBundle(join(root, 'servers', 'db.mcpb'), [
+      { name: 'server/escape', data: '../../../..', unixMode: 0o120777 },
+    ])
+    const discovered = await loadManifest(root, 'global', '')
+
+    expect(discovered.entrypoints.mcpServers['db-server']).toBeUndefined()
+    const cache = join(root, '.mcpb-cache')
+    const unpacked = existsSync(cache)
+      ? readdirSync(cache).filter((name) => !name.endsWith('.mcpb'))
+      : []
+    expect(unpacked).toEqual([])
   })
 })

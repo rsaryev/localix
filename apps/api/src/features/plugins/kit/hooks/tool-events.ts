@@ -1,4 +1,4 @@
-import { absoluteFilePaths, claudeCodeToolResponse } from '../../../ext/cc-tool-shapes'
+import { absoluteFilePaths, claudeCodeToolResponse } from '../tools/cc-tool-shapes'
 import type { CcHookToolRef, CcHooksRuntime } from '../../../cc-hooks/runtime-contracts'
 import { replacementContent } from '../../../cc-hooks/tool-output-replacement'
 import { claudeText, type EventDeps } from './runtime'

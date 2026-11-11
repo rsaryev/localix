@@ -46,7 +46,7 @@ export function McpElicitationInteractionView({
       return
     }
     setAttempted(true)
-    if (form.check.ok) onSubmit(id, { action: 'accept', content: form.check.content })
+    if (form.ok) onSubmit(id, { action: 'accept', content: form.content })
   }
 
   return (
@@ -93,7 +93,6 @@ export function McpElicitationInteractionView({
         ) : (
           <ElicitationFields
             form={form}
-            required={payload.requestedSchema?.required ?? []}
             showErrors={attempted}
             disabled={submitting}
             onEnter={accept}

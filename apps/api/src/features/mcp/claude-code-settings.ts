@@ -1,5 +1,10 @@
 import type { FetchLike } from '@modelcontextprotocol/sdk/shared/transport.js'
 import type { McpTimeouts } from '@rsaryev/llx-plugin/format'
+import type { ElicitationAnswer } from '@rsaryev/llx-plugin/elicitation'
+import type {
+  McpElicitationAnswer,
+  McpElicitationHookRequest,
+} from '../agent-core/tools/hitl/mcp-elicitation'
 import type { ClaudeCodeMcpInput } from './claude-code-servers'
 import type { McpServerRecord } from './repository'
 
@@ -8,7 +13,8 @@ import type { McpServerRecord } from './repository'
  * at boot (A4: the composition root wires it), so `mcp` never imports the kit (the kit builds its
  * records with `mcp`'s builder, so importing it back would be a feature cycle, A6): which servers of
  * Claude Code's files load, a server's `${VAR}` expansion, its time limits and how a remote one is
- * reached. Until a reader is installed a folder has no settings (no Claude Code server, no `env`),
+ * reached, and how an elicitation's answer reaches the server. Until a reader is installed a folder
+ * has no settings (no Claude Code server, no `env`),
  * and connecting a server is an error (`claudeCodeMcp`).
  */
 export interface McpSettingsReader {
@@ -18,7 +24,7 @@ export interface McpSettingsReader {
   folderEnv(cwd: string): Record<string, string>
   /** The config a server connects with under `env` (`plugins/kit/settings/mcp-connect.ts`). */
   connectConfig(
-    server: Pick<McpServerRecord, 'config' | 'configExpanded'>,
+    server: Pick<McpServerRecord, 'transport' | 'config' | 'configExpanded'>,
     env: Readonly<Record<string, string | undefined>>,
   ): Record<string, unknown>
   /** Its connect, tool-call and idle limits under `env`. */
@@ -26,6 +32,14 @@ export interface McpSettingsReader {
     server: Pick<McpServerRecord, 'transport' | 'config'>,
     env: Readonly<Record<string, string | undefined>>,
   ): McpTimeouts
+  /**
+   * The person's answer to an elicitation as the server gets it, or the problems of its form's
+   * values (`plugins/kit/elicitation.ts`).
+   */
+  elicitationAnswer(
+    request: McpElicitationHookRequest,
+    answer: McpElicitationAnswer,
+  ): ElicitationAnswer
   /** Its headers and the fetch that sends them (`plugins/kit/settings/mcp-remote.ts`). */
   remoteRequest(
     server: McpServerRecord,

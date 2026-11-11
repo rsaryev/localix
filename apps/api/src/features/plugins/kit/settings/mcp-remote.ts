@@ -14,6 +14,7 @@ import { claudeCodeHome } from '../../../cc-settings/config-dir'
 import type { McpRemoteRequest } from '../../../mcp/claude-code-settings'
 import type { McpServerRecord } from '../../../mcp/repository'
 import { hostCommandRunner } from '../ports/command-runner'
+import { stampedTrust } from './trust'
 
 /**
  * HOW A REMOTE SERVER IS REACHED, as Claude Code reaches it (mcp.md, "Use dynamic headers for custom
@@ -23,9 +24,9 @@ import { hostCommandRunner } from '../ports/command-runner'
  * (`attemptWithHeadersHelper`); a rejection while connecting fails the connection.
  *
  * Localix glue kept here: which records may run a helper (a plugin's, and a Claude Code file's by
- * its scope; a record of Localix's own registry or a subagent's inline server never does); a
- * project or local server reaches here with its helper only once its folder is trusted
- * (`mcp/claude-code-servers.ts` drops it before), so its trust is the folder's persisted one; and a
+ * its scope; a record of Localix's own registry or a subagent's inline server never does); the trust
+ * of the folder a Claude Code file's server was read in, stamped on its record (`mcp-plan.ts`), and
+ * none for a record without the stamp, so the kit's gate decides a project or local helper; and a
  * request to another host, or with a body that cannot be sent twice, is passed through as it is.
  */
 
@@ -50,7 +51,7 @@ function helperOf(server: McpServerRecord, config: Record<string, unknown>, cwd:
   const plan = planHeadersHelper(
     { name: server.name, url, expandedVariables: [], headersHelper: command },
     origin,
-    { source: 'persisted', key: cwd, interactive: true },
+    { ...stampedTrust(config.headersHelperTrust, cwd), interactive: true },
     {
       environment: definedOnly(childEnvNonInteractive()),
       locations: { homeDir: () => claudeCodeHome(), joinPath: (base, path) => join(base, path) },

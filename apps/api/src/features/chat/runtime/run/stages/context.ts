@@ -31,7 +31,7 @@ import { agentScopedHooks } from '../agent-hooks'
 import { claudeCodeHome, claudeConfigDir } from '../../../../cc-settings/config-dir'
 import { autoMemoryDir } from '../../../../memory/auto-memory'
 import {
-  claudeCodeTrusts,
+  claudeCodeTrust,
   issueLine,
   runningPlugins,
   sessionLspServers,
@@ -208,7 +208,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     interactive: turn.policy.human.canAnswer,
     // A delegated child runs its agent file's own hooks, for this run only.
     agentHooks: agentScopedHooks(session, turn.admittedAgent.spec, {
-      projectTrusted: claudeCodeTrusts({ homeDir: claudeCodeHome(), cwd: defaultCwd }),
+      trust: claudeCodeTrust({ homeDir: claudeCodeHome(), cwd: defaultCwd }),
     }),
   })
   const { ccHooks, ccInitialUserMessage } = built

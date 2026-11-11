@@ -1,4 +1,5 @@
 import type { HumanInLoopRequestBase, HumanInLoopResponseBase } from '@localixai/agent/agents'
+import type { ElicitationRequest, ElicitationResult } from '@rsaryev/llx-plugin'
 
 /**
  * The `mcp_elicitation` HITL contract: an MCP server asks the person for input in the middle of
@@ -11,34 +12,8 @@ import type { HumanInLoopRequestBase, HumanInLoopResponseBase } from '@localixai
 /** What the server receives: the person (or a hook) submitted, refused, or dismissed it. */
 export type McpElicitationAction = 'accept' | 'decline' | 'cancel'
 
-/** A submitted form value, as the protocol allows it. */
-export type McpElicitationValue = string | number | boolean | string[]
-export type McpElicitationContent = Record<string, McpElicitationValue>
-
-/** One field of a form request: the protocol's restricted, flat JSON Schema subset. */
-export interface McpElicitationField {
-  type: 'string' | 'number' | 'integer' | 'boolean' | 'array'
-  title?: string
-  description?: string
-  minLength?: number
-  maxLength?: number
-  format?: 'email' | 'uri' | 'date' | 'date-time'
-  minimum?: number
-  maximum?: number
-  enum?: string[]
-  enumNames?: string[]
-  oneOf?: Array<{ const: string; title: string }>
-  minItems?: number
-  maxItems?: number
-  items?: { type?: 'string'; enum?: string[]; anyOf?: Array<{ const: string; title: string }> }
-  default?: McpElicitationValue
-}
-
-export interface McpElicitationSchema {
-  type: 'object'
-  properties: Record<string, McpElicitationField>
-  required?: string[]
-}
+/** A form request's fields: the protocol's restricted, flat JSON Schema, read by the kit. */
+export type McpElicitationSchema = NonNullable<ElicitationRequest['requestedSchema']>
 
 export interface McpElicitationPayload {
   /** The server's configured name: what the card names and what hook matchers test. */
@@ -54,11 +29,8 @@ export interface McpElicitationPayload {
 
 export type McpElicitationRequest = HumanInLoopRequestBase<'mcp_elicitation', McpElicitationPayload>
 
-/** What the card sends back as its `answers`. */
-export interface McpElicitationAnswer {
-  action: McpElicitationAction
-  content?: McpElicitationContent
-}
+/** What the card sends back as its `answers`: the protocol's result, its action and content. */
+export type McpElicitationAnswer = Pick<ElicitationResult, 'action' | 'content'>
 
 export type McpElicitationResponse = HumanInLoopResponseBase<
   'mcp_elicitation',

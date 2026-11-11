@@ -35,34 +35,28 @@ const agent = (over: { source?: keyof typeof SOURCES; hooks?: undefined } = {}) 
 describe('the hooks of a delegated agent', () => {
   test('a delegated child of a user, managed, flag or trusted project agent runs them as a subagent', () => {
     for (const source of ['user', 'managed', 'flag', 'project'] as const) {
-      expect(agentScopedHooks(child(), agent({ source }), { projectTrusted: true })).toEqual([
+      expect(agentScopedHooks(child(), agent({ source }), { trust: 'trusted' })).toEqual([
         { raw: HOOKS, source: 'agent', asSubagent: true, agentType: 'guard' },
       ])
     }
   })
 
   test('none for a plugin agent, a project agent in an untrusted folder, or no hooks', () => {
-    expect(
-      agentScopedHooks(child(), agent({ source: 'plugin' }), { projectTrusted: true }),
-    ).toEqual([])
-    expect(
-      agentScopedHooks(child(), agent({ source: 'project' }), { projectTrusted: false }),
-    ).toEqual([])
-    expect(
-      agentScopedHooks(child(), agent({ hooks: undefined }), { projectTrusted: true }),
-    ).toEqual([])
-    expect(
-      agentScopedHooks(child(), agent({ source: 'builtin' }), { projectTrusted: true }),
-    ).toEqual([])
-    expect(agentScopedHooks(child(), undefined, { projectTrusted: true })).toEqual([])
+    expect(agentScopedHooks(child(), agent({ source: 'plugin' }), { trust: 'trusted' })).toEqual([])
+    expect(agentScopedHooks(child(), agent({ source: 'project' }), { trust: 'dialog' })).toEqual([])
+    expect(agentScopedHooks(child(), agent({ hooks: undefined }), { trust: 'trusted' })).toEqual([])
+    expect(agentScopedHooks(child(), agent({ source: 'builtin' }), { trust: 'trusted' })).toEqual(
+      [],
+    )
+    expect(agentScopedHooks(child(), undefined, { trust: 'trusted' })).toEqual([])
   })
 
   test('none outside a delegated child, and none for a fork, which is its delegator', () => {
     const root = { id: 'r', provenance: { kind: 'root' } } as never
-    expect(agentScopedHooks(root, agent(), { projectTrusted: true })).toEqual([])
+    expect(agentScopedHooks(root, agent(), { trust: 'trusted' })).toEqual([])
     expect(
       agentScopedHooks(child({ fork: { baseMessageId: null, snapshotMessageId: 'm' } }), agent(), {
-        projectTrusted: true,
+        trust: 'trusted',
       }),
     ).toEqual([])
   })

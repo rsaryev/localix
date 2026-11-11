@@ -90,7 +90,7 @@ export async function runForegroundCommand(
     const combined = joinCapture(result)
     const output = truncate(combined)
     // Each stream on its own when there is stderr: a Claude Code PostToolUse hook reads Bash's
-    // `stdout` and `stderr` apart (`ext/cc-tool-responses.ts`).
+    // `stdout` and `stderr` apart (`plugins/kit/tools/cc-tool-responses.ts`).
     const streams = result.stderr?.trim()
       ? {
           stdout: truncate(result.stdout.trimEnd()),

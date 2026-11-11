@@ -20,6 +20,8 @@ import type { McpServerRecord } from '../../../mcp/repository'
 import { settingsEnvOf } from './env'
 import { managedSettingsDir } from './managed'
 import { readClaudeSettingsSync, type ClaudeSettings } from './read'
+import { repositoryApprovalsCount, trustSourceOf } from './trust'
+import type { TrustSource } from '@rsaryev/llx-plugin/loading'
 
 /**
  * THE MCP SERVERS CLAUDE CODE WOULD LOAD IN A FOLDER, decided by the kit (`mcpLoadPlan` through the
@@ -46,7 +48,9 @@ function textOf(file: string): string | undefined {
 }
 
 /** A Localix record as the kit reads a server entry: `command` + `args`, or a remote `url`. */
-export function kitServerOf(record: McpServerRecord): PluginMcpServer {
+export function kitServerOf(
+  record: Pick<McpServerRecord, 'transport' | 'config'>,
+): PluginMcpServer {
   const config = record.config
   const headers = isRecord(config.headers) ? (config.headers as Record<string, string>) : undefined
   if (typeof config.url === 'string')
@@ -62,6 +66,18 @@ export function kitServerOf(record: McpServerRecord): PluginMcpServer {
     args: command.slice(1),
     ...(env ? { env } : {}),
   }
+}
+
+/**
+ * A Claude Code file's server with the trust of the folder it was read in, for its `headersHelper`'s
+ * gate (`mcp-remote.ts`, `planHeadersHelper`): stamped over whatever the entry wrote under that key,
+ * so a repository cannot claim a trust of its own.
+ */
+function withHelperTrust(
+  record: McpServerRecord | undefined,
+  trust: { source: TrustSource; key: string },
+): McpServerRecord | undefined {
+  return record && { ...record, config: { ...record.config, headersHelperTrust: trust } }
 }
 
 /** The project path `~/.claude.json` keys the folder by: the folder, else its repository root. */
@@ -94,12 +110,19 @@ export function claudeCodeMcpPlan(
   const managedText = managedDir ? textOf(join(managedDir, 'managed-mcp.json')) : undefined
   const managedFile = readManagedMcpFile(managedText).file
   const mcp = settings.policy().mcp
+  const trust = { source: trustSourceOf(settings.trust.situation), key: settings.trust.key }
 
   const user = claudeJsonServers(state, key).candidates
   const file = projectFileServers(mcpJson).candidates
   const approved = new Set(
     mcp
-      .projectServerApproval(file.map((one) => one.name))
+      .projectServerApproval(
+        file.map((one) => one.name),
+        {
+          // Approvals stored for the folder count only once the folder itself is trusted.
+          folderTrusted: repositoryApprovalsCount(settings.trust.situation),
+        },
+      )
       .filter((one) => one.status === 'approved')
       .map((one) => one.name),
   )
@@ -158,7 +181,7 @@ export function claudeCodeMcpPlan(
     else if (scope) {
       const raw = rawOf[scope](planned.name)
       if (isRecord(raw))
-        add(claudeCodeServerRecord(scope, planned.name, raw, input, settings.trusted), false)
+        add(withHelperTrust(claudeCodeServerRecord(scope, planned.name, raw, input), trust), false)
     }
   }
   for (const record of plan.exclusive ? [] : (input.extra ?? [])) add(record, true)

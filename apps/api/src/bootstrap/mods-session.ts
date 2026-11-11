@@ -1,5 +1,5 @@
 import type { PersistedMessage } from '../features/chat/contracts'
-import { claudeCodeToolResponse } from '../features/ext/cc-tool-shapes'
+import { claudeCodeToolResponse } from '../features/plugins/kit'
 import { claudeCodeHookCall, claudeCodeToolName } from '../features/plugins/kit'
 import type { ModSessionMessage, ModSessionRead } from '../features/mods/contracts'
 

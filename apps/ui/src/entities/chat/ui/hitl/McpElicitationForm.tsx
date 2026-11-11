@@ -1,29 +1,35 @@
 import { useMemo, useState, type KeyboardEvent } from 'react'
-import type { McpElicitationField, McpElicitationSchema } from '@localixai/api/client'
-import { elicitationOptions, validateElicitationContent } from '@localixai/api/mcp-elicitation'
+import type { McpElicitationSchema } from '@localixai/api/client'
+import {
+  elicitationFieldProblems,
+  elicitationFormFields,
+  type ElicitationField,
+  type ElicitationValue,
+} from '@rsaryev/llx-plugin/elicitation'
 import { Checkbox } from '@localixai/kit/checkbox'
 import { Field } from '@localixai/kit/field'
 import { Input } from '@localixai/kit/input'
 import { Select } from '@localixai/kit/select'
 
 /**
- * THE FORM OF AN MCP ELICITATION: one control per field of the server's flat schema, checked by
- * the same rule the server side applies (`validateElicitationContent`), so what Submit sends is
- * what the server accepts. The card around it owns the frame, the footer and the deadline.
+ * THE FORM OF AN MCP ELICITATION: one control per field of the server's flat schema, as the kit
+ * reads it (`elicitationFormFields`), checked by the kit's rule (`elicitationFieldProblems`), the
+ * same one the server side applies, so what Submit sends is what the server accepts. The card
+ * around it owns the frame, the footer and the deadline.
  */
 
 type Draft = string | boolean | string[]
 
-function initialDraft(field: McpElicitationField): Draft {
+function initialDraft(field: ElicitationField): Draft {
   if (field.type === 'boolean') return typeof field.default === 'boolean' ? field.default : false
-  if (field.type === 'array') return Array.isArray(field.default) ? field.default : []
+  if (field.type === 'multi-enum') return Array.isArray(field.default) ? field.default : []
   return field.default === undefined || Array.isArray(field.default) ? '' : String(field.default)
 }
 
 /** A typed draft as the protocol value it stands for; an empty optional answer is left out. */
-function fieldValue(field: McpElicitationField, draft: Draft): unknown {
+function fieldValue(field: ElicitationField, draft: Draft): ElicitationValue | undefined {
   if (field.type === 'boolean') return draft
-  if (field.type === 'array') return (draft as string[]).length > 0 ? draft : undefined
+  if (field.type === 'multi-enum') return (draft as string[]).length > 0 ? draft : undefined
   const text = draft as string
   if (text === '') return undefined
   if (field.type === 'number' || field.type === 'integer') return Number(text)
@@ -41,42 +47,46 @@ const INPUT_TYPE: Record<string, string> = {
   'date-time': 'datetime-local',
 }
 
+/** The choices of an `enum` or `multi-enum` field, each with the label the kit gives it. */
+const choicesOf = (field: ElicitationField) =>
+  (field.options ?? []).map((value, at) => ({ value, label: field.labels?.[at] ?? value }))
+
 export function useElicitationForm(schema: McpElicitationSchema | undefined) {
-  const properties = useMemo(() => Object.entries(schema?.properties ?? {}), [schema])
+  const fields = useMemo(() => elicitationFormFields(schema), [schema])
   const [drafts, setDrafts] = useState<Record<string, Draft>>(() =>
-    Object.fromEntries(properties.map(([name, field]) => [name, initialDraft(field)])),
+    Object.fromEntries(fields.map((field) => [field.name, initialDraft(field)])),
   )
   const content = useMemo(() => {
-    const out: Record<string, unknown> = {}
-    for (const [name, field] of properties) {
-      const value = fieldValue(field, drafts[name] ?? initialDraft(field))
-      if (value !== undefined) out[name] = value
+    const out: Record<string, ElicitationValue> = {}
+    for (const field of fields) {
+      const value = fieldValue(field, drafts[field.name] ?? initialDraft(field))
+      if (value !== undefined) out[field.name] = value
     }
     return out
-  }, [drafts, properties])
-  const check = useMemo(() => validateElicitationContent(schema, content), [schema, content])
+  }, [drafts, fields])
+  const problems = useMemo(() => elicitationFieldProblems(schema, content), [schema, content])
   return {
-    properties,
+    fields,
     drafts,
-    check,
+    content,
+    problems,
+    ok: Object.keys(problems).length === 0,
     setDraft: (name: string, value: Draft) => setDrafts((all) => ({ ...all, [name]: value })),
   }
 }
 
 export function ElicitationFields({
   form,
-  required,
   showErrors,
   disabled,
   onEnter,
 }: {
   form: ReturnType<typeof useElicitationForm>
-  required: readonly string[]
   showErrors: boolean
   disabled: boolean
   onEnter: () => void
 }) {
-  const errors = showErrors && !form.check.ok ? form.check.errors : {}
+  const errors = showErrors ? form.problems : {}
   // The frame's window listener defers to typing targets, so a field submits on its own Enter.
   const submitOnEnter = (event: KeyboardEvent) => {
     if (event.key !== 'Enter') return
@@ -85,15 +95,15 @@ export function ElicitationFields({
   }
   return (
     <div className="flex flex-col gap-2.5">
-      {form.properties.map(([name, field]) => {
+      {form.fields.map((field) => {
+        const { name } = field
         const label = field.title ?? name
         const draft = form.drafts[name]
-        const options = elicitationOptions(field)
         const common = {
           label,
           description: field.description,
           error: errors[name],
-          required: required.includes(name),
+          required: field.required,
           disabled,
         }
         if (field.type === 'boolean')
@@ -105,7 +115,7 @@ export function ElicitationFields({
               />
             </Field>
           )
-        if (field.type === 'array') {
+        if (field.type === 'multi-enum') {
           const chosen = (draft as string[] | undefined) ?? []
           // A set of choices is a fieldset, not a Field: a Field labels ONE control.
           return (
@@ -117,7 +127,7 @@ export function ElicitationFields({
               {field.description ? (
                 <p className="text-xs/relaxed text-text-faint">{field.description}</p>
               ) : null}
-              {(options ?? []).map((option) => (
+              {choicesOf(field).map((option) => (
                 <label
                   key={option.value}
                   className="flex items-center gap-2 text-xs text-text-strong"
@@ -144,13 +154,13 @@ export function ElicitationFields({
             </fieldset>
           )
         }
-        if (options)
+        if (field.type === 'enum')
           return (
             <Field key={name} {...common}>
               <Select
                 value={(draft as string) ?? ''}
                 onValueChange={(value) => form.setDraft(name, value)}
-                options={options}
+                options={choicesOf(field)}
                 placeholder="Choose…"
                 size="lg"
               />

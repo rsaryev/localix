@@ -5,14 +5,15 @@ import { readClaudeSettingsSync, type ClaudeSettings } from '../read'
 
 /**
  * A home, a project and a managed folder holding the given settings files, read as a session in
- * the project reads them. `trusted` accepts the project's trust dialog in the state file.
+ * the project reads them. `trusted` accepts the project's trust dialog in the state file; `'parent'`
+ * accepts it for the folder above the project instead.
  */
 export interface SettingsTree {
   user?: Record<string, unknown>
   project?: Record<string, unknown>
   local?: Record<string, unknown>
   managed?: Record<string, unknown>
-  trusted?: boolean
+  trusted?: boolean | 'parent'
 }
 
 export function settingsFixture(prefix: string) {
@@ -33,7 +34,9 @@ export function settingsFixture(prefix: string) {
       ...(tree.trusted
         ? {
             'home/.claude.json': json({
-              projects: { [project]: { hasTrustDialogAccepted: true } },
+              projects: {
+                [tree.trusted === 'parent' ? root : project]: { hasTrustDialogAccepted: true },
+              },
             }),
           }
         : {}),

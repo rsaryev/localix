@@ -15,7 +15,9 @@ import {
   type ModelAlias,
 } from '@rsaryev/llx-plugin/agents'
 import type { AgentMemoryScope, AgentSource } from '@rsaryev/llx-plugin/format'
+import type { TrustSituation } from '@rsaryev/llx-plugin/loading'
 import { bestModelForFamily } from './model-alias'
+import { contentApplies } from './settings/trust'
 import type { AgentPermissionMode } from '../../../contracts/agent-permission-mode'
 import type { PermissionMode } from '../../../contracts/permission-modes'
 
@@ -100,19 +102,20 @@ export interface AgentMcpSpecs {
 /**
  * The MCP servers an agent's `mcpServers` gives a subagent (sub-agents.md, "Scope MCP servers to a
  * subagent"): none for a plugin's agent or a built-in type, and a project file's inline servers
- * only once its folder is trusted. The organisation's allow and deny lists are applied where the
+ * only once its folder itself is trusted (the `subagent-inline-mcp` row: a parent folder's trust does
+ * not count). The organisation's allow and deny lists are applied where the
  * run gathers its servers, as for every other server.
  */
 export function agentMcpSpecs(
   agent: Pick<CatalogAgent, 'source' | 'definition'>,
-  folderTrusted: boolean,
+  trust: TrustSituation,
 ): AgentMcpSpecs {
   const source = fileSourceOf(agent.source)
   if (!source) return { references: [], inline: {}, skipped: [] }
   const allowAll = { allows: () => true, managedAllows: () => true }
   const resolved = resolveAgentMcpServers(agent.definition.mcpServers, {
     source,
-    folderTrusted,
+    folderTrusted: contentApplies('subagent-inline-mcp', trust),
     policy: allowAll,
   })
   return {
@@ -124,18 +127,22 @@ export function agentMcpSpecs(
 
 /**
  * Whether a delegated agent's frontmatter `hooks` run (sub-agents.md, "Hooks in subagent
- * frontmatter"): not a plugin's, and a project's only once its folder is trusted. A built-in type
+ * frontmatter"): not a plugin's, and a project's only once its folder itself is trusted (the
+ * `subagent-frontmatter-hooks` row: a parent folder's trust does not count). A built-in type
  * has no file, so no hooks.
  */
 export function agentHooksRun(
   agent: Pick<CatalogAgent, 'source' | 'hooks'>,
-  folderTrusted: boolean,
+  trust: TrustSituation,
 ): boolean {
   const own = fileSourceOf(agent.source)
   const { hooks } = agent
   if (!own || hooks === undefined) return false
   const groups = agentHookGroups({ source: own, hooks }, 'subagent')
-  return Object.keys(groups).length > 0 && hooksTrustGate(own, folderTrusted) === 'run'
+  return (
+    Object.keys(groups).length > 0 &&
+    hooksTrustGate(own, contentApplies('subagent-frontmatter-hooks', trust)) === 'run'
+  )
 }
 
 /** Localix's modes as Claude Code's: Bypass and Autonomous both skip every prompt. */

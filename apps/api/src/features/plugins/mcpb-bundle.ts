@@ -1,16 +1,13 @@
 import { promises as fs } from 'node:fs'
-import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { basename, extname, join } from 'node:path'
-import { promisify } from 'node:util'
 
-import { childEnv } from '../../lib/login-shell-env'
 import { confineToDir } from '../ext/fs-discovery'
+import { rmrf } from '../ext/install-tree'
+import { assertSafeZip } from './kit'
 import { fetchChecked, httpsPublicHop, readCapped } from './marketplace-download'
-import { verifyZipMembers } from './marketplace-zip-inflate'
+import { extractZipMembers } from './marketplace-zip-extract'
 import { scanZip } from './marketplace-zip-scan'
-
-const execFileAsync = promisify(execFile)
 
 /**
  * The effects of a packaged MCP server — an MCPB bundle (`.mcpb`, or the older `.dxt`) — a plugin's
@@ -48,19 +45,18 @@ async function bundleFile(pluginDir: string, ref: string, cacheDir: string): Pro
   return cached
 }
 
-/** Unpack a bundle into the cache once per content, refusing a zip bomb first. */
+/** Unpack a bundle into the cache once per content: within the limits, every path and link inside it. */
 async function extracted(pluginDir: string, file: string, cacheDir: string): Promise<string> {
   const bytes = await fs.readFile(file)
   const stem = basename(file, extname(file))
   const out = join(pluginDir, cacheDir, `${stem}-${hash(bytes)}`)
   if (await fs.stat(join(out, 'manifest.json')).catch(() => null)) return out
-  await verifyZipMembers(bytes, scanZip(bytes).members)
-  await fs.mkdir(out, { recursive: true })
-  // `unzip` skips entries with `..` or absolute paths, so nothing lands outside `out`.
-  await execFileAsync('unzip', ['-q', '-o', file, '-d', out], {
-    timeout: 60_000,
-    env: childEnv(),
-    windowsHide: true,
+  await assertSafeZip(bytes, file)
+  await rmrf(out)
+  // A bundle half written is never taken for a whole one on the next read.
+  await extractZipMembers(bytes, scanZip(bytes).members, '', out).catch(async (err: unknown) => {
+    await rmrf(out)
+    throw err
   })
   return out
 }

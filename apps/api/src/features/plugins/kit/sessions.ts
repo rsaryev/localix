@@ -5,8 +5,10 @@ import {
   type PluginSession,
   type SessionOptions,
 } from '@rsaryev/llx-plugin'
+import type { TrustSituation } from '@rsaryev/llx-plugin/loading'
 import { createPolicyView, type PolicyLayer } from '@rsaryev/llx-plugin/settings'
 import { keepUnchanged, samePlugins, type LoadedKitPlugin, type LocalixPluginHost } from './host'
+import { contentApplies } from './settings/trust'
 import { LOCALIX_TOOL_NAMES } from './tool-names'
 
 /**
@@ -28,8 +30,8 @@ export interface ChatSessionFacts {
   readonly transcriptPath: string
   /** In Claude Code's spelling (`ccPermissionMode`). */
   readonly permissionMode: string
-  /** Claude Code's workspace trust of the folder (`claudeCodeTrusts`). */
-  readonly trusted: boolean
+  /** Claude Code's workspace trust of the folder: its column of the trust table (`ClaudeSettings.trust`). */
+  readonly trust: TrustSituation
   /** `/add-dir` folders, in the order they were added; their skills and commands load. */
   readonly addedDirectories?: readonly string[]
   /** `permissions.additionalDirectories`: inside the project for a hook's `if` path rules. */
@@ -47,7 +49,9 @@ export interface ChatSessionFacts {
 /**
  * What a run gives the kit: the host its catalog's user installs (a held one this project's own
  * hide stays, for the other projects), the session the project's own, their values, and the agent's
- * selection as a `--settings` layer, so managed settings still turn any off.
+ * selection as a `--settings` layer, so managed settings still turn any off. That layer ranks above
+ * the user, project and local files (settings.md, "Settings precedence"), so their `enabledPlugins`
+ * yields to the selection, as it yields to `claude --settings`.
  */
 export function sessionOwn(
   host: LocalixPluginHost,
@@ -116,6 +120,17 @@ export function sessionLocations(
  * names: the one opener of a chat's session and of a scope's outside any chat (`./scope-session`).
  * `homeDir`, given, is the home its user files are read from.
  */
+/**
+ * What a session's hooks may run in the folder's column of the trust table: its settings files'
+ * hooks (`trusted`, a parent folder's trust counting), and a project subagent's frontmatter hooks,
+ * only once the dialog was accepted for the folder itself (`folderTrustAccepted`; hooks.md, "Hooks in
+ * skills and agents").
+ */
+export const sessionTrust = (situation: TrustSituation) => ({
+  trusted: contentApplies('settings-hooks', situation),
+  folderTrustAccepted: contentApplies('subagent-frontmatter-hooks', situation),
+})
+
 export function openOwnSession(
   host: LocalixPluginHost,
   own: ReturnType<typeof sessionOwn>,
@@ -162,7 +177,7 @@ export function createChatPluginSessions(host: LocalixPluginHost) {
       const held = open.get(facts.chatId)
       const own = sessionOwn(host, facts, held?.own)
       const key = JSON.stringify([
-        facts.trusted,
+        facts.trust,
         facts.addedDirectories ?? [],
         own.layers,
         own.userConfig,
@@ -179,7 +194,7 @@ export function createChatPluginSessions(host: LocalixPluginHost) {
         ...turn,
         sessionId: facts.chatId,
         transcriptPath: facts.transcriptPath,
-        trusted: facts.trusted,
+        ...sessionTrust(facts.trust),
         addedDirectories: facts.addedDirectories,
         // A sub-agent's shares its chat's ledger; a reopened chat's continues the replaced one's.
         ...(parent

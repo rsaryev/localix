@@ -63,8 +63,10 @@ describe('readClaudeSettingsSync', () => {
     const { homeDir, cwd, input } = fixture()
     mkdirSync(join(cwd, '.git'))
     write(join(homeDir, '.claude.json'), { projects: { [cwd]: { hasTrustDialogAccepted: true } } })
-    expect(readClaudeSettingsSync({ ...input, cwd: join(cwd, 'src') }).trusted).toBe(true)
-    expect(readClaudeSettingsSync({ ...input, cwd: temp() }).trusted).toBe(false)
+    expect(readClaudeSettingsSync({ ...input, cwd: join(cwd, 'src') }).trust.situation).toBe(
+      'trusted',
+    )
+    expect(readClaudeSettingsSync({ ...input, cwd: temp() }).trust.situation).toBe('dialog')
   })
 })
 

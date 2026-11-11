@@ -200,11 +200,12 @@ directory, in the project directory for a project or local server, and otherwise
 
 A helper is a command, so it runs only with your consent:
 
-- A project `.mcp.json` server must first be approved (the rules above). Its helper also waits for
-  the folder to be trusted in Claude Code; until then the server connects with its static headers
-  alone. Credential-looking variables (names holding `TOKEN`, `SECRET`, `PASSWORD`, `KEY` or `AUTH`)
-  are removed from the helper's environment for a project server and for a plugin's.
-- A local or user server is your own file and needs no further step.
+- A project `.mcp.json` server must first be approved (the rules above). The helper of a project or
+  local server also waits for the folder itself to be trusted in Claude Code (a folder above it does
+  not count); until then the server connects with its static headers alone. Credential-looking
+  variables (names holding `TOKEN`, `SECRET`, `PASSWORD`, `KEY` or `AUTH`) are removed from the
+  helper's environment for a project server and for a plugin's.
+- A user or managed server needs no further step.
 - A plugin's helper runs because you enabled the plugin, as its stdio servers do. It cannot
   reference `${user_config.*}`.
 - A server in Localix's own registry never runs a helper.

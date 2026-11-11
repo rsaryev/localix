@@ -58,6 +58,7 @@ function mcpEndpoint(accept: (headers: Headers) => boolean, status = 401) {
   return { url: `http://127.0.0.1:${server.port}/mcp`, seen }
 }
 
+/** A project server read in a folder trusted itself, stamped as `mcp-plan.ts` stamps it. */
 const record = (
   config: Record<string, unknown>,
   id = 'claude-code:project:api',
@@ -68,7 +69,7 @@ const record = (
   name: 'api',
   description: '',
   transport: 'http',
-  config,
+  config: { headersHelperTrust: { source: 'persisted', key: '/work' }, ...config },
   createdAt: '',
   updatedAt: '',
 })

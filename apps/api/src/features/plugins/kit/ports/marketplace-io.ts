@@ -11,7 +11,7 @@ import type {
   Sha256,
 } from '@rsaryev/llx-plugin/marketplace'
 import { errorMessage } from '../../../../lib/errors'
-import { scanZip, type ZipMember } from '../../marketplace-zip-scan'
+import { isZipLink, scanZip, type ZipMember } from '../../marketplace-zip-scan'
 import { cloneUrl } from '../marketplace/sources'
 import { diskFiles } from './files'
 
@@ -32,9 +32,6 @@ const NO_LIMITS = {
   maxUncompressedBytes: Infinity,
   maxCompressionRatio: Infinity,
 }
-const S_IFMT = 0o170000
-const S_IFLNK = 0o120000
-
 const linkTarget = (zip: Buffer, member: ZipMember): string => {
   const data = zip.subarray(member.dataStart, member.dataStart + member.compressedBytes)
   return (member.method === 8 ? inflateRawSync(data) : data).toString('utf8')
@@ -46,7 +43,7 @@ export const zipArchiveReader: ArchiveReader = {
     try {
       const zip = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength)
       const entries = scanZip(zip, NO_LIMITS).members.map((member) => {
-        const isSymlink = ((member.unixMode ?? 0) & S_IFMT) === S_IFLNK
+        const isSymlink = isZipLink(member)
         return {
           path: member.name,
           size: member.bytes,

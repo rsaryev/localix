@@ -1,5 +1,6 @@
 import { resolveSettingsEnv } from '@rsaryev/llx-plugin/settings'
 import { readClaudeSettingsSync, type ClaudeSettings, type ClaudeSettingsInput } from './read'
+import { contentApplies } from './trust'
 
 /**
  * THE `env` BLOCK OF CLAUDE CODE'S SETTINGS, resolved by the kit (`resolveSettingsEnv`: a higher
@@ -11,7 +12,7 @@ import { readClaudeSettingsSync, type ClaudeSettings, type ClaudeSettingsInput }
 export function settingsEnvOf(settings: ClaudeSettings): Record<string, string> {
   return {
     ...resolveSettingsEnv(settings.layers, {
-      isFolderTrusted: () => settings.trusted,
+      isFolderTrusted: () => contentApplies('env-and-helper-commands', settings.trust.situation),
       environment: settings.input.env ?? process.env,
       windows: settings.input.platform === 'win32',
     }).values,
