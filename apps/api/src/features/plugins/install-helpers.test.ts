@@ -27,7 +27,7 @@ test('manifest names are validated before deriving or replacing any destination'
   const { source, installRoot, outside } = await fixture()
   for (const name of ['../kept', '.', '..', outside]) {
     await fs.writeFile(join(source, '.claude-plugin', 'plugin.json'), JSON.stringify({ name }))
-    await expect(installFromLocal(source, installRoot, true)).rejects.toThrow('Invalid plugin name')
+    await expect(installFromLocal(source, installRoot, true)).rejects.toThrow('Invalid plugin:')
     expect(await fs.readFile(join(outside, 'keep.txt'), 'utf8')).toBe('keep')
     expect(await fs.readdir(installRoot)).toEqual([])
   }

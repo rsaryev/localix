@@ -41,7 +41,7 @@ export async function listScopeOutputStyles(
     styles: outputStyleCatalog({ plugins, ...local }).map((entry) => ({
       name: entry.fullName,
       source: entry.source,
-      description: entry.style.description,
+      description: entry.style.description ?? '',
       forced: entry.source === 'plugin' && entry.style.forceForPlugin,
     })),
   }

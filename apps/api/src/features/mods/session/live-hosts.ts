@@ -1,4 +1,4 @@
-import type { ModsHost as KitModsHost, ModPlugin } from '@rsaryev/llx-plugin/mods'
+import type { ModsHost as KitModsHost, ModPlugin, SessionEndReason } from '@rsaryev/llx-plugin/mods'
 import { diskFiles } from '../../plugins/kit'
 import type { ModScene, ModSource, ModsPorts } from '../contracts'
 import { modIdOf } from './session-policy'
@@ -30,17 +30,17 @@ export const keyOf = (scene: ModScene) => scene.sessionId ?? `workspace:${scene.
 export const revisionOf = (sources: readonly ModSource[]) =>
   sources.map((source) => `${source.plugin}=${source.revision}`).join('\n')
 /**
- * A host goes, `session.end` heard first, naming the conversation it ran for; one that never
- * finished loading has nothing to dispose.
+ * A host goes, `session.end` heard first: the kit's `endSession` names the conversation it ran for
+ * (`sessionId`, `resume.id`). A project's host outside any conversation has no session to end, so
+ * its mods hear none. One that never finished loading has nothing to dispose.
  */
 export async function disposeOf(
-  entry: Pick<Live, 'host' | 'scene'> | undefined,
-  reason: 'resume' | 'other' = 'other',
+  entry: Pick<Live, 'host'> | undefined,
+  reason: Extract<SessionEndReason, 'resume' | 'other'> = 'other',
 ) {
   const kit = await entry?.host.catch(() => undefined)
   if (!kit) return
-  const session = entry!.scene.sessionId ? { sessionId: entry!.scene.sessionId } : {}
-  await kit.fire('session.end', { reason, ...session }).catch(() => undefined)
+  await kit.endSession(reason).catch(() => undefined)
   await kit.dispose()
 }
 

@@ -1,9 +1,9 @@
 import { NotFoundError } from '../../lib/domain-errors'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import { removeIfUnderRoot } from '../ext/install-tree'
-import { listDependents } from './dependencies'
 import { pluginInstallRoot, type DiscoveredPlugin } from './discovery'
 import { setInPlaceRecord } from './in-place-installs'
+import { pluginDependents } from './kit'
 import { releaseCachedInstall } from './install-versioned'
 import { removeDataIfLastCopy, rowScopeOf } from './service-lifecycle'
 import { pluginIdOf } from './plugin-data-id'
@@ -47,9 +47,16 @@ export async function removePlugin(
     await ctx.disable(userId, input.name, projectId)
     return { warnings: [], claudeCodeInstall: plugin.claudeCodeInstall }
   }
-  // NO cascade on remove — dependents keep working off their own state — but WARN
-  // when other installed plugins still declare a dependency on the removed one.
-  const dependents = listDependents(input.name, discovered)
+  // NO cascade and no refusal on remove, as in Claude Code (the kit's `planUninstall`): the
+  // dependents then fail to load, so the installed plugins that still declare it are named.
+  const dependents = pluginDependents(
+    input.name,
+    discovered.map((other) => ({
+      name: other.manifest.name,
+      enabled: true,
+      dependencies: other.manifest.dependencies,
+    })),
+  )
   // A plugin loading in place is uninstalled by dropping its record, also when its folder is gone.
   if (!plugin || plugin.scope === 'global')
     await setInPlaceRecord(pluginInstallRoot('global', null, home), input.name, null)

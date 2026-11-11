@@ -1,10 +1,9 @@
 import { join } from 'node:path'
-import type { OutputStyle } from '@localixai/claude-plugin'
-import type { ClaudeTheme } from '@localixai/claude-plugin'
 import { readCatalog } from '@rsaryev/llx-plugin'
 import type { Plugin } from '@rsaryev/llx-plugin/loading'
-import { themeColorToHex, type Command } from '@rsaryev/llx-plugin/format'
+import { themeColorToHex, type Command, type Theme } from '@rsaryev/llx-plugin/format'
 import type { PluginCommand } from '../../contracts'
+import { styleBody, type StyleBody } from './output-style'
 
 /**
  * A loaded plugin's Markdown and JSON components as the kit's sessions read them (`readCatalog`,
@@ -51,16 +50,14 @@ export function readCommands(plugin: Plugin) {
   return { commands: readCatalog(plugin).commands.map(commandOf) }
 }
 
-const stylesOf = (plugin: Plugin): OutputStyle[] =>
-  readCatalog(plugin).outputStyles.map((style) => ({
-    name: style.name,
-    description: style.description ?? '',
-    keepCodingInstructions: style.keepCodingInstructions,
-    forceForPlugin: style.forceForPlugin,
-    prompt: style.instructions.trim(),
-  }))
+const stylesOf = (plugin: Plugin): StyleBody[] => readCatalog(plugin).outputStyles.map(styleBody)
 
-const themesOf = (plugin: Plugin): ClaudeTheme[] =>
+/** A plugin theme with each token's color as CSS hex, as the UI paints it. */
+export type HexTheme = Pick<Theme, 'slug' | 'name' | 'base'> & {
+  readonly overrides: Readonly<Record<string, string>>
+}
+
+const themesOf = (plugin: Plugin): HexTheme[] =>
   plugin.themes.flatMap(({ theme }) =>
     theme
       ? [

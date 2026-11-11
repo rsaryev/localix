@@ -7,7 +7,7 @@ import { claudeConfigDir } from '../cc-settings/config-dir'
 import { renderFrontmatterFile } from '../agent-core/frontmatter-yaml'
 import { assertSkillMarkdownSize, readSkillMarkdownFile } from '../agent-core/skill-file'
 import { recordSkillAuthored } from '../agent-core/skill-usage-recorder'
-import { skillFilePath, skillNameRefusal, type SkillFolderKind } from '../plugins/kit'
+import { skillFilePath, skillNameRefusal, type SkillFolder } from '../plugins/kit'
 
 /**
  * The skills Localix writes: the Skills list's create, edit and remove, and the `Skill` tool's
@@ -28,10 +28,7 @@ export interface SkillDraft {
 const SKILL_NAME_RE = /^[a-z0-9][a-z0-9_-]*$/i
 
 /** The `.claude` folder a skill of the scope is written to: the person's, or the project's. */
-export function skillFolderOf(projectDir: string | null): {
-  folder: string
-  kind: SkillFolderKind
-} {
+export function skillFolderOf(projectDir: string | null): SkillFolder {
   return projectDir
     ? { folder: join(projectDir, '.claude'), kind: 'project' }
     : { folder: claudeConfigDir(userHome()), kind: 'user' }
@@ -84,7 +81,7 @@ export function renderSkillFile(existing: string, draft: SkillDraft): string {
  * `authored`, when given, records a NEW skill as made in Localix (the curator archives only those).
  */
 export async function writeSkill(
-  target: { folder: string; kind: SkillFolderKind },
+  target: SkillFolder,
   draft: SkillDraft,
   authored?: { projectId: string },
 ): Promise<string> {
@@ -92,7 +89,7 @@ export async function writeSkill(
     ? skillNameRefusal(target.kind, draft.name)
     : 'Invalid skill name'
   if (refusal) throw new Error(refusal)
-  const file = skillFilePath(target.folder, draft.name)
+  const file = skillFilePath(target, draft.name)
   // The folder's parent (the project, the person's home) bounds where a link may lead.
   const root = dirname(target.folder)
   await requireWithin(root, dirname(file), 'write')
@@ -116,15 +113,15 @@ export async function writeSkill(
  * Removes the skill folder `name` of `<folder>/skills`; false when there is none. A skill of
  * another folder (`.agents/skills`, a plugin's) is not Localix's to remove.
  */
-export async function removeSkill(folder: string, name: string): Promise<boolean> {
+export async function removeSkill(target: SkillFolder, name: string): Promise<boolean> {
   if (!SKILL_NAME_RE.test(name)) return false
-  const dir = dirname(skillFilePath(folder, name))
+  const dir = dirname(skillFilePath(target, name))
   try {
     await fs.access(join(dir, 'SKILL.md'))
   } catch {
     return false
   }
-  await requireWithin(dirname(folder), dir, 'remove')
+  await requireWithin(dirname(target.folder), dir, 'remove')
   await fs.rm(dir, { recursive: true, force: true })
   return true
 }

@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import { resolvePluginConfig } from './config'
-import type { PluginManifest } from './contracts'
+import type { LocalixManifest } from './contracts'
 
-const manifest = (config: Record<string, { default?: unknown }>): PluginManifest =>
-  ({ config }) as unknown as PluginManifest
+const manifest = (config: Record<string, { default?: unknown }>): LocalixManifest =>
+  ({ config }) as unknown as LocalixManifest
 
 describe('resolvePluginConfig', () => {
   test('applies declared defaults', () => {

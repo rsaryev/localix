@@ -14,7 +14,7 @@ import {
   startMarketplaceAdd,
   type CommandOutput,
 } from '@rsaryev/llx-plugin/cli'
-import { issueLine } from '../catalog/read-folder'
+import { issueLine } from '../catalog/issue-line'
 import { hostPlatform } from '../ports/host-io'
 
 /**

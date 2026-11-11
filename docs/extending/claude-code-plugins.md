@@ -368,9 +368,8 @@ Code unchanged: panes, the band above the message box, buttons and their hotkeys
 
 ## Source of truth
 
-- [The Claude Code plugin format](https://github.com/rsaryev/localix/tree/main/packages/claude-plugin/src)
-- [Reading it as Localix's runtime manifest](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/layout/claude-code.ts)
-- [Reading a folder's manifest](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/layout/compose.ts)
+- [The Claude Code plugin format](https://github.com/rsaryev/llx-plugin/tree/main/src/format)
+- [Reading a plugin folder](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/catalog/read-folder.ts)
 - [The mods runtime](https://github.com/rsaryev/localix/tree/main/apps/api/src/features/mods)
 - [Mods engine and elements](https://github.com/rsaryev/llx-plugin/tree/main/src/mods)
 - [Hook events and the inert ones](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/contracts.ts)

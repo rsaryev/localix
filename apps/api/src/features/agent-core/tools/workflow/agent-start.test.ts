@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { deliverHeldReport } from '../../delegation-awaits'
 import type { TaskDelegationOptions } from '../task-delegation'
-import { taskAgent } from '../../testing/task-agent'
+import { testCatalogAgent } from '../../../plugins/kit/testing'
 import { startWorkflowAgent, type WorkflowAgentDeps } from './agent-start'
 
 /**
@@ -30,12 +30,12 @@ function options(
         reviewer: {
           kind: 'agent' as const,
           agent: { agentId: 'agent:reviewer', name: 'reviewer' },
-          type: taskAgent('reviewer'),
+          type: testCatalogAgent('reviewer'),
         },
         'sec-kit:reviewer': {
           kind: 'agent' as const,
           agent: { agentId: 'cc:sec-reviewer', name: 'sec-kit:reviewer' },
-          type: taskAgent('sec-kit:reviewer', {
+          type: testCatalogAgent('sec-kit:reviewer', {
             description: 'Reviews code for security problems',
             maxTurns: 4,
             skills: ['threat-model'],

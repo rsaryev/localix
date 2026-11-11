@@ -21,9 +21,9 @@ import {
   memoryScratch,
   recordingHttp,
   scriptedRunner,
+  catalogAgentFixture,
+  sessionSkillFixture,
 } from '@rsaryev/llx-plugin/testing'
-import { readSkill } from '@rsaryev/llx-plugin/format'
-import { invocationPolicy } from '@rsaryev/llx-plugin/skills'
 import type { ScopeAgent } from './agents'
 import { createLocalixPluginHost, type LocalixPluginHost } from './host'
 import { createKitHooksRuntime } from './hooks/runtime'
@@ -32,8 +32,6 @@ import { readPluginFolder } from './catalog/read-folder'
 import { sessionLspServers, type SessionLspServers } from './lsp-servers'
 import type { CcHooksRuntime } from '../../cc-hooks/runtime-contracts'
 import type { LocalixKitPorts } from './ports/host-ports'
-import type { Marketplace, MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
-import { parseMarketplace } from './marketplace/catalog'
 
 /**
  * The plugin kit boundary in memory, for other features' tests: every port of `createHostPorts`
@@ -231,67 +229,46 @@ export async function testLspServers(
 
 /** A marketplace as the kit reads it, from catalog fields (`name` and `owner` filled in). */
 /**
- * A subagent as the kit's catalog holds it, for other features' tests: a personal agent file of
- * `name` unless `more` says otherwise, its `definition` given as far as the test cares.
+ * A catalog agent as the kit reads `agents/<name>.md` (`catalogAgentFixture`): `plugin:name` is the
+ * agent of plugin `plugin` (its id `plugin@m`), any other name a personal one. `definition` holds
+ * frontmatter fields under the definition's names, `prompt` the body; `more` replaces whole fields
+ * of the row (a built-in or managed source, a resolved `plugin`).
  */
 export function testCatalogAgent(
   name: string,
-  definition: Partial<AgentDefinition> = {},
+  { prompt, description, ...frontmatter }: Partial<AgentDefinition> = {},
   more: Partial<ScopeAgent> = {},
 ): ScopeAgent {
+  const [plugin, own] = name.includes(':') ? name.split(':') : [undefined, name]
   return {
-    name,
-    ownName: name.split(':').at(-1) ?? name,
-    source: { kind: 'folder', scope: 'user' },
-    definition: { description: `${name} agent`, prompt: `You are ${name}.`, ...definition },
-    extras: {},
-    hooks: undefined,
-    path: `/home/.claude/agents/${name}.md`,
-    startsWith: { claudeMd: true, gitStatus: true },
+    ...catalogAgentFixture({
+      name: own ?? name,
+      description: description ?? `${name} agent`,
+      frontmatter,
+      body: prompt ?? `You are ${name}.`,
+      ...(plugin ? { source: { pluginId: `${plugin}@m` } } : {}),
+    }),
     ...more,
   }
 }
 
-/**
- * One row of a session's skill catalog, read by the kit from `frontmatter` (YAML lines): a personal
- * skill unless `plugin` names the plugin that ships it (`<plugin>:<name>`, the plugin's id `<plugin>@m`).
- */
+/** One row of a session's skill catalog (`sessionSkillFixture`); `plugin` names the plugin `<plugin>@m` that ships it. */
 export function testSessionSkill(
   name: string,
-  frontmatter = '',
+  frontmatter: Readonly<Record<string, unknown>> = {},
   more: { plugin?: string; scope?: 'user' | 'project' } = {},
 ): SessionSkill {
-  const path = `/skills/${name}/SKILL.md`
-  const origin = more.plugin
-    ? ({ kind: 'plugin', plugin: more.plugin } as const)
-    : { kind: 'user' as const }
-  const text = `---\nname: ${name}\ndescription: About ${name}\n${frontmatter}\n---\nDo ${name}.`
-  const { body: _body, ...invocable } = readSkill(path, text, { origin, dirName: name }).skill
-  const policy = invocationPolicy(invocable)
-  return {
-    invocable,
-    names: [invocable.command],
+  return sessionSkillFixture({
+    name: more.plugin ? `${more.plugin}:${name}` : name,
+    description: `About ${name}`,
+    frontmatter,
     source: more.plugin
       ? { kind: 'plugin', pluginId: `${more.plugin}@m` }
       : { kind: 'folder', scope: more.scope ?? 'user' },
-    override: 'on',
-    policy,
-    listed: policy.listedToModel,
-    dormant: false,
-    file: path,
-    directory: `/skills/${name}`,
-  }
+  })
 }
 
-export const kitMarketplace = (fields: Record<string, unknown>): Marketplace =>
-  parseMarketplace({ name: 'm', owner: { name: 'o' }, plugins: [], ...fields })
-
-/** One marketplace entry as the kit reads it, from the fields a catalog writes. */
-export function kitEntry(fields: Record<string, unknown>): MarketplaceEntry {
-  const entry = kitMarketplace({ plugins: [fields] }).plugins[0]
-  if (!entry) throw new Error(`The kit leaves this entry out: ${JSON.stringify(fields)}`)
-  return entry
-}
+export { kitEntry, kitMarketplace, npmPlan } from './marketplace/testing'
 
 /** The kit's mods test kit: fake ports and interface a mods host is built over in a test. */
 export { modsTesting } from '@rsaryev/llx-plugin/mods'

@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import type { ClaudeTheme } from '@localixai/claude-plugin'
 
 import type { PluginCatalog, PluginCatalogEntry } from './catalog'
+import type { HexTheme } from './kit'
 import { CC_THEME_TOKEN_VARS, listThemesFromCatalog, toLocalixTheme } from './themes'
 
 /** A theme as the kit reads one: its colors already CSS. */
-const theme = (slug: string, fields: Partial<ClaudeTheme> = {}): ClaudeTheme => ({
+const theme = (slug: string, fields: Partial<HexTheme> = {}): HexTheme => ({
   slug,
   name: slug,
   base: 'dark',
@@ -82,7 +82,7 @@ describe('listThemesFromCatalog', () => {
   const entry = (
     name: string,
     scope: 'global' | 'project',
-    themes: ClaudeTheme[],
+    themes: HexTheme[],
   ): PluginCatalogEntry =>
     ({
       plugin: {

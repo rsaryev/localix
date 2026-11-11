@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
+import { skillPlugin } from '@rsaryev/llx-plugin'
 import { invokeSkill } from './skills'
 import {
   findSessionSkill,
   sessionSkills,
-  skillPlugin,
-  skillScope,
+  projectOrGlobal,
   skillListing,
   touchSessionFiles,
   typedSkills,
@@ -79,10 +79,10 @@ describe('the skills of a chat, as the kit lists and expands them', () => {
       policy: { user: true, model: false },
       listed: 'hidden',
     })
-    expect(deploy && skillScope(deploy)).toBe('project')
+    expect(deploy && projectOrGlobal(deploy)).toBe('project')
     const tidy = findSessionSkill(chat, 'tidy')
     expect(tidy?.invocable.kind).toBe('command')
-    expect(tidy && skillScope(tidy)).toBe('project')
+    expect(tidy && projectOrGlobal(tidy)).toBe('project')
     expect(findSessionSkill(chat, 'nope')).toBeUndefined()
   })
 
@@ -124,6 +124,6 @@ describe('the skills of a chat, as the kit lists and expands them', () => {
     expect(findSessionSkill(chat, 'migrate')).toBeUndefined()
     await touchSessionFiles(chat, [join(work(), 'apps/api/db.ts')], signal)
     const migrate = findSessionSkill(chat, 'migrate')
-    expect(migrate && skillScope(migrate)).toBe('project')
+    expect(migrate && projectOrGlobal(migrate)).toBe('project')
   })
 })

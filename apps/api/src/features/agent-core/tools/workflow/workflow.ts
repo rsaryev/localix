@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import { defineAgentTool, type CallClass } from '@localixai/agent/agents'
-import { parseWorkflowMeta } from '@localixai/claude-plugin'
 
 import { TOOL } from '../../tool-names'
 import { newRunId, type JournalEntry } from './journal'
@@ -103,15 +102,13 @@ async function resolveScript(
   } else {
     return 'At least one of script, name or scriptPath is required.'
   }
-  const parsed = source === null ? null : parseWorkflowMeta(source)
-  if (!parsed?.meta) {
-    const why = parsed && 'error' in parsed ? parsed.error : 'it cannot be read'
-    return `Workflow ${entry.fullName || input.name || 'script'} cannot run: ${why}`
-  }
+  const read = source === null ? { error: 'it cannot be read' } : port.script(source)
+  if ('error' in read)
+    return `Workflow ${entry.fullName || input.name || 'script'} cannot run: ${read.error}`
   const named = entry.fullName
     ? entry
-    : { ...entry, fullName: parsed.meta.name, description: parsed.meta.description }
-  return { entry: named, source: source!, body: parsed.body }
+    : { ...entry, fullName: read.name, description: read.description }
+  return { entry: named, source: source!, body: read.body }
 }
 
 export function createWorkflowTool(port: WorkflowToolPort) {

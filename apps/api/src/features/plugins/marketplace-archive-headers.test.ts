@@ -50,6 +50,6 @@ describe('archive download headers', () => {
     for (const plugin of ['tool', 'other'])
       await resolveMarketplaceInstall({ plugin, marketplace: 'hosted' }, { ...deps, fetchArchive })
     // Another origin gets no marketplace headers; the kit sends header names in lower case.
-    expect(seen).toEqual([{ authorization: 'entry', 'x-mkt': 'm', 'x-entry': 'e' }, undefined])
+    expect(seen).toEqual([{ authorization: 'entry', 'x-mkt': 'm', 'x-entry': 'e' }, {}])
   })
 })

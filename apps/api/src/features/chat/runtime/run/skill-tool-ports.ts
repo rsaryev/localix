@@ -7,7 +7,7 @@ import {
   invokeSkill,
   sessionSkills,
   skillPlugin,
-  skillScope,
+  projectOrGlobal,
   typedSkills,
   type SkillShellAnswer,
 } from '../../../plugins/kit'
@@ -55,7 +55,7 @@ export function skillSavePorts(
   return {
     saveSkill: (draft, scope) =>
       writeSkill(target(scope), draft, { projectId: scope === 'project' ? projectId : '' }),
-    skillFilePath: (name, scope) => skillFilePath(target(scope).folder, name),
+    skillFilePath: (name, scope) => skillFilePath(target(scope), name),
   }
 }
 
@@ -125,7 +125,7 @@ function entryOf(skill: SessionSkill): SkillEntry {
   return {
     name: skill.invocable.command,
     ownName: skill.invocable.name,
-    scope: skillScope(skill),
+    scope: projectOrGlobal(skill),
     ...(skill.file ? { path: skill.file } : {}),
     ...(skill.directory ? { dir: skill.directory } : {}),
     ...(plugin ? { pluginName: plugin.name } : {}),

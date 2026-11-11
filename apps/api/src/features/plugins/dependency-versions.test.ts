@@ -11,8 +11,7 @@ import { withDependencyVersionChecks } from './dependency-versions'
 
 const plugin = (name: string, version: string | undefined, dependencies?: unknown[]) =>
   ({
-    manifest: { name, version: version ?? '0.0.0', dependencies },
-    rawManifest: version ? { name, version } : { name },
+    manifest: { name, ...(version ? { version } : {}), dependencies },
   }) as unknown as DiscoveredPlugin
 
 describe('dependency versions at load', () => {
@@ -38,6 +37,6 @@ describe('dependency versions at load', () => {
       plugin('app', '1.0.0', [{ name: 'vault', version: '^2.0.0' }]),
       plugin('vault', undefined),
     ])
-    expect(app!.error).toBe('Requires "vault" ^2.0.0, installed with no version')
+    expect(app!.error).toBe('Requires "vault" ^2.0.0, installed (no version)')
   })
 })

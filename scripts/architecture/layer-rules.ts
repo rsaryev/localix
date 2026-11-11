@@ -2,22 +2,22 @@ import { importsOf, resolveSpec, type Rule } from './kit'
 
 /**
  * X1 (`docs/internals/plugins-and-mini-apps.md`): plugins and mini apps share no code. The
- * plugins feature and the Claude Code format package never import the mini app feature or SDK,
- * and the mini app feature and SDK never import the plugin side. Type imports count: a type is
+ * plugins feature never imports the mini app feature or SDK, and the mini app feature and SDK never
+ * import the plugin side or the plugin kit (`@rsaryev/llx-plugin`). Type imports count: a type is
  * knowledge of the other layer too. A consumer of both (the chat runtime, bootstrap) is free to.
  */
 const SIDES = [
   {
     side: 'plugin',
-    owns: ['apps/api/src/features/plugins/', 'packages/claude-plugin/'],
+    owns: ['apps/api/src/features/plugins/'],
     files: ['apps/api/src/features/mini-apps/', 'packages/mini-app-sdk/'],
     packages: ['@localixai/mini-app-sdk', '@localix-mini-app/'],
   },
   {
     side: 'mini app',
     owns: ['apps/api/src/features/mini-apps/', 'packages/mini-app-sdk/'],
-    files: ['apps/api/src/features/plugins/', 'packages/claude-plugin/'],
-    packages: ['@localixai/claude-plugin'],
+    files: ['apps/api/src/features/plugins/'],
+    packages: ['@rsaryev/llx-plugin'],
   },
 ] as const
 

@@ -14,12 +14,13 @@ import { assertGunzipWithin } from './marketplace-gzip-limit'
 import { npmAuthFor } from './marketplace-npm-auth'
 import { downloadNpmTarball } from './marketplace-npm-integrity'
 import { DEFAULT_NPM_REGISTRY, npmHop, userNpmRegistryFor } from './marketplace-npm-registry'
+import type { NpmFetchPlan } from '@rsaryev/llx-plugin/marketplace'
 
 const execFileAsync = promisify(execFile)
 
 /**
- * npm plugin sources for marketplaces — the CC-spec shape
- * `{ "source": "npm", "package": "@org/plugin", "version"?: "^2.0.0", "registry"?: "…" }`.
+ * Runs the kit's plan for an npm plugin source (`NpmFetchPlan`, from `planPluginFetch`, which
+ * read and checked the entry's `package`, `version` and `registry`).
  *
  * Resolution goes straight at the npm registry HTTP API (no npm CLI): GET
  * `<registry>/<package>` for the packument, pick a version (exact → dist-tag → semver
@@ -33,73 +34,12 @@ const execFileAsync = promisify(execFile)
 /** Packument ceiling: a plugin's metadata is small; the body comes from a catalog-chosen host. */
 export const MAX_NPM_METADATA_BYTES = 64 * 1024 * 1024
 
-/** An npm plugin source (CC marketplace spec). */
-export interface NpmEntrySource {
-  package: string
-  /** An `https` link to the package's tarball, given as `package`: fetched as it is. */
-  tarball?: string
-  version?: string
-  registry?: string
-}
-
-/** npm package name: optional @scope/, lowercase URL-safe chars (blocks URL injection). */
-const NPM_NAME_RE = /^(@[a-z0-9~][\w.~-]*\/)?[a-z0-9~][\w.~-]*$/
-
-/**
- * Recognize an entry-source object as an npm source. Returns null for non-npm objects;
- * throws when it IS npm-shaped but unusable (no/invalid package name). Accepts the
- * spec form `source:"npm"` + `package`, as Claude Code's marketplace schema writes it.
- */
-export function parseNpmEntrySource(
-  entryName: string,
-  obj: Record<string, unknown>,
-): NpmEntrySource | null {
-  const isNpm = obj.source === 'npm'
-  if (!isNpm) return null
-  const raw = typeof obj.package === 'string' ? obj.package : undefined
-  if (raw && /^https?:\/\//i.test(raw)) return tarballSource(entryName, raw)
-  // `@org/formatter@2.0.0`: a version appended to the name (the scope's `@` is not one).
-  const at = raw ? raw.lastIndexOf('@') : -1
-  const appended = raw && at > 0 ? raw.slice(at + 1) : undefined
-  const pkg = appended ? raw!.slice(0, at) : raw
-  if (!pkg || !NPM_NAME_RE.test(pkg)) {
-    throw new InvalidRequestError(
-      'plugin_npm_bad_source',
-      `Entry "${entryName}" npm source needs a valid "package" name (got ${JSON.stringify(pkg ?? null)}).`,
-    )
-  }
-  const version = appended ?? (typeof obj.version === 'string' ? obj.version : undefined)
-  return {
-    package: pkg,
-    ...(version ? { version } : {}),
-    ...(typeof obj.registry === 'string' ? { registry: obj.registry } : {}),
-  }
-}
-
-/** Git hosts whose download links are not npm tarballs (GitLab's npm registry API aside). */
-const GIT_HOSTS = new Set([
-  'github.com',
-  'gist.github.com',
-  'gitlab.com',
-  'bitbucket.org',
-  'git.sr.ht',
-])
-
-/** A tarball link given as `package`; whether plain http may reach it is checked on fetch. */
-function tarballSource(entryName: string, link: string): NpmEntrySource {
-  const url = URL.canParse(link) ? new URL(link) : null
-  const host = url?.hostname.toLowerCase().replace(/^www\./, '')
-  const gitlabRegistry = host === 'gitlab.com' && url!.pathname.startsWith('/api/v4/')
-  if (!url || (host && GIT_HOSTS.has(host) && !gitlabRegistry))
-    throw new InvalidRequestError(
-      'plugin_npm_bad_source',
-      `Entry "${entryName}" npm source "${link}" is refused: a tarball link on a git host is not an npm package; use a github, url or git-subdir source.`,
-    )
-  const name = decodeURIComponent(url.pathname.split('/').at(-1) ?? '').replace(
-    /\.t?gz$|\.tar\.gz$/i,
-    '',
-  )
-  return { package: name || link, tarball: url.href }
+/** The package an npm plan names, its version, and the tarball link given as `package`. */
+function packageOf(plan: NpmFetchPlan): { package: string; version?: string; tarball?: string } {
+  if ('package' in plan.spec) return { package: plan.spec.package, version: plan.spec.version }
+  const url = new URL(plan.spec.tarballUrl)
+  const name = decodeURIComponent(url.pathname.split('/').at(-1) ?? '').replace(/\.t?gz$/i, '')
+  return { package: name || url.href, tarball: url.href }
 }
 
 /** Packument URL for a package: scoped names URL-encode the `/` (npm registry API). */
@@ -158,7 +98,7 @@ async function fetchNpm(
 
 /** The package's packument, its body capped and every failure a per-entry `ApiError`. */
 async function fetchPackument(
-  src: NpmEntrySource,
+  src: { package: string },
   defaultRegistry: string,
   registry: string,
   headers: (url: URL) => Record<string, string> | undefined,
@@ -194,19 +134,20 @@ async function fetchPackument(
  * git clone path stages, ready for `installFromLocal`.
  */
 export async function fetchNpmPlugin(
-  src: NpmEntrySource,
+  plan: NpmFetchPlan,
   dest: string,
   opts: { defaultRegistry?: string; env?: NodeJS.ProcessEnv; home?: string } = {},
 ): Promise<void> {
   // The registry npm would use for this package (its scope's line, else the default). A catalog's
   // own `registry` still wins for the lookup, but plain http stays allowed only on the user's own
   // registry, checked before anything is contacted.
+  const src = packageOf(plan)
   const defaultRegistry =
     opts.defaultRegistry ?? (await userNpmRegistryFor(src.package, opts.env, opts.home))
   const auth = await npmAuthFor(opts.env, opts.home)
   const meta = src.tarball
     ? null
-    : await fetchPackument(src, defaultRegistry, src.registry ?? defaultRegistry, auth)
+    : await fetchPackument(src, defaultRegistry, plan.registry ?? defaultRegistry, auth)
   const version = meta ? pickNpmVersion(src.package, meta, src.version) : 'tarball'
   const dist = meta ? meta.versions?.[version]?.dist : { tarball: src.tarball }
   if (!dist?.tarball) {

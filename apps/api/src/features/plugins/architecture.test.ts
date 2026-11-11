@@ -3,10 +3,9 @@ import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-import { pluginManifestSchema, type PluginManifest } from './contracts'
+import type { LocalixManifest } from './contracts'
 import type { DiscoveredPlugin } from './discovery'
 import type { ResolvedEntrypoints } from './kit'
-import { pluginConfigOptionSchema } from './contracts-config'
 import { validatePlugin } from './validate'
 import { pluginTrustClass } from './enable'
 import { trustFallback } from '../ext/trust'
@@ -33,7 +32,7 @@ function mkPlugin(
   manifestInput: Record<string, unknown>,
   over: Partial<DiscoveredPlugin> = {},
 ): DiscoveredPlugin {
-  const manifest = pluginManifestSchema.parse(manifestInput) as PluginManifest
+  const manifest = manifestInput as LocalixManifest
   return {
     manifest,
     dir: '/tmp/plugin',
@@ -55,7 +54,9 @@ describe('validatePlugin — required config and built-in path variables', () =>
   it('flags required config that is unset, and clears once provided', () => {
     const plugin = mkPlugin({
       name: 'a',
-      config: { KEY: { type: 'string', required: true } },
+      config: {
+        KEY: { type: 'string', title: 'Key', description: 'A key', required: true, secret: false },
+      },
     })
     expect(
       validatePlugin(plugin, { config: {} }).warnings.some((w) => /Required config "KEY"/.test(w)),
@@ -125,52 +126,5 @@ describe('install copy', () => {
       await fs.rm(src, { recursive: true, force: true })
       await fs.rm(dest, { recursive: true, force: true })
     }
-  })
-})
-
-// ---------------------------------------------------------------------------
-// C-UC Part A — pluginConfigOptionSchema accepts new CC-spec fields
-// ---------------------------------------------------------------------------
-describe('C-UC Part A — pluginConfigOptionSchema accepts CC-spec fields (title/multiple/min/max)', () => {
-  it('accepts and carries title, multiple, min, max', () => {
-    const opt = pluginConfigOptionSchema.parse({
-      type: 'number',
-      description: 'How many results',
-      required: false,
-      secret: false,
-      title: 'Result limit',
-      multiple: false,
-      min: 1,
-      max: 100,
-    })
-    expect(opt.title).toBe('Result limit')
-    expect(opt.multiple).toBe(false)
-    expect(opt.min).toBe(1)
-    expect(opt.max).toBe(100)
-  })
-
-  it('omits new fields when absent — no spurious defaults', () => {
-    const opt = pluginConfigOptionSchema.parse({
-      type: 'string',
-      description: 'A key',
-    })
-    expect(opt.title).toBeUndefined()
-    expect(opt.multiple).toBeUndefined()
-    expect(opt.min).toBeUndefined()
-    expect(opt.max).toBeUndefined()
-  })
-
-  it('still carries secret and sensitive=true (B1/B2 non-regression)', () => {
-    // secret is the host form; Claude Code's sensitive is mapped to it in layout/claude-code.ts
-    const opt = pluginConfigOptionSchema.parse({
-      type: 'string',
-      secret: true,
-    })
-    expect(opt.secret).toBe(true)
-  })
-
-  it('still accepts directory and file types (B1 non-regression)', () => {
-    expect(pluginConfigOptionSchema.parse({ type: 'directory' }).type).toBe('directory')
-    expect(pluginConfigOptionSchema.parse({ type: 'file' }).type).toBe('file')
   })
 })

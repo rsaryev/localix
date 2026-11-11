@@ -1,6 +1,6 @@
 import { makeSubstituter } from '../ext/manifest-substitute'
 import { pluginDataDir } from './mcp'
-import type { PluginManifest } from './contracts'
+import type { LocalixManifest } from './contracts'
 import type { PluginConfigValues } from './config'
 import type { DiscoveredPlugin } from './discovery'
 import type { LoadedPlugins } from './loader-contract'
@@ -17,7 +17,7 @@ export function makePluginSubstituter(
   /** The plugin's identifier (`plugin-data-id.ts`): its `${CLAUDE_PLUGIN_DATA}` key. */
   pluginId: string,
   config: PluginConfigValues,
-  manifest: PluginManifest,
+  manifest: LocalixManifest,
   projectDir: string,
   home: string,
 ): (text: string) => string {

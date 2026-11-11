@@ -38,6 +38,21 @@ describe('an agent file’s run options', () => {
     expect(options.instructions).toContain('MEMORY.md does not exist yet.')
   })
 
+  test('a plugin agent’s memory in the folder of its bare name is copied to its own once', async () => {
+    const earlier = join(dir(), 'repo', '.claude', 'agent-memory', 'reviewer')
+    await fs.mkdir(earlier, { recursive: true })
+    await fs.writeFile(join(earlier, 'MEMORY.md'), 'kept from before')
+    const agent = testCatalogAgent('kit:reviewer', { memory: 'project' })
+    const options = await subagentRunOptions(agent, context())
+    const own = join(dir(), 'repo', '.claude', 'agent-memory', 'kit-reviewer')
+    expect(options.memoryDir).toBe(own)
+    expect(options.instructions).toContain('kept from before')
+    expect(await fs.readFile(join(earlier, 'MEMORY.md'), 'utf8')).toBe('kept from before')
+    await fs.writeFile(join(own, 'MEMORY.md'), 'newer')
+    await fs.writeFile(join(earlier, 'MEMORY.md'), 'other agent')
+    expect((await subagentRunOptions(agent, context())).instructions).toContain('newer')
+  })
+
   test('with auto memory off the agent has no memory', async () => {
     const options = await subagentRunOptions(
       testCatalogAgent('r', { memory: 'user' }),

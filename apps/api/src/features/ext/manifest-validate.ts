@@ -66,16 +66,3 @@ export function isRequiredConfigMissing(
 ): boolean {
   return !!(opt.required && (value === undefined || value === ''))
 }
-
-// ---------------------------------------------------------------------------
-// Kebab-case name predicate
-// ---------------------------------------------------------------------------
-
-/**
- * Return true when `name` is strict kebab-case (lowercase letters, digits,
- * and hyphens only, no leading/trailing hyphen). The Claude.ai marketplace
- * sync requires this; our schema accepts underscores/camelCase but warns.
- */
-export function isKebabCase(name: string): boolean {
-  return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)
-}

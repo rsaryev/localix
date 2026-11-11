@@ -40,3 +40,29 @@ test('a command no command.run hook answers says so, and how to answer it', asyn
     'm registered /tally but no command.run hook answered it. Add a command.run hook for /tally that returns { text }.',
   ])
 })
+
+test('a command the person typed reaches command.run from the composer, presented on the main screen', async () => {
+  const seen: unknown[] = []
+  const { host, scene } = await hostWithMod((on) => {
+    on('session.start', async ($) => {
+      await ($ as { command: { register(spec: unknown): Promise<unknown> } }).command.register({
+        name: 'tally',
+      })
+    })
+    on('command.run', async (_$, e) => {
+      const { origin, presentation } = e as { origin: unknown; presentation: unknown }
+      seen.push({ origin, presentation })
+      return { text: 'ok' }
+    })
+  })
+  const ctx = {
+    deps: { mods: host },
+    now: () => 'now',
+    resolveSessionWorkingDir: async () => scene.cwd,
+    insertDirectReply: async () => ({ sessionId: session.id, messageId: 'reply' }),
+  } as unknown as CommandHandlerContext
+  await handleModCommand(ctx, 'u', session.id, session, '/tally')
+  expect(seen).toEqual([
+    { origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 80 } },
+  ])
+})

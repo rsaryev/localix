@@ -67,7 +67,7 @@ test('a run as a catalog agent takes its prompt and instruction files', () => {
     disabledTools: ['AskUserQuestion'],
   }
   const applied = applyCatalogAgent(input, LEAN)
-  expect(applied?.agent.instructions).toBe('You are the security reviewer.')
+  expect(applied?.agent.instructions).toBe('You are the security reviewer.\n')
   expect(applied?.subagent).toBe(LEAN)
   // Its `tools` and `disallowedTools` narrow the built run instead (`run-agent-tools.ts`).
   expect(applied?.disabledTools).toEqual(['AskUserQuestion'])

@@ -15,8 +15,6 @@ import { kitEntry } from './kit/testing'
 
 import {
   dependencyVersionWarning,
-  listDependents,
-  normalizePluginDependencies,
   resolveDependencyPlan,
   type DependencyResolverDeps,
   type ResolvedDependencyStep,
@@ -41,7 +39,7 @@ function fakePlugin(
 ): DiscoveredPlugin {
   const { name, dependencies, ...rest } = over
   return {
-    manifest: { name, version: '1.0.0', description: '', dependencies } as never,
+    manifest: { name, description: '', dependencies } as never,
     dir: `/plugins/${name}`,
     scope: 'global',
     projectId: '',
@@ -86,34 +84,15 @@ function fakeResolver(opts: {
 
 // ---------- normalize + version -----------------------------------------------
 
-describe('normalizePluginDependencies', () => {
-  it('parses the CC union (string | {name, version?}), deduped, invalid dropped', () => {
-    expect(
-      normalizePluginDependencies([
-        'helper-lib',
-        { name: 'pinned', version: '^2.0.0' },
-        { name: 'helper-lib', version: '9.9.9' }, // duplicate — first wins
-        '', // invalid
-        { version: '1.0.0' } as never, // no name
-        42 as never,
-      ]),
-    ).toEqual([{ name: 'helper-lib' }, { name: 'pinned', version: '^2.0.0' }])
-  })
-  it('returns [] for absent/non-array input', () => {
-    expect(normalizePluginDependencies(undefined)).toEqual([])
-    expect(normalizePluginDependencies({} as never)).toEqual([])
-  })
-})
-
 describe('dependencyVersionWarning', () => {
   it('is silent when the range is satisfied or unknown', () => {
-    expect(dependencyVersionWarning({ name: 'a', version: '^1.0.0' }, '1.4.2', 'x')).toBeNull()
+    expect(dependencyVersionWarning({ name: 'a', range: '^1.0.0' }, '1.4.2', 'x')).toBeNull()
     expect(dependencyVersionWarning({ name: 'a' }, '1.0.0', 'x')).toBeNull()
-    expect(dependencyVersionWarning({ name: 'a', version: '^1.0.0' }, undefined, 'x')).toBeNull()
+    expect(dependencyVersionWarning({ name: 'a', range: '^1.0.0' }, undefined, 'x')).toBeNull()
   })
   it('warns (never blocks) naming the exact versions on a mismatch', () => {
     const w = dependencyVersionWarning(
-      { name: 'a', version: '^2.0.0' },
+      { name: 'a', range: '^2.0.0' },
       '1.4.2',
       'the installed plugin',
     )
@@ -141,7 +120,7 @@ describe('resolveDependencyPlan', () => {
 
   it('treats already-installed plugins as satisfied (advisory version check only)', async () => {
     const plan = await resolveDependencyPlan(
-      [{ name: 'helper', version: '^2.0.0' }],
+      [{ name: 'helper', range: '^2.0.0' }],
       'main',
       fakeResolver({ installed: new Map([['helper', '1.0.0']]) }),
     )
@@ -198,7 +177,7 @@ describe('resolveDependencyPlan', () => {
 
   it('warns on a version-pinned marketplace dependency whose entry version mismatches', async () => {
     const plan = await resolveDependencyPlan(
-      [{ name: 'helper', version: '^3.0.0' }],
+      [{ name: 'helper', range: '^3.0.0' }],
       'main',
       fakeResolver({ markets: { main: { helper: step('helper', 'main', { version: '2.1.0' }) } } }),
     )
@@ -234,18 +213,6 @@ describe('planEnableCascade', () => {
     const result = plan(root, [root, lib], new Set(['parent']))
     expect(result.enable).toEqual([])
     expect(result.issues.join(' ')).toContain('"ghost" is not installed')
-  })
-})
-
-// ---------- reverse lookup ------------------------------------------------------
-
-describe('listDependents', () => {
-  it('names installed plugins that declare a dependency on the given one', () => {
-    const a = fakePlugin({ name: 'a', dependencies: ['lib', { name: 'other' }] })
-    const b = fakePlugin({ name: 'b', dependencies: [{ name: 'lib', version: '^1.0.0' }] })
-    const c = fakePlugin({ name: 'c' })
-    expect(listDependents('lib', [a, b, c])).toEqual(['a', 'b'])
-    expect(listDependents('nope', [a, b, c])).toEqual([])
   })
 })
 
@@ -548,7 +515,7 @@ describe('prepareDependenciesForInstall', () => {
       deps,
     )
     const installedHelper = fakePlugin({ name: 'helper' })
-    installedHelper.rawManifest = { name: 'helper', version: '1.0.0' }
+    installedHelper.manifest = { name: 'helper', version: '1.0.0' }
     const prepared = await prepareDependenciesForInstall(resolved, deps, [installedHelper])
     expect(prepared.toInstall).toEqual([])
     expect(prepared.warnings.join(' ')).toContain('"^2.0.0"')

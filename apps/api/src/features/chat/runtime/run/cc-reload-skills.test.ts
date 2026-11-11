@@ -10,7 +10,7 @@ test('names the skills the frozen listing lacks, and only those Claude may load'
   const skills = [
     skill('review'),
     skill('deploy'),
-    skill('quiet', 'disable-model-invocation: true'),
+    skill('quiet', { 'disable-model-invocation': true }),
   ]
   expect(reloadedSkillsNote(skills, '- review: About review')).toBe(
     'Skills a SessionStart hook installed, available with the Skill tool:\n- deploy: About deploy',

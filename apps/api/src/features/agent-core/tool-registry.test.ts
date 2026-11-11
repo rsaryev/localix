@@ -60,6 +60,7 @@ const maximalRegistryOptions = {
       scripts: { run: async () => ({ ok: true, value: undefined, output: [] }) },
       list: async () => [],
       read: async () => null,
+      script: () => ({ error: 'none' }),
       runAgent: async () => null,
     },
   },

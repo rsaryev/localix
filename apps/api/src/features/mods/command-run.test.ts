@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { hostWithMods } from './testing/testing-host'
+import { hostWithMod, hostWithMods } from './testing/testing-host'
 
 test('a command typed in a conversation runs in its host, among the mods its turn loaded', async () => {
   const ended: string[] = []
@@ -40,4 +40,31 @@ test('a command in a conversation with no host yet loads one with its mod', asyn
   expect(await host.runCommand({ command: 'count' }, fresh, new Set(['counter']))).toEqual({
     text: 'counted',
   })
+})
+
+test('$.command.list gives Localix’s own commands first, each with its source, then the mods’', async () => {
+  let listed: unknown
+  const { scope } = await hostWithMod(
+    (on) => {
+      on('session.start', async ($: { command: { register(def: object): unknown } }) => {
+        await $.command.register({ name: 'count', description: 'Counts' })
+      })
+      on('turn.start', async ($: { command: { list(): Promise<unknown> } }, e, next) => {
+        listed = await $.command.list()
+        return next(e)
+      })
+    },
+    {
+      listCommands: async () => [
+        { name: 'compact', description: 'Compact', source: 'builtin' },
+        { name: 'kit:lint', description: 'Lints', source: 'plugin', plugin: 'kit' },
+      ],
+    },
+  )
+  await scope.turnStart('hi', 't1')
+  expect(listed).toMatchObject([
+    { name: 'compact', source: 'builtin' },
+    { name: 'kit:lint', source: 'plugin', plugin: 'kit' },
+    { name: 'count', description: 'Counts', source: 'plugin', plugin: 'm' },
+  ])
 })

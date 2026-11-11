@@ -56,11 +56,7 @@ export const A1_PACKAGE_CYCLES: Rule = {
   },
 }
 
-const CORE_ROOTS = [
-  'packages/agent/src/',
-  'packages/engine-loop/src/',
-  'packages/claude-plugin/src/',
-]
+const CORE_ROOTS = ['packages/agent/src/', 'packages/engine-loop/src/']
 
 export const A2_AGNOSTIC_CORE: Rule = {
   id: 'A2',

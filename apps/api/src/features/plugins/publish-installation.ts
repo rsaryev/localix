@@ -1,3 +1,4 @@
+import { declaredDependencies } from './kit'
 import { ConflictError, InvalidRequestError } from '../../lib/domain-errors'
 import type { Kysely } from 'kysely'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
@@ -11,7 +12,6 @@ import { publishExtensionTrees } from '../ext/publish-trees'
 import type { PreparedDependencyInstall } from './dependencies-install'
 import { loadManifest, type DiscoveredPlugin } from './discovery'
 import type { MaterializedPluginSource } from './install-helpers'
-import { normalizePluginDependencies } from './dependencies'
 import { planDependencyEnables } from './dependencies-policy'
 import { actionFor } from '../capabilities/resolve'
 import { claimInPlaceRecord, type InPlaceClaim } from './install-in-place'
@@ -57,7 +57,7 @@ export async function publishPluginInstallation(input: {
     if (plugin.error) throw new InvalidRequestError('plugin_invalid', plugin.error)
     // Files are published while their backups and locks are retained. Resolve the graph before
     // taking the database transaction so discovery never calls back into a held DB connection.
-    const hasDependencies = normalizePluginDependencies(plugin.manifest.dependencies).length > 0
+    const hasDependencies = declaredDependencies(plugin.manifest.dependencies).length > 0
     const discovered = hasDependencies ? await input.discover() : []
     const warnings: string[] = []
     // The record, the row and its change notice are written here, under the destination lock.

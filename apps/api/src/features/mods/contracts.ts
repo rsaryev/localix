@@ -4,6 +4,8 @@
  * builds no other feature's service (A4).
  */
 
+import type { CommandListing } from '@rsaryev/llx-plugin/mods'
+
 /** Where an event happens: the conversation a hook's `$` acts in. */
 export interface ModScene {
   userId: string
@@ -101,14 +103,6 @@ export interface ModSessionRead {
   startedAt?: number
 }
 
-/** A slash command or skill as `$.command.list()` lists it. */
-export interface ModCommandInfo {
-  name: string
-  description: string
-  source: 'builtin' | 'plugin' | 'user' | 'mcp'
-  plugin?: string
-}
-
 /** One delegated child of a conversation (`$.agent.list`). */
 export interface ModAgentRun {
   sessionId: string
@@ -141,7 +135,7 @@ export interface ModsPorts {
   /** The scene's conversation's delegated children (`$.agent.list`). */
   listAgentRuns?: (scene: ModScene) => Promise<readonly ModAgentRun[]>
   /** Localix's own commands and the skills a person runs there (`$.command.list`). */
-  listCommands?: (scene: ModScene) => Promise<readonly ModCommandInfo[]>
+  listCommands?: (scene: ModScene) => Promise<readonly CommandListing[]>
   /** A conversation's working directory, for its band before it ran a turn here. */
   sessionCwd?: (scene: ModScene) => Promise<string | null>
   /** The scene's conversation for `$.session`, or null outside one. */

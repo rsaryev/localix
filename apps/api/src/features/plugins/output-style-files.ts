@@ -1,11 +1,9 @@
 import { promises as fs } from 'node:fs'
-import { basename, dirname, extname, join, parse, resolve } from 'node:path'
-
-import { outputStyleOf, type OutputStyle } from '@localixai/claude-plugin'
+import { dirname, extname, join, parse, resolve } from 'node:path'
 
 import { claudeConfigDir } from '../cc-settings/config-dir'
-import { parseMarkdownFrontmatter } from '../agent-core/frontmatter-yaml'
 import { readSkillMarkdownFile } from '../agent-core/skill-file'
+import { outputStyleFile, type StyleBody } from './kit'
 
 /**
  * The person's and the project's own output styles: Localix's `.localix/output-styles` and Claude
@@ -26,29 +24,26 @@ const STYLE_DIR = join('.localix', 'output-styles')
 const CLAUDE_STYLE_DIR = join('.claude', 'output-styles')
 
 /** The styles in one folder, sorted by file name; a file that cannot be read is skipped. */
-export async function readOutputStyleDir(dir: string): Promise<OutputStyle[]> {
+export async function readOutputStyleDir(dir: string): Promise<StyleBody[]> {
   const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => [])
   const files = entries
     .filter((entry) => entry.isFile() && extname(entry.name) === '.md')
     .map((entry) => entry.name)
     .sort()
     .slice(0, MAX_STYLES_PER_DIR)
-  const styles: OutputStyle[] = []
+  const styles: StyleBody[] = []
   for (const name of files) {
     const raw = await readSkillMarkdownFile(join(dir, name)).catch(() => null)
     if (raw === null) continue
-    // A frontmatter that does not parse still loads the style under its file name, as in Claude
-    // Code: the YAML reader returns no fields for it.
-    const { fields, body } = parseMarkdownFrontmatter(raw)
-    const style = outputStyleOf(basename(name, '.md'), fields, body)
+    const style = outputStyleFile(join(dir, name), raw)
     if (!styles.some((found) => found.name === style.name)) styles.push(style)
   }
   return styles
 }
 
 /** One style per name, the later list's winning. */
-function byName(styles: readonly OutputStyle[]): OutputStyle[] {
-  const out = new Map<string, OutputStyle>()
+function byName(styles: readonly StyleBody[]): StyleBody[] {
+  const out = new Map<string, StyleBody>()
   for (const style of styles) out.set(style.name, style)
   return [...out.values()]
 }
@@ -81,7 +76,7 @@ export async function readLocalOutputStyles(input: {
   homeDir: string
   cwd?: string | null
   env?: Record<string, string | undefined>
-}): Promise<{ user: OutputStyle[]; project: OutputStyle[] }> {
+}): Promise<{ user: StyleBody[]; project: StyleBody[] }> {
   const home = resolve(input.homeDir)
   const user = byName([
     ...(await readOutputStyleDir(join(claudeConfigDir(home, input.env), 'output-styles'))),
@@ -89,7 +84,7 @@ export async function readLocalOutputStyles(input: {
   ])
   if (!input.cwd || input.cwd === '/') return { user, project: [] }
   const chain = await projectChain(input.cwd, home)
-  const project = new Map<string, OutputStyle>()
+  const project = new Map<string, StyleBody>()
   // Root first, so a nearer folder's style replaces a farther one's of the same name.
   for (const dir of chain.reverse())
     for (const folder of [CLAUDE_STYLE_DIR, STYLE_DIR])

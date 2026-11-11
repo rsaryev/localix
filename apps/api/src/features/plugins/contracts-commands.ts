@@ -52,7 +52,7 @@ export type MiniAppCommandArg = z.infer<typeof miniAppCommandArgSchema>
  */
 export const pluginCommandSchema = z.object({
   // Accepts a namespaced `foo:bar` name (nested `commands/foo/bar.md`), of which a plain
-  // single-segment name is the common case (PLUGIN_QUALIFIED_NAME_RE ⊇ PLUGIN_NAME_RE).
+  // single-segment name is the common case.
   name: z.string().regex(PLUGIN_QUALIFIED_NAME_RE),
   description: z.string().default(''),
   args: z.array(miniAppCommandArgSchema).default([]),

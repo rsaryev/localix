@@ -14,7 +14,7 @@ import {
   parseInstalledPlugins,
   readKnownMarketplaces,
   readMarketplace,
-  resolveEntrySource,
+  entryFolder,
   type KnownMarketplaces,
   type ClaudeSettingsInput,
   type FolderSource,
@@ -80,8 +80,8 @@ async function marketplaceListing(
   }
   if (!entry) return undefined
   try {
-    const resolved = resolveEntrySource(catalogAt(record).root, entry, record.source)
-    return 'localPath' in resolved ? { entry, localPath: resolved.localPath } : { entry }
+    const localPath = entryFolder(catalogAt(record).root, entry, record.source)
+    return localPath ? { entry, localPath } : { entry }
   } catch {
     return { entry }
   }

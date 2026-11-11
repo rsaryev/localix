@@ -5,7 +5,7 @@ import { ConflictError } from '../../lib/domain-errors'
 import { isRecord } from '../../lib/record'
 import { pathExists } from '../ext/fs-discovery'
 import type { InPlaceInstall } from './install-in-place'
-import { pluginVersion } from './kit'
+import { PLUGIN_MANIFEST, pluginVersion } from './kit'
 import type { ResolvedMarketplaceInstall } from './marketplace-registry'
 import {
   cachedPluginDir,
@@ -40,7 +40,7 @@ export interface VersionedInstall {
 
 async function manifestField(dir: string, field: 'name' | 'version'): Promise<string | undefined> {
   try {
-    const json = JSON.parse(await fs.readFile(join(dir, '.claude-plugin', 'plugin.json'), 'utf8'))
+    const json = JSON.parse(await fs.readFile(join(dir, PLUGIN_MANIFEST), 'utf8'))
     return isRecord(json) && typeof json[field] === 'string' ? json[field] : undefined
   } catch {
     return undefined

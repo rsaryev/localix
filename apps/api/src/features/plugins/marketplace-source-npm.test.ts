@@ -5,12 +5,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { stubFetch, fetchUrl } from '../../testing/fetch-stub'
-import {
-  fetchNpmPlugin,
-  npmMetadataUrl,
-  parseNpmEntrySource,
-  pickNpmVersion,
-} from './marketplace-source-npm'
+import { npmPlan } from './kit/testing'
+import { fetchNpmPlugin, npmMetadataUrl, pickNpmVersion } from './marketplace-source-npm'
 import { downloadNpmTarball } from './marketplace-npm-integrity'
 import { DEFAULT_NPM_REGISTRY } from './marketplace-npm-registry'
 
@@ -65,31 +61,6 @@ function stubRegistry(meta: unknown, opts?: { tarballBytes?: Uint8Array }): stri
   })
   return urls
 }
-
-describe('parseNpmEntrySource', () => {
-  it('parses the spec form with version + registry', () => {
-    expect(
-      parseNpmEntrySource('x', {
-        source: 'npm',
-        package: '@org/plugin',
-        version: '^2.0.0',
-        registry: 'https://r.example',
-      }),
-    ).toEqual({ package: '@org/plugin', version: '^2.0.0', registry: 'https://r.example' })
-  })
-  it('does not treat a shorthand or a bare package key as npm', () => {
-    expect(parseNpmEntrySource('x', { npm: 'left-pad' })).toBeNull()
-    expect(parseNpmEntrySource('x', { package: 'left-pad' })).toBeNull()
-  })
-  it('returns null for git-shaped sources', () => {
-    expect(parseNpmEntrySource('x', { source: 'github', repo: 'a/b' })).toBeNull()
-    expect(parseNpmEntrySource('x', { url: 'https://x/y.git', path: 'p' })).toBeNull()
-  })
-  it('throws on a missing or invalid package name', () => {
-    expect(() => parseNpmEntrySource('x', { source: 'npm' })).toThrow(/package/)
-    expect(() => parseNpmEntrySource('x', { source: 'npm', package: '../evil' })).toThrow(/package/)
-  })
-})
 
 describe('npmMetadataUrl', () => {
   it('encodes a scoped name and defaults the registry', () => {
@@ -200,7 +171,7 @@ describe('fetchNpmPlugin', () => {
       }),
     )
     const dest = join(work, 'out-basic')
-    await fetchNpmPlugin({ package: '@org/demo' }, dest)
+    await fetchNpmPlugin(npmPlan({ package: '@org/demo' }), dest)
     expect(urls[0]).toBe(`${DEFAULT_NPM_REGISTRY}/@org%2fdemo`)
     // package/ prefix stripped: plugin.json sits at the dest root.
     expect(JSON.parse(await fs.readFile(join(dest, 'plugin.json'), 'utf8'))).toEqual({
@@ -212,7 +183,7 @@ describe('fetchNpmPlugin', () => {
   it('resolves metadata against a custom registry', async () => {
     const urls = stubRegistry(packument({ tarball: 'https://r.example/demo/-/demo-2.1.0.tgz' }))
     const dest = join(work, 'out-registry')
-    await fetchNpmPlugin({ package: 'demo', registry: 'https://r.example/' }, dest)
+    await fetchNpmPlugin(npmPlan({ package: 'demo', registry: 'https://r.example/' }), dest)
     expect(urls[0]).toBe('https://r.example/demo')
     expect(urls[1]).toBe('https://r.example/demo/-/demo-2.1.0.tgz')
   })
@@ -226,32 +197,36 @@ describe('fetchNpmPlugin', () => {
         '3.0.0': { dist: { tarball: 'https://x/demo-3.0.0.tgz' } },
       },
     })
-    await fetchNpmPlugin({ package: 'demo', version: '^2.0.0' }, join(work, 'out-range'))
+    await fetchNpmPlugin(npmPlan({ package: 'demo', version: '^2.0.0' }), join(work, 'out-range'))
     expect(urls[1]).toBe('https://x/demo-2.5.0.tgz')
   })
 
   it('integrity mismatch → typed error, staging dir removed', async () => {
     stubRegistry(packument({ tarball: 'https://x/demo.tgz', integrity: 'sha512-bogus' }))
     const dest = join(work, 'out-bad')
-    expect(fetchNpmPlugin({ package: 'demo' }, dest)).rejects.toThrow(/integrity/)
+    expect(fetchNpmPlugin(npmPlan({ package: 'demo' }), dest)).rejects.toThrow(/integrity/)
   })
 
   it('missing version → clear error naming the package and spec', async () => {
     stubRegistry(packument({ tarball: 'https://x/demo.tgz' }))
     expect(
-      fetchNpmPlugin({ package: 'demo', version: '^9.0.0' }, join(work, 'out-none')),
+      fetchNpmPlugin(npmPlan({ package: 'demo', version: '^9.0.0' }), join(work, 'out-none')),
     ).rejects.toThrow(/"demo" has no version satisfying/)
   })
 
   it('metadata that is not JSON → per-entry error, not a raw SyntaxError', async () => {
     globalThis.fetch = stubFetch(async () => new Response('<html>'))
-    expect(fetchNpmPlugin({ package: 'demo' }, join(work, 'out-html'))).rejects.toMatchObject({
+    expect(
+      fetchNpmPlugin(npmPlan({ package: 'demo' }), join(work, 'out-html')),
+    ).rejects.toMatchObject({
       code: 'plugin_npm_fetch_failed',
     })
   })
 
   it('registry HTTP error → clear per-entry error', async () => {
     globalThis.fetch = stubFetch(async () => new Response('nope', { status: 404 }))
-    expect(fetchNpmPlugin({ package: 'demo' }, join(work, 'out-404'))).rejects.toThrow(/HTTP 404/)
+    expect(fetchNpmPlugin(npmPlan({ package: 'demo' }), join(work, 'out-404'))).rejects.toThrow(
+      /HTTP 404/,
+    )
   })
 })

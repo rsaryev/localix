@@ -11,7 +11,7 @@ test('$.command.list names Localix’s commands and the skills a person runs, by
       ],
       skills: [
         testSessionSkill('commit'),
-        testSessionSkill('deploy', '', { plugin: 'vercel' }),
+        testSessionSkill('deploy', {}, { plugin: 'vercel' }),
         // A skill shadowed by the command.
         testSessionSkill('clear'),
       ],

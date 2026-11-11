@@ -73,7 +73,7 @@ export async function loadEnabledPlugins(opts: {
     const summary = {
       name: plugin.manifest.name,
       scope: plugin.scope,
-      description: plugin.manifest.description,
+      description: plugin.manifest.description ?? '',
       skills: plugin.provides.skills,
       mcpServers: plugin.provides.mcpServers,
       binDir: undefined as string | undefined,

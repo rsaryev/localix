@@ -1,7 +1,6 @@
-import { DEFAULT_OUTPUT_STYLE, type OutputStyle } from '@localixai/claude-plugin'
-
 import { BUILTIN_OUTPUT_STYLES } from './output-style-builtins'
 import type { DiscoveredPlugin } from './discovery-types'
+import { DEFAULT_OUTPUT_STYLE_ID, type StyleBody } from './kit'
 
 /**
  * The output styles a chat can run in, as Claude Code lists them in `/output-style`: the built-in
@@ -16,7 +15,7 @@ export interface NamedOutputStyle {
   /** What a chat or a setting stores: the style's name, or `<plugin>:<name>` for a plugin's. */
   fullName: string
   source: OutputStyleSource
-  style: OutputStyle
+  style: StyleBody
   pluginName?: string
 }
 
@@ -34,7 +33,7 @@ export function pluginOutputStyles(
     pluginName: plugin.manifest.name,
     fullName: `${plugin.manifest.name}:${style.name}`,
     source: 'plugin',
-    style: { ...style, prompt: subst(style.prompt) },
+    style: { ...style, instructions: subst(style.instructions) },
   }))
 }
 
@@ -45,13 +44,13 @@ export function pluginOutputStyles(
  */
 export function outputStyleCatalog(input: {
   plugins?: readonly PluginOutputStyle[]
-  user?: readonly OutputStyle[]
-  project?: readonly OutputStyle[]
+  user?: readonly StyleBody[]
+  project?: readonly StyleBody[]
 }): NamedOutputStyle[] {
   const local = new Map<string, NamedOutputStyle>()
-  const offer = (source: OutputStyleSource, styles: readonly OutputStyle[]) => {
+  const offer = (source: OutputStyleSource, styles: readonly StyleBody[]) => {
     for (const style of styles)
-      if (style.name !== DEFAULT_OUTPUT_STYLE)
+      if (style.name !== DEFAULT_OUTPUT_STYLE_ID)
         local.set(style.name, { fullName: style.name, source, style })
   }
   offer('builtin', BUILTIN_OUTPUT_STYLES)
@@ -75,7 +74,7 @@ export function activeOutputStyle(
   const forced = styles.find((entry) => entry.source === 'plugin' && entry.style.forceForPlugin)
   if (forced) return forced
   const name = chosen || fallback
-  if (!name || name === DEFAULT_OUTPUT_STYLE) return null
+  if (!name || name === DEFAULT_OUTPUT_STYLE_ID) return null
   return styles.find((entry) => entry.fullName === name) ?? null
 }
 
@@ -91,7 +90,7 @@ export function findOutputStyle(
   | { kind: 'style'; entry: NamedOutputStyle }
   | { kind: 'none' | 'ambiguous' } {
   const wanted = query.trim().toLowerCase()
-  if (wanted === DEFAULT_OUTPUT_STYLE) return { kind: 'default' }
+  if (wanted === DEFAULT_OUTPUT_STYLE_ID) return { kind: 'default' }
   const exact = styles.find((entry) => entry.fullName.toLowerCase() === wanted)
   if (exact) return { kind: 'style', entry: exact }
   const bare = styles.filter(

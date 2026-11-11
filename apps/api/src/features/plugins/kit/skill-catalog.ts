@@ -1,44 +1,21 @@
 import {
   listingLine,
+  skillScope,
   type PluginSession,
-  type ScanScope,
   type SessionSkill,
+  type SkillScope,
 } from '@rsaryev/llx-plugin'
 import { skillLookup } from '@rsaryev/llx-plugin/skills'
 
-/** `keywords: a, b c` or a YAML list, as the frontmatter record holds it. */
-function keywordsOf(value: unknown): string[] {
-  const items = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : []
-  return items.flatMap((item) => (typeof item === 'string' && item.trim() ? [item.trim()] : []))
-}
+const PROJECT_SCOPES: ReadonlySet<SkillScope> = new Set(['project', 'nested', 'additional'])
 
 /**
- * Frontmatter `keywords`, which only Localix reads: phrases of the person's message that put the
- * skill's text in the prompt (`chat/runtime/prompt-skill-triggers.ts`). Comma-separated, so a
- * phrase may hold spaces.
+ * Localix's two places for a skill, from the scope the kit says it loaded from (`skillScope`):
+ * `project` for a project's folders, `global` for the personal, managed and synced ones and the
+ * plugins'.
  */
-export function skillKeywords(skill: SessionSkill): string[] {
-  return keywordsOf(skill.invocable.frontmatter.keywords)
-}
-
-/** The plugin that ships it: the kit finds its folder by the id (`CLAUDE_PLUGIN_ROOT`). */
-export function skillPlugin(
-  skill: SessionSkill,
-): { readonly id: string; readonly name: string } | undefined {
-  const { source } = skill
-  const { origin } = skill.invocable
-  return source.kind === 'plugin' && origin.kind === 'plugin'
-    ? { id: source.pluginId, name: origin.plugin }
-    : undefined
-}
-
-const PROJECT_SCOPES: ReadonlySet<ScanScope> = new Set(['project', 'nested', 'additional'])
-
-/** `global`: the personal, managed and synced folders and the plugins; `project`: the rest. */
-export function skillScope(skill: SessionSkill): 'global' | 'project' {
-  return skill.source.kind === 'folder' && PROJECT_SCOPES.has(skill.source.scope)
-    ? 'project'
-    : 'global'
+export function projectOrGlobal(skill: SessionSkill): 'global' | 'project' {
+  return PROJECT_SCOPES.has(skillScope(skill)) ? 'project' : 'global'
 }
 
 /** The session's skills and commands, in the kit's order (plugins first, then the folders). */

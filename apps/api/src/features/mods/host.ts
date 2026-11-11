@@ -219,7 +219,8 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions) {
     async runCommand(input: CommandInput, scene: ModScene, plugins?: ReadonlySet<string>) {
       const kit = (await runningHostFor(scene, plugins)) ?? (await hostFor(scene, plugins))
       if (!kit) return commandAnswer(undefined)
-      return commandAnswer(await kit.runCommand(input.command, input.args ?? ''))
+      const options = input.origin ? { origin: input.origin } : {}
+      return commandAnswer(await kit.runCommand(input.command, input.args ?? '', options))
     },
     stop(): Promise<void> {
       lifecycle = lifecycle.then(async () => {

@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
 import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
-import { resolveEntrySource } from './kit'
+import { entryFetchPlan } from './kit'
 import { gitRefProblem, gitUrlProblem } from './marketplace-git-args'
 import { fetchEntryPlugin, materializeMarketplace } from './marketplace-materialize'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
@@ -17,6 +17,16 @@ import type { MarketplaceRegistryDeps } from './marketplace-registry'
 
 const dir = tempDirPerTest('mkt-gitargs')
 const entry = (source: Record<string, unknown>) => ({ name: 'p', source }) as MarketplaceEntry
+/** The kit's plan for a git clone of `repo`, as a fetched entry hands it to the transport. */
+const gitPlan = (repo: { url: string }) =>
+  ({
+    kind: 'git',
+    repo,
+    checkout: 'default-branch',
+    sparse: false,
+    partialClone: false,
+    lfs: 'pointer-files',
+  }) as const
 
 describe('gitUrlProblem', () => {
   it('accepts https, http, ssh, file and scp-style URLs', () => {
@@ -59,7 +69,7 @@ describe('marketplace git sources', () => {
       { source: 'url', url: 'https://github.com/o/r.git', ref: '--upload-pack=touch /tmp/pwned' },
       { source: 'github', repo: 'o/r', sha: '-c' },
     ])
-      expect(() => resolveEntrySource('/m', entry(source))).toThrow('Entry "p" source')
+      expect(() => entryFetchPlan(entry(source))).toThrow('Entry "p" source')
   })
 
   it('never calls git for unsafe coordinates of a marketplace or a fetched entry', async () => {
@@ -89,7 +99,7 @@ describe('marketplace git sources', () => {
       ),
     ).rejects.toThrow('is not a branch or tag name')
     await expect(
-      fetchEntryPlugin({ git: { url: 'ext::sh -c x' } }, join(dir(), 'e'), deps),
+      fetchEntryPlugin(gitPlan({ url: 'ext::sh -c x' }), join(dir(), 'e'), deps),
     ).rejects.toThrow('Plugin source')
     expect(cloned).toEqual([])
   })

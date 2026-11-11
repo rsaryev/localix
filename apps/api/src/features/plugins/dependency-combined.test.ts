@@ -48,7 +48,7 @@ function resolver(opts: {
 describe('a dependency several plugins constrain', () => {
   it('installs the highest version every range admits', async () => {
     const deps = resolver({ constraints: new Map([['vault', [{ range: '^2.0', by: 'app-a' }]]]) })
-    const plan = await resolveDependencyPlan([{ name: 'vault', version: '>=2.1' }], 'm', deps)
+    const plan = await resolveDependencyPlan([{ name: 'vault', range: '>=2.1' }], 'm', deps)
     expect(plan.steps.map((s) => s.version)).toEqual(['2.4.0'])
   })
 
@@ -57,7 +57,7 @@ describe('a dependency several plugins constrain', () => {
       installed: new Map([['vault', '2.0.0']]),
       constraints: new Map([['vault', [{ range: '^2.0', by: 'app-a' }]]]),
     })
-    const plan = await resolveDependencyPlan([{ name: 'vault', version: '>=2.1' }], 'm', deps)
+    const plan = await resolveDependencyPlan([{ name: 'vault', range: '>=2.1' }], 'm', deps)
     expect(plan.steps.map((s) => [s.name, s.version])).toEqual([['vault', '2.4.0']])
   })
 
@@ -66,11 +66,9 @@ describe('a dependency several plugins constrain', () => {
       installed: new Map([['vault', '2.1.0']]),
       constraints: new Map([['vault', [{ range: '~2.1', by: 'app-a' }]]]),
     })
-    const error = await resolveDependencyPlan(
-      [{ name: 'vault', version: '~3.0' }],
-      'm',
-      deps,
-    ).catch((err: Error) => err)
+    const error = await resolveDependencyPlan([{ name: 'vault', range: '~3.0' }], 'm', deps).catch(
+      (err: Error) => err,
+    )
     const message = error instanceof Error ? error.message : ''
     expect(message).toContain('"vault" has conflicting version requirements')
     expect(message).toContain('~2.1 (app-a)')

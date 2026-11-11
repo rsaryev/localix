@@ -1,6 +1,5 @@
 import type { DiscoveredPlugin } from './discovery'
 import type { PluginValidation } from './contracts'
-import { isKebabCase } from '../ext/manifest-validate'
 import { pluginLspNotes, summarizePluginLspServers } from '../lsp'
 
 /**
@@ -29,14 +28,6 @@ export function validateCompatibility(plugin: DiscoveredPlugin): PluginValidatio
     extensions: Object.keys(server.extensionToLanguage),
   }))
   warnings.push(...pluginLspNotes(summarizePluginLspServers(lspServers)))
-
-  // Kebab-case name: our schema accepts underscores/camel, but the Claude.ai
-  // marketplace sync requires strict kebab-case.
-  if (!plugin.error && !isKebabCase(plugin.manifest.name)) {
-    warnings.push(
-      `Plugin name "${plugin.manifest.name}" is not kebab-case — this host accepts it, but a Claude Code marketplace sync requires lowercase letters, digits, and hyphens only.`,
-    )
-  }
 
   return { errors: [], warnings }
 }

@@ -33,7 +33,6 @@ import {
   type ResolvedMarketplaceInstall,
 } from './marketplace-registry'
 import { createMarketplaceMethods } from './service-marketplaces'
-import { normalizePluginDependencies } from './dependencies'
 import { planDependencyEnables } from './dependencies-policy'
 import { actionFor } from '../capabilities/resolve'
 import type { RuleChange } from '../capabilities/rule-changes'
@@ -46,6 +45,7 @@ import { isDefaultProject } from '../projects/default-project'
 import { applyEntryManifestOverrides } from './marketplace-entry-manifest'
 import { pluginTrustClass } from './enable'
 import { validatePluginFull } from './validate'
+import { declaredDependencies, UNKNOWN_VERSION } from './kit'
 import { listThemesFromCatalog } from './themes'
 import type { PluginRecord } from './contracts'
 import { toConfigFields, type PluginService, type PluginServiceDeps } from './service-types'
@@ -136,9 +136,10 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     return {
       name: plugin.manifest.name,
       displayName: plugin.manifest.displayName,
-      version: plugin.manifest.version,
-      description: plugin.manifest.description,
-      author: plugin.manifest.author,
+      // What the kit read; a plugin that states no version goes by the one its install computed.
+      version: plugin.manifest.version ?? plugin.cachedInstall?.version ?? UNKNOWN_VERSION,
+      description: plugin.manifest.description ?? '',
+      author: plugin.manifest.author?.name,
       homepage: plugin.manifest.homepage,
       ...(plugin.manifest.origin ? { importedFrom: plugin.manifest.origin.format } : {}),
       projectId: plugin.projectId,
@@ -310,7 +311,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         // A rule may name a plugin this scope has never seen — an uninstall left its row, or
         // the change arrived for another machine's install. There is nothing to cascade.
         if (!plugin) continue
-        if (normalizePluginDependencies(plugin.manifest.dependencies).length === 0) continue
+        if (declaredDependencies(plugin.manifest.dependencies).length === 0) continue
         const discovered = await discover({
           cwd: projectId ? await cwdFor(userId, projectId) : null,
           projectId,
@@ -355,7 +356,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       // The cascade is PLANNED and then written with the change that caused it, so a plugin
       // is never allowed without the dependencies it needs — one transaction, not two.
       const cascade =
-        input.enabled && normalizePluginDependencies(plugin.manifest.dependencies).length > 0
+        input.enabled && declaredDependencies(plugin.manifest.dependencies).length > 0
           ? await planDependencyEnables(deps.db, {
               userId,
               plugin,

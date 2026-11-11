@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { locateManifest, PLUGIN_MANIFEST_CANDIDATES } from './manifest-locate'
-import { MANIFEST_FILE as CLAUDE_CODE_PLUGIN_MANIFEST } from '@localixai/claude-plugin'
+import { PLUGIN_MANIFEST as CLAUDE_CODE_PLUGIN_MANIFEST } from './kit'
 
 /**
  * Shared manifest-locating core: first existing candidate wins, candidate order is the

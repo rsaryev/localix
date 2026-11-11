@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { listSubdirs, pathExists } from '../ext/fs-discovery'
 import { isExtensionPublicationArtifact } from '../ext/publish-tree'
-import { COMPONENT_MARKERS } from '@localixai/claude-plugin'
+import { isPluginFolder } from './kit'
 import { MINI_APP_FILE } from './layout/read'
 import { locateManifest, PLUGIN_MANIFEST_CANDIDATES } from './manifest-locate'
 import { loadManifest } from './manifest-load'
@@ -14,16 +14,12 @@ export async function findManifestPath(dir: string): Promise<string | null> {
 }
 
 /**
- * What makes a directory a plugin, as in Claude Code: its manifest or a default component location
- * (the manifest is optional). A mini app's manifest is read too, only so that a mini app dropped among
- * the plugins says what it is instead of vanishing. Bare dirs (e.g. a `cache`) are skipped.
+ * What makes a directory a plugin, as the kit classifies one (the manifest is optional). A mini
+ * app's manifest is read too, only so that a mini app dropped among the plugins says what it is
+ * instead of vanishing. Bare dirs (e.g. a `cache`) are skipped.
  */
-const PLUGIN_MARKERS = [...COMPONENT_MARKERS, MINI_APP_FILE]
-
 async function isPluginDir(dir: string): Promise<boolean> {
-  // Check all markers in parallel — any one present makes this a folder to read.
-  const checks = await Promise.all(PLUGIN_MARKERS.map((c) => pathExists(join(dir, c))))
-  return checks.some(Boolean)
+  return (await isPluginFolder(dir)) || (await pathExists(join(dir, MINI_APP_FILE)))
 }
 
 /**

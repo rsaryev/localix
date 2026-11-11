@@ -108,7 +108,7 @@ describe('positive and negative controls', () => {
       ),
       planted(
         'packages/mini-app-sdk/src/z.ts',
-        "import { MANIFEST_FILE } from '@localixai/claude-plugin'",
+        "import type { PluginManifest } from '@rsaryev/llx-plugin/format'",
       ),
       planted(
         'apps/api/src/features/chat/both.ts',

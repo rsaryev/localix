@@ -24,24 +24,6 @@ export const rmrf = (path: string): Promise<void> =>
 export const stripDotGit = (dir: string): Promise<void> => rmrf(join(dir, '.git'))
 
 /**
- * Read an extension manifest file and return its trimmed `name` string, or null
- * when the file is missing/unreadable/malformed or carries no usable name. Shared
- * by the plugin installer, which derives an install name
- * from a manifest's `name` (with a directory-basename fallback the caller owns,
- * since the validity rule differs per subsystem).
- */
-export async function readManifestName(manifestPath: string): Promise<string | null> {
-  try {
-    const raw = await fs.readFile(manifestPath, 'utf8')
-    const parsed = JSON.parse(raw) as { name?: unknown }
-    if (typeof parsed.name === 'string' && parsed.name.trim()) return parsed.name.trim()
-  } catch {
-    // missing/unreadable/malformed manifest → no name
-  }
-  return null
-}
-
-/**
  * True when `source` already lives inside the managed install root (it IS the
  * `<root>/<name>` dir, or sits anywhere beneath the root). Both ext installers use
  * this to detect a drop-in being registered in place — so it's copied, not cloned

@@ -20,7 +20,7 @@ const chat = { agentId: DEFAULT_AGENT_ID, host: 'chat' }
 describe('the agent setting', () => {
   test('runs the default agent’s chat as the plugin agent; its tools narrow the run later', () => {
     const applied = applyMainAgent(input, reviewer, chat)
-    expect(applied.agent.instructions).toBe('You are a security reviewer.')
+    expect(applied.agent.instructions).toBe('You are a security reviewer.\n')
     expect(applied.mainAgent).toBe(reviewer)
     // The kit resolves `tools` and `disallowedTools` over the built tools (`runToolsAgent`).
     expect(applied.disabledTools).toEqual(['Loops'])

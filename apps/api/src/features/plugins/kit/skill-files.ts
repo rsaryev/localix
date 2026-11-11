@@ -1,6 +1,6 @@
-import { basename, join } from 'node:path'
+import { basename } from 'node:path'
 import { resolveSkillName } from '@rsaryev/llx-plugin/format'
-import { scanSkillContainer } from '@rsaryev/llx-plugin/skills'
+import { scanSkillContainer, scopeFilePath } from '@rsaryev/llx-plugin/skills'
 import { diskFolderScan } from './ports/folder-scan'
 
 /**
@@ -13,14 +13,20 @@ import { diskFolderScan } from './ports/folder-scan'
 /** The folder kinds Localix writes skills to: the person's `.claude` and a project's. */
 export type SkillFolderKind = 'user' | 'project'
 
+/** A `.claude` folder Localix writes skills to, and which scope it is. */
+export interface SkillFolder {
+  readonly folder: string
+  readonly kind: SkillFolderKind
+}
+
 /**
- * Where a new skill named `name` of a `.claude` folder lives (skills.md, "Where skills live":
- * `~/.claude/skills/<skill-name>/SKILL.md`, `.claude/skills/<skill-name>/SKILL.md`). The kit keeps
- * the same rule as `SCOPE_RULES` (`skills/scan/locations.ts`) but exports no function for it, so the
- * path is written here once. Kit gap: no exported skill-path function.
+ * Where a new skill named `name` of a `.claude` folder lives, by the kit's rule (`scopeFilePath`:
+ * `<folder>/skills/<name>/SKILL.md`). Both scopes Localix writes to read skills, so there is a path.
  */
-export function skillFilePath(claudeFolder: string, name: string): string {
-  return join(claudeFolder, 'skills', name, 'SKILL.md')
+export function skillFilePath(target: SkillFolder, name: string): string {
+  const path = scopeFilePath(target.kind, 'skill', target.folder, name)
+  if (path === undefined) throw new Error(`The ${target.kind} scope reads no skills`)
+  return path
 }
 
 /** Why Claude Code would refuse a skill folder of this name; undefined when it would load. */

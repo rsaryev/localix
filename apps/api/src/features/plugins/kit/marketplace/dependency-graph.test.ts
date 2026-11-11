@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'bun:test'
 
-import { disableRefusal, enableCascade, type PluginNode } from './dependency-graph'
+import {
+  declaredDependencies,
+  disableRefusal,
+  enableCascade,
+  pluginDependents,
+  type PluginNode,
+} from './dependency-graph'
 
 /**
  * Enabling and disabling a plugin that is part of a dependency graph, judged by the kit
@@ -34,5 +40,38 @@ describe('disableRefusal', () => {
       'Cannot disable "lib": "app" depends on it; disable it first',
     )
     expect(disableRefusal('app', plugins)).toBeUndefined()
+  })
+})
+
+describe('declaredDependencies', () => {
+  it('parses the CC union (string | {name, version?}), deduped, invalid dropped', () => {
+    expect(
+      declaredDependencies([
+        'helper-lib',
+        { name: 'pinned', version: '^2.0.0' },
+        { name: 'helper-lib', version: '9.9.9' }, // duplicate — first wins
+        '', // invalid
+        { version: '1.0.0' } as never, // no name
+        42 as never,
+      ]),
+    ).toEqual([{ name: 'helper-lib' }, { name: 'pinned', range: '^2.0.0' }])
+  })
+  it('returns [] for absent/non-array input', () => {
+    expect(declaredDependencies(undefined)).toEqual([])
+    expect(declaredDependencies({} as never)).toEqual([])
+  })
+})
+
+describe('pluginDependents', () => {
+  it('names the enabled plugins that declare a dependency on the given one', () => {
+    const plugins = [
+      node('a', true, ['lib', { name: 'other' }]),
+      node('b', true, [{ name: 'lib', version: '^1.0.0' }]),
+      node('c', true),
+      node('off', false, ['lib']),
+      node('lib', true),
+    ]
+    expect(pluginDependents('lib', plugins)).toEqual(['a', 'b'])
+    expect(pluginDependents('nope', plugins)).toEqual([])
   })
 })

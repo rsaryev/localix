@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 
 import { InvalidRequestError } from '../../lib/domain-errors'
+import type { ArchiveFetchPlan, MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
 import { archiveHeaders, type UrlSourceHeaders } from './kit'
 
 /**
@@ -18,33 +19,32 @@ export function headersHelperAcceptance(command: string, archiveUrl: string): st
 }
 
 /**
- * An archive source with the headers it is downloaded with: the marketplace's `url` source's on
- * its origin, the entry's over them, its accepted command's output over those.
+ * The kit's archive plan with the headers it is downloaded with: the marketplace's `url` source's
+ * on its origin, the entry's over them, its accepted command's output over those.
  */
-export async function withArchiveHeaders<
-  A extends { url: string; headers?: Record<string, string>; headersHelper?: string },
->(
-  archive: A,
+export async function withArchiveHeaders(
+  plan: ArchiveFetchPlan,
+  entry: Pick<MarketplaceEntry, 'headers' | 'headersHelper'>,
   ref: { plugin: string; marketplace: string; source?: UrlSourceHeaders },
   opts: { accepted?: string | undefined; managedSettingsDir?: string | undefined },
-): Promise<Omit<A, 'headersHelper' | 'headers'> & { headers?: Record<string, string> }> {
-  const { headersHelper, headers: given, ...rest } = archive
+): Promise<ArchiveFetchPlan> {
+  const headersHelper = entry.headersHelper?.trim() ? entry.headersHelper : undefined
   if (headersHelper !== undefined) {
-    const sha = headersHelperAcceptance(headersHelper, archive.url)
+    const sha = headersHelperAcceptance(headersHelper, plan.url)
     if (opts.accepted !== sha)
       throw new InvalidRequestError(
         'plugin_command_needs_acceptance',
-        `"${ref.plugin}" fetches ${archive.url} with the headers its command prints: \`${headersHelper}\`. To run it, install or update "${ref.plugin}" by itself with --accept-command ${sha}`,
+        `"${ref.plugin}" fetches ${plan.url} with the headers its command prints: \`${headersHelper}\`. To run it, install or update "${ref.plugin}" by itself with --accept-command ${sha}`,
       )
   }
-  if (headersHelper === undefined && !given && !ref.source) return rest
+  if (headersHelper === undefined && !entry.headers && !ref.source) return plan
   const headers = await archiveHeaders(
     {
-      archiveUrl: archive.url,
+      archiveUrl: plan.url,
       plugin: ref.plugin,
       marketplace: ref.marketplace,
       entry: {
-        ...(given ? { headers: given } : {}),
+        ...(entry.headers ? { headers: entry.headers } : {}),
         ...(headersHelper === undefined ? {} : { headersHelper }),
       },
       ...(ref.source ? { source: ref.source } : {}),
@@ -52,5 +52,5 @@ export async function withArchiveHeaders<
     },
     { managedSettingsDir: opts.managedSettingsDir },
   )
-  return Object.keys(headers).length ? { ...rest, headers: { ...headers } } : rest
+  return { ...plan, headers }
 }

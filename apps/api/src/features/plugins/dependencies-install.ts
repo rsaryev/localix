@@ -1,3 +1,4 @@
+import { declaredDependencies } from './kit'
 import type { ExtensionTreeInput } from '../ext/publish-trees'
 import { dependencyTagVersions } from './dependency-tag-versions'
 import { loadManifest, type DiscoveredPlugin } from './discovery'
@@ -11,7 +12,6 @@ import {
   type ResolvedMarketplaceInstall,
 } from './marketplace-registry'
 import {
-  normalizePluginDependencies,
   resolveDependencyPlan,
   type DependencyPlan,
   type DependencyResolverDeps,
@@ -88,9 +88,8 @@ function toDependencyStep(
   r: ResolvedMarketplaceInstall,
   probe: DiscoveredPlugin | null,
 ): ResolvedDependencyStep {
-  // The DECLARED plugin.json version wins over the entry's (Claude Code), so the raw manifest is
-  // read (zod defaults to "0.0.0"); entry dependencies take precedence over the manifest's.
-  const rawVersion = probe?.rawManifest?.version
+  // The DECLARED plugin.json version wins over the entry's (Claude Code); entry dependencies take
+  // precedence over the manifest's.
   const entryDeps = r.entry.dependencies
   return {
     name: r.entry.name,
@@ -98,9 +97,8 @@ function toDependencyStep(
     dir: r.dir,
     linkRoot: r.linkRoot,
     entry: r.entry,
-    version:
-      (typeof rawVersion === 'string' && rawVersion ? rawVersion : undefined) ?? r.entry.version,
-    dependencies: normalizePluginDependencies(entryDeps ?? probe?.manifest.dependencies),
+    version: probe?.manifest.version || r.entry.version,
+    dependencies: declaredDependencies(entryDeps ?? probe?.manifest.dependencies),
   }
 }
 
@@ -120,10 +118,7 @@ export async function prepareDependenciesForInstall(
   const rootStep = toDependencyStep(resolved, await probeManifest(resolved.dir))
   const reachable = discovered.filter((p) => scope !== 'global' || p.scope === 'global')
   const installed = new Map<string, string | undefined>(
-    reachable.map((p) => [
-      p.manifest.name,
-      typeof p.rawManifest?.version === 'string' ? (p.rawManifest.version as string) : undefined,
-    ]),
+    reachable.map((p) => [p.manifest.name, p.manifest.version || undefined]),
   )
   // A cycle back to the root is satisfied by the parent in this same publication.
   // Its own dependencies are already the traversal roots; never schedule its tree twice.
@@ -133,11 +128,11 @@ export async function prepareDependenciesForInstall(
   const constraints = new Map<string, Array<{ range: string; by: string }>>()
   for (const plugin of reachable) {
     if (plugin.manifest.name === rootStep.name) continue
-    for (const dep of normalizePluginDependencies(plugin.manifest.dependencies))
-      if (dep.version)
+    for (const dep of declaredDependencies(plugin.manifest.dependencies))
+      if (dep.range)
         constraints.set(dep.name, [
           ...(constraints.get(dep.name) ?? []),
-          { range: dep.version, by: plugin.manifest.name },
+          { range: dep.range, by: plugin.manifest.name },
         ])
   }
   const resolver = marketplaceDependencyResolver(registryDeps, installed, constraints)

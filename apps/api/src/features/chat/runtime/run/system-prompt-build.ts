@@ -221,7 +221,7 @@ export async function buildRunSystemPrompt(
       ? {
           outputStyle: {
             name: style.fullName,
-            prompt: style.style.prompt,
+            prompt: style.style.instructions,
             keepCodingInstructions: style.style.keepCodingInstructions,
           },
         }

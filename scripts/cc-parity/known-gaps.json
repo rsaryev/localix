@@ -1,12 +1,7 @@
 {
   "$comment": "Known differences from the newest Claude Code snapshot, each with why. The report prints the reason beside the entry; fixing one moves it to checked.json.",
   "gaps": {
-    "call:command.list": "The kit's $.command.list (@rsaryev/llx-plugin 26f9c65) answers name, description and argumentHint; it names no source.",
-    "call:ui.panes": "The kit's $.ui.panes (@rsaryev/llx-plugin 26f9c65) answers id, title and isPlaced; it says neither isFocused nor isShown.",
-    "event:command.run": "The kit's runCommand (@rsaryev/llx-plugin 26f9c65) fires a typed command as { command, args }; it takes no origin or presentation from the host.",
-    "event:session.end": "Localix ends a conversation's mods host when the conversation ends or its mods change; its session.end names the conversation but resumes into none.",
     "event:turn.step": "Localix leaves effort out when the run sets no effort Claude Code names (the fixture's run sets none).",
-    "event:ui.render:AbovePrompt": "The kit (@rsaryev/llx-plugin 26f9c65) draws AbovePrompt as a site with one instance and drops its requestId.",
     "event:ui.render:CommandOutput": "Localix's desktop surface draws only panes through ui.render.",
     "event:ui.render:PromptHint": "Localix's desktop surface draws only panes through ui.render.",
     "event:ui.render:SessionMode": "Localix's desktop surface draws only panes through ui.render.",

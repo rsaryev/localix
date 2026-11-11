@@ -153,9 +153,9 @@ describe('renderSkillFile', () => {
 describe('removeSkill', () => {
   test("removes the folder's skill by name; a missing or unsafe name removes nothing", async () => {
     await seed('gone', '---\nname: gone\ndescription: d\n---\nb\n')
-    expect(await removeSkill(project().folder, 'gone')).toBe(true)
+    expect(await removeSkill(project(), 'gone')).toBe(true)
     expect(await fs.exists(join(skillFile('gone'), '..'))).toBe(false)
-    expect(await removeSkill(project().folder, 'gone')).toBe(false)
-    expect(await removeSkill(project().folder, '..')).toBe(false)
+    expect(await removeSkill(project(), 'gone')).toBe(false)
+    expect(await removeSkill(project(), '..')).toBe(false)
   })
 })

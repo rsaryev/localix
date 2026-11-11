@@ -2,7 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { scopeSkills } from './scope-skills'
-import { skillPlugin, skillScope } from './skill-catalog'
+import { skillPlugin } from '@rsaryev/llx-plugin'
+import { projectOrGlobal } from './skill-catalog'
 import { diskPluginHost, writeTestPlugin } from './testing'
 
 const dir = tempDirPerTest('kit-scope-skills')
@@ -34,8 +35,8 @@ describe('scopeSkills', () => {
     })
     const listed = await read([kit])
     const rows = Object.fromEntries(listed.skills.map((one) => [one.invocable.command, one]))
-    expect(rows.mine && skillScope(rows.mine)).toBe('global')
-    expect(rows.ours && skillScope(rows.ours)).toBe('project')
+    expect(rows.mine && projectOrGlobal(rows.mine)).toBe('global')
+    expect(rows.ours && projectOrGlobal(rows.ours)).toBe('project')
     expect(rows['kit:lint'] && skillPlugin(rows['kit:lint'])?.name).toBe('kit')
     expect(await listed.content('ours')).toContain('Our body')
     expect(await listed.content('nothing')).toBeUndefined()

@@ -189,13 +189,13 @@ describe('Client', () => {
       ],
       [
         'export const register = () => <Client key="a" module="../../x.tsx" />',
-        'inside the plugin',
+        "leaves the plugin's folder",
       ],
       [
         'export const register = () => <Client key="a" module="./missing.tsx" />',
         'inside the plugin',
       ],
-      ['export const register = () => Client({ key: "a", module: "./w.css" })', 'not a ./ path'],
+      ['export const register = () => Client({ key: "a", module: "./w.css" })', 'names no file'],
     ]
     for (const [code, why] of cases) {
       const { host, sources } = setup({ 'hooks/register.tsx': code })

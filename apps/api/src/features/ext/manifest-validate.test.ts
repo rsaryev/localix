@@ -4,7 +4,7 @@ import {
   resolveDeclaredReasoningEffort,
 } from '../../db/types'
 import { describe, it, expect } from 'bun:test'
-import { checkApiVersion, isRequiredConfigMissing, isKebabCase } from './manifest-validate'
+import { checkApiVersion, isRequiredConfigMissing } from './manifest-validate'
 
 describe('checkApiVersion', () => {
   it('pushes a warning when apiVersion is undefined', () => {
@@ -76,34 +76,6 @@ describe('isRequiredConfigMissing', () => {
 
   it('returns false when required and value is boolean true', () => {
     expect(isRequiredConfigMissing({ required: true }, true)).toBe(false)
-  })
-})
-
-describe('isKebabCase', () => {
-  it('accepts valid kebab-case names', () => {
-    expect(isKebabCase('my-plugin')).toBe(true)
-    expect(isKebabCase('hello')).toBe(true)
-    expect(isKebabCase('hello-world')).toBe(true)
-    expect(isKebabCase('abc123')).toBe(true)
-    expect(isKebabCase('a1-b2-c3')).toBe(true)
-  })
-
-  it('rejects names with uppercase letters', () => {
-    expect(isKebabCase('MyPlugin')).toBe(false)
-    expect(isKebabCase('camelCase')).toBe(false)
-  })
-
-  it('rejects names with underscores', () => {
-    expect(isKebabCase('my_plugin')).toBe(false)
-  })
-
-  it('rejects names with leading or trailing hyphens', () => {
-    expect(isKebabCase('-plugin')).toBe(false)
-    expect(isKebabCase('plugin-')).toBe(false)
-  })
-
-  it('rejects empty string', () => {
-    expect(isKebabCase('')).toBe(false)
   })
 })
 

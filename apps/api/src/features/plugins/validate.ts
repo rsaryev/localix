@@ -61,13 +61,6 @@ export function validatePlugin(
   )
     warnings.push(`settings "agent" names "${mainAgent}", which is not one of this plugin's agents`)
 
-  // Warn on a missing description: it explains what the plugin is for. Author, version and
-  // license nudges are for authors; a Claude Code plugin was not written for this host, so its
-  // user gets none they can't act on.
-  if (!plugin.error && !plugin.manifest.description.trim()) {
-    warnings.push('Manifest has no description — add one so users know what this plugin does.')
-  }
-
   // The directory name is the install/dedup key (install copies to <root>/<name>,
   // remove deletes by it) — a mismatch makes Settings show one name while the disk
   // shows another, so nudge authors to keep them aligned.

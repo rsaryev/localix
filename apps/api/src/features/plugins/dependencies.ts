@@ -1,14 +1,12 @@
 import { InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
-import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
-import type { DiscoveredPlugin } from './discovery'
+import type { MarketplaceEntry, NormalizedDependency } from '@rsaryev/llx-plugin/marketplace'
 
 /**
  * Plugin-to-plugin dependencies (Claude Code `plugin.json` `dependencies`).
  *
  * PURE resolution layer: normalizing the manifest field, planning which missing
  * dependencies to install from which marketplace (enforcing the parent catalog's
- * `allowCrossMarketplaceDependenciesOn` restriction), advisory semver checks, and
- * reverse-dependency lookup. All I/O is injected so the logic is unit-testable.
+ * `allowCrossMarketplaceDependenciesOn` restriction) and advisory semver checks. All I/O is injected so the logic is unit-testable.
  * The install write-phase lives in `dependencies-install.ts`; the enable cascade
  * in `dependencies-enable.ts`.
  *
@@ -22,62 +20,23 @@ import type { DiscoveredPlugin } from './discovery'
  *    at enable time (cascade warns about missing ones).
  */
 
-export interface PluginDependency {
-  name: string
-  /** The marketplace to resolve `name` in (`"name@marketplace"` or the object's field). */
-  marketplace?: string
-  /** Semver RANGE (advisory — a mismatch warns, never blocks). */
-  version?: string
-}
-
-/**
- * Normalize the manifest's `dependencies` union (`"name"`, `"name@marketplace"`,
- * `{ name, marketplace?, version? }`) — deduped by name, first wins.
- */
-export function normalizePluginDependencies(raw: unknown): PluginDependency[] {
-  if (!Array.isArray(raw)) return []
-  const seen = new Set<string>()
-  const out: PluginDependency[] = []
-  for (const entry of raw) {
-    let name = ''
-    let version: string | undefined
-    let marketplace: string | undefined
-    if (typeof entry === 'string') {
-      // `"name@marketplace"` resolves `name` in another marketplace.
-      const [bare = '', market] = entry.trim().split('@')
-      name = bare.trim()
-      if (market?.trim()) marketplace = market.trim()
-    } else if (entry && typeof entry === 'object') {
-      const obj = entry as { name?: unknown; version?: unknown; marketplace?: unknown }
-      if (typeof obj.name === 'string') name = obj.name.trim()
-      if (typeof obj.version === 'string' && obj.version.trim()) version = obj.version.trim()
-      if (typeof obj.marketplace === 'string' && obj.marketplace.trim())
-        marketplace = obj.marketplace.trim()
-    }
-    if (!name || seen.has(name)) continue
-    seen.add(name)
-    out.push({ name, ...(marketplace ? { marketplace } : {}), ...(version ? { version } : {}) })
-  }
-  return out
-}
-
 /**
  * Advisory semver check: a version-pinned dependency whose resolved source declares a
  * version that does not satisfy the range yields a WARNING naming both — never a hard
  * failure (CC treats ranges as hints too). Unknown/unparseable versions warn nothing.
  */
 export function dependencyVersionWarning(
-  dep: PluginDependency,
+  dep: NormalizedDependency,
   resolvedVersion: string | undefined,
   where: string,
 ): string | null {
-  if (!dep.version || !resolvedVersion) return null
+  if (!dep.range || !resolvedVersion) return null
   try {
-    if (Bun.semver.satisfies(resolvedVersion, dep.version)) return null
+    if (Bun.semver.satisfies(resolvedVersion, dep.range)) return null
   } catch {
     return null // unparseable range/version — advisory check, stay silent
   }
-  return `Dependency "${dep.name}" wants version "${dep.version}" but ${where} has "${resolvedVersion}" — installing anyway (version pins are advisory).`
+  return `Dependency "${dep.name}" wants version "${dep.range}" but ${where} has "${resolvedVersion}" — installing anyway (version pins are advisory).`
 }
 
 /** One planned dependency install: a marketplace entry resolved to a local dir. */
@@ -91,7 +50,7 @@ export interface ResolvedDependencyStep {
   entry: MarketplaceEntry
   version?: string
   /** The step's OWN dependencies (for transitive planning). */
-  dependencies: PluginDependency[]
+  dependencies: NormalizedDependency[]
 }
 
 export interface DependencyPlan {
@@ -139,7 +98,7 @@ const satisfies = (version: string | undefined, range: string) => {
  * that step's marketplace as the new parent. Cycle-safe via a visited set.
  */
 export async function resolveDependencyPlan(
-  rootDeps: PluginDependency[],
+  rootDeps: NormalizedDependency[],
   parentMarketplace: string,
   deps: DependencyResolverDeps,
 ): Promise<DependencyPlan> {
@@ -147,7 +106,7 @@ export async function resolveDependencyPlan(
   const warnings: string[] = []
   const visited = new Set<string>()
 
-  const visit = async (list: PluginDependency[], from: string): Promise<void> => {
+  const visit = async (list: NormalizedDependency[], from: string): Promise<void> => {
     for (const dep of list) {
       if (visited.has(dep.name)) continue // cycle / diamond — already handled
       visited.add(dep.name)
@@ -155,7 +114,7 @@ export async function resolveDependencyPlan(
       // Every range on the dependency, this plugin's and the installed plugins' (dependencies.md,
       // "Combine constraints from several plugins").
       const ranges = [
-        ...(dep.version ? [{ range: dep.version, by: 'this plugin' }] : []),
+        ...(dep.range ? [{ range: dep.range, by: 'this plugin' }] : []),
         ...(deps.constraints?.get(dep.name) ?? []),
       ]
       const combined = ranges.map((found) => found.range).join(' ')
@@ -213,16 +172,4 @@ export async function resolveDependencyPlan(
 
   await visit(rootDeps, parentMarketplace)
   return { steps, warnings }
-}
-
-/** Installed plugins whose manifest declares a dependency on `name` (reverse lookup). */
-export function listDependents(name: string, discovered: DiscoveredPlugin[]): string[] {
-  return discovered.flatMap((plugin) =>
-    plugin.manifest.name !== name &&
-    normalizePluginDependencies(plugin.manifest.dependencies).some(
-      (dependency) => dependency.name === name,
-    )
-      ? [plugin.manifest.name]
-      : [],
-  )
 }

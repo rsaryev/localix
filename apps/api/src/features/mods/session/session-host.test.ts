@@ -126,11 +126,11 @@ test('each conversation has a host of its own, kept until its mods change or it 
 test('a conversation whose host goes hears session.end, naming the conversation', async () => {
   const { mods, logs, source, scene } = setup()
   const code = `export function register(on) {
-    on('session.end', ($, e) => { $.ui.log(e.reason + ' ' + e.sessionId) })
+    on('session.end', ($, e) => { $.ui.log(e.reason + ' ' + e.sessionId + ' ' + e.resume.id) })
   }`
   await mods.hostFor(scene('a'), [source('m', code)])
   await mods.drop(scene('a'))
-  expect(logs).toEqual(['m|● m: other a'])
+  expect(logs).toEqual(['m|● m: other a a'])
 })
 
 test("a module that fails to load is reported, by the kit's line", async () => {

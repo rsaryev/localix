@@ -45,20 +45,19 @@ describe('a plugin folder read by the kit', () => {
       name: 'fmt',
       version: '1.2.0',
       description: 'Formats',
-      author: 'Ada',
+      author: { name: 'Ada' },
       origin: { format: 'claude-code' },
     })
     expect(found.manifest.config?.TOKEN).toMatchObject({ secret: true })
     expect(found.manifest.config?.TAGS?.default).toBe('["a"]')
     expect(Object.keys(found.manifest.config ?? {}).sort()).toEqual(['ROOM', 'TAGS', 'TOKEN'])
-    expect(found.rawManifest?.version).toBe('1.2.0')
     expect(found.error).toBeUndefined()
   })
 
-  test('a folder with no manifest is a plugin named after itself, at version 0.0.0', async () => {
+  test('a folder with no manifest is a plugin named after itself, with no version', async () => {
     const found = await read({ 'skills/review/SKILL.md': '---\ndescription: Review\n---\nGo' })
     expect(found.manifest.name).toBe(dir().split('/').pop()!)
-    expect(found.manifest.version).toBe('0.0.0')
+    expect(found.manifest.version).toBeUndefined()
     expect(found.provides.skills).toEqual(['review'])
   })
 
@@ -170,7 +169,7 @@ describe('a plugin folder read by the kit', () => {
         description: 'Short',
         keepCodingInstructions: false,
         forceForPlugin: false,
-        prompt: 'Be short.',
+        instructions: 'Be short.',
       },
     ])
     expect(entry.components?.themes).toEqual([

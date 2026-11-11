@@ -26,9 +26,10 @@ describe('mod panes', () => {
     expect(answers[0]).toEqual({ isPlaced: true })
     expect(answers[1]).toEqual({ isPlaced: true })
     expect(String(answers[2])).toContain('focus is true or left out')
+    // The server does not know which tab the screen shows: the kit's rule, the newest placed pane.
     expect(answers[3]).toEqual([
-      { id: 'held', isPlaced: true },
-      { id: 'quiet', title: 'Quiet', isPlaced: true },
+      { id: 'held', title: 'held', isPlaced: true, isShown: false, isFocused: false },
+      { id: 'quiet', title: 'Quiet', isPlaced: true, isShown: true, isFocused: false },
     ])
     const held = host.panes.list().find((pane) => pane.id === 'held')
     expect(held).toMatchObject({ plugin: 'm', closeOnEscape: true, focusRequest: 1 })

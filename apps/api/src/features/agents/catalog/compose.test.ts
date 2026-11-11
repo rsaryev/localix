@@ -4,6 +4,11 @@ import { testCatalogAgent } from '../../plugins/kit/testing'
 import { composeCatalog, type ScopeCatalog } from './compose'
 
 const BUILTIN = { source: { kind: 'builtin' } } as const
+/** A built-in as the kit lists one: no file, so no prompt of its own. */
+function builtin(name: string): ScopeAgent {
+  const agent = testCatalogAgent(name, {}, BUILTIN)
+  return { ...agent, definition: { ...agent.definition, prompt: '' } }
+}
 const plugin = (name: string, scope: 'user' | 'project'): Partial<ScopeAgent> => ({
   source: { kind: 'plugin', pluginId: `${name}@x` },
   plugin: { name, scope },
@@ -54,13 +59,7 @@ describe("a scope's catalog with Localix's additions", () => {
   })
 
   test("the built-ins run on Localix's prompts; general-purpose is the delegator; localix is added", () => {
-    const catalog = composeCatalog(
-      scope([
-        testCatalogAgent('Explore', { prompt: '' }, BUILTIN),
-        testCatalogAgent('general-purpose', { prompt: '' }, BUILTIN),
-      ]),
-      '',
-    )
+    const catalog = composeCatalog(scope([builtin('Explore'), builtin('general-purpose')]), '')
     const shown = catalog.builtins.map((one) => [
       one.name,
       Boolean(one.definition.prompt),

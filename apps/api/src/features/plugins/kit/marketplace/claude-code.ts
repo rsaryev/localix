@@ -4,7 +4,8 @@ import {
   pluginConfig,
   type FileScope,
 } from '@rsaryev/llx-plugin/settings'
-import { isFileScope, readClaudeSettings, type ClaudeSettingsInput } from '../settings/read'
+import { isFileScope } from '@rsaryev/llx-plugin/settings'
+import { readClaudeSettings, type ClaudeSettingsInput } from '../settings/read'
 
 /**
  * What Claude Code's own files say about the plugins a person installed there, read by the kit

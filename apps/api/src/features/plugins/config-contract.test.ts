@@ -2,9 +2,8 @@ import { describe, expect, test } from 'bun:test'
 
 import { scalarConfig } from '../capabilities/source-repository'
 import { setPluginConfigRequestSchema } from './contracts'
-import { pluginConfigOptionSchema } from './contracts-config'
 import { resolvePluginConfig, type PluginConfigValues } from './config'
-import type { PluginManifest } from './contracts'
+import type { LocalixManifest } from './contracts'
 
 /**
  * `PluginConfigValues = Record<string, string | number | boolean>` — IS THE TYPE HONEST?
@@ -25,19 +24,19 @@ import type { PluginManifest } from './contracts'
  *   2. READ    every reader passes the stored config through `scalarConfig`
  *              (`capabilities/source-repository.ts`), which keeps ONLY primitives. A
  *              `null`, array, or object in the column is DROPPED before it is resolved.
- *   3. DEFAULT `pluginConfigOptionSchema.default` is `z.union([string, number, boolean])
- *              .optional()`. A manifest cannot declare a null default either.
+ *   3. DEFAULT a setting's default is `string | number | boolean` (`PluginConfigOption`): the
+ *              kit refuses any other `userConfig` default, and a list's is kept as its JSON.
  *
  * The invariant is CHECKED here instead of being folklore.
  *
- * Each barrier below is falsifiable: widen any one of the three and this file goes red.
+ * Barriers 1 and 2 are falsifiable below: widen either and this file goes red. Barrier 3 is held
+ * by the type checker (`settingOf` in `kit/catalog/manifest.ts` returns `PluginConfigOption`).
  */
 
 /** A stored `config` column as every reader sees it: parsed, then `scalarConfig`. */
 const readStored = (raw: string) => scalarConfig(JSON.parse(raw) as Record<string, unknown>)
 
-const mkManifest = (config: PluginManifest['config']): PluginManifest =>
-  ({ name: 'p', config }) as PluginManifest
+const mkManifest = (config: LocalixManifest['config']): LocalixManifest => ({ name: 'p', config })
 
 describe('PluginConfigValues is honest — every path in filters non-primitives', () => {
   test('BARRIER 1 (write): the route schema REJECTS a null / array / object value', () => {
@@ -62,29 +61,27 @@ describe('PluginConfigValues is honest — every path in filters non-primitives'
     })
   })
 
-  test('BARRIER 3 (manifest): a config option cannot DECLARE a null default', () => {
-    expect(pluginConfigOptionSchema.safeParse({ type: 'string', default: 'x' }).success).toBe(true)
-    expect(pluginConfigOptionSchema.safeParse({ type: 'string', default: null }).success).toBe(
-      false,
-    )
-    expect(pluginConfigOptionSchema.safeParse({ type: 'string', default: ['a'] }).success).toBe(
-      false,
-    )
-  })
-
   test('END-TO-END: resolvePluginConfig only ever emits primitives, so the type holds', () => {
     // Feed it the WORST case each barrier permits: a manifest default plus stored values
     // that already came through scalarConfig.
     const manifest = mkManifest({
       WITH_DEFAULT: {
         type: 'string',
+        title: 'T',
         description: '',
         required: false,
         secret: false,
         default: 'd',
       },
-      OVERRIDDEN: { type: 'number', description: '', required: false, secret: false, default: 1 },
-      NO_DEFAULT: { type: 'string', description: '', required: false, secret: false },
+      OVERRIDDEN: {
+        type: 'number',
+        title: 'T',
+        description: '',
+        required: false,
+        secret: false,
+        default: 1,
+      },
+      NO_DEFAULT: { type: 'string', title: 'T', description: '', required: false, secret: false },
     })
     const stored = readStored('{"OVERRIDDEN":9,"NIL":null,"LIST":[1]}')
     const resolved: PluginConfigValues = resolvePluginConfig(manifest, stored)
@@ -126,19 +123,20 @@ describe('PluginConfigValues is honest — every path in filters non-primitives'
  *      dropped at the read barrier — exactly as for any other field.
  */
 describe('`multiple: true` is a manifest HINT, not a storage mode', () => {
-  test('the schema ACCEPTS multiple:true — rejecting it would break Claude Code plugin loading', () => {
-    const opt = pluginConfigOptionSchema.safeParse({ type: 'string', multiple: true })
-    expect(opt.success).toBe(true)
-    if (opt.success) expect(opt.data.multiple).toBe(true)
-  })
-
   test('a multiple:true field stores its comma-separated list as an ordinary string', () => {
     // This is the documented contract: the native tool owns the parsing.
     const write = setPluginConfigRequestSchema.safeParse({ name: 'p', values: { TAGS: 'a,b,c' } })
     expect(write.success).toBe(true)
 
     const manifest = mkManifest({
-      TAGS: { type: 'string', description: '', required: false, secret: false, multiple: true },
+      TAGS: {
+        type: 'string',
+        title: 'T',
+        description: '',
+        required: false,
+        secret: false,
+        multiple: true,
+      },
     })
     const resolved = resolvePluginConfig(manifest, readStored('{"TAGS":"a,b,c"}'))
     expect(resolved).toStrictEqual({ TAGS: 'a,b,c' })

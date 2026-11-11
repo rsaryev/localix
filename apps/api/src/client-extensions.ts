@@ -26,7 +26,6 @@ export type {
   PluginConfigField,
   PluginConfigOption,
   PluginConfigType,
-  PluginManifest,
   PluginCommand,
   MiniAppCommandArg,
   PluginCommandSpec,

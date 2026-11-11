@@ -1,7 +1,9 @@
-import { DEFAULT_OUTPUT_STYLE } from '@localixai/claude-plugin'
-
 import { userHome } from '../../../lib/env'
-import { outputStyleSetting, readClaudeSettingsSync } from '../../plugins/kit'
+import {
+  DEFAULT_OUTPUT_STYLE_ID,
+  outputStyleSetting,
+  readClaudeSettingsSync,
+} from '../../plugins/kit'
 import { readLocalOutputStyles } from '../../plugins/output-style-files'
 import {
   activeOutputStyle,
@@ -43,7 +45,7 @@ function listing(
     return `- \`${entry.fullName}\`${notes.length ? ` — ${notes.join(' · ')}` : ''}${mark(entry === active)}`
   }
   const rows = [
-    `- \`${DEFAULT_OUTPUT_STYLE}\` — no style instructions${mark(!active)}`,
+    `- \`${DEFAULT_OUTPUT_STYLE_ID}\` — no style instructions${mark(!active)}`,
     ...styles.map(row),
   ]
   const notes = [
@@ -108,7 +110,7 @@ export async function handleOutputStyleCommand(
         ? `Several plugins offer "${query}" — name one as \`<plugin>:<name>\`.\n\n${listing(styles, null, defaultStyle)}`
         : `No output style "${query}".\n\n${listing(styles, current(), defaultStyle)}`,
     )
-  const outputStyle = found.kind === 'style' ? found.entry.fullName : DEFAULT_OUTPUT_STYLE
+  const outputStyle = found.kind === 'style' ? found.entry.fullName : DEFAULT_OUTPUT_STYLE_ID
   const updated: SessionRecord = { ...session, outputStyle, updatedAt: ts }
   await ctx.repo.updateSession(userId, sessionId, { outputStyle, updatedAt: ts })
   ctx.publishSession(updated)

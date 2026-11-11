@@ -3,7 +3,7 @@ import { promises as fs } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
-import { MANIFEST_FILE as CLAUDE_CODE_PLUGIN_MANIFEST } from '@localixai/claude-plugin'
+import { PLUGIN_MANIFEST as CLAUDE_CODE_PLUGIN_MANIFEST } from './kit'
 
 import { CC_INERT_HOOK_EVENTS } from '../cc-hooks/contracts'
 import { marketplaceOnlyHint } from './claude-code-marketplace'
@@ -67,7 +67,7 @@ describe('a Claude Code plugin in place', () => {
       name: 'full-plugin',
       displayName: 'Full Plugin',
       version: '1.2.0',
-      author: 'Author',
+      author: { name: 'Author', email: 'a@example.com' },
       license: 'MIT',
       origin: { format: 'claude-code' },
     })
@@ -207,7 +207,7 @@ describe('a Claude Code plugin in place', () => {
       expect.objectContaining({
         name: 'terse',
         keepCodingInstructions: true,
-        prompt: 'Keep it short.',
+        instructions: 'Keep it short.',
       }),
     ])
     expect(components.themes).toEqual([

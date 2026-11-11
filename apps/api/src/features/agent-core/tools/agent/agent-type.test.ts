@@ -6,16 +6,16 @@ import type { AgentLaunchPorts } from './agent-type'
 import { launchAgent } from './agent-start'
 import type { TaskDelegationOptions } from '../task-delegation'
 import type { TaskAgentType, DelegateResolution } from '../task-delegation-contracts'
-import { taskAgent } from '../../testing/task-agent'
+import { testCatalogAgent } from '../../../plugins/kit/testing'
 
 afterEach(() => __resetExpectedReports())
 
-const REVIEWER = taskAgent(
-  'sec:reviewer',
-  { description: 'Reviews code for security issues', skills: ['threat-model'], maxTurns: 7 },
-  { source: { kind: 'plugin', pluginId: 'sec' } },
-)
-const TESTER = taskAgent('tester', { description: 'Tests' })
+const REVIEWER = testCatalogAgent('sec:reviewer', {
+  description: 'Reviews code for security issues',
+  skills: ['threat-model'],
+  maxTurns: 7,
+})
+const TESTER = testCatalogAgent('tester', { description: 'Tests' })
 
 /** The catalog as `resolveDelegation` answers: the agent with its own session, `self`, or nothing. */
 const CATALOG: Record<string, DelegateResolution> = {
@@ -261,7 +261,10 @@ test.each([
     const planner: DelegateResolution = {
       kind: 'agent',
       agent: { agentId: 'cc:planner', name: 'planner' },
-      type: taskAgent('planner', { description: 'Plans' }, askedMode ? { askedMode } : {}),
+      type: {
+        ...testCatalogAgent('planner', { description: 'Plans' }),
+        ...(askedMode ? { askedMode } : {}),
+      },
     }
     const { opts, ports, calls } = host({}, { planner })
     await launchAgent('c', request({ agent: 'planner' }), opts, undefined, ports)

@@ -1,6 +1,6 @@
 import type { AgentToolResult, AsyncToolRegistry } from '@localixai/agent/agents'
 import type { ScriptSandbox } from '@localixai/agent/runtime'
-import { parseWorkflowMeta } from '@localixai/claude-plugin'
+import type { WorkflowScript } from '../../../plugins/kit'
 
 import { MAX_BACKGROUND_JOBS_PER_SESSION } from '../bash/bash-promote'
 import type { JournalEntry, WorkflowRunStore } from './journal'
@@ -37,6 +37,8 @@ export interface WorkflowDetails {
 export interface WorkflowRunPort {
   scripts: ScriptSandbox
   read(file: string): Promise<string | null>
+  /** A script's `meta` and its body after it, or why it has none (the plugin kit's reader). */
+  script(source: string): WorkflowScript
   /** Run one agent of run `runId` (started by `toolCallId`) as a child of this chat. */
   runAgent(
     toolCallId: string,
@@ -124,17 +126,17 @@ export async function executeRun(
             if (typeof path !== 'string')
               return { error: 'workflow() takes a name or { scriptPath }' }
             const text = await port.read(path)
-            const meta = text === null ? null : parseWorkflowMeta(text)
-            return meta?.meta
-              ? { name: meta.meta.name, body: meta.body }
+            const read = text === null ? null : port.script(text)
+            return read && !('error' in read)
+              ? { name: read.name, body: read.body }
               : { error: `Workflow script ${path} cannot be read` }
           }
           const nested = findWorkflow(run.entries, ref)
           if (typeof nested === 'string') return { error: nested }
           const text = await port.read(nested.file)
-          const meta = text === null ? null : parseWorkflowMeta(text)
-          return meta?.meta
-            ? { name: nested.fullName, body: meta.body }
+          const read = text === null ? null : port.script(text)
+          return read && !('error' in read)
+            ? { name: nested.fullName, body: read.body }
             : { error: `Workflow ${nested.fullName} cannot be read` }
         },
         onEvent: note,

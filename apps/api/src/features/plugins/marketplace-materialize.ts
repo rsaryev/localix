@@ -8,7 +8,7 @@ import {
   DEFAULT_MARKETPLACE_PATH,
   cloneUrl,
   marketplaceFetchPlan,
-  type ResolvedEntrySource,
+  type EntryFetchPlan,
 } from './kit'
 import type { MarketplaceSource } from '@rsaryev/llx-plugin/marketplace'
 import { assertGitArgs } from './marketplace-git-args'
@@ -115,7 +115,7 @@ async function takePrefetched(
  * With `prefetch` (a Store page), the fetch is kept for the install that may follow.
  */
 export async function fetchEntryPlugin(
-  resolved: Exclude<ResolvedEntrySource, { localPath: string }>,
+  resolved: RemotePlan,
   staging: string,
   deps: MarketplaceRegistryDeps,
   opts: { prefetch?: boolean } = {},
@@ -130,21 +130,27 @@ export async function fetchEntryPlugin(
   return fetched
 }
 
+/** A plan that fetches: every kind but a folder inside the marketplace. */
+export type RemotePlan = Exclude<EntryFetchPlan, { kind: 'local' }>
+
 async function fetchInto(
-  resolved: Exclude<ResolvedEntrySource, { localPath: string }>,
+  plan: RemotePlan,
   staging: string,
   deps: MarketplaceRegistryDeps,
 ): Promise<{ dir: string; commitSha?: string }> {
   await rmrf(staging)
-  if ('npm' in resolved) {
-    await (deps.fetchNpm ?? fetchNpmPlugin)(resolved.npm, staging)
+  if (plan.kind === 'npm') {
+    await (deps.fetchNpm ?? fetchNpmPlugin)(plan, staging)
     return { dir: staging }
   }
-  if ('archive' in resolved) {
-    await (deps.fetchArchive ?? fetchArchivePlugin)(resolved.archive, staging)
+  if (plan.kind === 'archive') {
+    await (deps.fetchArchive ?? fetchArchivePlugin)(plan, staging)
     return { dir: staging }
   }
-  const { url, ref, subdir } = resolved.git
+  // "When you set both, Claude Code checks out `sha`" (the kit's `checkout`).
+  const url = cloneUrl(plan.repo)
+  const ref = plan.sha ?? plan.ref
+  const subdir = plan.subdir
   assertGitArgs('Plugin source', url, ref)
   await deps.cloneRepo(url, staging, ref, subdir)
   const commitSha = await readHeadCommit(staging)

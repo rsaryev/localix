@@ -14,7 +14,8 @@ import {
 import type { Marketplace, MarketplaceSource } from '@rsaryev/llx-plugin/marketplace'
 import { rmrf } from '../ext/install-tree'
 import { hashString, marketplacesRoot } from './marketplace-source'
-import type { NpmEntrySource } from './marketplace-source-npm'
+import type { NpmFetchPlan } from '@rsaryev/llx-plugin/marketplace'
+import type { ArchivePlan } from './marketplace-source-archive'
 import { materializeMarketplace } from './marketplace-materialize'
 import {
   addMarketplaceInPlace,
@@ -54,12 +55,9 @@ export interface MarketplaceRegistryDeps {
    */
   cloneRepo: (url: string, dest: string, ref?: string, sparse?: string | string[]) => Promise<void>
   /** Download an npm plugin entry into `dest`. Defaults to `fetchNpmPlugin` (tests stub). */
-  fetchNpm?: (src: NpmEntrySource, dest: string) => Promise<void>
+  fetchNpm?: (plan: NpmFetchPlan, dest: string) => Promise<void>
   /** Download an archive plugin source into `dest`. Defaults to `fetchArchivePlugin`. */
-  fetchArchive?: (
-    src: { url: string; sha256?: string; headers?: Record<string, string> },
-    dest: string,
-  ) => Promise<void>
+  fetchArchive?: (plan: ArchivePlan, dest: string) => Promise<void>
   /** Marketplaces root override (tests). Defaults to `~/.localix/marketplaces`. */
   root?: string
   /** Claude Code's managed settings directory (tests); the platform's system one by default. */

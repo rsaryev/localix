@@ -68,6 +68,7 @@ function resultOf(reply: ModelCompletion) {
 
 export function createSessionPorts(deps: SessionPortsDeps): ModSessionPorts {
   const { ports, scene, composer } = deps
+  const { listCommands } = ports
   const turn = deps.turn ?? NO_TURN
   const settings = () =>
     deps.settings?.() ?? readClaudeSettings({ homeDir: ports.homeDir ?? '', cwd: scene.cwd })
@@ -225,6 +226,8 @@ export function createSessionPorts(deps: SessionPortsDeps): ModSessionPorts {
     },
     commands: {
       builtIns: deps.builtIns,
+      // Localix's own commands and skills, listed before the mods' (`bootstrap/mods-commands.ts`).
+      ...(listCommands ? { list: () => listCommands(scene) } : {}),
       run: (command) => deps.runCommand?.(command) ?? unsupported('$.command.run')(),
     },
     tools: turn.tools,

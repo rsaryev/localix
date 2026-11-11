@@ -18,17 +18,16 @@ record before changing it.
 
 ## Ownership contract
 
-| Path                     | Owns                                                                                        | Boundary                                                                |
-| ------------------------ | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `apps/api`               | Hono routes, domain services, agent execution, persistence, and mini app hosts.             | Feature code reaches the agent loop through the runtime port.           |
-| `apps/ui`                | React workspaces, typed panes, settings, and API/event clients.                             | It requests state from the API; it does not own durable domain state.   |
-| `apps/desktop-tauri`     | Native window, release sidecar lifecycle, and desktop capabilities.                         | Development scripts start the API instead of the Rust shell.            |
-| `apps/landing`           | Documentation site and generated navigation.                                                | It is not part of the desktop runtime.                                  |
-| `packages/agent`         | Provider-neutral agent types, tools, messages, and runtime interfaces.                      | It cannot import Localix API features or the engine.                    |
-| `packages/engine*`       | The engine behind the runtime port: loop, model access, script sandbox.                     | Production API imports are limited to the bootstrap composition root.   |
-| `packages/mini-app-sdk`  | The mini app manifest (`/app-manifest`) and host contribution contracts.                    | A contribution exists only when its extension is installed and enabled. |
-| `packages/claude-plugin` | The Claude Code plugin format: `plugin.json` and `hooks.json` schemas, name and path rules. | It knows no Localix concept; `features/plugins/layout` composes it.     |
-| `packages/cli`           | The `localix` launcher: it hands a path to the running desktop app.                         | It opens a deep link; it never starts a runtime or renders a session.   |
+| Path                    | Owns                                                                            | Boundary                                                                |
+| ----------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `apps/api`              | Hono routes, domain services, agent execution, persistence, and mini app hosts. | Feature code reaches the agent loop through the runtime port.           |
+| `apps/ui`               | React workspaces, typed panes, settings, and API/event clients.                 | It requests state from the API; it does not own durable domain state.   |
+| `apps/desktop-tauri`    | Native window, release sidecar lifecycle, and desktop capabilities.             | Development scripts start the API instead of the Rust shell.            |
+| `apps/landing`          | Documentation site and generated navigation.                                    | It is not part of the desktop runtime.                                  |
+| `packages/agent`        | Provider-neutral agent types, tools, messages, and runtime interfaces.          | It cannot import Localix API features or the engine.                    |
+| `packages/engine*`      | The engine behind the runtime port: loop, model access, script sandbox.         | Production API imports are limited to the bootstrap composition root.   |
+| `packages/mini-app-sdk` | The mini app manifest (`/app-manifest`) and host contribution contracts.        | A contribution exists only when its extension is installed and enabled. |
+| `packages/cli`          | The `localix` launcher: it hands a path to the running desktop app.             | It opens a deep link; it never starts a runtime or renders a session.   |
 
 ## How it works
 

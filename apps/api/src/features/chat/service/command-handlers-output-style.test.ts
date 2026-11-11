@@ -1,22 +1,22 @@
 import { describe, expect, test } from 'bun:test'
 
-import type { OutputStyle } from '@localixai/claude-plugin'
+import type { StyleBody } from '../../plugins/kit'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
 import { sessionFixture } from '../../../testing/session-fixture'
 import { handleControlCommand } from './command-handlers'
 import type { SessionRecord } from '../repository'
 
-const style = (name: string, extra: Partial<OutputStyle> = {}): OutputStyle => ({
+const style = (name: string, extra: Partial<StyleBody> = {}): StyleBody => ({
   name,
   description: `${name} replies`,
   keepCodingInstructions: false,
   forceForPlugin: false,
-  prompt: `Write ${name}.`,
+  instructions: `Write ${name}.`,
   ...extra,
 })
 
-const plugin = (name: string, styles: OutputStyle[]) => ({
+const plugin = (name: string, styles: StyleBody[]) => ({
   plugin: {
     manifest: { name },
     entrypoints: { components: { outputStyles: styles } },

@@ -88,6 +88,6 @@ describe("a marketplace entry's headersHelper", () => {
     await resolveMarketplaceInstall({ plugin: 'tool', marketplace: 'hosted' }, deps, {
       acceptCommand,
     })
-    expect(seen).toEqual([undefined])
+    expect(seen).toEqual([{}])
   })
 })

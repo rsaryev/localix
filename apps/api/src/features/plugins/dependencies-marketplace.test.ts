@@ -8,13 +8,12 @@ import { kitEntry } from './kit/testing'
 
 import { isApiError } from '../../lib/errors'
 import {
-  normalizePluginDependencies,
   resolveDependencyPlan,
   type DependencyResolverDeps,
   type ResolvedDependencyStep,
 } from './dependencies'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
-import { readPluginFolder } from './kit'
+import { declaredDependencies, readPluginFolder } from './kit'
 
 const step = (name: string, marketplace: string): ResolvedDependencyStep => ({
   name,
@@ -43,7 +42,7 @@ async function declared(dependencies: unknown[]) {
   writeTree(folder(), {
     '.claude-plugin/plugin.json': JSON.stringify({ name: 'deploy-kit', dependencies }),
   })
-  return normalizePluginDependencies((await readPluginFolder(folder())).manifest.dependencies)
+  return declaredDependencies((await readPluginFolder(folder())).manifest.dependencies)
 }
 
 describe('a dependency that names its marketplace', () => {
@@ -56,7 +55,7 @@ describe('a dependency that names its marketplace', () => {
       ]),
     ).toEqual([
       { name: 'audit-logger', marketplace: 'shared' },
-      { name: 'secrets-vault', marketplace: 'shared', version: '~2.1.0' },
+      { name: 'secrets-vault', marketplace: 'shared', range: '~2.1.0' },
       { name: 'plain' },
     ])
   })

@@ -92,7 +92,7 @@ describe('plugin skills as slash commands', () => {
   })
 
   test('a command of the same full name keeps its entry; a command named after its plugin too', () => {
-    const row = (name: string) => testSessionSkill(name, '', { plugin: 'kit' })
+    const row = (name: string) => testSessionSkill(name, {}, { plugin: 'kit' })
     const taken: PluginCommandSpec[] = [
       { pluginName: 'kit', name: 'fancy', fullName: 'kit:fancy', description: 'cmd', args: [] },
       { pluginName: 'kit', name: 'kit', fullName: 'kit', description: 'cmd', args: [] },

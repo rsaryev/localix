@@ -7,10 +7,13 @@ import type { DiscoveredPlugin } from './discovery-types'
 import {
   catalogAt,
   isUpdate,
+  PLUGIN_MANIFEST,
   pluginVersion,
   readMarketplace,
   resolveEntryName,
-  resolveEntrySource,
+  cloneUrl,
+  entryFetchPlan,
+  localEntryDir,
   UNKNOWN_VERSION,
   type KnownMarketplace,
 } from './kit'
@@ -65,13 +68,12 @@ export async function listMarketplaceInstalls(deps: {
       if (!plugin || plugin.inPlaceInstall || plugin.claudeCodeInstall) return null
       const id = plugin.cachedInstall?.id ?? `${ref.plugin}@${ref.marketplace}`
       const record = records[id]
-      const declared = plugin.rawManifest?.version
       return {
         id,
         name: id.slice(0, id.lastIndexOf('@')),
         marketplace: id.slice(id.lastIndexOf('@') + 1),
         source: row.source,
-        version: record?.version ?? (typeof declared === 'string' ? declared : UNKNOWN_VERSION),
+        version: record?.version ?? plugin.manifest.version ?? UNKNOWN_VERSION,
         ...(record?.gitCommitSha ? { commitSha: record.gitCommitSha } : {}),
       }
     }),
@@ -81,7 +83,7 @@ export async function listMarketplaceInstalls(deps: {
 
 async function manifestVersion(dir: string): Promise<string | undefined> {
   try {
-    const json = JSON.parse(await fs.readFile(join(dir, '.claude-plugin', 'plugin.json'), 'utf8'))
+    const json = JSON.parse(await fs.readFile(join(dir, PLUGIN_MANIFEST), 'utf8'))
     return isRecord(json) && typeof json.version === 'string' ? json.version : undefined
   } catch {
     return undefined
@@ -121,18 +123,18 @@ export async function candidateFor(
     return { version: install.version, manual: 'its marketplace entry sets a headersHelper' }
   let input = entryVersionInput(entry)
   let declared: string | undefined
-  const resolved = (() => {
+  const plan = (() => {
     try {
-      return resolveEntrySource(catalogAt(record).root, entry, record.source)
+      return entryFetchPlan(entry, record.source)
     } catch {
       return null
     }
   })()
-  if (resolved && 'localPath' in resolved) {
-    declared = await manifestVersion(resolved.localPath)
+  if (plan?.kind === 'local') {
+    declared = await manifestVersion(localEntryDir(catalogAt(record).root, entry, plan))
     if (record.gitCommitSha) input = withCommit(RELATIVE_INPUT, record.gitCommitSha)
-  } else if (resolved && 'git' in resolved && isGitInput(input) && !input.commitSha) {
-    input = withCommit(input, await remoteCommit(resolved.git.url, resolved.git.ref))
+  } else if (plan?.kind === 'git' && isGitInput(input) && !input.commitSha) {
+    input = withCommit(input, await remoteCommit(cloneUrl(plan.repo), plan.sha ?? plan.ref))
   }
   const version = await pluginVersion({
     ...input,

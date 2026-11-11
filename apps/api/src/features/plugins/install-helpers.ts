@@ -1,14 +1,13 @@
 import { ConflictError, InvalidRequestError } from '../../lib/domain-errors'
 import { promises as fs } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { basename, isAbsolute, join, resolve } from 'node:path'
+import { isAbsolute, join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
 import { ApiError } from '../../lib/errors'
 import { gitUrl, isGitSource } from '../ext/git-source'
-import { isUnderInstallRoot, readManifestName, rmrf, stripDotGit } from '../ext/install-tree'
-import { findManifestPath } from './discovery'
-import { PLUGIN_ID_NAME_RE } from './contracts'
+import { isUnderInstallRoot, rmrf, stripDotGit } from '../ext/install-tree'
+import { pluginNameRefusal, readPluginFolder } from './kit'
 import { marketplaceOnlyHint } from './claude-code-marketplace'
 import { fetchGitTree } from './git-fetch'
 import { publishExtensionTree, type ExtensionPublicationLifecycle } from '../ext/publish-tree'
@@ -44,7 +43,7 @@ export async function withPluginSource<T>(
     )
   if (!(await fs.stat(input.source).catch(() => null))?.isDirectory())
     throw new InvalidRequestError('plugin_bad_source', `Not a directory: ${input.source}`)
-  if (input.nameOverride !== undefined && !PLUGIN_ID_NAME_RE.test(input.nameOverride))
+  if (input.nameOverride !== undefined && pluginNameRefusal(input.nameOverride))
     throw new InvalidRequestError('plugin_invalid', 'Invalid plugin name override')
   const name = input.nameOverride ?? (await manifestName(input.source))
   const directory = resolve(input.source)
@@ -101,28 +100,14 @@ export async function installFromLocal(
   })
 }
 
+/** The name the kit loads the folder's plugin by; a folder it cannot load as one is refused. */
 async function manifestName(dir: string): Promise<string> {
-  // A mini app names itself; else the plugin's manifest (Claude Code's, or a legacy one) does.
-  const pluginManifest = await findManifestPath(dir)
-  const declared = pluginManifest ? await readManifestName(pluginManifest) : null
-  const hint = declared ? null : await marketplaceOnlyHint(dir)
+  const read = await readPluginFolder(dir)
+  // A folder that is only a marketplace says how to install from it.
+  const hint = read.manifest.origin ? null : await marketplaceOnlyHint(dir)
   if (hint) throw new InvalidRequestError('plugin_claude_marketplace', hint)
-  if (declared) {
-    if (!PLUGIN_ID_NAME_RE.test(declared))
-      throw new InvalidRequestError('plugin_invalid', 'Invalid plugin name in manifest')
-    return declared
-  }
-  // The fallback becomes the install directory AND the manifest-facing name, so it
-  // must satisfy the same rules — otherwise a dir like ".my-plugins" would install
-  // under a name the manifest schema rejects on every later discovery.
-  const fallback = basename(dir)
-  if (!PLUGIN_ID_NAME_RE.test(fallback)) {
-    throw new InvalidRequestError(
-      'plugin_invalid',
-      `Cannot derive a valid plugin name: plugin.json has no "name" and the directory name "${fallback}" is not a valid plugin name.`,
-    )
-  }
-  return fallback
+  if (read.error) throw new InvalidRequestError('plugin_invalid', `Invalid plugin: ${read.error}`)
+  return read.manifest.name
 }
 
 async function publishPluginTree(

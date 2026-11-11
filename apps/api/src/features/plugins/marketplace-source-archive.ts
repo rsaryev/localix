@@ -12,14 +12,20 @@ import { rmrf } from '../ext/install-tree'
 import { catalogHop, fetchChecked, httpsPublicHop, readCapped } from './marketplace-download'
 import { verifyZipMembers } from './marketplace-zip-inflate'
 import { scanZip, type ZipLimits } from './marketplace-zip-scan'
+import type { ArchiveFetchPlan } from '@rsaryev/llx-plugin/marketplace'
+
+/** What the download reads of the kit's archive plan: its link, its pin and its headers. */
+export type ArchivePlan = Pick<ArchiveFetchPlan, 'url' | 'sha256'> & {
+  readonly headers?: ArchiveFetchPlan['headers']
+}
 
 const execFileAsync = promisify(execFile)
 
 /** Headers for a download URL: given only on `origin` (same scheme, host and port). */
 function onOrigin(
   origin: string,
-  headers: Record<string, string> | undefined,
-): (url: URL) => Record<string, string> | undefined {
+  headers: Readonly<Record<string, string>> | undefined,
+): (url: URL) => Readonly<Record<string, string>> | undefined {
   return (url) => (headers && url.origin === origin ? headers : undefined)
 }
 
@@ -76,7 +82,7 @@ async function pluginRootOf(dir: string): Promise<string> {
  * so `dest` IS the plugin directory — the shape the git and npm paths stage.
  */
 export async function fetchArchivePlugin(
-  src: { url: string; sha256?: string; headers?: Record<string, string> },
+  src: ArchivePlan,
   dest: string,
   opts: { timeoutMs?: number; limits?: ZipLimits } = {},
 ): Promise<void> {

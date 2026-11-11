@@ -140,8 +140,7 @@ export async function updateSkill(
   const record = await createSkill(ctx, userId, input as SkillInput)
   const oldName = skillNameFromId(id)
   if (oldName && oldName !== input.name) {
-    const { folder } = await folderFor(ctx, userId, input.projectId ?? null)
-    await removeSkill(folder, oldName)
+    await removeSkill(await folderFor(ctx, userId, input.projectId ?? null), oldName)
   }
   return record
 }
@@ -153,6 +152,5 @@ export async function deleteSkill(
   name: string,
   projectId?: string | null,
 ): Promise<void> {
-  const { folder } = await folderFor(ctx, userId, projectId ?? null)
-  await removeSkill(folder, name)
+  await removeSkill(await folderFor(ctx, userId, projectId ?? null), name)
 }

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { createScriptSandbox } from '@localixai/engine-scripts'
 
 import { createWorkflowTool, findWorkflow, type WorkflowToolPort } from './workflow'
+import { workflowScript } from '../../../plugins/kit'
 
 /**
  * `workflow` runs a plugin workflow by its `<plugin>:<name>`: the script's agents go to the port
@@ -29,6 +30,7 @@ function port(): { port: WorkflowToolPort; started: string[] } {
         { fullName: 'acme:audit', description: 'Audit files', file: '/p/audit.js' },
         { fullName: 'acme:broken', description: 'Broken', file: '/p/broken.js' },
       ],
+      script: workflowScript,
       read: async (file) => FILES[file] ?? null,
       runAgent: async (toolCallId, workflow, request) => {
         started.push(`${toolCallId} ${workflow} ${request.label}`)

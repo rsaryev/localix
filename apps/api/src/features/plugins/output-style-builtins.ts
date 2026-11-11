@@ -1,4 +1,4 @@
-import type { OutputStyle } from '@localixai/claude-plugin'
+import { builtinStyleDescription, type StyleBody } from './kit'
 
 /**
  * Claude Code's built-in output styles besides Default: Proactive, Concise, Explanatory and
@@ -61,34 +61,18 @@ const LEARNING = [
   'Then stop and wait for the person. Leave only one `TODO(human)` open at a time. When they say they are done, respond with one Insight about the code they wrote, then continue the task.',
 ].join('\n')
 
-const builtin = (name: string, description: string, prompt: string): OutputStyle => ({
+const builtin = (name: string, instructions: string): StyleBody => ({
   name,
-  description,
+  description: builtinStyleDescription(name) ?? '',
   keepCodingInstructions: true,
   forceForPlugin: false,
-  prompt,
+  instructions,
 })
 
 /** The four built-in styles, in the order Claude Code lists them after `default`. */
-export const BUILTIN_OUTPUT_STYLES: readonly OutputStyle[] = [
-  builtin(
-    'Proactive',
-    'Starts work right away and makes reasonable assumptions about routine decisions',
-    PROACTIVE,
-  ),
-  builtin(
-    'Concise',
-    'Leads with the result and leaves out preamble, narration and recaps',
-    CONCISE,
-  ),
-  builtin(
-    'Explanatory',
-    'Adds short Insight blocks that explain the choices behind the code',
-    EXPLANATORY,
-  ),
-  builtin(
-    'Learning',
-    'Explains its choices and leaves small pieces of code for you to write',
-    LEARNING,
-  ),
+export const BUILTIN_OUTPUT_STYLES: readonly StyleBody[] = [
+  builtin('Proactive', PROACTIVE),
+  builtin('Concise', CONCISE),
+  builtin('Explanatory', EXPLANATORY),
+  builtin('Learning', LEARNING),
 ]

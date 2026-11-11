@@ -4,6 +4,7 @@ import path from 'node:path'
 import type { ScriptSandbox } from '@localixai/agent/runtime'
 
 import { localixHome } from '../../../../lib/env'
+import { workflowScript } from '../../../plugins/kit'
 import type { OptionalToolPorts } from '../../../agent-core/tool-registry'
 import { isToolDirect, type RunProfile } from '../../../agent-core/run-shape'
 import { TOOL } from '../../../agent-core/tool-names'
@@ -87,6 +88,7 @@ export function buildWorkflowOptions(
       if (!stat?.isFile() || stat.size > MAX_WORKFLOW_BYTES) return null
       return fs.readFile(file, 'utf8').catch(() => null)
     },
+    script: workflowScript,
     runAgent: (toolCallId, workflow, request, signal, runId) =>
       startWorkflowAgent(toolCallId, workflow, request, deps(runId), signal),
     runs: createWorkflowRunStore(path.join(input.runsRoot ?? workflowRunsRoot(), rootId)),

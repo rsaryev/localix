@@ -1,14 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll, spyOn } from 'bun:test'
 import { mkdirSync, promises as fs } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
-import {
-  MANIFEST_DIR as CLAUDE_CODE_DIR,
-  MANIFEST_FILE as CLAUDE_CODE_PLUGIN_MANIFEST,
-} from '@localixai/claude-plugin'
 
-import { resolve } from 'node:path'
 import { discoverPlugins, loadManifest, pluginInstallRoot } from './discovery'
+import { PLUGIN_MANIFEST as CLAUDE_CODE_PLUGIN_MANIFEST } from './kit'
+
+const CLAUDE_CODE_DIR = dirname(CLAUDE_CODE_PLUGIN_MANIFEST)
 
 /** The path of a plugin's `.claude-plugin/plugin.json`, its folder created. */
 function manifestAt(pluginDir: string): string {

@@ -1,5 +1,5 @@
 import type { SessionSkill } from '@rsaryev/llx-plugin'
-import type { ModCommandInfo } from '../features/mods/contracts'
+import type { CommandListing } from '@rsaryev/llx-plugin/mods'
 import { skillPlugin } from '../features/plugins/kit'
 
 /**
@@ -11,10 +11,10 @@ import { skillPlugin } from '../features/plugins/kit'
 export function localixCommands(input: {
   builtins: readonly { name: string; description: string; hidden?: boolean }[]
   skills: readonly SessionSkill[]
-}): ModCommandInfo[] {
+}): CommandListing[] {
   const seen = new Set<string>()
-  const listed: ModCommandInfo[] = []
-  const add = (command: ModCommandInfo) => {
+  const listed: CommandListing[] = []
+  const add = (command: CommandListing) => {
     if (seen.has(command.name)) return
     seen.add(command.name)
     listed.push(command)

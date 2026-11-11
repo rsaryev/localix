@@ -9,6 +9,7 @@ import {
   npmUrlProblem,
   userDefaultNpmRegistry,
 } from './marketplace-npm-registry'
+import { npmPlan } from './kit/testing'
 import { fetchNpmPlugin } from './marketplace-source-npm'
 
 /**
@@ -82,16 +83,20 @@ describe('fetchNpmPlugin over plain http', () => {
   it('refuses an http registry before contacting it', async () => {
     const urls = record(() => new Response('unreachable'))
     await expect(
-      fetchNpmPlugin({ package: 'p', registry: 'http://r.example' }, join(dir(), 'out'), opts),
+      fetchNpmPlugin(
+        { ...npmPlan({ package: 'p' }), registry: 'http://r.example' },
+        join(dir(), 'out'),
+        opts,
+      ),
     ).rejects.toThrow('uses plain http and is not your default npm registry')
     expect(urls).toEqual([])
   })
 
   it('refuses an http tarball link, and an https tarball that redirects to http', async () => {
     let urls = record(() => packument('http://cdn.example/p-1.0.0.tgz'))
-    await expect(fetchNpmPlugin({ package: 'p' }, join(dir(), 'out'), opts)).rejects.toThrow(
-      'uses plain http',
-    )
+    await expect(
+      fetchNpmPlugin(npmPlan({ package: 'p' }), join(dir(), 'out'), opts),
+    ).rejects.toThrow('uses plain http')
     expect(urls).toEqual([`${DEFAULT_NPM_REGISTRY}/p`])
 
     urls = record((url) =>
@@ -99,9 +104,9 @@ describe('fetchNpmPlugin over plain http', () => {
         ? new Response(null, { status: 302, headers: { location: 'http://cdn.example/p.tgz' } })
         : packument('https://cdn.example/p-1.0.0.tgz'),
     )
-    await expect(fetchNpmPlugin({ package: 'p' }, join(dir(), 'out'), opts)).rejects.toThrow(
-      'uses plain http',
-    )
+    await expect(
+      fetchNpmPlugin(npmPlan({ package: 'p' }), join(dir(), 'out'), opts),
+    ).rejects.toThrow('uses plain http')
     expect(urls).toEqual([`${DEFAULT_NPM_REGISTRY}/p`, 'https://cdn.example/p-1.0.0.tgz'])
   })
 
@@ -112,7 +117,7 @@ describe('fetchNpmPlugin over plain http', () => {
     )
     // Reaches the tarball (and fails only at extraction): neither URL was refused.
     await expect(
-      fetchNpmPlugin({ package: 'p', registry: lan }, join(dir(), 'out'), {
+      fetchNpmPlugin({ ...npmPlan({ package: 'p' }), registry: lan }, join(dir(), 'out'), {
         defaultRegistry: `${lan}/`,
       }),
     ).rejects.toThrow('Extracting npm tarball')
@@ -129,12 +134,14 @@ describe('which registry a source with no `registry` resolves against', () => {
     const opts = { env: {}, home }
     const urls = record(() => new Response('nope', { status: 404 }))
     await expect(
-      fetchNpmPlugin({ package: '@acme/plugin' }, join(dir(), 'a'), opts),
+      fetchNpmPlugin(npmPlan({ package: '@acme/plugin' }), join(dir(), 'a'), opts),
     ).rejects.toThrow()
-    await expect(fetchNpmPlugin({ package: 'plain' }, join(dir(), 'b'), opts)).rejects.toThrow()
+    await expect(
+      fetchNpmPlugin(npmPlan({ package: 'plain' }), join(dir(), 'b'), opts),
+    ).rejects.toThrow()
     await expect(
       fetchNpmPlugin(
-        { package: '@acme/plugin', registry: 'https://r.example' },
+        npmPlan({ package: '@acme/plugin', registry: 'https://r.example' }),
         join(dir(), 'c'),
         opts,
       ),

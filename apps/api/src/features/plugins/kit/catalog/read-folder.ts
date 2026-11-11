@@ -9,6 +9,7 @@ import { diskFiles } from '../ports/files'
 import { mcpBundleReader } from '../ports/mcp-bundle'
 import { readCommands } from './components'
 import { entrypointsOf } from './entrypoints'
+import { issueLine } from './issue-line'
 import { localixManifest } from './manifest'
 
 /**
@@ -29,10 +30,6 @@ export interface FolderSource {
 
 export type CatalogPlugin = Omit<DiscoveredPlugin, 'scope' | 'projectId'>
 
-/** An issue as one line: its message, then where it is unless the message already says so. */
-export const issueLine = ({ message, path }: PluginIssue): string =>
-  message.includes(path) ? message : `${message} (${path})`
-
 const isError = (found: PluginIssue) => found.severity === 'error'
 
 function empty(
@@ -42,7 +39,7 @@ function empty(
   issues: readonly PluginIssue[],
 ): CatalogPlugin {
   return {
-    manifest: { name, version: '0.0.0', description: '' },
+    manifest: { name },
     dir,
     entrypoints: {
       mcpServers: {},
@@ -74,7 +71,7 @@ async function catalogOf(
   loadIssues: readonly PluginIssue[],
   fallbackName: string,
 ): Promise<CatalogPlugin> {
-  const mapped = localixManifest(plugin.name, plugin.manifest, fallbackName, plugin.mcpBundles)
+  const mapped = localixManifest(plugin, fallbackName)
   const commands = readCommands(plugin)
   const { agents } = readCatalog(plugin)
   const entrypoints = await entrypointsOf(plugin, dir)
@@ -88,7 +85,6 @@ async function catalogOf(
   ]
   return {
     manifest: mapped.manifest,
-    ...(plugin.manifest ? { rawManifest: { ...plugin.manifest } } : {}),
     kit: plugin,
     dir,
     entrypoints,

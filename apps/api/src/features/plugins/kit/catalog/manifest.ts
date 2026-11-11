@@ -4,21 +4,23 @@ import {
   type UserConfigOption,
 } from '@rsaryev/llx-plugin/format'
 import type { Plugin } from '@rsaryev/llx-plugin/loading'
-import { pluginManifestSchema, type PluginManifest } from '../../contracts'
-import { schemaIssue } from '../../contracts-base'
+import { pluginIdIssues } from '@rsaryev/llx-plugin/marketplace'
+import type { LocalixManifest } from '../../contracts'
+import type { PluginConfigOption } from '../../contracts-base'
+import { issueLine } from './issue-line'
 
 /**
- * The manifest Localix keeps for a plugin the kit loaded: what its screens and installs read (name,
- * version, description, author as text, `userConfig` and the channels' options as `config`). Paths
- * and components are the kit's: they are not copied here.
+ * The manifest Localix keeps for a plugin the kit loaded (`LocalixManifest`): the kit's, with the
+ * plugin's options as Localix settings beside it.
  */
 
 /** A `userConfig` option as a Localix setting: `sensitive` is `secret`, a list default its JSON. */
-function settingOf(option: UserConfigOption): Record<string, unknown> {
-  const { sensitive, default: fallback, ...rest } = option
+function settingOf(option: UserConfigOption): PluginConfigOption {
+  const { sensitive, default: fallback, required, ...rest } = option
   return {
     ...rest,
-    ...(sensitive ? { secret: true } : {}),
+    required: required ?? false,
+    secret: sensitive ?? false,
     ...(fallback === undefined
       ? {}
       : { default: Array.isArray(fallback) ? JSON.stringify(fallback) : fallback }),
@@ -46,7 +48,7 @@ const bundleSettingsOf = (bundles: Plugin['mcpBundles']) =>
 function configOf(
   manifest: KitManifest,
   bundles: Plugin['mcpBundles'],
-): Record<string, unknown> | undefined {
+): Record<string, PluginConfigOption> | undefined {
   const channels = Object.assign({}, ...(manifest.channels ?? []).map((c) => c.userConfig ?? {}))
   const config = {
     ...bundleSettingsOf(bundles),
@@ -56,50 +58,34 @@ function configOf(
   return Object.keys(config).length ? config : undefined
 }
 
-/** `"name@marketplace"` keeps the marketplace the dependency resolves in. */
-const dependenciesOf = (dependencies: KitManifest['dependencies']) =>
-  dependencies?.map((dependency) => {
-    if (typeof dependency !== 'string') return dependency
-    const [name, marketplace] = dependency.split('@')
-    return marketplace ? { name, marketplace } : name
-  })
+/** Why `name` cannot be part of a plugin id, and so cannot name an install folder (the kit's grammar). */
+export function pluginNameRefusal(name: string): string | undefined {
+  const refused = pluginIdIssues('plugin', name, 'name')[0]
+  return refused && issueLine(refused)
+}
 
 export interface MappedManifest {
-  readonly manifest: PluginManifest
+  readonly manifest: LocalixManifest
   readonly error?: string
 }
 
 /**
- * The Localix manifest of a plugin named `name`, from the kit's (absent without a `plugin.json`);
- * one Localix cannot key by is the error, the plugin kept under `fallbackName`.
+ * The Localix manifest of a plugin the kit loaded: the kit's own, under the name the kit loaded it
+ * by, with its options as settings. A name that cannot be part of a plugin id (the kit's grammar)
+ * cannot name an install folder: that is the error, the plugin kept under `fallbackName`.
  */
-export function localixManifest(
-  name: string,
-  kit: KitManifest | undefined,
-  fallbackName: string,
-  bundles: Plugin['mcpBundles'] = {},
-): MappedManifest {
-  const fields = kit
-    ? {
-        name,
-        origin: { format: 'claude-code' },
-        version: kit.version,
-        description: kit.description,
-        displayName: kit.displayName,
-        author: kit.author,
-        homepage: kit.homepage,
-        repository: kit.repository,
-        license: kit.license,
-        keywords: kit.keywords,
-        defaultEnabled: kit.defaultEnabled,
-        dependencies: dependenciesOf(kit.dependencies),
-        config: configOf(kit, bundles),
-      }
-    : { name }
-  const parsed = pluginManifestSchema.safeParse(fields)
-  if (parsed.success) return { manifest: parsed.data }
+export function localixManifest(plugin: Plugin, fallbackName: string): MappedManifest {
+  const refused = pluginNameRefusal(plugin.name)
+  if (refused) return { manifest: { name: fallbackName }, error: refused }
+  const kit = plugin.manifest
+  if (!kit) return { manifest: { name: plugin.name } }
+  const config = configOf(kit, plugin.mcpBundles)
   return {
-    manifest: { name: fallbackName, version: '0.0.0', description: '' },
-    error: `Invalid manifest: ${schemaIssue(parsed.error)}`,
+    manifest: {
+      ...kit,
+      name: plugin.name,
+      origin: { format: 'claude-code' },
+      ...(config ? { config } : {}),
+    },
   }
 }

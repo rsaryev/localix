@@ -1,5 +1,5 @@
 import { joinedList, listItems } from './config-lists'
-import type { PluginManifest } from './contracts'
+import type { LocalixManifest } from './contracts'
 
 import type { PluginConfigValues } from './contracts-base'
 
@@ -11,7 +11,7 @@ export type { PluginConfigValues } from './contracts-base'
  * and to substitute `${KEY}` tokens in MCP config.
  */
 export function resolvePluginConfig(
-  manifest: PluginManifest,
+  manifest: LocalixManifest,
   stored: PluginConfigValues | undefined,
 ): PluginConfigValues {
   const out: Record<string, unknown> = {}
@@ -32,7 +32,7 @@ export function resolvePluginConfig(
  * `multiple` option's as its list of strings.
  */
 export function storedOptionValues(
-  manifest: PluginManifest,
+  manifest: LocalixManifest,
   stored: PluginConfigValues | undefined,
 ): Record<string, string | number | boolean | string[]> {
   const out: Record<string, string | number | boolean | string[]> = {}

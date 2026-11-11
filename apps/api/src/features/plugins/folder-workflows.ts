@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 
-import { parseWorkflowMeta } from '@localixai/claude-plugin'
+import { workflowScript } from './kit'
 
 import type { WorkflowEntry } from '../agent-core/tools/workflow/workflow'
 import { claudeConfigDir } from '../cc-settings/config-dir'
@@ -17,9 +17,9 @@ async function workflowsIn(dir: string): Promise<WorkflowEntry[]> {
     const stat = await fs.stat(path).catch(() => null)
     if (!stat?.isFile() || stat.size > MAX_BYTES) continue
     const source = await fs.readFile(path, 'utf8').catch(() => null)
-    const parsed = source === null ? null : parseWorkflowMeta(source)
-    if (parsed?.meta)
-      found.push({ fullName: parsed.meta.name, description: parsed.meta.description, file: path })
+    const read = source === null ? null : workflowScript(source)
+    if (read && !('error' in read))
+      found.push({ fullName: read.name, description: read.description, file: path })
   }
   return found
 }

@@ -6,7 +6,7 @@ import {
   invokeTypedSkills,
   resolveModelAlias,
   skillPlugin,
-  skillScope,
+  projectOrGlobal,
   typedSkills,
 } from '../../plugins/kit'
 import { parseSkillCommand } from './slash-commands'
@@ -47,7 +47,7 @@ export async function handleSkillCommand(
   // No skill by the name — let the final unresolved-slash gate report it.
   if (!skill) return null
   const name = skill.invocable.command
-  const scope = skillScope(skill)
+  const scope = projectOrGlobal(skill)
   // The skill's plugin, for a forked child's hooks (`${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`).
   const plugin = skillPlugin(skill)
   const skillOverrides = await ctx.loadSkillOverrides(

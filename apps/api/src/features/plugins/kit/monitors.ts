@@ -1,5 +1,5 @@
 import type { PluginSession } from '@rsaryev/llx-plugin'
-import { issueLine } from './catalog/read-folder'
+import { issueLine } from './catalog/issue-line'
 
 /**
  * One plugin monitor a chat's kit session hands out to start now (`session.monitorsToStart`,

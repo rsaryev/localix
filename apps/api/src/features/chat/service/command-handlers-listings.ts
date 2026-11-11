@@ -4,7 +4,7 @@ import type { SessionRecord } from '../repository'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext, DirectReply } from './command-handlers'
 import { isSkillDisabled } from '../../agent-core/skill-overrides'
-import { skillPlugin, skillScope } from '../../plugins/kit'
+import { skillPlugin, projectOrGlobal } from '../../plugins/kit'
 import { commandRemainder } from './slash-commands'
 import {
   commandUsage,
@@ -145,7 +145,7 @@ export async function handleSkillsControlCommand(
           '',
           ...skills.map((s) => {
             const plugin = skillPlugin(s)
-            const tags = plugin ? `plugin ${plugin.name}` : skillScope(s)
+            const tags = plugin ? `plugin ${plugin.name}` : projectOrGlobal(s)
             const { command, description } = s.invocable
             return `- \`/${command}\` _(${tags})_ — ${description || 'No description'}`
           }),

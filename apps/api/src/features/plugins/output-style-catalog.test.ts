@@ -12,7 +12,13 @@ const pluginStyle = (name: string, forceForPlugin = false): PluginOutputStyle =>
   pluginName: 'p',
   fullName: `p:${name}`,
   source: 'plugin',
-  style: { name, description: '', keepCodingInstructions: true, forceForPlugin, prompt: name },
+  style: {
+    name,
+    description: '',
+    keepCodingInstructions: true,
+    forceForPlugin,
+    instructions: name,
+  },
 })
 
 describe('the output style catalog', () => {
@@ -25,26 +31,26 @@ describe('the output style catalog', () => {
       'Learning',
     ])
     expect(builtins.every((entry) => entry.style.keepCodingInstructions)).toBe(true)
-    expect(builtins.find((entry) => entry.fullName === 'Explanatory')?.style.prompt).toContain(
-      '★ Insight',
-    )
-    expect(builtins.find((entry) => entry.fullName === 'Learning')?.style.prompt).toContain(
+    expect(
+      builtins.find((entry) => entry.fullName === 'Explanatory')?.style.instructions,
+    ).toContain('★ Insight')
+    expect(builtins.find((entry) => entry.fullName === 'Learning')?.style.instructions).toContain(
       'TODO(human)',
     )
   })
 
   test('a local style of the same name replaces a built-in, the project over the person', () => {
-    const style = (prompt: string) => ({
+    const style = (instructions: string) => ({
       name: 'Concise',
       description: '',
       keepCodingInstructions: false,
       forceForPlugin: false,
-      prompt,
+      instructions,
     })
     const catalog = outputStyleCatalog({ user: [style('mine')], project: [style('team')] })
     const concise = catalog.filter((entry) => entry.fullName === 'Concise')
     expect(concise).toHaveLength(1)
-    expect(concise[0]).toMatchObject({ source: 'project', style: { prompt: 'team' } })
+    expect(concise[0]).toMatchObject({ source: 'project', style: { instructions: 'team' } })
   })
 })
 
@@ -86,13 +92,14 @@ describe("reading the person's and the project's styles", () => {
     expect(local.user).toEqual([
       {
         name: 'Plain',
-        description: '',
         keepCodingInstructions: false,
         forceForPlugin: false,
-        prompt: 'No frills.',
+        instructions: 'No frills.',
       },
     ])
-    expect(Object.fromEntries(local.project.map((style) => [style.name, style.prompt]))).toEqual({
+    expect(
+      Object.fromEntries(local.project.map((style) => [style.name, style.instructions])),
+    ).toEqual({
       team: 'Nearest team voice.',
       'root-only': 'Only at the root.',
     })
@@ -118,10 +125,12 @@ describe("reading the person's and the project's styles", () => {
       '.claude/output-styles/review.md': 'Team review voice.',
     })
     const local = await readLocalOutputStyles({ homeDir: home(), cwd: repo(), env: {} })
-    expect(Object.fromEntries(local.user.map((style) => [style.name, style.prompt]))).toEqual({
-      terse: 'From Claude Code.',
-      plain: 'Localix plain.',
-    })
+    expect(Object.fromEntries(local.user.map((style) => [style.name, style.instructions]))).toEqual(
+      {
+        terse: 'From Claude Code.',
+        plain: 'Localix plain.',
+      },
+    )
     expect(local.project.map((style) => style.name)).toEqual(['review'])
   })
 })

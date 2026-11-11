@@ -1,12 +1,11 @@
 import { promises as fs } from 'node:fs'
-import { join, posix } from 'node:path'
-
-import { MANIFEST_DIR, MANIFEST_FILE } from '@localixai/claude-plugin'
+import { dirname, join, posix } from 'node:path'
 
 import { findManifestPath } from './discovery'
 import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
 import { isRecord } from '../../lib/record'
 import { rmrf } from '../ext/install-tree'
+import { PLUGIN_MANIFEST } from './kit'
 
 /**
  * Marketplace entry → plugin manifest reconciliation, as Claude Code combines an entry with
@@ -209,8 +208,9 @@ export async function applyEntryManifestOverrides(
   const manifestPath = await findManifestPath(dir)
   if (!manifestPath) {
     const synthesized = synthesizeEntryManifest(entry)
-    await fs.mkdir(join(dir, MANIFEST_DIR), { recursive: true })
-    await fs.writeFile(join(dir, MANIFEST_FILE), JSON.stringify(synthesized, null, 2) + '\n')
+    const path = join(dir, PLUGIN_MANIFEST)
+    await fs.mkdir(dirname(path), { recursive: true })
+    await fs.writeFile(path, JSON.stringify(synthesized, null, 2) + '\n')
     return
   }
   let existing: Record<string, unknown>

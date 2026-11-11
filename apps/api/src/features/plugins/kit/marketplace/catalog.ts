@@ -6,7 +6,7 @@ import {
   type Marketplace,
   type MarketplaceSource,
 } from '@rsaryev/llx-plugin/marketplace'
-import { issueLine } from '../catalog/read-folder'
+import { issueLine } from '../catalog/issue-line'
 import { catalogAt } from './records'
 
 /**

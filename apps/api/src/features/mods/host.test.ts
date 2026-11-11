@@ -32,7 +32,7 @@ export function register(on, options) {
   on('prompt.submit', async ($, e, next) => next({ ...e, text: e.text.trim(), context: ['from first-mod'] }))
   on('ui.render', { component: 'Pane', requestId: 'tally' }, async ($, e) => {
     const { Box, Text, Button } = $.ui.resolve(e)
-    return <Box><Text>{'Calls: ' + calls}</Text><Button key="reset" label="Reset" onPress={() => { calls = 0 }} /></Box>
+    return <Box><Text key="count">{'Calls: ' + calls}</Text><Button key="reset" label="Reset" onPress={() => { calls = 0 }} /></Box>
   })
 }
 `
@@ -137,6 +137,7 @@ describe('mods host', () => {
     })
   })
 
+  // JSX gives every tag a `key`: Text takes none and drops it, Button keeps its own.
   test('a pane draws through ui.render, and its button runs the closure', async () => {
     const { host, scope, pane, changes } = await loadFirstMod()
     await scope.wrapTools([tool('Read')])[0]!.execute('t1', {})

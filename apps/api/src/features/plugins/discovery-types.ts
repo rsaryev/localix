@@ -1,16 +1,10 @@
-import type { PluginCommand, PluginManifest, PluginProvides } from './contracts'
+import type { LocalixManifest, PluginCommand, PluginProvides } from './contracts'
 import type { ResolvedEntrypoints } from './kit'
 import type { Plugin as KitPlugin } from '@rsaryev/llx-plugin/loading'
 import type { AgentRecord, PluginIssue } from '@rsaryev/llx-plugin/format'
 
 export interface DiscoveredPlugin {
-  manifest: PluginManifest
-  /**
-   * The raw parsed manifest object (pre-zod), kept so the validator can inspect
-   * Claude Code spec fields our schema strips (lspServers, monitors, hooks-as-path…)
-   * and flag cross-spec compatibility issues. Undefined on read/parse failure.
-   */
-  rawManifest?: Record<string, unknown>
+  manifest: LocalixManifest
   /** The plugin as the kit loaded it; absent when it did not load. */
   kit?: KitPlugin
   /** Absolute plugin directory. */

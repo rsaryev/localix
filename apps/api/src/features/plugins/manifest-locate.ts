@@ -1,7 +1,7 @@
 import { join } from 'node:path'
-import { MANIFEST_FILE } from '@localixai/claude-plugin'
 
 import { pathExists } from '../ext/fs-discovery'
+import { PLUGIN_MANIFEST } from './kit'
 
 /**
  * "Find the manifest file in this directory" for plugin discovery (`discovery.ts`
@@ -9,7 +9,7 @@ import { pathExists } from '../ext/fs-discovery'
  */
 
 /** A plugin's manifest: Claude Code's `.claude-plugin/plugin.json`, and nothing else. */
-export const PLUGIN_MANIFEST_CANDIDATES: readonly string[] = [MANIFEST_FILE]
+export const PLUGIN_MANIFEST_CANDIDATES: readonly string[] = [PLUGIN_MANIFEST]
 
 /**
  * Return the absolute path of the first candidate (relative to `dir`) that exists,

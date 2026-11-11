@@ -32,7 +32,11 @@ export async function handleModCommand(
   const ts = ctx.now()
   const cwd = await ctx.resolveSessionWorkingDir(userId, session)
   const result = await mods.runCommand(
-    { command: command.name, args: prompt.trim().slice(firstToken.length).trim() },
+    {
+      command: command.name,
+      args: prompt.trim().slice(firstToken.length).trim(),
+      origin: { kind: 'composer' },
+    },
     { userId, sessionId, cwd },
     new Set([command.plugin]),
   )

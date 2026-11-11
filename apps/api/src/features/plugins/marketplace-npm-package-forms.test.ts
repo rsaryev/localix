@@ -4,13 +4,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { fetchUrl, stubFetch } from '../../testing/fetch-stub'
-import { isApiError } from '../../lib/errors'
-import { fetchNpmPlugin, parseNpmEntrySource } from './marketplace-source-npm'
+import { fetchNpmPlugin } from './marketplace-source-npm'
+import { npmPlan } from './kit/testing'
 
 /**
- * The other `package` forms of an npm plugin source (marketplace-reference.md, "npm plugin
- * source"): a name with a version appended, an `https` tarball link, and a private registry that
- * the user's `.npmrc` holds a token for.
+ * Running the kit's plan for the other `package` forms of an npm plugin source
+ * (marketplace-reference.md, "npm plugin source"): an `https` tarball link, and a private registry
+ * that the user's `.npmrc` holds a token for. Reading the forms is the kit's (`planPluginFetch`).
  */
 
 const realFetch = globalThis.fetch
@@ -51,56 +51,20 @@ function registry() {
 }
 
 describe('npm package forms', () => {
-  it('a version appended to the name is the version', () => {
-    expect(parseNpmEntrySource('x', { source: 'npm', package: '@org/formatter@2.0.0' })).toEqual({
-      package: '@org/formatter',
-      version: '2.0.0',
-    })
-    expect(parseNpmEntrySource('x', { source: 'npm', package: 'formatter@^2' })).toEqual({
-      package: 'formatter',
-      version: '^2',
-    })
-  })
-
   it('an https tarball link is downloaded as it is', async () => {
     const seen = registry()
-    const src = parseNpmEntrySource('x', {
-      source: 'npm',
-      package: 'https://npm.example.com/demo/-/demo-2.0.0.tgz',
-    })!
+    const src = npmPlan({ package: 'https://npm.example.com/demo/-/demo-2.0.0.tgz' })
     const dest = join(work, 'out-tarball')
     await fetchNpmPlugin(src, dest, { defaultRegistry: 'https://registry.npmjs.org', home: work })
     expect(seen.map((r) => r.url)).toEqual(['https://npm.example.com/demo/-/demo-2.0.0.tgz'])
     expect(await fs.readFile(join(dest, 'plugin.json'), 'utf8')).toBe('{"name":"demo"}')
   })
 
-  it('refuses a tarball link on a git host', () => {
-    for (const link of [
-      'https://github.com/o/r/releases/download/v1/x.tgz',
-      'https://gitlab.com/o/r/-/archive/x.tgz',
-    ]) {
-      let error: unknown
-      try {
-        parseNpmEntrySource('x', { source: 'npm', package: link })
-      } catch (caught) {
-        error = caught
-      }
-      expect(isApiError(error)).toBe(true)
-      expect((error as Error).message).toContain(link)
-    }
-    expect(
-      parseNpmEntrySource('x', {
-        source: 'npm',
-        package: 'https://gitlab.com/api/v4/projects/1/packages/npm/x/-/x-1.0.0.tgz',
-      })?.tarball,
-    ).toContain('gitlab.com/api/v4/')
-  })
-
   it('sends the .npmrc token to that registry, and only to it', async () => {
     await fs.writeFile(join(work, '.npmrc'), '//npm.example.com/:_authToken=s3cret\n')
     const seen = registry()
     await fetchNpmPlugin(
-      { package: 'demo', registry: 'https://npm.example.com' },
+      npmPlan({ package: 'demo', registry: 'https://npm.example.com' }),
       join(work, 'out-auth'),
       { defaultRegistry: 'https://registry.npmjs.org', home: work, env: {} },
     )

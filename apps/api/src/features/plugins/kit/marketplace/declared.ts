@@ -6,7 +6,8 @@ import {
   type Registration,
 } from '@rsaryev/llx-plugin/settings'
 import { isRecord } from '../../../../lib/record'
-import { isFileScope, readClaudeSettings } from '../settings/read'
+import { isFileScope } from '@rsaryev/llx-plugin/settings'
+import { readClaudeSettings } from '../settings/read'
 import { marketplacePolicy } from './policy'
 import { parseDeclaredSource } from './sources'
 

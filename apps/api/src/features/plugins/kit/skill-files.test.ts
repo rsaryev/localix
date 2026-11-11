@@ -13,7 +13,9 @@ function write(path: string, text: string) {
 
 describe('skillFilePath', () => {
   test('a new skill is <folder>/skills/<name>/SKILL.md', () => {
-    expect(skillFilePath('/h/.claude', 'deploy')).toBe('/h/.claude/skills/deploy/SKILL.md')
+    expect(skillFilePath({ folder: '/h/.claude', kind: 'user' }, 'deploy')).toBe(
+      '/h/.claude/skills/deploy/SKILL.md',
+    )
   })
 })
 

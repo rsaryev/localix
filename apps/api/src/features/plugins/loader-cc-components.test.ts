@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { dirname, join } from 'node:path'
 
-import { MANIFEST_FILE } from '@localixai/claude-plugin'
+import { PLUGIN_MANIFEST as MANIFEST_FILE } from './kit'
 import { tempDirPerTest } from '@localixai/testing'
 
 import { loadManifest } from './discovery'
@@ -41,7 +41,7 @@ describe('an enabled plugin’s output styles', () => {
       expect.objectContaining({
         pluginName: 'sec',
         fullName: 'sec:terse',
-        style: expect.objectContaining({ prompt: 'Short replies. Notes in /root/notes.' }),
+        style: expect.objectContaining({ instructions: 'Short replies. Notes in /root/notes.' }),
       }),
     ])
   })
@@ -52,7 +52,13 @@ describe('choosing a style', () => {
     pluginName: plugin,
     fullName: `${plugin}:${name}`,
     source: 'plugin' as const,
-    style: { name, description: '', keepCodingInstructions: false, forceForPlugin, prompt: name },
+    style: {
+      name,
+      description: '',
+      keepCodingInstructions: false,
+      forceForPlugin,
+      instructions: name,
+    },
   })
 
   test('a forced style wins; a chosen style counts only while it is offered', () => {

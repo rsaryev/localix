@@ -12,7 +12,10 @@ export { monitorsToLaunch, type MonitorLaunch } from './monitors'
 export { scopeAgents, type HostAgents, type ScopeAgent, type ScopeAgents } from './agents'
 export { catalogTier } from '@rsaryev/llx-plugin/agents'
 export { scopeMcpServers } from './scope-session'
-export { issueLine, readPluginFolder, type FolderSource } from './catalog/read-folder'
+export { readPluginFolder, type FolderSource } from './catalog/read-folder'
+export { issueLine } from './catalog/issue-line'
+export { isPluginFolder, PLUGIN_MANIFEST } from './catalog/plugin-folder'
+export { pluginNameRefusal } from './catalog/manifest'
 export type { ResolvedEntrypoints } from './catalog/entrypoints'
 export { validatePluginFolder } from './catalog/validate'
 export {
@@ -26,8 +29,15 @@ export {
   type AgentMemoryContext,
 } from './spawn'
 export { resolveModelAlias } from './model-alias'
-export type { PluginWorkflow } from './catalog/components'
+export type { HexTheme, PluginWorkflow } from './catalog/components'
 export { readSkillDescriptions } from './catalog/components'
+export { workflowScript, type WorkflowScript } from './catalog/workflow-script'
+export {
+  builtinStyleDescription,
+  DEFAULT_OUTPUT_STYLE_ID,
+  outputStyleFile,
+  type StyleBody,
+} from './catalog/output-style'
 export { lateModelRunner, type CcMcpToolResult, type ModelBackend } from './ports/session-ports'
 export {
   readClaudeSettings,
@@ -35,9 +45,9 @@ export {
   mergedSettings,
   type ClaudeSettings,
   type ClaudeSettingsInput,
-  isFileScope,
   type Settings,
 } from './settings/read'
+export { isFileScope } from '@rsaryev/llx-plugin/settings'
 export { managedSettingsDir, type ManagedSettingsSource } from './settings/managed'
 export { claudeCodeTrusts } from './settings/trust'
 export { claudeCodeSettingsEnv, settingsEnvOf } from './settings/env'
@@ -65,14 +75,13 @@ export { settingsAdditionalDirectories, settingsRuleEntries } from './settings/p
 export { invokeSkill, invokeTypedSkills, type SkillShellAnswer } from './skills'
 export {
   findSessionSkill,
+  projectOrGlobal,
   sessionSkills,
-  skillKeywords,
   skillListing,
-  skillPlugin,
-  skillScope,
   touchSessionFiles,
   typedSkills,
 } from './skill-catalog'
+export { skillKeywords, skillPlugin } from '@rsaryev/llx-plugin'
 export { preloadedSkillTexts, skillTexts, type SkillText } from './skill-texts'
 export { scopeSkills, type ScopeSkills } from './scope-skills'
 export {
@@ -80,7 +89,7 @@ export {
   skillFilePath,
   skillNameRefusal,
   type FolderSkill,
-  type SkillFolderKind,
+  type SkillFolder,
 } from './skill-files'
 export { skillPromptInput, type SkillOrigin, type SkillPromptInput } from './mods/skill-prompt'
 export {
@@ -107,7 +116,13 @@ export {
   versionsToOrphan,
   writeInstalled,
 } from './marketplace/installs'
-export { disableRefusal, enableCascade } from './marketplace/dependency-graph'
+export {
+  declaredDependencies,
+  dependencyRangeIssue,
+  disableRefusal,
+  pluginDependents,
+  enableCascade,
+} from './marketplace/dependency-graph'
 export { autoUpdatePassAllowed, autoUpdateToggleRefusal } from './marketplace/updates'
 export { pluginVersion, UNKNOWN_VERSION } from './marketplace/versions'
 export {
@@ -124,7 +139,12 @@ export {
   assertPluginAllowed,
   managedDeclarations,
 } from './marketplace/policy'
-export { resolveEntrySource, type ResolvedEntrySource } from './marketplace/entry-source'
+export {
+  entryFetchPlan,
+  entryFolder,
+  localEntryDir,
+  type EntryFetchPlan,
+} from './marketplace/entry-source'
 export { archiveHeaders, catalogHeaders, type UrlSourceHeaders } from './marketplace/headers'
 export { claudeCodePluginSettings } from './marketplace/claude-code'
 export { declaredMarketplaces, type DeclaredMarketplace } from './marketplace/declared'

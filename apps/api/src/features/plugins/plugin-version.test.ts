@@ -1,5 +1,7 @@
-import { kitEntry } from './kit/testing'
 import { describe, expect, test } from 'bun:test'
+
+import { pluginVersion } from './kit'
+import { kitEntry } from './kit/testing'
 
 import { entryVersionInput, RELATIVE_INPUT, withCommit } from './plugin-version'
 
@@ -57,4 +59,16 @@ describe('what a marketplace entry says about its version before anything is fet
     expect(withCommit(npm, SHA)).toBe(npm)
     expect(withCommit(RELATIVE_INPUT, undefined)).toBe(RELATIVE_INPUT)
   })
+})
+
+test('a URL source is a url source and versions as a github one does, so no update appears', async () => {
+  const url = entryVersionInput(
+    kitEntry({ name: 'p', source: { source: 'url', url: 'https://github.com/o/r.git', sha: SHA } }),
+  )
+  const github = entryVersionInput(
+    kitEntry({ name: 'p', source: { source: 'github', repo: 'o/r', sha: SHA } }),
+  )
+  expect(url.sourceKind).toBe('url')
+  expect(await pluginVersion(url)).toBe(await pluginVersion(github))
+  expect(await pluginVersion(url)).toBe(SHA.slice(0, 12))
 })

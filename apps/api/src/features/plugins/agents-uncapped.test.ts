@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { dirname, join } from 'node:path'
 
-import { MANIFEST_FILE } from '@localixai/claude-plugin'
+import { PLUGIN_MANIFEST as MANIFEST_FILE } from './kit'
 import { tempDirPerTest } from '@localixai/testing'
 
 import { loadManifest } from './discovery'

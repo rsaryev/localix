@@ -1,5 +1,5 @@
-import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { cp, readFile, stat } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import {
   agentHookGroups,
   catalogTier,
@@ -44,16 +44,43 @@ export async function agentMemory(
   context: AgentMemoryContext,
 ): Promise<MemoryPlan | undefined> {
   if (scope === undefined) return undefined
-  return planAgentMemory(scope, agentType, {
-    autoMemoryEnabled: context.autoMemoryEnabled(),
-    configDir: context.configDir,
-    locations: {
-      homeDir: () => context.homeDir,
-      projectDir: () => context.projectDir,
-      joinPath: join,
-    },
-    files: { readText: (path) => readFile(path, 'utf8').catch(() => undefined) },
-  })
+  const plan = () =>
+    planAgentMemory(scope, agentType, {
+      autoMemoryEnabled: context.autoMemoryEnabled(),
+      configDir: context.configDir,
+      locations: {
+        homeDir: () => context.homeDir,
+        projectDir: () => context.projectDir,
+        joinPath: join,
+      },
+      files: { readText: (path) => readFile(path, 'utf8').catch(() => undefined) },
+    })
+  const planned = await plan()
+  if (!planned || !(await adoptedEarlierMemory(planned.directory, agentType))) return planned
+  return plan()
+}
+
+const isDirectory = (path: string) =>
+  stat(path).then(
+    (found) => found.isDirectory(),
+    () => false,
+  )
+
+/**
+ * Localix used to name a plugin agent's memory folder by the agent's own name (`reviewer` for
+ * `kit:reviewer`); the kit names it by the full type (`kit-reviewer`). The first time the new
+ * folder is missing and the old one is there, the old one is copied in, and the old one is left as
+ * it was: an agent of the same name from another plugin or the person's own may share it.
+ */
+async function adoptedEarlierMemory(directory: string, agentType: string): Promise<boolean> {
+  const leaf = agentType.split(':').pop() ?? ''
+  // A leaf that is a path (`..`, `a/b`) would name a folder outside the memory folder.
+  const plainLeaf = /^[^/\\]+$/.test(leaf) && !/^\.+$/.test(leaf)
+  if (!agentType.includes(':') || !plainLeaf || (await isDirectory(directory))) return false
+  const earlier = join(dirname(directory), leaf)
+  if (earlier === directory || !(await isDirectory(earlier))) return false
+  await cp(earlier, directory, { recursive: true, errorOnExist: false, force: false })
+  return true
 }
 
 /** The row of the priority table a catalog agent ranks by; none for a built-in type, which has no file. */

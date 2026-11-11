@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 
 import { loadManifest } from './discovery'
 import { validateCompatibility } from './validate-compat'
-import { validatePlugin } from './validate'
+import { validatePlugin, validatePluginFull } from './validate'
 
 let dir: string
 
@@ -197,10 +197,10 @@ describe('validatePlugin', () => {
     expect(warning).not.toContain('"secret')
   })
 
-  it('warns when the manifest has no description', async () => {
+  it('warns, as the kit validates, when the manifest has no description', async () => {
     const plugin = await writePlugin('nodesc', 'nodesc', { description: '' })
-    const { warnings } = validatePlugin(plugin)
-    expect(warnings.some((w) => w.includes('no description'))).toBe(true)
+    const { warnings } = await validatePluginFull(plugin)
+    expect(warnings.some((w) => w.includes('No description provided'))).toBe(true)
   })
 
   it('warns on a field Claude Code does not know', async () => {
@@ -329,10 +329,10 @@ describe('validateCompatibility', () => {
     )
   })
 
-  it('warns on a non-kebab-case name', async () => {
+  it('warns, as the kit validates, on a non-kebab-case name', async () => {
     const plugin = await writePlugin('Not_Kebab', 'Not_Kebab', {})
-    const { warnings } = validateCompatibility(plugin)
-    expect(warnings.some((w) => w.includes('kebab-case'))).toBe(true)
+    const { warnings } = await validatePluginFull(plugin)
+    expect(warnings.some((w) => w.includes('is not kebab-case'))).toBe(true)
   })
 
   it('is silent for a clean manifest', async () => {

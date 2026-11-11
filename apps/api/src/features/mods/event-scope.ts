@@ -28,13 +28,13 @@ export const hearsIn = (scope: Pick<ModEventScope, 'kit'>, event: string): boole
 type FireByName = (
   name: string,
   input: unknown,
-  options: { core: (e: unknown) => Promise<unknown>; signal?: AbortSignal },
+  options: { core: (e: unknown) => unknown; signal?: AbortSignal },
 ) => Promise<unknown>
 
 /**
  * The event through the conversation's chain; `core` is Localix's own behaviour at its end. An
- * event abandoned before its end (the turn stopped) runs nothing of Localix's: the kit skips a hook
- * that failed and goes on to core, and a hook that held a tool call fails as the turn stops.
+ * event abandoned before its end (the turn stopped) runs nothing of Localix's: the kit rejects an
+ * aborted dispatch with the abort's reason and never runs core.
  */
 export const fireIn = (
   scope: Pick<ModEventScope, 'kit'>,
@@ -44,10 +44,7 @@ export const fireIn = (
   signal?: AbortSignal,
 ): Promise<unknown> =>
   (scope.kit.fire as unknown as FireByName)(event, input, {
-    core: async (e) => {
-      signal?.throwIfAborted()
-      return core(e)
-    },
+    core,
     ...(signal ? { signal } : {}),
   })
 

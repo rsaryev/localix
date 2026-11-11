@@ -103,14 +103,6 @@
         {
           "role": "string",
           "text": "string",
-          "toolResults?": [
-            {
-              "isError": "boolean",
-              "result": "object",
-              "text": "string",
-              "tool_use_id": "string"
-            }
-          ],
           "toolUses": [
             {
               "input": "object",
@@ -187,8 +179,7 @@
       "kind": "call",
       "name": "ui.open",
       "shape": {
-        "isPlaced": "boolean",
-        "reason": "string"
+        "isPlaced": "boolean"
       }
     },
     {
@@ -234,7 +225,11 @@
       "kind": "event",
       "name": "session.end",
       "shape": {
-        "reason": "string"
+        "reason": "string",
+        "resume": {
+          "id": "string"
+        },
+        "sessionId": "string"
       }
     },
     {

@@ -39,11 +39,6 @@ import { folderTrusted } from './trust'
 
 export type Settings = PolicyLayer['settings']
 
-const FILE_SCOPES: ReadonlySet<string> = new Set<FileScope>(['user', 'project', 'local', 'managed'])
-
-/** A settings file a person can name: the four scopes the kit's `FileScope` holds. */
-export const isFileScope = (scope: string): scope is FileScope => FILE_SCOPES.has(scope)
-
 export interface SettingsFile {
   scope: FileScope
   file: string

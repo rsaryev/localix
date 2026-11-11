@@ -11,7 +11,14 @@ import {
 } from '@localixai/store'
 
 import { defaultMarketplaceOf } from './default-marketplaces'
-import { catalogAt, type KnownMarketplace, parseMarketplace, resolveEntrySource } from './kit'
+import {
+  catalogAt,
+  cloneUrl,
+  entryFetchPlan,
+  localEntryDir,
+  type KnownMarketplace,
+  parseMarketplace,
+} from './kit'
 import type { Marketplace, MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
 import type { PluginContents } from './store-contents'
 import { entryCuration } from './store-editorial'
@@ -67,23 +74,22 @@ function repositoryOf(record: KnownMarketplace): string | null {
 export function entryOrigin(view: MarketView, entry: MarketplaceEntry): string | undefined {
   try {
     const { root } = catalogAt(view.record)
-    const at = resolveEntrySource(root, entry, view.record.source)
-    if ('localPath' in at) {
-      const path = relative(root, at.localPath)
+    const plan = entryFetchPlan(entry, view.record.source)
+    if (plan.kind === 'local') {
+      const path = relative(root, localEntryDir(root, entry, plan))
       const repo = repositoryOf(view.record)
       return repo ? gitOrigin({ url: repo, path }) : `marketplace:${view.name}#${path}`
     }
-    if ('git' in at) {
+    if (plan.kind === 'git')
       // A branch or tag names the package; a pinned commit (`sha`) is one version of it.
-      const ref = 'ref' in entry.source ? entry.source.ref : undefined
       return gitOrigin({
-        url: at.git.url,
-        ...(at.git.subdir ? { path: at.git.subdir } : {}),
-        ...(typeof ref === 'string' && ref ? { ref } : {}),
+        url: cloneUrl(plan.repo),
+        ...(plan.subdir ? { path: plan.subdir } : {}),
+        ...(plan.ref ? { ref: plan.ref } : {}),
       })
-    }
-    if ('npm' in at) return npmOrigin(at.npm.package)
-    return `archive:${at.archive.url}`
+    if (plan.kind === 'npm')
+      return npmOrigin('package' in plan.spec ? plan.spec.package : plan.spec.tarballUrl)
+    return `archive:${plan.url}`
   } catch {
     return undefined
   }

@@ -8,11 +8,13 @@ import {
   readKnownMarketplaces,
   readMarketplace,
   resolveEntryName,
-  resolveEntrySource,
+  cloneUrl,
+  entryFetchPlan,
+  localEntryDir,
 } from './kit'
 import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
 import { hashString, marketplacesRoot, sourceMatchesRef } from './marketplace-source'
-import { fetchEntryPlugin } from './marketplace-materialize'
+import { fetchEntryPlugin, type RemotePlan } from './marketplace-materialize'
 import { readsInPlace } from './marketplace-in-place'
 import { findMarketplacesWithPlugin } from './marketplace-catalog'
 import { withArchiveHeaders } from './entry-headers-helper'
@@ -98,7 +100,7 @@ export async function resolveMarketplaceInstall(
 
   // The kit resolves a bare name under `metadata.pluginRoot`, and refuses a relative source of a
   // marketplace that brought only its marketplace.json (one added by URL or from settings).
-  const resolved = resolveEntrySource(marketplaceDir, entry, record.source)
+  const plan = entryFetchPlan(entry, record.source)
   const base = {
     entry,
     marketplace: ref.marketplace,
@@ -107,33 +109,37 @@ export async function resolveMarketplaceInstall(
       : {}),
     ...(renamedFrom ? { renamedFrom } : {}),
   }
-  if ('localPath' in resolved) {
-    if (!(await fs.stat(resolved.localPath).catch(() => null))?.isDirectory())
-      throw new Error(`Source path does not exist: ${resolved.localPath}`)
+  if (plan.kind === 'local') {
+    const dir = localEntryDir(marketplaceDir, entry, plan)
+    if (!(await fs.stat(dir).catch(() => null))?.isDirectory())
+      throw new Error(`Source path does not exist: ${dir}`)
     const inPlace = readsInPlace(record, root) ? { inPlace: true } : {}
     // A relative entry of a git-hosted marketplace is at the marketplace's commit.
     const commit = record.gitCommitSha
     const commitSha = commit ? { commitSha: commit } : {}
-    return { dir: resolved.localPath, linkRoot: marketplaceDir, ...base, ...inPlace, ...commitSha }
+    return { dir, linkRoot: marketplaceDir, ...base, ...inPlace, ...commitSha }
   }
 
   // A version range picks the highest `<plugin>--v<version>` tag of the plugin's own repository.
   let tagVersion: string | undefined
-  if (opts?.versionRange && 'git' in resolved) {
-    const tag = await tagInRange(entry.name, resolved.git.url, opts.versionRange, deps)
+  let remote: RemotePlan = plan
+  if (opts?.versionRange && plan.kind === 'git') {
+    const tag = await tagInRange(entry.name, cloneUrl(plan.repo), opts.versionRange, deps)
     if (!tag)
       throw new Error(
         `Dependency "${entry.name}@${ref.marketplace}" has no git tag satisfying "${opts.versionRange}"`,
       )
-    resolved.git = { ...resolved.git, ref: tag.tag }
+    const { sha: _pinned, ...unpinned } = plan
+    remote = { ...unpinned, ref: tag.tag, checkout: 'ref' }
     tagVersion = tag.version
   }
   // An archive on a url marketplace's origin gets that source's headers; the entry's win a name,
   // and its headersHelper runs only once the person accepted it.
   const hostedBy = record.source
-  if ('archive' in resolved)
-    resolved.archive = await withArchiveHeaders(
-      resolved.archive,
+  if (remote.kind === 'archive')
+    remote = await withArchiveHeaders(
+      remote,
+      entry,
       {
         plugin: entry.name,
         marketplace: ref.marketplace,
@@ -153,7 +159,7 @@ export async function resolveMarketplaceInstall(
   // Remote sources stage into a stable temp dir under the marketplaces root; git, npm and
   // archives land the same shape (a plain plugin dir handed to `installFromLocal`).
   const staging = join(root, `.fetch-${Math.abs(hashString(`${ref.plugin}\0${ref.marketplace}`))}`)
-  const fetched = await fetchEntryPlugin(resolved, staging, deps, {
+  const fetched = await fetchEntryPlugin(remote, staging, deps, {
     prefetch: opts?.prefetch ?? false,
   })
   return { ...fetched, linkRoot: staging, ...base, ...(tagVersion ? { tagVersion } : {}) }

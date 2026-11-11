@@ -1,5 +1,5 @@
 import type { SessionSkill } from '@rsaryev/llx-plugin'
-import { skillScope } from '../../plugins/kit'
+import { projectOrGlobal } from '../../plugins/kit'
 import type { SkillCatalogEntry } from '../contracts/skills'
 
 export interface SkillRecord {
@@ -46,7 +46,7 @@ export function toSkillRecord(
   extra: { content?: string; validation?: SkillRecord['validation'] } = {},
 ): SkillRecord {
   const { invocable, policy, file } = skill
-  const scope = skillScope(skill)
+  const scope = projectOrGlobal(skill)
   return {
     id: `file:${file ?? invocable.command}`,
     name: invocable.command,

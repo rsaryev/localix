@@ -5,6 +5,7 @@ import { tempDirPerTest } from '@localixai/testing'
 
 import { createWorkflowRunStore } from './journal'
 import { createWorkflowTool, type WorkflowToolPort } from './workflow'
+import { workflowScript } from '../../../plugins/kit'
 
 /**
  * A workflow run as Claude Code runs one: in the background, reporting when it ends, under an id
@@ -22,6 +23,7 @@ function port(answer: (prompt: string) => Promise<string | null> | string | null
   const fake: WorkflowToolPort = {
     scripts,
     list: async () => [{ fullName: 'acme:audit', description: 'Audit', file: '/p/audit.js' }],
+    script: workflowScript,
     read: async () => AUDIT,
     runAgent: async (_call, _workflow, request) => {
       ran.push(request.prompt)
