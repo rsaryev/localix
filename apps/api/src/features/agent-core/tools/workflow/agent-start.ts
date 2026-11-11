@@ -91,7 +91,7 @@ export async function startWorkflowAgent(
   // `notes` is the outcome's own list: the worktree's fate, decided in `finally`, joins it.
   try {
     const child = await opts.createSession(opts.userId, {
-      agents: [{ agentId: agent.agentId }],
+      agent: { agentId: agent.agentId },
       title,
       parentSessionId: opts.parentSessionId,
       sessionKind: 'subagent',

@@ -109,7 +109,7 @@ export async function launchAgent(
     if ('refusal' in planned) return refuse(planned.refusal)
     const { agent, notes } = planned
     const child = await opts.createSession(opts.userId, {
-      agents: [{ agentId: agent.agentId }],
+      agent: { agentId: agent.agentId },
       title,
       parentSessionId: opts.parentSessionId,
       sessionKind: 'subagent',

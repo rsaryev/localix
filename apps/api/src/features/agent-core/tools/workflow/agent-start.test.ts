@@ -46,7 +46,7 @@ function options(
     delegationsSinceHuman: () => 10_000,
     createSession: async (_user, input) => {
       inputs.push(input)
-      created.push({ title: input.title, agentId: input.agents[0]!.agentId })
+      created.push({ title: input.title, agentId: input.agent!.agentId })
       return { id: `child-${created.length}` }
     },
     startSubagentTask: async (_user, sessionId, task, startOpts) => {

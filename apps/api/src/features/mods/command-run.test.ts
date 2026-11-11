@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { hostWithMod, hostWithMods } from './testing/testing-host'
+import { hostWithMod, hostWithMods, type TestHook } from './testing/testing-host'
 
 test('a command typed in a conversation runs in its host, among the mods its turn loaded', async () => {
   const ended: string[] = []
@@ -67,4 +67,34 @@ test('$.command.list gives Localix’s own commands first, each with its source,
     { name: 'kit:lint', source: 'plugin', plugin: 'kit' },
     { name: 'count', description: 'Counts', source: 'plugin', plugin: 'm' },
   ])
+})
+
+// `$.command.run` fires `command.run` once, through every mod's hooks (api.md, "Add a command"):
+// when none answers, the call's own end is the command's body, not a second `command.run` through
+// the same hooks, which a pass-through hook would count twice.
+test('$.command.run fires command.run once, even when no mod answers it', async () => {
+  const seen: string[] = []
+  let answer: unknown
+  const { host, scene } = await hostWithMods({
+    caller: (on) => {
+      on('session.start', async ($: { command: { register(def: object): unknown } }) => {
+        await $.command.register({ name: 'go' })
+      })
+      on('command.run', { command: 'go' }, async ($: { command: { run(c: object): unknown } }) => {
+        answer = await Promise.resolve($.command.run({ command: 'nobody', args: '' })).catch(
+          (error: Error) => error.message,
+        )
+        return { text: 'went' }
+      })
+    },
+    watcher: (on) => {
+      on('command.run', async (_$: unknown, e: { command: string }, next: TestHook) => {
+        seen.push(e.command)
+        return next(e)
+      })
+    },
+  })
+  expect(await host.runCommand({ command: 'go' }, scene)).toEqual({ text: 'went' })
+  expect(seen.filter((command) => command === 'nobody')).toEqual(['nobody'])
+  expect(answer).toContain('not /nobody')
 })

@@ -41,7 +41,7 @@ export interface SubsessionRunnerDeps {
       sourceToolCallId: string
       provenance: { kind: 'loop'; parentSessionId: string; loopId: string }
       /** The agent that runs the round: the loop's owner, never another agent. */
-      agents?: Array<{ agentId: string }>
+      agent?: { agentId: string }
       providerConnectionId?: string | null
       modelId?: string
       projectId?: string
@@ -123,7 +123,7 @@ export function createSubsessionRunner(deps: SubsessionRunnerDeps) {
         // An agent's loop runs as that agent, on its own route: a round must not start a
         // different agent (the default one) on the owner's behalf. A person's loop keeps the
         // conversation's default.
-        ...(loop.ownerAgentId ? { agents: [{ agentId: loop.ownerAgentId }] } : {}),
+        ...(loop.ownerAgentId ? { agent: { agentId: loop.ownerAgentId } } : {}),
         providerConnectionId: parent.providerConnectionId,
         ...(parent.modelId ? { modelId: parent.modelId } : {}),
         projectId: parent.projectId,

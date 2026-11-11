@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import type { Plugin } from '@rsaryev/llx-plugin/loading'
-import { readHooksJsonModules } from '@rsaryev/llx-plugin/format'
+import { readHooksJsonModules, resolveTypesPath } from '@rsaryev/llx-plugin/format'
 import { readJsonFile } from '../../../../lib/json'
 import { readComponents, type PluginCcComponents } from './components'
 
@@ -14,6 +14,8 @@ export type ResolvedEntrypoints = Pick<Plugin, 'mcpServers' | 'lspServers' | 'mo
   hookConfigs: unknown[]
   /** The hooks module (`modules` in `hooks/hooks.json`), absolute. */
   hookModule?: string
+  /** The hooks module's types file (the manifest's `types`, else `types/index.d.ts`), absolute. */
+  hookTypes?: string
   components?: PluginCcComponents
 }
 
@@ -25,10 +27,12 @@ async function hookModuleOf(dir: string): Promise<string | undefined> {
 
 export async function entrypointsOf(plugin: Plugin, dir: string): Promise<ResolvedEntrypoints> {
   const hookModule = await hookModuleOf(dir)
+  const types = hookModule ? resolveTypesPath(plugin.manifest ?? {}) : undefined
   return {
     mcpServers: plugin.mcpServers,
     hookConfigs: Object.keys(plugin.hooks).length ? [{ hooks: plugin.hooks }] : [],
     ...(hookModule ? { hookModule } : {}),
+    ...(types ? { hookTypes: join(dir, types) } : {}),
     lspServers: plugin.lspServers,
     monitors: plugin.monitors,
     components: readComponents(plugin, dir),

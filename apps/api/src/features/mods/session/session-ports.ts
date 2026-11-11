@@ -22,8 +22,6 @@ export interface SessionPortsDeps {
   composer: ModComposer
   /** The names of Localix's own commands, which a mod's command cannot take. */
   builtIns: () => readonly string[]
-  /** Runs a command a mod asked for (`$.command.run`). */
-  runCommand?: (command: { command: string; args: string }) => Promise<unknown>
   /** A short command's output, for `$.session.repo()` (git in the working directory). */
   run?: (argv: readonly string[], cwd: string) => Promise<{ exitCode: number; stdout: string }>
   /** What the conversation's running turn lends: its tools, its verdict, its `Agent` tool. */
@@ -228,7 +226,13 @@ export function createSessionPorts(deps: SessionPortsDeps): ModSessionPorts {
       builtIns: deps.builtIns,
       // Localix's own commands and skills, listed before the mods' (`bootstrap/mods-commands.ts`).
       ...(listCommands ? { list: () => listCommands(scene) } : {}),
-      run: (command) => deps.runCommand?.(command) ?? unsupported('$.command.run')(),
+      // The kit ends a mod's command itself and hands this port only the rest, after the hooks ran:
+      // Localix has no body to run for those, and must not fire `command.run` a second time.
+      run: async ({ command }) => {
+        throw new Error(
+          `$.command.run: Localix runs only a mod's command this way, not /${command}`,
+        )
+      },
     },
     tools: turn.tools,
     turns: {

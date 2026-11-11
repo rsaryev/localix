@@ -81,7 +81,7 @@ test('delegating to a catalog agent starts that agent, with its frontmatter', as
   expect(result.content).toContain('agent sec:reviewer')
   expect(calls.create).toEqual([
     expect.objectContaining({
-      agents: [{ agentId: 'cc:reviewer' }],
+      agent: { agentId: 'cc:reviewer' },
       provenance: expect.objectContaining({ agentType: 'sec:reviewer', depth: 1 }),
       pinnedSkills: ['threat-model'],
     }),
@@ -204,7 +204,7 @@ test('general-purpose and claude run the task as the delegator itself', async ()
     expect(JSON.stringify(out)).not.toContain('No enabled agent')
     expect(calls.create).toEqual([
       expect.objectContaining({
-        agents: [{ agentId: 'builtin:localix' }],
+        agent: { agentId: 'builtin:localix' },
         provenance: expect.objectContaining({ agentType: 'general-purpose' }),
       }),
     ])

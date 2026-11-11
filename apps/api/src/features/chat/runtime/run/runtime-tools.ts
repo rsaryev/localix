@@ -36,7 +36,7 @@ import type { RunPolicy } from '../../policy/run-policy'
 import type { WorkflowEntry } from '../../../agent-core/tools/workflow/workflow'
 import type { AgentModelChoice } from '../../../agent-core/agent-model-route'
 import type { SkillCommandPolicyRef } from './skill-tool-ports'
-import type { PluginLspServer } from '../../../plugins/kit'
+import type { PluginLspServer, SubagentModelContext } from '../../../plugins/kit'
 import type { PluginSession as KitSession } from '@rsaryev/llx-plugin'
 import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 
@@ -111,8 +111,8 @@ export function buildRunToolRegistry(
     listWorkflows?: () => Promise<WorkflowEntry[]>
     /** The model and effort the person chose per agent: a child's route, else its session's. */
     agentModelChoices?: readonly AgentModelChoice[]
-    /** The run's model: a child whose agent file names its family or `inherit` stays on it. */
-    mainModelId?: string
+    /** The run's model and the models a live key runs: what an agent file's `model` routes to. */
+    subagentModels?: SubagentModelContext
     /** Filled by the run's gate: the rules a skill's injected commands are checked against. */
     skillCommandPolicy?: SkillCommandPolicyRef
     /** The chat's kit session as this run's turn: a skill the model loads runs through it. */

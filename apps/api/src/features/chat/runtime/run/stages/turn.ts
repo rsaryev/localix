@@ -16,6 +16,7 @@ import { agentRoute } from '../../../../../contracts/session-route'
 import { loadUserSettingsContext } from '../../../../user/runtime-settings'
 import { awaitAgentService } from '../../agent-service-binding'
 import { sessionAgent } from '../../message-envelope'
+import { offeredModelIds } from '../../offered-models'
 import { invocationApprovalRequester } from '../invocation-approval'
 import {
   persistReboundConnection,
@@ -73,9 +74,10 @@ export async function resolveRunTurn(frame: RunFrame, standing: RunStanding) {
 
   // The global agent settings (disabled tools, permissions, response defaults) feed both
   // prompt-context assembly and provider resolution, so they load before either.
-  const [catalog, { agentSettings: globalAgentSettings }] = await Promise.all([
+  const [catalog, { agentSettings: globalAgentSettings }, { connections }] = await Promise.all([
     deps.catalogService.getCatalog(),
     loadUserSettingsContext(env.userProfileRepo, userId),
+    deps.providerConnectionsService.listConnections(userId).catch(() => ({ connections: [] })),
   ])
 
   const model = await resolveRunModel({
@@ -113,6 +115,8 @@ export async function resolveRunTurn(frame: RunFrame, standing: RunStanding) {
     state,
     turnIdleMs,
     catalog,
+    // What a `model:` alias (an agent file's, a hook's) may route to: models a live key can run.
+    offeredModelIds: offeredModelIds(catalog.models, connections),
     globalAgentSettings,
     model,
     catalogModel,

@@ -116,14 +116,7 @@ export function buildOptionalToolPorts(
   // How `Agent` and a workflow's `agent()` create a child: its route and its worktree.
   const pluginAgents = agentLaunchPorts({
     ...(params.agentModelChoices ? { choices: params.agentModelChoices } : {}),
-    ...(params.mainModelId
-      ? {
-          models: {
-            mainModel: params.mainModelId,
-            available: params.catalog.models.map((m) => m.id),
-          },
-        }
-      : {}),
+    ...(params.subagentModels ? { models: params.subagentModels } : {}),
     defaultCwd,
     rootSessionId: session.rootSessionId ?? session.id,
     ...(params.spawnTypes

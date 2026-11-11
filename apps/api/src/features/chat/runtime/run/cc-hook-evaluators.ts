@@ -24,6 +24,8 @@ export interface HookModelsInput {
   session: SessionRecord
   agentId?: string
   catalog: RunCatalog
+  /** The models a live key runs (`offered-models.ts`): what a hook's `model` alias routes to. */
+  offeredModelIds: readonly string[]
   /** The run's model: what a hook that names none, or an alias, resolves against. */
   effectiveModelId: string
 }
@@ -44,13 +46,7 @@ export function createHookModels(input: HookModelsInput): ModelBackend {
   const { env, userId, session, catalog, effectiveModelId } = input
   const route = input.agentId ? agentRoute(session) : sessionRoute(session)
   const modelOf = (named: string | undefined, parent: string) =>
-    (named &&
-      resolveModelAlias(
-        named,
-        parent,
-        catalog.models.map((m) => m.id),
-      )) ||
-    parent
+    (named && resolveModelAlias(named, parent, input.offeredModelIds)) || parent
   const connection = () => {
     if (!route?.providerConnectionId) throw new Error('the session has no provider connection')
     return route.providerConnectionId

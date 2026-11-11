@@ -41,7 +41,7 @@ export interface LoadedPluginMod {
   module: string
   /** Its `userConfig` values, defaults filled in (`register`'s `options`). */
   options: Record<string, unknown>
-  /** Changes when a file beside the module (its own imports) or the options change. */
+  /** Changes when a file beside the module (its own imports), its types file or the options change (`modRevision`). */
   revision: string
   /** Its `${CLAUDE_PLUGIN_DATA}`, keyed by the plugin's identifier. */
   dataDir: string
@@ -66,17 +66,35 @@ export async function loadEnabledPluginMods(
     const module = plugin.entrypoints.hookModule
     if (!module || pluginLoadBlockReason(plugin)) continue
     const options = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
-    const mtime = await newestChange(dirname(module))
     mods.push({
       plugin: plugin.manifest.name,
       root: plugin.dir,
       dataDir: dataDirOfPlugin(plugin, opts.homeDir),
       module,
       options,
-      revision: `${mtime}:${JSON.stringify(options)}`,
+      revision: await modRevision({ module, types: plugin.entrypoints.hookTypes }, options),
     })
   }
   return mods
+}
+
+/**
+ * What identifies one load of a mod: the newest change beside its module (its own imports), its
+ * types file (the loader checks the module's `$.state` against it), and its options. The mods
+ * host reloads a mod only when this changes.
+ */
+export async function modRevision(
+  files: { module: string; types?: string | undefined },
+  options: Record<string, unknown>,
+): Promise<string> {
+  const types = files.types
+    ? await stat(files.types).then(
+        (info) => info.mtimeMs,
+        () => 0,
+      )
+    : 0
+  const code = await newestChange(dirname(files.module))
+  return `${code}:${files.types ?? ''}:${types}:${JSON.stringify(options)}`
 }
 
 /** The newest modification time under `dir`: a hooks module and the files it imports. */

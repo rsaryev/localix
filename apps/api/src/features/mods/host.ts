@@ -93,7 +93,6 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions) {
     // The conversation's messages as plain data: what the session store keeps is JSON.
     compact: (scene) => calls.compact(scene) as unknown as Promise<JsonObject>,
     compose: async (scene) => (await calls.compose(scene, {})).sections,
-    runCommand: (scene, command) => host.runCommand(command, scene),
   })
 
   /** The scene's host with the mods of `plugins` (every loaded one when absent); none without mods. */

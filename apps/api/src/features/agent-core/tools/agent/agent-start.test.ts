@@ -74,7 +74,7 @@ test('by default the calling agent runs the task in a clean child, from the task
   expect(result.content).not.toContain('@')
   expect(calls.create).toEqual([
     expect.objectContaining({
-      agents: [{ agentId: 'builtin:qa' }],
+      agent: { agentId: 'builtin:qa' },
       provenance: expect.objectContaining({ depth: 1, chain: ['builtin:qa'] }),
     }),
   ])
@@ -149,9 +149,7 @@ test('the name the call gave is kept with the child, for SendMessage and TaskSto
 test('another agent takes the task by name, and only a known one', async () => {
   const { opts, calls } = host()
   await launchAgent('call-1', request({ agent: '@design' }), opts)
-  expect(calls.create).toEqual([
-    expect.objectContaining({ agents: [{ agentId: 'native:design' }] }),
-  ])
+  expect(calls.create).toEqual([expect.objectContaining({ agent: { agentId: 'native:design' } })])
   // The child is told who delegated, not who it is.
   expect((calls.start![0] as { task: string }).task).toContain(
     'The agent qa started you as a subagent',
@@ -174,7 +172,7 @@ describe('a fork', () => {
     expect(calls.capture).toEqual(['call-1'])
     expect(calls.create).toEqual([
       expect.objectContaining({
-        agents: [{ agentId: 'builtin:qa' }],
+        agent: { agentId: 'builtin:qa' },
         providerConnectionId: 'conn-1',
         modelId: 'parent-model',
         reasoningEffort: 'high',

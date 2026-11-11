@@ -41,6 +41,8 @@ export interface BuildRunCcHooksInput {
   agentId: string
   params: RunParams
   catalog: RunCatalog
+  /** The models a live key runs: what a hook's `model` alias may route to. */
+  offeredModelIds: readonly string[]
   /** Model this run resolved to — the fallback for a prompt hook that names none. */
   effectiveModelId: string
   defaultCwd: string
@@ -157,7 +159,15 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     ...(facts.model ? { model: facts.model } : {}),
     ...(subagent ? { agent: subagent } : {}),
     ...(input.interactive === undefined ? {} : { interactive: input.interactive }),
-    models: createHookModels({ env, userId, session, agentId, catalog, effectiveModelId }),
+    models: createHookModels({
+      env,
+      userId,
+      session,
+      agentId,
+      catalog,
+      offeredModelIds: input.offeredModelIds,
+      effectiveModelId,
+    }),
     mcp: createMcpHookCaller({
       env,
       userId,

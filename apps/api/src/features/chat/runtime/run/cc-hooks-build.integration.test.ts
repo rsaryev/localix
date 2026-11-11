@@ -68,6 +68,7 @@ function input(hooks: Record<string, unknown>, extra: Partial<BuildRunCcHooksInp
     params: { scope: {} } as never,
     catalog: {} as never,
     effectiveModelId: 'm',
+    offeredModelIds: [],
     defaultCwd: work(),
     disabledTools: [],
     availability: {} as never,

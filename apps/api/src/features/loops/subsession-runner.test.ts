@@ -22,7 +22,7 @@ const loop: SessionLoop = {
 describe('loop subsession runner', () => {
   test('an agent-armed loop runs as that agent on its own route, never the default agent', async () => {
     const reads: unknown[] = []
-    const creates: Array<{ agents?: Array<{ agentId: string }> }> = []
+    const creates: Array<{ agent?: { agentId: string } }> = []
     const fire = createSubsessionRunner({
       getParentSession: async (...args) => {
         reads.push(args)
@@ -38,12 +38,12 @@ describe('loop subsession runner', () => {
     await fire({ ...loop, ownerAgentId: 'builtin:qa' }, loop.prompt, [])
     expect(reads).toEqual([['user-1', 'parent-1', 'builtin:qa']])
     expect(creates[0]).toMatchObject({
-      agents: [{ agentId: 'builtin:qa' }],
+      agent: { agentId: 'builtin:qa' },
       providerConnectionId: 'qa-provider',
       modelId: 'qa-model',
     })
     await fire(loop, loop.prompt, [])
-    expect(creates[1]?.agents).toBeUndefined()
+    expect(creates[1]?.agent).toBeUndefined()
   })
 
   test('inherits parent policy and dispatches with loop provenance, never delegate provenance', async () => {

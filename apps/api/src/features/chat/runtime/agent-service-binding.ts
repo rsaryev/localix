@@ -37,7 +37,7 @@ export interface AgentServiceBinding {
   createSession: (
     userId: string,
     input: {
-      agents?: Array<{ agentId: string }>
+      agent?: { agentId: string }
       title: string
       parentSessionId: string
       sessionKind: 'subagent' | 'job'

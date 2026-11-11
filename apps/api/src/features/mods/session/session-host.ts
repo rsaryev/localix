@@ -67,8 +67,6 @@ export interface SessionModsDeps {
   /** `$.session.compact` and `$.prompt.compose` of the conversation (`event-calls.ts`). */
   compact?: (scene: ModScene) => Promise<JsonObject>
   compose?: (scene: ModScene) => Promise<readonly { id: string; text: string; scope: string }[]>
-  /** `$.command.run` in the conversation. */
-  runCommand?: (scene: ModScene, command: { command: string; args: string }) => Promise<unknown>
   /** The managed settings source; the machine's own by default, `null` for none. */
   managed?: ManagedSettingsSource | null
   /** How hooks modules compile: one compiler for every host, so a module is built once. */
@@ -140,7 +138,6 @@ export function createSessionMods(deps: SessionModsDeps) {
           builtIns: deps.builtIns,
           turn,
           settings: read,
-          ...(deps.runCommand ? { runCommand: (command) => deps.runCommand!(scene, command) } : {}),
           ...(deps.compact ? { compact: () => deps.compact!(scene) } : {}),
           ...(deps.compose ? { compose: () => deps.compose!(scene) } : {}),
         }),

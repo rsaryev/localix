@@ -191,6 +191,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     capabilities: context.capabilities,
     params,
     catalog: turn.catalog,
+    offeredModelIds: turn.offeredModelIds,
     effectiveModelId: turn.model.effectiveModelId,
     defaultCwd,
     disabledTools: context.disabledTools,

@@ -41,6 +41,7 @@ const verifier = () =>
     userId: 'u',
     session,
     catalog: {} as never,
+    offeredModelIds: [],
     effectiveModelId: 'p/m',
   })
 
@@ -160,6 +161,7 @@ describe('prompt hook billing', () => {
       userId: 'u',
       session,
       catalog: catalog as never,
+      offeredModelIds: ['p/m'],
       effectiveModelId: 'p/m',
     }).complete({ prompt: 'allow?', signal: live() })
 
@@ -250,6 +252,7 @@ describe('the model a hook names', () => {
       userId: 'u',
       session,
       catalog: catalog as never,
+      offeredModelIds: catalog.models.map((model) => model.id),
       effectiveModelId: 'p/m',
       ...over,
     })
@@ -260,6 +263,18 @@ describe('the model a hook names', () => {
       await models(created).complete({ prompt: 'allow?', model: 'haiku', signal: live() }),
     ).toBe('{"ok":true}')
     expect(JSON.stringify(created)).toContain('claude-haiku-4-5')
+  })
+
+  // The catalog lists every provider's models; one no live key runs is not offered, so a hook's
+  // alias stays on the run's model rather than failing on a provider the person never connected.
+  test('an alias whose family no live key runs stays on the run model', async () => {
+    const created: unknown[] = []
+    await models(created, { offeredModelIds: ['p/m'] }).complete({
+      prompt: 'allow?',
+      model: 'haiku',
+      signal: live(),
+    })
+    expect(JSON.stringify(created)).not.toContain('claude-haiku-4-5')
   })
 
   // A throw is the kit's model failure: what it means for the hook is the kit's.

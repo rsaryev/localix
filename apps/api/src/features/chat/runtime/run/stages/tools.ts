@@ -112,7 +112,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       ...(inputs.kitSession ? { kitSession: inputs.kitSession } : {}),
       pluginLspServers: inputs.pluginLspServers,
       agentModelChoices: turn.globalAgentSettings?.agentModelChoices,
-      mainModelId: turn.model.effectiveModelId,
+      subagentModels: { mainModel: turn.model.effectiveModelId, available: turn.offeredModelIds },
       listWorkflows: () =>
         listEnabledPluginWorkflows({
           repo: env.pluginRepo,

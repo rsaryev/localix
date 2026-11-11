@@ -113,7 +113,7 @@ export interface TaskDelegationOptions {
   createSession: (
     userId: string,
     input: {
-      agents: Array<{ agentId: string }>
+      agent: { agentId: string }
       title: string
       parentSessionId: string
       sessionKind: 'subagent'
