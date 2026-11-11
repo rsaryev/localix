@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { CLAUDE_CODE_BASE_VERSION } from '../../cc-settings/claude-code-version'
 import type { ModScene, ModsPorts } from '../contracts'
 import { apiMessagesOf, newestRows } from './session-messages'
+import { contextUsage } from '../../plugins/kit'
 
 /**
  * `$.session`: the conversation a hook runs in, shaped as Claude Code answers it. Localix shows a
@@ -76,13 +77,7 @@ export function createSessionApi(input: {
       const session = await read()
       const context = session?.context
       return {
-        context: {
-          window: context?.window ?? 0,
-          ...(context?.tokens !== undefined ? { tokens: context.tokens } : {}),
-          ...(context?.tokens !== undefined && context.window > 0
-            ? { percent: Math.round((context.tokens / context.window) * 100) }
-            : {}),
-        },
+        context: contextUsage({ window: context?.window ?? 0, tokens: context?.tokens }),
         rateLimits: [],
         cost: { usd: session?.costUsd ?? 0 },
         startedAt: session?.startedAt ?? Date.now(),

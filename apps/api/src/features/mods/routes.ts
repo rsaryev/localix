@@ -4,6 +4,7 @@ import type { AppContext } from '../../app'
 import { NotFoundError } from '../../lib/domain-errors'
 import { zValidator } from '../../lib/validator'
 import type { ModsHost } from './host'
+import { MOD_LIMITS } from '../plugins/kit'
 
 /**
  * The screen side of mods: which panes are open (each a mod instance's, in one project), what a
@@ -21,12 +22,12 @@ const takenBody = z.object({
   suggestion: z.boolean().optional(),
 })
 
-const clientQuery = z.object({ module: z.string().min(1).max(10_000) })
+const clientQuery = z.object({ module: z.string().min(1).max(MOD_LIMITS.fieldChars) })
 // Bounded again where it is read: plain data within a tree's bounds (`plainDataProblem`).
 const messageBody = z.object({ data: z.unknown() })
 const faultBody = z.object({
   phase: z.enum(['load', 'render', 'run']),
-  reason: z.string().max(4096),
+  reason: z.string().max(MOD_LIMITS.reasonChars),
 })
 
 const actionBody = z.object({

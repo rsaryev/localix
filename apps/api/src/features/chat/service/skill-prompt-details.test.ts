@@ -4,7 +4,6 @@ import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 import { skillPrompt } from '../../mods/conversation-events'
 import { hostWithMod } from '../../mods/testing/testing-host'
-import { skillPromptDetails } from '../../agent-core/skill-prompt-details'
 import { createSkillTool } from '../../agent-core/tools/skill'
 import { testSkillPorts } from '../../agent-core/testing/skill-ports'
 
@@ -32,8 +31,11 @@ test('skill.prompt carries the skill’s frontmatter, source, plugin and path', 
       return { text: e.text }
     })
   })
-  const details = await skillPromptDetails({ path, scope: 'project', pluginName: 'kit' })
-  await skillPrompt(host, scene, 'kit:commit', 'Commit.', details)
+  await skillPrompt(host, scene, 'kit:commit', 'Commit.', {
+    path,
+    scope: 'project',
+    pluginName: 'kit',
+  })
   expect(seen).toEqual([
     {
       frontmatter: { name: 'commit', description: 'Commit', 'allowed-tools': ['Bash'] },
@@ -42,12 +44,6 @@ test('skill.prompt carries the skill’s frontmatter, source, plugin and path', 
       path,
     },
   ])
-  expect(await skillPromptDetails({ path, scope: 'global' })).toMatchObject({
-    source: 'userSettings',
-  })
-  expect(await skillPromptDetails({ path, scope: 'project' })).toMatchObject({
-    source: 'projectSettings',
-  })
 })
 
 test('a skill the agent loads tells skill.prompt the same', async () => {

@@ -10,7 +10,6 @@ import {
   type ChatSkill,
 } from '../../plugins/kit'
 import { parseSkillCommand } from './slash-commands'
-import { skillPromptDetails } from '../../agent-core/skill-prompt-details'
 import { typedSkillShellAnswer } from './skill-command-authorize'
 import type { SessionRecord } from '../repository'
 import type { MessageMutationResponse } from '../contracts'
@@ -89,11 +88,11 @@ export async function handleSkillCommand(
     { userId, sessionId, cwd: workingDir },
     skill.name,
     expanded,
-    await skillPromptDetails({
+    {
       scope: skill.scope,
       ...(skill.path ? { path: skill.path } : {}),
       ...(skill.plugin ? { pluginName: skill.plugin.name } : {}),
-    }),
+    },
   )
   // Curator usage telemetry — a slash-command invocation counts as a use. The curator tends the
   // person's own skills; a plugin's are the plugin's.

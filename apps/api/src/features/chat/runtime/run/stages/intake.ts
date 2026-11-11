@@ -72,7 +72,7 @@ export async function intakeRunTurn(
   if (!intake.ok) {
     if (intake.promptMessage)
       await markPromptBlocked(deps, userId, intake.promptMessage, true, now())
-    throw new Error(`Prompt blocked by hook: ${intake.blockedReason}`)
+    throw new Error(intake.notice ?? `Prompt blocked by hook: ${intake.blockedReason}`)
   }
   const accepted = intake.frame.promptMessage
   if (accepted) await markPromptBlocked(deps, userId, accepted, false, now())

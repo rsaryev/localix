@@ -1,5 +1,6 @@
 import { childEnv } from '../../../lib/login-shell-env'
 import { modFetch, type HttpInit } from './http-api'
+import { MOD_LIMITS } from '../../plugins/kit'
 
 /**
  * `$.http`, `$.process`, `$.env` and `$.clock`, with Claude Code's limits: a fetch is bounded in
@@ -10,8 +11,8 @@ import { modFetch, type HttpInit } from './http-api'
  * instance has at most `MAX_TIMERS` timers and sleeps pending at once: each firing crosses into
  * the mod's VM, so a timer every millisecond would flood Localix's own thread.
  */
-const PROCESS_MS = 30_000
-const PROCESS_MAX_MS = 10 * 60_000
+const PROCESS_MS = MOD_LIMITS.runTimeoutMs
+const PROCESS_MAX_MS = MOD_LIMITS.runTimeoutMaxMs
 export const MIN_EVERY_MS = 100
 export const MAX_TIMERS = 100
 
@@ -40,7 +41,7 @@ export interface ModTimer {
 }
 
 /** What one stream of a child may hand back: 4 MiB, as Claude Code's `$.process.run` holds it. */
-const OUTPUT_BYTES = 4 * 1024 * 1024
+const OUTPUT_BYTES = MOD_LIMITS.outputBytes
 
 /** A child's stream as text, its first 4 MiB, and whether more was read and dropped. */
 async function capped(stream: ReadableStream<Uint8Array>) {

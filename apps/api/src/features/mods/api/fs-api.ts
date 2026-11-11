@@ -1,12 +1,13 @@
 import { promises as fs } from 'node:fs'
 import { dirname, isAbsolute, join, parse, resolve } from 'node:path'
 import { isPathBelow } from '../../../lib/path-containment'
+import { MOD_LIMITS } from '../../plugins/kit'
 
 /**
  * `$.fs`: files, relative to the conversation's working directory (`cwd`). A mod acts with the
  * user's own permissions, as in Claude Code; the limits are Claude Code's: 4 MiB a file.
  */
-const MAX_FILE_BYTES = 4 * 1024 * 1024
+const MAX_FILE_BYTES = MOD_LIMITS.fileBytes
 
 type Kind = 'file' | 'dir' | 'other'
 const kindOf = (stat: { isFile(): boolean; isDirectory(): boolean }): Kind =>

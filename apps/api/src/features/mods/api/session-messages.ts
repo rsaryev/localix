@@ -1,4 +1,5 @@
 import type { ModSessionMessage } from '../contracts'
+import { MOD_LIMITS } from '../../plugins/kit'
 
 /**
  * `$.session.messages` as Claude Code answers it: the newest 4096 entries, as rows
@@ -7,7 +8,7 @@ import type { ModSessionMessage } from '../contracts'
  * the assistant message that called it.
  */
 
-export const MAX_MESSAGES = 4096
+export const MAX_MESSAGES = MOD_LIMITS.messages
 
 export interface ApiMessage {
   role: 'user' | 'assistant'

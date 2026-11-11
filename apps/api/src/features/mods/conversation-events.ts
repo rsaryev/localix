@@ -1,3 +1,4 @@
+import { skillPromptInput, type SkillOrigin } from '../plugins/kit'
 import type { ModScene } from './contracts'
 import {
   cachedIn,
@@ -24,35 +25,28 @@ async function conversationScope(host: ModsHost, scene: ModScene): Promise<ModEv
   return { host, scene, plugins: await host.instancesFor(scene, new Set(host.loaded())) }
 }
 
-/** What `skill.prompt` is told about the skill beside its text (`SkillPromptInput`). */
-export interface SkillPromptDetails {
-  frontmatter: Record<string, unknown>
-  source: string
-  pluginName?: string
-  path?: string
-}
-
 /** `skill.prompt`: the text the model reads for a skill typed as `/name`. */
 export async function skillPrompt(
   host: ModsHost | undefined,
   scene: ModScene,
   skill: string,
   text: string,
-  details?: SkillPromptDetails,
+  origin?: SkillOrigin,
 ): Promise<string> {
   if (!host || !host.hears('skill.prompt')) return text
-  return skillPromptIn(await conversationScope(host, scene), skill, text, details)
+  return skillPromptIn(await conversationScope(host, scene), skill, text, origin)
 }
 
+/** The event is the kit's (`skillPromptInput`); absent an origin, the skill reads as built in. */
 export async function skillPromptIn(
   scope: ModEventScope,
   skill: string,
   text: string,
-  // Absent, the skill reads as one with no file (`built-in`, `{}`), as the types allow.
-  details: SkillPromptDetails = { frontmatter: {}, source: 'built-in' },
+  origin?: SkillOrigin,
 ): Promise<string> {
   if (!hearsIn(scope, 'skill.prompt')) return text
-  const answer = await fireIn(scope, 'skill.prompt', { skill, text, ...details }, (e) => ({
+  const input = await skillPromptInput(skill, text, origin)
+  const answer = await fireIn(scope, 'skill.prompt', input, (e) => ({
     text: fieldOf(e, 'text') ?? text,
   }))
   const rewritten = fieldOf(answer, 'text')
@@ -197,7 +191,7 @@ export function wrapSkillTool<T extends { name: string; execute: (...args: never
         if (typeof result.content !== 'string' || (result as { isError?: unknown }).isError)
           return result
         // The skill tool says which skill it loaded (`details.skill`, `agent-core/tools/skill.ts`).
-        const loaded = (result as { details?: { skill?: SkillPromptDetails } }).details?.skill
+        const loaded = (result as { details?: { skill?: SkillOrigin } }).details?.skill
         return {
           ...result,
           content: await skillPromptIn(scope, input.name, result.content, loaded),

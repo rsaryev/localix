@@ -1,12 +1,14 @@
+import { MOD_LIMITS } from '../../plugins/kit'
+
 /**
  * `$.http.fetch`, with Claude Code's limits: http and https only, 30 s, 5 redirects and 4 MiB each
  * way. Redirects are followed here, as a browser's fetch follows them: a cross-origin hop keeps only
  * the harmless headers (no `Authorization` or cookie reaches another origin), a 303 — or a 301/302
  * after a POST — goes on as a GET without its body.
  */
-const FETCH_MS = 30_000
-const MAX_BODY = 4 * 1024 * 1024
-const MAX_REDIRECTS = 5
+const FETCH_MS = MOD_LIMITS.httpMs
+const MAX_BODY = MOD_LIMITS.httpResponseBytes
+const MAX_REDIRECTS = MOD_LIMITS.redirects
 const SCHEMES: ReadonlySet<string> = new Set(['http:', 'https:'])
 /** What a request may carry to an origin it did not name. */
 const CROSS_ORIGIN_HEADERS: ReadonlySet<string> = new Set([

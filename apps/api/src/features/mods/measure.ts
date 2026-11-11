@@ -1,4 +1,5 @@
 import type { ModScene, ModSessionRead } from './contracts'
+import { contextUsage } from '../plugins/kit'
 
 /**
  * `session.measure`: after each turn, the conversation's usage — the context window's fill and
@@ -41,13 +42,7 @@ export function createMeasurer(input: {
     await input.dispatch(
       'session.measure',
       {
-        context: {
-          window: context?.window ?? 0,
-          ...(context?.tokens !== undefined ? { tokens: context.tokens } : {}),
-          ...(context?.tokens !== undefined && context.window > 0
-            ? { percent: Math.round((context.tokens / context.window) * 100) }
-            : {}),
-        },
+        context: contextUsage({ window: context?.window ?? 0, tokens: context?.tokens }),
         rateLimits: [],
         ...(now.costUsd !== undefined ? { cost: { usd: now.costUsd } } : {}),
         changed,

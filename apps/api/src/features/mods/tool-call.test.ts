@@ -17,6 +17,41 @@ function bash(run: () => { content: string; isError?: boolean } = () => ({ conte
 }
 
 describe('tool.call', () => {
+  test('a deny after the tool ran says the tool ran and a plugin withheld its result', async () => {
+    let ran = 0
+    const { scope } = await hostWithMod((on) => {
+      on('tool.call', async (_$, e, next) => {
+        await next(e)
+        return { deny: 'secrets in the output' }
+      })
+    })
+    const [tool] = scope.wrapTools([bash(() => (ran++, { content: 'TOKEN=1' }))])
+    const read = await tool!.execute('t1', { command: 'env' }, new AbortController().signal).then(
+      () => 'answered',
+      (error: Error) => error.message,
+    )
+    expect(ran).toBe(1)
+    expect(read).toBe('Bash ran, and a plugin withheld its result: secrets in the output')
+  })
+
+  test('a deny before the tool runs, or after it failed, is the reason alone', async () => {
+    const { scope } = await hostWithMod((on) => {
+      on('tool.call', async (_$, e, next) => {
+        if ((e as { command?: string }).command === 'rm') return { deny: 'no rm' }
+        await next(e)
+        return { deny: 'it failed anyway' }
+      })
+    })
+    const [tool] = scope.wrapTools([bash(() => ({ content: 'boom', isError: true }))])
+    const reason = (command: string) =>
+      tool!.execute('t1', { command }, new AbortController().signal).then(
+        () => 'answered',
+        (error: Error) => error.message,
+      )
+    expect(await reason('rm')).toBe('no rm')
+    expect(await reason('make')).toBe('it failed anyway')
+  })
+
   test('next.signal aborts when the run stops the call, so a held call lets go', async () => {
     const { scope } = await hostWithMod((on) => {
       on('tool.call', async (_$, _e, next) => {

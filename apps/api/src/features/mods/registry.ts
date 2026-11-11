@@ -1,12 +1,12 @@
+import { modNameProblem } from '../plugins/kit'
 import { pluginOfInstance } from './instance-id'
 
 /**
  * What mods add to Localix while they are loaded: commands (`$.command.register`), tools
  * (`$.tool.register`) and open panes (`$.ui.open`). Each belongs to the mod instance that added it
- * (`instance-id.ts`) and goes when that instance unloads. Names follow Claude Code's rule: letters,
- * digits, `_` and `-`, up to 64.
+ * (`instance-id.ts`) and goes when that instance unloads. Names follow Claude Code's rule, the kit's
+ * (`modNameProblem`).
  */
-const NAME = /^[A-Za-z0-9_-]{1,64}$/
 
 export interface Owned {
   /** The mod instance that added it. */
@@ -55,9 +55,9 @@ export interface ModPane extends Owned {
 }
 
 function checkName(kind: string, name: unknown): string {
-  if (typeof name !== 'string' || !NAME.test(name))
-    throw new Error(`${kind} name must be letters, digits, _ or -, up to 64: ${String(name)}`)
-  return name
+  const problem = modNameProblem(kind, name)
+  if (problem !== undefined) throw new Error(problem)
+  return name as string
 }
 
 export function createModRegistry(onChange: () => void) {
@@ -71,17 +71,17 @@ export function createModRegistry(onChange: () => void) {
     [...map.values()].filter((entry) => instance === undefined || entry.instance === instance)
   return {
     addCommand(instance: string, spec: Omit<ModCommand, keyof Owned>) {
-      const name = checkName('A command', spec.name)
+      const name = checkName('command', spec.name)
       commands.set(key(instance, name), { ...owner(instance), ...spec, name })
       onChange()
     },
     addTool(instance: string, spec: Omit<ModTool, keyof Owned>) {
-      const name = checkName('A tool', spec.name)
+      const name = checkName('tool', spec.name)
       tools.set(key(instance, name), { ...owner(instance), ...spec, name })
       onChange()
     },
     addAgent(instance: string, spec: Omit<ModAgent, keyof Owned>): string {
-      const name = checkName('An agent', spec.name)
+      const name = checkName('subagent type', spec.name)
       agents.set(key(instance, name), { ...owner(instance), ...spec, name })
       return name
     },
@@ -104,7 +104,7 @@ export function createModRegistry(onChange: () => void) {
       instance: string,
       pane: Omit<ModPane, keyof Owned | 'focusRequest'> & { focus?: boolean },
     ) {
-      const id = checkName('A pane', pane.id)
+      const id = checkName('pane', pane.id)
       const { focus, ...rest } = pane
       const before = panes.get(key(instance, id))?.focusRequest ?? 0
       panes.set(key(instance, id), {

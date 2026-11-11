@@ -5,7 +5,6 @@ import { defineAgentTool } from '@localixai/agent/agents'
 import { TOOL } from '../tool-names'
 import { writeSkillFile } from '../skill-discovery'
 import { recordSkillUse } from '../skill-usage-recorder'
-import { skillPromptDetails } from '../skill-prompt-details'
 import { MAX_OUTPUT_BYTES } from './file/read-output'
 import { truncationMarker } from './tool-output'
 import { isSkillDisabled, type SkillOverrides } from '../skill-overrides'
@@ -186,8 +185,14 @@ export function createSkillTool(
               })}`
             : body
           return {
-            // What a mod's `skill.prompt` is told about the skill it rewrites.
-            details: { skill: await skillPromptDetails(skill) },
+            // Where the skill comes from, for a mod's `skill.prompt` (`mods/conversation-events.ts`).
+            details: {
+              skill: {
+                scope: skill.scope,
+                ...(skill.path ? { path: skill.path } : {}),
+                ...(skill.pluginName ? { pluginName: skill.pluginName } : {}),
+              },
+            },
             content: [
               `# Skill: ${called}`,
               `Source: ${JSON.stringify(skill.path)}`,

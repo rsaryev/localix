@@ -1,5 +1,6 @@
 import type { ModelStepHook } from '@localixai/agent'
 import type { AgentTool } from '@localixai/agent/agents'
+import { clampReason, promptDroppedText } from '../plugins/kit'
 import { offerAgents, wrapAgent, type DirectoryAgent } from './agent-events'
 import type { RunSurface } from './api/run-api'
 import type { ModelUsage, ModScene } from './contracts'
@@ -31,7 +32,8 @@ import { modelStepHook } from './turn-step'
  */
 
 export type PromptOutcome =
-  | { dropped: true; reason: string }
+  /** `notice` is the line the person reads (Claude Code's, the kit's `promptDroppedText`). */
+  | { dropped: true; reason: string; notice: string }
   | { dropped: false; text: string; context: readonly string[] }
 
 export interface ModRunScope {
@@ -153,7 +155,10 @@ export async function createModRunScope(
         scene,
         plugins,
       )) as { drop?: unknown; text?: unknown; context?: unknown } | undefined
-      if (typeof answer?.drop === 'string') return { dropped: true, reason: answer.drop }
+      if (typeof answer?.drop === 'string') {
+        const reason = clampReason(answer.drop)
+        return { dropped: true, reason, notice: promptDroppedText(reason) }
+      }
       return {
         dropped: false,
         text: typeof answer?.text === 'string' ? answer.text : text,

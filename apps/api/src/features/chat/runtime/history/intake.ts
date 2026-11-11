@@ -67,7 +67,13 @@ export interface IntakeArgs {
 export type IntakeResult =
   | { ok: true; frame: ChatTurnFrame }
   /** A UserPromptSubmit hook denied the prompt — the caller fails the run before any model call. */
-  | { ok: false; blockedReason: string; promptMessage: PersistedMessage | undefined }
+  | {
+      ok: false
+      blockedReason: string
+      /** The line the person reads instead of the generic one (a mod's drop). */
+      notice?: string
+      promptMessage: PersistedMessage | undefined
+    }
 
 /**
  * A blocked prompt never reaches the model, on this turn or a later one (hooks.md: "A blocked
@@ -188,7 +194,10 @@ export async function intakeTurn(args: IntakeArgs): Promise<IntakeResult> {
   if (args.mods?.active && isRealUserPrompt && promptMessage) {
     const current = messages[messages.length - 1]?.payload.content as string
     const submitted = await args.mods.submit(current, promptMessage.id)
-    if (submitted.dropped) return { ok: false, blockedReason: submitted.reason, promptMessage }
+    if (submitted.dropped) {
+      const { reason, notice } = submitted
+      return { ok: false, blockedReason: reason, notice, promptMessage }
+    }
     if (submitted.text !== current)
       messages = rewriteModelPrompt(modelHistory, promptMessage, submitted.text)
     modContext = submitted.context

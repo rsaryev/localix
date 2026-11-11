@@ -1,5 +1,6 @@
 import type { AgentToolResult } from '@localixai/agent/agents'
 import { claudeCodeToolResponse } from '../ext/cc-tool-shapes'
+import { clampReason } from '../plugins/kit'
 
 /**
  * What `tool.call`'s core answers and what a hook's answer becomes. Core answers Claude Code's
@@ -49,11 +50,19 @@ const contextOf = (value: unknown): string[] =>
     ? value.filter((line): line is string => typeof line === 'string' && line !== '')
     : []
 
-/** The tool result the model reads for what the chain answered. */
-export function resultOf(answer: unknown, fallback: AgentToolResult): AgentToolResult {
+/**
+ * The tool result the model reads for what the chain answered. A `{ deny }` rejects the call with
+ * its reason, cut at 4,096 characters, as `withheld` words it (the reason alone by default).
+ */
+export function resultOf(
+  answer: unknown,
+  fallback: AgentToolResult,
+  withheld: (reason: string) => string = (reason) => reason,
+): AgentToolResult {
   if (!answer || typeof answer !== 'object') return fallback
   const record = answer as Fields
-  if (typeof record.deny === 'string') throw new ModToolDeniedError(record.deny)
+  if (typeof record.deny === 'string')
+    throw new ModToolDeniedError(withheld(clampReason(record.deny)))
   const context = contextOf(record.context)
   const withContext = (result: AgentToolResult): AgentToolResult =>
     context.length === 0

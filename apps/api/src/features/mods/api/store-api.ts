@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { stringOr } from '../contracts'
 import { errorMessage } from '../../../lib/errors'
+import { MOD_LIMITS } from '../../plugins/kit'
 
 /**
  * `$.store`: a mod's key-value store, kept as one JSON file in its data directory and shared by
@@ -10,7 +11,7 @@ import { errorMessage } from '../../../lib/errors'
  * atomic (a renamed temporary file). A value is JSON data, read back as `JSON.parse(JSON.stringify
  * (value))`; a function, a cycle or a store over 4 MiB of JSON is refused, as in Claude Code.
  */
-const MAX_STORE_BYTES = 4 * 1024 * 1024
+const MAX_STORE_BYTES = MOD_LIMITS.storeBytes
 
 interface SharedStore {
   data: Record<string, unknown> | null

@@ -5,6 +5,7 @@ import { loadModRuntime } from './isolation/guest-file'
 import { startModVm, type ModVm, type ModVmPort } from './isolation/mod-vm'
 import { bundleHooksModule } from './module-build'
 import { SUPERVISOR_CLOCK, type RestartRules } from './restarts'
+import { MOD_LIMITS } from '../plugins/kit'
 
 /**
  * One load of a plugin's hooks module for one instance: its bundle, sent to a VM of its own
@@ -77,7 +78,7 @@ export function createHooksLoader(input: HooksLoaderInput) {
       runtime: await loadModRuntime(input.runtimeDir),
       code: loaded.code,
       name: `${plugin}/hooks.cjs`,
-      hangMs: input.hangMs ?? 10_000,
+      hangMs: input.hangMs ?? MOD_LIMITS.hookMs,
       memoryLimitBytes: input.memoryLimitBytes ?? DEFAULT_MEMORY_LIMIT,
       clock,
       apiOf: () => input.apiOf(id),

@@ -4,6 +4,7 @@ import {
   type ModelCompletionRequest,
   type ModSessionMessage,
 } from '../contracts'
+import { MOD_LIMITS } from '../../plugins/kit'
 
 /**
  * `$.model`, as Claude Code answers it. `complete` and `fork` resolve to a result that says what
@@ -15,7 +16,7 @@ import {
 
 const EFFORTS = new Set(['low', 'medium', 'high', 'xhigh', 'max'])
 /** One reply's cap, as Claude Code holds it. */
-const MAX_TOKENS = 64_000
+const MAX_TOKENS = MOD_LIMITS.maxTokensCap
 /** The longest wait a timer holds. */
 const MAX_TIMEOUT_MS = 2_147_483_647
 

@@ -58,3 +58,18 @@ test('a submitted prompt is forgotten when its turn starts, even if no mod hears
   // Left behind, it would make a later identical typed prompt skip the hooks of a mod loaded since.
   expect(host.composer.takeSubmitted(scene.sessionId!, woken[0]!)).toBe(false)
 })
+
+test('a prompt a mod drops tells the person why, in Claude Code’s words, its reason cut at 4,096', async () => {
+  const long = 'x'.repeat(5000)
+  const { scope } = await hostWithMods({
+    gate: (on) => {
+      on('prompt.submit', () => ({ drop: long }))
+    },
+  })
+  const entered = await scope.submit('rm -rf /', 't1')
+  expect(entered).toEqual({
+    dropped: true,
+    reason: 'x'.repeat(4096),
+    notice: `Prompt dropped by a hook: ${'x'.repeat(4096)}`,
+  })
+})

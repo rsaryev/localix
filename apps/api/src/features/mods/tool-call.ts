@@ -6,6 +6,7 @@ import { agentOf } from './event-scope'
 import type { ModsHost } from './host'
 import { coreAnswer, resultOf } from './tool-answers'
 import { errorMessage } from '../../lib/errors'
+import { withheldResultText, type ToolCallEnd } from '../plugins/kit'
 
 /**
  * `tool.call` in Localix. Every tool call of a conversation goes through the mods enabled there:
@@ -52,6 +53,7 @@ async function callThrough(
   // A path the hooks left as they saw it goes to the tool as the call wrote it.
   const written = toolCallEvent(tool, input, toolCallId).file_path
   let ran: AgentToolResult = { content: '' }
+  let end: ToolCallEnd = 'not-run'
   let refused = undefined as { error: unknown; reason: string } | undefined
   const answer = await scope.host.dispatch(
     'tool.call',
@@ -65,6 +67,7 @@ async function callThrough(
       const local = toolInputOf(tool.name, own)
       try {
         ran = await tool.execute(toolCallId, local, signal, onUpdate, context)
+        end = ran.isError ? 'failed' : 'succeeded'
       } catch (error) {
         // A `PreToolUse` hook or the permission check refused the call: `next(e)` resolves to
         // `{ deny }`, as in Claude Code, rather than throwing at the hook.
@@ -83,7 +86,11 @@ async function callThrough(
   // person sees); a mod's own `deny` is the mod's.
   const deny = (answer as { deny?: unknown } | undefined)?.deny
   if (refused && deny === refused.reason) throw refused.error
-  return resultOf(answer, ran)
+  // What the model reads of a deny: after a call that succeeded, that it ran and its result was
+  // withheld (the kit's words); before it ran or after it failed, the reason alone.
+  return resultOf(answer, ran, (reason) =>
+    withheldResultText({ tool: String(seen.tool), reason, ran: end }),
+  )
 }
 
 /** Run each tool through `tool.call`; the same array when no enabled mod hooks it. */
