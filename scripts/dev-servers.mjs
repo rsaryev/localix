@@ -1,13 +1,21 @@
+// The development launcher: one process that owns the API supervisor (`scripts/dev-api.mjs`, via
+// `apps/api`'s `dev` task) and the Vite dev server(s), and stops them together. Callers: the root
+// `dev:web` (`--isolated`: a checkout-local database) and `dev:workspace` (`--workspace`: every
+// workspace dev task) scripts, and Tauri's `beforeDevCommand` (`apps/desktop-tauri/scripts/
+// dev-servers.mjs`) for `bun run dev`.
 import { spawn, spawnSync } from 'node:child_process'
-import net from 'node:net'
 import { resolve } from 'node:path'
 
 import {
   discoverRuntimeEndpoint,
-  isRuntimeEndpointLive,
   readRuntimeEndpoint,
   resolveRuntimeIdentity,
 } from '../apps/api/src/lib/runtime-endpoint'
+import {
+  assertApiPortAvailable,
+  assertDevelopmentRuntimeAvailable,
+  assertFrontendPortAvailable,
+} from './dev-preflight.mjs'
 import { repoRoot } from './lib/paths.mjs'
 import { devApiPort, devUiPort } from './lib/ports.mjs'
 
@@ -21,34 +29,6 @@ export function resolveDevDatabaseFile(env = process.env, root = repo) {
 export const exitCode = (code, signal) =>
   code ?? (signal === 'SIGINT' ? 130 : signal === 'SIGTERM' ? 143 : 1)
 
-function processIsAlive(pid) {
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch {
-    return false
-  }
-}
-
-/**
- * A full dev launch owns the API for its database. Reusing another runtime is
- * not valid here because Vite's proxy is fixed to the requested development
- * port. Detect the conflict before spawning either half of the app so the user
- * never lands in a frontend-only workspace.
- */
-export async function assertDevelopmentRuntimeAvailable() {
-  const identity = await resolveRuntimeIdentity()
-  const descriptor = await readRuntimeEndpoint(identity.endpointFile)
-  if (!descriptor || !processIsAlive(descriptor.pid)) return
-
-  const responsive = await isRuntimeEndpointLive(descriptor)
-  throw new Error(
-    `Cannot start Localix development: database ${identity.databaseFile} is already owned by ` +
-      `pid ${descriptor.pid} at ${descriptor.baseUrl} (${responsive ? 'responding' : 'alive but not responding'}). ` +
-      `Quit the other Localix app/runtime, then run bun run dev again.`,
-  )
-}
-
 /** The port `apps/ui`'s dev script passes to Vite. One constant so the check and the log agree. */
 export const FRONTEND_DEV_PORT = devUiPort()
 
@@ -61,71 +41,6 @@ export const FRONTEND_DEV_PORT = devUiPort()
  */
 export function devUiOrigins(port = FRONTEND_DEV_PORT) {
   return [`http://localhost:${port}`, `http://127.0.0.1:${port}`].join(',')
-}
-
-/**
- * BOTH loopback addresses, and that is the whole point.
- *
- * Measured: with a listener on `[::1]:P`, binding `127.0.0.1`, `::` or no host at all all report
- * the port FREE. Only binding `::1` sees it. Vite resolves `localhost` and on macOS lands on `::1`
- * first, so a one-address probe is a guard that cannot detect the conflict it exists for.
- */
-const LOOPBACKS = ['127.0.0.1', '::1']
-
-const bindOutcome = (host, port) =>
-  new Promise((resolveOutcome) => {
-    const probe = net.createServer()
-    probe.once('error', (error) => resolveOutcome(error.code ?? 'ERROR'))
-    probe.listen({ host, port }, () => probe.close(() => resolveOutcome('free')))
-  })
-
-/**
- * Which loopback address is already serving `port`, or null when it is startable.
- *
- * Anything other than EADDRINUSE counts as free: a host without IPv6 answers EADDRNOTAVAIL or
- * EAFNOSUPPORT for `::1`, and refusing to launch over that would be worse than the conflict.
- */
-export async function busyLoopbackAddress(port, hosts = LOOPBACKS) {
-  for (const host of hosts) {
-    if ((await bindOutcome(host, port)) === 'EADDRINUSE') return host
-  }
-  return null
-}
-
-/**
- * Refuse before spawning when the frontend port is taken.
- *
- * `assertDevelopmentRuntimeAvailable` promises to "detect the conflict before spawning either half
- * of the app" but only ever checked the API's database owner. A stale Vite from an earlier session
- * therefore passed preflight, failed with EADDRINUSE seconds later, and took the whole Turbo group
- * down with it — API and Tauri included — which reads as "the dev servers crashed, restart
- * everything" rather than as one leftover process.
- */
-export async function assertFrontendPortAvailable(port = FRONTEND_DEV_PORT) {
-  await assertPortAvailable('frontend', port)
-}
-
-/**
- * Refuse before spawning when the API port is taken.
- *
- * The frontend half got this guard and the API half did not, which left the asymmetry the
- * frontend guard exists to prevent: a foreign listener on the API port passed preflight,
- * failed with a raw EADDRINUSE after the (slow) dependency build, and took the whole Turbo
- * group down with it. `assertDevelopmentRuntimeAvailable` does not cover it — that one
- * checks who owns the DATABASE, which says nothing about who holds the port.
- */
-export async function assertApiPortAvailable(port) {
-  await assertPortAvailable('API', port)
-}
-
-async function assertPortAvailable(label, port) {
-  const host = await busyLoopbackAddress(port)
-  if (!host) return
-  throw new Error(
-    `Cannot start Localix development: the ${label} port ${port} is already in use on ${host}. ` +
-      `A dev server from an earlier session is probably still running — stop it ` +
-      `(\`lsof -nP -iTCP:${port} -sTCP:LISTEN\`, then kill that pid) and run bun run dev again.`,
-  )
 }
 
 /**
@@ -153,25 +68,21 @@ export function observeChildProcess(child, label) {
 const WORKSPACE_DEV_CONCURRENCY = 64
 
 export function resolveDevTurboCommands(workspace) {
-  const apiFilter = '--filter=@localixai/api'
-  const frontendFilters = workspace
-    ? ['--filter=!@localixai/api']
-    : ['--filter=@localixai/ui', '--filter=@localixai/agent', '--filter=@localixai/engine...']
-
   return {
-    prepare: ['x', 'turbo', 'dev:prepare', '--output-logs=new-only', apiFilter, ...frontendFilters],
-    api: ['x', 'turbo', 'dev', '--only', apiFilter],
+    api: ['x', 'turbo', 'dev', '--only', '--filter=@localixai/api'],
     // Every workspace package's persistent `dev` runs at once; Turbo refuses a run whose persistent
     // tasks reach its default concurrency of 10, which the workspace passed as mini apps were
     // added.
-    frontend: [
-      'x',
-      'turbo',
-      'dev',
-      '--only',
-      ...(workspace ? [`--concurrency=${WORKSPACE_DEV_CONCURRENCY}`] : []),
-      ...frontendFilters,
-    ],
+    frontend: workspace
+      ? [
+          'x',
+          'turbo',
+          'dev',
+          '--only',
+          `--concurrency=${WORKSPACE_DEV_CONCURRENCY}`,
+          '--filter=!@localixai/api',
+        ]
+      : ['x', 'turbo', 'dev', '--only', '--filter=@localixai/ui'],
   }
 }
 
@@ -179,9 +90,9 @@ export function resolveDevTurboCommands(workspace) {
  * What is actually wrong when the API never answers, in the message itself.
  *
  * The old timeout said only `Timed out waiting for Localix API at <url>`, and the failure mode that
- * really happens is invisible from that: a previous API process still ALIVE while serving nothing (a
- * `bun --watch` whose reload deadlocked on its own lease) leaves a runtime descriptor behind, so the
- * new one cannot take ownership. Naming the descriptor, holder pid and state turns that into a
+ * really happens is invisible from that: a previous API process still ALIVE while serving nothing
+ * (once, a `bun --watch` reload deadlocked on its own lease) leaves a runtime descriptor behind, so
+ * the new one cannot take ownership. Naming the descriptor, holder pid and state turns that into a
  * one-look diagnosis. The frontend now starts independently and keeps rendering this failure.
  */
 async function describeRuntimeState() {
@@ -301,24 +212,8 @@ export async function runDevServers(args = process.argv.slice(2)) {
   }
 
   try {
-    // Two concurrent `turbo dev` graphs both expand `dev.dependsOn: ["^build"]`. Their identical
-    // build tasks can then race while deleting and rewriting the same dist/ trees. Prepare the
-    // combined graph once, then start only the selected persistent tasks below.
-    const prepare = spawn('bun', commands.prepare, {
-      cwd: repo,
-      stdio: 'inherit',
-    })
-    children.add(prepare)
-    prepare.once('exit', () => children.delete(prepare))
-    const prepareResult = await observeChildProcess(prepare, 'development dependencies').exited
-    if (prepareResult.error) throw prepareResult.error
-    if (prepareResult.code !== 0 || prepareResult.signal) {
-      return exitCode(prepareResult.code, prepareResult.signal)
-    }
-
-    // The API imports runtime entrypoints from compiled workspace packages (for example,
-    // @localixai/mini-app-sdk/backend). The preparation pass above seeds those outputs on a fresh
-    // checkout; --only prevents this independent API supervisor from rebuilding them again.
+    // Nothing is built first: the API and Vite read workspace packages from source
+    // (`lib/workspace-source.mjs`).
     const api = spawn('bun', commands.api, {
       cwd: repo,
       env: {

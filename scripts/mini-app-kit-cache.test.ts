@@ -60,4 +60,24 @@ describe('cachedKit / storeKit', () => {
     // The current kit plus the two newest others survive.
     expect(readdirSync(cache).filter((name) => /^[0-9a-f]{32}$/u.test(name)).length).toBe(3)
   })
+
+  // The stager keys kits `<digest>-<Localix version>`; a prune that matched only bare digests kept
+  // every one of them, and the cache grew to 97 kits (7GB) on a development machine.
+  test('prunes version-suffixed kits and the scratch copies of stagers that died', () => {
+    const cache = scratch()
+    const staged = scratch()
+    writeFileSync(join(staged, 'kit.json'), '{}')
+    const deadPid = 2 ** 22 + 1
+    mkdirSync(join(cache, `${'0'.repeat(32)}-1.0.0.tmp-${deadPid}`))
+    mkdirSync(join(cache, `${'0'.repeat(32)}-1.0.0.tmp-${process.ppid}`))
+
+    for (const digest of ['1', '2', '3', '4'].map((c) => `${c.repeat(32)}-9.8.7-beta.6`)) {
+      storeKit(cache, digest, staged)
+    }
+
+    expect(readdirSync(cache).sort()).toEqual([
+      `${'0'.repeat(32)}-1.0.0.tmp-${process.ppid}`,
+      ...['2', '3', '4'].map((c) => `${c.repeat(32)}-9.8.7-beta.6`),
+    ])
+  })
 })

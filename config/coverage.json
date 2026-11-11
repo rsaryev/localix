@@ -377,7 +377,6 @@
     "scripts/check-doc-refs.mjs",
     "scripts/check-generated.mjs",
     "scripts/check-public-repo.mjs",
-    "scripts/dev-api.mjs",
     "scripts/lib/run.mjs",
     "scripts/lib/wait.mjs",
     "scripts/pre-commit.mjs",

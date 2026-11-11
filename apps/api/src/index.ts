@@ -683,17 +683,19 @@ export async function ensureDaemon(options: { watch?: boolean; host?: string } =
   )
 }
 
-if (import.meta.main) {
-  if (process.argv.includes(DESKTOP_RUNTIME_ARG)) {
+/** The process entry: `src/index.ts` run directly, and `bin/localix` (`bun run start`), which
+ * imports this module and so is not `import.meta.main`. */
+export async function main(argv: readonly string[] = process.argv): Promise<void> {
+  if (argv.includes(DESKTOP_RUNTIME_ARG)) {
     // The shell's first sign of life from this process. Without it, "printed nothing" could
     // mean anything; with it, silence means the runtime never got to run its own code — the
     // OS held the read of `server.js` (a macOS folder-access prompt nobody answered yet) — and
     // the shell says so instead of "timed out" (`sidecar.rs` `format_timeout_message`).
     startupDiag(`runtime code loaded pid=${process.pid}`)
     await runDesktopRuntime()
-  } else if (process.argv.includes(ENSURE_DAEMON_ARG)) {
+  } else if (argv.includes(ENSURE_DAEMON_ARG)) {
     const endpoint = await ensureDaemon({
-      watch: process.argv.includes(WATCH_DAEMON_ARG),
+      watch: argv.includes(WATCH_DAEMON_ARG),
       host: envString('LOCALIX_RUNTIME_HOST'),
     })
     process.stdout.write(`${LOCALIX_RUNTIME_READY_PREFIX}${JSON.stringify(endpoint)}\n`)
@@ -704,7 +706,7 @@ if (import.meta.main) {
       // log, so a development launch is in `bun run logs` like a packaged one. A detached daemon
       // child must not: its stdout is already redirected INTO that file, and teeing would write
       // every line twice.
-      const daemonChild = process.argv.includes(DAEMON_CHILD_ARG)
+      const daemonChild = argv.includes(DAEMON_CHILD_ARG)
       await startServer({
         installSignalHandlers: true,
         ...(daemonChild ? {} : { logFile: true, teeStdout: true }),
@@ -713,15 +715,17 @@ if (import.meta.main) {
       if (!(error instanceof RuntimeOwnershipHeldError)) throw error
       // A detached election loser exits immediately. The one-shot ensureDaemon
       // parent observes the lease and retries if the winner crashes before ready.
-      if (process.argv.includes(DAEMON_CHILD_ARG)) process.exit(0)
+      if (argv.includes(DAEMON_CHILD_ARG)) process.exit(0)
       const endpoint = await waitForRuntimeEndpoint({
         protocolVersion: LOCALIX_API_PROTOCOL_VERSION,
       })
-      if (!process.argv.includes(DAEMON_CHILD_ARG)) {
+      if (!argv.includes(DAEMON_CHILD_ARG)) {
         process.stdout.write(`Localix API already running at ${endpoint.baseUrl}\n`)
       }
     }
   }
 }
+
+if (import.meta.main) await main()
 
 export type { App } from './app'

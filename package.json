@@ -31,7 +31,7 @@
     "check:tests": "bunx turbo type-check:tests --concurrency=${TURBO_CONCURRENCY:-2} ${TURBO_FILTER:-}",
     "check:rust": "bunx turbo tauri:check",
     "check:bundle": "bun apps/desktop-tauri/scripts/prepare-sidecar.mjs && bun apps/desktop-tauri/scripts/smoke-bundle.mjs",
-    "clean": "bunx turbo clean && shx rm -rf node_modules",
+    "clean": "bunx turbo clean && shx rm -rf .turbo node_modules",
     "lint:fix": "oxlint --type-aware --fix",
     "lint:changed": "oxlint --type-aware $(git diff --name-only --diff-filter=d main -- '*.ts' '*.tsx' '*.mjs' '*.js' | tr '\\n' ' ')",
     "lint:react-doctor": "oxlint -c config/oxlint-react-doctor.json apps/api/src apps/desktop-tauri/scripts apps/landing/src apps/ui/src packages scripts",

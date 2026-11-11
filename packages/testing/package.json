@@ -14,7 +14,8 @@
   },
   "scripts": {
     "test": "bun test src",
-    "type-check": "bun ../../scripts/tsc.mjs --noEmit"
+    "type-check": "bun ../../scripts/tsc.mjs --noEmit",
+    "clean": "shx rm -rf .turbo"
   },
   "devDependencies": {
     "@types/bun": "1.4.3",

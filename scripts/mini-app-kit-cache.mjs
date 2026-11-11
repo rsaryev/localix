@@ -22,9 +22,8 @@ import { join, relative } from 'node:path'
  * the inputs are the same; a change to staging itself changes the key, so a test still stages fresh
  * exactly when what it tests changed.
  *
- * Keyed by CONTENT, not mtime: `turbo dev` starts `tsc --watch` for a package whose `dist` is a
- * kit input, and its initial emit rewrites that `dist` with identical bytes on every launch — an
- * mtime key would miss every time.
+ * Keyed by CONTENT, not mtime: a package build rewrites a `dist` that is a kit input with identical
+ * bytes (a Turbo cache restore, a test rebuilding `dist`), and an mtime key would miss every time.
  */
 
 /** Kits kept besides the current one; each is ~33MB. */
@@ -72,6 +71,20 @@ export function cachedKit(cacheRoot, digest, manifest) {
   return existsSync(join(dir, manifest)) ? dir : null
 }
 
+/** A stored kit: `<digest>`, or `<digest>-<Localix version>` as `stage-mini-app-kit.mjs` keys it. */
+const KIT_ENTRY = /^[0-9a-f]{32}(?:-[0-9A-Za-z.+-]+)?$/u
+/** `storeKit`'s scratch copy, named after the staging process. */
+const SCRATCH_ENTRY = /\.tmp-(\d+)$/u
+
+function processIsAlive(pid) {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    return error?.code === 'EPERM'
+  }
+}
+
 /** Store a freshly staged kit under `digest` (swapped in whole), and drop the oldest others. */
 export function storeKit(cacheRoot, digest, stagedKit) {
   const target = join(cacheRoot, digest)
@@ -80,8 +93,16 @@ export function storeKit(cacheRoot, digest, stagedKit) {
   cpSync(stagedKit, scratch, { recursive: true })
   rmSync(target, { recursive: true, force: true })
   renameSync(scratch, target)
-  const others = readdirSync(cacheRoot)
-    .filter((name) => name !== digest && /^[0-9a-f]{32}$/u.test(name))
+  const names = readdirSync(cacheRoot)
+  // A stager that died between the copy and the rename left its scratch copy behind.
+  for (const name of names) {
+    const owner = SCRATCH_ENTRY.exec(name)?.[1]
+    if (owner && !processIsAlive(Number(owner))) {
+      rmSync(join(cacheRoot, name), { recursive: true, force: true })
+    }
+  }
+  const others = names
+    .filter((name) => name !== digest && KIT_ENTRY.test(name) && !SCRATCH_ENTRY.test(name))
     .map((name) => ({ name, at: statSync(join(cacheRoot, name)).mtimeMs }))
     .sort((a, b) => b.at - a.at)
   for (const { name } of others.slice(KEEP)) {

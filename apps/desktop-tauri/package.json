@@ -21,7 +21,8 @@
     "tauri:release": "bun scripts/run-tauri.mjs --release --notarize-dmg build",
     "tauri:check": "bun scripts/check-rust.mjs",
     "tauri:resilience": "bun scripts/check-resilience.mjs",
-    "tauri:tabs": "bun scripts/check-native-tabs.mjs"
+    "tauri:tabs": "bun scripts/check-native-tabs.mjs",
+    "clean": "shx rm -rf .turbo src-tauri/binaries src-tauri/resources src-tauri/tauri.release.generated.conf.json"
   },
   "devDependencies": {
     "@localixai/mini-app-sdk": "workspace:*",

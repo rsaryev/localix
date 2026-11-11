@@ -1,6 +1,6 @@
 /**
  * Regression: the visual-feedback probe is bundled once and MEMOIZED
- * in a module-level cache. `bun --watch src/index.ts` (the apps/api dev script) only
+ * in a module-level cache. `bun --watch src/index.ts` (or `--hot`) only
  * rebuilds the STATIC import graph of `src/index.ts`; the probe is built dynamically,
  * so a code change under `packages/visual-feedback/src/**` never rebuilds it and a
  * running dev server keeps serving a STALE probe until a manual restart — a landed

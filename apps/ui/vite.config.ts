@@ -1,4 +1,4 @@
-import { defineConfig, type PluginOption } from 'vite'
+import { defaultClientConditions, defineConfig, type PluginOption } from 'vite'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
@@ -97,11 +97,25 @@ export default defineConfig(({ command }) => {
       // react-router-dom share the same renderer instance.
       //
       dedupe: ['react', 'react-dom', 'react-router-dom'],
+      // The dev server reads workspace packages from their `src` (the export condition named in
+      // `scripts/lib/workspace-source.mjs`), so a package build rewriting `dist` reloads nothing
+      // and dev needs no build first. A build keeps the published `dist` exports.
+      conditions:
+        command === 'serve' ? [...defaultClientConditions, '@localixai/source'] : undefined,
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
     },
-    optimizeDeps: { include: ['react', 'react-dom', 'react-router-dom'] },
+    optimizeDeps: {
+      // The polyfill shim is imported only by modules loaded after the first page; left to
+      // discovery, Vite finds it then, re-bundles, and reloads the open page.
+      include: [
+        'react',
+        'react-dom',
+        'react-router-dom',
+        'vite-plugin-node-polyfills/shims/process',
+      ],
+    },
     build: {
       // `rolldownOptions`, not `rollupOptions`: Vite 8 deprecated the latter, and
       // it silently ignores `output.codeSplitting` — the build's own warning names

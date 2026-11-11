@@ -21,14 +21,9 @@
       "outputs": ["src/generated/**"]
     },
     "dev": {
-      "dependsOn": ["^build"],
       "passThroughEnv": ["HOST", "PORT", "NODE_ENV", "LOCALIX_*", "VITE_*"],
       "cache": false,
       "persistent": true
-    },
-    "dev:prepare": {
-      "dependsOn": ["^build"],
-      "outputs": []
     },
     "test": {
       "dependsOn": ["^build"],

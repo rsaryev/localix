@@ -27,7 +27,7 @@ if (uiDir) {
     '[localix] No built UI found. Looked in:\n' +
       candidates.map((dir) => `  - ${join(dir, 'index.html')}`).join('\n') +
       '\n\nBuild the UI first (from the repo root):\n' +
-      '  bun run build:web   # or: cd apps/ui && bun run build\n',
+      '  bunx turbo build --filter=@localixai/ui\n',
   )
   process.exit(1)
 }
@@ -37,4 +37,5 @@ if (!process.env.PORT) {
   process.env.PORT = '5050'
 }
 
-await import('../src/index.ts')
+const { main } = await import('../src/index.ts')
+await main()

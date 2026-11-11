@@ -20,7 +20,7 @@ import { errorMessage } from '../../../../lib/errors'
 //
 // The probe is bundled ONCE with `Bun.build` and cached process-wide. That cache is
 // correct in PRODUCTION (the source never changes), but a real DX trap in DEVELOPMENT:
-// the apps/api dev script is `bun --watch src/index.ts`, and `--watch` only rebuilds
+// an API run under `bun --watch src/index.ts` (or `--hot`) only rebuilds
 // the STATIC import graph of `src/index.ts`. The probe is built DYNAMICALLY (via
 // `Bun.resolveSync` + `Bun.build`), so it isn't in that graph — a code change under
 // `packages/visual-feedback/src/**` does NOT rebuild it and the running server keeps

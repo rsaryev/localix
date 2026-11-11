@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { assertConsistent, readVersions, repoRootFromHere, stampVersion } from './stamp-version.mjs'
@@ -8,13 +8,17 @@ const real = repoRootFromHere()
 const srcTauri = ['apps', 'desktop-tauri', 'src-tauri']
 const roots: string[] = []
 
-/** A copy of the three real files, so each test edits a throwaway tree. */
+/**
+ * A copy of the three real files, so each test edits a throwaway tree. Read and written, not
+ * `cpSync`: on macOS that clones, which posts a change event on the SOURCE files, and `tauri dev`
+ * watches them; a test run must not look like an edit to a running development app.
+ */
 function fixture(): string {
   const root = mkdtempSync(join(tmpdir(), 'stamp-version-'))
   roots.push(root)
   mkdirSync(join(root, ...srcTauri), { recursive: true })
   for (const file of ['tauri.conf.json', 'Cargo.toml', 'Cargo.lock']) {
-    cpSync(join(real, ...srcTauri, file), join(root, ...srcTauri, file))
+    writeFileSync(join(root, ...srcTauri, file), readFileSync(join(real, ...srcTauri, file)))
   }
   return root
 }

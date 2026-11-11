@@ -38,8 +38,8 @@ export async function isManagedCopy(dir: string): Promise<boolean> {
 /**
  * Install `sourceDir` at `installDir`, atomically: a complete temp copy, then one rename. The
  * previous copy is RETIRED (renamed aside), not deleted. Its backend bundle may be the module this
- * process is executing right now, and the development runtime is `bun --watch`, which reloads the
- * whole API the moment a file it imported is unlinked (measured: rename-aside leaves it alone;
+ * process is executing right now, and an API run under `bun --watch` reloads the whole process
+ * the moment a file it imported is unlinked (measured: rename-aside leaves it alone;
  * `rm` of the renamed tree reloads). Retired trees are swept by {@link pruneRetiredManagedCopies}
  * on the first discovery of the next process, before anything is imported. `marker` is written
  * beside the copy: the record of where it came from (a marketplace's archive, a local folder).

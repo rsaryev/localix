@@ -7,7 +7,8 @@
   "type": "module",
   "scripts": {
     "test": "bun test --timeout 60000 --path-ignore-patterns='**/*.integration.test.ts' .",
-    "test:integration": "bun test integration.test"
+    "test:integration": "bun test integration.test",
+    "clean": "shx rm -rf .turbo"
   },
   "devDependencies": {
     "@localixai/agent": "workspace:*",

@@ -69,13 +69,13 @@ bun run test
 bun run check:bundle
 ```
 
-Type checks read workspace packages from source (the `@localixai/source` export condition), so they
-need no build first; the build and the tests still use `dist`. Tests have two tiers in every
-workspace, the `scripts` workspace of repository contracts included: `bun run test` (unit tests) and
-`bun run test:integration` (real processes, PTYs and watchers). Both run through Turbo, which
-replays a package whose inputs did not change; CI runs them as parallel jobs. `check:tests`
-type-checks test files, while `test` executes them. `bun run coverage` holds the coverage gates.
-`check:bundle` stages the desktop bundle and starts its API outside the checkout.
+Type checks and the development servers read workspace packages from source (the `@localixai/source`
+export condition), so they need no build first; the build and the tests still use `dist`. Tests have
+two tiers in every workspace, the `scripts` workspace of repository contracts included:
+`bun run test` (unit tests) and `bun run test:integration` (real processes, PTYs and watchers). Both
+run through Turbo, which replays a package whose inputs did not change; CI runs them as parallel
+jobs. `check:tests` type-checks test files, while `test` executes them. `bun run coverage` holds the
+coverage gates. `check:bundle` stages the desktop bundle and starts its API outside the checkout.
 
 The workflows have separate responsibilities:
 

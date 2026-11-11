@@ -73,7 +73,8 @@
     "validate:plugins": "bun scripts/validate-plugins.ts",
     "lsp:update": "bun scripts/lsp-update.ts",
     "db:migrate": "bun run src/db/migrate.ts",
-    "db:audit": "bun run src/db/audit-cli.ts"
+    "db:audit": "bun run src/db/audit-cli.ts",
+    "clean": "shx rm -rf dist .turbo"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.9.1",

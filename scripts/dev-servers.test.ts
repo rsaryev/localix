@@ -11,17 +11,19 @@ import { resolveRuntimeIdentity } from '../apps/api/src/lib/runtime-endpoint'
 import { parseUiOrigins } from '../apps/api/src/lib/local-origin-guard'
 
 import {
-  devUiOrigins,
+  assertApiPortAvailable,
   assertDevelopmentRuntimeAvailable,
+  assertFrontendPortAvailable,
+  busyLoopbackAddress,
+} from './dev-preflight.mjs'
+import {
+  devUiOrigins,
+  ensureDependenciesInstalled,
   exitCode,
   observeChildProcess,
+  resolveDevDatabaseFile,
   resolveDevTurboCommands,
   waitForHealth,
-  assertFrontendPortAvailable,
-  assertApiPortAvailable,
-  busyLoopbackAddress,
-  ensureDependenciesInstalled,
-  resolveDevDatabaseFile,
 } from './dev-servers.mjs'
 
 class FakeChild extends EventEmitter {}
@@ -104,35 +106,19 @@ describe('dev server child lifecycle', () => {
 })
 
 describe('development Turbo orchestration', () => {
-  test('prepares shared dependencies once before isolated persistent tasks start', () => {
+  // Dev reads workspace packages from source (`lib/workspace-source.mjs`): nothing is built first,
+  // and no package `tsc --watch` rewrites `dist` under the running API and Vite.
+  test('starts the API and the app dev server, and builds nothing first', () => {
     const commands = resolveDevTurboCommands(false)
 
-    expect(commands.prepare).toEqual([
-      'x',
-      'turbo',
-      'dev:prepare',
-      '--output-logs=new-only',
-      '--filter=@localixai/api',
-      '--filter=@localixai/ui',
-      '--filter=@localixai/agent',
-      '--filter=@localixai/engine...',
-    ])
-    expect(commands.api).toEqual(['x', 'turbo', 'dev', '--only', '--filter=@localixai/api'])
-    expect(commands.frontend).toContain('--only')
+    expect(commands).toEqual({
+      api: ['x', 'turbo', 'dev', '--only', '--filter=@localixai/api'],
+      frontend: ['x', 'turbo', 'dev', '--only', '--filter=@localixai/ui'],
+    })
   })
 
-  test('workspace preparation covers both the API and the remaining workspace', () => {
-    const commands = resolveDevTurboCommands(true)
-
-    expect(commands.prepare).toEqual([
-      'x',
-      'turbo',
-      'dev:prepare',
-      '--output-logs=new-only',
-      '--filter=@localixai/api',
-      '--filter=!@localixai/api',
-    ])
-    expect(commands.frontend).toEqual([
+  test('the workspace variant starts every other workspace dev task', () => {
+    expect(resolveDevTurboCommands(true).frontend).toEqual([
       'x',
       'turbo',
       'dev',
@@ -140,6 +126,20 @@ describe('development Turbo orchestration', () => {
       '--concurrency=64',
       '--filter=!@localixai/api',
     ])
+  })
+
+  test('the Turbo dev task depends on no build, and no package runs a dist watcher', async () => {
+    const turbo = await Bun.file(resolve(import.meta.dir, '../turbo.json')).json()
+    expect(turbo.tasks.dev.dependsOn ?? []).toEqual([])
+    expect(turbo.tasks['dev:prepare']).toBeUndefined()
+    const watchers = []
+    for (const manifest of new Bun.Glob('packages/*/package.json').scanSync({
+      cwd: resolve(import.meta.dir, '..'),
+    })) {
+      const scripts = (await Bun.file(resolve(import.meta.dir, '..', manifest)).json()).scripts
+      if (scripts?.dev) watchers.push(manifest)
+    }
+    expect(watchers).toEqual([])
   })
 })
 

@@ -72,7 +72,10 @@ need no build.
 Every internal package lists a `@localixai/source` condition in its `exports`, pointing at `src`,
 and `tsconfig.base.json` sets it as a `customConditions` entry. The compiler therefore reads
 dependencies from source. The `tsconfig.build.json` files clear the condition, so a build still
-emits against `dist`, and the packaged app, Bun and Vite never see it.
+emits against `dist`, and the packaged app never sees it. Development reads source too: the dev API
+runs under `bun --conditions=@localixai/source` and the Vite dev servers add the condition, so dev
+builds nothing first and a package build never restarts the API or reloads the page
+(`scripts/lib/workspace-source.mjs`). Production builds, the CLI and the tests still read `dist`.
 
 A workspace that reads another workspace's files through tsconfig `paths` must hash them: depend on
 the target's `type-check` in its `turbo.json`, or list the target in `inputs`.

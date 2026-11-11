@@ -1,139 +1,161 @@
-import { join } from 'node:path'
+// The development API: runs `apps/api/src/index.ts` and restarts it, as a fresh process, when its
+// source changes. Started by `apps/api`'s `dev` script, which `scripts/dev-servers.mjs` runs
+// (`bun run dev`, `dev:web`, `dev:workspace`).
+//
+// Why not `bun --watch`, which this used to be:
+//  - It watched every file of the module graph, so writes nobody meant as an API edit restarted
+//    it: a `tsc --watch` re-emit or Turbo cache restore of `packages/*/dist`, a test rebuilding
+//    `dist`, an edit to the linked plugin kit in another checkout. That was "it restarts by itself".
+//  - It reloads by re-executing the same process, which keeps the previous image's children (PTY
+//    watchdogs, language servers) running unowned, and a file it saw deleted is no longer watched,
+//    so restoring it never brought the API back; a health-probe supervisor covered that by
+//    killing whatever stopped answering, a busy API included.
+// Here the API reads workspace packages from source (`lib/workspace-source.mjs`), only source
+// directories are watched, a burst of writes restarts once, the old process gets its graceful
+// teardown before the new one starts, and an API that exits on its own (a startup error, another
+// runtime taking the database over) is left down until the next source change.
+import { watch } from 'node:fs'
+import { basename, join, relative } from 'node:path'
 
+import { RUNTIME_SHUTDOWN_DEADLINE_MS } from '../apps/api/src/lib/runtime-protocol'
 import { repoRoot } from './lib/paths.mjs'
+import { SOURCE_CONDITION, workspaceSourceRoots } from './lib/workspace-source.mjs'
 
-const repo = repoRoot()
-const apiDir = join(repo, 'apps', 'api')
+/** Long enough to fold a save, a checkout or a formatter run into one restart. */
+const RESTART_DELAY_MS = 200
+/** The API's own teardown deadline, plus room to exit; past it the process is killed. */
+const STOP_DEADLINE_MS = RUNTIME_SHUTDOWN_DEADLINE_MS + 2_000
 
-// Localix ships no mini app and no mini app kit: the store installs mini apps, and a mini app
-// installs the kit it is built against (`docs/extending/mini-apps.md`).
-const spawnApi = () =>
-  Bun.spawn(['bun', '--watch', 'src/index.ts'], {
-    cwd: apiDir,
-    env: process.env,
-    stdin: 'inherit',
-    stdout: 'inherit',
-    stderr: 'inherit',
-  })
-
-let child = spawnApi()
-let stopping = false
-// Set only while the supervisor is deliberately swapping the child, so its exit is not read as the
-// API giving up. Settles once the replacement is in `child`.
-/** @type {Promise<void> | undefined} */
-let restarting
-const stop = (signal) => {
-  if (stopping) return
-  stopping = true
-  supervisor?.stop()
-  child.kill(signal)
+/** The API's source, its migrations, and the source of every workspace package it imports. */
+export function apiWatchRoots(repo) {
+  return [
+    join(repo, 'apps/api/src'),
+    join(repo, 'apps/api/migrations'),
+    ...workspaceSourceRoots(repo, 'apps/api'),
+  ]
 }
-for (const signal of ['SIGINT', 'SIGTERM']) {
-  process.once(signal, () => stop(signal))
+
+const SOURCE_FILE = /\.(?:[cm]?[jt]s|tsx|json)$/u
+const TEST_FILE = /\.test\.[cm]?[jt]sx?$/u
+const IGNORED_DIRECTORY = new Set(['node_modules', 'dist', '.turbo'])
+
+/** Whether a change to `path` (relative to a watched root) can change what the API runs. */
+export function isReloadTrigger(path) {
+  if (path.split(/[\\/]/u).some((segment) => IGNORED_DIRECTORY.has(segment))) return false
+  const name = basename(path)
+  return SOURCE_FILE.test(name) && !TEST_FILE.test(name) && !name.startsWith('.')
 }
 
 /**
- * Bring the API back when a reload leaves it dead.
+ * Debounces change notifications into restarts. A change that arrives while a restart runs is kept
+ * and starts one more restart once it finishes. Timers are injected so tests need no real time.
  *
- * `bun --watch` re-evaluates the module graph in the same process. If that evaluation THROWS —
- * a half-written file caught mid-save, or an import of a module that was just deleted — the
- * previous realm's listener is already gone and the new one never binds. The process stays alive
- * and serves nothing, and the only symptom is `ECONNREFUSED 127.0.0.1:5051` repeating in Vite's
- * proxy log.
- *
- * Fixing the file is usually enough, because saving it triggers another reload. It is NOT enough
- * when the file was DELETED: the watcher has no path left to watch, so restoring it fires nothing
- * and the API stays down until some other watched file happens to change. That is the case that
- * sent people to restart `bun run dev` by hand — which also happens to be exactly what a large
- * refactor does, dozens of times.
- *
- * So: watch the health endpoint, and when it has been unreachable for long enough that a slow
- * reload is ruled out, respawn — on a widening backoff, because the tree can stay broken for as
- * long as it takes to fix and a restart every few seconds would bury the compiler error that says
- * what to fix. A healthy probe resets the backoff.
- *
- * It keeps trying rather than giving up after one attempt: the case this exists for is a file that
- * came BACK, and only a later respawn can notice that.
+ * @param {{
+ *   delayMs: number,
+ *   restart: (paths: string[]) => Promise<void>,
+ *   setTimer?: (run: () => void, ms: number) => unknown,
+ *   clearTimer?: (timer: unknown) => void,
+ * }} options
  */
-function superviseApi() {
-  const PROBE_MS = 2_000
-  // Three consecutive misses, not one: a reload legitimately drops the socket for a moment, and
-  // respawning on that would turn every ordinary save into a full restart.
-  const MISSES_BEFORE_RESPAWN = 3
-  const MIN_BACKOFF_MS = 5_000
-  const MAX_BACKOFF_MS = 60_000
-
-  // `<database file>.api-runtime.json`, the same derivation the runtime uses when it publishes the
-  // descriptor. Reading it rather than assuming a port is what keeps this correct when `PORT` was
-  // taken and the runtime picked another.
-  const databaseFile =
-    process.env.LOCALIX_DB_FILE || join(process.env.HOME ?? '', '.localix', 'localix.db')
-  const endpointFile = `${databaseFile}.api-runtime.json`
-
-  let misses = 0
-  let backoffMs = MIN_BACKOFF_MS
-  let nextAttemptAt = 0
-
-  const probe = async () => {
-    if (stopping || restarting) return
-    let baseUrl
+export function createRestartScheduler({
+  delayMs,
+  restart,
+  setTimer = setTimeout,
+  clearTimer = clearTimeout,
+}) {
+  let changed = new Set()
+  let timer
+  let running = false
+  const schedule = () => {
+    if (timer !== undefined) clearTimer(timer)
+    timer = setTimer(() => void fire(), delayMs)
+  }
+  const fire = async () => {
+    timer = undefined
+    running = true
+    const paths = [...changed]
+    changed = new Set()
     try {
-      baseUrl = JSON.parse(await Bun.file(endpointFile).text()).baseUrl
-    } catch {
-      // The first boot has not published a descriptor yet. Nothing to judge, and nothing that a
-      // restart would help with — a boot that never comes up prints its own error.
-      return
+      await restart(paths)
+    } finally {
+      running = false
+      if (changed.size > 0) schedule()
     }
-    if (!baseUrl) return
+  }
+  return {
+    notify(path) {
+      changed.add(path)
+      if (!running) schedule()
+    },
+    cancel() {
+      if (timer !== undefined) clearTimer(timer)
+      timer = undefined
+      changed = new Set()
+    },
+  }
+}
+
+async function main() {
+  const repo = repoRoot()
+  const log = (message) => console.log(`[dev-api] ${message}`)
+  const spawnApi = () => {
+    const proc = Bun.spawn([process.execPath, `--conditions=${SOURCE_CONDITION}`, 'src/index.ts'], {
+      cwd: join(repo, 'apps/api'),
+      env: process.env,
+      stdio: ['inherit', 'inherit', 'inherit'],
+    })
+    void proc.exited.then((code) => {
+      if (proc !== child || stopping) return
+      child = undefined
+      log(`the API exited (code ${code}); it starts again on the next source change`)
+    })
+    return proc
+  }
+
+  let stopping = false
+  /** The running API, or undefined while it is down or being replaced. */
+  let child = spawnApi()
+
+  const stopChild = async (signal) => {
+    const proc = child
+    if (!proc) return 0
+    child = undefined
+    proc.kill(signal)
+    const deadline = setTimeout(() => proc.kill('SIGKILL'), STOP_DEADLINE_MS)
     try {
-      const response = await fetch(`${baseUrl}/health`, { signal: AbortSignal.timeout(PROBE_MS) })
-      if (response.ok) {
-        misses = 0
-        backoffMs = MIN_BACKOFF_MS
-        return
-      }
-    } catch {
-      // fall through to the miss counter
+      return await proc.exited
+    } finally {
+      clearTimeout(deadline)
     }
-    misses += 1
-    if (misses < MISSES_BEFORE_RESPAWN || Date.now() < nextAttemptAt) return
-    misses = 0
-    // Back off between attempts. The tree can be broken for as long as it takes to fix, and a
-    // restart every six seconds would bury the compiler error that says what to fix.
-    nextAttemptAt = Date.now() + backoffMs
-    backoffMs = Math.min(backoffMs * 2, MAX_BACKOFF_MS)
-    console.log(
-      `[dev-api] the API stopped answering at ${baseUrl} — a reload most likely failed to evaluate. Restarting it.`,
-    )
-    const swap = (async () => {
-      const previous = child
-      previous.kill('SIGTERM')
-      await previous.exited.catch(() => {})
+  }
+
+  const scheduler = createRestartScheduler({
+    delayMs: RESTART_DELAY_MS,
+    restart: async (paths) => {
+      const more = paths.length > 1 ? ` (+${paths.length - 1} more)` : ''
+      log(`${relative(repo, paths[0])}${more} changed; restarting the API`)
+      await stopChild('SIGTERM')
       if (!stopping) child = spawnApi()
-    })()
-    restarting = swap
-    await swap
-    restarting = undefined
+    },
+  })
+
+  const watchers = apiWatchRoots(repo).map((root) =>
+    watch(root, { recursive: true }, (_event, name) => {
+      if (name && isReloadTrigger(String(name))) scheduler.notify(join(root, String(name)))
+    }),
+  )
+
+  const finished = Promise.withResolvers()
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.once(signal, () => {
+      if (stopping) return
+      stopping = true
+      scheduler.cancel()
+      for (const watcher of watchers) watcher.close()
+      void stopChild(signal).then(finished.resolve, finished.reject)
+    })
   }
-
-  const timer = setInterval(() => void probe(), PROBE_MS)
-  timer.unref?.()
-  return { stop: () => clearInterval(timer) }
+  process.exitCode = await finished.promise
 }
 
-const supervisor = superviseApi()
-
-/** The exit that ends the dev server — a supervisor respawn is not one. */
-async function waitForFinalExit() {
-  for (;;) {
-    const code = await child.exited
-    if (stopping || !restarting) return code
-    await restarting
-  }
-}
-
-try {
-  process.exitCode = await waitForFinalExit()
-} finally {
-  supervisor.stop()
-}
+if (import.meta.main) await main()

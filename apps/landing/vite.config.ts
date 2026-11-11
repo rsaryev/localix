@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defaultClientConditions, defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
@@ -8,7 +8,7 @@ import { stageThirdPartyNotices } from '../../scripts/stage-third-party-notices.
 // Landing site for localix.ai — a separate Vite app that reuses the chat
 // workspace's design tokens and shared primitives (single source of truth) so
 // the marketing surface and the product never drift apart.
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   // 5173 (Vite's classic port) — NOT 5060/5061, which Chrome blocks as unsafe
   // (SIP) with ERR_UNSAFE_PORT.
   server: { port: 5173 },
@@ -42,6 +42,8 @@ export default defineConfig({
   ],
   resolve: {
     dedupe: ['react', 'react-dom', 'react-router-dom'],
+    // Like the app's dev server: workspace packages from `src` in dev, so it needs no build first.
+    conditions: command === 'serve' ? [...defaultClientConditions, '@localixai/source'] : undefined,
     alias: {
       '@': path.resolve(__dirname, './src'),
       // Single source of truth: pull the product's design tokens + shared
@@ -49,4 +51,4 @@ export default defineConfig({
       '@ui': path.resolve(__dirname, '../ui/src'),
     },
   },
-})
+}))
