@@ -402,6 +402,24 @@ describe('plugins in the Store', () => {
     expect(done.job).toMatchObject({ phase: 'done' })
   })
 
+  test("a removed plugin's listing shows no job that ended before the remove", async () => {
+    const { provider, offer } = fixture()
+    await provider.update(`review@${OFFICIAL}`, 'user', actor)
+    await provider.settled()
+    const id = `review@${OFFICIAL}`
+    expect(byId((await provider.listings(actor)).listings, id).job).toMatchObject({
+      action: 'update',
+      phase: 'done',
+    })
+    offer({ available: [], jobs: [{ id, phase: 'done' }], lastCheckedAt: null })
+    await provider.remove(id, 'user', actor)
+    expect(byId((await provider.listings(actor)).listings, id).job).toBeUndefined()
+    offer({ available: [], jobs: [{ id, phase: 'downloading' }], lastCheckedAt: null })
+    expect(byId((await provider.listings(actor)).listings, id).job).toMatchObject({
+      phase: 'downloading',
+    })
+  })
+
   test('a project install goes to the open project, and needs one', async () => {
     const { provider, calls, release } = fixture()
     await expect(

@@ -217,6 +217,7 @@ export function createPluginStoreProvider(deps: {
         name: entry.name,
         projectId: projectOf(scope, actor),
       })
+      jobs.removed(id)
       changed()
       return { warnings: removed?.warnings ?? [] }
     },

@@ -59,3 +59,20 @@ test('a host whose turn runs is not idle', () => {
   clock.advance(100)
   expect(live.size).toBe(1)
 })
+
+test("a host's work is released once every hold on it ends, at once when none holds it", async () => {
+  const { keep, open } = keeping()
+  const a = open('a')
+  const order: string[] = []
+  await keep.released('a').then(() => order.push('free'))
+  const first = Promise.withResolvers<void>()
+  const second = Promise.withResolvers<void>()
+  const held = [keep.holding(a, () => first.promise), keep.holding(a, () => second.promise)]
+  const released = keep.released('a').then(() => order.push('released'))
+  first.resolve()
+  await held[0]
+  order.push('one ended')
+  second.resolve()
+  await Promise.all([...held, released])
+  expect(order).toEqual(['free', 'one ended', 'released'])
+})

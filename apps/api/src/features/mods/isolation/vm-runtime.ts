@@ -3,7 +3,7 @@ import type { PluginIssue } from '@rsaryev/llx-plugin/format'
 import { loadModRuntime } from '../../plugins/kit'
 import { defaultElementTable, RENDER_SITE_NAMES } from '../../plugins/kit/mods'
 import { errorMessage } from '../../../lib/errors'
-import { startModVm, type ModVmPort, type VmClock, type VmHook } from './mod-vm'
+import { startModVm, type ModVmThread, type VmClock, type VmHook } from './mod-vm'
 import type { DollarApi } from './stand-in'
 
 /**
@@ -18,7 +18,8 @@ import type { DollarApi } from './stand-in'
 export const VM_FORMAT = 'cjs'
 
 export interface VmRuntimeOptions {
-  vms: ModVmPort
+  /** The thread every mod this runtime loads shares: one conversation's (`session-host.ts`). */
+  vms: ModVmThread
   /** Where a bundled host keeps the mods runtime (`plugins/kit/mods/guest/runtime-file.ts`). */
   runtimeDir?: string
   /** An unsettled `register`, or a turn that holds the VM's thread, for this long: the VM goes. */

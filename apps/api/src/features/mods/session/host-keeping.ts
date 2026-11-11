@@ -24,6 +24,8 @@ export function createHostKeeping(deps: HostKeepingDeps) {
   const { live } = deps
   /** Work running in a host outside a turn, by host key. */
   const holds = new Map<string, number>()
+  /** What waits for a key's work to end (`released`). */
+  const waiting = new Map<string, Array<() => void>>()
   const busy = (key: string, entry: Live) => holds.has(key) || !!deps.turnOf?.(entry.scene)
 
   /** `entry` was used: its idle time starts again. */
@@ -58,12 +60,21 @@ export function createHostKeeping(deps: HostKeepingDeps) {
       return await work()
     } finally {
       const left = holds.get(key)! - 1
-      if (left === 0) holds.delete(key)
-      else holds.set(key, left)
+      if (left === 0) {
+        holds.delete(key)
+        for (const release of waiting.get(key) ?? []) release()
+        waiting.delete(key)
+      } else holds.set(key, left)
       const kept = live.get(key)
       if (kept) touch(key, kept)
     }
   }
 
-  return { touch, evict, holding }
+  /** Settles once no work holds `key`'s host: at once when none does. */
+  function released(key: string): Promise<void> {
+    if (!holds.has(key)) return Promise.resolve()
+    return new Promise((resolve) => waiting.set(key, [...(waiting.get(key) ?? []), resolve]))
+  }
+
+  return { touch, evict, holding, released }
 }

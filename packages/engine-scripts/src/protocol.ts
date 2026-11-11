@@ -37,7 +37,7 @@ export interface HostMessage {
   payload: string | undefined
 }
 
-/** A long-lived VM (`vm.ts`, `worker-vm.ts`): the runtime it evaluates first, and its limits. */
+/** What one turn of a long-lived VM (`vm.ts`, `worker-vm.ts`) may post. */
 export interface VmPostLimits {
   messages: number
   characters: number
@@ -52,36 +52,47 @@ export const DEFAULT_VM_POST_LIMITS: VmPostLimits = {
   characters: 32 * 1024 * 1024,
 }
 
-export interface VmWorkerData {
+/**
+ * A thread's worker (`worker-vm.ts`): the compiled QuickJS and extensions each of its VMs
+ * instantiates, with a heap of its own. A structured clone shares the compiled code.
+ */
+export interface VmThreadData {
   mode: 'vm'
-  runtime: string
-  /** What stack traces name the runtime. */
-  name: string
   wasm: object
   /** Compiled extensions, by the name their init function carries. */
   extensions: { name: string; wasm: object }[]
+}
+
+/** One VM a thread starts: the runtime it evaluates first, and its limits. */
+export interface VmSpec {
+  runtime: string
+  /** What stack traces name the runtime. */
+  name: string
   memoryLimitBytes: number
   /** One turn — a delivered message and the promise jobs it starts — may run this long. */
   sliceMs: number
   /** What one turn may post (`host.post`): this many messages, this many characters in all. */
   postLimits: VmPostLimits
-  /** As a run's: set by the host before it terminates the worker. */
+  /** One Int32 the host sets when it stops the VM: a turn running then is interrupted. */
   interrupt: SharedArrayBuffer
 }
 
+/** What a VM sends, by the id the host started it under. */
 export type VmWorkerMessage =
   /** What the runtime posted (`host.post`). */
-  | { type: 'message'; json: string }
+  | { type: 'message'; vm: number; json: string }
   /** A promise of the VM's rejected with no handler by the end of a turn. */
-  | { type: 'rejection'; message: string }
-  /** The VM is done for: it held its thread past the turn's limit, or failed. */
-  | { type: 'exit'; reason: string }
+  | { type: 'rejection'; vm: number; message: string }
+  /** The VM is done for: it held its thread past the turn's limit, or failed. The worker freed it. */
+  | { type: 'exit'; vm: number; reason: string }
 
-/** A message for the runtime's listener (`host.listen`). */
-export interface VmHostMessage {
-  type: 'deliver'
-  json: string
-}
+/** What the host asks of a thread's worker, for the VM of id `vm`. */
+export type VmHostMessage =
+  | { type: 'start'; vm: number; spec: VmSpec }
+  /** A message for the runtime's listener (`host.listen`). */
+  | { type: 'deliver'; vm: number; json: string }
+  /** The host is done with the VM: the worker frees it. */
+  | { type: 'stop'; vm: number }
 
 const WORKER_TYPES = new Set(['call', 'output', 'done', 'crash'])
 const VM_WORKER_TYPES = new Set(['message', 'rejection', 'exit'])
@@ -97,10 +108,15 @@ export function isHostMessage(value: unknown): value is HostMessage {
   return typeOf(value) === 'result'
 }
 
+const vmOf = (value: unknown) => (value as { vm?: unknown }).vm
+
 export function isVmWorkerMessage(value: unknown): value is VmWorkerMessage {
-  return VM_WORKER_TYPES.has(typeOf(value) as string)
+  return VM_WORKER_TYPES.has(typeOf(value) as string) && typeof vmOf(value) === 'number'
 }
 
 export function isVmHostMessage(value: unknown): value is VmHostMessage {
-  return typeOf(value) === 'deliver' && typeof (value as { json?: unknown }).json === 'string'
+  if (typeof vmOf(value) !== 'number') return false
+  const type = typeOf(value)
+  if (type === 'deliver') return typeof (value as { json?: unknown }).json === 'string'
+  return type === 'start' || type === 'stop'
 }

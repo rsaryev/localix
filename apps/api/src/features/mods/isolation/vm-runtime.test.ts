@@ -28,7 +28,7 @@ async function hostWith(mods: Record<string, string>, overrides: Partial<KitMods
     ports: modsTesting.fakePorts().ports,
     iface: modsTesting.fakeModInterface(),
     runtime: createVmRuntime({
-      vms,
+      vms: vms.thread(),
       hangMs: 2_000,
       memoryLimitBytes: 32 * 1024 * 1024,
       clock: REAL_CLOCK,

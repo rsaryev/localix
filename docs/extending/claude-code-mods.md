@@ -24,11 +24,12 @@ workspace's instance runs as a session of its own: `$.session.id()` names it, an
 `session.end` when Localix stops or its mods reload. A plugin whose dependency is not met runs no
 mod.
 
-Each instance runs in a QuickJS VM of its own, in a worker thread: the same sandbox that runs
-`Workflow` scripts. As Claude Code describes a hooks module, `$` is its only way out: the VM has no
-`process`, `Bun`, `fetch`, `require`, environment, files or timer globals, and no code can be made
-in it with `eval` or `Function`. A module that reaches for `import.meta.require` does not load, and
-`import(…)` rejects.
+Each instance runs in a QuickJS VM of its own, with its own memory, in a worker thread that the
+chat's other mods share, as Claude Code runs a session's mods on one thread: the same sandbox that
+runs `Workflow` scripts. The thread starts with the chat's mods and ends with them. As Claude Code
+describes a hooks module, `$` is its only way out: the VM has no `process`, `Bun`, `fetch`,
+`require`, environment, files or timer globals, and no code can be made in it with `eval` or
+`Function`. A module that reaches for `import.meta.require` does not load, and `import(…)` rejects.
 
 Standard JavaScript and the web APIs `URL`, `TextEncoder`, `TextDecoder`, `Headers`,
 `AbortController`, `crypto.subtle`, `crypto.getRandomValues`, `structuredClone`, `atob` and `btoa`
@@ -36,12 +37,15 @@ work; `Intl`, `Blob`, `Response` and the stream classes are not there. The built
 frozen, so a module cannot change what the runtime beside it relies on, though it can still assign
 to its own objects. `console` prints text, at most 200 lines in 10 seconds.
 
-Each instance has 128 MiB of memory: an allocation past it fails inside the mod with
-`InternalError: out of memory`, and the rest of Localix goes on. A module whose `register` has not
-finished within 10 seconds does not load. One that holds its thread for 10 seconds without yielding,
-in a loop or a chain of promises, is interrupted and stopped, as is one that crashes; it is reported
-and starts again with the next event that needs it. A second death within a minute makes it wait a
-second first, and a third stops it until the plugin changes. Localix keeps answering meanwhile.
+Each instance has 64 MiB of memory: an allocation past it fails inside the mod with
+`InternalError: out of memory`, and the rest of Localix goes on.
+
+A module whose `register` has not finished within 10 seconds does not load. One that holds its
+thread for 10 seconds without yielding, in a loop or a chain of promises, is interrupted and
+stopped, as is one that crashes; it is reported and starts again with the next event that needs it.
+A second death within a minute makes it wait a second first, and a third stops it until the plugin
+changes. Localix and the other chats keep answering meanwhile; the same chat's other mods wait for
+the thread and answer once it is stopped.
 
 `$.clock.every` fires at most every 100 ms, and an instance has at most 100 timers and sleeps
 pending.

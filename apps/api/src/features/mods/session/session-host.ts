@@ -45,7 +45,8 @@ import { createSessionPorts } from './session-ports'
  * One kit `ModsHost` per Localix conversation, as Claude Code runs one mods runtime per session:
  * its chain, its `$` and its interface bound to that conversation's scene. The project a
  * conversation runs in chooses which mods it loads (`ModSource`); each loads in a VM of its own
- * (`vm-runtime.ts`). Hosts are kept for the conversations used most recently, the oldest past the
+ * (`vm-runtime.ts`), on the conversation's one thread, as Claude Code runs a session's mods on one.
+ * Hosts are kept for the conversations used most recently, the oldest past the
  * limit or unused for `idleMs` going unless in use (`host-keeping.ts`), and a change to the mods it
  * loaded disposes it so the next use loads them anew. The workspace's host stays outside that
  * limit: it holds the commands and panes there before any chat.
@@ -95,14 +96,18 @@ export function createSessionMods(deps: SessionModsDeps) {
   const compiler = deps.compiler ?? createModuleCompiler()
   const clock = deps.clock ?? systemClock
   const crashes = createCrashes(() => clock.now())
-  const { touch, evict, ...keeping } = createHostKeeping({
+  const { touch, evict, released, ...keeping } = createHostKeeping({
     live,
     clock,
     idleMs: deps.idleMs ?? IDLE_MS,
     maxHosts: deps.maxHosts ?? SESSION_HOSTS,
     ...(deps.turnOf ? { turnOf: deps.turnOf } : {}),
   })
-  /** A mod's VM died: the line reported, and the host it ran in goes, rebuilt on its next use. */
+  /**
+   * A mod's VM died: the line reported, and the host it ran in goes, rebuilt on its next use. It goes
+   * once the work running in it ends: the conversation's other mods share the dead one's thread, and
+   * what they were asked meanwhile is answered rather than cut off.
+   */
   function died(key: string, sources: readonly ModSource[], plugin: string, reason: string) {
     const source = sources.find((one) => one.plugin === nameOf(plugin))
     if (!source) return
@@ -110,7 +115,7 @@ export function createSessionMods(deps: SessionModsDeps) {
     const kept = live.get(key)
     if (!kept || kept.sources !== sources) return
     live.delete(key)
-    void disposeOf(kept)
+    void released(key).then(() => disposeOf(kept))
   }
 
   async function build(scene: ModScene, sources: readonly ModSource[]): Promise<KitModsHost> {
@@ -173,7 +178,9 @@ export function createSessionMods(deps: SessionModsDeps) {
       runtime:
         deps.runtime ??
         createVmRuntime({
-          vms: deps.vms,
+          // The conversation's mods share a worker, as Claude Code runs a session's mods on one
+          // thread; each still has a QuickJS VM and a heap of its own.
+          vms: deps.vms.thread(),
           ...(deps.runtimeDir ? { runtimeDir: deps.runtimeDir } : {}),
           hangMs: deps.hangMs ?? 10_000,
           memoryLimitBytes: deps.memoryLimitBytes ?? 64 * 1024 * 1024,

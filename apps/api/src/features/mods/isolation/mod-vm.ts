@@ -20,10 +20,17 @@ import { createCalls, type DollarApi, type StandIn } from './stand-in'
  */
 
 /**
- * A JavaScript VM a mod instance runs in, exchanging JSON text with the host: a long-lived VM of
- * `@localixai/engine-scripts` (`createScriptVms`), which the composition root hands the host.
+ * The JavaScript VMs mod instances run in, exchanging JSON text with the host: long-lived VMs of
+ * `@localixai/engine-scripts` (`createScriptVms`), which the composition root hands the host. A
+ * conversation's mods share a thread (`session-host.ts`): one worker, each mod in a QuickJS VM
+ * and a heap of its own.
  */
 export interface ModVmPort {
+  thread(): ModVmThread
+}
+
+/** VMs that share a worker; it goes with the last of them. */
+export interface ModVmThread {
   start(input: {
     runtime: string
     name: string
@@ -48,7 +55,7 @@ export interface VmHook extends Omit<HookSpec, 'onError'> {
 }
 
 export interface ModVmOptions {
-  vms: ModVmPort
+  vms: ModVmThread
   /** The mods runtime the VM runs first (`plugins/kit/mods/guest/runtime-file.ts`). */
   runtime: string
   /** The bundled hooks module, sent to the VM as text (`module-build.ts`). */
@@ -270,8 +277,10 @@ function ownMember(owner: object, key: unknown): Record<string, unknown> | undef
 
 /** No VM: a host with nothing to run (an app built without mods) starts none. */
 export const NO_MOD_VMS: ModVmPort = {
-  start(input) {
-    queueMicrotask(() => input.onExit('No mods run here'))
-    return { send() {}, stop() {} }
-  },
+  thread: () => ({
+    start(input) {
+      queueMicrotask(() => input.onExit('No mods run here'))
+      return { send() {}, stop() {} }
+    },
+  }),
 }

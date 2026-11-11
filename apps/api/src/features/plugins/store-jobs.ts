@@ -22,12 +22,15 @@ const FINISHED = new Set<StoreJob['phase']>(['done', 'failed'])
 export function createPluginStoreJobs(changed: () => void) {
   const jobs = new Map<string, StoreJob>()
   const running = new Set<Promise<unknown>>()
+  /** Plugins removed since their last job: how that job ended is no longer theirs to show. */
+  const removed = new Set<string>()
 
   return {
     /** Run `work` as `id`'s job; returns once it is queued. A plugin runs one job at a time. */
     run(id: string, action: StoreJob['action'], work: () => Promise<unknown>) {
       const current = jobs.get(id)
       if (current && !FINISHED.has(current.phase)) return
+      removed.delete(id)
       jobs.set(id, { action, phase: 'downloading' })
       changed()
       const done = work()
@@ -42,21 +45,25 @@ export function createPluginStoreJobs(changed: () => void) {
       running.add(done)
     },
 
+    /** `id` was removed: a job it finished before is not shown on its listing. */
+    removed: (id: string) => void removed.add(id),
+
     /**
      * The job a listing shows: the Store's own while it runs, else the update pass's, else how the
-     * Store's own last one ended.
+     * Store's own last one ended; once the plugin is removed, only one that runs.
      */
     of(id: string, updates: PluginUpdatesResponse): StoreJob | undefined {
       const own = jobs.get(id)
       if (own && !FINISHED.has(own.phase)) return own
       const pass = updates.jobs.find((job) => job.id === id)
-      return pass
+      const job: StoreJob | undefined = pass
         ? {
             action: 'update',
             phase: PHASES[pass.phase],
             ...(pass.error ? { error: pass.error } : {}),
           }
         : own
+      return job && removed.has(id) && FINISHED.has(job.phase) ? undefined : job
     },
 
     async settled(): Promise<void> {

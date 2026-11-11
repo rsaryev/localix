@@ -5,6 +5,7 @@ import { createScriptVms } from './vm'
 /**
  * A long-lived VM on the real QuickJS: it carries text both ways, makes no code of its own, and
  * whatever its code does — loop, allocate, throw — ends the VM or fails inside it, never the host.
+ * The VMs of a thread share its worker; each keeps its own heap.
  */
 const vms = createScriptVms({ memoryLimitBytes: 16 * 1024 * 1024 })
 
@@ -12,13 +13,13 @@ const vms = createScriptVms({ memoryLimitBytes: 16 * 1024 * 1024 })
  * Starts a VM whose runtime evaluates each delivered message as a script (`host.evaluate`) and
  * posts its completion value back as JSON.
  */
-function evaluator(sliceMs = 5_000) {
+function evaluator(sliceMs = 5_000, thread = vms.thread()) {
   const inbox: unknown[] = []
   const rejections: string[] = []
   let arrived = () => {}
   let exited!: (reason: string) => void
   const exit = new Promise<string>((resolve) => (exited = resolve))
-  const vm = vms.start({
+  const vm = thread.start({
     name: 'evaluator.js',
     sliceMs,
     runtime: `
@@ -62,6 +63,7 @@ describe('a long-lived VM', () => {
       let exited!: (reason: string) => void
       const exit = new Promise<string>((resolve) => (exited = resolve))
       vms
+        .thread()
         .start({
           name: 'flood.js',
           sliceMs: 5_000,
@@ -175,7 +177,7 @@ describe('a long-lived VM', () => {
     const reasons: string[] = []
     const broken = createScriptVms({ wasmPath: 'missing/quickjs.wasm' })
     const ended = new Promise<void>((resolve) =>
-      broken.start({
+      broken.thread().start({
         runtime: 'host.listen(() => {})',
         name: 'none.js',
         sliceMs: 1_000,
@@ -188,5 +190,49 @@ describe('a long-lived VM', () => {
     )
     await ended
     expect(reasons).toEqual([expect.stringContaining('could not load QuickJS')])
+  })
+})
+
+describe('the VMs of one thread', () => {
+  test('keep their own state: one never sees what another defined or froze', async () => {
+    const thread = vms.thread()
+    const first = evaluator(5_000, thread)
+    const second = evaluator(5_000, thread)
+    expect(await first.ask('globalThis.mine = 1; typeof mine')).toEqual({ ok: 'number' })
+    expect(await second.ask('typeof mine')).toEqual({ ok: 'undefined' })
+    first.vm.stop()
+    expect(await second.ask('1 + 1')).toEqual({ ok: 2 })
+    second.vm.stop()
+  })
+
+  test('share its worker: one holding it delays the others until it is interrupted, and they go on', async () => {
+    const thread = vms.thread()
+    const holder = evaluator(200, thread)
+    const other = evaluator(5_000, thread)
+    const order: string[] = []
+    void holder.exit.then((reason) => order.push(`holder: ${reason}`))
+    void holder.ask('for (;;) {}')
+    order.push(`other: ${JSON.stringify(await other.ask('1 + 1'))}`)
+    expect(order).toEqual(['holder: held its thread for 200 ms', 'other: {"ok":2}'])
+    other.vm.stop()
+  })
+
+  test('another thread answers while one holds its own', async () => {
+    const holder = evaluator(30_000)
+    void holder.ask('for (;;) {}')
+    const other = evaluator()
+    expect(await other.ask('1 + 1')).toEqual({ ok: 2 })
+    holder.vm.stop()
+    other.vm.stop()
+  })
+
+  test('a VM stopped mid-turn ends that turn; the next VM of its thread runs', async () => {
+    const thread = vms.thread()
+    const holder = evaluator(30_000, thread)
+    void holder.ask('for (;;) {}')
+    holder.vm.stop()
+    const next = evaluator(5_000, thread)
+    expect(await next.ask('1 + 1')).toEqual({ ok: 2 })
+    next.vm.stop()
   })
 })

@@ -4,8 +4,8 @@ import { hostWithVms } from './testing/testing-mods'
 
 /**
  * A mod gone wrong on the real VM: a hook that never yields the thread — a plain loop or a loop of
- * promise jobs — is interrupted at the turn limit while the host goes on answering, and the mod
- * starts again; memory past the VM's limit fails inside the VM, never the host; a rejection
+ * promise jobs — is interrupted at the turn limit; the conversation's other mods, which share its
+ * thread, answer once it is, and the mod starts again; memory past the VM's limit fails inside the VM, never the host; a rejection
  * nothing handled is reported without stopping the mod. The turn limit is the test's own (`hangMs`).
  */
 
@@ -35,7 +35,7 @@ export function register(on) {
 `
 
 for (const kind of ['spin', 'jobs'])
-  test(`a hook that holds its thread (${kind}) is stopped, the host answers meanwhile, and the mod starts again`, async () => {
+  test(`a hook that holds its thread (${kind}) is stopped, the conversation's other mods answer once it is, and the mod starts again`, async () => {
     const { command, host, reported, reports } = await hostWithVms(
       { spinner: SPINNER, other: OTHER },
       { vms, hangMs: 300 },

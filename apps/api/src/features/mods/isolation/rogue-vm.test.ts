@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { MAX_PENDING, startModVm, WIRE_LIMITS, type ModVmOptions, type ModVmPort } from './mod-vm'
+import { MAX_PENDING, startModVm, WIRE_LIMITS, type ModVmOptions, type ModVmThread } from './mod-vm'
 import { manualClock } from './testing/testing-mods'
 
 /**
@@ -9,13 +9,13 @@ import { manualClock } from './testing/testing-mods'
  */
 
 type Frame = { t: string; id?: number; type?: string; ok?: boolean; payload?: unknown }
-type Start = Parameters<ModVmPort['start']>[0]
+type Start = Parameters<ModVmThread['start']>[0]
 
 function rogue(respond: (frame: Frame, send: (frame: unknown) => void) => void) {
   let input!: Start
   let stopped = false
   const send = (frame: unknown) => input.onMessage(JSON.stringify(frame))
-  const vms: ModVmPort = {
+  const vms: ModVmThread = {
     start(start) {
       input = start
       return {
@@ -40,7 +40,7 @@ const answering = (answer: unknown) =>
       send({ t: 'res', id: frame.id, ok: true, value: answer })
   })
 
-function start(vms: ModVmPort, options: Partial<ModVmOptions> = {}) {
+function start(vms: ModVmThread, options: Partial<ModVmOptions> = {}) {
   const reports: string[] = []
   const printed: string[] = []
   const deaths: string[] = []
