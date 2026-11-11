@@ -34,6 +34,8 @@ interface PreviewTabProps {
   frameBlocked?: boolean
   /** Load a typed address; absent while no conversation can resolve a dev preview. */
   onNavigate?: (url: string) => void
+  /** Show this page without the proxy, at its own origin; absent where no engine can. */
+  onOpenDirect?: () => void
 }
 
 /**
@@ -53,6 +55,7 @@ export function PreviewTab({
   rootDir,
   frameBlocked,
   onNavigate,
+  onOpenDirect,
 }: PreviewTabProps) {
   // Local reload counter — distinct from `version`; remounts the iframe via its key.
   const [nonce, setNonce] = useState(0)
@@ -173,6 +176,8 @@ export function PreviewTab({
           onNavigate={onNavigate}
           feedback={feedback}
           viewport={{ preset: viewport, onChange: changeViewport }}
+          // Only a page the proxy serves has another origin to leave.
+          onOpenDirect={injectUrl ? onOpenDirect : undefined}
         />
       )}
 

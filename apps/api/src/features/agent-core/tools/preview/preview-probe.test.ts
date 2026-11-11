@@ -9,7 +9,7 @@ import {
   disposePreviewServers,
   getPreviewProbeJs,
 } from './preview-probe'
-import { forwardProxyHeaders } from './preview-proxy'
+import { forwardProxyHeaders } from './preview-proxy-headers'
 import { injectProbeIntoHtml, resolveProbeEntry, resolvePrebuiltProbeFile } from './probe-inject'
 
 const PROBE = 'data-vf-probe'
@@ -83,12 +83,14 @@ describe('disposePreviewServers', () => {
   })
 })
 
+const ORIGINS = { upstream: 'http://localhost:3000', proxy: 'http://localhost:61000' }
+
 describe('forwardProxyHeaders', () => {
   test('preserves multiple Set-Cookie headers individually', () => {
     const up = new Headers()
     up.append('set-cookie', 'session=abc; Path=/; Expires=Wed, 09 Jun 2027 10:18:14 GMT; HttpOnly')
     up.append('set-cookie', 'csrf=xyz; Path=/')
-    const cookies = forwardProxyHeaders(up).getSetCookie()
+    const cookies = forwardProxyHeaders(up, ORIGINS).getSetCookie()
     expect(cookies).toHaveLength(2)
     expect(cookies[0]).toContain('session=abc')
     expect(cookies[1]).toContain('csrf=xyz')
@@ -104,7 +106,7 @@ describe('forwardProxyHeaders', () => {
       'content-type': 'text/html',
       'cache-control': 'no-cache',
     })
-    const out = forwardProxyHeaders(up)
+    const out = forwardProxyHeaders(up, ORIGINS)
     expect(out.has('content-encoding')).toBe(false) // fetch already decoded the body
     expect(out.has('content-length')).toBe(false)
     expect(out.has('connection')).toBe(false)
@@ -160,7 +162,7 @@ describe('buildInjectedPreviewUrl protocol guard', () => {
 })
 
 describe('injecting proxy', () => {
-  test('follows upstream redirects internally + injects the final HTML (stays on proxy)', async () => {
+  test('hands a redirect to the browser, kept on the proxy, and injects the page it lands on', async () => {
     const upstream = Bun.serve({
       port: 0,
       fetch(req) {
@@ -175,8 +177,11 @@ describe('injecting proxy', () => {
     })
     try {
       const proxied = buildInjectedPreviewUrl(`http://localhost:${upstream.port}/start`)!
-      const res = await fetch(proxied, { redirect: 'manual' })
-      expect(res.status).toBe(200) // redirect consumed by the proxy, not surfaced
+      const redirect = await fetch(proxied, { redirect: 'manual' })
+      expect(redirect.status).toBe(302)
+      expect(redirect.headers.get('location')).toBe(`${new URL(proxied).origin}/dest`)
+      expect(await redirect.text()).not.toContain(PROBE)
+      const res = await fetch(redirect.headers.get('location')!)
       const body = await res.text()
       expect(body).toContain('<body>dest</body>') // served the final page
       expect(body).toContain(PROBE) // with the probe injected

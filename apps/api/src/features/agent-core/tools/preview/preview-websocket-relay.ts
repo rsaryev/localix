@@ -1,10 +1,13 @@
 // WebSocket transport for preview HMR: bounded queues and backpressure in both directions.
 
+import { PREVIEW_PROXY_HEADER } from '../../../../lib/local-origin-guard'
+
 /** Per-connection relay state carried on a proxied HMR WebSocket. */
 export interface WsRelay {
   /** Upstream dev-server ws:// URL this browser socket is bridged to. */
   target: string
-  /** The proxy's own origin, sent upstream so the dev server can still judge the handshake. */
+  /** The Origin sent upstream, so the dev server can still judge the handshake: its own origin
+   *  for a page the proxy served, the proxy's (unknown to it) for a client that sent none. */
   origin: string
   /** Negotiated subprotocol echoed from the browser (e.g. Vite's `vite-hmr`). */
   protocol?: string
@@ -76,7 +79,7 @@ export const websocketRelay: Bun.WebSocketHandler<WsRelay> = {
     // non-browser client. Name the page origin the handshake came from instead.
     // (Bun's client takes an options object; the DOM typing in scope only knows protocols.)
     const options: Bun.WebSocketOptions = {
-      headers: { origin: relay.origin },
+      headers: { origin: relay.origin, [PREVIEW_PROXY_HEADER]: '1' },
       ...(relay.protocol ? { protocols: relay.protocol.split(',').map((p) => p.trim()) } : {}),
     }
     const up = new WebSocket(relay.target, options as unknown as string[])

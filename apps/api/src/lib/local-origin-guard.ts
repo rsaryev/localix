@@ -26,7 +26,8 @@ import { dialableRuntimeHost } from './runtime-address'
  *  1. `Host` must name this machine by a loopback name — the rebinding defence. Only the HOSTNAME
  *     is compared, not the port: the port is known only after `listen` (the desktop shell's port
  *     can fall back to an OS-assigned one), and a rebinding page's `Host` carries its OWN domain,
- *     which is what the check rejects.
+ *     which is what the check rejects. A request forwarded by a preview proxy is refused next
+ *     ({@link PREVIEW_PROXY_HEADER}).
  *  2. A browser always sends `Origin` on a websocket handshake and on every non-GET request. When
  *     it is present it must be one of the origins this boot allows ({@link createLocalOriginPolicy})
  *     — an explicit set, never "any localhost port".
@@ -57,6 +58,17 @@ export function packagedAppOrigins(platform: NodeJS.Platform): readonly string[]
       ]
     : ['tauri://localhost', 'localix-app://app']
 }
+
+/**
+ * The header the preview proxy puts on every request it forwards (`preview-proxy-headers.ts`).
+ *
+ * The proxy gives a page it serves the identity of the app behind it, so a preview of THIS API
+ * (an agent can open any loopback address) would hand the page the API's own first-party origin,
+ * and the agent driving that page would write as the person's UI. The API refuses every request
+ * that carries it, reads included. A page can add the header only to its own direct requests,
+ * where it only gets itself refused.
+ */
+export const PREVIEW_PROXY_HEADER = 'x-localix-preview-proxy'
 
 const LOOPBACK_HOSTNAMES: readonly string[] = ['127.0.0.1', 'localhost', '[::1]']
 
@@ -165,13 +177,15 @@ export interface GuardedRequest {
   upgrade: string | undefined
   clientHeader: string | undefined
   contentType: string | undefined
+  /** The request came through a preview proxy ({@link PREVIEW_PROXY_HEADER}). */
+  viaPreviewProxy?: boolean
 }
 
 export type GuardVerdict =
   | { ok: true }
   | {
       ok: false
-      code: 'forbidden_host' | 'forbidden_origin' | 'client_header_required'
+      code: 'forbidden_host' | 'forbidden_origin' | 'client_header_required' | 'preview_proxied'
       message: string
     }
 
@@ -188,6 +202,13 @@ export function judgeRequest(policy: LocalOriginPolicy, req: GuardedRequest): Gu
       ok: false,
       code: 'forbidden_host',
       message: 'The Localix API answers only requests addressed to this machine.',
+    }
+  }
+  if (req.viaPreviewProxy) {
+    return {
+      ok: false,
+      code: 'preview_proxied',
+      message: 'The Localix API does not answer through a preview proxy.',
     }
   }
   const isUpgrade = req.upgrade?.toLowerCase().includes('websocket') ?? false
@@ -231,6 +252,7 @@ export function createLocalOriginGuard(
       upgrade: c.req.header('upgrade'),
       clientHeader: c.req.header(LOCALIX_CLIENT_HEADER),
       contentType: c.req.header('content-type'),
+      viaPreviewProxy: c.req.header(PREVIEW_PROXY_HEADER) !== undefined,
     })
     if (verdict.ok) return next()
     logger?.warn({

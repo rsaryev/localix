@@ -101,3 +101,50 @@ describe('FrameSizeMenu — the page frame pick', () => {
     }
   })
 })
+
+describe('BrowserToolbar — the direct view of a proxied page', () => {
+  async function mountToolbar(onOpenDirect?: () => void) {
+    const { act } = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { BrowserToolbar } = await import('./BrowserToolbar')
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    await act(async () =>
+      root.render(
+        <BrowserToolbar
+          url="http://localhost:3000/"
+          onReload={() => {}}
+          onOpenDirect={onOpenDirect}
+        />,
+      ),
+    )
+    return {
+      button: () => host.querySelector<HTMLButtonElement>('button[aria-label="Open directly"]'),
+      unmount: async () => {
+        await act(async () => root.unmount())
+        host.remove()
+      },
+    }
+  }
+
+  test('offers the page at its own address when the host can show it so, and opens it', async () => {
+    let opened = 0
+    const ui = await mountToolbar(() => opened++)
+    try {
+      ui.button()!.click()
+      expect(opened).toBe(1)
+    } finally {
+      await ui.unmount()
+    }
+  })
+
+  test('is absent where no engine can show the page without the proxy', async () => {
+    const ui = await mountToolbar()
+    try {
+      expect(ui.button()).toBeNull()
+    } finally {
+      await ui.unmount()
+    }
+  })
+})

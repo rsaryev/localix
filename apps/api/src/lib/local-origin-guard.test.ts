@@ -115,6 +115,17 @@ describe('Origin', () => {
   })
 })
 
+describe('a request forwarded by a preview proxy', () => {
+  test('is refused whatever it carries, reads and handshakes included', () => {
+    const viaPreviewProxy = true
+    expect(verdictCode({ viaPreviewProxy, method: 'GET' })).toBe('preview_proxied')
+    expect(verdictCode({ viaPreviewProxy, origin: DEV_UI })).toBe('preview_proxied')
+    expect(verdictCode({ viaPreviewProxy, method: 'GET', upgrade: 'websocket' })).toBe(
+      'preview_proxied',
+    )
+  })
+})
+
 describe('websocket upgrade', () => {
   const upgrade = 'websocket'
 

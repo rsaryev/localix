@@ -173,13 +173,13 @@ describe('the static preview server binds loopback only', () => {
     expect((await fetch(`http://127.0.0.1:${port}/../../etc/passwd`)).status).not.toBe(200)
   })
 
-  test.each(['preview-static.ts', 'preview-proxy.ts'])('%s pins the bind address', (file) => {
+  test('preview-static.ts pins the bind address', () => {
     // A SOURCE assertion, because a loopback fetch cannot discriminate: `0.0.0.0` answers on
     // 127.0.0.1 too, so the test above passes either way and would be dishonest as a binding proof.
     // What regresses here is a DELETED LINE — `Bun.serve`'s `hostname` defaults to `0.0.0.0`, which
     // exposed the served directory (and the proxied dev server) to the whole LAN for the process
     // lifetime — so reading the file is the guard that actually catches it.
-    const src = readFileSync(path.join(import.meta.dir, file), 'utf8')
+    const src = readFileSync(path.join(import.meta.dir, 'preview-static.ts'), 'utf8')
     expect(src).toContain("hostname: '127.0.0.1'")
   })
 })

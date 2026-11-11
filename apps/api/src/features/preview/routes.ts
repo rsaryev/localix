@@ -52,8 +52,9 @@ export interface PreviewRoutesDeps {
 /**
  * REST surface of the in-process preview servers.
  *
- * Both servers a preview may load through — the static file server and the probe-injecting
- * proxy — are `Bun.serve` on an EPHEMERAL port held in a process-local map. They die with the
+ * Both servers a preview may load through — the static file server (an ephemeral port) and the
+ * probe-injecting proxy (a preferred port that moves when taken) — are `Bun.serve` held in a
+ * process-local map, so neither port is promised to a later process. They die with the
  * process: a dev `bun --watch` reload, a crash, a machine sleep that bounced the API. A pane
  * that had persisted one of those ports came back to a dead address, and because the app it
  * fronted (say `localhost:8000`) was still up, liveness said "running" and the pane showed a

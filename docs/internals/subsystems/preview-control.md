@@ -81,18 +81,28 @@ HTML. For a URL, it requires HTTP or HTTPS, follows redirects during a 2.5-secon
 and publishes the direct URL plus whether the site refuses framing.
 
 The proxy forwards ordinary requests and HMR websockets. When nothing listens upstream it answers
-502 with the upstream address; a reload shows the page once the server is up. The proxy is built
-only for a loopback upstream (`localhost`, `127.0.0.1`, `[::1]`); `resolve` returns no `injectUrl`
-for a remote site, so a remote page is never re-hosted on a loopback origin.
+502 with the upstream address; a reload shows the page once the server is up. It answers on the
+upstream's host name, sets `Host` to the upstream's, and maps an `Origin` or `Referer` of its own
+origin to the upstream's; a foreign or `null` origin passes unchanged. It never follows a redirect:
+a `Location` on the upstream's origin is moved onto the proxy, and any other one is passed to the
+browser. Only a 2xx HTML document receives the probe. Every forwarded request carries
+`x-localix-preview-proxy`, and the API's local-origin guard refuses any request that has it
+(`preview_proxied`), because a page served through the proxy has the identity of the app behind it,
+which may be the API itself. The rules are in `preview-proxy-headers.ts`. The proxy is built only
+for a loopback upstream (`localhost`, `127.0.0.1`, `[::1]`); `resolve` returns no `injectUrl` for a
+remote site, so a remote page is never re-hosted on a loopback origin.
 
 ### Frame address
 
-Both in-process preview servers (the static server and the injecting proxy) bind an ephemeral port
-that dies with the API process, so no port is ever persisted or carried on the `preview.updated`
-frame. The pane asks `POST /rpc/preview/resolve` (`features/preview/routes.ts`) for the current
-address before it mounts a frame and again after every socket reconnect (the signal that the API
-restarted); a re-served file that came back on a new port re-points the stored entry. When the API
-cannot answer, the frame loads the URL as given. The UI half is
+The static server binds an ephemeral port. The injecting proxy binds a port derived from the
+upstream origin, in 61000–64999, and tries the next candidates and then any free port when it is
+taken (`preview-proxy-listen.ts`); a stable port keeps the proxied page's storage across API
+restarts. A `localhost` proxy binds both `127.0.0.1` and `[::1]`, so a wildcard listener of another
+process on the same port cannot answer the proxy's URL. Neither port is persisted or carried on the
+`preview.updated` frame. The pane asks `POST /rpc/preview/resolve` (`features/preview/routes.ts`)
+for the current address before it mounts a frame and again after every socket reconnect (the signal
+that the API restarted); a re-served file that came back on a new port re-points the stored entry.
+When the API cannot answer, the frame loads the URL as given. The UI half is
 `apps/ui/src/features/inspector/ui/usePreviewEndpoint.ts`.
 
 The pane does not track whether the page's own server is up. It shows whatever the URL returns; a
@@ -296,6 +306,12 @@ that timed out might already have executed. Required unperformed checks remain b
   reset page state and probe refs.
 - The injecting proxy removes CSP and frame-blocking headers and forwards cookies and request
   bodies. Bot protection, frame-busting scripts, or an unreachable upstream can still prevent use.
+- The proxied page's origin is not the app's. An OAuth `redirect_uri` returns the frame to the app's
+  real address, and a PKCE verifier kept in session storage does not reach it. The toolbar's **Open
+  directly** (desktop only) switches the tab to the native page, which keeps the real origin.
+- In the desktop shell, a frame navigation to a non-loopback document opens the system browser,
+  including a sign-in provider's page. Handing that navigation to the tab's native page instead
+  needs the shell's `on_navigation` handler to tell the UI; it does not yet.
 - Probe dialog handling changes preview behavior: `confirm` returns `true`, `prompt` returns `null`,
   and `alert` returns immediately while the probe is mounted.
 - A single `evaluate` that mutates state and immediately reads it can run before an asynchronous
@@ -325,7 +341,9 @@ that timed out might already have executed. Required unperformed checks remain b
 - [Command relay and ownership](../../../apps/api/src/features/chat/runtime/preview-command-registry.ts)
 - [Static and URL opening](../../../apps/api/src/features/agent-core/tools/preview/open-preview.ts)
 - [Probe build and injection](../../../apps/api/src/features/agent-core/tools/preview/probe-inject.ts)
-- [Reverse proxy](../../../apps/api/src/features/agent-core/tools/preview/preview-proxy.ts)
+- [Reverse proxy](../../../apps/api/src/features/agent-core/tools/preview/preview-proxy.ts) ·
+  [header rules](../../../apps/api/src/features/agent-core/tools/preview/preview-proxy-headers.ts) ·
+  [stable port](../../../apps/api/src/features/agent-core/tools/preview/preview-proxy-listen.ts)
 - [Banner URL detection](../../../apps/api/src/features/agent-core/tools/preview/served-url-detect.ts)
 - [Terminal service](../../../apps/api/src/features/terminal/service.ts)
 - [UI relay](../../../apps/ui/src/features/inspector/ui/PreviewTab.tsx) ·

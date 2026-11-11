@@ -122,6 +122,28 @@ The API injects a browser probe into HTML before the preview loads. Static files
 from the loopback static server. HTTP and HTTPS previews can receive it through a loopback reverse
 proxy that forwards page requests, assets, and WebSocket traffic.
 
+### The proxied page and its app
+
+The proxy serves the app under the app's own host name (`localhost` for `localhost`, `127.0.0.1` for
+`127.0.0.1`) on a port of its own. Cookies belong to a host name, not a port, so the app's cookies,
+`HttpOnly` session cookies included, apply to the proxied page. The port is derived from the app's
+address and stays the same across Localix restarts, so the page's local storage survives them. If
+that port is taken, the proxy moves to another one; the page's storage starts empty there, but its
+cookies still apply.
+
+The proxy tells the app its own name. `Host` is the app's, and an `Origin` or `Referer` of the
+proxied page reaches the app as the app's own origin, so the app's CSRF check accepts its own forms
+and requests. Any other origin reaches the app unchanged, and the app refuses it as it would without
+the proxy. The proxy never follows a redirect itself; the browser does. A redirect to the app's own
+address keeps the page on the proxy, and a redirect to another site, such as a sign-in provider,
+leaves for that site.
+
+OAuth sign-in works with this. The provider sends the browser to the app's registered address, so
+after sign-in the frame shows the app at its real address, without Visual Feedback, until the
+preview is opened again. Where the app keeps sign-in state in local or session storage instead of a
+cookie, a flow started on the proxied page cannot finish there. In the desktop app, **Open
+directly** shows the page at its real address, outside the proxy, for flows like these.
+
 The probe and host UI establish a per-load `postMessage` channel. Turning Visual Feedback on sends a
 mode change through that channel, so it does not reload a connected preview. A page reload creates a
 new handshake; a comment being written survives it, and the new page is asked to find its element
@@ -205,12 +227,13 @@ attached is reviewed in the composer's attached-context list.
 | **Page frame size** | Chooses responsive fill, phone, tablet, laptop, or desktop dimensions. | Available on every page                                |
 | **Rotate frame**    | Swaps the selected fixed width and height.                             | Hidden for responsive fill                             |
 | **Attach feedback** | Attaches the observation as context, screenshot nested inside it.      | Requires a selected capture and session; note optional |
+| **Open directly**   | Shows a proxied page at its real address, without Visual Feedback.     | Desktop app, on a page served through the proxy        |
 
-| Preview input                 | Probe path                                                                 | Boundary                                                                                                               |
-| ----------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Static HTML served by Localix | The loopback static server injects the probe into the HTML response.       | Only files below the selected static root are served; dotfiles and dot-directories answer 404, except `/.well-known/`. |
-| HTTP or HTTPS preview         | A loopback reverse proxy injects the probe and relays the upstream origin. | Loopback upstreams only; the proxy removes CSP and frame-blocking headers.                                             |
-| Frame-blocked preview         | The UI shows a blocked-state card and can engage the injecting proxy.      | Frame-busting script, bot protection, or an unreachable origin can still prevent use.                                  |
+| Preview input                 | Probe path                                                                | Boundary                                                                                                               |
+| ----------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Static HTML served by Localix | The loopback static server injects the probe into the HTML response.      | Only files below the selected static root are served; dotfiles and dot-directories answer 404, except `/.well-known/`. |
+| HTTP or HTTPS preview         | A loopback reverse proxy injects the probe and presents the app's origin. | Loopback upstreams only; the proxy removes CSP and frame-blocking headers.                                             |
+| Frame-blocked preview         | The UI shows a blocked-state card and can engage the injecting proxy.     | Frame-busting script, bot protection, or an unreachable origin can still prevent use.                                  |
 
 ## Limits
 
@@ -224,6 +247,14 @@ attached is reviewed in the composer's attached-context list.
   browser-specific rendering.
 - The injecting proxy binds to loopback, forwards upstream cookies and request bodies, and removes
   CSP and frame-blocking response headers. Use it only with preview origins you trust.
+- The proxied page has another origin than the app. A sign-in redirect returns to the app's real
+  address, and state the app keeps in local or session storage is not shared between the two.
+- Browsers block `SameSite=Lax` and `Strict` cookies in a frame whose site differs from the Localix
+  window's, for example a `localhost` app while Localix runs on `127.0.0.1`. Sign-in then fails in
+  the frame, with or without the proxy. Use **Open directly** in the desktop app.
+- Hosted sign-in providers refuse to be framed. In the desktop app, a frame that navigates to one
+  opens it in the system browser.
+- The Localix API refuses every request that arrives through a preview proxy.
 - A probe build or handshake failure leaves the page viewable but removes element picking and agent
   control from that preview.
 

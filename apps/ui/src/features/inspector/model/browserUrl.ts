@@ -27,7 +27,7 @@ export function hostsInFrame(tab: { url: string; frameBlocked?: boolean }): bool
 export type BrowserEngine = 'history' | 'native' | 'frame'
 
 /** Every desktop shell hosts native pages; Linux through a `gtk::Fixed` (`native_browser_gtk.rs`). */
-const NATIVE_PAGES = isDesktop
+export const NATIVE_PAGES = isDesktop
 
 interface EngineInput {
   url: string

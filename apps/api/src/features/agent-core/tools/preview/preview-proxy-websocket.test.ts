@@ -99,7 +99,7 @@ test('refuses a cross-site handshake instead of relaying it without its Origin',
   }
 }, 3000)
 
-test('dials the upstream with the proxy origin, never without one', async () => {
+test('dials the upstream with its own origin for a page the proxy served', async () => {
   const { server, origins } = originRecordingUpstream()
   let client: WebSocket | undefined
   try {
@@ -113,7 +113,26 @@ test('dials the upstream with the proxy origin, never without one', async () => 
       client.addEventListener('message', () => resolve())
       client.addEventListener('error', () => reject(new Error('Preview WebSocket failed')))
     })
-    expect(origins).toEqual([proxyOrigin])
+    expect(origins).toEqual([`http://127.0.0.1:${server.port}`])
+  } finally {
+    client?.close()
+    disposeProxyServers()
+    await server.stop(true)
+  }
+}, 3000)
+
+test('dials the upstream with the proxy origin, never without one, for a client that sent none', async () => {
+  const { server, origins } = originRecordingUpstream()
+  let client: WebSocket | undefined
+  try {
+    const url = buildInjectedPreviewUrl(`http://127.0.0.1:${server.port}/`)!
+    await new Promise<void>((resolve, reject) => {
+      client = new WebSocket(`${url.replace(/^http/, 'ws')}hmr`)
+      client.addEventListener('open', () => client!.send('ping'))
+      client.addEventListener('message', () => resolve())
+      client.addEventListener('error', () => reject(new Error('Preview WebSocket failed')))
+    })
+    expect(origins).toEqual([`http://localhost:${new URL(url).port}`])
   } finally {
     client?.close()
     disposeProxyServers()

@@ -255,8 +255,9 @@ export async function openPreviewCore(
     ...(servedFile ? { servedFile } : {}),
     ...(rootDir ? { rootDir } : {}),
     // When framing is refused, the UI shows the "can't embed" card (strip-proxy/open-in-browser).
-    // The proxy address stays off the wire: it is an ephemeral port of THIS process, and a pane
-    // that persisted one came back to a dead port after a restart — it resolves it on mount.
+    // The proxy address stays off the wire: it is a port of THIS process, stable but not promised
+    // (a taken port moves), and a pane that persisted one could come back to a dead or foreign
+    // port after a restart — it resolves it on mount.
     ...(frameBlocked && injectUrl ? { frameBlocked: true } : {}),
   })
 

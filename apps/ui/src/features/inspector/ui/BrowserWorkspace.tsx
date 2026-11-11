@@ -8,7 +8,12 @@ import { tabIdInScope } from '@/entities/workspace-grid/model'
 import { usePreviewStore, type PreviewEntry } from '../model/previewStore'
 import { personActionLines, personActionsExpireIn, usePersonActions } from '../model/personActions'
 import { useBrowserHistory } from '../model/browserHistory'
-import { addressDestination, browserEngine, isLocalBrowserUrl } from '../model/browserUrl'
+import {
+  NATIVE_PAGES,
+  addressDestination,
+  browserEngine,
+  isLocalBrowserUrl,
+} from '../model/browserUrl'
 import { openPreviewFromClick } from '../model/openPreview'
 import { BrowserHistoryTab } from './BrowserHistoryTab'
 import { BrowserNewTab } from './BrowserNewTab'
@@ -32,6 +37,7 @@ export function BrowserWorkspace({
   const setActivePreview = usePreviewStore((s) => s.setActivePreview)
   const openBrowserTab = usePreviewStore((s) => s.openBrowserTab)
   const openBrowserHistory = usePreviewStore((s) => s.openBrowserHistory)
+  const updateBrowserTab = usePreviewStore((s) => s.updateBrowserTab)
   const visits = useBrowserHistory((s) => s.visits)
   const personDid = usePersonActions((s) => s.bySession[sessionId])
   // The grid id of THIS chat's Browser tab — the key its live context is read back under.
@@ -128,6 +134,14 @@ export function BrowserWorkspace({
           if (addressDestination(current, next) === 'here') openPreviewFromClick(sessionId, next)
           else open(next)
         }}
+        // The desktop's native page shows a local server at its own origin, where an OAuth
+        // provider, a cookie session and an origin check work as in a browser (the proxy is
+        // another origin, and the frame a third-party context of the app's window).
+        onOpenDirect={
+          NATIVE_PAGES
+            ? () => updateBrowserTab(sessionId, current.previewId, { nativePage: true })
+            : undefined
+        }
       />
     ))
 

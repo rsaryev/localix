@@ -3,6 +3,7 @@ import {
   Monitor,
   Server,
   ExternalLink,
+  AppWindow,
   Maximize2,
   Smartphone,
   Tablet,
@@ -44,6 +45,11 @@ export interface BrowserToolbarProps {
   /** Pick an element to comment on — the frame's probe is the only thing that can. */
   feedback?: { on: boolean; available: boolean; onToggle: () => void }
   viewport?: { preset: PreviewViewportPreset; onChange: (next: PreviewViewportPreset) => void }
+  /**
+   * Show the page at its own address instead of through the preview proxy: the desktop's native
+   * page, where its origin, cookies and sign-in work as in a browser, without Visual Feedback.
+   */
+  onOpenDirect?: () => void
 }
 
 /**
@@ -66,6 +72,7 @@ export function BrowserToolbar({
   loading = false,
   feedback,
   viewport,
+  onOpenDirect,
 }: BrowserToolbarProps) {
   return (
     <WorkbenchToolbar density="compact" aria-label="Browser controls" className="relative gap-1">
@@ -114,6 +121,16 @@ export function BrowserToolbar({
         className="shrink-0 grow-0 border-l border-border-soft pl-1"
       >
         {onNavigate && <DevServerMenu onNavigate={onNavigate} />}
+        {onOpenDirect && (
+          <IconButton
+            size="sm"
+            aria-label="Open directly"
+            tooltip="Open directly: the page keeps its own address (no Visual Feedback)"
+            onClick={onOpenDirect}
+          >
+            <AppWindow className="size-3.5" />
+          </IconButton>
+        )}
         {/* The button IS the question — asking "Open localhost:8000?" after a click on
             "Open in browser" is a second question with one answer. Content links keep
             the confirmation; a toolbar action the person chose does not. */}
