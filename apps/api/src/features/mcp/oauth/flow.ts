@@ -7,6 +7,7 @@ import { UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js'
 import { errorMessage } from '../../../lib/errors'
 import type { McpServerRecord } from '../repository'
 import { claudeCodeMcp } from '../claude-code-settings'
+import { mcpLaunch } from '../mcp-settings-env'
 import { listenForCallback, type CallbackListener } from './callback-listener'
 import { createMcpOAuthProvider } from './provider'
 import { createPendingOAuthRegistry } from './pending-flow-registry'
@@ -48,21 +49,27 @@ export interface StartAuthResult {
   state?: string
 }
 
+/**
+ * `cwd` is the folder the server was declared in (its project's, as a connect uses): its config is
+ * expanded and its `headersHelper` run there, with that folder's settings `env` and
+ * `CLAUDE_PROJECT_DIR`, exactly as `connectClient` does (`mcp-settings-env.ts`), never with the API
+ * process's own working directory.
+ */
 export async function startMcpOAuth(
   server: McpServerRecord,
-  opts: { store?: McpOAuthStore; nowMs?: number } = {},
+  opts: { cwd: string; store?: McpOAuthStore; nowMs?: number },
 ): Promise<StartAuthResult> {
   const store = opts.store ?? mcpOAuthStore
   const now = opts.nowMs ?? Date.now()
   pending.sweep(now)
   if (server.transport !== 'http')
     throw new Error('OAuth is only supported for remote (http) MCP servers')
-  const config = claudeCodeMcp().connectConfig(server, process.env)
+  const config = mcpLaunch(server, opts.cwd).config
   const url = config.url as string | undefined
   if (!url) throw new Error('server has no url')
 
   const session = mcpOAuthSession(server)
-  const remote = await claudeCodeMcp().remoteRequest(server, config, process.cwd(), session.fetch)
+  const remote = await claudeCodeMcp().remoteRequest(server, config, opts.cwd, session.fetch)
   if (!remote.oauthFallback)
     throw new Error(
       'its Authorization header (set or from its headersHelper) is its credential, so there is no sign-in',

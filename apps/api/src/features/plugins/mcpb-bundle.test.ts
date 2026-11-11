@@ -8,7 +8,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
-import { makeZip, type ZipFixtureEntry } from '../../testing/zip-fixture'
+import { CASE_COLLISION_LINKS, makeZip, type ZipFixtureEntry } from '../../testing/zip-fixture'
 
 import { loadManifest } from './manifest-load'
 import { pluginMcpRecords } from './testing/test-mcp-records'
@@ -121,5 +121,37 @@ describe('a packaged MCP server in a plugin', () => {
       ? readdirSync(cache).filter((name) => !name.endsWith('.mcpb'))
       : []
     expect(unpacked).toEqual([])
+  })
+
+  /** What sits in `.mcpb-cache` besides the bundle's own folder: anything else was planted. */
+  function plantedBeside(root: string) {
+    const cache = join(root, '.mcpb-cache')
+    if (!existsSync(cache)) return []
+    return readdirSync(cache).filter((name) => !name.startsWith('db-'))
+  }
+
+  test('a bundle whose links chain out of its folder by case plants nothing beside it', async () => {
+    const root = plugin('./servers/db.mcpb')
+    makeBundle(join(root, 'servers', 'db.mcpb'), [
+      { name: 'plugin/skills/x.md', data: 'PLANTED' },
+      ...CASE_COLLISION_LINKS,
+    ])
+    await loadManifest(root, 'global', '')
+
+    expect(plantedBeside(root)).toEqual([])
+    const besidePlugin = readdirSync(root).filter((name) => name !== '.mcpb-cache')
+    expect(besidePlugin.toSorted()).toEqual(['.claude-plugin', 'servers'])
+  })
+
+  test('a bundle with a link that really resolves out of its folder is refused', async () => {
+    const root = plugin('./servers/db.mcpb')
+    makeBundle(join(root, 'servers', 'db.mcpb'), [
+      { name: 'here', data: '.', unixMode: 0o120777 },
+      { name: 'server/out', data: '../here/..', unixMode: 0o120777 },
+    ])
+    const discovered = await loadManifest(root, 'global', '')
+
+    expect(discovered.entrypoints.mcpServers['db-server']).toBeUndefined()
+    expect(plantedBeside(root)).toEqual([])
   })
 })

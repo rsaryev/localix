@@ -55,6 +55,27 @@ describe('the marketplace effects', () => {
     })
   })
 
+  test('a link whose target is longer than a path can be fails the scan, never inflated whole', async () => {
+    const long = 'a/'.repeat(4096)
+    for (const deflate of [true, false]) {
+      const zip = makeZip([{ name: 'link', data: long, unixMode: 0o120777, deflate }])
+      expect(await zipArchiveReader.scan(new Uint8Array(zip), signal)).toEqual({
+        failure: 'corrupt',
+        message: 'The archive entry link is a symbolic link whose target is over 4096 bytes',
+      })
+    }
+    // A link whose header understates its target is held to the bound, not to the header.
+    const lying = makeZip([{ name: 'link', data: long, unixMode: 0o120777, declaredBytes: 10 }])
+    expect(await zipArchiveReader.scan(new Uint8Array(lying), signal)).toMatchObject({
+      failure: 'corrupt',
+    })
+    const fits = 'b'.repeat(4096)
+    const ok = makeZip([{ name: 'link', data: fits, unixMode: 0o120777 }])
+    expect(await zipArchiveReader.scan(new Uint8Array(ok), signal)).toMatchObject({
+      entries: [{ path: 'link', linkTarget: fits }],
+    })
+  })
+
   test('lists the tags of a repository, and an unreachable one is a failure', async () => {
     const urls: string[] = []
     const tags = gitTags(async (url) => {

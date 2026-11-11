@@ -32,9 +32,32 @@ const NO_LIMITS = {
   maxUncompressedBytes: Infinity,
   maxCompressionRatio: Infinity,
 }
+/**
+ * A link's target is a path, so it is read to PATH_MAX (4096 bytes on Linux, the larger of the
+ * common limits) and no further: a longer one, by its header or by what it inflates to, fails the
+ * scan as an unsafe archive before any of the kit's limits are judged.
+ */
+const MAX_LINK_TARGET_BYTES = 4096
+
+const tooLong = (member: ZipMember) =>
+  new Error(
+    `The archive entry ${member.name} is a symbolic link whose target is over ${MAX_LINK_TARGET_BYTES} bytes`,
+  )
+
+function inflateBounded(data: Buffer, member: ZipMember): Buffer {
+  try {
+    return inflateRawSync(data, { maxOutputLength: MAX_LINK_TARGET_BYTES })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ERR_BUFFER_TOO_LARGE') throw tooLong(member)
+    throw error
+  }
+}
+
 const linkTarget = (zip: Buffer, member: ZipMember): string => {
+  if (member.bytes > MAX_LINK_TARGET_BYTES) throw tooLong(member)
   const data = zip.subarray(member.dataStart, member.dataStart + member.compressedBytes)
-  return (member.method === 8 ? inflateRawSync(data) : data).toString('utf8')
+  if (member.method !== 8 && data.length > MAX_LINK_TARGET_BYTES) throw tooLong(member)
+  return (member.method === 8 ? inflateBounded(data, member) : data).toString('utf8')
 }
 
 export const zipArchiveReader: ArchiveReader = {

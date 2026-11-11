@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
+import { mkdirSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { tempDirPerTest } from '@localixai/testing'
@@ -30,6 +31,7 @@ interface Hit {
   method: string
   path: string
   body: string
+  headers: Headers
 }
 
 /** A protected MCP resource that is also its own authorization server. */
@@ -40,7 +42,12 @@ function authServer(metadata: Record<string, unknown> = {}) {
     hostname: '127.0.0.1',
     async fetch(request): Promise<Response> {
       const url = new URL(request.url)
-      hits.push({ method: request.method, path: url.pathname, body: await request.text() })
+      hits.push({
+        method: request.method,
+        path: url.pathname,
+        body: await request.text(),
+        headers: request.headers,
+      })
       const base = `http://127.0.0.1:${server.port}`
       if (url.pathname === '/mcp') return new Response('denied', { status: 401 })
       if (
@@ -78,7 +85,7 @@ const record = (url: string, oauth: Record<string, unknown>): McpServerRecord =>
 })
 
 async function authorizeUrl(server: McpServerRecord) {
-  const started = await startMcpOAuth(server, { store: stores() })
+  const started = await startMcpOAuth(server, { store: stores(), cwd: dir() })
   return new URL(started.authorizationUrl ?? 'http://missing.invalid')
 }
 
@@ -142,9 +149,7 @@ describe('a server’s oauth block', () => {
     const store = stores()
     const started = await startMcpOAuth(
       record(`${base}/mcp`, { clientId: 'cid', callbackPort: port }),
-      {
-        store,
-      },
+      { store, cwd: dir() },
     )
     const url = new URL(started.authorizationUrl ?? 'http://missing.invalid')
     expect(url.searchParams.get('redirect_uri')).toBe(`http://localhost:${port}/callback`)
@@ -167,6 +172,7 @@ describe('a server’s oauth block', () => {
     const port = await freePort()
     await startMcpOAuth(record(`${base}/mcp`, { clientId: 'cid', callbackPort: port }), {
       store: stores(),
+      cwd: dir(),
     })
     const page = await fetch(`http://127.0.0.1:${port}/callback?code=c&state=forged`)
     expect(page.status).toBe(400)
@@ -179,7 +185,25 @@ describe('a server’s oauth block', () => {
     await expect(
       startMcpOAuth(record(`${base}/mcp`, { clientId: 'cid', callbackPort: taken.port }), {
         store: stores(),
+        cwd: dir(),
       }),
     ).rejects.toThrow(new RegExp(String(taken.port)))
+  })
+
+  test('expands the config and runs a headersHelper in the server’s project, not the API process’s', async () => {
+    const { base, hits } = authServer()
+    const project = join(dir(), 'project')
+    mkdirSync(project, { recursive: true })
+    const server = record(`${base}/mcp`, { clientId: 'cid' })
+    server.config = {
+      ...server.config,
+      headersHelperTrust: { source: 'persisted', key: project },
+      headers: { 'X-Project': '${CLAUDE_PROJECT_DIR}' },
+      headersHelper: `printf '{"X-Dir":"%s"}' "$(pwd -P)"`,
+    }
+    await startMcpOAuth(server, { store: stores(), cwd: project })
+    const first = hits.find((h) => h.path === '/mcp')
+    expect(first?.headers.get('x-dir')).toBe(realpathSync(project))
+    expect(first?.headers.get('x-project')).toBe(project)
   })
 })

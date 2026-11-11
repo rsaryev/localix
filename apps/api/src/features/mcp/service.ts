@@ -206,7 +206,7 @@ export function createMcpService(deps: McpServiceDeps): McpService {
         )
       }
       try {
-        return await startMcpOAuth(record)
+        return await startMcpOAuth(record, { cwd: await cwdFor(userId, record.projectId) })
       } catch (err) {
         throw new InvalidRequestError(
           'mcp_oauth_failed',

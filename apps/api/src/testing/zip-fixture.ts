@@ -87,3 +87,17 @@ export function makeZip(entries: ZipFixtureEntry[], opts: ZipFixtureOptions = {}
   end.writeUInt32LE(offset, 16)
   return Buffer.concat([...locals, directory, end])
 }
+
+const LINK_MODE = 0o120777
+
+/**
+ * A link chain that leaves its folder only where names fold case (macOS APFS): `A` -> `.`, then
+ * `a/B` -> `..` (written beside `A`, so it names the folder above), then a link under `b/` (= `B`,
+ * the folder above) that would create `planted-outside/` there. On a case-sensitive file system
+ * `a/` and `b/` are folders of their own and every entry stays inside.
+ */
+export const CASE_COLLISION_LINKS: readonly ZipFixtureEntry[] = [
+  { name: 'A', data: '.', unixMode: LINK_MODE },
+  { name: 'a/B', data: '..', unixMode: LINK_MODE },
+  { name: 'b/planted-outside/file.txt', data: '../plugin/skills/x.md', unixMode: LINK_MODE },
+]
