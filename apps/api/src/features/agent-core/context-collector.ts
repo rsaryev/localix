@@ -4,6 +4,7 @@ import { isPathWithin } from '../../lib/path-containment'
 import { stripHtmlBlockComments } from './context-comments'
 import { expandImports } from './context-imports'
 import { readCappedFile } from './context-read'
+import type { MemoryRuleScope } from '@rsaryev/llx-plugin/format'
 import { discoverRules, type RuleScope } from './context-rules'
 
 /**
@@ -129,18 +130,28 @@ export class ContextCollector {
   }
 }
 
-/** Load rules from `rulesDir` (`.claude/rules`, `.localix/rules`): which apply is `context-rules.ts`'s. */
+/**
+ * Load rules from `rulesDir` (`.claude/rules`, `.localix/rules`): which apply is `context-rules.ts`'s.
+ * `owner` is whose they are and the folder their patterns are relative to: the project folder
+ * holding them, or for the user's own the session's working directory.
+ */
 export async function collectRules(
   rulesDir: string,
-  base: string,
+  owner: { scope: MemoryRuleScope; cwd: string },
   collector: ContextCollector,
   confineTo?: string,
   scope?: RuleScope,
 ): Promise<void> {
-  for (const rule of await discoverRules(rulesDir, base, readNamed, scope)) {
+  for (const rule of await discoverRules(rulesDir, owner, readNamed, scope)) {
     await collector.add(rule.path, 'rule', rule.body, confineTo)
   }
 }
+
+/** The owner of a project folder's rules: their patterns are relative to `dir`. */
+export const projectRules = (dir: string) => ({ scope: 'project' as const, cwd: dir })
+
+/** The owner of the user's own rules: their patterns are relative to the working directory. */
+export const userRules = (cwd: string) => ({ scope: 'user' as const, cwd })
 
 /**
  * Emit one directory's instruction files, then (inside the project) its Localix context document
@@ -160,8 +171,8 @@ export async function collectDir(
   }
   // Rules are the project's own: an ancestor above it contributes only its instruction files.
   if (!inProject) return
-  await collectRules(join(dir, '.claude', 'rules'), dir, collector, confineTo, scope)
+  await collectRules(join(dir, '.claude', 'rules'), projectRules(dir), collector, confineTo, scope)
   const localixDir = join(dir, '.localix')
   await collector.add(join(localixDir, 'context.md'), 'context', undefined, confineTo)
-  await collectRules(join(localixDir, 'rules'), dir, collector, confineTo, scope)
+  await collectRules(join(localixDir, 'rules'), projectRules(dir), collector, confineTo, scope)
 }

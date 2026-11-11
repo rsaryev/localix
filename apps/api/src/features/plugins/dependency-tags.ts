@@ -2,15 +2,16 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 
 import { childEnvNonInteractive } from '../../lib/login-shell-env'
+import { cloneUrl, entryFetchPlan } from './kit'
+import type { MarketplaceEntry, MarketplaceSource } from '@rsaryev/llx-plugin/marketplace'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
 
 const execFileAsync = promisify(execFile)
 
 /**
- * Release tags for dependency version ranges (dependencies.md, "Release a plugin that others
- * depend on"): a plugin's releases are tagged `<plugin-name>--v<version>` on the repository that
- * hosts it, and a range installs the highest tag it admits. A pre-release matches only a range
- * that opts in (`^2.0.0-0`), as semver ranges do.
+ * The tags of the repository that hosts a plugin, for the kit's dependency plan to resolve a
+ * version range against (`<plugin>--v<version>` release tags, dependencies.md, "Release a plugin
+ * that others depend on"): which tag a range picks is the kit's (`installClosure`).
  */
 
 /** The tag names of `url`, without fetching the repository. */
@@ -26,24 +27,13 @@ export async function lsRemoteTags(url: string): Promise<string[]> {
     .filter((tag): tag is string => !!tag)
 }
 
-/** The highest `<plugin>--v<version>` tag of `url` that `range` admits, or undefined. */
-export async function tagInRange(
-  plugin: string,
-  url: string,
-  range: string,
+/** The tags of the git repository an entry installs from; none for any other source. */
+export async function entryTags(
+  entry: MarketplaceEntry,
+  hostedBy: MarketplaceSource,
   deps: Pick<MarketplaceRegistryDeps, 'listTags'>,
-): Promise<{ tag: string; version: string } | undefined> {
-  const prefix = `${plugin}--v`
-  const candidates = (await (deps.listTags ?? lsRemoteTags)(url))
-    .filter((tag) => tag.startsWith(prefix))
-    .map((tag) => ({ tag, version: tag.slice(prefix.length) }))
-    .filter(({ version }) => {
-      try {
-        return Bun.semver.satisfies(version, range)
-      } catch {
-        return false
-      }
-    })
-    .sort((a, b) => Bun.semver.order(a.version, b.version))
-  return candidates.at(-1)
+): Promise<string[]> {
+  const plan = entryFetchPlan(entry, hostedBy)
+  if (plan.kind !== 'git') return []
+  return (deps.listTags ?? lsRemoteTags)(cloneUrl(plan.repo)).catch(() => [])
 }

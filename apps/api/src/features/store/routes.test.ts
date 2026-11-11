@@ -139,10 +139,12 @@ describe('/rpc/store', () => {
     expect(apps.calls).toContain('install atlas user')
   })
 
-  test('update is queued; remove and enable answer 204', async () => {
+  test('update is queued; remove says what it warned about; enable answers 204', async () => {
     const { apps, post } = app()
     expect((await post('/mini-app/tasks/update', {})).status).toBe(202)
-    expect((await post('/mini-app/tasks/remove', { scope: 'user' })).status).toBe(204)
+    const removed = await post('/mini-app/tasks/remove', { scope: 'user' })
+    expect(removed.status).toBe(200)
+    expect(await removed.json()).toEqual({ warnings: [] })
     expect((await post('/mini-app/tasks/enable', { enabled: false })).status).toBe(204)
     expect(apps.calls.slice(-3)).toEqual([
       'update tasks user',

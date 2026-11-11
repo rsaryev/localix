@@ -14,6 +14,8 @@ export interface Live {
   revision: string
   scene: ModScene
   sources: readonly ModSource[]
+  /** When it goes for being unused (`idleMs` of `session-host.ts`). */
+  idle?: () => void
   /** The host once it loaded, and why each mod it was given did not load. */
   ready?: { kit: KitModsHost; failures: ReadonlyMap<string, string> }
 }
@@ -35,9 +37,10 @@ export const revisionOf = (sources: readonly ModSource[]) =>
  * its mods hear none. One that never finished loading has nothing to dispose.
  */
 export async function disposeOf(
-  entry: Pick<Live, 'host'> | undefined,
+  entry: Pick<Live, 'host' | 'idle'> | undefined,
   reason: Extract<SessionEndReason, 'resume' | 'other'> = 'other',
 ) {
+  entry?.idle?.()
   const kit = await entry?.host.catch(() => undefined)
   if (!kit) return
   await kit.endSession(reason).catch(() => undefined)

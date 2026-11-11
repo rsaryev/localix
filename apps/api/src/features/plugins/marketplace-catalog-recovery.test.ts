@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import {
   findMarketplacesWithPlugin,
   listMarketplaces,
-  marketplaceDependencyAllowList,
+  closureMarketplaces,
   type MarketplaceRegistryDeps,
 } from './marketplace-registry'
 import { type KnownMarketplace, readKnownMarketplaces, writeKnownMarketplaces } from './kit'
@@ -42,7 +42,7 @@ test('an unreadable registered catalog stays listed but contributes no plugins o
       },
     ])
     expect(await findMarketplacesWithPlugin('anything', deps)).toEqual([])
-    expect(await marketplaceDependencyAllowList('broken', deps)).toEqual([])
+    expect(await closureMarketplaces(deps)).toEqual([])
     expect(await readKnownMarketplaces(root)).toEqual(known)
   } finally {
     await fs.rm(root, { recursive: true, force: true })

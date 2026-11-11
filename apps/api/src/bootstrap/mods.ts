@@ -29,7 +29,7 @@ import { localixCommands } from './mods-commands'
 import { createModCompletion } from './mods-model'
 import { sessionReadOf } from './mods-session'
 import type { MiniAppHostRefs } from './mini-app-host-refs'
-import { createDebouncer, createThrottle } from '../lib/debounce'
+import { createThrottle } from '../lib/debounce'
 import { localixWorkspaceDir, userHome } from '../lib/env'
 import type { createLogger } from '../lib/logger'
 
@@ -40,7 +40,6 @@ import type { createLogger } from '../lib/logger'
  * hooks modules after any plugin change, debounced like the other plugin hosts.
  */
 
-const REFRESH_DEBOUNCE_MS = 500
 /** Panes redraw on a poke; a mod that invalidates in a loop is held to a few pokes a second. */
 const PANES_POKE_MS = 100
 
@@ -214,8 +213,7 @@ export function createModsPhase(input: {
     // A mod's command may not take a built-in's name (`$.command.register`).
     builtIns: () => [...BUILTIN_COMMAND_NAMES],
   })
-  const debounce = createDebouncer(REFRESH_DEBOUNCE_MS)
-  const reconcile = async () => {
+  const load = async () => {
     const mods = await loadEnabledPluginMods({
       repo,
       availability: await readAvailability(deps.db, {
@@ -224,19 +222,19 @@ export function createModsPhase(input: {
       }),
       userId: defaultUserId,
       homeDir: userHome(),
+      pluginHost: input.pluginHost,
     })
     modDataDirs.clear()
     for (const mod of mods) modDataDirs.set(mod.plugin, mod.dataDir)
-    await modsHost.reconcile(mods.map(({ dataDir: _dataDir, ...mod }) => mod))
-    publish(defaultUserId, ['mods', 'capabilities'])
+    return mods.map(({ dataDir: _dataDir, ...mod }) => mod)
   }
+  const refreshFailed = (error: unknown) =>
+    logger.warn({ event: 'mods.refresh_failed', error: String(error) })
   const refreshMods = () =>
-    debounce.schedule(
-      () =>
-        void reconcile().catch((error: unknown) =>
-          logger.warn({ event: 'mods.refresh_failed', error: String(error) }),
-        ),
-    )
+    modsHost.refresh(load, {
+      loaded: () => publish(defaultUserId, ['mods', 'capabilities']),
+      failed: refreshFailed,
+    })
   // Chat reads the host through its refs, and a plugin change reloads the mods (domain-services).
   infra.serviceRefs.modsHost = modsHost
   hostRefs.mods = {

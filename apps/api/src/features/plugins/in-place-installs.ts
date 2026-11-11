@@ -9,9 +9,8 @@ import { pathExists } from '../ext/fs-discovery'
 import { entrySource } from './claude-code-installs'
 import type { DiscoveredPlugin } from './discovery-types'
 import { loadManifest } from './manifest-load'
-import { readKnownMarketplaces, readMarketplace } from './kit'
 import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
-import { marketplacesRoot } from './marketplace-source'
+import { listedEntry } from './marketplace-copy'
 import { withWorkflowCommands } from './workflow-commands'
 
 /**
@@ -84,20 +83,6 @@ export function setInPlaceRecord(
     await fs.rename(staged, file)
     return previous
   })
-}
-
-/** The entry `id` names in the catalog of a registered marketplace, when it is still listed. */
-async function listedEntry(homeDir: string, id: string): Promise<MarketplaceEntry | undefined> {
-  const at = id.lastIndexOf('@')
-  if (at <= 0) return undefined
-  try {
-    const record = (await readKnownMarketplaces(marketplacesRoot(homeDir)))[id.slice(at + 1)]
-    if (!record) return undefined
-    const market = await readMarketplace(record)
-    return market.plugins.find((one) => one.name === id.slice(0, at))
-  } catch {
-    return undefined
-  }
 }
 
 /** Read one in-place plugin as Claude Code does: its folder, combined with its entry. */

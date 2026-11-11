@@ -63,7 +63,10 @@ export function fakeClient(fake: StoreFake): StoreClient {
       )
     },
     update: async (ref, scope) => call(`update ${ref.kind}/${ref.id} ${scope}`),
-    remove: async (ref, scope) => call(`remove ${ref.kind}/${ref.id} ${scope}`),
+    remove: async (ref, scope) => {
+      call(`remove ${ref.kind}/${ref.id} ${scope}`)
+      return { warnings: [] }
+    },
     setAutoUpdate: async (ref, on) => call(`auto-update ${ref.kind}/${ref.id} ${on}`),
     setEnabled: async (ref, scope, enabled) =>
       call(`${enabled ? 'enable' : 'disable'} ${ref.kind}/${ref.id} ${scope}`),

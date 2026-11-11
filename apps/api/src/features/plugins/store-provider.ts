@@ -103,22 +103,37 @@ export function createPluginStoreProvider(deps: {
     return actor.projectId
   }
 
+  /** What an install brings with it (the kit's plan), or why it would be refused. */
+  async function requiredBy(id: string, projectId: string | null, actor: StoreActor) {
+    try {
+      const ids = await deps.service.dependencies(actor.userId, { source: id, projectId })
+      return { requires: ids.map((one) => ({ kind: 'plugin' as const, id: one })), refused: [] }
+    } catch (error) {
+      return { requires: [], refused: [error instanceof Error ? error.message : String(error)] }
+    }
+  }
+
   async function plan(id: string, scope: Scope, actor: StoreActor): Promise<InstallPlan> {
-    projectOf(scope, actor)
-    const { view, contents } = await opened(id)
+    const projectId = projectOf(scope, actor)
+    const [{ view, contents }, needs] = await Promise.all([
+      opened(id),
+      requiredBy(id, projectId, actor),
+    ])
     const runs = contents?.runs ?? []
     // What it runs is the plan's own `runs`, shown wherever the plan is: a warning saying it again
     // was the consent sheet's loudest line.
-    const warnings =
-      view.trust === 'community'
+    const warnings = [
+      ...(view.trust === 'community'
         ? [`${view.label} is a community marketplace: Localix does not review what it lists`]
-        : []
+        : []),
+      ...needs.refused,
+    ]
     return {
       scope,
       adds: contents?.components ?? [],
       runs,
       network: contents?.network ?? [],
-      requires: [],
+      requires: needs.requires,
       warnings,
       needsConsent: view.trust === 'community' || runs.length > 0,
     }
@@ -198,11 +213,12 @@ export function createPluginStoreProvider(deps: {
 
     async remove(id, scope, actor) {
       const { entry } = await find(id)
-      await deps.service.remove(actor.userId, {
+      const removed = await deps.service.remove(actor.userId, {
         name: entry.name,
         projectId: projectOf(scope, actor),
       })
       changed()
+      return { warnings: removed?.warnings ?? [] }
     },
 
     async setEnabled(id, scope, enabled, actor) {

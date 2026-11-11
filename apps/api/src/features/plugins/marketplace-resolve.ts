@@ -8,7 +8,6 @@ import {
   readKnownMarketplaces,
   readMarketplace,
   resolveEntryName,
-  cloneUrl,
   entryFetchPlan,
   localEntryDir,
 } from './kit'
@@ -18,7 +17,6 @@ import { fetchEntryPlugin, type RemotePlan } from './marketplace-materialize'
 import { readsInPlace } from './marketplace-in-place'
 import { findMarketplacesWithPlugin } from './marketplace-catalog'
 import { withArchiveHeaders } from './entry-headers-helper'
-import { tagInRange } from './dependency-tags'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
 
 /** Result of resolving a marketplace plugin reference to a local install path. */
@@ -48,8 +46,6 @@ export interface ResolvedMarketplaceInstall {
    * (CC 2.1.193+) — callers can surface "installed as <entry.name>" to the user.
    */
   renamedFrom?: string
-  /** The version of the `<plugin>--v<version>` tag a version range resolved to. */
-  tagVersion?: string
 }
 
 /**
@@ -65,7 +61,8 @@ export async function resolveMarketplaceInstall(
   ref: { plugin: string; marketplace: string },
   deps: MarketplaceRegistryDeps,
   opts?: {
-    versionRange?: string
+    /** The release tag the kit's dependency plan resolved a range to (`installClosure`). */
+    tag?: string
     /** The person accepted this entry's `headersHelper` (`entry-headers-helper.ts`). */
     acceptCommand?: string
     /** Fetched for a Store page: kept for the install that may follow (`fetchEntryPlugin`). */
@@ -120,18 +117,11 @@ export async function resolveMarketplaceInstall(
     return { dir, linkRoot: marketplaceDir, ...base, ...inPlace, ...commitSha }
   }
 
-  // A version range picks the highest `<plugin>--v<version>` tag of the plugin's own repository.
-  let tagVersion: string | undefined
+  // A dependency's range resolved to a release tag of the plugin's own repository: that tag.
   let remote: RemotePlan = plan
-  if (opts?.versionRange && plan.kind === 'git') {
-    const tag = await tagInRange(entry.name, cloneUrl(plan.repo), opts.versionRange, deps)
-    if (!tag)
-      throw new Error(
-        `Dependency "${entry.name}@${ref.marketplace}" has no git tag satisfying "${opts.versionRange}"`,
-      )
+  if (opts?.tag && plan.kind === 'git') {
     const { sha: _pinned, ...unpinned } = plan
-    remote = { ...unpinned, ref: tag.tag, checkout: 'ref' }
-    tagVersion = tag.version
+    remote = { ...unpinned, ref: opts.tag, checkout: 'ref' }
   }
   // An archive on a url marketplace's origin gets that source's headers; the entry's win a name,
   // and its headersHelper runs only once the person accepted it.
@@ -162,7 +152,7 @@ export async function resolveMarketplaceInstall(
   const fetched = await fetchEntryPlugin(remote, staging, deps, {
     prefetch: opts?.prefetch ?? false,
   })
-  return { ...fetched, linkRoot: staging, ...base, ...(tagVersion ? { tagVersion } : {}) }
+  return { ...fetched, linkRoot: staging, ...base }
 }
 
 /**

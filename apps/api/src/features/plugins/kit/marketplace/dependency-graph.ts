@@ -1,6 +1,6 @@
+import { startUninstall } from '@rsaryev/llx-plugin/cli'
 import {
   checkInstalledDependency,
-  dependentsOf,
   disableDecision,
   enablePlan,
   normalizeDependency,
@@ -71,9 +71,18 @@ export function disableRefusal(name: string, plugins: readonly PluginNode[]): st
   return decision.allowed ? undefined : decision.message
 }
 
-/** The enabled plugins that declare `name` as a dependency (the kit's `dependentsOf`). */
-export function pluginDependents(name: string, plugins: readonly PluginNode[]): readonly string[] {
-  return dependentsOf(name, factsOf(plugins))
+/**
+ * The enabled plugins that still need `id` when it is uninstalled from `scope`: the `requiredBy` of
+ * the kit's `startUninstall` (not refused, as in Claude Code; the dependents then fail to load).
+ */
+export function uninstallRequiredBy(
+  id: string,
+  scope: 'user' | 'project',
+  facts: Pick<GraphFacts, 'installed' | 'enabled'>,
+): readonly string[] {
+  const graph = { ...facts, catalog: {}, allowlists: {} }
+  const start = startUninstall({ plugin: id, scope }, { graph, tty: false })
+  return start.kind === 'remove' ? start.requiredBy : []
 }
 
 /**

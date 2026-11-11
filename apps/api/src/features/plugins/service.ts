@@ -20,6 +20,8 @@ import {
 import { cloneRepo, withPluginSource } from './install-helpers'
 import { publishPluginInstallation } from './publish-installation'
 import { buildPluginCatalog, type PluginCatalog } from './catalog'
+import { catalogPluginErrors } from './catalog-kit'
+import { pluginIdOf } from './plugin-data-id'
 import { createAvailabilityWriter, readAvailability } from '../capabilities/availability'
 import { listCatalogCommandSpecs } from './plugin-skills'
 import { listScopeOutputStyles } from './output-style-listing'
@@ -27,6 +29,7 @@ import {
   marketplacesRoot,
   parseMarketplaceRef,
   resolveBareInstall,
+  resolveMarketplaceInstall,
   updateMarketplace,
   addMarketplace,
   type MarketplaceRegistryDeps,
@@ -37,12 +40,13 @@ import { planDependencyEnables } from './dependencies-policy'
 import { actionFor } from '../capabilities/resolve'
 import type { RuleChange } from '../capabilities/rule-changes'
 import {
+  dependenciesToInstall,
   prepareDependenciesForInstall,
   type PreparedDependencyInstall,
 } from './dependencies-install'
 import { resolvePluginConfig } from './config'
 import { isDefaultProject } from '../projects/default-project'
-import { applyEntryManifestOverrides } from './marketplace-entry-manifest'
+import { entrySource } from './claude-code-installs'
 import { pluginTrustClass } from './enable'
 import { validatePluginFull } from './validate'
 import { declaredDependencies, UNKNOWN_VERSION } from './kit'
@@ -127,9 +131,11 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     enabled: boolean,
     /** Not running only because nobody has said yes yet — see `ext/trust.ts`. */
     awaitingConsent = false,
+    /** What the kit reports against it in its scope (`catalogPluginErrors`). */
+    kitError?: string,
   ): Promise<PluginRecord> => {
     const resolvedConfig = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
-    let error = plugin.error
+    let error = plugin.error ?? kitError
     const loadBlocked = pluginLoadBlockReason(plugin)
     if (loadBlocked) error = error ? `${error}; ${loadBlocked}` : loadBlocked
     const validation = await validatePluginFull(plugin, { config: resolvedConfig })
@@ -201,14 +207,22 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
    * project, only global plugins surface. `toRecord` validates skills per plugin, so map
    * it in parallel rather than awaiting each in turn.
    */
-  const recordsFromCatalog = (catalog: PluginCatalog, projectId: string): Promise<PluginRecord[]> =>
-    Promise.all(
+  const recordsFromCatalog = async (
+    catalog: PluginCatalog,
+    projectId: string,
+    cwd: string,
+  ): Promise<PluginRecord[]> => {
+    const kitErrors = deps.pluginHost
+      ? await catalogPluginErrors(deps.pluginHost, catalog, { cwd, homeDir: home })
+      : new Map<string, string>()
+    return Promise.all(
       catalog.all.flatMap(({ plugin, state, enabled, awaitingConsent }) =>
         projectId || plugin.scope !== 'project'
-          ? [toRecord(plugin, state, enabled, awaitingConsent)]
+          ? [toRecord(plugin, state, enabled, awaitingConsent, kitErrors.get(pluginIdOf(plugin)))]
           : [],
       ),
     )
+  }
 
   /** One scope's plugin catalog, built where its project runs (the workspace when global). */
   const scopeCatalog = async (userId: string, scopeProjectId: string | null | undefined) => {
@@ -260,8 +274,8 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       void cwdFor(userId, opts?.projectId ?? '')
         .then(syncDeclared)
         .catch(() => undefined)
-      const { projectId, catalog } = await scopeCatalog(userId, opts?.projectId)
-      return { plugins: await recordsFromCatalog(catalog, projectId) }
+      const { projectId, runtimeCwd, catalog } = await scopeCatalog(userId, opts?.projectId)
+      return { plugins: await recordsFromCatalog(catalog, projectId, runtimeCwd) }
     },
 
     /**
@@ -272,7 +286,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     async listPluginContributions(userId, opts) {
       const { projectId, runtimeCwd, catalog } = await scopeCatalog(userId, opts?.projectId)
       return {
-        plugins: await recordsFromCatalog(catalog, projectId),
+        plugins: await recordsFromCatalog(catalog, projectId, runtimeCwd),
         themes: listThemesFromCatalog(catalog),
         commands: await listCatalogCommandSpecs(catalog, {
           projectId,
@@ -435,7 +449,8 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       const versioned = await versionedInstallFor({
         resolved: resolvedMarket,
         inPlace,
-        scope,
+        projectPath: scope === 'project' ? cwd : null,
+        installRoot,
         home,
       })
       if (versioned) {
@@ -460,15 +475,25 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         }
       }
       opts?.onPhase?.('installing')
-      // Validate the actual copied tree before it becomes discoverable. Marketplace
-      // overlays belong to preparation too: their failures must preserve the live tree.
+      // The plugin as it will load: one from a marketplace with its entry, its copy as fetched.
+      const load = (directory: string) =>
+        inPlace
+          ? inPlace.load(projectId)
+          : loadManifest(
+              directory,
+              scope,
+              projectId,
+              resolvedMarket
+                ? entrySource(
+                    `${resolvedMarket.entry.name}@${resolvedMarket.marketplace}`,
+                    resolvedMarket.entry,
+                  )
+                : undefined,
+            )
+      // Validate the actual copied tree before it becomes discoverable.
       const prepare = async (directory: string) => {
         // What Localix does not run is said once, here.
-        if (resolvedMarket && !inPlace)
-          await applyEntryManifestOverrides(directory, resolvedMarket.entry)
-        const candidate = inPlace
-          ? await inPlace.load(projectId)
-          : await loadManifest(directory, scope, projectId)
+        const candidate = await load(directory)
         if (candidate.error) throw new InvalidRequestError('plugin_invalid', candidate.error)
         installNotes.push(
           ...(candidate.manifestIssues ?? []).map((found) => `${found.path}: ${found.message}`),
@@ -481,15 +506,17 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
           if (packages.skipped) installNotes.push(packages.skipped)
         }
       }
-      if (resolvedMarket) {
-        const discovered = await discover({ cwd, projectId })
-        depInstall = await prepareDependenciesForInstall(
-          resolvedMarket,
+      if (resolvedMarket)
+        depInstall = await prepareDependenciesForInstall({
+          resolved: resolvedMarket,
           registryDeps,
-          discovered,
+          entries: (await catalogFor(userId, projectId)).all,
           scope,
-        )
-      }
+          projectPath: scope === 'project' ? cwd : null,
+          installRoot,
+          home,
+          now,
+        })
       const enabledValue = input.enable
       const installNotes = [...refreshNotes, ...(depInstall?.warnings ?? [])]
       const { plugin, state, warnings } = await withPluginSource(
@@ -508,15 +535,11 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
             scope,
             installRoot,
             parent: inPlace ? { ...parent, inPlace: true } : parent,
-            ...inPlacePublication(inPlace, scope, installRoot, projectId),
-            ...(versioned
-              ? {
-                  versioned: {
-                    root: versioned.root,
-                    name: versioned.version,
-                    claim: () => claimCachedRecord(home, versioned, now),
-                  },
-                }
+            ...inPlacePublication(inPlace, scope, installRoot),
+            ...(versioned ? { record: () => claimCachedRecord(home, versioned, now) } : {}),
+            // A user-scope copy is one version of the cache; a project's is its plugins root's.
+            ...(versioned && !versioned.projectPath
+              ? { versioned: { root: versioned.root, name: versioned.version } }
               : {}),
             // A marketplace install records its canonical `<plugin>@<marketplace>` reference.
             source: resolvedMarket
@@ -527,6 +550,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
             now,
             dependencies: depInstall,
             prepare,
+            load,
             discover: () => discover({ cwd, projectId }),
           }),
       )
@@ -560,6 +584,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
           home,
           cwdFor,
           discover,
+          entries: async (projectId) => (await catalogFor(userId, projectId)).all,
           disable: (user, name, projectId) =>
             service.setEnabled(
               user,
@@ -572,6 +597,18 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         userId,
         input,
       ),
+
+    async dependencies(userId, input) {
+      const ref = parseMarketplaceRef(input.source)
+      if (!ref) return []
+      const projectId = input.projectId ?? ''
+      return dependenciesToInstall({
+        resolved: await resolveMarketplaceInstall(ref, registryDeps, { prefetch: true }),
+        registryDeps,
+        entries: (await catalogFor(userId, projectId)).all,
+        scope: projectId ? 'project' : 'global',
+      })
+    },
 
     validatePath: (dir, opts) => validatePluginDir(dir, opts),
 

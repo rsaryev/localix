@@ -1,6 +1,6 @@
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { renderFrontmatterFile } from '../agent-core/frontmatter-yaml'
+import { frontmatterFileText } from '../plugins/kit'
 import type { AgentRecordInput } from './contracts'
 
 /** What a Definition holds: the fields of an agent file Localix edits, as authored. */
@@ -25,7 +25,7 @@ function frontmatterOf(input: AgentDefinitionInput): Record<string, unknown> {
 
 /** The agent file for a Definition, over `existing` (empty for a new file): its other keys stay. */
 export const agentFileText = (existing: string, input: AgentDefinitionInput): string =>
-  renderFrontmatterFile(existing, frontmatterOf(input), input.instructions)
+  frontmatterFileText(existing, frontmatterOf(input), input.instructions)
 
 export const agentFilePath = (agentsDir: string, name: string): string =>
   join(agentsDir, `${name}.md`)

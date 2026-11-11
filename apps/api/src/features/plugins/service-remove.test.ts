@@ -109,6 +109,33 @@ describe('plugin remove', () => {
     expect(rows.some((row) => JSON.stringify(row).includes('vanished-tool'))).toBe(false)
   })
 
+  test("a removal names the enabled plugins that still need it (the kit's requiredBy)", async () => {
+    const write = async (name: string, dependencies: string[]) => {
+      const dir = join(root, 'src', name)
+      await mkdir(join(dir, '.claude-plugin'), { recursive: true })
+      await writeFile(
+        join(dir, '.claude-plugin', 'plugin.json'),
+        JSON.stringify({ name, version: '1.0.0', dependencies }),
+      )
+      return dir
+    }
+    await service.install('u1', { source: await write('lib', []), projectId: null, enable: true })
+    await service.install('u1', {
+      source: await write('app', ['lib']),
+      projectId: null,
+      enable: true,
+    })
+    await service.install('u1', {
+      source: await write('idle', ['lib']),
+      projectId: null,
+      enable: false,
+    })
+
+    const result = await service.remove('u1', { name: 'lib', projectId: null })
+
+    expect(result?.warnings).toEqual(['"lib" was removed — warning: required by app'])
+  })
+
   test('a name that is not installed is an error, not a removal', async () => {
     await expect(
       service.remove('u1', { name: 'never-installed', projectId: null }),

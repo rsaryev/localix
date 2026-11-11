@@ -49,6 +49,29 @@ describe('the text of a skill a host puts in the prompt', () => {
     expect(texts[0]!.content).toContain('Lint it')
   })
 
+  test("a plugin agent's bare preload name is its own plugin's skill first", async () => {
+    // Both plugins have `lint`; the first in load order is `first`, the agent is `second`'s.
+    await writeTestPlugin(join(dir(), 'first'), 'first', {
+      'skills/lint/SKILL.md': skillFile('description: First lints', 'First lint'),
+    })
+    await writeTestPlugin(join(dir(), 'second'), 'second', {
+      'skills/lint/SKILL.md': skillFile('description: Second lints', 'Second lint'),
+    })
+    writeTree(work(), { '.git/HEAD': 'ref: refs/heads/main\n' })
+    const chat = await skillTestSession(home(), work(), [
+      join(dir(), 'first'),
+      join(dir(), 'second'),
+    ])
+    await chat.reloadSkills({ signal })
+    const own = { kind: 'plugin', pluginId: 'second@test' } as const
+    expect((await preloadedSkillTexts(chat, ['lint'], signal, own)).map((t) => t.name)).toEqual([
+      'second:lint',
+    ])
+    expect((await preloadedSkillTexts(chat, ['lint'], signal)).map((t) => t.name)).toEqual([
+      'first:lint',
+    ])
+  })
+
   test('a frontmatter `keywords` list, which only Localix reads, rides on the row', async () => {
     const chat = await session({
       '.claude/skills/deploy/SKILL.md': skillFile(

@@ -205,6 +205,10 @@ export const installPlanSchema = z.object({
 })
 export type InstallPlan = z.infer<typeof installPlanSchema>
 
+/** What a removal warned about: it is not refused (a plugin other installed plugins still need). */
+export const removeResultSchema = z.object({ warnings: z.array(z.string()) })
+export type RemoveResult = z.infer<typeof removeResultSchema>
+
 /** One place a provider reads packages from. */
 export const sourceViewSchema = z.object({
   kind: packageKindSchema,

@@ -12,8 +12,6 @@
   "apps/api/src/features/ext/manifest-substitute.ts spells user_config. (user config references)",
   "apps/api/src/features/mcp/mcp-connect.ts spells CLAUDE_PLUGIN_DATA (plugin variables)",
   "apps/api/src/features/mini-apps/folder.ts spells plugin.json (manifest reading)",
-  "apps/api/src/features/mods/summary.ts spells plugin.json (manifest reading)",
-  "apps/api/src/features/plugins/marketplace-entry-manifest.ts spells plugin.json (manifest reading)",
   "apps/api/src/features/plugins/subagent-status-line.ts spells CLAUDE_PLUGIN_DATA (plugin variables)",
   "apps/api/src/features/plugins/validate-config.ts spells CLAUDE_PLUGIN_DATA (plugin variables)",
   "apps/api/src/features/plugins/validate-config.ts spells user_config. (user config references)",

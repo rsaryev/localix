@@ -32,10 +32,11 @@ export interface DiscoveredPlugin {
    */
   inPlaceInstall?: string
   /**
-   * A user-scope copy installed from a marketplace into the version cache (`plugin-cache.ts`):
-   * its `<name>@<marketplace>` and the resolved version it was installed at.
+   * A copy installed from a marketplace and recorded in `installed_plugins.json` (`plugin-cache.ts`):
+   * its `<name>@<marketplace>`, the resolved version it was installed at and, for a project-scope
+   * copy, the project folder it is recorded for (a user-scope one is in the version cache).
    */
-  cachedInstall?: { id: string; version: string }
+  cachedInstall?: { id: string; version: string; projectPath?: string }
   /** What Claude Code's own rules found in the plugin (unknown fields, unsupported parts). */
   manifestIssues?: PluginIssue[]
   /** Manifest parse/validation error — the plugin still surfaces in the UI. */

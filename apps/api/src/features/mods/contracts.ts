@@ -20,6 +20,8 @@ export interface ModSource {
   plugin: string
   /** The plugin root (`$.plugin.root`, `${CLAUDE_PLUGIN_ROOT}`). */
   root: string
+  /** The version the plugin loaded at (its manifest's, as the kit merged it with its entry). */
+  version?: string
   /** The hooks module, absolute and inside the plugin. */
   module: string
   /** The plugin's `userConfig` values, defaults filled in. */

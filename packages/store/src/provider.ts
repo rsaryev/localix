@@ -13,6 +13,7 @@ import type {
   ListingDetail,
   ListingRef,
   PackageKind,
+  RemoveResult,
   Scope,
   SourcePreview,
   SourceView,
@@ -54,7 +55,8 @@ export interface StoreProvider {
   /** Queues a job; resolves once queued. Refuses a plan that needs consent without it. */
   install?(id: string, scope: Scope, consent: { plan: boolean }, actor: StoreActor): Promise<void>
   update?(id: string, scope: Scope, actor: StoreActor): Promise<void>
-  remove(id: string, scope: Scope, actor: StoreActor): Promise<void>
+  /** Resolves with what the removal warned about, when it warned. */
+  remove(id: string, scope: Scope, actor: StoreActor): Promise<RemoveResult | void>
   setEnabled?(id: string, scope: Scope, enabled: boolean, actor: StoreActor): Promise<void>
   /** Whether an installed package that can update on its own does (`Listing.autoUpdate`). */
   setAutoUpdate?(id: string, on: boolean, actor: StoreActor): Promise<void>

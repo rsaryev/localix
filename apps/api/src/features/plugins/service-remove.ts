@@ -3,7 +3,9 @@ import type { CapabilitySourceRepository } from '../capabilities/source-reposito
 import { removeIfUnderRoot } from '../ext/install-tree'
 import { pluginInstallRoot, type DiscoveredPlugin } from './discovery'
 import { setInPlaceRecord } from './in-place-installs'
-import { pluginDependents } from './kit'
+import { uninstallRequiredBy } from './kit'
+import type { PluginCatalogEntry } from './catalog'
+import { factIdOf, factScopeOf, installedFacts } from './dependency-facts'
 import { releaseCachedInstall } from './install-versioned'
 import { removeDataIfLastCopy, rowScopeOf } from './service-lifecycle'
 import { pluginIdOf } from './plugin-data-id'
@@ -21,6 +23,8 @@ export async function removePlugin(
     home: string
     cwdFor: (userId: string, projectId: string) => Promise<string | null>
     discover: (scope: { cwd: string | null; projectId: string }) => Promise<DiscoveredPlugin[]>
+    /** What is installed in the scope, with its on/off state (`buildPluginCatalog`). */
+    entries: (projectId: string) => Promise<readonly PluginCatalogEntry[]>
     disable: (userId: string, name: string, projectId: string) => Promise<unknown>
     changed: (name: string, projectId: string) => void
     warn?: (message: string) => void
@@ -47,16 +51,13 @@ export async function removePlugin(
     await ctx.disable(userId, input.name, projectId)
     return { warnings: [], claudeCodeInstall: plugin.claudeCodeInstall }
   }
-  // NO cascade and no refusal on remove, as in Claude Code (the kit's `planUninstall`): the
-  // dependents then fail to load, so the installed plugins that still declare it are named.
-  const dependents = pluginDependents(
-    input.name,
-    discovered.map((other) => ({
-      name: other.manifest.name,
-      enabled: true,
-      dependencies: other.manifest.dependencies,
-    })),
-  )
+  // NO cascade and no refusal on remove, as in Claude Code: the enabled plugins that still need it
+  // (the kit's `requiredBy`) are named, and they then fail to load.
+  const entries = await ctx.entries(projectId)
+  const removed = plugin && entries.find((entry) => entry.plugin.dir === plugin.dir)
+  const requiredBy = removed
+    ? uninstallRequiredBy(factIdOf(removed), factScopeOf(removed.plugin), installedFacts(entries))
+    : []
   // A plugin loading in place is uninstalled by dropping its record, also when its folder is gone.
   if (!plugin || plugin.scope === 'global')
     await setInPlaceRecord(pluginInstallRoot('global', null, home), input.name, null)
@@ -64,9 +65,11 @@ export async function removePlugin(
   // An older build kept a user-scope plugin's options in a per-project row as well.
   if (rowScope !== projectId) await repo.remove(userId, projectId, input.name)
   // An in-place plugin's folder is the person's: it is not deleted. A cached version is orphaned,
-  // so whatever started from it keeps its files for 14 days. Anything else only inside its root.
-  if (plugin?.cachedInstall) await releaseCachedInstall(home, plugin.cachedInstall.id, plugin.dir)
-  else if (plugin && !plugin.inPlaceInstall) {
+  // so whatever started from it keeps its files for 14 days. Anything else (a project's recorded
+  // copy too) only inside its root.
+  const recorded = plugin?.cachedInstall
+  if (recorded) await releaseCachedInstall(home, recorded.id, plugin.dir, recorded.projectPath)
+  if (plugin && !plugin.inPlaceInstall && (!recorded || recorded.projectPath)) {
     await removeIfUnderRoot(plugin.dir, pluginInstallRoot(plugin.scope, cwd, home))
   }
   await removeDataIfLastCopy({
@@ -78,8 +81,8 @@ export async function removePlugin(
     discoverHome: () => ctx.discover({ cwd: null, projectId: '' }),
   })
   ctx.changed(input.name, projectId)
-  if (dependents.length) {
-    const warning = `"${input.name}" was removed, but other installed plugin(s) still depend on it: ${dependents.join(', ')}.`
+  if (requiredBy.length) {
+    const warning = `"${input.name}" was removed — warning: required by ${requiredBy.join(', ')}`
     ctx.warn?.(warning)
     return { warnings: [warning] }
   }

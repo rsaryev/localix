@@ -103,8 +103,12 @@ function fixture() {
       calls.push(`update ${input.name}`)
       return {} as PluginRecord
     },
-    remove: async (_user, input) =>
-      void calls.push(`remove ${input.name} ${input.projectId ?? ''}`),
+    dependencies: async (_user, input) =>
+      input.source === `review@${OFFICIAL}` ? [`lint@${OFFICIAL}`] : [],
+    remove: async (_user, input) => {
+      calls.push(`remove ${input.name} ${input.projectId ?? ''}`)
+      return input.name === 'review' ? { warnings: ['"review" is required by audit'] } : undefined
+    },
     setEnabled: async (_user, input) => {
       calls.push(`enable ${input.name} ${input.enabled}`)
       return {} as PluginRecord
@@ -367,6 +371,20 @@ describe('plugins in the Store', () => {
   test('a text-only plugin from a trusted marketplace installs without a yes', async () => {
     const { provider } = fixture()
     expect((await provider.plan(`review@${OFFICIAL}`, 'user', actor)).needsConsent).toBe(false)
+  })
+
+  test("a plan names what the install brings with it, as the kit's plan has it", async () => {
+    const { provider } = fixture()
+    expect((await provider.plan(`review@${OFFICIAL}`, 'user', actor)).requires).toEqual([
+      { kind: 'plugin', id: `lint@${OFFICIAL}` },
+    ])
+  })
+
+  test('a remove says which installed plugins still need what went', async () => {
+    const { provider } = fixture()
+    expect(await provider.remove(`review@${OFFICIAL}`, 'user', actor)).toEqual({
+      warnings: ['"review" is required by audit'],
+    })
   })
 
   test('install is queued: refused without the yes a plan asks for, its job shown until done', async () => {

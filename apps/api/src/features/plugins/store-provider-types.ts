@@ -5,6 +5,7 @@ export type PluginStoreService = Pick<
   PluginService,
   | 'listPlugins'
   | 'install'
+  | 'dependencies'
   | 'update'
   | 'remove'
   | 'setEnabled'

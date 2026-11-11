@@ -4,6 +4,7 @@ import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import { rmrf } from '../ext/install-tree'
 import {
   clearOrphaned,
+  installsAt,
   markOrphaned as markVersion,
   orphansToSweep,
   pluginStore,
@@ -66,36 +67,58 @@ const toCached = ({
   ...(gitCommitSha ? { gitCommitSha } : {}),
 })
 
-/** The user-scope install records, by `<plugin>@<marketplace>`. */
+/**
+ * Whose record: the user's, or with `projectPath` a project's (`scope: "project"`, as Claude Code
+ * records a project install; Localix's copy is under the project's `.localix/plugins`).
+ */
+function recordAt(
+  installs: readonly InstallRecord[],
+  projectPath: string | undefined,
+): InstallRecord | undefined {
+  if (projectPath === undefined) return installs.find((one) => one.scope === 'user')
+  const platform = process.platform === 'win32' ? 'windows' : 'posix'
+  // The kit says which records apply in the folder (`installsAt`); of those, the project's own.
+  const here = installsAt({ one: installs }, { projectPath, platform }).one ?? []
+  return here.find((one) => one.scope === 'project')
+}
+
+/** The user-scope install records (with `projectPath`, that project's), by `<plugin>@<marketplace>`. */
 export async function readInstallRecords(
   home: string,
+  projectPath?: string,
 ): Promise<Record<string, CachedInstallRecord>> {
   const { records } = await readInstalled(pluginsRoot(home))
   return Object.fromEntries(
     Object.entries(records).flatMap(([id, installs]) => {
-      const user = installs.find((one) => one.scope === 'user')
-      return user ? [[id, toCached(user)]] : []
+      const found = recordAt(installs, projectPath)
+      return found ? [[id, toCached(found)]] : []
     }),
   )
 }
 
 /**
- * Set (or with `null`, drop) one user-scope record, serialized; returns the previous one. Every
- * other record, and what the kit keeps of fields it does not know, is written back as it was.
+ * Set (or with `null`, drop) one user-scope record (with `projectPath`, that project's),
+ * serialized; returns the previous one. Every other record, and what the kit keeps of fields it
+ * does not know, is written back as it was.
  */
 export function setInstallRecord(
   home: string,
   id: string,
   record: CachedInstallRecord | null,
+  projectPath?: string,
 ): Promise<CachedInstallRecord | null> {
   const root = pluginsRoot(home)
+  const at =
+    projectPath === undefined
+      ? { scope: 'user' as const }
+      : { scope: 'project' as const, projectPath: resolve(projectPath) }
   return serialize(root, async () => {
     const { records } = await readInstalled(root)
     const installs = records[id] ?? []
-    const previous = installs.find((one) => one.scope === 'user')
+    const previous = recordAt(installs, projectPath)
     if (!previous && !record) return null
     const kept = installs.filter((one) => one !== previous)
-    const next = record ? [...kept, { ...previous, scope: 'user' as const, ...record }] : kept
+    const next = record ? [...kept, { ...previous, ...at, ...record }] : kept
     const { [id]: _, ...rest } = records
     await writeInstalled(root, next.length ? { ...rest, [id]: next } : rest)
     return previous ? toCached(previous) : null

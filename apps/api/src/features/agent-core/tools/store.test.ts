@@ -33,7 +33,7 @@ function harness(over: Partial<StoreToolPort> = {}) {
     plan: record('plan', plan()),
     install: record('install', undefined),
     update: record('update', undefined),
-    remove: record('remove', undefined),
+    remove: record('remove', { warnings: [] }),
     setEnabled: record('setEnabled', undefined),
     create: record('create', { kind: 'agent' as const, id: 'native:qa' }),
     ...over,
@@ -277,6 +277,16 @@ describe('store tool: the other changes', () => {
     const result = await pending
     expect(calls).toEqual([['create', 'agent', 'project', values]])
     expect(String(result.content)).toContain('native:qa')
+  })
+
+  test('a removal that warned tells the agent what still needs it', async () => {
+    const { run, answer } = harness({
+      remove: async () => ({ warnings: ['"review" was removed — warning: required by audit'] }),
+    })
+    const pending = run({ action: 'remove', ref: review, scope: 'user' })
+    await tick()
+    answer(true)
+    expect(String((await pending).content)).toContain('warning: required by audit')
   })
 
   test('a Store refusal comes back as an error result, not a throw', async () => {

@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks'
 import type { JsonObject } from '@rsaryev/llx-plugin/mods'
 import type { ModsHost as KitModsHost, ModCompiler, ModRuntime } from '@rsaryev/llx-plugin/mods'
 import {
@@ -44,10 +45,15 @@ import { createSessionPorts } from './session-ports'
  * conversation runs in chooses which mods it loads (`ModSource`); each loads in a VM of its own
  * (`vm-runtime.ts`). Hosts are kept for the conversations used most recently; the oldest past the
  * limit is disposed, and a change to the mods it loaded disposes it so the next use loads them anew.
+ * A conversation's host unused for `idleMs` goes too (its VMs are most of what a conversation costs),
+ * unless its turn runs or a pane of its mods is open; its next use loads it anew. The workspace's
+ * host stays: it holds the commands and panes there before any chat.
  */
 
 /** Live sessions' hosts kept at once; Localix's mods ran one instance per project for up to this many. */
 export const SESSION_HOSTS = 16
+/** How long a conversation's host is kept unused. */
+export const IDLE_MS = 10 * 60_000
 
 export interface SessionModsDeps {
   ports: ModsPorts
@@ -62,6 +68,7 @@ export interface SessionModsDeps {
   hangMs?: number
   memoryLimitBytes?: number
   maxHosts?: number
+  idleMs?: number
   /** The conversation's running turn, while it runs (`$.tool`, `$.mcp`, `$.ui.ask`, `$.agent.spawn`). */
   turnOf?: (scene: ModScene) => RunSurface | undefined
   /** `$.session.compact` and `$.prompt.compose` of the conversation (`event-calls.ts`). */
@@ -162,6 +169,9 @@ export function createSessionMods(deps: SessionModsDeps) {
           died: (plugin, reason) => died(keyOf(scene), sources, plugin, reason),
         }),
       compiler,
+      // Which hook made a call: a VM's calls run in the context their hook's run was in
+      // (`stand-in.ts`), so a mod's call skips its calling hook alone.
+      asyncContext: () => new AsyncLocalStorage(),
       policy: sessionPolicy(settings, sources, env),
       deny: sessionDeny(settings, scene.cwd, deps.homeDir),
       report: (report) => reportLine(ports, report.line, [report.plugin], report.plugin),
@@ -175,6 +185,19 @@ export function createSessionMods(deps: SessionModsDeps) {
     // A command, tool or subagent type a mod registered: clients re-read the mods.
     host.registered.onChange(() => ports.changed())
     return host
+  }
+
+  /** `entry` was used: it goes once unused for `idleMs`, `session.end` heard as a resume. */
+  function touch(key: string, entry: Live) {
+    entry.idle?.()
+    if (!entry.scene.sessionId) return
+    entry.idle = clock.setTimer(() => {
+      if (live.get(key) !== entry) return
+      if (deps.turnOf?.(entry.scene) || entry.ready?.kit.ui.panes.list().length)
+        return touch(key, entry)
+      live.delete(key)
+      void disposeOf(entry, 'resume')
+    }, deps.idleMs ?? IDLE_MS)
   }
 
   async function evict() {
@@ -198,6 +221,7 @@ export function createSessionMods(deps: SessionModsDeps) {
       if (kept?.revision === revision) {
         live.delete(key)
         live.set(key, kept)
+        touch(key, kept)
         return kept.host
       }
       const entry: Omit<Live, 'host'> & Partial<Live> = { revision, scene, sources }
@@ -217,6 +241,7 @@ export function createSessionMods(deps: SessionModsDeps) {
       })())
       live.delete(key)
       live.set(key, entry as Live)
+      touch(key, entry as Live)
       void next.then(evict, () => live.get(key)?.host === next && live.delete(key))
       return next
     },

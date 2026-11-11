@@ -6,6 +6,8 @@ import { tempDirPerTest } from '@localixai/testing'
 import { createLocalixPluginHost } from './host'
 import {
   createChatPluginSessions,
+  pluginErrors,
+  runningPlugins,
   sessionLocations,
   type ChatSessionFacts,
   type ScopePlugin,
@@ -28,8 +30,9 @@ function sessions() {
 }
 
 const loaded = new Map<string, Plugin>()
-async function plugin(name: string): Promise<Plugin> {
-  const files = memoryFiles({ '.claude-plugin/plugin.json': JSON.stringify({ name }) })
+async function plugin(name: string, dependencies?: string[]): Promise<Plugin> {
+  const manifest = { name, ...(dependencies ? { dependencies } : {}) }
+  const files = memoryFiles({ '.claude-plugin/plugin.json': JSON.stringify(manifest) })
   const read = loaded.get(name) ?? (await loadPlugin({ files })).plugin
   if (!read) throw new Error('fixture does not load')
   loaded.set(name, read)
@@ -169,6 +172,29 @@ describe('one kit session per chat', () => {
       }),
     )
     expect(enabledIn(session)).toEqual({ 'fmt@acme': false })
+  })
+})
+
+describe("a plugin's dependencies, as the kit judges them at load", () => {
+  test("one that needs a plugin the agent did not select is off, with the kit's error", async () => {
+    const { chats } = sessions()
+    const app = { ...(await scoped('app', true)), plugin: await plugin('app-needs-lib', ['lib']) }
+    const session = chats.forRun(
+      facts({ plugins: [{ ...app, id: 'app@acme' }, await scoped('lib', false)] }),
+    )
+    expect(enabledIn(session)).toEqual({ 'app@acme': false, 'lib@acme': false })
+    // The error a plugin record shows is the kit's, under the plugin's id (`pluginErrors`).
+    expect(pluginErrors(session)).toEqual(
+      new Map([
+        ['app@acme', 'Dependency "lib@acme" is disabled — enable it or remove the dependency'],
+      ]),
+    )
+    // The mods that run are those of the plugins the session runs (`runningPlugins`).
+    expect(runningPlugins(session)).toEqual(new Set())
+    const both = chats.forRun(
+      facts({ plugins: [{ ...app, id: 'app@acme' }, await scoped('lib', true)] }),
+    )
+    expect(runningPlugins(both)).toEqual(new Set(['app-needs-lib', 'lib']))
   })
 })
 

@@ -4,10 +4,14 @@ import { atomicWriteFile } from '@localixai/mini-app-sdk/backend'
 import { isPathWithin } from '../../lib/path-containment'
 import { userHome } from '../../lib/env'
 import { claudeConfigDir } from '../cc-settings/config-dir'
-import { renderFrontmatterFile } from '../agent-core/frontmatter-yaml'
 import { assertSkillMarkdownSize, readSkillMarkdownFile } from '../agent-core/skill-file'
 import { recordSkillAuthored } from '../agent-core/skill-usage-recorder'
-import { skillFilePath, skillNameRefusal, type SkillFolder } from '../plugins/kit'
+import {
+  frontmatterFileText,
+  skillFilePath,
+  skillNameRefusal,
+  type SkillFolder,
+} from '../plugins/kit'
 
 /**
  * The skills Localix writes: the Skills list's create, edit and remove, and the `Skill` tool's
@@ -70,10 +74,10 @@ async function existingText(file: string): Promise<string | undefined> {
 }
 
 /** The file a draft becomes: its frontmatter merged into what the file had, the body replaced. */
-export function renderSkillFile(existing: string, draft: SkillDraft): string {
-  // The description is one line of YAML.
+export function skillFileText(existing: string, draft: SkillDraft): string {
+  // The description is one line.
   const description = draft.description.replace(/[\r\n\t]+/g, ' ').trim()
-  return renderFrontmatterFile(existing, { name: draft.name, description }, draft.content.trim())
+  return frontmatterFileText(existing, { name: draft.name, description }, draft.content)
 }
 
 /**
@@ -94,7 +98,7 @@ export async function writeSkill(
   const root = dirname(target.folder)
   await requireWithin(root, dirname(file), 'write')
   const existing = await existingText(file)
-  const rendered = renderSkillFile(existing ?? '', draft)
+  const rendered = skillFileText(existing ?? '', draft)
   assertSkillMarkdownSize(rendered, file)
   await fs.mkdir(dirname(file), { recursive: true })
   await requireWithin(root, dirname(file), 'write')

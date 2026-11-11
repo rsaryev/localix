@@ -10,11 +10,14 @@ import type { CapabilitySourceRecord } from '../capabilities/source-repository'
 import type { CapabilityStores } from '../capabilities/store-factory'
 import { publishExtensionTrees } from '../ext/publish-trees'
 import type { PreparedDependencyInstall } from './dependencies-install'
-import { loadManifest, type DiscoveredPlugin } from './discovery'
+import type { DiscoveredPlugin } from './discovery'
 import type { MaterializedPluginSource } from './install-helpers'
 import { planDependencyEnables } from './dependencies-policy'
 import { actionFor } from '../capabilities/resolve'
 import { claimInPlaceRecord, type InPlaceClaim } from './install-in-place'
+
+/** An `installed_plugins.json` record taken inside the commit (`claimCachedRecord`). */
+export type RecordClaim = () => Promise<{ undo: () => Promise<void>; settle: () => Promise<void> }>
 
 /** One file publication and one database commit for the parent and its dependency plan. */
 export async function publishPluginInstallation(input: {
@@ -32,28 +35,24 @@ export async function publishPluginInstallation(input: {
   dependencies: Pick<PreparedDependencyInstall, 'publication'> | null
   prepare: (directory: string) => Promise<void>
   discover: () => Promise<DiscoveredPlugin[]>
-  /** Reads the parent as it will load; a plugin loading in place is read with its entry. */
-  loadParent?: (directory: string) => Promise<DiscoveredPlugin>
+  /** Reads the parent as it will load: one from a marketplace with its entry. */
+  load: (directory: string) => Promise<DiscoveredPlugin>
   /** A user-scope install's in-place record (`install-in-place.ts`), written with the commit. */
   inPlaceClaim?: InPlaceClaim
   /**
    * A user-scope marketplace copy goes into the version cache (`install-versioned.ts`): its tree is
-   * published as `<root>/<name>` (one version) and `claim` records it inside the commit.
+   * published as `<root>/<name>` (one version).
    */
-  versioned?: {
-    root: string
-    name: string
-    claim: () => Promise<{ undo: () => Promise<void>; settle: () => Promise<void> }>
-  }
+  versioned?: { root: string; name: string }
+  /** The parent's `installed_plugins.json` record (a user-scope cached copy's, a project copy's). */
+  record?: RecordClaim
 }): Promise<{ plugin: DiscoveredPlugin; state: CapabilitySourceRecord; warnings: string[] }> {
   const publication = input.dependencies?.publication(input)
   let result:
     | { plugin: DiscoveredPlugin; state: CapabilitySourceRecord; warnings: string[] }
     | undefined
   const commit = async (directory: string) => {
-    const plugin = input.loadParent
-      ? await input.loadParent(directory)
-      : await loadManifest(directory, input.scope, input.projectId)
+    const plugin = await input.load(directory)
     if (plugin.error) throw new InvalidRequestError('plugin_invalid', plugin.error)
     // Files are published while their backups and locks are retained. Resolve the graph before
     // taking the database transaction so discovery never calls back into a held DB connection.
@@ -69,10 +68,21 @@ export async function publishPluginInstallation(input: {
           input.replace,
         )
       : null
-    let cached: Awaited<ReturnType<NonNullable<typeof input.versioned>['claim']>> | null = null
+    // The parent's and its dependencies' `installed_plugins.json` records, undone together.
+    const records: Awaited<ReturnType<RecordClaim>>[] = []
+    const cached = {
+      undo: async () => {
+        for (const one of records.reverse()) await one.undo()
+      },
+      settle: async () => {
+        for (const one of records) await one.settle()
+      },
+    }
     try {
-      cached = (await input.versioned?.claim()) ?? null
+      for (const take of [input.record, ...(publication?.claims ?? [])])
+        if (take) records.push(await take())
     } catch (error) {
+      await cached.undo()
       await claim?.undo()
       throw error
     }
@@ -110,12 +120,12 @@ export async function publishPluginInstallation(input: {
       return saved
     })
     const state = await write.catch(async (error: unknown) => {
-      await cached?.undo()
+      await cached.undo()
       await claim?.undo()
       throw error
     })
     await claim?.settle()
-    await cached?.settle()
+    await cached.settle()
     result = { plugin, state, warnings }
   }
   // A discovered drop-in is user-owned in place. Only dependency trees are published for it.
@@ -141,15 +151,9 @@ export async function publishPluginInstallation(input: {
               },
             ]
           : []),
+        // Each tree's `prepare` reads it as it will load, and refuses it when it does not.
         ...(publication?.trees ?? []),
-      ].map((tree) => ({
-        ...tree,
-        prepare: async (directory: string) => {
-          await tree.prepare?.(directory)
-          const prepared = await loadManifest(directory, input.scope, input.projectId)
-          if (prepared.error) throw new InvalidRequestError('plugin_invalid', prepared.error)
-        },
-      })),
+      ],
       commit: (directories) =>
         commit(input.parent.inPlace ? input.parent.directory : directories[0]!),
     })

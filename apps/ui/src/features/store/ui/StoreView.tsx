@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { CircleAlert } from 'lucide-react'
+import { CircleAlert, TriangleAlert } from 'lucide-react'
 import type { Listing, ListingRef, PackageKind, StoreComponent } from '@localixai/store'
 import { SearchInput } from '@localixai/kit/search-input'
 import { useElementWidth } from '@localixai/kit/lib'
@@ -212,6 +212,18 @@ export function StoreView({
                     title={actions.problem}
                     dismissLabel="Dismiss"
                     onDismiss={actions.dismissProblem}
+                    className="mb-3 rounded-md border border-border-faint"
+                  />
+                )}
+                {actions.warning && (
+                  <WorkbenchNoticeBar
+                    role="status"
+                    tone="warning"
+                    layout="stacked"
+                    icon={<TriangleAlert className="size-3.5" />}
+                    title={actions.warning}
+                    dismissLabel="Dismiss"
+                    onDismiss={actions.dismissWarning}
                     className="mb-3 rounded-md border border-border-faint"
                   />
                 )}

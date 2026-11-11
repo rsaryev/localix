@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test'
+import { join } from 'node:path'
 import { hostWithMod } from '../../mods/testing/testing-host'
 import { sessionFixture } from '../../../testing/session-fixture'
 import type { CommandHandlerContext } from './command-handlers-context'
@@ -65,4 +66,42 @@ test('a command the person typed reaches command.run from the composer, presente
   expect(seen).toEqual([
     { origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 80 } },
   ])
+})
+
+test('a command typed while the mods are still loading (after start, after a plugin change) waits for them', async () => {
+  const replies: string[] = []
+  const { host, scene, dir } = await hostWithMod((on) => {
+    on('session.start', async ($) => {
+      await ($ as { command: { register(spec: unknown): Promise<unknown> } }).command.register({
+        name: 'tally',
+      })
+    })
+    on('command.run', async () => ({ text: '3 files' }))
+  })
+  const root = join(dir, 'plugins', 'm')
+  const source = {
+    plugin: 'm',
+    root,
+    module: join(root, 'hooks/register.js'),
+    options: {},
+    revision: '1',
+  }
+  // The mods load a moment after a change, as at start: none is loaded until then.
+  await host.reconcile([])
+  host.refresh(async () => [source], {
+    failed: (error) => {
+      throw error
+    },
+  })
+  const ctx = {
+    deps: { mods: host },
+    now: () => 'now',
+    resolveSessionWorkingDir: async () => scene.cwd,
+    insertDirectReply: async (_u: string, _s: string, _p: string, reply: string) => {
+      replies.push(reply)
+      return { sessionId: session.id, messageId: 'reply' }
+    },
+  } as unknown as CommandHandlerContext
+  expect(await handleModCommand(ctx, 'u', session.id, session, '/tally')).not.toBeNull()
+  expect(replies).toEqual(['m: 3 files'])
 })

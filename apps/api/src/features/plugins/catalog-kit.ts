@@ -1,7 +1,13 @@
 import { scalarConfig } from '../capabilities/source-repository'
 import type { PluginCatalog } from './catalog'
 import { storedOptionValues } from './config'
-import { issueLine, scopeMcpServers, type LocalixPluginHost, type ScopePlugin } from './kit'
+import {
+  issueLine,
+  scopeMcpServers,
+  scopePluginErrors,
+  type LocalixPluginHost,
+  type ScopePlugin,
+} from './kit'
 import type { Resolved, ResolvedMcpServer } from '@rsaryev/llx-plugin'
 import { pluginLoadBlockReason } from './load-block'
 import { pluginIdOf } from './plugin-data-id'
@@ -48,4 +54,16 @@ export async function catalogMcpServers(
   })
   for (const issue of servers.issues) scope.logger?.warn(issueLine(issue))
   return servers
+}
+
+/**
+ * The kit's error against each plugin of a catalog, by `pluginIdOf` (a dependency not installed,
+ * disabled or outside its range keeps the plugin off): what its record shows.
+ */
+export function catalogPluginErrors(
+  host: LocalixPluginHost,
+  catalog: Pick<PluginCatalog, 'all'>,
+  scope: { readonly cwd: string; readonly homeDir: string },
+): Promise<ReadonlyMap<string, string>> {
+  return scopePluginErrors(host, { ...scope, plugins: kitPluginsOf(catalog) })
 }

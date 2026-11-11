@@ -27,7 +27,7 @@ import { keptPreferences } from './marketplace-catalog'
 
 export {
   listMarketplaces,
-  marketplaceDependencyAllowList,
+  closureMarketplaces,
   findMarketplacesWithPlugin,
   type MarketplaceListing,
 } from './marketplace-catalog'

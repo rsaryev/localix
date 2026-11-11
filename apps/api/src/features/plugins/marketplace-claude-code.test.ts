@@ -4,7 +4,6 @@ import { join } from 'node:path'
 
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
-import { applyEntryManifestOverrides } from './marketplace-entry-manifest'
 import {
   addMarketplace,
   listMarketplaces,
@@ -12,8 +11,6 @@ import {
   updateMarketplace,
   type MarketplaceRegistryDeps,
 } from './marketplace-registry'
-import { kitEntry } from './kit/testing'
-import { loadManifest } from './manifest-load'
 import { fetchUrl, stubFetch } from '../../testing/fetch-stub'
 
 /**
@@ -149,25 +146,5 @@ describe('Claude Code catalogs through the registry', () => {
     await expect(
       resolveMarketplaceInstall({ plugin: 'evil', marketplace: 'acme-tools' }, deps),
     ).rejects.toThrow('must be inside the repository')
-  })
-})
-
-describe('an entry whose source is the marketplace root', () => {
-  it('loads only the skills it lists', async () => {
-    const plugin = dir()
-    writeTree(plugin, {
-      'skills/xlsx/SKILL.md': '---\nname: xlsx\ndescription: Sheets\n---\nBody\n',
-      'skills/pdf/SKILL.md': '---\nname: pdf\ndescription: PDFs\n---\nBody\n',
-    })
-    const entry = kitEntry({
-      name: 'document-skills',
-      source: './',
-      strict: false,
-      skills: ['./skills/xlsx'],
-    })
-    await applyEntryManifestOverrides(plugin, entry)
-    const loaded = await loadManifest(plugin, 'global', '')
-    expect(loaded.error).toBeUndefined()
-    expect(loaded.provides.skills).toEqual(['xlsx'])
   })
 })

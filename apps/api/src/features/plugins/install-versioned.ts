@@ -1,11 +1,10 @@
-import { promises as fs } from 'node:fs'
 import { join, resolve } from 'node:path'
 
 import { ConflictError } from '../../lib/domain-errors'
-import { isRecord } from '../../lib/record'
 import { pathExists } from '../ext/fs-discovery'
+import { discoverCachedPlugins } from './cached-installs'
 import type { InPlaceInstall } from './install-in-place'
-import { PLUGIN_MANIFEST, pluginVersion } from './kit'
+import { pluginVersion, readFetchedManifest } from './kit'
 import type { ResolvedMarketplaceInstall } from './marketplace-registry'
 import {
   cachedPluginDir,
@@ -21,9 +20,10 @@ import { entryVersionInput, withCommit } from './plugin-version'
 /**
  * A user-scope install from a marketplace that Localix copies goes into the version cache
  * (`plugin-cache.ts`), as Claude Code's does: `cache/<marketplace>/<plugin>/<version>/`, with its
- * record in `installed_plugins.json`. A project-scope install, a plugin loading in place from a
- * local-folder marketplace and a plugin installed from a path or a git URL keep their folder under
- * the scope's plugins root.
+ * record in `installed_plugins.json`. A project-scope one keeps its folder under the project's
+ * plugins root, recorded there too (`scope: "project"`, its `projectPath`), so it loads with its
+ * entry as well. A plugin loading in place from a local-folder marketplace and a plugin installed
+ * from a path or a git URL keep their folder under the scope's plugins root, unrecorded.
  */
 export interface VersionedInstall {
   /** `<plugin>@<marketplace>`, the record's key. */
@@ -31,27 +31,20 @@ export interface VersionedInstall {
   /** The marketplace entry's name: the cache folder and the plugin's place in the plugins root. */
   plugin: string
   version: string
-  /** `cache/<marketplace>/<plugin>`, the folder the version is published into. */
+  /** The folder the copy is published into: `cache/<marketplace>/<plugin>`, or a project's plugins root. */
   root: string
-  /** `cache/<marketplace>/<plugin>/<version>`. */
+  /** The copy: `cache/<marketplace>/<plugin>/<version>`, or `<project>/.localix/plugins/<plugin>`. */
   dir: string
+  /** The project a project-scope copy is recorded for. */
+  projectPath?: string
   commitSha?: string
 }
 
-async function manifestField(dir: string, field: 'name' | 'version'): Promise<string | undefined> {
-  try {
-    const json = JSON.parse(await fs.readFile(join(dir, PLUGIN_MANIFEST), 'utf8'))
-    return isRecord(json) && typeof json[field] === 'string' ? json[field] : undefined
-  } catch {
-    return undefined
-  }
-}
-const manifestVersion = (dir: string) => manifestField(dir, 'version')
-const manifestName = (dir: string) => manifestField(dir, 'name')
-
 /** The version a resolved marketplace plugin installs at, computed as Claude Code computes it. */
-export async function resolvedVersion(resolved: ResolvedMarketplaceInstall): Promise<string> {
-  const declared = await manifestVersion(resolved.dir)
+export async function resolvedVersion(
+  resolved: Pick<ResolvedMarketplaceInstall, 'dir' | 'entry' | 'commitSha'>,
+): Promise<string> {
+  const declared = (await readFetchedManifest(resolved.dir))?.version
   const { version } = resolved.entry
   return pluginVersion({
     ...withCommit(entryVersionInput(resolved.entry), resolved.commitSha),
@@ -61,21 +54,33 @@ export async function resolvedVersion(resolved: ResolvedMarketplaceInstall): Pro
 }
 
 export async function versionedInstallFor(input: {
-  resolved: ResolvedMarketplaceInstall | null
+  resolved: Pick<ResolvedMarketplaceInstall, 'dir' | 'entry' | 'commitSha' | 'marketplace'> | null
   inPlace: InPlaceInstall | null
-  scope: 'global' | 'project'
+  /** The project folder of a project-scope install, else `null` (user scope). */
+  projectPath: string | null
+  /** The scope's plugins root, where a project-scope copy goes. */
+  installRoot: string
   home: string
 }): Promise<VersionedInstall | null> {
   const { resolved } = input
-  if (!resolved || input.inPlace || input.scope !== 'global') return null
+  if (!resolved || input.inPlace) return null
   const plugin = resolved.entry.name
   const version = await resolvedVersion(resolved)
+  const at = input.projectPath
+    ? {
+        root: input.installRoot,
+        dir: join(input.installRoot, plugin),
+        projectPath: input.projectPath,
+      }
+    : {
+        root: cachedPluginDir(input.home, resolved.marketplace, plugin),
+        dir: cachedVersionDir(input.home, resolved.marketplace, plugin, version),
+      }
   return {
     id: `${plugin}@${resolved.marketplace}`,
     plugin,
     version,
-    root: cachedPluginDir(input.home, resolved.marketplace, plugin),
-    dir: cachedVersionDir(input.home, resolved.marketplace, plugin, version),
+    ...at,
     ...(resolved.commitSha ? { commitSha: resolved.commitSha } : {}),
   }
 }
@@ -90,12 +95,12 @@ export async function existingVersion(
   versioned: VersionedInstall,
   replace: boolean,
 ): Promise<CachedInstallRecord | null> {
-  const record = (await readInstallRecords(home))[versioned.id]
+  const record = (await readInstallRecords(home, versioned.projectPath))[versioned.id]
   if (!replace) {
     if (record)
       throw new ConflictError(
         'plugin_already_installed',
-        `Plugin "${versioned.plugin}" is already installed (scope: user)`,
+        `Plugin "${versioned.plugin}" is already installed (scope: ${versioned.projectPath ? 'project' : 'user'})`,
       )
     return null
   }
@@ -114,17 +119,23 @@ export async function claimCachedRecord(
   now: () => string,
 ): Promise<{ undo: () => Promise<void>; settle: () => Promise<void> }> {
   const at = now()
-  const existing = (await readInstallRecords(home))[versioned.id]
-  const previous = await setInstallRecord(home, versioned.id, {
-    installPath: versioned.dir,
-    version: versioned.version,
-    installedAt: existing?.installedAt || at,
-    lastUpdated: at,
-    ...(versioned.commitSha ? { gitCommitSha: versioned.commitSha } : {}),
-  })
+  const { projectPath } = versioned
+  const existing = (await readInstallRecords(home, projectPath))[versioned.id]
+  const previous = await setInstallRecord(
+    home,
+    versioned.id,
+    {
+      installPath: versioned.dir,
+      version: versioned.version,
+      installedAt: existing?.installedAt || at,
+      lastUpdated: at,
+      ...(versioned.commitSha ? { gitCommitSha: versioned.commitSha } : {}),
+    },
+    projectPath,
+  )
   return {
     undo: async () => {
-      await setInstallRecord(home, versioned.id, previous)
+      await setInstallRecord(home, versioned.id, previous, projectPath)
     },
     settle: async () => {
       await clearOrphaned(versioned.dir)
@@ -134,17 +145,23 @@ export async function claimCachedRecord(
   }
 }
 
-/** Release every cached copy that loads under `name` (its entry or its manifest says so). */
+/** Release every cached copy that loads under `name`, as it loads (with its entry). */
 export async function releaseCachedCopiesOf(home: string, name: string): Promise<void> {
-  for (const [id, record] of Object.entries(await readInstallRecords(home))) {
-    const entryName = id.slice(0, id.lastIndexOf('@'))
-    if (entryName === name || (await manifestName(record.installPath)) === name)
-      await releaseCachedInstall(home, id, record.installPath)
-  }
+  for (const plugin of await discoverCachedPlugins({ homeDir: home, projectId: '' }))
+    if (plugin.cachedInstall && plugin.manifest.name === name)
+      await releaseCachedInstall(home, plugin.cachedInstall.id, plugin.dir)
 }
 
-/** An uninstall of a cached copy: the record goes and the version is orphaned, not deleted. */
-export async function releaseCachedInstall(home: string, id: string, dir: string): Promise<void> {
-  await setInstallRecord(home, id, null)
-  await markOrphaned(home, dir)
+/**
+ * An uninstall of a recorded copy: the record goes. A cached version is orphaned, not deleted; a
+ * project's copy (`projectPath`) is its folder, which the uninstall removes.
+ */
+export async function releaseCachedInstall(
+  home: string,
+  id: string,
+  dir: string,
+  projectPath?: string,
+): Promise<void> {
+  await setInstallRecord(home, id, null, projectPath)
+  if (projectPath === undefined) await markOrphaned(home, dir)
 }

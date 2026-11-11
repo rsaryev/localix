@@ -3,6 +3,8 @@ import { dirname, join, parse, relative, resolve, sep } from 'node:path'
 import {
   collectDir,
   collectRules,
+  projectRules,
+  userRules,
   ContextCollector,
   isGitRoot,
   type ContextFile,
@@ -41,11 +43,35 @@ export async function discoverTouchedContextFiles(
     const scope = { unscoped: false, touched }
 
     // Path-scoped rules of the user and of every project directory from the root to cwd.
-    await collectRules(join(home, '.localix', 'rules'), start, collector, undefined, scope)
-    await collectRules(join(home, '.claude', 'rules'), start, collector, undefined, scope)
+    await collectRules(
+      join(home, '.localix', 'rules'),
+      userRules(start),
+      collector,
+      undefined,
+      scope,
+    )
+    await collectRules(
+      join(home, '.claude', 'rules'),
+      userRules(start),
+      collector,
+      undefined,
+      scope,
+    )
     for (const dir of chainBetween(projectRoot, start)) {
-      await collectRules(join(dir, '.claude', 'rules'), dir, collector, projectRoot, scope)
-      await collectRules(join(dir, '.localix', 'rules'), dir, collector, projectRoot, scope)
+      await collectRules(
+        join(dir, '.claude', 'rules'),
+        projectRules(dir),
+        collector,
+        projectRoot,
+        scope,
+      )
+      await collectRules(
+        join(dir, '.localix', 'rules'),
+        projectRules(dir),
+        collector,
+        projectRoot,
+        scope,
+      )
     }
 
     // Subdirectories below cwd that hold a touched file: everything they declare, root-first.

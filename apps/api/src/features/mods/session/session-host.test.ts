@@ -209,3 +209,87 @@ test('$.tool.call runs the turn’s gated tool: a call the gate refuses is refus
   expect(answer.text).toContain('Blocked by the Claude Code permission rule')
   expect(ran).toHaveLength(1)
 })
+
+test("a hook's $.command.run reaches the mod's other hook while that one runs elsewhere", async () => {
+  // Only the calling hook is skipped (claude-code/index.d.ts:7298): the kit knows which hook made
+  // the call through the async context the VM's calls run in (`asyncContext`, `stand-in.ts`).
+  const gate = Promise.withResolvers<void>()
+  const asked = Promise.withResolvers<void>()
+  const { mods, source, scene } = setup({
+    complete: async () => {
+      asked.resolve()
+      await gate.promise
+      return { isAnswered: true, text: 'slow done', usage: NO_USAGE }
+    },
+  })
+  const host = await mods.hostFor(scene('s1'), [
+    source(
+      'pair',
+      `export function register(on) {
+        on('tool.call', async ($) => ({ value: await $.command.run({ command: 'probe' }) }))
+        on('command.run', async ($, e, next) => {
+          if (e.command === 'slow')
+            return { text: (await $.model.complete({ model: 'haiku', prompt: 'x', maxTokens: 1 })).text }
+          return e.command === 'probe' ? { text: 'B answered' } : next(e)
+        })
+      }`,
+    ),
+  ])
+  const slow = host.runCommand('slow', '')
+  await asked.promise
+  expect(await host.fire('tool.call', { tool: 'Read', input: {} })).toEqual({
+    value: { text: 'B answered' },
+  })
+  gate.resolve()
+  expect(await slow).toEqual({ text: 'slow done' })
+  await mods.stop()
+})
+
+/** A clock the test moves: timers fire when it passes them. */
+function manualClock() {
+  let now = 0
+  const timers = new Set<{ at: number; fire: () => void }>()
+  return {
+    now: () => now,
+    setTimer(fire: () => void, ms: number) {
+      const timer = { at: now + ms, fire }
+      timers.add(timer)
+      return () => void timers.delete(timer)
+    },
+    advance(ms: number) {
+      now += ms
+      for (const timer of timers)
+        if (timer.at <= now) {
+          timers.delete(timer)
+          timer.fire()
+        }
+    },
+  }
+}
+
+test("a conversation's host idle past `idleMs` goes; its next use loads it anew", async () => {
+  const clock = manualClock()
+  const { mods, source, scene } = setup({}, { idleMs: 40, clock })
+  const mod = source(
+    'idler',
+    `export function register(on) { on('command.run', () => ({ text: 'up' })) }`,
+  )
+  const first = await mods.hostFor(scene('s1'), [mod])
+  clock.advance(30)
+  expect(mods.size()).toBe(1)
+  clock.advance(10)
+  expect(mods.size()).toBe(0)
+  const again = await mods.hostFor(scene('s1'), [mod])
+  expect(again).not.toBe(first)
+  expect(await again.runCommand('x', '')).toEqual({ text: 'up' })
+  await mods.stop()
+})
+
+test('a host whose turn runs is not idle', async () => {
+  const clock = manualClock()
+  const { mods, source, scene } = setup({}, { idleMs: 40, clock, turnOf: () => ({ tools: [] }) })
+  await mods.hostFor(scene('s1'), [source('busy', `export function register(on) {}`)])
+  clock.advance(100)
+  expect(mods.size()).toBe(1)
+  await mods.stop()
+})

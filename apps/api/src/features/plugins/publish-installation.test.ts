@@ -71,10 +71,12 @@ async function fixture() {
           const plugin = await loadManifest(directory, 'global', '')
           if (plugin.error) throw new Error(plugin.error)
         },
+        load: (directory) => loadManifest(directory, 'global', ''),
         discover: async () => [await loadManifest(join(installRoot, 'helper'), 'global', '')],
         dependencies: {
           publication: () => ({
             trees: [{ source: join(root, 'helper'), name: 'helper', replace: true }],
+            claims: [],
             write: async (repo) => {
               await repo.upsert('u', '', 'helper', { source: 'new-helper' })
             },

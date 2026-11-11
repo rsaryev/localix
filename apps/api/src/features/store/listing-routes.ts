@@ -10,6 +10,7 @@ import {
   listingDetailSchema,
   listingParamsSchema,
   projectQuerySchema,
+  removeResultSchema,
   scopedSchema,
   scopedValuesSchema,
 } from '@localixai/store'
@@ -79,8 +80,8 @@ export function createListingRoutes(store: StoreService) {
       zValidator('json', scopedSchema),
       async (c) => {
         const { scope, projectId } = c.req.valid('json')
-        await store.remove(c.req.valid('param'), scope, actor(c, projectId))
-        return c.body(null, 204)
+        const removed = await store.remove(c.req.valid('param'), scope, actor(c, projectId))
+        return c.json(removeResultSchema.parse(removed), 200)
       },
     )
     .get(

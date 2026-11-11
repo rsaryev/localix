@@ -1,18 +1,12 @@
 import { expect, test } from 'bun:test'
-import { mkdirSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { tempDirPerTest } from '@localixai/testing'
 import { summarize } from './summary'
 
-const scratch = tempDirPerTest('mods-summary', {})
-
 test('each plugin row lists its mod with its version, what it hooks, its panes and why one failed', () => {
-  const root = scratch()
-  mkdirSync(join(root, '.claude-plugin'))
-  writeFileSync(join(root, '.claude-plugin/plugin.json'), JSON.stringify({ version: '1.2.0' }))
+  // The version is the one the plugin loaded with (the kit's manifest, its entry's when it has no
+  // plugin.json), not a second read of the folder's plugin.json.
   expect(
     summarize({
-      roots: new Map([['suggester', root]]),
+      sources: [{ plugin: 'suggester', version: '1.2.0' }, { plugin: 'unversioned' }],
       events: new Map([['suggester', ['turn.complete', 'ui.render']]]),
       failures: new Map([['broken', 'register threw: no such file']]),
       panes: [{ plugin: 'suggester' }],
@@ -26,6 +20,7 @@ test('each plugin row lists its mod with its version, what it hooks, its panes a
       draws: true,
       status: 'running',
     },
+    { plugin: 'unversioned', events: [], panes: 0, draws: false, status: 'running' },
     {
       plugin: 'broken',
       events: [],

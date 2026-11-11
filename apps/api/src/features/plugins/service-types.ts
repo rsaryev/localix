@@ -131,6 +131,14 @@ export interface PluginService {
     input: Omit<InstallPluginRequest, 'enable'> & { enable?: boolean },
     opts?: { replace?: boolean; onPhase?: (phase: 'installing') => void },
   ): Promise<PluginRecord>
+  /**
+   * The plugins an install of `name@marketplace` would bring with it, by `name@marketplace`, as the
+   * kit plans them (fetching what the plan needs to read); throws when the install is refused.
+   */
+  dependencies(
+    userId: string,
+    input: { source: string; projectId: string | null },
+  ): Promise<string[]>
   /** Validate a plugin folder in place, installed or not (`claude plugin validate <path>`). */
   validatePath(
     dir: string,

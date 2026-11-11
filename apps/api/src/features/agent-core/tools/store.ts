@@ -192,8 +192,10 @@ export function createStoreTool(port: StoreToolPort) {
       }
     }
     if (input.action === 'remove') {
-      await port.remove(ref!, scope)
-      return { content: `Removed ${refText(ref!)} (${scope}).` }
+      const { warnings } = await port.remove(ref!, scope)
+      return {
+        content: [`Removed ${refText(ref!)} (${scope}).`, ...warnings].join('\n'),
+      }
     }
     if (input.action === 'enable' || input.action === 'disable') {
       await port.setEnabled(ref!, scope, input.action === 'enable')

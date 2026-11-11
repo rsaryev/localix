@@ -1,4 +1,5 @@
 import { homedir } from 'node:os'
+import { createDebouncer } from '../../lib/debounce'
 import type { JsonObject } from '@rsaryev/llx-plugin/mods'
 import type { CommandDef } from '@rsaryev/llx-plugin/mods'
 import type { ModsHost as KitModsHost, ModRuntime } from '@rsaryev/llx-plugin/mods'
@@ -35,12 +36,16 @@ export interface ModsHostOptions {
   builtIns?: () => readonly string[]
   managed?: ManagedSettingsSource | null
   maxHosts?: number
+  /** How long a conversation's host is kept unused (`IDLE_MS` of `session-host.ts` by default). */
+  idleMs?: number
   hangMs?: number
   memoryLimitBytes?: number
   /** Where hooks modules run; each in a VM of its own by default. */
   runtime?: ModRuntime
   /** The clock a VM's load and turns are timed on; tests drive their own. */
   clock?: VmClock
+  /** How long a refresh waits for more changes before it loads; half a second by default. */
+  refreshDelayMs?: number
   /** Where a mod's `console` lines go; the process's console by default. */
   print?: (level: 'log' | 'error', line: string) => void
 }
@@ -51,6 +56,8 @@ export interface ModAgentGroup {
   agents: Readonly<Record<string, Readonly<Record<string, unknown>>>>
 }
 
+const REFRESH_DELAY_MS = 500
+
 export function createModsHost(ports: ModsPorts, options: ModsHostOptions) {
   const composer = createModComposer(() => ports.changed())
   const answers = createAnswerCache()
@@ -59,6 +66,11 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions) {
   const workspace: ModScene = { userId: '', cwd: ports.workspaceDir }
   let wanted: readonly ModSource[] = []
   let lifecycle: Promise<void> = Promise.resolve()
+  // A refresh waits a moment so a burst of plugin changes loads once; until it has loaded, a
+  // reader that must see the mods (`settled`) waits for it (`refresh`).
+  const debounce = createDebouncer(options.refreshDelayMs ?? REFRESH_DELAY_MS)
+  const loading = new Set<Promise<void>>()
+  let next: ReturnType<typeof Promise.withResolvers<void>> | undefined
   /** Each plugin root's surface modules, bundled for the screen (`client-modules.ts`). */
   const clients = new Map<string, Map<string, ClientBundle>>()
   const compiler = createModuleCompiler({
@@ -84,6 +96,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions) {
     compiler,
     ...(options.managed !== undefined ? { managed: options.managed } : {}),
     ...(options.maxHosts ? { maxHosts: options.maxHosts } : {}),
+    ...(options.idleMs ? { idleMs: options.idleMs } : {}),
     ...(options.hangMs ? { hangMs: options.hangMs } : {}),
     ...(options.memoryLimitBytes ? { memoryLimitBytes: options.memoryLimitBytes } : {}),
     ...(options.runtime ? { runtime: options.runtime } : {}),
@@ -176,6 +189,35 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions) {
       })
       return lifecycle
     },
+    /**
+     * Reload the mods a moment from now (`load` reads what should run), once for a burst of calls:
+     * at start and after any plugin change. `settled` waits for it; `loaded` hears it done.
+     */
+    refresh(
+      load: () => Promise<readonly ModSource[]>,
+      on: { loaded?: () => void; failed: (error: unknown) => void },
+    ): void {
+      if (!next) {
+        next = Promise.withResolvers<void>()
+        loading.add(next.promise)
+      }
+      debounce.schedule(() => {
+        const due = next!
+        next = undefined
+        void load()
+          .then((sources) => host.reconcile(sources))
+          .then(on.loaded, on.failed)
+          .finally(() => {
+            loading.delete(due.promise)
+            due.resolve()
+          })
+      })
+    },
+    /** Once every refresh asked for so far has loaded (or failed) and nothing else is loading. */
+    async settled(): Promise<void> {
+      await Promise.all(loading)
+      await lifecycle
+    },
     /** After a turn: the conversation's usage to the mods that hear `session.measure`. */
     measure: createMeasurer(ports.readSession ? { read: ports.readSession } : {}),
     /** `$.ui.invalidate(event)`: the event's kept answers go, and clients re-read the mods. */
@@ -199,7 +241,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions) {
     summary() {
       const kit = sessions.hosts().find((live) => live.key === `workspace:${workspace.cwd}`)?.kit
       return summarize({
-        roots: new Map(wanted.map((source) => [source.plugin, source.root])),
+        sources: wanted,
         events: new Map(
           (kit?.active() ?? []).map((mod) => [mod.name, mod.hooks.map((hook) => hook.event)]),
         ),
@@ -221,7 +263,17 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions) {
       const options = input.origin ? { origin: input.origin } : {}
       return commandAnswer(await kit.runCommand(input.command, input.args ?? '', options))
     },
+    /** A deleted conversation: its host goes (`session.end` heard), and what was kept for it. */
+    async forget(sessionId: string): Promise<void> {
+      conversations.forget(sessionId)
+      host.measure.forget(sessionId)
+      await sessions.drop({ userId: '', sessionId, cwd: '' })
+    },
     stop(): Promise<void> {
+      debounce.cancel()
+      if (next) loading.delete(next.promise)
+      next?.resolve()
+      next = undefined
       lifecycle = lifecycle.then(async () => {
         stopping.abort()
         await sessions.stop()

@@ -14,6 +14,7 @@ import {
   type SkillText,
 } from '../../plugins/kit'
 import type { PluginSession as KitSession, SessionSkill } from '@rsaryev/llx-plugin'
+import type { CatalogAgent } from '@rsaryev/llx-plugin/agents'
 import type { PersistedMessage } from '../contracts'
 import type { SessionRecord } from '../repository'
 import { triggeringKeywords, type TriggeredSkill } from './prompt-skill-triggers'
@@ -55,6 +56,8 @@ export async function resolveRunSkills(
     capabilities: ResolvedRunAgent['capabilities']
     session: SessionRecord
     agentSkills?: AgentDefinition['skills']
+    /** The agent's catalog source: a plugin agent's bare preload finds its own plugin's skill first. */
+    agentSource?: CatalogAgent['source']
     history: readonly PersistedMessage[]
     cwd: string
     signal: AbortSignal
@@ -88,7 +91,7 @@ export async function resolveRunSkills(
     session.provenance.agentType !== GENERAL_PURPOSE_TYPE
   const pinned = (
     preload
-      ? await preloadedSkillTexts(kitSession, pinnedNames, signal)
+      ? await preloadedSkillTexts(kitSession, pinnedNames, signal, input.agentSource)
       : await skillTexts(kitSession, pinnedNames, signal)
   ).filter(allowed)
   const pinnedSet = new Set(pinned.map((text) => text.name))

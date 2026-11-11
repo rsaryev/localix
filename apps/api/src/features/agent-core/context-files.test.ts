@@ -1,8 +1,14 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { discoverTouchedContextFiles } from './context-on-demand'
+import { memoryRuleReader } from '../plugins/kit/memory-rules'
+import { installMemoryRuleReader } from './context-rules'
+
+// What a rule file means is the kit's, installed at boot (`installKitPorts`).
+beforeAll(() => installMemoryRuleReader(memoryRuleReader))
+afterAll(() => installMemoryRuleReader(undefined))
 import {
   discoverContextFiles,
   buildProjectContextSection,

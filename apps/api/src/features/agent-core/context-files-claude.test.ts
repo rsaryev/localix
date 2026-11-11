@@ -1,9 +1,15 @@
-import { describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 import { discoverContextFiles } from './context-files'
 import { discoverTouchedContextFiles } from './context-on-demand'
+import { memoryRuleReader } from '../plugins/kit/memory-rules'
+import { installMemoryRuleReader } from './context-rules'
+
+// What a rule file means is the kit's, installed at boot (`installKitPorts`).
+beforeAll(() => installMemoryRuleReader(memoryRuleReader))
+afterAll(() => installMemoryRuleReader(undefined))
 
 // memory.md — where Claude Code reads instructions from, and how. A repository set up for Claude
 // Code has to give the agent the same instructions in Localix.
@@ -80,6 +86,29 @@ describe('Claude Code instruction files', () => {
     )
     const files = await discoverContextFiles(root, { homeDir: home })
     expect(files.map((f) => f.content)).toEqual(['linked rule'])
+  })
+
+  // memory.md, "Path-specific rules": the patterns are the skill gate's (`*.md` at any depth, a
+  // leading `/` anchored at the rule's base), relative to the folder holding the rule's `.claude`
+  // or, for a user rule, the working directory.
+  test('a rule pattern matches as Claude Code matches it: `*.md` anywhere, `/*.md` at the base', async () => {
+    const { home, root } = await setup()
+    await write(join(root, '.claude', 'rules', 'docs.md'), '---\npaths: "*.md"\n---\ndocs rule')
+    await write(join(home, '.claude', 'rules', 'top.md'), '---\npaths: ["/*.md"]\n---\ntop rule')
+    const stable = await discoverContextFiles(root, { homeDir: home })
+    const deep = await discoverTouchedContextFiles(
+      root,
+      [join(root, 'docs', 'a', 'guide.md')],
+      stable,
+      {
+        homeDir: home,
+      },
+    )
+    expect(deep.map((f) => f.content)).toEqual(['docs rule'])
+    const top = await discoverTouchedContextFiles(root, [join(root, 'README.md')], stable, {
+      homeDir: home,
+    })
+    expect(top.map((f) => f.content).sort()).toEqual(['docs rule', 'top rule'])
   })
 
   test('a CLAUDE.md above the repository loads first', async () => {

@@ -178,6 +178,7 @@ export async function prepareRunContext(
       session,
       agentId,
       skills: resolvedAgent.definition.skills,
+      ...(resolvedAgent.spec ? { agentSource: resolvedAgent.spec.source } : {}),
       historyMessages,
       viewEpoch,
       memory,

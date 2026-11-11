@@ -11,6 +11,8 @@ export interface SkillText {
   readonly content: string
 }
 
+type AgentSource = Parameters<PluginSession['preloadSkills']>[1]['source']
+
 const textOf = (name: string, dir: string | undefined, body: string): SkillText => ({
   name,
   content: dir ? `Resolve relative references from: ${JSON.stringify(dir)}\n\n${body}` : body,
@@ -49,8 +51,10 @@ export async function preloadedSkillTexts(
   session: PluginSession,
   names: readonly string[],
   signal: AbortSignal,
+  /** The agent's `CatalogAgent.source`: a plugin agent's bare name finds its own plugin's skill first. */
+  source?: AgentSource,
 ): Promise<SkillText[]> {
-  const { preloaded } = await session.preloadSkills({ skills: [...names] }, { signal })
+  const { preloaded } = await session.preloadSkills({ skills: [...names] }, { signal, source })
   // The row's folder is absolute for every source; a plugin skill's own `dir` is the plugin's.
   const folders = new Map(
     session.skillCatalog().skills.map((row) => [row.invocable.command, row.directory]),

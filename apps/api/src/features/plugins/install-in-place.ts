@@ -8,7 +8,6 @@ import type { DiscoveredPlugin } from './discovery-types'
 import { loadInPlacePlugin, setInPlaceRecord, type InPlaceRecord } from './in-place-installs'
 import { MINI_APP_FILE } from './layout/read'
 import type { MarketplaceEntry } from '@rsaryev/llx-plugin/marketplace'
-import { entryPrunesSkills } from './marketplace-entry-manifest'
 import type { ResolvedMarketplaceInstall } from './marketplace-registry'
 
 /**
@@ -16,9 +15,8 @@ import type { ResolvedMarketplaceInstall } from './marketplace-registry'
  *
  * A user-scope install of a relative-path entry from a marketplace added from a local folder loads
  * from that folder, as in Claude Code, when the plugin is in Claude Code's format: no mini app
- * (`.localix-app/app.json`), no root `plugin.json`, no native tools, and an entry that does not
- * trim the plugin's skills (which only a copy can). Everything else, and every project-scope
- * install, is copied as before.
+ * (`.localix-app/app.json`) and the plugin inside no install root; it loads with its entry, as every
+ * marketplace plugin does. Everything else, and every project-scope install, is copied.
  */
 export interface InPlaceInstall {
   record: InPlaceRecord
@@ -34,7 +32,7 @@ export async function inPlaceInstallFor(
 ): Promise<InPlaceInstall | null> {
   if (!resolved?.inPlace || scope !== 'global') return null
   const dir = resolve(resolved.dir)
-  if (isPathWithin(resolve(installRoot), dir) || entryPrunesSkills(resolved.entry)) return null
+  if (isPathWithin(resolve(installRoot), dir)) return null
   if (await pathExists(join(dir, MINI_APP_FILE))) return null
   const record = { id: `${resolved.entry.name}@${resolved.marketplace}`, dir }
   const load = (projectId: string) => loadInPlacePlugin(record, resolved.entry, projectId)
@@ -52,14 +50,9 @@ export function inPlacePublication(
   inPlace: InPlaceInstall | null,
   scope: 'global' | 'project',
   installRoot: string,
-  projectId: string,
-): { inPlaceClaim?: InPlaceClaim; loadParent?: (directory: string) => Promise<DiscoveredPlugin> } {
+): { inPlaceClaim?: InPlaceClaim } {
   if (scope !== 'global') return {}
-  if (!inPlace) return { inPlaceClaim: { installRoot, record: null } }
-  return {
-    inPlaceClaim: { installRoot, record: inPlace.record },
-    loadParent: () => inPlace.load(projectId),
-  }
+  return { inPlaceClaim: { installRoot, record: inPlace?.record ?? null } }
 }
 
 /**

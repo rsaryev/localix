@@ -7,7 +7,6 @@ import type { DiscoveredPlugin } from './discovery-types'
 import { scanDirsCached } from './discovery-cached-scan'
 
 import { discoverClaudeCodePlugins } from './claude-code-installs'
-import { withDependencyVersionChecks } from './dependency-versions'
 import { discoverInPlacePlugins } from './in-place-installs'
 import { discoverCachedPlugins } from './cached-installs'
 export { findManifestPath } from './discovery-directory-scan'
@@ -73,11 +72,29 @@ export async function discoverPlugins(opts: {
     cwd: projectId ? absCwd : null,
     projectId,
   })
-  const [projectPlugins, homePlugins, cachedPlugins, inPlacePlugins, claudeCodePlugins] =
-    await Promise.all([projectScan, homeScan, cachedScan, inPlaceScan, claudeCodeScan])
+  // A project's recorded marketplace copies load with their entry, ahead of the same folders scanned.
+  const projectRecorded =
+    absCwd && absCwd !== home
+      ? discoverCachedPlugins({ homeDir: home, projectId, projectPath: absCwd })
+      : Promise.resolve([])
+  const [
+    projectPlugins,
+    homePlugins,
+    cachedPlugins,
+    inPlacePlugins,
+    claudeCodePlugins,
+    recordedProjectPlugins,
+  ] = await Promise.all([
+    projectScan,
+    homeScan,
+    cachedScan,
+    inPlaceScan,
+    claudeCodeScan,
+    projectRecorded,
+  ])
   if (!projectId) {
     const installed = [homePlugins, cachedPlugins, inPlacePlugins, claudeCodePlugins]
-    return withDependencyVersionChecks(mergeByPrecedence(installed))
+    return mergeByPrecedence(installed)
   }
 
   // EVERYTHING the user has, plus the repository's own plugins.
@@ -99,9 +116,10 @@ export async function discoverPlugins(opts: {
     cachedPlugins,
     inPlacePlugins,
     claudeCodePlugins,
+    recordedProjectPlugins,
     projectPlugins,
   ]
-  return withDependencyVersionChecks(mergeByPrecedence(installed))
+  return mergeByPrecedence(installed)
 }
 
 /** The canonical install directory for a scope (global home, or a project dir). */

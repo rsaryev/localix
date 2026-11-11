@@ -6,15 +6,22 @@
  * them). In-memory ports for other features' tests are in `./testing`.
  */
 export { createLocalixPluginHost, type LocalixPluginHost } from './host'
-export { createChatPluginSessions, type ChatPluginSessions, type ScopePlugin } from './sessions'
+export {
+  createChatPluginSessions,
+  pluginErrors,
+  runningPlugins,
+  type ChatPluginSessions,
+  type ScopePlugin,
+} from './sessions'
 export { sessionLspServers, type PluginLspServer } from './lsp-servers'
 export { monitorsToLaunch, type MonitorLaunch } from './monitors'
 export { scopeAgents, type HostAgents, type ScopeAgent, type ScopeAgents } from './agents'
 export { catalogTier } from '@rsaryev/llx-plugin/agents'
-export { scopeMcpServers } from './scope-session'
+export { scopeMcpServers, scopePluginErrors, scopeRunningPlugins } from './scope-session'
 export { readPluginFolder, type FolderSource } from './catalog/read-folder'
 export { issueLine } from './catalog/issue-line'
 export { isPluginFolder, PLUGIN_MANIFEST } from './catalog/plugin-folder'
+export { dropSynthesizedManifest } from './catalog/synthesized-manifest'
 export { pluginNameRefusal } from './catalog/manifest'
 export type { ResolvedEntrypoints } from './catalog/entrypoints'
 export { validatePluginFolder } from './catalog/validate'
@@ -32,6 +39,8 @@ export { resolveModelAlias } from './model-alias'
 export type { HexTheme, PluginWorkflow } from './catalog/components'
 export { readSkillDescriptions } from './catalog/components'
 export { workflowScript, type WorkflowScript } from './catalog/workflow-script'
+export { savedWorkflows } from './catalog/saved-workflows'
+export { frontmatterFileText } from './catalog/frontmatter-edit'
 export {
   builtinStyleDescription,
   DEFAULT_OUTPUT_STYLE_ID,
@@ -120,9 +129,16 @@ export {
   declaredDependencies,
   dependencyRangeIssue,
   disableRefusal,
-  pluginDependents,
   enableCascade,
+  uninstallRequiredBy,
 } from './marketplace/dependency-graph'
+export {
+  installedRecord,
+  planInstallClosure,
+  readFetchedManifest,
+  type ClosureMarketplace,
+  type FetchedCopy,
+} from './marketplace/install-closure'
 export { autoUpdatePassAllowed, autoUpdateToggleRefusal } from './marketplace/updates'
 export { pluginVersion, UNKNOWN_VERSION } from './marketplace/versions'
 export {

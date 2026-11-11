@@ -7,7 +7,7 @@ import type { CommandHandlerContext } from './command-handlers-context'
  * A mod's command (`$.command.register`): `/<name>`, or `/<plugin>:<name>` when two mods or a
  * built-in share the name. It runs through `command.run`, which only the mod's hooks answer: their
  * `{ text }` is the command's output, shown under the mod's name as Claude Code shows it; with no
- * answer the kit's reply says how to add one. Returns
+ * answer the kit's reply says how to add one. A load still coming is waited for. Returns
  * null when the first token is not a mod's command, so skills and the rest still resolve.
  */
 export async function handleModCommand(
@@ -23,6 +23,8 @@ export async function handleModCommand(
   const token = firstToken.match(/^\/([A-Za-z0-9_-]+)(?::([A-Za-z0-9_-]+))?$/)
   if (!token) return null
   const [, first, second] = token
+  // The mods load a moment after start and after a plugin change: a command typed then is theirs.
+  await mods.settled()
   const command = mods
     .commands()
     .find((entry) =>

@@ -11,12 +11,15 @@ A plugin whose `hooks/hooks.json` lists `modules` is a mod. Localix bundles the 
 (TypeScript and JSX included, `h` and `Fragment` as globals) and calls its `register(on, options)`
 with the plugin's `userConfig` values.
 
-A Claude Code session runs in one directory, so a mod runs once per project: an instance starts with
-`session.start` in the project's folder the first time a chat there needs it, keeps its own state,
-and serves every chat in that project. One more instance runs in the workspace, so a mod's commands
-and panes are there before any chat. Instances reload when the plugin is updated, enabled or
-reconfigured; at most eight projects run a mod at once, and the least recently used one stops
-(`session.end`).
+Claude Code runs one mods runtime per session, so a mod runs once per chat: an instance starts with
+`session.start` in the chat's folder the first time the chat needs it, and keeps its own state. One
+more instance runs in the workspace, so a mod's commands and panes are there before any chat.
+Instances reload when the plugin is updated, enabled or reconfigured. At most 16 run at once, and
+the least recently used one stops (`session.end`).
+
+A chat's instance unused for 10 minutes stops too, unless the chat's turn runs or one of its mods'
+panes is open, and starts again the next time the chat needs it. Deleting a chat stops its instance.
+A plugin whose dependency is not met runs no mod.
 
 Each instance runs in a QuickJS VM of its own, in a worker thread: the same sandbox that runs
 `Workflow` scripts. As Claude Code describes a hooks module, `$` is its only way out: the VM has no

@@ -3,8 +3,7 @@ import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 import { setSkillAuthoredRecorder } from '../agent-core/skill-usage-recorder'
-import { parseMarkdownFrontmatter } from '../agent-core/frontmatter-yaml'
-import { removeSkill, renderSkillFile, writeSkill } from './skill-files'
+import { removeSkill, skillFileText, writeSkill } from './skill-files'
 
 /**
  * The one place skills are written, for the Store and for the agent's `Skill` tool. A draft carries
@@ -65,8 +64,9 @@ describe('writeSkill', () => {
       content: '  body  ',
     })
     expect(file).toBe(skillFile('fresh'))
+    // The body is written as given (the kit's `editFrontmatter`).
     expect(await fs.readFile(file, 'utf8')).toBe(
-      '---\nname: fresh\ndescription: a b c\n---\n\nbody\n',
+      '---\nname: fresh\ndescription: a b c\n---\n  body  ',
     )
   })
 
@@ -106,7 +106,7 @@ describe('writeSkill', () => {
   })
 })
 
-describe('renderSkillFile', () => {
+describe('skillFileText', () => {
   test('sets owned keys and keeps comments, order and unknown keys', () => {
     const existing = [
       '---',
@@ -119,7 +119,7 @@ describe('renderSkillFile', () => {
       '---',
       'old body',
     ].join('\n')
-    const out = renderSkillFile(existing, {
+    const out = skillFileText(existing, {
       name: 'new',
       description: 'Use when: deploying',
       content: 'new body',
@@ -135,18 +135,30 @@ describe('renderSkillFile', () => {
         // The line writer emitted this unquoted — invalid YAML every real parser rejects.
         'description: "Use when: deploying"',
         '---',
-        '',
         'new body',
-        '',
       ].join('\n'),
     )
-    expect(parseMarkdownFrontmatter(out).fields.description).toBe('Use when: deploying')
   })
 
-  test('writes a new file with name and description first', () => {
-    expect(renderSkillFile('', { name: 'n', description: 'd\nmore', content: ' b ' })).toBe(
-      '---\nname: n\ndescription: d more\n---\n\nb\n',
+  test('a key the file lacks goes after the others', () => {
+    const out = skillFileText('---\nname: n\nlicense: MIT\n---\nold', {
+      name: 'n',
+      description: 'd',
+      content: 'b',
+    })
+    expect(out).toBe('---\nname: n\nlicense: MIT\ndescription: d\n---\nb')
+  })
+
+  test('writes a new file with name and description, the body as given', () => {
+    expect(skillFileText('', { name: 'n', description: 'd\nmore', content: ' b ' })).toBe(
+      '---\nname: n\ndescription: d more\n---\n b ',
     )
+  })
+
+  test('a block that does not read is refused, not overwritten', () => {
+    expect(() =>
+      skillFileText('---\n- a\n- b\n---\nbody', { name: 'n', description: 'd', content: 'b' }),
+    ).toThrow(/frontmatter/)
   })
 })
 

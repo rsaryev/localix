@@ -8,6 +8,8 @@ import { pluginLoadBlockReason } from './load-block'
 import { dataDirOfPlugin } from './plugin-data-id'
 import { scalarConfig, type CapabilitySourceRepository } from '../capabilities/source-repository'
 import { resolvePluginConfig } from './config'
+import { kitPluginsOf } from './catalog-kit'
+import { scopeRunningPlugins, type LocalixPluginHost } from './kit'
 
 /**
  * Contributions that are pure MANIFEST DATA — collected without importing a single
@@ -20,7 +22,8 @@ import { resolvePluginConfig } from './config'
  *
  * The enable state remains the trust gate here exactly as in the full loader: a
  * disabled plugin contributes nothing, and a plugin the host refuses to load
- * (`pluginLoadBlockReason`) contributes nothing either.
+ * (`pluginLoadBlockReason`) contributes nothing either, nor one the kit turns off because a
+ * dependency of it is not met (`scopeRunningPlugins`).
  */
 
 export interface DeclarativeLoadOptions {
@@ -32,12 +35,16 @@ export interface DeclarativeLoadOptions {
   cwd?: string
   /** The user's home (see `discoverPlugins`). */
   homeDir: string
+  /** The plugin host the scope's session opens on: which plugins run is the kit's to judge. */
+  pluginHost: LocalixPluginHost
 }
 
 /** An enabled plugin's hooks module, as the mods host loads it. */
 export interface LoadedPluginMod {
   plugin: string
   root: string
+  /** The version it loaded at (`ModSource.version`). */
+  version?: string
   module: string
   /** Its `userConfig` values, defaults filled in (`register`'s `options`). */
   options: Record<string, unknown>
@@ -61,14 +68,20 @@ export async function loadEnabledPluginMods(
     cwd: opts.cwd ?? localixWorkspaceDir(),
     homeDir: opts.homeDir,
   })
+  const running = await scopeRunningPlugins(opts.pluginHost, {
+    cwd: opts.cwd ?? localixWorkspaceDir(),
+    homeDir: opts.homeDir,
+    plugins: kitPluginsOf(catalog),
+  })
   const mods: LoadedPluginMod[] = []
   for (const { plugin, state } of catalog.enabled) {
     const module = plugin.entrypoints.hookModule
-    if (!module || pluginLoadBlockReason(plugin)) continue
+    if (!module || pluginLoadBlockReason(plugin) || !running.has(plugin.manifest.name)) continue
     const options = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
     mods.push({
       plugin: plugin.manifest.name,
       root: plugin.dir,
+      ...(plugin.manifest.version ? { version: plugin.manifest.version } : {}),
       dataDir: dataDirOfPlugin(plugin, opts.homeDir),
       module,
       options,

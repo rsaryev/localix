@@ -1,4 +1,3 @@
-import { listFolderWorkflows } from './folder-workflows'
 import { scalarConfig } from '../capabilities/source-repository'
 import { dataDirOfPlugin, pluginIdOf } from './plugin-data-id'
 import type { PluginCatalog } from './catalog'
@@ -8,7 +7,7 @@ import type { PluginCommand, PluginCommandSpec } from './contracts'
 import { makePluginSubstituter } from './loader-runtime-declarations'
 import { kitPluginsOf } from './catalog-kit'
 import type { SessionSkill } from '@rsaryev/llx-plugin'
-import { scopeSkills, skillPlugin, type LocalixPluginHost } from './kit'
+import { savedWorkflows, scopeSkills, skillPlugin, type LocalixPluginHost } from './kit'
 
 /**
  * The commands of every ENABLED plugin, with their text read as a skill's is (a command is a skill
@@ -119,7 +118,7 @@ export async function listCatalogCommandSpecs(
       ),
   )
   const saved: PluginCommandSpec[] = (
-    await listFolderWorkflows({ cwd: opts.projectDir, homeDir: opts.homeDir })
+    await savedWorkflows({ cwd: opts.projectDir, homeDir: opts.homeDir })
   )
     .filter((entry) => !bySkill.has(entry.fullName.toLowerCase()))
     .map((entry) => ({

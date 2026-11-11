@@ -37,6 +37,11 @@ export function createModConversations(limit = KEPT) {
       if (conversation) conversation.composed = facts
     },
     requestCompaction: (sessionId: string): void => void compactions.add(sessionId),
+    /** A deleted conversation is forgotten. */
+    forget(sessionId: string): void {
+      joined.delete(sessionId)
+      compactions.delete(sessionId)
+    },
     /** True once for a conversation a mod asked to compact. */
     takeCompaction: (sessionId: string | undefined): boolean =>
       sessionId ? compactions.delete(sessionId) : false,

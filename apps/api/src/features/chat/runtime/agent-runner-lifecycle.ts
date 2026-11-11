@@ -71,6 +71,9 @@ export function createRunnerLifecycle({ deps, state, wakeQueue }: RunnerLifecycl
     async forgetSession(userId: string, sessionId: string) {
       forgetSessionRuntimeState(state, sessionId)
       deps.pluginSessions?.forget(sessionId)
+      await deps.mods?.forget(sessionId).catch((error: unknown) => {
+        console.warn(`[agent-runner] failed to dispose the mods of session ${sessionId}`, error)
+      })
       // What the person was told is waiting on them there must not outlive the session.
       deps.notifications?.attention.forgetSession(sessionId)
       await wakeQueue.forget(userId, sessionId)

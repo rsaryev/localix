@@ -30,7 +30,12 @@ import { applyCatalogAgent, contextFilesFor } from '../catalog-agent'
 import { agentScopedHooks } from '../agent-hooks'
 import { claudeCodeHome, claudeConfigDir } from '../../../../cc-settings/config-dir'
 import { autoMemoryDir } from '../../../../memory/auto-memory'
-import { claudeCodeTrusts, issueLine, sessionLspServers } from '../../../../plugins/kit'
+import {
+  claudeCodeTrusts,
+  issueLine,
+  runningPlugins,
+  sessionLspServers,
+} from '../../../../plugins/kit'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { reloadedSkillsNote } from '../cc-reload-skills'
 import type { ModelView } from '../../model-view/view'
@@ -225,7 +230,8 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     ? await createModRunScope(
         deps.mods,
         { userId, sessionId: session.id, cwd: defaultCwd },
-        new Set(loadedPlugins.loaded.map((plugin) => plugin.name)),
+        // The plugins the chat's session runs: one whose dependency is not met loads no mod.
+        built.kitSession ? runningPlugins(built.kitSession) : new Set<string>(),
         {
           model: turn.model.rawModelId,
           // A delegated child's turn reaches the mods as Claude Code's subagent turns do: its

@@ -4,6 +4,7 @@ import { dirname, join, parse, resolve } from 'node:path'
 import {
   collectDir,
   collectRules,
+  userRules,
   ContextCollector,
   isGitRoot,
   type ContextFile,
@@ -81,10 +82,10 @@ export async function discoverContextFiles(
     // scope their globs against the session's working directory.
     const localixHome = join(home, '.localix')
     await collector.add(join(localixHome, 'context.md'), 'context')
-    await collectRules(join(localixHome, 'rules'), start, collector)
+    await collectRules(join(localixHome, 'rules'), userRules(start), collector)
     const claudeHome = join(home, '.claude')
     await collector.add(join(claudeHome, 'CLAUDE.md'), 'context')
-    await collectRules(join(claudeHome, 'rules'), start, collector)
+    await collectRules(join(claudeHome, 'rules'), userRules(start), collector)
 
     // Phase 2 — directory hierarchy, ROOT-first. A file already loaded above is not read again.
     for (const dir of [...chain].reverse()) {

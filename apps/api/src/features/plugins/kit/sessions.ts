@@ -73,6 +73,29 @@ export function sessionOwn(
   }
 }
 
+/**
+ * The plugins a session runs, by name: those its settings select whose dependencies are met (the
+ * kit turns off one whose dependency is not installed, disabled or outside its range). Their mods
+ * are the ones that load.
+ */
+export function runningPlugins(session: Pick<PluginSession, 'plugins'>): ReadonlySet<string> {
+  return new Set(session.plugins.flatMap((one) => (one.enabled ? [one.name] : [])))
+}
+
+/**
+ * The errors the kit reports against a session's plugins, under each plugin's id (a dependency not
+ * installed, disabled or outside its range: the plugin stays off). The plugin records show them.
+ */
+export function pluginErrors(
+  session: Pick<PluginSession, 'plugins' | 'issues'>,
+): ReadonlyMap<string, string> {
+  const ids = new Set(session.plugins.map((one) => one.id))
+  const errors = new Map<string, string>()
+  for (const { severity, path, message } of session.issues)
+    if (severity === 'error' && ids.has(path) && !errors.has(path)) errors.set(path, message)
+  return errors
+}
+
 /** The locations of a session: its project, and its own plugins' folders before the host's. */
 export function sessionLocations(
   host: LocalixPluginHost,

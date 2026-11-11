@@ -1,4 +1,5 @@
 import type { AgentDefinition } from '@localixai/agent/agents'
+import type { CatalogAgent } from '@rsaryev/llx-plugin/agents'
 import { skillOverridesRevision } from '../../agent-core/skill-overrides'
 import type { ResolvedRunAgent } from '../../agents/invocation-service'
 import type { PluginSession as KitSession } from '@rsaryev/llx-plugin'
@@ -27,6 +28,8 @@ export async function resolveAgentPromptContext(input: {
   session: SessionRecord
   agentId: string
   skills?: AgentDefinition['skills']
+  /** The agent file's catalog source (`ResolvedRunAgent.spec`). */
+  agentSource?: CatalogAgent['source']
   historyMessages: PersistedMessage[]
   viewEpoch: string
   /** The auto memory folder and its MEMORY.md as loaded; null when the run keeps no memory. */
@@ -53,6 +56,7 @@ export async function resolveAgentPromptContext(input: {
     capabilities: input.capabilities,
     session,
     ...(skills ? { agentSkills: skills } : {}),
+    ...(input.agentSource ? { agentSource: input.agentSource } : {}),
     history: historyMessages,
     cwd: input.cwd,
     signal: input.signal,

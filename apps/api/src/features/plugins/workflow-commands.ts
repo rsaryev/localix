@@ -5,10 +5,9 @@ import type { CapabilitySourceRepository } from '../capabilities/source-reposito
 import { TOOL } from '../agent-core/tool-names'
 import type { WorkflowEntry } from '../agent-core/tools/workflow/workflow'
 import { buildPluginCatalog } from './catalog'
-import { listFolderWorkflows } from './folder-workflows'
 import type { PluginCommand } from './contracts'
 import type { DiscoveredPlugin } from './discovery-types'
-import type { PluginWorkflow } from './kit'
+import { savedWorkflows, type PluginWorkflow } from './kit'
 
 /**
  * A plugin's workflows as its commands: `/<plugin>:<name>`, as Claude Code names them. The command
@@ -69,7 +68,7 @@ export async function listEnabledPluginWorkflows(opts: {
   homeDir: string
 }): Promise<WorkflowEntry[]> {
   const catalog = await buildPluginCatalog(opts)
-  const folders = await listFolderWorkflows(opts)
+  const folders = await savedWorkflows(opts)
   return folders.concat(
     catalog.enabled.flatMap(({ plugin }) =>
       (plugin.entrypoints.components?.workflows ?? []).map((workflow) => ({
@@ -86,7 +85,7 @@ export async function folderWorkflowCommands(opts: {
   cwd: string
   homeDir: string
 }): Promise<Array<{ plugin: string; command: PluginCommand; pluginDir: string }>> {
-  return (await listFolderWorkflows(opts)).map((entry) => ({
+  return (await savedWorkflows(opts)).map((entry) => ({
     plugin: entry.fullName,
     command: workflowCommand(null, { name: entry.fullName, description: entry.description }),
     pluginDir: dirname(entry.file),

@@ -1,4 +1,10 @@
-import { catalogKnows, readKnownMarketplaces, readMarketplace, type KnownMarketplace } from './kit'
+import {
+  catalogKnows,
+  readKnownMarketplaces,
+  readMarketplace,
+  type ClosureMarketplace,
+  type KnownMarketplace,
+} from './kit'
 import type { Marketplace } from '@rsaryev/llx-plugin/marketplace'
 import { marketplacesRoot } from './marketplace-source'
 import { errorMessage } from '../../lib/errors'
@@ -57,20 +63,30 @@ export async function listMarketplaces(
 }
 
 /**
- * Read a marketplace catalog's `allowCrossMarketplaceDependenciesOn` list. Returns []
- * for an unknown/unreadable marketplace or when the field is absent (nothing allowed).
+ * Every registered marketplace whose catalog reads, as the dependency plan reads it: its entries
+ * and its `allowCrossMarketplaceDependenciesOn` list. One that does not read is left out.
  */
-export async function marketplaceDependencyAllowList(
-  name: string,
+export async function closureMarketplaces(
   deps: MarketplaceRegistryDeps,
-): Promise<string[]> {
-  try {
-    const known = (await readKnownMarketplaces(deps.root ?? marketplacesRoot()))[name]
-    if (!known) return []
-    return [...(await readMarketplace(known)).allowCrossMarketplaceDependenciesOn]
-  } catch {
-    return []
-  }
+): Promise<ClosureMarketplace[]> {
+  const known = await readKnownMarketplaces(deps.root ?? marketplacesRoot())
+  const read = await Promise.all(
+    Object.entries(known).map(async ([name, rec]) => {
+      try {
+        const market = await readMarketplace(rec)
+        return [
+          {
+            name,
+            plugins: market.plugins,
+            allowCrossMarketplaceDependenciesOn: market.allowCrossMarketplaceDependenciesOn,
+          },
+        ]
+      } catch {
+        return []
+      }
+    }),
+  )
+  return read.flat()
 }
 
 /**

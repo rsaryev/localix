@@ -11,6 +11,7 @@ import type {
   ListingsResponse,
   OpenersResponse,
   PackageKind,
+  RemoveResult,
   Scope,
   ShelfPlan,
   SourcePreview,
@@ -101,8 +102,9 @@ export const storeApi = {
     )
   },
 
-  async remove(ref: ListingRef, scope: Scope, projectId?: string | null): Promise<void> {
-    await assertOk(
+  /** Resolves with what the removal warned about (a plugin other installed plugins still need). */
+  async remove(ref: ListingRef, scope: Scope, projectId?: string | null): Promise<RemoveResult> {
+    return unwrap(
       await listing().remove.$post({ ...param(ref), json: { scope, ...project(projectId) } }),
     )
   },

@@ -7,6 +7,7 @@ import { tempDirPerFile, tempDirPerTest } from '@localixai/testing'
 
 import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
+import { diskPluginHost } from './kit/testing'
 import { createPluginService } from './service'
 
 // What `claude plugin install|enable|disable|update` refuse, report or leave off.
@@ -56,7 +57,12 @@ async function setup() {
   mkdirSync(home, { recursive: true })
   db = createDatabase()
   await migrateToLatest(db)
-  const service = createPluginService({ db, capabilityStores, homeDir: home })
+  const service = createPluginService({
+    db,
+    capabilityStores,
+    homeDir: home,
+    pluginHost: diskPluginHost(home),
+  })
   return { root, service }
 }
 
@@ -91,6 +97,19 @@ describe('plugin switches', () => {
     await expect(enabling).rejects.toThrow('Dependency "ghost" is not installed')
     const listed = (await service.listPlugins('u1', { projectId: null })).plugins
     expect(listed.find((p) => p.name === 'lone')?.enabled).toBe(false)
+  })
+
+  test("a plugin whose dependency is outside its range shows the kit's error", async () => {
+    const { root, service } = await setup()
+    writePlugin(join(root, 'base'), 'base', { version: '3.0.0' })
+    writePlugin(join(root, 'top'), 'top', { dependencies: [{ name: 'base', version: '~2.1.0' }] })
+    for (const name of ['base', 'top'])
+      await service.install('u1', { source: join(root, name), projectId: null, enable: true })
+    const listed = (await service.listPlugins('u1', { projectId: null })).plugins
+    expect(listed.find((p) => p.name === 'top')?.error).toBe(
+      'Requires "base" ~2.1.0, installed 3.0.0',
+    )
+    expect(listed.find((p) => p.name === 'base')?.error).toBeUndefined()
   })
 
   test('a switch or an install that changes nothing says the plugin already is', async () => {

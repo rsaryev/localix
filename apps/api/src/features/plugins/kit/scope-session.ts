@@ -1,7 +1,13 @@
 import type { PluginSession, Resolved, ResolvedMcpServer } from '@rsaryev/llx-plugin'
 import type { LocalixPluginHost } from './host'
 import type { ManagedSettingsSource } from './settings/managed'
-import { openOwnSession, sessionOwn, type ScopePlugin } from './sessions'
+import {
+  openOwnSession,
+  pluginErrors,
+  runningPlugins,
+  sessionOwn,
+  type ScopePlugin,
+} from './sessions'
 import { readClaudeSettings } from './settings/read'
 
 /** One scope: its folder, the home its Claude Code settings are read from, its catalog. */
@@ -43,4 +49,20 @@ export async function scopeMcpServers(
   scope: PluginScope,
 ): Promise<Resolved<ResolvedMcpServer>> {
   return (await openScopeSession(host, scope, 'mcp-servers')).mcpServers()
+}
+
+/** The plugins a scope runs outside any chat, by name (`runningPlugins` of its session). */
+export async function scopeRunningPlugins(
+  host: LocalixPluginHost,
+  scope: PluginScope,
+): Promise<ReadonlySet<string>> {
+  return runningPlugins(await openScopeSession(host, scope, 'mods'))
+}
+
+/** The kit's errors against a scope's plugins, by plugin id (`pluginErrors` of its session). */
+export async function scopePluginErrors(
+  host: LocalixPluginHost,
+  scope: PluginScope,
+): Promise<ReadonlyMap<string, string>> {
+  return pluginErrors(await openScopeSession(host, scope, 'plugin-errors'))
 }

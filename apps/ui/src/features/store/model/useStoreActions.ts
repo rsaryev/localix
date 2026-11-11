@@ -42,6 +42,8 @@ export function useStoreActions(deps: {
 }) {
   const { client, project } = deps
   const [problem, setProblem] = useState<string | null>(null)
+  /** What a removal warned about: it went, and something installed still needs it. */
+  const [warning, setWarning] = useState<string | null>(null)
   const [asking, setAsking] = useState<ConsentRequest | null>(null)
   const extras = useExtrasAfterInstall(client)
   const projectOf = (scope: Scope) => (scope === 'project' ? project?.id : undefined)
@@ -88,6 +90,8 @@ export function useStoreActions(deps: {
   return {
     problem,
     dismissProblem: () => setProblem(null),
+    warning,
+    dismissWarning: () => setWarning(null),
     asking,
     /** The consent sheet's answer: install with the person's yes, or nothing. */
     answer: (request: ConsentRequest | null) => {
@@ -98,7 +102,11 @@ export function useStoreActions(deps: {
     update,
     remove: (listing: Listing, install?: StoreInstall) => {
       const scope = scopeOf(listing, install)
-      run(client.remove(listing.ref, scope, projectOf(scope)))
+      run(
+        client
+          .remove(listing.ref, scope, projectOf(scope))
+          .then(({ warnings }) => setWarning(warnings.join('\n') || null)),
+      )
     },
     setEnabled: (listing: Listing, install: StoreInstall, enabled: boolean) =>
       run(client.setEnabled(listing.ref, install.scope, enabled, projectOf(install.scope))),

@@ -17,7 +17,7 @@ export function createMeasurer(input: {
   read?: (scene: ModScene) => Promise<ModSessionRead | null>
 }) {
   const last = new Map<string, Measured>()
-  return async function measure(scope: Pick<ModEventScope, 'kit' | 'scene'>): Promise<void> {
+  async function measure(scope: Pick<ModEventScope, 'kit' | 'scene'>): Promise<void> {
     const { scene } = scope
     if (!scene.sessionId || !input.read || !hearsIn(scope, 'session.measure')) return
     const session = await input.read(scene)
@@ -43,4 +43,6 @@ export function createMeasurer(input: {
       () => ({ changed }),
     )
   }
+  /** A deleted conversation's last measure goes with it. */
+  return Object.assign(measure, { forget: (sessionId: string) => void last.delete(sessionId) })
 }

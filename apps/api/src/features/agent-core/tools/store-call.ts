@@ -7,6 +7,7 @@ import {
   type Listing,
   type ListingDetail,
   type ListingRef,
+  type RemoveResult,
   type PackageKind,
   type Scope,
 } from '@localixai/store'
@@ -77,7 +78,8 @@ export interface StoreToolPort {
   plan(ref: ListingRef, scope: Scope): Promise<InstallPlan>
   install(ref: ListingRef, scope: Scope, consent: { plan: boolean }): Promise<void>
   update(ref: ListingRef, scope: Scope): Promise<void>
-  remove(ref: ListingRef, scope: Scope): Promise<void>
+  /** Resolves with what the removal warned about. */
+  remove(ref: ListingRef, scope: Scope): Promise<RemoveResult>
   setEnabled(ref: ListingRef, scope: Scope, enabled: boolean): Promise<void>
   create(kind: PackageKind, scope: Scope, values: Record<string, string>): Promise<ListingRef>
 }

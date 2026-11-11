@@ -45,8 +45,11 @@ export function readClientModules(input: {
   const root = realpathSync(input.root)
   const name = relative(root, realpathSync(input.file)).split(sep).join('/')
   const scan = scanHooksModule(code, name)
-  // The kit's lines of a `Client` start `<file>: Client`; the file's other rules its load checks.
-  const refusal = scan.issues.find((issue) => issue.message.startsWith(`${name}: Client `))
+  // A `Client` refusal is the kit's `client-props` or `client-module`; the file's other rules its
+  // load checks.
+  const refusal = scan.issues.find(
+    (issue) => issue.code === 'client-props' || issue.code === 'client-module',
+  )
   if (refusal) throw new ClientModuleError(refusal.message)
   if (scan.surfaceModuleSpans.length === 0) return undefined
   let rewritten = code

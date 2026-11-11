@@ -4,9 +4,10 @@ import {
   declaredDependencies,
   disableRefusal,
   enableCascade,
-  pluginDependents,
+  uninstallRequiredBy,
   type PluginNode,
 } from './dependency-graph'
+import { installedRecord } from './install-closure'
 
 /**
  * Enabling and disabling a plugin that is part of a dependency graph, judged by the kit
@@ -62,16 +63,15 @@ describe('declaredDependencies', () => {
   })
 })
 
-describe('pluginDependents', () => {
-  it('names the enabled plugins that declare a dependency on the given one', () => {
-    const plugins = [
-      node('a', true, ['lib', { name: 'other' }]),
-      node('b', true, [{ name: 'lib', version: '^1.0.0' }]),
-      node('c', true),
-      node('off', false, ['lib']),
-      node('lib', true),
-    ]
-    expect(pluginDependents('lib', plugins)).toEqual(['a', 'b'])
-    expect(pluginDependents('nope', plugins)).toEqual([])
+describe('uninstallRequiredBy', () => {
+  it("names the enabled plugins that depend on it, at the scope (the kit's requiredBy)", () => {
+    const record = (id: string, deps: string[] = []) =>
+      installedRecord({ id, scope: 'user', manifest: { dependencies: deps } })
+    const facts = {
+      installed: [record('a@m', ['lib']), record('off@m', ['lib']), record('lib@m')],
+      enabled: { user: { 'a@m': true, 'off@m': false, 'lib@m': true } },
+    }
+    expect(uninstallRequiredBy('lib@m', 'user', facts)).toEqual(['a'])
+    expect(uninstallRequiredBy('nope@m', 'user', facts)).toEqual([])
   })
 })

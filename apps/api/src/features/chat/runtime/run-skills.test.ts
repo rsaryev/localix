@@ -26,7 +26,12 @@ const readFile = (path: string) =>
 async function run(
   session: Partial<SessionRecord>,
   history: PersistedMessage[],
-  options: { deny?: string; agentSkills?: string[]; plugins?: string[] } = {},
+  options: {
+    deny?: string
+    agentSkills?: string[]
+    plugins?: string[]
+    agentSource?: { kind: 'plugin'; pluginId: string }
+  } = {},
 ) {
   writeTree(work(), {
     '.git/HEAD': 'ref: refs/heads/main\n',
@@ -48,6 +53,7 @@ async function run(
     ),
     session: { id: 's1', ...session } as SessionRecord,
     ...(options.agentSkills ? { agentSkills: options.agentSkills } : {}),
+    ...(options.agentSource ? { agentSource: options.agentSource } : {}),
     history,
     cwd: work(),
     signal,
@@ -83,6 +89,25 @@ describe("a run's skills, read from the chat's plugin session", () => {
       { agentSkills: ['hidden', 'review'] },
     )
     expect(skills.pinnedSkills.map((one) => one.name)).toEqual(['review'])
+  })
+
+  test("a plugin agent's bare preload finds its own plugin's skill first", async () => {
+    const plugins = ['first', 'second'].map((name) => {
+      const root = join(dir(), name)
+      writeTree(root, {
+        '.claude-plugin/plugin.json': JSON.stringify({ name }),
+        'skills/lint/SKILL.md': skillFile(`description: ${name} lints`, `${name} lint`),
+      })
+      return root
+    })
+    const skills = await run(
+      {
+        provenance: { kind: 'task-delegation', agentType: 'second:checker' },
+      } as Partial<SessionRecord>,
+      [],
+      { agentSkills: ['lint'], plugins, agentSource: { kind: 'plugin', pluginId: 'second@test' } },
+    )
+    expect(skills.pinnedSkills.map((one) => one.name)).toEqual(['second:lint'])
   })
 
   test("a keyword of the person's message puts the skill in, unless it is pinned", async () => {

@@ -4,6 +4,7 @@ import {
   type ListingRef,
   type ListingsResponse,
   type PackageKind,
+  type RemoveResult,
   type Scope,
   type SourceView,
   type StoreActivity,
@@ -236,9 +237,10 @@ export function createStoreService(deps: StoreServiceDeps) {
 
     update,
 
-    async remove(ref: ListingRef, scope: Scope, actor: StoreActor) {
-      await providerOf(ref.kind).remove(ref.id, scope, actor)
+    async remove(ref: ListingRef, scope: Scope, actor: StoreActor): Promise<RemoveResult> {
+      const result = await providerOf(ref.kind).remove(ref.id, scope, actor)
       await recommendations.removed(actor, ref)
+      return { warnings: result?.warnings ?? [] }
     },
 
     async setEnabled(ref: ListingRef, scope: Scope, enabled: boolean, actor: StoreActor) {

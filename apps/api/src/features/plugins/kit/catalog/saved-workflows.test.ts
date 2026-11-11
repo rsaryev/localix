@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { tempDirPerTest } from '@localixai/testing'
 
-import { listFolderWorkflows } from './folder-workflows'
+import { savedWorkflows } from './saved-workflows'
 
 const script = (name: string, note: string) =>
   `export const meta = { name: '${name}', description: '${note}' }\nreturn 1\n`
@@ -22,7 +22,7 @@ describe('workflows kept in folders', () => {
     writeFileSync(join(repo, '.claude', 'workflows', 'audit.js'), script('audit', 'project'))
     writeFileSync(join(home, '.claude', 'workflows', 'audit.js'), script('audit', 'user'))
     writeFileSync(join(home, '.claude', 'workflows', 'sweep.js'), script('sweep', 'user'))
-    const found = await listFolderWorkflows({ cwd: repo, homeDir: home })
+    const found = await savedWorkflows({ cwd: repo, homeDir: home })
     expect(found.map((e) => [e.fullName, e.description])).toEqual([
       ['audit', 'project'],
       ['sweep', 'user'],
