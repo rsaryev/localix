@@ -51,7 +51,8 @@ const realSleep = (ms: number): Promise<void> =>
     timer.unref?.()
   })
 
-const nextMacrotask = (): Promise<void> => new Promise((resolve) => setImmediate(resolve))
+/** One turn of the event loop: I/O and timers run before it resolves, which a microtask cannot do. */
+export const nextMacrotask = (): Promise<void> => new Promise((resolve) => setImmediate(resolve))
 
 /**
  * Resolve once `quietMs` of consecutive ticks each ran within `quietLagMs` of when they were

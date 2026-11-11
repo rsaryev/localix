@@ -32,7 +32,7 @@ import { installBrowserPageWindowTransfers } from '@/widgets/editor-grid/model/b
 import { installBrowserPageOwnership } from '@/widgets/editor-grid/model/browserPageOwnership'
 import { installWorkspaceDragPreviews } from '@/widgets/editor-grid/model/workspaceDragPreviews'
 import { AttentionDialog } from '@/entities/chat/ui/attention/AttentionDialog'
-import { SetupAnnouncement } from '@/widgets/workspace-tips/ui/SetupAnnouncement'
+import { SetupAnnouncement } from '@/widgets/setup/ui/SetupAnnouncement'
 import { FolderTree } from 'lucide-react'
 import { discoverUi } from '@/shared/contrib/discover'
 import { standaloneApp } from '@/shared/lib/standaloneApp'

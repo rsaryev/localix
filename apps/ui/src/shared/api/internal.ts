@@ -143,6 +143,17 @@ function apiRequestMetadata(
 }
 
 /**
+ * The route that answered, as the API names it (`x-localix-route`: `/rpc/sessions/:id/tree`).
+ * A template carries no ids, so it may be kept where the raw URL may not; anything else in the
+ * header is ignored and the trace keeps its coarse path.
+ */
+function answeredRoute(response: Response): { path?: string } {
+  // Naming the route is tracing: a response without headers (a stub `fetch`) is still answered.
+  const template = (response.headers as Headers | undefined)?.get('x-localix-route')
+  return template && /^\/[\w:/.-]*$/.test(template) ? { path: template } : {}
+}
+
+/**
  * Mark a write as first-party (`@localixai/api/client`'s `LOCALIX_CLIENT_HEADER`).
  *
  * The API refuses a body-less `POST`/`DELETE` that carries neither an allowed `Origin` nor this
@@ -187,7 +198,7 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
       phase: response.ok ? 'succeeded' : 'failed',
       ts,
       durationMs: ts - startedAt,
-      attributes: { ...base.attributes, status: response.status },
+      attributes: { ...base.attributes, ...answeredRoute(response), status: response.status },
       error: response.ok ? undefined : { status: response.status },
     })
     return response

@@ -205,3 +205,61 @@ describe('the session index', () => {
     expect(fakes.map((fake) => fake.state.parsed)).toEqual([[], [], []])
   })
 })
+
+describe('listing before walking', () => {
+  /**
+   * A cold list used to walk every byte of every transcript for token usage before it returned —
+   * measured on a real history at 10 GB and 12 s, all of it before the History tab showed a row. A
+   * list needs a transcript's head and tail; the walk is what statistics need, and only they wait
+   * for it.
+   */
+  function folding(refs: SourceRef[]) {
+    const { adapter, state } = counting(refs)
+    const walks: string[] = []
+    const folds: ProviderAdapter = {
+      ...adapter,
+      async foldSummary(source, previous, _env, { walk }) {
+        walks.push(`${source.nativeSessionId}:${walk ? 'walk' : 'list'}`)
+        const summary = { ...summaryOf(source), ...(walk ? { messageCount: 7 } : {}) }
+        return walk
+          ? { summary, fold: { offset: 10, mark: 'm' } }
+          : { summary, ...(previous?.fold ? { fold: previous.fold } : {}), unwalked: true }
+      },
+    }
+    return { adapter: folds, state, walks }
+  }
+
+  test('a list reads no transcript body; statistics walk each one once', async () => {
+    const { adapter, walks } = folding([ref('a', 'r1'), ref('b', 'r1')])
+    const index = new SessionIndex([adapter], ENV, await stateDir(), () => {})
+
+    const listed = await index.scan(adapter)
+    expect(walks).toEqual(['a:list', 'b:list'])
+    expect(listed.summaries.map((s) => s.messageCount)).toEqual([undefined, undefined])
+
+    const walked = await index.scan(adapter, 'walked')
+    expect(walks).toEqual(['a:list', 'b:list', 'a:walk', 'b:walk'])
+    expect(walked.summaries.map((s) => s.messageCount)).toEqual([7, 7])
+
+    await index.scan(adapter, 'walked')
+    await index.scan(adapter)
+    expect(walks).toHaveLength(4)
+  })
+
+  test('a walk still owed survives a restart, and one already paid is not paid again', async () => {
+    const dir = await stateDir()
+    const { adapter, walks } = folding([ref('a', 'r1'), ref('b', 'r1')])
+    await new SessionIndex([adapter], ENV, dir, () => {}).scan(adapter)
+    await new SessionIndex([adapter], ENV, dir, () => {}).scan(adapter, 'walked')
+    await new SessionIndex([adapter], ENV, dir, () => {}).scan(adapter, 'walked')
+    expect(walks).toEqual(['a:list', 'b:list', 'a:walk', 'b:walk'])
+  })
+
+  test('concurrent statistics share one walk', async () => {
+    const { adapter, walks } = folding([ref('a', 'r1')])
+    const index = new SessionIndex([adapter], ENV, await stateDir(), () => {})
+    await index.scan(adapter)
+    await Promise.all([index.scan(adapter, 'walked'), index.scan(adapter, 'walked')])
+    expect(walks).toEqual(['a:list', 'a:walk'])
+  })
+})

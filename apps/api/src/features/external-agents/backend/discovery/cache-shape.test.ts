@@ -19,7 +19,7 @@ import { join } from 'node:path'
  * runtime, so the declaration is the only thing there is to read.
  */
 const CONTRACTS = join(import.meta.dir, '..', '..', 'shared', 'contracts.ts')
-const INDEX_CACHE = join(import.meta.dir, 'index-cache.ts')
+const INDEX_CACHE = join(import.meta.dir, 'index-store.ts')
 
 /**
  * Every interface whose fields end up INSIDE a stored summary.
@@ -84,9 +84,10 @@ const PINNED = [
  * 8 is the counter-example this file cannot catch on its own: nothing in the shape moved — Gemini
  * sessions began RESOLVING a `cwd` that was always declared and always absent — so the list above is
  * unchanged and only the version moved. A derivation change invalidates cached rows exactly as a
- * field addition does; the difference is that only a human notices.
+ * field addition does; the difference is that only a human notices. 9 is another: Claude Code's
+ * `/rename` name became the title.
  */
-const PINNED_AT_VERSION = 8
+const PINNED_AT_VERSION = 9
 
 describe('a stored summary cannot change shape without discarding the cache', () => {
   const source = [CONTRACTS, join(import.meta.dir, '..', '..', 'shared', 'quotas.ts')]
@@ -107,7 +108,7 @@ describe('a stored summary cannot change shape without discarding the cache', ()
   test('the stored shape is exactly what CACHE_VERSION was last bumped for', () => {
     const actual = STORED.flatMap((name) => fieldsOf(source, name)).sort()
 
-    // If this fails, the fix is not to edit the list: it is to bump CACHE_VERSION in index-cache.ts
+    // If this fails, the fix is not to edit the list: it is to bump CACHE_VERSION in index-store.ts
     // so existing caches are discarded, THEN update the list and PINNED_AT_VERSION to match.
     expect(actual).toEqual([...PINNED].sort())
   })

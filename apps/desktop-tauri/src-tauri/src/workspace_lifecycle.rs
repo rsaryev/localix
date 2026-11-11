@@ -21,6 +21,12 @@ pub(crate) fn register(window: &WebviewWindow) {
             crate::menu::activate_workspace(&app, &label);
             #[cfg(target_os = "macos")]
             crate::native_header::refresh_after_focus(&app, &label);
+            // Reduce transparency is changed in System Settings, so it can only have changed while
+            // this window was not key.
+            #[cfg(target_os = "macos")]
+            if let Some(webview) = app.get_webview_window(&label) {
+                let _ = webview.eval(crate::display_options::script());
+            }
             #[cfg(target_os = "macos")]
             {
                 let restore_hidden = {

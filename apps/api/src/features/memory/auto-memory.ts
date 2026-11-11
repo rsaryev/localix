@@ -1,5 +1,5 @@
 import { realpathSync } from 'node:fs'
-import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { appendFile, cp, mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
 import { claudeConfigDir } from '../cc-settings/config-dir'
@@ -64,6 +64,30 @@ export function autoMemoryDir(input: {
   // Memory keys on the repository's main checkout, a repository rooted at home included.
   const project = settings.repository?.root ?? cwd
   return join(claudeConfigDir(input.homeDir, env), 'projects', claudeProjectKey(project), 'memory')
+}
+
+const hasEntries = async (dir: string) => (await readdir(dir).catch(() => [])).length > 0
+
+/**
+ * A project re-pointed at its moved folder keeps what its chats learned: memory is filed under the
+ * folder's PATH, so without this the new path starts with none. The old folder's memory is COPIED
+ * when the new one has none (`copied`); a new folder that already has memory keeps its own and
+ * nothing is merged (`kept`); no memory, memory off, or one configured folder for every project is
+ * `none`. The old folder's memory is left where it is: Claude Code may still be opened there.
+ */
+export async function carryAutoMemory(input: {
+  from: string
+  to: string
+  homeDir: string
+  env?: Record<string, string | undefined>
+}): Promise<'copied' | 'kept' | 'none'> {
+  const env = input.env ?? process.env
+  const from = autoMemoryDir({ cwd: input.from, homeDir: input.homeDir, env })
+  const to = autoMemoryDir({ cwd: input.to, homeDir: input.homeDir, env })
+  if (!from || !to || from === to || !(await hasEntries(from))) return 'none'
+  if (await hasEntries(to)) return 'kept'
+  await cp(from, to, { recursive: true, force: false, errorOnExist: false })
+  return 'copied'
 }
 
 /** MEMORY.md as the prompt carries it: its first 200 lines or 25KB, whichever ends first. */

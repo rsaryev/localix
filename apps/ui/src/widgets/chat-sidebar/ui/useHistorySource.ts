@@ -44,7 +44,6 @@ export function useHistorySource({
   }, [])
   const nativeHistory = useExternalHistory(search, externalAvailable && source === 'external', {
     cwd: activeProject?.workingDir,
-    includeDescendants: true,
   })
   const nativeRows = useMemo(
     () => nativeHistoryRows(nativeHistory.sessions, allSessions, activeProject),

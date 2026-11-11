@@ -8,7 +8,7 @@ import type { TerminalRead } from '@localixai/mini-app-sdk/backend'
 import type { AdapterEnv, ProviderAdapter, SourceRef } from './adapters/types'
 import { sessionResume } from './resume-session'
 import { PROVIDER_ADAPTERS, adapterFor } from './adapters/registry'
-import { SessionIndex } from './discovery/index-cache'
+import { SessionIndex, type ScanDepth } from './discovery/index-cache'
 import { buildRoster } from './discovery/roster'
 import { computeStats, type ExternalAgentStats, type StatsQuery } from './discovery/stats'
 import { ManifestRegistry } from './detection/registry'
@@ -113,11 +113,13 @@ export class AgentSessionsService {
     await this.manifests.loadOverrides()
   }
 
-  shutdown(): void {
+  /** Settles when the index's last due write has landed. */
+  shutdown(): Promise<void> {
     this.stopped = true
     for (const timer of this.timers) clearTimeout(timer)
     this.timers.clear()
     this.history.close()
+    return this.index.close()
   }
 
   /** Hook entrypoint — see live/observe.ts for why observation is the whole live mechanism. */
@@ -172,9 +174,13 @@ export class AgentSessionsService {
     return false
   }
 
-  async providers(): Promise<readonly ProviderStatus[]> {
+  /**
+   * Each provider's status. `walked` (the default, what the model's tool asks) waits for every
+   * session's usage — quota readings come from that walk; a browsing surface asks for `listed`.
+   */
+  async providers(depth: ScanDepth = 'walked'): Promise<readonly ProviderStatus[]> {
     const indexes = await Promise.all(
-      this.availableAdapters().map((adapter) => this.index.scan(adapter)),
+      this.availableAdapters().map((adapter) => this.index.scan(adapter, depth)),
     )
     return indexes.map((i) => i.status)
   }
@@ -183,7 +189,15 @@ export class AgentSessionsService {
    * Provider history and live delegations, filtered by the query's directory and provider.
    * The asking Localix session controls live screen refreshes, not which native rows exist.
    */
-  async roster(query: RosterQuery, localixSessionId?: string): Promise<Bounded<RosterRow>> {
+  async roster(
+    query: RosterQuery,
+    localixSessionId?: string,
+    /**
+     * `listed` is a History list's depth: every session, its title and recency, without waiting for
+     * the walk of every transcript's usage. A model filter needs that walk, so it always waits.
+     */
+    depth: ScanDepth = 'walked',
+  ): Promise<Bounded<RosterRow>> {
     // Refresh the LIVE rows before listing them. Without this the roster is a fresh list of stale
     // states: the panel re-fetches every few seconds while something is running, but a delegation's
     // state came from whatever the model last happened to screen, so the list moved and the states
@@ -196,7 +210,8 @@ export class AgentSessionsService {
       ? this.availableAdapters().filter((a) => query.providers?.includes(a.id))
       : this.availableAdapters()
     if (!wanted.length) return { items: [], total: 0, withheld: 0 }
-    const indexes = await Promise.all(wanted.map((a) => this.index.scan(a)))
+    const scanDepth = query.model ? 'walked' : depth
+    const indexes = await Promise.all(wanted.map((a) => this.index.scan(a, scanDepth)))
     const summaries = indexes.flatMap((i) => i.summaries)
     return buildRoster({
       summaries,
@@ -215,7 +230,9 @@ export class AgentSessionsService {
     // scan to what was asked for. The agent distribution is the control you drill WITH, so it has
     // to keep showing the agents you are not currently looking at. Narrowing here would make that
     // impossible and buys nothing: this is the same warm index the roster already paid for.
-    const indexes = await Promise.all(this.availableAdapters().map((a) => this.index.scan(a)))
+    const indexes = await Promise.all(
+      this.availableAdapters().map((a) => this.index.scan(a, 'walked')),
+    )
     return computeStats(
       indexes.flatMap((i) => i.summaries),
       query,

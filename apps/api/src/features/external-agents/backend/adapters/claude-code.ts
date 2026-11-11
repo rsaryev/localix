@@ -232,7 +232,7 @@ export const claudeCodeAdapter: ProviderAdapter = {
   async readSummaries(refs) {
     return mapConcurrent(refs, SUMMARY_CONCURRENCY, summarize)
   },
-  foldSummary: (ref, previous) => foldClaudeCode(ref, previous),
+  foldSummary: (ref, previous, _env, { walk }) => foldClaudeCode(ref, previous, walk),
   readTranscript,
   readTurnState: readAppendedTurnState,
 }

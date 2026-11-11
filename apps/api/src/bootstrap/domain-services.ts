@@ -21,6 +21,7 @@ import { createSkillArchiveFacts } from '../features/notifications/producers/ski
 import type { InfraPhase } from './infra'
 import { toResourceExpansionResult } from '../features/projects/expand-refs'
 import { createProjectsService } from '../features/projects/service'
+import { claudeCodeFolderPort } from './claude-code-folder'
 import { createUserService } from '../features/user/service'
 import { createSkillUsageRepository } from '../features/skills-curator/repository'
 import { createSkillsCuratorService } from '../features/skills-curator/service'
@@ -140,6 +141,7 @@ export function createDomainServicesPhase({
     // The ownership-checked session-cwd seam: late-bound, because chat is built after this
     // phase and long before any request asks to expand a ref.
     resolveSessionCwd: (...args) => hostRefs.chatService!.resolveSessionCwd(...args),
+    claudeCode: claudeCodeFolderPort(),
   })
   // Core's own reference kinds (file/folder/session/message/terminal/call/project/snippet) resolve
   // through Context Fabric like every provider's, so a sent message, an edit prediction and a

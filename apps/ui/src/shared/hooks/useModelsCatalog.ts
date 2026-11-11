@@ -38,8 +38,8 @@ export function useModelsCatalog() {
   )
 
   const all = data?.models
-  // One catalog lists every kind (decision models for group routing); every client surface lists
-  // chat models.
+  // One catalog lists every kind (decision models included); every client surface lists chat
+  // models.
   const chat = useMemo(() => (all ?? []).filter((model) => modelKindOf(model) === 'chat'), [all])
 
   return {

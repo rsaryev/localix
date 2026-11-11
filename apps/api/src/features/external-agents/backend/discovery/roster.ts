@@ -14,7 +14,12 @@
  */
 
 import type { Bounded, RosterRow, RosterQuery, SessionSummary } from '../../shared/contracts'
-import { MAX_ROSTER_LIMIT, sessionHasParent, sessionUsedModel } from '../../shared/contracts'
+import {
+  MAX_ROSTER_LIMIT,
+  sessionHasParent,
+  sessionUnderDir,
+  sessionUsedModel,
+} from '../../shared/contracts'
 import { pendingNativeId, type LiveStore } from '../live/store'
 import { waitedKeys } from '../live/waiters'
 
@@ -125,7 +130,7 @@ export function buildRoster(input: RosterInput): Bounded<RosterRow> {
   if (query.parentKey) {
     rows = rows.filter((r) => sessionHasParent(r, query.parentKey as string))
   }
-  if (query.cwdPrefix) rows = rows.filter((r) => r.cwd?.startsWith(query.cwdPrefix as string))
+  if (query.cwdPrefix) rows = rows.filter((r) => sessionUnderDir(r, query.cwdPrefix as string))
   // Both places a model is recorded, through the predicate the statistics use — see shared/contracts.
   if (query.model) rows = rows.filter((r) => sessionUsedModel(r, query.model as string))
   if (query.text?.trim()) {

@@ -170,12 +170,11 @@ count in one button, wider than a chip), the collection card, and the facts card
 ### Every fill answers one question: what is under me?
 
 The macOS window is backed by an `NSVisualEffectView`, so the ground tokens carry alpha. That single
-fact drives the whole system. `packages/kit/styles/window-material.css` clears the root backdrop
-only for `data-desktop='true'` with `data-os='mac'`; browsers and other desktops keep the synthetic
-backdrop. Reduced transparency restores an opaque ground on every platform. A fill that names a
-colour outright — a ground token, an opaque grey, a palette class — is a bet that the thing
-underneath will not move. It moves: between themes, between panes, and between a window with a
-material and one without.
+fact drives the whole system. `packages/kit/styles/window-material.css` clears the root only for
+`data-desktop='true'` with `data-os='mac'`; browsers and other desktops paint a solid ground (see
+[The Mac window](#the-mac-window)). A fill that names a colour outright — a ground token, an opaque
+grey, a palette class — is a bet that the thing underneath will not move. It moves: between themes,
+between panes, and between a window with a material and one without.
 
 A veil makes no such bet. `bg-foreground/[0.04]` is "whatever is under me, four percent denser", so
 one value is correct on near-black, on graphite and on white. Fills, hovers, borders and chips are
@@ -189,15 +188,15 @@ coat, one step denser than its pane (`--card-solid` at `--work-coat + 6%`), so a
 collection card reads as a step above its pane at every level instead of a near-opaque slab once the
 pane clears. Reduced transparency makes it `--card-solid`. A surface that must hide what it
 overlaps, such as a board node over another node, takes `--card-occlude`, the same step never
-thinner than 88%. A veil, a floating panel's frost, `--background-solid` and `--surface-raised` on a
-modal stay as they are: a veil already follows its ground, and the others are opaque or frosted on
-purpose. A floating chip or an overlay that hides content takes `lx-occluder` (a veil plus blur) or
-the floating material, never `bg-surface-raised/NN`, which mixes from a darker ground than the pane.
+thinner than 88%. A veil, a floating panel, `--background-solid` and a modal stay as they are: a
+veil already follows its ground, and the others are opaque on purpose. A floating chip or an overlay
+that hides content takes `lx-occluder` (a veil plus blur) or the floating material, never
+`bg-surface-raised/NN`, which mixes from a darker ground than the pane.
 
 ### Over content the app does not own, glass has nothing to bet on
 
-A floating panel is translucent and frosted because it frosts over the app's own chrome, whose tone
-the system knows. One panel does not: the preview's comment composer floats over a live page
+A floating panel once frosted the app's own chrome, whose tone the system knows; it is solid now on
+every platform. One panel never could: the preview's comment composer floats over a live page
 belonging to whoever wrote it. There the same 82% white sat above a beige game board and the label,
 the placeholder and the Attach row all washed out — the panel was a smear rather than a card.
 
@@ -213,6 +212,38 @@ unlayered rule in `apps/ui/src/app/index.css` clears any ground nested inside an
 whichever token each uses, because matching them token-for-token is exactly where the bug hid. The
 rule reaches rendered utility classes; `scripts/pane-ground-guard.test.ts` covers what it cannot, by
 refusing a pane-sized element that paints a ground in the first place.
+
+### The Mac window
+
+Localix follows the Mac window rules below. Each source is Apple's unless it names the sibling
+`localix-desk` research (`docs/ui.md` there), which tested them in a native AppKit window.
+
+| Rule                                                                                                   | Here                                                                                                                                    | Source                                                                                                      |
+| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| One material behind the whole window; chrome stays clear over it; content panes take a coat.           | `window_material.rs` puts one `NSVisualEffectView` in the frame view; the page root is transparent.                                     | Adopting Liquid Glass: "Reduce your use of custom backgrounds in controls and navigation elements"          |
+| Nothing is painted under the page to fake glass: no wallpaper, colour pools, sheen or gradient.        | Without the material (browser, Windows, Linux) the root paints `--window-ground` and every coat is 100%.                                | Adopting Liquid Glass; HIG Materials: "Don't use Liquid Glass in the content layer"                         |
+| No glass on glass: menus, popovers and dialogs are solid with a hairline and never blur what is under. | `.lx-floating-surface`, `.bg-popover` and `.lx-modal-surface` are opaque on every platform.                                             | Adopting Liquid Glass ("Audit the backgrounds of sheets and popovers"); `localix-desk` `docs/ui.md`, Layers |
+| Solid when it must be: Reduce transparency, Increase contrast, full screen, the person's Off.          | One selector list in `window-material.css` lifts every coat to 100% for `data-reduce-transparency`, `data-fullscreen` and Off.          | HIG Accessibility; `localix-desk` `docs/ui.md`, Glass (full screen has no desktop to sample)                |
+| The page is told the accessibility setting; it does not guess.                                         | WKWebView never matches `prefers-reduced-transparency`, so `display_options.rs` stamps `data-reduce-transparency` at load and on focus. | Probed on macOS 26 in a WKWebView: neither `reduce` nor `no-preference` matches                             |
+| Transparency is offered only where there is glass.                                                     | Settings → Preferences shows Window transparency only when `hasNativeWindowMaterial()`.                                                 | HIG Materials                                                                                               |
+
+Deliberate deviations, each a decision rather than an oversight:
+
+- The material stays `Active` when the window is not key. Apple says "inactive windows don't use
+  vibrancy" (HIG Windows), but `FollowsWindowActiveState` stopped sampling and filled the whole
+  workspace with flat grey the moment focus left. The titlebar dims its contents instead.
+- The material is chosen per appearance (`HUDWindow` in dark, `UnderWindowBackground` in light).
+  Apple says to pick by purpose, not by apparent colour (`NSVisualEffectView`), but no single
+  material served both themes: `HUDWindow` turned the light theme to mud. `localix-desk` makes the
+  same split.
+- The accent is the app's own (`--composer-accent`), not the system accent colour.
+
+Sources:
+[Adopting Liquid Glass](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass),
+[HIG Materials](https://developer.apple.com/design/human-interface-guidelines/materials),
+[HIG Windows](https://developer.apple.com/design/human-interface-guidelines/windows),
+[HIG Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility),
+[`NSVisualEffectView`](https://developer.apple.com/documentation/appkit/nsvisualeffectview).
 
 ### Motion is a token, and an overlay has one recipe
 
@@ -302,6 +333,7 @@ last column is what the corresponding check found on its first run.
 | A pane body fills its pane (no centred literal column)                             | `scripts/ui-token-drift-guard.test.ts`             | 10    |
 | A class that names a kit colour or radius names one the theme declares             | `scripts/ui-token-existence-guard.test.ts`         | 33    |
 | An overlay takes its motion from one recipe                                        | `packages/kit/src/overlays/overlay-motion.test.ts` | 7     |
+| The window ground paints no picture; floats do not frost; no dead media query      | `scripts/window-glass-guard.test.ts`               | 12    |
 
 The token-drift rules have one owner, `apps/api/src/contracts/ui-token-rules.ts`, and two readers:
 the guard above, over the app, and the style step of the authoring plugin's check (through the kit's
@@ -329,8 +361,8 @@ toolbar paints its sidebar coat; only the native tab band receives a native coat
 
 The Event Center excludes this native chrome from its popover collision area. Its header stays below
 the tabs, and its scrollable journal uses the remaining window height, including when the native tab
-band changes or the window enters fullscreen. Its fill and backdrop blur use the same shared
-floating material as context menus.
+band changes or the window enters fullscreen. Its fill uses the same shared floating material as
+context menus.
 
 When a desktop window loses focus, the titlebar dims its contents only. Its sidebar ground keeps the
 same opacity as the native header, so the two bars remain aligned over the shared material.
@@ -339,12 +371,12 @@ The person's window transparency level (`data-window-transparency` on `<html>`, 
 `apps/ui/src/shared/theme/windowTransparency.ts` and by the `index.html` boot script) scales the two
 ground coats through `--coat-scale` and `--coat-lift`; it never restates a density. Tune a theme's
 look through its `--*-density` tokens and every level follows. A level changes `--sidebar`, so it
-re-sends the native header tint. The OS Reduce transparency preference still wins.
+re-sends the native header tint. The OS Reduce transparency preference, full screen and a window
+without the material still win.
 
-The glass theme is macOS-only: the `@supports` blocks are scoped to `[data-desktop][data-os='mac']`,
-and every other platform gets the opaque tokens, which is why a fill can look correct in a browser
-and wrong in the app. The guards are static — they read class strings, so a class assembled at
-runtime from variables passes unchecked. Neither guard covers CSS files;
+The glass theme is macOS-only: every other platform gets a solid ground, which is why a fill can
+look correct in a browser and wrong in the app. The guards are static — they read class strings, so
+a class assembled at runtime from variables passes unchecked. Neither guard covers CSS files;
 `apps/ui/src/shared/ui/code-editor/monacoEditor.css` carries its reasoning in a file-header comment
 instead.
 

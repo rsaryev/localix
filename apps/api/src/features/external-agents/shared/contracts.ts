@@ -11,6 +11,7 @@ import type { AgentState, StateAuthority, StateExplain } from './state'
 import type { ProviderId } from './identity'
 import { linkKeyOf } from './identity'
 import type { QuotaReading } from './quotas'
+import { isAtOrUnder } from '@localixai/path-containment/ancestry'
 
 /** One external agent session as it appears in the roster. */
 export interface SessionSummary {
@@ -155,6 +156,20 @@ export const MAX_TRANSCRIPT_EVENTS = 2_000
 export function sessionUsedModel(session: SessionSummary, model: string): boolean {
   if (session.model === model) return true
   return (session.usage?.byModel ?? []).some((entry) => entry.model === model)
+}
+
+/**
+ * Was this session recorded in `dir` or beneath it?
+ *
+ * Path containment, not a string prefix: `/work/app` must not select `/work/app-legacy`, whose
+ * sessions the History tab of `/work/app` then filtered out again on the client — after they had
+ * taken up the page, so a project showed a handful of rows and a "Show more" that kept yielding
+ * none. A trailing separator on `dir` means the same directory. Shared by the roster and the
+ * statistics for the same reason `sessionUsedModel` is.
+ */
+export function sessionUnderDir(session: SessionSummary, dir: string): boolean {
+  const root = dir.length > 1 ? dir.replace(/\/+$/, '') || '/' : dir
+  return Boolean(session.cwd && isAtOrUnder(root, session.cwd))
 }
 
 /**

@@ -1,6 +1,6 @@
 /**
  * The one model pinned in code: the default embedding model every consumer of vectors may use
- * (semantic search, group routing, plugins). Its vector space must never move to a new commit,
+ * (semantic search, plugins). Its vector space must never move to a new commit,
  * so its files and hashes live here in full. Chat models are not listed anywhere in code — the
  * catalog reads them from Hugging Face and plans them for this computer.
  */

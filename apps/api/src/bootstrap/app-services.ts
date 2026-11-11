@@ -135,10 +135,11 @@ export function createAppServicesPhase({
     // A takeover or a served URL, pushed so the composer does not wait for its registry poll.
     publishState: (userId, sessionId, event) =>
       chatService.streamRegistry.publish(userId, sessionId, { ...event, sessionId }),
-    // resolveSessionCwd is the ownership gate. A foreign/stale id fails closed, and there is
-    // no session-less branch: a terminal without a session used to open in HOME, bound to
-    // nothing, and outlived every chat (the contract now requires the session).
-    resolveCwd: (...args) => chatService.resolveSessionCwd(...args),
+    // resolveSessionWorkspaceDir is the ownership gate. A foreign/stale id fails closed, and there
+    // is no session-less branch: a terminal without a session used to open in HOME, bound to
+    // nothing, and outlived every chat (the contract now requires the session). A project folder
+    // that was moved is refused (409 `workspace_folder_*`) instead of a 500 from posix_spawn.
+    resolveCwd: (...args) => chatService.resolveSessionWorkspaceDir(...args),
   })
 
   // Edit prediction plus one shared inline-completion route. Code prediction, chat input and every

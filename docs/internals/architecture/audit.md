@@ -36,7 +36,7 @@ current state.
 | `mini-app-sdk` binds React, zustand, Hono and `node:*`; only its subpaths keep them apart.   | `packages/mini-app-sdk/src/backend/http.ts`, `packages/mini-app-sdk/src/ui/resource-sync.ts`                             |
 | The UI client is typed through the API's Hono app rather than a contracts package.           | `apps/ui/src/shared/api/internal.ts`                                                                                     |
 | The server treats a connection id as a hint; the composer treats it as required (two rules). | `apps/api/src/features/chat/runtime/model-resolution.ts`, `apps/ui/src/entities/chat/ui/prompt-input/connectionScope.ts` |
-| Provider names appear as data in setup scenes and the model order list.                      | `apps/ui/src/widgets/workspace-tips/ui/scenes/ModelScene.tsx`, `packages/agent/src/catalog/model-order.ts`               |
+| Provider names appear as data in the model order list.                                       | `packages/agent/src/catalog/model-order.ts`                                                                              |
 
 ## Layers and ownership (A4–A8)
 
@@ -101,14 +101,14 @@ Follow-ups driven by the writer instead of a consumer, most valuable first:
 
 ## Client synchronization (C6, P11, P12)
 
-| Finding                                                                                    | Where                                                                                                                        |
-| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| Connections have five writers; only the realtime adapter discards a stale answer.          | `apps/ui/src/entities/chat/model/store.ts`, `apps/ui/src/entities/chat/model/useWorkspace.ts`                                |
-| Writers patch readers directly: the setup model step and the connections hook.             | `apps/ui/src/widgets/workspace-tips/ui/scenes/ModelScene.tsx`, `apps/ui/src/entities/chat/ui/prompt-input/useConnections.ts` |
-| About 25 sites replace a session in the store with their own response.                     | `apps/ui/src/entities/chat/model/sessionModelSelectionActions.ts`                                                            |
-| Caches with no topic: the settings model field, settings project lists, the model catalog. | `apps/ui/src/shared/ui/ModelFieldSelect.tsx`, `apps/ui/src/shared/hooks/useModelsCatalog.ts`                                 |
-| A reconnect invalidates every resource instead of catching up after a position.            | `packages/mini-app-sdk/src/ui/resource-sync.ts`                                                                              |
-| Topic names are repeated in the API and the UI.                                            | `apps/api/src/features/realtime/resources.ts`, `apps/ui/src/shared/api/resourceSyncTransport.ts`                             |
+| Finding                                                                                    | Where                                                                                            |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Connections have five writers; only the realtime adapter discards a stale answer.          | `apps/ui/src/entities/chat/model/store.ts`, `apps/ui/src/entities/chat/model/useWorkspace.ts`    |
+| Writers patch readers directly: the connections hook.                                      | `apps/ui/src/entities/chat/ui/prompt-input/useConnections.ts`                                    |
+| About 25 sites replace a session in the store with their own response.                     | `apps/ui/src/entities/chat/model/sessionModelSelectionActions.ts`                                |
+| Caches with no topic: the settings model field, settings project lists, the model catalog. | `apps/ui/src/shared/ui/ModelFieldSelect.tsx`, `apps/ui/src/shared/hooks/useModelsCatalog.ts`     |
+| A reconnect invalidates every resource instead of catching up after a position.            | `packages/mini-app-sdk/src/ui/resource-sync.ts`                                                  |
+| Topic names are repeated in the API and the UI.                                            | `apps/api/src/features/realtime/resources.ts`, `apps/ui/src/shared/api/resourceSyncTransport.ts` |
 
 ## Recorded exceptions
 

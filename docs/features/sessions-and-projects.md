@@ -55,6 +55,41 @@ Long paths scroll horizontally, keeping every ancestor reachable. Navigating to 
 reveals the end of its path automatically. Trackpad gestures and a mouse wheel both scroll the
 trail.
 
+### When the project folder moves
+
+A project remembers its folder by path. Rename, move or delete the folder and the project's chats
+still open with their history, but nothing that works in the folder runs: the Files pane, file reads
+and writes, search, a new terminal, the language servers and the next chat turn each answer with the
+same `409` error. Its code names what is wrong with the folder: `workspace_folder_missing`,
+`workspace_folder_not_a_directory` or `workspace_folder_unreadable`. The Files pane shows **Project
+folder not found** with the old path and three actions:
+
+- **Locate folder…** picks the folder's new place and points the project there. Every chat in the
+  project follows, with its history.
+- **Use "_folder_"** appears when Localix can tell for certain that a folder nearby is the same one,
+  moved or renamed. It is only a suggestion: nothing changes until you click it. Localix recognizes
+  a folder only if it saw it before the move while it was running, so after a restart there is no
+  suggestion and you locate the folder yourself.
+- **Try again** looks again, for a folder put back or a disk plugged in.
+
+What follows the project to the new folder:
+
+- Its chats, rules and settings, which are filed under the project, not the path.
+- Claude Code's auto memory for the old path is copied when the new folder has none. The old copy
+  stays.
+- Live views pick up the new folder: the file watcher, mini apps and every open window.
+
+What does not:
+
+- Claude Code's trust in a folder is never carried over. Trust is Claude Code's answer to "may this
+  folder's hooks, MCP servers and settings run", and a path does not prove it is the same folder.
+  Localix reads that answer and never writes it. If the old folder was trusted and the new one is
+  not, Localix says so; open the folder in Claude Code once to trust it.
+- A terminal that is already open keeps its old directory. Open a new one.
+
+A project cannot move into a folder another project already uses, into your home folder or a disk
+root, or into the default project's folder.
+
 ### Who said it, and when
 
 Every reply is headed by its author: a generated monogram tile, the agent's name in that agent's own
@@ -300,6 +335,9 @@ persisted per session where applicable.
 - [Project persistence and deletion behavior](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/projects/repository.ts)
 - [Session contracts and persisted fields](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/contracts/session.ts)
 - [Session working-directory resolution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/session-cwd.ts)
+- [Moving a project to its folder's new place](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/projects/relocate.ts)
+  ·
+  [folder status and refusal](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/projects/workspace-folder.ts)
 - [Message branching operations](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/branching-ops.ts)
 - [Session fork](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/session-fork.ts)
 - [Composer draft persistence](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/composerDrafts.ts)

@@ -1,4 +1,5 @@
 import type { Context } from 'hono'
+import { routePath } from 'hono/route'
 
 import type { Logger } from './logger'
 
@@ -35,6 +36,25 @@ export function stampRequestId(c: Context, id: string): void {
     c.res.headers.set(REQUEST_ID_HEADER, id)
   } catch {
     // Immutable headers — the log line still carries the id.
+  }
+}
+
+/** The route template that answered (`/rpc/sessions/:id/tree`); see {@link stampRoute}. */
+export const ROUTE_HEADER = 'x-localix-route'
+
+/**
+ * Name the route that answered on the response: its registered template, parameters as names.
+ * The client's request trace may not keep raw URLs, which carry ids, paths and names, and
+ * without the template a failed `GET /rpc/sessions/<id>/tree` showed only `/rpc/sessions` and
+ * read as the session being gone. Nothing is named when no route answered (only a catch-all).
+ */
+export function stampRoute(c: Context): void {
+  const template = routePath(c)
+  if (!template.startsWith('/') || template.endsWith('*')) return
+  try {
+    c.res.headers.set(ROUTE_HEADER, template)
+  } catch {
+    // Immutable headers: the trace keeps its coarse path.
   }
 }
 

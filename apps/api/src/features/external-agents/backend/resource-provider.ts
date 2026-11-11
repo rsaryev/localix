@@ -34,6 +34,7 @@ import {
 } from '@localixai/mini-app-sdk/backend'
 import type { ResourceRefScope } from '@localixai/mini-app-sdk/resource-refs'
 
+import type { ScanDepth } from './discovery/index-cache'
 import { PROVIDER_ADAPTERS, adapterFor } from './adapters/registry'
 import { MAX_ROSTER_LIMIT } from '../shared/contracts'
 import { isPendingKey } from './live/store'
@@ -64,8 +65,13 @@ import type {
  * what lets every level be tested without a real agent history on disk.
  */
 export interface ExternalAgentResourceService {
-  providers(): Promise<readonly ProviderStatus[]>
-  roster(query: RosterQuery, localixSessionId?: string): Promise<Bounded<RosterRow>>
+  /** A ref picker lists; it never waits for the usage walk (`ScanDepth`). */
+  providers(depth: ScanDepth): Promise<readonly ProviderStatus[]>
+  roster(
+    query: RosterQuery,
+    localixSessionId: string | undefined,
+    depth: ScanDepth,
+  ): Promise<Bounded<RosterRow>>
   transcript(
     key: string,
     maxEvents?: number,
@@ -91,6 +97,7 @@ export function createExternalAgentResourceProvider(
     const { items } = await service.roster(
       { providers: [provider], text: query || undefined, limit: MAX_ROSTER_LIMIT },
       scope?.sessionId,
+      'listed',
     )
     // A live delegation that has not correlated yet has no transcript to expand, and its key is a
     // placeholder that disappears the moment correlation succeeds. Offering it as a ref would mint
@@ -100,7 +107,7 @@ export function createExternalAgentResourceProvider(
 
   async function rootNodes(query: string): Promise<ResourceNode[]> {
     const root = buildResourceUri(PROVIDER)
-    const statuses = await service.providers()
+    const statuses = await service.providers('listed')
     const nodes: ResourceNode[] = []
     const notices: ResourceNode[] = []
     for (const status of statuses) {

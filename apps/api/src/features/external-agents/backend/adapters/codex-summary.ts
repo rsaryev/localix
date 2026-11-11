@@ -4,7 +4,7 @@ import { parseWindowLines, readHead } from './fs-read'
 import { linkKeyOf } from '../../shared/identity'
 import { asRecord, asString, asNumber as numberOf, firstText } from './json-util'
 import { normalizeTokenSample, SessionUsageAccumulator, usageDelta } from './usage'
-import { foldOnward, resumableFold, usageEnd } from './summary-fold'
+import { foldOnward, resumableFold, walkEnd } from './summary-fold'
 import type { TokenUsage } from '../../shared/contracts'
 
 export const ID = 'codex'
@@ -70,19 +70,21 @@ export async function summarizeCodex(ref: SourceRef): Promise<SessionSummary> {
 export async function foldCodex(
   ref: SourceRef,
   previous: FoldedSummary | undefined,
+  /** A list read walks only an append's worth — see `walkEnd`. */
+  walk = true,
 ): Promise<FoldedSummary> {
   const resumed = await resumableFold(ref, previous)
   // The head is final once the previous fold read past it; before that, a live rollout may not yet
   // have reached its first prompt, and keeping its placeholder title would keep it for good.
   const identity =
     resumed && (resumed.fold?.offset ?? 0) >= HEAD_BYTES ? resumed.summary : await readIdentity(ref)
-  const usage = await foldUsage(ref, resumed)
+  const usage = await foldUsage(ref, resumed, walk)
   const measured = usage?.accumulator.result()
   const summary: SessionSummary = {
     key: linkKeyOf({ provider: ID, nativeSessionId: ref.nativeSessionId }),
     provider: ID,
     nativeSessionId: ref.nativeSessionId,
-    title: identity.title,
+    title: ref.titleHint ?? identity.title,
     cwd: identity.cwd,
     startedAt: identity.startedAt,
     updatedAt: ref.updatedAtHint ?? Date.now(),
@@ -94,7 +96,11 @@ export async function foldCodex(
       ? { parentNativeSessionId: identity.parentNativeSessionId }
       : {}),
   }
-  return { summary, ...(usage ? { fold: usage.fold } : {}) }
+  return {
+    summary,
+    ...(usage ? { fold: usage.fold } : {}),
+    ...(usage?.unwalked ? { unwalked: true as const } : {}),
+  }
 }
 
 async function readIdentity(ref: SourceRef) {
@@ -127,9 +133,9 @@ async function readIdentity(ref: SourceRef) {
   return { title, cwd, startedAt, parentNativeSessionId }
 }
 
-async function foldUsage(ref: SourceRef, resumed: FoldedSummary | undefined) {
-  const end = usageEnd(ref)
-  if (end === undefined) return undefined
+async function foldUsage(ref: SourceRef, resumed: FoldedSummary | undefined, walk: boolean) {
+  const bound = walkEnd(ref, resumed, walk)
+  if (bound === undefined) return undefined
   const usage = SessionUsageAccumulator.from(resumed?.summary.usage)
   const quotas = new Map<number, QuotaReading>(
     (resumed?.summary.quotas ?? []).map((quota) => [quota.windowMinutes, quota]),
@@ -141,7 +147,7 @@ async function foldUsage(ref: SourceRef, resumed: FoldedSummary | undefined) {
   const fold = await foldOnward(
     ref,
     resumed,
-    end,
+    bound.end,
     FOLDED_LINE,
     (rec) => {
       const payload = asRecord(rec.payload)
@@ -188,10 +194,5 @@ async function foldUsage(ref: SourceRef, resumed: FoldedSummary | undefined) {
       ...(currentModel ? { currentModel } : {}),
     }),
   )
-  return {
-    accumulator: usage,
-    quotas,
-    messageCount,
-    fold,
-  }
+  return { accumulator: usage, quotas, messageCount, fold, unwalked: bound.unwalked }
 }

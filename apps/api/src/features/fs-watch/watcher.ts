@@ -1,4 +1,4 @@
-import { realpathSync } from 'node:fs'
+import { existsSync, realpathSync } from 'node:fs'
 import path from 'node:path'
 
 import { isPathWithin } from '../../lib/path-containment'
@@ -124,7 +124,14 @@ export function createDirWatcher(
     for (const event of events) {
       if (coarse && entriesOverflow) break
       const changed = toTreePath(event.path)
-      if (!changed || changed === root) continue
+      if (!changed) continue
+      if (changed === root) {
+        // The watched folder itself renamed or deleted: nothing under it will ever be reported
+        // again, so the watch is over. Saying so makes the tree re-list and learn the folder is
+        // gone. A delete followed by a re-create (the folder put back) still stands.
+        if (event.type === 'delete' && !existsSync(root)) fail(new Error(`${root} is gone`))
+        continue
+      }
       if (!entriesOverflow) {
         entries.set(changed, foldChange(entries.get(changed), event.type))
         if (entries.size > MAX_CHANGES) entriesOverflow = true

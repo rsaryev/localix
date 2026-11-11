@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import path from 'node:path'
 
 import { localEnvironment } from '../../agent-core/tools/environments/local'
+import { assertWorkspaceFolder } from '../../projects/workspace-folder'
 import type { SessionRecord } from '../repository'
 
 /**
@@ -21,12 +22,15 @@ export interface FileOpsContext {
 /**
  * Shared per-op preamble: load the session, build its backend-aware execution
  * environment, and resolve its working dir. Every file operation starts from this
- * same triple.
+ * same triple, so this is where a project folder that was moved or deleted is refused
+ * (409 `workspace_folder_*`, projects/workspace-folder.ts) instead of each operation
+ * failing in its own words on a path that is not there.
  */
 export const openSessionEnv = async (ctx: FileOpsContext, userId: string, sessionId: string) => {
   const session = await ctx.requireSession(userId, sessionId)
   const env = localEnvironment
   const dir = await ctx.resolveSessionWorkingDir(userId, session)
+  await assertWorkspaceFolder(dir)
   return { session, env, dir }
 }
 

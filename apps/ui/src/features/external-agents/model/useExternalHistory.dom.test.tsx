@@ -123,3 +123,43 @@ test('another project reads as loading, not as empty, until its rows arrive', as
     roster.mockRestore()
   }
 })
+
+test('a page of history is a page of conversations, not of the sub-agents they spawned', async () => {
+  const providers = spyOn(externalAgentsApi, 'providers').mockResolvedValue([
+    { id: 'codex', name: 'Codex', command: 'codex' },
+  ])
+  // What the server holds: two conversations, each with sub-agent transcripts beneath it.
+  const held: (ReturnType<typeof row> & { parentNativeSessionId?: string })[] = [
+    row('root-a'),
+    row('root-b'),
+    ...['a1', 'a2', 'a3', 'b1'].map((id) => ({ ...row(id), parentNativeSessionId: 'root-a' })),
+  ]
+  const roster = spyOn(externalAgentsApi, 'roster').mockImplementation(async (query) => {
+    const matching = held.filter((r) => query.includeChildren || !r.parentNativeSessionId)
+    const items = matching.slice(query.offset ?? 0, (query.offset ?? 0) + (query.limit ?? 200))
+    return { items, total: matching.length, withheld: matching.length - items.length }
+  })
+  const seen: { titles: string; hasMore: boolean }[] = []
+  function Probe() {
+    const history = useExternalHistory('', true, { cwd: '/work/app' })
+    seen.push({ titles: history.sessions.map((s) => s.title).join(), hasMore: history.hasMore })
+    return null
+  }
+  const { createRoot } = await import('react-dom/client')
+  const root = createRoot(document.createElement('div'))
+  try {
+    await act(async () =>
+      root.render(
+        <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+          <Probe />
+        </SWRConfig>,
+      ),
+    )
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 0)))
+    expect(seen.at(-1)).toEqual({ titles: 'root-a,root-b', hasMore: false })
+  } finally {
+    await act(async () => root.unmount())
+    providers.mockRestore()
+    roster.mockRestore()
+  }
+})

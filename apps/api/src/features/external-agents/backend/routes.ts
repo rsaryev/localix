@@ -51,7 +51,11 @@ export function createAgentSessionsRoutes(
         if (!providers.length) {
           return c.json({ items: [] as Omit<RosterRow, 'usage'>[], total: 0, withheld: 0 })
         }
-        const rows = await service.roster({ ...input.query, providers }, input.localixSessionId)
+        const rows = await service.roster(
+          { ...input.query, providers },
+          input.localixSessionId,
+          'listed',
+        )
         return c.json({ ...rows, items: rows.items.map(({ usage: _usage, ...row }) => row) })
       } catch (error) {
         return jsonError(

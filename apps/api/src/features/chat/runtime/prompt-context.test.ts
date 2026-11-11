@@ -220,3 +220,49 @@ test('a denied mini app tool, mini app and plugin are absent from the turn', asy
     await rm(cwd, { recursive: true, force: true })
   }
 })
+
+/**
+ * A turn in a project whose folder was moved or deleted fails up front with the folder's own
+ * words, instead of starting tools in a path that is not there.
+ */
+test('a turn in a project whose folder is gone fails with workspace_folder_missing', async () => {
+  const home = await mkdtemp(join(tmpdir(), 'localix-run-gone-'))
+  const gone = join(home, 'claude-plugin-kit')
+  try {
+    const agentId = 'native:project:worker'
+    const deps = {
+      claudeHome: home,
+      projectsRepo: { getProject: async () => ({ workingDir: gone, settings: null }) },
+      pluginRepo: {},
+      contextSnapshots: createSessionSnapshotCache<FrozenSessionContext>(),
+      promptSnapshots: snapshotStore(),
+      runScopes: { resolve: async () => [emptyLoadedPlugins(), emptyLoadedMiniApps()] },
+      now: () => '2026-01-01T00:00:00Z',
+    } as unknown as PromptContextDeps
+    const definition = agentDefinitionSchema.parse({
+      id: agentId,
+      name: 'worker',
+      description: '',
+      instructions: 'x',
+    })
+    const prepared = prepareRunContext(deps, {
+      userId: 'user',
+      session: sessionFixture({
+        projectId: 'project',
+        agent: routedAgent({ agentId, name: 'worker' }),
+      }),
+      historyMessages: [],
+      viewEpoch: '',
+      globalAgentSettings: null,
+      agentId,
+      agent: { approval: 'policy', definition, capabilities: composeCapabilities([]) },
+    })
+    await expect(prepared).rejects.toMatchObject({
+      status: 409,
+      code: 'workspace_folder_missing',
+      detail: gone,
+    })
+  } finally {
+    await rm(home, { recursive: true, force: true })
+  }
+})

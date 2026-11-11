@@ -2,7 +2,7 @@ import type { MiddlewareHandler } from 'hono'
 import type { HostRouteContext } from '@localixai/mini-app-sdk/backend'
 import type { Logger } from './logger'
 import { requestQueryKeys, resolveRequestUserId } from './request-identity'
-import { assignRequestId, logCompletedRequest, stampRequestId } from './request-id'
+import { assignRequestId, logCompletedRequest, stampRequestId, stampRoute } from './request-id'
 
 /** Identity and request logging run once for every route, after the origin boundary. */
 export function createRequestBoundary(
@@ -18,6 +18,7 @@ export function createRequestBoundary(
     const startedAt = Date.now()
     await next()
     stampRequestId(c, requestId)
+    stampRoute(c)
     // Query KEYS, never values. `c.req.path` alone hid a real defect for months: a
     // capability snapshot read in the global scope and one read in a project's scope
     // log identically, and they return materially different answers (4 of 19 plugins

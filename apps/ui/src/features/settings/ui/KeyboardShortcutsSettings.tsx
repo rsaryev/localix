@@ -2,8 +2,6 @@ import { useCallback, useMemo, useState } from 'react'
 import {
   CATEGORY_META,
   CATEGORY_ORDER,
-  CUSTOM_PRESET_ID,
-  KEYMAP_PRESETS,
   SHORTCUT_CATALOG,
   chordToTokens,
   conflictingCommands,
@@ -18,7 +16,7 @@ import { SettingsPage, SettingsRows, SettingsSection } from './SettingsScaffold'
 import { SearchInput } from '@localixai/kit/search-input'
 import { IconButton } from '@localixai/kit/icon-button'
 import { RotateCcw } from 'lucide-react'
-import { Select, type SelectOption } from '@localixai/kit/select'
+import { BaseKeymapSelect } from './BaseKeymapSelect'
 import { ShortcutRow } from './keyboard/ShortcutRow'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 
@@ -34,28 +32,8 @@ function commandMatches(command: ShortcutCommand, chordText: string, query: stri
 }
 
 export function KeyboardShortcutsSettings() {
-  const { resolved, isOverridden, setBinding, resetBinding, resetAll, activePreset, applyPreset } =
-    useKeybindingsEditor()
+  const { resolved, isOverridden, setBinding, resetBinding, resetAll } = useKeybindingsEditor()
   const [query, setQuery] = useState('')
-
-  // Preset picker options: the real presets, plus a read-only "Custom" entry
-  // surfaced only while the live overrides match no preset (e.g. a hand-edit). Each says what it
-  // is under its name: a line beside the field described only the CURRENT preset, so comparing
-  // two meant applying one — which rewrites the whole keymap.
-  const presetOptions: SelectOption[] = useMemo(() => {
-    const opts: SelectOption[] = KEYMAP_PRESETS.map((p) => ({
-      value: p.id,
-      label: p.label,
-      description: p.description,
-    }))
-    if (activePreset === CUSTOM_PRESET_ID)
-      opts.push({
-        value: CUSTOM_PRESET_ID,
-        label: 'Custom',
-        description: 'Your bindings differ from every preset.',
-      })
-    return opts
-  }, [activePreset])
 
   // Names of the other commands a candidate chord for `commandId` would clash
   // with — shared by the record-time confirm and the post-hoc "Also:" badge.
@@ -88,22 +66,7 @@ export function KeyboardShortcutsSettings() {
       title="Keyboard shortcuts"
       description={`Rebind the app's commands. Bindings adapt to your OS — shown as ${formatModifierText('mod')} / ${formatModifierText('alt')} here. Click a shortcut to record a new combination; built-in interaction keys are listed for reference.`}
     >
-      <SettingsSection
-        title="Base keymap"
-        actions={
-          <Select
-            size="xl"
-            aria-label="Base keymap"
-            value={activePreset}
-            onValueChange={(id) => {
-              if (id !== CUSTOM_PRESET_ID) applyPreset(id)
-            }}
-            options={presetOptions}
-            className="w-52 shrink-0 @max-xl:w-full"
-            contentClassName="w-80"
-          />
-        }
-      />
+      <SettingsSection title="Base keymap" actions={<BaseKeymapSelect />} />
 
       <div className="flex items-center gap-3">
         <SearchInput

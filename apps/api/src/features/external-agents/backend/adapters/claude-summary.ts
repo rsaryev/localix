@@ -4,7 +4,7 @@ import { parseWindowLines, readHead, readTail } from './fs-read'
 import { linkKeyOf } from '../../shared/identity'
 import { asRecord, asString, asNumber as numberOf, firstText, textOfContent } from './json-util'
 import { normalizeTokenSample, SessionUsageAccumulator } from './usage'
-import { foldOnward, resumableFold, usageEnd } from './summary-fold'
+import { foldOnward, resumableFold, walkEnd } from './summary-fold'
 
 export const ID = 'claude-code'
 const HEAD_BYTES = 64 * 1024
@@ -26,6 +26,21 @@ type Carry = {
   readonly headTitle?: string
 }
 
+/** What Claude Code writes around a local command: its caveat and its output, not the user's words. */
+const BOOKKEEPING = ['<local-command-caveat>', '<local-command-stdout>', '<local-command-stderr>']
+
+/**
+ * A slash-command record, as `/name args`, or undefined for any other text. Claude Code writes the
+ * invocation as tags, `<command-message>` or `<command-name>` first depending on the version.
+ */
+function slashCommand(text: string): string | undefined {
+  if (!text.startsWith('<command-')) return undefined
+  const name = /<command-name>([^<]*)<\/command-name>/.exec(text)?.[1]?.trim()
+  if (!name) return undefined
+  const args = /<command-args>([^<]*)<\/command-args>/.exec(text)?.[1]?.trim()
+  return args ? `${name} ${args}` : name
+}
+
 export async function summarizeClaudeCode(ref: SourceRef): Promise<SessionSummary> {
   return (await foldClaudeCode(ref, undefined)).summary
 }
@@ -37,6 +52,8 @@ export async function summarizeClaudeCode(ref: SourceRef): Promise<SessionSummar
 export async function foldClaudeCode(
   ref: SourceRef,
   previous: FoldedSummary | undefined,
+  /** A list read walks only an append's worth — see `walkEnd`. */
+  walk = true,
 ): Promise<FoldedSummary> {
   const resumed = await resumableFold(ref, previous)
   const tail = parseWindowLines(await readTail(ref.sourcePath, TAIL_BYTES), 'tail')
@@ -50,6 +67,7 @@ export async function foldClaudeCode(
   let cwd = headKnown?.summary.cwd
   let startedAt = headKnown?.summary.startedAt
   let firstPrompt: string | undefined
+  let firstCommand: string | undefined
   for (const rec of head ?? []) {
     cwd ??= asString(rec.cwd)
     const ts = asString(rec.timestamp)
@@ -57,20 +75,25 @@ export async function foldClaudeCode(
     if (!firstPrompt && rec.type === 'user' && rec.isMeta !== true) {
       const message = asRecord(rec.message)
       const text = message ? textOfContent(message.content) : undefined
-      // Slash-command echoes and caveat blocks are Claude Code bookkeeping, not the user's intent.
-      if (
-        text &&
-        !text.startsWith('<command-name>') &&
-        !text.startsWith('<local-command-caveat>')
-      ) {
+      const command = text === undefined ? undefined : slashCommand(text)
+      if (command !== undefined) {
+        // A command with arguments says what the session was for; a bare one only how it began.
+        if (!firstCommand || (command.includes(' ') && !firstCommand.includes(' ')))
+          firstCommand = command
+      } else if (text && !BOOKKEEPING.some((tag) => text.startsWith(tag))) {
         firstPrompt = text
       }
     }
   }
 
+  // Claude Code's own precedence: a name set with `/rename` (`custom-title`), then the generated
+  // title (`ai-title`), then the first prompt. Both records are rewritten every turn, so the tail
+  // holds the current ones.
+  let customTitle: string | undefined
   let aiTitle: string | undefined
   let updatedAt = ref.updatedAtHint ?? 0
   for (const rec of tail) {
+    customTitle = asString(rec.customTitle) ?? customTitle
     const t = asString(rec.aiTitle)
     if (t) aiTitle = t
     const ts = asString(rec.timestamp)
@@ -82,9 +105,9 @@ export async function foldClaudeCode(
 
   const headTitle = headKnown
     ? ((headKnown.fold?.carry as Carry | undefined)?.headTitle ?? headKnown.summary.title)
-    : (firstText(firstPrompt, 120) ?? ref.nativeSessionId)
-  const title = aiTitle ?? headTitle
-  const usage = await foldUsage(ref, resumed, headTitle)
+    : (firstText(firstPrompt ?? firstCommand, 120) ?? ref.nativeSessionId)
+  const title = customTitle ?? aiTitle ?? headTitle
+  const usage = await foldUsage(ref, resumed, headTitle, walk)
   const measured = usage?.accumulator.result()
   const messageCount = usage?.messageCount ?? 0
   const summary: SessionSummary = {
@@ -100,7 +123,11 @@ export async function foldClaudeCode(
     sourcePath: ref.sourcePath,
     parentNativeSessionId: ref.parentHint,
   }
-  return { summary, ...(usage ? { fold: usage.fold } : {}) }
+  return {
+    summary,
+    ...(usage ? { fold: usage.fold } : {}),
+    ...(usage?.unwalked ? { unwalked: true as const } : {}),
+  }
 }
 
 /**
@@ -111,9 +138,14 @@ export async function foldClaudeCode(
  * a larger `output_tokens` than the first, because the message was still streaming. So an id counts
  * once, its LAST usage wins, and a cut has to carry the id it fell on and the sample it holds.
  */
-async function foldUsage(ref: SourceRef, resumed: FoldedSummary | undefined, headTitle: string) {
-  const end = usageEnd(ref)
-  if (end === undefined) return undefined
+async function foldUsage(
+  ref: SourceRef,
+  resumed: FoldedSummary | undefined,
+  headTitle: string,
+  walk: boolean,
+) {
+  const bound = walkEnd(ref, resumed, walk)
+  if (bound === undefined) return undefined
   const accumulator = SessionUsageAccumulator.from(resumed?.summary.usage)
   const carry = (resumed?.fold?.carry as Carry | undefined) ?? { anonymous: 0 }
   let pending = carry.pending
@@ -122,7 +154,7 @@ async function foldUsage(ref: SourceRef, resumed: FoldedSummary | undefined, hea
   const fold = await foldOnward(
     ref,
     resumed,
-    end,
+    bound.end,
     MESSAGE_LINE,
     (rec) => {
       const type = asString(rec.type)
@@ -162,9 +194,5 @@ async function foldUsage(ref: SourceRef, resumed: FoldedSummary | undefined, hea
     },
     (): Carry => ({ anonymous, headTitle, ...(pending ? { pending } : {}) }),
   )
-  return {
-    accumulator,
-    messageCount,
-    fold,
-  }
+  return { accumulator, messageCount, fold, unwalked: bound.unwalked }
 }

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { mkdtemp, mkdir, writeFile, rm, symlink } from 'node:fs/promises'
+import { mkdtemp, mkdir, rename, writeFile, rm, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
@@ -162,6 +162,21 @@ describe('createDirWatcher (real fs)', () => {
       setTimeout(() => resolve(null), 2000)
     })
     expect(error).not.toBeNull()
+  })
+
+  // The project folder renamed or deleted under a live watch: the watch is over, and saying so is
+  // what makes the tree re-list and show the folder is gone, instead of going quietly stale.
+  test('reports the watched folder itself being renamed away to onError', async () => {
+    const base = await tempRoot()
+    const root = path.join(base, 'claude-plugin-kit')
+    await mkdir(root)
+    await writeFile(path.join(root, 'a.txt'), 'x')
+    let error: unknown = null
+    handles.push(createDirWatcher(root, () => {}, { quietMs: 40, onError: (e) => (error = e) }))
+    await sleep(150)
+    await rename(root, path.join(base, 'llx-plugin'))
+    await until(() => error !== null)
+    expect(String(error)).toContain(root)
   })
 })
 

@@ -30,6 +30,29 @@ export function usageEnd(ref: SourceRef): number | undefined {
 }
 
 /**
+ * The most a LIST read walks: what appends add to a session between two looks at it. A live
+ * session grows by kilobytes per turn, so its counts stay current at list cost; a session first
+ * seen, or one that grew past this while nobody looked, waits for a walked scan instead.
+ */
+export const LIST_WALK_BYTES = 4 * 1024 * 1024
+
+/**
+ * How far this read walks, and whether that leaves the walk owed: a walked read goes to the usage
+ * end; a list read only continues a resumed fold by an append's worth, and otherwise walks nothing.
+ */
+export function walkEnd(
+  ref: SourceRef,
+  resumed: FoldedSummary | undefined,
+  walk: boolean,
+): { end: number; unwalked: boolean } | undefined {
+  const end = usageEnd(ref)
+  if (end === undefined) return undefined
+  const from = resumed?.fold?.offset ?? 0
+  if (walk || (resumed && end - from <= LIST_WALK_BYTES)) return { end, unwalked: false }
+  return { end: from, unwalked: from < end }
+}
+
+/**
  * Fold the records the previous fold has not read, up to `end`, and say where this one stopped.
  * `carry` is asked after the walk, so it reports what the fold holds at its cut.
  */

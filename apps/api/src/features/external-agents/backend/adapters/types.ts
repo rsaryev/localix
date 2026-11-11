@@ -43,6 +43,11 @@ export interface SourceRef {
   readonly updatedAtHint?: number
   /** Native parent session id, when enumeration can derive it from the path without a read. */
   readonly parentHint?: string
+  /**
+   * A name the agent keeps OUTSIDE the transcript (Codex's thread name), which wins over a title
+   * derived from it. Part of `revision`, since renaming does not touch the transcript.
+   */
+  readonly titleHint?: string
 }
 
 /**
@@ -58,6 +63,8 @@ export interface SummaryFold {
 export interface FoldedSummary {
   readonly summary: SessionSummary
   readonly fold?: SummaryFold
+  /** A list read: the usage walk stopped short of the file's end, and a walked scan owes it. */
+  readonly unwalked?: true
 }
 
 export interface AdapterEnv {
@@ -143,6 +150,12 @@ export interface ProviderAdapter {
     ref: SourceRef,
     previous: FoldedSummary | undefined,
     env: AdapterEnv,
+    /**
+     * `walk: false` is a LIST read: head and tail, plus only what an append added to a session
+     * walked before — never a whole transcript. It marks what it left `unwalked`. `true` walks the
+     * usage to the end. An adapter whose identity needs the whole walk walks either way.
+     */
+    options: { readonly walk: boolean },
   ): Promise<FoldedSummary>
   /** Parse one session's body, bounded. */
   readTranscript(req: TranscriptRequest, env: AdapterEnv): Promise<TranscriptResult>

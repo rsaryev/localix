@@ -93,6 +93,21 @@ export const projectsApi = {
     return json.paths
   },
 
+  /** Whether the project's folder is where it says, and where it went when that is certain. */
+  async projectFolder(id: string) {
+    return unwrap(await client.rpc.projects[':id'].folder.$get({ param: { id } }))
+  },
+
+  /**
+   * Point the project at the folder it moved to. Its chats follow with their history; Claude
+   * Code's memory is copied; Claude Code's trust is not (the answer says whether it holds).
+   */
+  async relocateProject(id: string, path: string) {
+    return unwrap(
+      await client.rpc.projects[':id'].relocate.$post({ param: { id }, json: { path } }),
+    )
+  },
+
   async openProjectDirectory(id: string): Promise<void> {
     await unwrap(await client.rpc.projects[':id'].open.$post({ param: { id } }))
   },

@@ -37,7 +37,6 @@ export interface ProjectActions {
    */
   createHomeDraft: () => Promise<UiSession | null>
   createProject: (name: string, workingDir: string) => Promise<Project>
-  updateProject: (id: string, name: string, workingDir: string) => Promise<Project>
   deleteProject: (id: string) => Promise<void>
   setIsCreatingProject: (value: boolean) => void
   setEditingProject: (project: Project | null) => void
@@ -116,14 +115,6 @@ export function createProjectActions({ set, customSet, get }: ProjectActionsDeps
         projects: [...state.projects, newProject],
       }))
       return newProject
-    },
-
-    updateProject: async (id, name, workingDir) => {
-      const updated = await backendClient.updateProject(id, { name, workingDir })
-      customSet((state) => ({
-        projects: state.projects.map((p) => (p.id === id ? updated : p)),
-      }))
-      return updated
     },
 
     deleteProject: async (id) => {

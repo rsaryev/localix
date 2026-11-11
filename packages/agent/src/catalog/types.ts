@@ -25,7 +25,7 @@ export interface ModelCost extends ModelCostRates {
 
 /**
  * What a model is for. One catalog lists every kind, and each consumer asks for its own: chat
- * workloads for `chat`, typed decisions (group routing) for `decision`. Absent means `chat`.
+ * workloads for `chat`, typed decisions (Browser goals, games, mini apps) for `decision`. Absent means `chat`.
  */
 export type ModelKind = 'chat' | 'decision'
 

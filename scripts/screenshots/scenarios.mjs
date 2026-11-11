@@ -110,7 +110,7 @@ export async function compose(page, scenario) {
     await page.keyboard.press('F1')
     await page.getByRole('dialog').getByRole('combobox').fill('terminal')
   } else if (scenario === 'first-run') {
-    await page.getByRole('region', { name: 'Workspace tips', exact: true }).waitFor()
+    await page.getByRole('region', { name: 'Connect a model', exact: true }).waitFor()
   } else if (scenario === 'terminal-error') {
     await button(page, 'Terminal').click()
     await button(page, 'Maximize panel').first().click()

@@ -62,21 +62,11 @@
   }
 }
 
-/* The shared floating material covers menus, tooltips, hover cards and picker drawers.
-   Every platform uses the theme-owned coat in window-material.css.
+/* The shared floating material (`.lx-floating-surface`: menus, tooltips, hover cards, picker
+   drawers) and the modal material (`.lx-modal-surface`: dialogs) are solid with a hairline on
+   every platform; window-material.css owns both fills. No blur: a frosted menu or dialog over the
+   window's own material is glass on glass, and the scrim under a dialog already dims the page.
    Do not include foreign-page overlays: their deliberately opaque surface has no marker. */
-.lx-floating-surface {
-  -webkit-backdrop-filter: blur(24px) saturate(1.1);
-  backdrop-filter: blur(24px) saturate(1.1);
-}
-
-@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
-  :root .lx-floating-surface {
-    background-color: var(--popover);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
 
 /* Scrim — glass's opposite number, and the ONE recipe for "dim the page behind a
    dialog/drawer/sidebar". Same two-part material (fill + backdrop), tuned per
@@ -100,53 +90,6 @@
   backdrop-filter: blur(6px) saturate(120%);
 }
 
-/* Modal material — the third member of the family, beside `.lx-glass` (floating chrome)
-   and `.lx-scrim` (the ground behind a modal).
-
-   A dialog used to be the one surface in the app that was flatly opaque everywhere except
-   macOS desktop, where a `:root[data-desktop][data-os='mac']` block below gave it a frosted
-   window-ground coat. So the same dialog was glass in the packaged Mac app and a plain grey
-   card in the browser, on Windows and on Linux — with nothing in `modal-surface.ts` saying
-   why. This is that material, unconditionally: `bg-surface-raised` stays the token, the coat
-   just stops being fully opaque and frosts what it covers.
-
-   Legibility is not at risk the way it would be for a floating panel: a modal always paints
-   over `.lx-scrim`, which has already dimmed and blurred the page beneath it, so the only
-   thing showing through is a flat wash. That is exactly what makes it read as glass rather
-   than as transparency.
-
-   Unlayered on purpose (same reason as the mac block below): Tailwind utilities live in a
-   layer, so `bg-surface-raised` on the element would otherwise win. The macOS rule is more
-   specific and still overrides this one with its window-ground anchoring. */
-.lx-modal-surface {
-  -webkit-backdrop-filter: blur(20px) saturate(1.25);
-  backdrop-filter: blur(20px) saturate(1.25);
-}
-
-@supports (background: color-mix(in oklch, black 50%, oklch(0 0 0 / 0))) {
-  .lx-modal-surface {
-    background-color: color-mix(in oklch, var(--surface-raised) 86%, oklch(0 0 0 / 0));
-  }
-}
-
-/* No backdrop compositing (old WebKit, forced-colors, GPU blocklists): the frost that made
-   the coat safe to thin is gone, so the fill goes back to carrying it alone. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .lx-modal-surface {
-    background-color: var(--surface-raised);
-  }
-}
-
-/* Reduced transparency is an accessibility setting, not a taste — an opaque coat, and the
-   `@media` block far below drops the blur for the same reason. */
-@media (prefers-reduced-transparency: reduce) {
-  .lx-modal-surface {
-    background-color: var(--surface-raised);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-
 /* No backdrop compositing at all (old WebKit, forced-colors, GPU blocklists): the
    blur that does most of the hiding is gone, so the fill has to carry it alone. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -159,55 +102,56 @@
   }
 }
 
-/* Respect the OS "Reduce transparency" preference as progressive enhancement.
-   The query is not available in every engine yet, so the ordinary material and
-   the no-backdrop-filter fallback above remain authoritative everywhere else.
+/* Respect the OS "Reduce transparency" preference. WKWebView has no
+   `prefers-reduced-transparency`, so the page is told: the macOS shell stamps
+   `data-reduce-transparency` (`display_options.rs`) and a browser mirrors its own
+   media query (`shared/theme/reducedTransparency.ts`).
 
    Tailwind backdrop utilities retain `backdrop-blur` in the DOM class name,
    including arbitrary values such as `backdrop-blur-[1px]`; the attribute
    selector therefore covers current and future host/mini app chrome without a
    second opt-in API. Low-opacity materials get an explicit readable fallback,
    while already-near-opaque 85–95% sticky chrome only loses its blur. */
-@media (prefers-reduced-transparency: reduce) {
-  .lx-glass {
-    background-color: var(--popover);
-    background-image: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-  .lx-glass::before {
-    padding: 0;
-    border: 1px solid var(--control-border);
-    background: none;
-    -webkit-mask: none;
-    mask: none;
-    opacity: 1;
-  }
+:root[data-reduce-transparency='true'] .lx-glass {
+  background-color: var(--popover);
+  background-image: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-reduce-transparency='true'] .lx-glass::before {
+  padding: 0;
+  border: 1px solid var(--control-border);
+  background: none;
+  -webkit-mask: none;
+  mask: none;
+  opacity: 1;
+}
 
-  .lx-scrim {
-    background-color: rgba(0, 0, 0, 0.78);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-  [data-theme='light'] .lx-scrim {
-    background-color: rgba(20, 26, 38, 0.5);
-  }
+:root[data-reduce-transparency='true'] .lx-scrim {
+  background-color: rgba(0, 0, 0, 0.78);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-reduce-transparency='true'][data-theme='light'] .lx-scrim {
+  background-color: rgba(20, 26, 38, 0.5);
+}
 
-  :where([class*='backdrop-blur']) {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-  }
+:root[data-reduce-transparency='true'] :where([class*='backdrop-blur']) {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
 
+:root[data-reduce-transparency='true']
   [data-slot='pane-state-overlay']:not([data-material='solid']) {
-    background-color: var(--background);
-  }
+  background-color: var(--background);
+}
 
-  /* Image-overlay controls must retain the image as spatial context, but their
-     resting 45–55% fill is too transparent once blur is removed. Hover keeps
-     each component's own stronger/semantic treatment (including destructive). */
+/* Image-overlay controls must retain the image as spatial context, but their
+   resting 45–55% fill is too transparent once blur is removed. Hover keeps
+   each component's own stronger/semantic treatment (including destructive). */
+:root[data-reduce-transparency='true']
   :where([class*='backdrop-blur'][class*='bg-black/']):not(:hover) {
-    background-color: rgb(20 20 20 / 0.9);
-  }
+  background-color: rgb(20 20 20 / 0.9);
 }
 
 /* An app tile's monogram (`AppTile`): the bundled mini app icons' dark tile — inset and rounded as

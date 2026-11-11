@@ -162,10 +162,11 @@ export function wireSessionServices({
   // Inspector-editor LSP document service: drives the language server from the
   // editor's UNSAVED buffer and fans per-file diagnostics back onto the session
   // firehose as `lsp.diagnostics`. Root metadata resolves through chatService's
-  // ownership check without enumerating the Explorer directory.
+  // ownership check without enumerating the Explorer directory; a project folder that was moved
+  // starts no language server there (409 `workspace_folder_*`).
   serviceRefs.lspDocumentService = createLspDocumentService({
     lspManager,
-    resolveProjectRoot: (...args) => chatService.resolveSessionCwd(...args),
+    resolveProjectRoot: (...args) => chatService.resolveSessionWorkspaceDir(...args),
     publish: (userId, sessionId, push) =>
       chatService.streamRegistry.publish(userId, sessionId, {
         type: 'lsp.diagnostics',

@@ -1,6 +1,7 @@
 import type { FileOpsContext } from './file-ops'
 import * as fileOps from './file-ops'
 import { openSessionEnv } from './file-ops-context'
+import { assertWorkspaceFolder } from '../../projects/workspace-folder'
 import type { createFileWatchService } from '../../fs-watch/service'
 
 /**
@@ -29,6 +30,17 @@ export function createChatFileFacade({
   return {
     async resolveSessionCwd(userId: string, sessionId: string): Promise<string> {
       return (await resolveSessionWorkspaceMetadata(userId, sessionId)).rootPath
+    },
+
+    /**
+     * The folder a process STARTS in for this session (a terminal, a language server): the cwd,
+     * refused with 409 `workspace_folder_*` when it is not there. `resolveSessionCwd` stays the
+     * plain answer, because most of its callers only need the path as a key or an ownership check.
+     */
+    async resolveSessionWorkspaceDir(userId: string, sessionId: string): Promise<string> {
+      const dir = (await resolveSessionWorkspaceMetadata(userId, sessionId)).rootPath
+      await assertWorkspaceFolder(dir)
+      return dir
     },
 
     /**

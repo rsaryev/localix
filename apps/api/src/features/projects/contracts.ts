@@ -128,7 +128,7 @@ export const resolveProjectByPathResponseSchema = z.object({
 export const updateProjectRequestSchema = z
   .object({
     name: z.string().min(1).optional(),
-    workingDir: z.string().min(1).optional(),
+    // No `workingDir`: a project's folder changes only through `POST /:id/relocate`, which checks it.
     settings: projectSettingsSchema
       .refine(
         (settings) =>

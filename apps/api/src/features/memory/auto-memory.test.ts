@@ -9,7 +9,13 @@ import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
-import { autoMemoryDir, claudeProjectKey, readMemoryIndex, rememberFact } from './auto-memory'
+import {
+  autoMemoryDir,
+  carryAutoMemory,
+  claudeProjectKey,
+  readMemoryIndex,
+  rememberFact,
+} from './auto-memory'
 
 const root = tempDirPerTest('auto-memory-')
 
@@ -149,5 +155,47 @@ describe('/memory <fact>', () => {
     expect(entry).toBe(
       `- [Use arr\\[0\\] and \\[draft\\] flags](${file}) — Use arr[0] and [draft] flags`,
     )
+  })
+})
+
+describe('carrying memory to a project’s new folder', () => {
+  test('the old folder’s memory is copied to the new folder’s, and the old one is left', async () => {
+    const { base, home, env } = layout()
+    const from = join(base, 'work', 'claude-plugin-kit')
+    const to = join(base, 'work', 'llx-plugin')
+    mkdirSync(to, { recursive: true })
+    await rememberFact(inProjects(home, from), 'We deploy on Fridays only')
+    expect(await carryAutoMemory({ from, to, homeDir: home, env })).toBe('copied')
+    expect((await readMemoryIndex(inProjects(home, to))).index).toContain('Fridays')
+    expect((await readMemoryIndex(inProjects(home, from))).index).toContain('Fridays')
+  })
+
+  test('a new folder that already has memory keeps its own; nothing is merged', async () => {
+    const { base, home, env } = layout()
+    const from = join(base, 'old')
+    const to = join(base, 'new')
+    mkdirSync(to)
+    await rememberFact(inProjects(home, from), 'old fact')
+    await rememberFact(inProjects(home, to), 'its own fact')
+    expect(await carryAutoMemory({ from, to, homeDir: home, env })).toBe('kept')
+    const index = (await readMemoryIndex(inProjects(home, to))).index
+    expect(index).toContain('its own fact')
+    expect(index).not.toContain('old fact')
+  })
+
+  test('no memory to carry, memory turned off, or one configured folder for all: nothing', async () => {
+    const { base, home, env } = layout()
+    const from = join(base, 'a')
+    const to = join(base, 'b')
+    mkdirSync(to)
+    expect(await carryAutoMemory({ from, to, homeDir: home, env })).toBe('none')
+    await rememberFact(inProjects(home, from), 'fact')
+    const off = { CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' }
+    expect(await carryAutoMemory({ from, to, homeDir: home, env: off })).toBe('none')
+    writeFileSync(
+      join(home, '.claude', 'settings.json'),
+      JSON.stringify({ autoMemoryDirectory: join(base, 'shared-memory') }),
+    )
+    expect(await carryAutoMemory({ from, to, homeDir: home, env })).toBe('none')
   })
 })

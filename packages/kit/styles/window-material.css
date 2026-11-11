@@ -1,18 +1,15 @@
-/* The synthetic backdrop supplies glass in browsers and other desktops. On macOS
-   desktop it would cover NSVisualEffectView's wallpaper sampling (as documented by
-   tauri-apps/window-vibrancy), so keep the same coats over a transparent root there.
+/* One material behind the window, clear chrome over it, coats only where content needs them.
+   Glass exists only on macOS desktop, where `window_material.rs` puts one NSVisualEffectView
+   behind the whole window. Everywhere else, and on macOS whenever it must be (Off, Reduce
+   transparency, full screen), the ground is solid: no picture is painted under the page to fake
+   glass. The rules and their sources: docs/internals/visual-system.md, "The Mac window".
    Unlayered to override the theme's base tokens. */
 .app-shell-ground {
   background-color: var(--background);
 }
 
-@supports (background: color-mix(in oklch, black 50%, transparent)) and
-  ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+@supports (background: color-mix(in oklch, black 50%, transparent)) {
   :root[data-theme='dark'] {
-    --window-backdrop:
-      radial-gradient(ellipse at 10% 50%, oklch(0.3 0.065 265 / 0.2), transparent 90%),
-      radial-gradient(ellipse at 90% 50%, oklch(0.28 0.055 255 / 0.15), transparent 90%),
-      linear-gradient(110deg, oklch(0.26 0.055 265), oklch(0.25 0.05 255));
     --work-density: 85%;
     --sidebar-density: 70%;
     --hover-density: 7%;
@@ -24,18 +21,11 @@
     --control-density: 18%;
     --control-hover-density: 28%;
     --control-focus-density: 44%;
-    --modal-density: 55%;
-    --popover-solid: oklch(0.13 0 0);
-    --popover: color-mix(in oklch, var(--popover-solid) 45%, transparent);
     --card-solid: oklch(0.155 0 0);
     --surface-sunken: oklch(0.02 0 0 / 0.45);
   }
 
   :root[data-theme='light'] {
-    --window-backdrop:
-      radial-gradient(ellipse at 10% 50%, oklch(0.88 0.04 285 / 0.25), transparent 90%),
-      radial-gradient(ellipse at 90% 50%, oklch(0.9 0.03 245 / 0.2), transparent 90%),
-      linear-gradient(110deg, oklch(0.94 0.02 280), oklch(0.92 0.018 250));
     --work-density: 92%;
     --sidebar-density: 78%;
     --hover-density: 8%;
@@ -47,15 +37,12 @@
     --control-density: 26%;
     --control-hover-density: 40%;
     --control-focus-density: 58%;
-    --modal-density: 55%;
-    --popover-solid: oklch(1 0 0);
-    --popover: color-mix(in oklch, var(--popover-solid) 82%, transparent);
     --card-solid: oklch(1 0 0);
     --surface-sunken: color-mix(in oklch, var(--foreground) 6%, transparent);
   }
 
   :root:is([data-theme='dark'], [data-theme='light']) {
-    background: var(--window-backdrop) fixed;
+    background: transparent;
     /* The person's transparency choice scales both coats toward clear (`--coat-scale` below 1) or
        toward opaque (`--coat-lift`), so each theme and platform keeps its own tuned densities and
        the choice stays one relative step. Declared on the root beside the attribute that sets
@@ -66,12 +53,8 @@
     --sidebar-coat: calc(
       min(100%, var(--sidebar-density) * var(--coat-scale, 1) + 100% * var(--coat-lift, 0))
     );
-    /* A dialog and the scrim under it follow the same choice. The scrim did not: 60% black under
-       every dialog hid the window at any level, so a dialog read as plain black (or white) even
-       at High. Standard keeps half the scrim, Off keeps all of it and an opaque dialog. */
-    --modal-coat: calc(
-      min(100%, var(--modal-density) * var(--coat-scale, 1) + 100% * var(--coat-lift, 0))
-    );
+    /* The scrim under a dialog follows the same choice: 60% black under every dialog hid the
+       window at any level. Standard keeps half the scrim, solid keeps all of it. */
     --scrim-strength: min(1, 0.5 * var(--coat-scale, 1) + var(--coat-lift, 0));
     --background: color-mix(in oklch, var(--window-ground) var(--work-coat), transparent);
     /* A card is one step denser than the pane it sits in, at every transparency level: a fixed
@@ -136,7 +119,6 @@
     --color-control-border: var(--control-border);
     --color-control-border-hover: var(--control-border-hover);
     --color-control-border-focus: var(--control-border-focus);
-    --color-popover: var(--popover);
     --color-card: var(--card);
   }
 
@@ -144,39 +126,8 @@
     background: transparent;
   }
 
-  :root[data-desktop='true'][data-os='mac']:is([data-theme='dark'], [data-theme='light']) {
-    background: transparent;
-  }
-
-  /* A broad, muted wallpaper wash gives web glass the diffuse variation of native
-     macOS sampling, with black above and below rather than illuminated corners. Linux and
-     Windows desktop windows have no native material either, so they take the same wash;
-     the saturated default above showed through their translucent regions as a blue cast. */
-  :root:not([data-desktop='true'][data-os='mac'])[data-theme='dark'] {
-    --window-backdrop:
-      radial-gradient(ellipse 120% 28% at 10% 46%, oklch(0.32 0.018 260 / 0.65), transparent 80%),
-      radial-gradient(ellipse 80% 36% at 92% 58%, oklch(0.24 0.008 260 / 0.3), transparent 85%),
-      oklch(0 0 0);
-  }
-
-  /* Nearly opaque coats over a near-black backdrop looked solid in the browser. A visible
-     stationary backdrop and thinner regions provide the variation that native glass samples
-     from the wallpaper, without altering the native macOS coat or text colours. */
-  :root:not([data-desktop='true'][data-os='mac'])[data-theme='dark'] {
-    --work-density: 65%;
-    --sidebar-density: 45%;
-  }
-
-  :root:not([data-desktop='true'][data-os='mac'])[data-theme='light'] {
-    --work-density: 78%;
-    --sidebar-density: 60%;
-  }
-
-  /* Window transparency, chosen in Preferences (`shared/theme/windowTransparency.ts`). Standard is
-     no attribute at all. `off` lifts the coats to 100% (dialogs included) and paints the root,
-     which the macOS rule above clears for the native material, so no wallpaper shows between
-     panes either. Floating panels keep their frost: over an opaque ground it blurs only the app's
-     own content. The OS "Reduce transparency" block below still wins whatever is chosen here. */
+  /* Window transparency, chosen in Preferences (`shared/theme/windowTransparency.ts`) and offered
+     only where the material exists. Standard is no attribute at all. */
   :root[data-window-transparency='low'] {
     --coat-scale: 0.5;
     --coat-lift: 0.5;
@@ -186,16 +137,18 @@
     --coat-scale: 0.7;
   }
 
-  :root[data-window-transparency='off'] {
+  /* Solid when it must be: no material (browser, Windows, Linux), Off, the system's Reduce
+     transparency (which Increase contrast also turns on; stamped by `display_options.rs`, since
+     WKWebView has no `prefers-reduced-transparency`), and native full screen, where there is no
+     desktop to sample. Every coat lifts to 100% and the root paints the ground. */
+  :root:is([data-theme='dark'], [data-theme='light']):is(
+      :not([data-desktop='true'][data-os='mac']),
+      [data-window-transparency='off'],
+      [data-reduce-transparency='true'],
+      [data-fullscreen='true']
+    ) {
     --coat-scale: 0;
     --coat-lift: 1;
-  }
-
-  :root[data-window-transparency='off']:is([data-theme='dark'], [data-theme='light']),
-  :root[data-desktop='true'][data-os='mac'][data-window-transparency='off']:is(
-      [data-theme='dark'],
-      [data-theme='light']
-    ) {
     background: var(--window-ground);
   }
 
@@ -206,16 +159,15 @@
     background-color: transparent;
   }
 
+  /* Floating things are solid with a hairline: a menu, popover or dialog never frosts the window
+     under it, which would be a second glass over the system's. `--popover` stays the theme's
+     opaque fill. */
   :root:is([data-theme='dark'], [data-theme='light']) :is(.bg-popover, .lx-floating-surface) {
     background-color: var(--popover);
-    -webkit-backdrop-filter: blur(24px) saturate(1.1);
-    backdrop-filter: blur(24px) saturate(1.1);
   }
 
   :root:is([data-theme='dark'], [data-theme='light']) .lx-modal-surface {
-    background-color: color-mix(in oklch, var(--window-ground) var(--modal-coat), transparent);
-    -webkit-backdrop-filter: blur(24px) saturate(1.1);
-    backdrop-filter: blur(24px) saturate(1.1);
+    background-color: var(--window-ground-raised);
   }
 
   :root:is([data-theme='dark'], [data-theme='light']) .lx-scrim {
@@ -232,55 +184,5 @@
       var(--scrim-fill) calc(var(--scrim-strength) * 50%),
       transparent
     );
-  }
-
-  /* WebKitGTK blurs a backdrop only with GPU compositing, which many Linux machines lack, and it
-     still reports `backdrop-filter` as supported. Without the blur a 45% popover shows the page
-     through its text, so Linux desktop floating surfaces are opaque. */
-  :root[data-desktop='true'][data-os='linux']:is([data-theme='dark'], [data-theme='light']) {
-    --popover: var(--popover-solid);
-  }
-
-  :root[data-desktop='true'][data-os='linux']:is([data-theme='dark'], [data-theme='light'])
-    :is(.bg-popover, .lx-floating-surface) {
-    background-color: var(--popover);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-
-  :root[data-desktop='true'][data-os='linux']:is([data-theme='dark'], [data-theme='light'])
-    .lx-modal-surface {
-    background-color: var(--window-ground-raised);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-
-  @media (prefers-reduced-transparency: reduce), (forced-colors: active) {
-    :root[data-desktop='true'][data-os='mac']:is([data-theme='dark'], [data-theme='light']) {
-      background: var(--window-ground);
-    }
-
-    :root:is([data-theme='dark'], [data-theme='light']) {
-      background: var(--window-ground);
-      --background: var(--window-ground);
-      --card: var(--card-solid);
-      --card-occlude: var(--card-solid);
-      --sidebar: var(--window-ground-sidebar);
-      --surface-raised: var(--window-ground-raised);
-      --popover: var(--popover-solid);
-      --scrim-strength: 1;
-    }
-
-    :root:is([data-theme='dark'], [data-theme='light']) :is(.bg-popover, .lx-floating-surface) {
-      background-color: var(--popover);
-      -webkit-backdrop-filter: none;
-      backdrop-filter: none;
-    }
-
-    :root:is([data-theme='dark'], [data-theme='light']) .lx-modal-surface {
-      background-color: var(--surface-raised);
-      -webkit-backdrop-filter: none;
-      backdrop-filter: none;
-    }
   }
 }

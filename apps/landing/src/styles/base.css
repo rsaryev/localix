@@ -16,7 +16,6 @@ html {
 :root:root:root[data-site='landing'][data-theme='dark'] {
   --font-sans: 'Localix Landing Sans', Arial, sans-serif;
   --font-heading: 'Localix Landing Heading', Arial, sans-serif;
-  --window-backdrop: none;
   --work-density: 100%;
   --sidebar-density: 100%;
   --window-ground: #070707;

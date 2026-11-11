@@ -23,6 +23,7 @@ import { resolveBaseSessionCwd } from '../session-cwd'
 import type { PersistedMessage } from '../contracts'
 import { loadProjectStructureSnapshot } from '../../agent-core/project-structure'
 import { discoverContextFiles } from '../../agent-core/context-files'
+import { assertWorkspaceFolder } from '../../projects/workspace-folder'
 import { autoMemoryDir, readMemoryIndex } from '../../memory/auto-memory'
 import { claudeCodeHome } from '../../cc-settings/config-dir'
 import type { PromptContextDeps, PreparedRunContext } from './prompt-context-contracts'
@@ -75,6 +76,9 @@ export async function prepareRunContext(
     session,
   )
   const [project, defaultCwd] = await Promise.all([projectPromise, defaultCwdPromise])
+  // A project folder that was moved or deleted fails the turn here, in its own words (409
+  // `workspace_folder_*`), before any tool starts in a path that is not there.
+  await assertWorkspaceFolder(defaultCwd)
   // Claude Code's auto memory folder for the run's repository, shared with Claude Code itself.
   const memoryDir = autoMemoryDir({ cwd: defaultCwd, homeDir: ctx.claudeHome ?? claudeCodeHome() })
   const memory = memoryDir ? { dir: memoryDir, ...(await readMemoryIndex(memoryDir)) } : null

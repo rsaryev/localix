@@ -21,6 +21,13 @@ import {
   updateProjectRequestSchema,
 } from './contracts'
 import {
+  type ProjectFolderResponse,
+  type RelocateProjectResponse,
+  projectFolderResponseSchema,
+  relocateProjectRequestSchema,
+  relocateProjectResponseSchema,
+} from './folder-contracts'
+import {
   type InspectPathResponse,
   inspectPathRequestSchema,
   inspectPathResponseSchema,
@@ -38,6 +45,8 @@ export interface ProjectsRoutesService {
   pickFiles(): Promise<{ paths: string[] }>
   expandRefs(userId: string, input: ExpandRefsRequest): Promise<ExpandRefsResponse>
   openProjectDirectory(userId: string, id: string): Promise<{ opened: true }>
+  relocateProject(userId: string, id: string, path: string): Promise<RelocateProjectResponse>
+  projectFolder(userId: string, id: string): Promise<ProjectFolderResponse>
 }
 
 export function createProjectsRoutes(service: ProjectsRoutesService) {
@@ -80,6 +89,22 @@ export function createProjectsRoutes(service: ProjectsRoutesService) {
       const response = await service.openProjectDirectory(c.get('userId'), id)
       return c.json(response, 200)
     })
+    .get('/:id/folder', zValidator('param', projectParamsSchema), async (c) => {
+      const { id } = c.req.valid('param')
+      const response = await service.projectFolder(c.get('userId'), id)
+      return c.json(projectFolderResponseSchema.parse(response), 200)
+    })
+    .post(
+      '/:id/relocate',
+      zValidator('param', projectParamsSchema),
+      zValidator('json', relocateProjectRequestSchema),
+      async (c) => {
+        const { id } = c.req.valid('param')
+        const { path } = c.req.valid('json')
+        const response = await service.relocateProject(c.get('userId'), id, path)
+        return c.json(relocateProjectResponseSchema.parse(response), 200)
+      },
+    )
     .get('/:id', zValidator('param', projectParamsSchema), async (c) => {
       const { id } = c.req.valid('param')
       const response = await service.getProject(c.get('userId'), id)

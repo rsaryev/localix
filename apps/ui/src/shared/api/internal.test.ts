@@ -205,6 +205,30 @@ describe('apiFetch request observations', () => {
   })
 })
 
+describe('apiFetch names the route that answered', () => {
+  // The defect: a Files tree read that failed showed as `GET sessions failed, path=/rpc/sessions,
+  // status=404`, which reads as the session being gone. The server names the route's template.
+  test('a failed answer carries the route template, never the ids in the URL', async () => {
+    const fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(null, { status: 409, headers: { 'x-localix-route': '/rpc/sessions/:id/tree' } }),
+    )
+    const events: Parameters<Parameters<typeof onApiRequestEvent>[0]>[0][] = []
+    const off = onApiRequestEvent((event) => events.push(event))
+    try {
+      await apiFetch('http://localhost:5050/rpc/sessions/LOCALIX-1/tree?path=src')
+      expect(events[1]).toMatchObject({
+        phase: 'failed',
+        operation: 'GET sessions',
+        attributes: { path: '/rpc/sessions/:id/tree', status: 409 },
+      })
+      expect(JSON.stringify(events)).not.toContain('LOCALIX-1')
+    } finally {
+      off()
+      fetchSpy.mockRestore()
+    }
+  })
+})
+
 /**
  * The guard on the API <-> UI contract. `unwrap` reads its type from the route's own response, so a
  * route that changes what it returns is a compile error where the UI reads it. `check:tests`

@@ -2,77 +2,61 @@
  * The session index: a memoized, persisted map from a session's `(id, revision)` to its parsed
  * `SessionSummary`.
  *
- * WHY THIS EXISTS. `listSources()` is cheap (readdir+stat: a few ms per provider).
- * `readSummaries()` is not: summarizing hundreds of sessions cold costs on the order of a hundred
- * ms of parsing. That is tolerable once and intolerable per keystroke or per render. So:
- *
- *   scan() = listSources()  →  diff against the cache by that key  →  readSummaries() ONLY for
- *            the misses  →  persist.
+ *   scan() = listSources()  →  diff against the cache by that key  →  read ONLY the misses
+ *            →  persist.
  *
  * INVALIDATION IS ON A REAL SIGNAL, not a clock. `revision` is `mtime|size` for a file and the
- * row's own `time_updated` for a database row. Both change exactly when the session's content
- * changes. There is deliberately no TTL: a TTL would either re-parse unchanged history or serve
- * stale rows for a live session, and neither is necessary when the source tells you the truth.
+ * row's own `time_updated` for a database row; both change exactly when the session's content does.
  *
- * The in-memory layer is additionally guarded by `SCAN_COALESCE_MS`, which does NOT cache results
- * — it collapses concurrent/rapid callers onto one in-flight scan. Without it, a roster, a search
- * and a tool call arriving together each walk the filesystem.
+ * TWO DEPTHS. A miss is first LISTED: an append-only adapter reads the transcript's head and tail
+ * (identity, title, recency) and walks only what an append added to a session it walked before.
+ * The whole-file walk for token usage is what statistics need, and only a `walked` scan pays it —
+ * once per session, remembered across restarts as the `unwalked` set. Measured on a real history
+ * (3,700 sessions, 10 GB) the cold list went from a 12 s walk of every byte to head-and-tail reads.
+ *
+ * Concurrent callers share work: scans of one provider coalesce for `SCAN_COALESCE_MS`, and one walk
+ * runs per provider at a time, every `walked` caller awaiting the same one.
  */
 
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
-import type { ProviderAdapter, AdapterEnv, SourceRef, SummaryFold } from '../adapters/types'
+import type { ProviderAdapter, AdapterEnv, SourceRef } from '../adapters/types'
 import { nextFolds, readMisses } from './read-misses'
 import { newestQuotas } from './newest-quotas'
+import { emptyIndexState, indexPath, readIndexState, writeIndexState } from './index-store'
 import type { ProviderStatus, SessionSummary } from '../../shared/contracts'
 
 /** Two rapid callers share one scan; a third arriving later gets a fresh one. */
 const SCAN_COALESCE_MS = 1_500
 
-interface CacheFile {
-  version: number
-  /** provider id -> `<sessionId>|<revision>` -> summary. The provider id is a KEY IN THE DOCUMENT,
-   *  never a path. */
-  providers: Record<string, Record<string, SessionSummary>>
-  /**
-   * provider id -> native session id -> where that session's append-only fold stopped. Optional: a
-   * cache written before folds existed is still valid, and a session without one refolds from byte
-   * 0 the next time it changes.
-   */
-  folds?: Record<string, Record<string, SummaryFold>>
+/**
+ * The document is written at most this often; a change inside the interval trails it. The index in
+ * memory is the truth while the process runs, and the document only spares the next start a re-read
+ * — a write lost to a crash costs re-reading what changed since, which the folds make an append's
+ * worth. Every refresh used to rewrite all of it: 7 MB every few seconds while an agent ran.
+ */
+const PERSIST_EVERY_MS = 30_000
+
+export interface IndexTiming {
+  readonly now: () => number
+  /** Resolves when a trailing write is due. */
+  readonly delay: (ms: number) => Promise<void>
 }
 
-/**
- * Bumped when the summary shape or a parser changes in a way that invalidates stored rows.
- *
- * 8: Gemini sessions carry a `cwd`, resolved from `~/.gemini/projects.json`. NOTHING ABOUT THE
- * SHAPE MOVED — the field was always declared, it was always absent for this provider, and the
- * derivation is what changed. That is the one case `cache-shape.test.ts` cannot see: a row cached
- * under 7 parses cleanly, keeps its empty attribution, and 29 sessions stay in the "no working
- * directory recorded" bucket until their files happen to change. A bump is a rescan, and a rescan is
- * the only thing that re-derives.
- *
- * 7: sessions carry `model` — a single-model provider's own record, so the model axis works without
- * token usage. A stale row parses fine without it, and the axis silently stays empty for those
- * providers, which is the same silence 6 was bumped for.
- *
- * 6: sessions carry `quotas` (a reading per window). Two changes landed on shape 5 without a bump —
- * `quota` and then its replacement — and the symptom is silence, not an error: the stale rows parse
- * fine and simply lack the field, so every quota surface goes blank until something else forces a
- * rescan. Caught by running the tool against a state dir written by the previous build.
- */
-const CACHE_VERSION = 8
+const realTiming: IndexTiming = {
+  now: Date.now,
+  delay: (ms) =>
+    new Promise((resolve) => {
+      const timer = setTimeout(resolve, ms)
+      timer.unref?.()
+    }),
+}
+
+/** What a caller needs: rows to list, or rows whose usage has been walked to the end. */
+export type ScanDepth = 'listed' | 'walked'
 
 /**
- * Cache key for one discovered session.
- *
- * The SESSION ID is part of it, not just the revision. A revision is only unique WITHIN a session —
- * it is `mtime|size` for a file and the row's own `time_updated` for a database row — so keying on
- * it alone made two sessions that happened to share one collide, and the cache then served one
- * session's summary under the other's name. For opencode, where the revision is a millisecond
- * timestamp, two sessions saved in the same millisecond is not a hypothetical.
- *
- * Invalidation is unaffected: the key still changes exactly when the revision does.
+ * The session id is part of the key, not just the revision: a revision is unique only WITHIN a
+ * session (an opencode revision is a millisecond timestamp), and keying on it alone served one
+ * session's summary under another's name.
  */
 function cacheKey(ref: { nativeSessionId: string; revision: string }): string {
   return `${ref.nativeSessionId}|${ref.revision}`
@@ -83,157 +67,167 @@ export interface ProviderIndex {
   readonly status: ProviderStatus
 }
 
+/** What a list scan learned besides the state it updated. */
+interface ScanOutcome {
+  readonly roots: ProviderStatus['roots']
+  readonly lastScanMs: number
+  readonly error: string | undefined
+}
+
 export class SessionIndex {
   private readonly adapters: readonly ProviderAdapter[]
   private readonly env: AdapterEnv
-  private readonly stateDir: string
+  private readonly path: string
   private readonly log: (message: string) => void
-  private readonly memory = new Map<string, Map<string, SessionSummary>>()
-  private readonly folds = new Map<string, Map<string, SummaryFold>>()
-  private readonly inFlight = new Map<string, { at: number; promise: Promise<ProviderIndex> }>()
-  private readonly last = new Map<string, ProviderIndex>()
+  private state = emptyIndexState()
+  private readonly inFlight = new Map<string, { at: number; promise: Promise<ScanOutcome> }>()
+  private readonly walking = new Map<string, Promise<void>>()
   /** Each provider's refs from its last scan, by native session id. */
   private readonly refs = new Map<string, Map<string, SourceRef>>()
-  /** The one read of the cache file, shared: every provider's scan waits for the same load. */
+  /** The one read of the document, shared: a flag set before the read let providers scanned
+   * alongside the first see "loaded" while it was still being read, and re-parse everything. */
   private loading: Promise<void> | undefined
   private writing: Promise<void> = Promise.resolve()
+  private lastWrite = -Infinity
+  private trailing: Promise<void> | undefined
+  private readonly timing: IndexTiming
 
   constructor(
     adapters: readonly ProviderAdapter[],
     env: AdapterEnv,
     stateDir: string,
     log: (message: string) => void,
+    timing: IndexTiming = realTiming,
   ) {
     this.adapters = adapters
     this.env = env
-    this.stateDir = stateDir
+    this.path = indexPath(stateDir)
     this.log = log
+    this.timing = timing
   }
 
-  /**
-   * ONE cache document, whose name is a constant.
-   *
-   * The earlier shape was one file per provider, named by sanitizing the provider id into a path
-   * segment. That is a filesystem key, and deriving one here re-spelled a rule the repo owns in
-   * exactly one place (`@localixai/mini-app-sdk/backend`'s `safeFileKey`) — the fifth near-copy of a
-   * security primitive, which `safe-file-key-contract.test.ts` exists to reject. It was also
-   * subtly WRONG as a copy: it permitted `.`, which the owner does not.
-   *
-   * The owner is not reachable from here — it is not exported by `@localixai/mini-app-sdk`, and a
-   * plugin importing `apps/api/src/**` is rejected by `check:architecture`. So rather than keep a
-   * near-copy or widen the host, the derivation is DELETED: no untrusted-ish value ever becomes a
-   * path segment, because the provider id now lives in the JSON document instead of in its name.
-   * A rule you do not need is better than a rule you copy.
-   *
-   * Trade, stated: any provider's scan now rewrites the whole document rather than its own file.
-   * Writes are serialized through `writing` and the in-memory map is the source of truth, so
-   * concurrent scans cannot lose each other's sections. At the real size here (694 summaries,
-   * ~400 KB) a full rewrite is single-digit milliseconds, and it only happens when a scan actually
-   * found something new.
-   */
-  private cachePath(): string {
-    return join(this.stateDir, 'index.json')
-  }
-
-  /**
-   * Shared as a promise, not a flag. A flag set before the read let the providers scanned alongside
-   * the first one see "loaded" while the file was still being read, so after every restart they
-   * started from an empty cache and re-parsed their whole history.
-   */
   private loadAll(): Promise<void> {
-    this.loading ??= this.readCache()
+    this.loading ??= readIndexState(this.path).then((state) => {
+      this.state = state
+    })
     return this.loading
   }
 
-  private async readCache(): Promise<void> {
-    try {
-      const parsed = JSON.parse(await readFile(this.cachePath(), 'utf8')) as CacheFile
-      if (parsed.version !== CACHE_VERSION || !parsed.providers) return
-      for (const [provider, entries] of Object.entries(parsed.providers)) {
-        const map = new Map<string, SessionSummary>()
-        for (const [key, summary] of Object.entries(entries)) map.set(key, summary)
-        this.memory.set(provider, map)
-      }
-      for (const [provider, entries] of Object.entries(parsed.folds ?? {}))
-        this.folds.set(provider, new Map(Object.entries(entries)))
-    } catch {
-      // A missing or corrupt cache is a cold start, never an error: the source of truth is on disk.
-    }
-  }
-
-  private async load(provider: string): Promise<Map<string, SessionSummary>> {
-    await this.loadAll()
-    const cached = this.memory.get(provider)
-    if (cached) return cached
-    const map = new Map<string, SessionSummary>()
-    this.memory.set(provider, map)
-    return map
-  }
-
-  private async persist(): Promise<void> {
-    const path = this.cachePath()
-    const providers: Record<string, Record<string, SessionSummary>> = {}
-    for (const [provider, map] of this.memory) providers[provider] = Object.fromEntries(map)
-    const folds: Record<string, Record<string, SummaryFold>> = {}
-    for (const [provider, map] of this.folds) folds[provider] = Object.fromEntries(map)
-    const payload: CacheFile = { version: CACHE_VERSION, providers, folds }
-    // Serialize: four providers scanning in parallel share one target, so overlapping temp+rename
-    // pairs would otherwise race and one section could be lost.
-    this.writing = this.writing.then(async () => {
-      try {
-        await mkdir(dirname(path), { recursive: true })
-        // temp+rename: a crash mid-write must not leave a half-JSON cache that then fails to parse
-        // on every subsequent boot.
-        const tmp = `${path}.${process.pid}.tmp`
-        await writeFile(tmp, JSON.stringify(payload), 'utf8')
-        await rename(tmp, path)
-      } catch (error) {
-        this.log(`external-agents: could not persist the session index: ${String(error)}`)
-      }
+  /**
+   * At once when the last write is older than the interval, otherwise once when it has passed —
+   * whatever the state is then. Serialized: providers scanning in parallel share one target, and
+   * overlapping temp+rename pairs would otherwise race and lose a section.
+   */
+  private persist(): Promise<void> {
+    const wait = this.lastWrite + PERSIST_EVERY_MS - this.timing.now()
+    if (wait <= 0) return this.write()
+    this.trailing ??= this.timing.delay(wait).then(() => {
+      if (!this.trailing) return
+      this.trailing = undefined
+      return this.write()
     })
+    return Promise.resolve()
+  }
+
+  /** At shutdown: a write that is due lands now rather than being lost with the process. */
+  close(): Promise<void> {
+    if (!this.trailing) return this.writing
+    this.trailing = undefined
+    return this.write()
+  }
+
+  /** Settles when no write is due: the trailing one, if any, has landed. */
+  async settled(): Promise<void> {
+    await this.trailing
+    await this.writing
+  }
+
+  private write(): Promise<void> {
+    this.lastWrite = this.timing.now()
+    this.writing = this.writing.then(() =>
+      writeIndexState(this.path, this.state).catch((error: unknown) =>
+        this.log(`external-agents: could not persist the session index: ${String(error)}`),
+      ),
+    )
     return this.writing
   }
 
-  private async scanProvider(adapter: ProviderAdapter): Promise<ProviderIndex> {
+  private async scanProvider(adapter: ProviderAdapter): Promise<ScanOutcome> {
     const startedAt = Date.now()
     const roots = await adapter.probeRoots(this.env)
-    let summaries: SessionSummary[] = []
     let error: string | undefined
     try {
       const refs = await adapter.listSources(this.env)
       this.refs.set(adapter.id, new Map(refs.map((ref) => [ref.nativeSessionId, ref])))
-      const cache = await this.load(adapter.id)
-      const hits: SessionSummary[] = []
-      const misses = []
-      for (const ref of refs) {
-        const hit = cache.get(cacheKey(ref))
-        if (hit) hits.push(hit)
-        else misses.push(ref)
-      }
-      const previous = new Map([...cache.values()].map((s) => [s.nativeSessionId, s]))
-      const read = await readMisses(adapter, misses, previous, this.folds.get(adapter.id), this.env)
-      const parsed = read.summaries
-      // Rebuild rather than mutate, so revisions belonging to deleted or superseded sessions are
-      // evicted instead of growing the cache without bound.
-      const next = new Map<string, SessionSummary>()
-      for (const ref of refs) {
-        const hit = cache.get(cacheKey(ref))
-        if (hit) next.set(cacheKey(ref), hit)
-      }
-      const byId = new Map(parsed.map((s) => [s.nativeSessionId, s]))
-      for (const ref of misses) {
-        const summary = byId.get(ref.nativeSessionId)
-        if (summary) next.set(cacheKey(ref), summary)
-      }
-      this.memory.set(adapter.id, next)
-      this.folds.set(adapter.id, nextFolds(this.folds.get(adapter.id), refs, misses, read.folds))
+      await this.loadAll()
+      const cache = this.state.summaries.get(adapter.id) ?? new Map<string, SessionSummary>()
+      const misses = refs.filter((ref) => !cache.has(cacheKey(ref)))
+      await this.read(adapter, refs, misses, false)
       if (misses.length > 0) await this.persist()
-      summaries = [...hits, ...parsed]
     } catch (cause) {
       // A provider whose scan throws must not take the whole roster down; it reports its own error.
       error = cause instanceof Error ? cause.message : String(cause)
       this.log(`external-agents: ${adapter.id} scan failed: ${error}`)
     }
+    return { roots, lastScanMs: Date.now() - startedAt, error }
+  }
+
+  /**
+   * Read `misses` (at the given depth) and rebuild the provider's maps over `refs`. Rebuilt rather
+   * than mutated, so revisions of deleted or superseded sessions are evicted, not kept forever.
+   */
+  private async read(
+    adapter: ProviderAdapter,
+    refs: readonly SourceRef[],
+    misses: readonly SourceRef[],
+    walk: boolean,
+  ): Promise<void> {
+    const before = this.state.summaries.get(adapter.id) ?? new Map<string, SessionSummary>()
+    const previous = new Map([...before.values()].map((s) => [s.nativeSessionId, s]))
+    const read = await readMisses(
+      adapter,
+      misses,
+      previous,
+      this.state.folds.get(adapter.id),
+      this.env,
+      walk,
+    )
+    // Merged against the state as it is NOW: a walk may have finished while this read ran.
+    const cache = this.state.summaries.get(adapter.id) ?? new Map<string, SessionSummary>()
+    const folds = this.state.folds.get(adapter.id)
+    const byId = new Map(read.summaries.map((s) => [s.nativeSessionId, s]))
+    const owed = this.state.unwalked.get(adapter.id) ?? new Set<string>()
+    const reread = new Set(misses.map((ref) => ref.nativeSessionId))
+    const next = new Map<string, SessionSummary>()
+    const nextOwed = new Set<string>()
+    for (const ref of refs) {
+      const id = ref.nativeSessionId
+      const summary = reread.has(id) ? byId.get(id) : cache.get(cacheKey(ref))
+      if (summary) next.set(cacheKey(ref), summary)
+      if (reread.has(id) ? read.unwalked.has(id) : owed.has(id)) nextOwed.add(id)
+    }
+    this.state.summaries.set(adapter.id, next)
+    this.state.folds.set(adapter.id, nextFolds(folds, refs, misses, read.folds))
+    this.state.unwalked.set(adapter.id, nextOwed)
+  }
+
+  /** Walk every session of the provider a list read left unwalked, then persist once. */
+  private async walkOwed(adapter: ProviderAdapter): Promise<void> {
+    const owed = this.state.unwalked.get(adapter.id)
+    const refs = [...(this.refs.get(adapter.id)?.values() ?? [])]
+    const misses = refs.filter((ref) => owed?.has(ref.nativeSessionId))
+    if (misses.length === 0) return
+    await this.read(adapter, refs, misses, true)
+    await this.persist()
+  }
+
+  /** Built from the state as it is when asked, so a coalesced caller sees a walk that finished. */
+  private indexOf(
+    adapter: ProviderAdapter,
+    { roots, lastScanMs, error }: ScanOutcome,
+  ): ProviderIndex {
+    const summaries = error ? [] : [...(this.state.summaries.get(adapter.id)?.values() ?? [])]
+    const children = summaries.filter((s) => s.parentNativeSessionId).length
     const quotas = newestQuotas(summaries)
     return {
       summaries,
@@ -241,31 +235,44 @@ export class SessionIndex {
         provider: adapter.id,
         displayName: adapter.displayName,
         roots,
-        sessionCount: summaries.filter((s) => !s.parentNativeSessionId).length,
-        ...(summaries.some((s) => s.parentNativeSessionId)
-          ? { childSessionCount: summaries.filter((s) => s.parentNativeSessionId).length }
-          : {}),
+        sessionCount: summaries.length - children,
+        ...(children ? { childSessionCount: children } : {}),
         error,
-        lastScanMs: Date.now() - startedAt,
+        lastScanMs,
         verified: adapter.verified,
         ...(quotas.length > 0 ? { quotas } : {}),
       },
     }
   }
 
-  async scan(adapter: ProviderAdapter): Promise<ProviderIndex> {
+  private listed(adapter: ProviderAdapter): Promise<ScanOutcome> {
     const pending = this.inFlight.get(adapter.id)
-    if (pending && Date.now() - pending.at < SCAN_COALESCE_MS) return pending.promise
-    const promise = this.scanProvider(adapter).then((result) => {
-      this.last.set(adapter.id, result)
-      return result
-    })
-    this.inFlight.set(adapter.id, { at: Date.now(), promise })
+    if (pending && this.timing.now() - pending.at < SCAN_COALESCE_MS) return pending.promise
+    const promise = this.scanProvider(adapter)
+    this.inFlight.set(adapter.id, { at: this.timing.now(), promise })
     return promise
   }
 
-  async scanAll(): Promise<readonly ProviderIndex[]> {
-    return Promise.all(this.adapters.map((a) => this.scan(a)))
+  async scan(adapter: ProviderAdapter, depth: ScanDepth = 'listed'): Promise<ProviderIndex> {
+    const listed = await this.listed(adapter)
+    if (depth === 'walked' && !listed.error) await this.walk(adapter)
+    return this.indexOf(adapter, listed)
+  }
+
+  private walk(adapter: ProviderAdapter): Promise<void> {
+    const running = this.walking.get(adapter.id)
+    if (running) return running
+    const walk = this.walkOwed(adapter)
+      .catch((cause: unknown) =>
+        this.log(`external-agents: ${adapter.id} walk failed: ${String(cause)}`),
+      )
+      .finally(() => this.walking.delete(adapter.id))
+    this.walking.set(adapter.id, walk)
+    return walk
+  }
+
+  async scanAll(depth: ScanDepth = 'listed'): Promise<readonly ProviderIndex[]> {
+    return Promise.all(this.adapters.map((a) => this.scan(a, depth)))
   }
 
   /**
@@ -280,10 +287,5 @@ export class SessionIndex {
     const ref = this.refs.get(adapter.id)?.get(nativeSessionId)
     const summary = ref && index.summaries.find((s) => s.nativeSessionId === nativeSessionId)
     return ref && summary ? { ref, summary } : undefined
-  }
-
-  /** Last completed scan, without triggering one. Used by paths that must not block on I/O. */
-  peek(provider: string): ProviderIndex | undefined {
-    return this.last.get(provider)
   }
 }

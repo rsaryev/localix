@@ -118,25 +118,11 @@
   --scroll-thumb: rgba(100, 100, 100, 0.28);
   --scroll-thumb-hover: rgba(100, 100, 100, 0.45);
 
-  /* Liquid glass — light re-tunes the material, not the component. On a near-white shell a white
-     rim is invisible, so the ring inverts through the middle: white glint at the incident corner,
-     a dark hairline across the body, white glint at the exit. The backdrop brightens. */
+  /* Flat glass — light re-tunes the material, not the component: a whiter fill and a brighter
+     backdrop. */
   --glass-fill: rgba(255, 255, 255, 0.28);
   --glass-fill-hover: rgba(255, 255, 255, 0.46);
   --glass-backdrop: blur(3px) saturate(150%) brightness(1.06);
-  --glass-sheen: radial-gradient(
-    120% 80% at 30% -20%,
-    rgba(255, 255, 255, 0.5) 0%,
-    rgba(255, 255, 255, 0.2) 40%,
-    transparent 70%
-  );
-  --glass-rim: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(20, 26, 38, 0.14) 42%,
-    rgba(20, 26, 38, 0.08) 68%,
-    rgba(255, 255, 255, 0.8) 100%
-  );
   --glass-depth:
     inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 -10px 16px -14px rgba(20, 26, 38, 0.25),
     0 6px 18px -8px rgba(20, 26, 38, 0.22);

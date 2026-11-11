@@ -27,12 +27,9 @@ describe('shared model task catalog', () => {
     ])
   })
 
-  test('delegated runs and group routing have no route: agents and availability decide', () => {
-    // A delegated run runs on its agent's own model (the agent's Store page); group routing on Jev
-    // where OpenRouter is connected, else the embedding model (`floor-advisor.ts`).
+  test('delegated runs have no route: a delegated run runs on its agent’s own model', () => {
     const keys: readonly string[] = AUX_MODEL_TASKS.map((task) => task.key)
     expect(keys).not.toContain('delegation')
-    expect(keys).not.toContain('groupRouting')
   })
 
   test('reads availability from the same record as the saved model assignment', () => {

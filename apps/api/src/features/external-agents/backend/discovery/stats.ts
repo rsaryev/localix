@@ -10,7 +10,7 @@
  */
 
 import { DEFAULT_STATS_DAYS, MAX_STATS_DAYS } from '../../shared/contracts'
-import { sessionUsedModel } from '../../shared/contracts'
+import { sessionUnderDir, sessionUsedModel } from '../../shared/contracts'
 import type { ExternalAgentStats, SessionSummary, StatsQuery } from '../../shared/contracts'
 import { addUsage, emptyUsage } from '../adapters/usage'
 import { fold, foldModels, usageInWindow, type WindowUsage } from './stats-usage'
@@ -58,9 +58,9 @@ export function computeStats(
     : summaries.filter((row) => !row.parentNativeSessionId)
   const allowed = query.providers?.length ? new Set(query.providers) : null
   const byProvider0 = allowed ? topLevel.filter((row) => allowed.has(row.provider)) : topLevel
-  // Same shape as the roster's: a prefix, so a project bar selects its own subtree too.
+  // The roster's predicate: a project bar selects its own subtree too, and never a sibling.
   const byCwd = query.cwdPrefix
-    ? byProvider0.filter((row) => row.cwd?.startsWith(query.cwdPrefix as string))
+    ? byProvider0.filter((row) => sessionUnderDir(row, query.cwdPrefix as string))
     : byProvider0
   // The roster runs the same predicate over the same field, so a bar and the list it drills into
   // cannot report different counts.

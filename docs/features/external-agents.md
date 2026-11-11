@@ -13,6 +13,16 @@ grouping apply within the open tab, and message search runs only on the Localix 
 without a folder shows no External tab. With no installed CLI or no recorded session, the External
 tab says where this history comes from.
 
+The External tab lists conversations. Sub-agent transcripts that a conversation started are not
+listed beside it. A sibling folder whose name only begins the same way, such as `app-old` next to
+`app`, is not part of the folder's history. Each row has the title the agent itself shows: a name
+set with `/rename` (or Codex's thread name), then the agent's generated title, then the first
+prompt.
+
+The list reads only the start and end of each transcript, so it appears in about a second even on a
+history of several gigabytes. Localix keeps an index of what it read, so the next start reads only
+what changed.
+
 Agent icons before each title identify the linked agent. Default stays within the Localix workspace
 tree; it never aggregates machine-wide CLI history. A native session already linked to a Localix
 chat appears once, as that chat on the Localix tab. Archiving the chat does not bring back a native
@@ -152,8 +162,10 @@ the installed agents' recorded token usage by agent, project or model. Click a s
 inspect its conversation.
 
 External numbers come from local history records. Missing usage remains unknown, and records without
-timestamps are reported outside the selected period. These are recorded usage totals, not an account
-quota or a bill; the External tab does not show account reset countdowns.
+timestamps are reported outside the selected period. The first time statistics are opened, Localix
+reads every transcript in full to count tokens, which can take several seconds on a large history.
+After that it reads only what was appended. These are recorded usage totals, not an account quota or
+a bill; the External tab does not show account reset countdowns.
 
 ## Data boundaries
 

@@ -34,7 +34,7 @@ describe('window transparency preference', () => {
     )
     for (const level of WINDOW_TRANSPARENCY_LEVELS) {
       if (level === DEFAULT_WINDOW_TRANSPARENCY) continue
-      expect(css).toContain(`:root[data-window-transparency='${level}'] {`)
+      expect(css).toContain(`[data-window-transparency='${level}']`)
     }
   })
 })

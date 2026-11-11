@@ -73,6 +73,8 @@ export function useFileTree(
   // Disk changes reach the tree on their own; when not (ssh/docker, a failed watcher), the
   // sidebar offers a manual Refresh instead.
   const [live, setLive] = useState(false)
+  // The project's folder is gone (409 `workspace_folder_*`): the pane offers to locate it.
+  const [folderGone, setFolderGone] = useState(false)
   // Active in-tree create/rename edit + its (server) validation error, if any.
   const [edit, setEdit] = useState<EditState | null>(null)
   const [editError, setEditError] = useState<string | null>(null)
@@ -123,6 +125,7 @@ export function useFileTree(
     setError,
     setRefreshing,
     setLive,
+    setFolderGone,
     setSelected,
     setRevealRequest,
   })
@@ -329,6 +332,7 @@ export function useFileTree(
     problem,
     refreshing,
     live,
+    folderGone,
     edit,
     editError,
     pendingDelete,

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SettingsControlRow, SettingsPage, SettingsSection } from './SettingsScaffold'
+import { SettingsPage, SettingsSection } from './SettingsScaffold'
 import { NotificationsSection } from './NotificationsSection'
 import { IslandSection } from './IslandSection'
 import { ModBandSection } from './ModBandSection'
@@ -8,15 +8,8 @@ import { Input } from '@localixai/kit/input'
 import { getSpendThreshold, setSpendThreshold } from '@/shared/lib/spendAlert'
 import { ThemeField } from './ThemeField'
 import { OutputStyleField } from './OutputStyleField'
-import {
-  DEFAULT_WINDOW_TRANSPARENCY,
-  WINDOW_TRANSPARENCY_LABELS,
-  WINDOW_TRANSPARENCY_LEVELS,
-  setWindowTransparency,
-  useWindowTransparency,
-} from '@/shared/theme/windowTransparency'
+import { TransparencyField } from './TransparencyField'
 import { Select, type SelectOption } from '@localixai/kit/select'
-import { Slider } from '@localixai/kit/slider'
 import {
   setRailRecentsMode,
   useRailRecentsMode,
@@ -101,26 +94,6 @@ function SpendAlertField() {
         </>
       }
     />
-  )
-}
-
-function TransparencyField() {
-  const level = useWindowTransparency()
-  return (
-    <SettingsControlRow
-      title="Window transparency"
-      description="How much of the desktop shows through the workspace. Menus and dialogs keep their frosted glass. Reduce transparency in the system settings makes the window opaque at any level."
-    >
-      <Slider
-        aria-label="Window transparency"
-        className="w-full @xl:w-56"
-        steps={WINDOW_TRANSPARENCY_LEVELS.map((step) => WINDOW_TRANSPARENCY_LABELS[step])}
-        value={WINDOW_TRANSPARENCY_LEVELS.indexOf(level)}
-        onValueChange={(index) =>
-          setWindowTransparency(WINDOW_TRANSPARENCY_LEVELS[index] ?? DEFAULT_WINDOW_TRANSPARENCY)
-        }
-      />
-    </SettingsControlRow>
   )
 }
 

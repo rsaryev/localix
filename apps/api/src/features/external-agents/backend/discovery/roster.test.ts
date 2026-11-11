@@ -366,6 +366,18 @@ describe('roster — filtering', () => {
     ).toHaveLength(2)
   })
 
+  it('selects a directory and what is under it, never a sibling that shares its spelling', () => {
+    const siblings = [
+      summary('claude-code', 'own', { cwd: '/repo/app' }),
+      summary('claude-code', 'nested', { cwd: '/repo/app/packages/ui' }),
+      summary('claude-code', 'sibling', { cwd: '/repo/app-marketplace' }),
+      summary('claude-code', 'trailing', { cwd: '/repo/application' }),
+    ]
+    const page = buildRoster({ summaries: siblings, live, query: { cwdPrefix: '/repo/app/' } })
+    expect(page.items.map((row) => row.nativeSessionId).sort()).toEqual(['nested', 'own'])
+    expect(page.total).toBe(2)
+  })
+
   it('hides sub-agent transcripts by default and shows them on request', () => {
     const child = summary('claude-code', 'child', { parentNativeSessionId: 'a' })
     expect(buildRoster({ summaries: [...rows, child], live, query: {} }).items).toHaveLength(3)

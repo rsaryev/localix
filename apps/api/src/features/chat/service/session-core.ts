@@ -2,6 +2,7 @@ import { NotFoundError } from '../../../lib/domain-errors'
 import { readAvailability } from '../../capabilities/availability'
 import { discardSessionData } from '../../mini-apps/session-storage'
 import { resolveDefaultProject } from '../../projects/default-project'
+import { assertWorkspaceFolder } from '../../projects/workspace-folder'
 import type { SessionDetail } from '../contracts'
 import { createModelContextRepository } from '../model-context-repository'
 import { toSessionSummary, type SessionRecord } from '../repository'
@@ -84,9 +85,13 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
     streamRegistry,
     // Quick-open's file-list memo and the root's language servers (root-change-fanout.ts).
     onRootChanged: rootChangeFanout(deps.lspManager),
+    // A missing folder is not watched: `arm` answers "not live", and the listing's own refusal
+    // tells the client why. Nothing is remembered, so the folder coming back arms on the next read.
     resolveRoot: async (userId, sessionId) => {
       const session = await requireSession(userId, sessionId)
-      return { root: await resolveSessionWorkingDir(userId, session), local: true }
+      const root = await resolveSessionWorkingDir(userId, session)
+      await assertWorkspaceFolder(root)
+      return { root, local: true }
     },
   })
 

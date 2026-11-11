@@ -260,8 +260,9 @@ export function createLocalOriginBoundary(
       origin: (origin, c) => (policy.allowsOrigin(origin, c.req.header('host')) ? origin : null),
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       // The packaged page is cross-origin, so the request id is unreadable unless exposed — and it
-      // is what joins an Event Center row to its line in the API log.
-      exposeHeaders: ['x-request-id'],
+      // is what joins an Event Center row to its line in the API log. The route template names the
+      // route that answered in the client's request trace (`stampRoute`).
+      exposeHeaders: ['x-request-id', 'x-localix-route'],
       // The packaged page is cross-origin to this API, so every write it sends with the client
       // header is preflighted. Caching the answer keeps that to one preflight per URL instead of
       // one per request (browsers cap the cache: Chromium at 2 h, WebKit at 10 min).

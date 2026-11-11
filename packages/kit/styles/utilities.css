@@ -135,14 +135,12 @@
   }
 }
 
-/* Reduced transparency is an accessibility setting, not a taste. Same reasoning as the block
-   above: the opaque companion, so the strip matches the pane's tone instead of stacking on it. */
-@media (prefers-reduced-transparency: reduce) {
-  .lx-occluder {
-    background-color: var(--background-solid);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
+/* Reduced transparency (`data-reduce-transparency`, see materials.css) is an accessibility
+   setting, not a taste. Same reasoning as the block above: the opaque companion, so the strip matches the pane's tone instead of stacking on it. */
+:root[data-reduce-transparency='true'] .lx-occluder {
+  background-color: var(--background-solid);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 /* ── Faded edges of a horizontal strip ───────────────────────────────────────

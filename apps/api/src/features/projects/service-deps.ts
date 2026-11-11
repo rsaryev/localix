@@ -38,4 +38,17 @@ export interface ProjectsServiceDeps {
    * rule), so this feature never re-derives a sandbox path from an id.
    */
   resolveSessionCwd?: (userId: string, sessionId: string) => Promise<string>
+  /** Claude Code's side of a project folder, for a relocation. Injected by bootstrap (plugins'
+   *  trust reading, memory's carry) so this feature imports neither. */
+  claudeCode?: ClaudeCodeFolderPort
+  /** The person's home folder, too broad to become a project folder; tests use a temp dir. */
+  homeDir?: string
+}
+
+/** What Claude Code keeps about a folder by its PATH, which a relocation must answer for. */
+export interface ClaudeCodeFolderPort {
+  /** Whether Claude Code trusts this folder (read only; Localix never writes trust). */
+  trusts: (cwd: string) => boolean
+  /** Copy the old path's auto memory to the new path's, when the new one has none. */
+  carryMemory: (from: string, to: string) => Promise<'copied' | 'kept' | 'none'>
 }

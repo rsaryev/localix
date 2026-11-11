@@ -43,7 +43,6 @@ export function ProjectSettingsForm({ project, onDeleted, picker }: ProjectSetti
       const version = ++saveVersionRef.current
       const request = {
         name: (overrides?.name ?? name).trim() || project.name,
-        workingDir: project.workingDir,
         settingsPatch: {
           customSystemPrompt: (overrides?.systemPrompt ?? systemPrompt).trim() || null,
         },

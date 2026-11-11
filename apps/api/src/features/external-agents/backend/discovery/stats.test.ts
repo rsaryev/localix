@@ -616,6 +616,16 @@ describe('a project drill narrows the statistics, as an agent drill does', () =>
     ])
   })
 
+  test('a sibling directory sharing the spelling is not part of the project', () => {
+    const stats = computeStats(
+      [...rows, at('/work/app-legacy', 'e')],
+      { days: 30, cwdPrefix: '/work/app' },
+      now,
+    )
+
+    expect(stats.sessions).toBe(2)
+  })
+
   test('sessions with no cwd are outside every project drill', () => {
     const stats = computeStats(rows, { days: 30, cwdPrefix: '/work' }, now)
 

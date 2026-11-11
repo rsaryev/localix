@@ -19,6 +19,7 @@ import {
   revealThemeChange,
   type ThemeChangeOrigin,
 } from './themeReveal'
+import { REDUCED_TRANSPARENCY_QUERY, mirrorReducedTransparency } from './reducedTransparency'
 
 export type { ThemeChangeOrigin } from './themeReveal'
 
@@ -208,6 +209,12 @@ if (typeof window !== 'undefined') {
   // material selectors before sampling --sidebar, or AppKit receives the browser
   // coat (45% in dark mode) while the mounted UI later switches to the macOS coat (70%).
   applyPlatformDataset()
+  // On macOS desktop the shell stamps Reduce transparency itself; WKWebView has no media query.
+  if (!hasNativeWindowMaterial() && typeof window.matchMedia === 'function')
+    mirrorReducedTransparency(
+      window.matchMedia(REDUCED_TRANSPARENCY_QUERY),
+      document.documentElement,
+    )
   currentResolved = applyThemeModeToDom(currentMode)
   snapshot = { themeMode: currentMode, resolvedTheme: currentResolved }
   updateSystemListener()

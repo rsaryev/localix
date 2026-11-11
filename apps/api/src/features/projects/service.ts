@@ -20,6 +20,7 @@ import {
   resolveDefaultProject,
 } from './default-project'
 import { assertAbsolutePath, inspectPath } from './inspect-path'
+import { projectFolder, relocateProject } from './relocate'
 import type { ProjectsServiceDeps } from './service-deps'
 
 export type { ProjectsServiceDeps } from './service-deps'
@@ -65,6 +66,12 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
   }
 
   const expandRefsWithin = createUserRefExpander(deps)
+  const relocateDeps = {
+    repo,
+    now,
+    ...(deps.claudeCode ? { claudeCode: deps.claudeCode } : {}),
+    ...(deps.homeDir ? { homeDir: deps.homeDir } : {}),
+  }
 
   return {
     /** The project a session with no explicit one belongs to. See `default-project.ts`. */
@@ -133,8 +140,12 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
         // point at it (their `project_id` is not nullable) and its capability rules are still
         // filed under its scope, so a fresh row would strand both behind a project the user can
         // no longer see. `created` stays false — the user is coming back to something.
-        const rows = await repo.listAllProjects(userId)
-        const existing = rows.find((r) => normalizeProjectDir(r.workingDir) === workingDir)
+        // A live project at the path wins over a deleted one that once had it (a project
+        // re-pointed at a folder a deleted project used to own).
+        const rows = (await repo.listAllProjects(userId)).filter(
+          (r) => normalizeProjectDir(r.workingDir) === workingDir,
+        )
+        const existing = rows.find((r) => !r.deletedAt) ?? rows[0]
         if (existing) {
           if (existing.deletedAt) await repo.restoreProject(userId, existing.id)
           return { project: toDto({ ...existing, deletedAt: null }), created: false }
@@ -173,7 +184,6 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
 
         const updateData: Partial<Omit<ProjectRecord, 'id' | 'userId' | 'createdAt'>> = {
           ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
-          ...(patch.workingDir !== undefined ? { workingDir: patch.workingDir.trim() } : {}),
           ...(settings !== undefined ? { settings: JSON.stringify(settings) } : {}),
           updatedAt,
         }
@@ -183,11 +193,25 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
         return {
           ...current,
           ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
-          ...(patch.workingDir !== undefined ? { workingDir: patch.workingDir.trim() } : {}),
           ...(settings !== undefined ? { settings } : {}),
           updatedAt,
         }
       })
+    },
+
+    /**
+     * Point the project at the folder it moved to; see `relocate.ts` for what follows it. The
+     * generic update cannot change the folder: this is the one way, so it is always checked.
+     */
+    async relocateProject(userId: string, id: string, path: string) {
+      return serializeUpdate(`${userId}\n${id}`, async () =>
+        relocateProject(relocateDeps, await requireProject(userId, id), path),
+      )
+    },
+
+    /** Whether the project's folder is where it says, and where it went when that is certain. */
+    async projectFolder(userId: string, id: string) {
+      return projectFolder(relocateDeps, await requireProject(userId, id))
     },
 
     /**

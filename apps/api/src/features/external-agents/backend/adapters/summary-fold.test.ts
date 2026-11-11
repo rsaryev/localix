@@ -154,7 +154,12 @@ describe('append-only summary folds', () => {
     ].join('\n')
     const { stepped, whole } = await foldInSteps(
       (ref, previous) =>
-        githubCopilotAdapter.foldSummary!(ref, previous, { env: {}, homeDir: '/nonexistent' }),
+        githubCopilotAdapter.foldSummary!(
+          ref,
+          previous,
+          { env: {}, homeDir: '/nonexistent' },
+          { walk: true },
+        ),
       text,
       [text.indexOf('{"type":"tool'), text.lastIndexOf('{"type":"user')],
     )

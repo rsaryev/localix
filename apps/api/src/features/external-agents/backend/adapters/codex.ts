@@ -24,7 +24,7 @@ import type {
   TranscriptResult,
 } from './types'
 import type { TranscriptEvent } from '../../shared/contracts'
-import { clip, pathExists, revisionOf, jsonlRecords } from './fs-read'
+import { clip, jsonlRecords, parseWindowLines, pathExists, readTail, revisionOf } from './fs-read'
 import { eventWindow } from './event-window'
 import { readAppendedTurnState } from './append-turn-state'
 import { asRecord, asString } from './json-util'
@@ -33,6 +33,8 @@ import { ID, summarizeCodex as summarize, foldCodex } from './codex-summary'
 
 const SESSION_DIRS = ['sessions', 'archived_sessions']
 const SUMMARY_CONCURRENCY = 8
+/** About 40,000 namings; the real index is 140 lines. */
+const THREAD_INDEX_BYTES = 4 * 1024 * 1024
 const UUID_TAIL = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i
 
 function homeFor(env: AdapterEnv): string {
@@ -61,10 +63,28 @@ async function walkJsonl(dir: string, depth: number, out: string[]): Promise<voi
   }
 }
 
+/**
+ * Thread names, from `session_index.jsonl`: one `{id, thread_name}` line per naming, appended, so
+ * the last line for an id is its current name. It is what `/rename` writes and what Codex's resume
+ * picker lists. Bounded like any other read of a provider file; a missing index is no names.
+ */
+async function threadNames(root: string): Promise<Map<string, string>> {
+  const names = new Map<string, string>()
+  const path = join(root, 'session_index.jsonl')
+  if (!(await pathExists(path))) return names
+  for (const rec of parseWindowLines(await readTail(path, THREAD_INDEX_BYTES), 'tail')) {
+    const id = asString(rec.id)
+    const name = asString(rec.thread_name)?.trim()
+    if (id && name) names.set(id, name)
+  }
+  return names
+}
+
 async function listSources(env: AdapterEnv): Promise<readonly SourceRef[]> {
   const root = homeFor(env)
   const files: string[] = []
   for (const sub of SESSION_DIRS) await walkJsonl(join(root, sub), 5, files)
+  const names = await threadNames(root)
   const refs: SourceRef[] = []
   for (const full of files) {
     const nativeSessionId = sessionIdFromName(full.slice(full.lastIndexOf('/') + 1))
@@ -72,12 +92,15 @@ async function listSources(env: AdapterEnv): Promise<readonly SourceRef[]> {
     try {
       const info = await stat(full)
       if (info.size === 0) continue
+      const name = names.get(nativeSessionId)
+      const revision = revisionOf(info.mtimeMs, info.size)
       refs.push({
         nativeSessionId,
         sourcePath: full,
-        revision: revisionOf(info.mtimeMs, info.size),
+        revision: name ? `${revision}|${name}` : revision,
         sourceBytes: info.size,
         updatedAtHint: info.mtimeMs,
+        ...(name ? { titleHint: name } : {}),
       })
     } catch {
       continue
@@ -197,7 +220,7 @@ export const codexAdapter: ProviderAdapter = {
   async readSummaries(refs) {
     return mapConcurrent(refs, SUMMARY_CONCURRENCY, summarize)
   },
-  foldSummary: (ref, previous) => foldCodex(ref, previous),
+  foldSummary: (ref, previous, _env, { walk }) => foldCodex(ref, previous, walk),
   readTranscript,
   readTurnState: readAppendedTurnState,
 }

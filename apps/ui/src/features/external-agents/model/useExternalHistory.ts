@@ -1,5 +1,5 @@
 import useSWRInfinite from 'swr/infinite'
-import { isAtOrUnder } from '@localixai/path-containment/ancestry'
+import { sessionUnderDir } from '@localixai/api/external-agent-contracts'
 import { externalAgentsApi } from '../api'
 import { useInstalledAgents } from './useInstalledAgents'
 import { useHistoryStream } from './useHistoryStream'
@@ -10,7 +10,8 @@ const PAGE_SIZE = 200
 export function useExternalHistory(
   text: string,
   enabled = true,
-  scope?: { provider?: string; cwd?: string; includeDescendants?: boolean },
+  /** A folder's history is the sessions recorded in it and beneath it, as the server selects. */
+  scope?: { provider?: string; cwd?: string },
 ) {
   const installed = useInstalledAgents()
   // Not keyed on the installed list: the route already narrows to installed agents, so the roster
@@ -31,7 +32,8 @@ export function useExternalHistory(
         providers: provider ? [provider] : undefined,
         text: search,
         cwdPrefix: cwd || undefined,
-        includeChildren: true,
+        // Conversations only: sub-agent transcripts outnumber them several to one, and a page that
+        // held them showed a handful of rows behind a "Show more" (their parents link to them).
         offset: index * PAGE_SIZE,
         limit: PAGE_SIZE,
       }),
@@ -53,25 +55,21 @@ export function useExternalHistory(
     intervalMs: 30_000,
     onTick: () => query.mutate(),
   })
+  // The server filters (installed agents, provider, folder, text) and orders; pages are joined
+  // once each, as a background refresh can move a row from one page to the next. The scope is
+  // checked again only because `keepPreviousData` holds another folder's rows while this one's load.
   const byKey = new Map(query.data?.flatMap((page) => page.items).map((row) => [row.key, row]))
-  const sessions = [...byKey.values()]
-    .filter(
-      (row) =>
-        !row.sourcePath.startsWith('terminal:') &&
-        installed.agents.some((agent) => agent.id === row.provider) &&
-        (!scope?.provider || row.provider === scope.provider) &&
-        (!scope?.cwd ||
-          row.cwd === scope.cwd ||
-          (scope.includeDescendants &&
-            row.cwd &&
-            isAtOrUnder(scope.cwd.replace(/\/+$/, '') || '/', row.cwd))),
-    )
-    .sort((left, right) => right.updatedAt - left.updatedAt)
+  const sessions = [...byKey.values()].filter(
+    (row) =>
+      !row.sourcePath.startsWith('terminal:') &&
+      (!scope?.provider || row.provider === scope.provider) &&
+      (!scope?.cwd || sessionUnderDir(row, scope.cwd)),
+  )
   const last = query.data?.at(-1)
   return {
     agents: installed.agents,
     sessions,
-    // Rows kept from the previous search still count; rows of another scope are filtered out above,
+    // Rows kept from the previous search still count; another scope's rows are filtered out above,
     // and an empty list while a read is running is loading, not "no sessions".
     loading: (installed.isLoading || query.isLoading) && sessions.length === 0,
     // Only a page beyond the loaded ones: a background refresh must not read as "Loading…".

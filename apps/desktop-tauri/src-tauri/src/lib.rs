@@ -113,6 +113,7 @@ mod app_runner_ui;
 mod app_runner_web;
 mod commands;
 mod deeplink;
+mod display_options;
 mod frontend_flush;
 #[cfg(target_os = "macos")]
 mod instance;

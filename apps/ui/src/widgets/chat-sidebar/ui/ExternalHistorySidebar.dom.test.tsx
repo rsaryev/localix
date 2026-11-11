@@ -274,10 +274,7 @@ test('Unified history shows owned Localix and external sessions together within 
     expect(terminal).toHaveBeenCalledWith('linked-native', 'pty', 'Codex')
     await act(async () => useChatStore.setState({ activeProjectId: 'project' }))
     expect(host.textContent).not.toContain('Recorded CLI')
-    expect(nativeHistory).toHaveBeenLastCalledWith('', true, {
-      cwd: '/work/project',
-      includeDescendants: true,
-    })
+    expect(nativeHistory).toHaveBeenLastCalledWith('', true, { cwd: '/work/project' })
     await act(async () => tab('Localix').click())
     expect(host.textContent).toContain('Project external')
     expect(host.textContent).not.toContain('Our external')

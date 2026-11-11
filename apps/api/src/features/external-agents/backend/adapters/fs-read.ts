@@ -18,6 +18,7 @@
  */
 
 import { open, stat } from 'node:fs/promises'
+import { nextMacrotask } from '../../../../lib/idle-tasks'
 
 export interface BoundedText {
   readonly text: string
@@ -61,24 +62,39 @@ export function parseWindowLines(
   window: BoundedText,
   position: 'head' | 'tail',
 ): readonly Record<string, unknown>[] {
+  return [...windowRecords(window, position)]
+}
+
+/** `read` counts the characters of the window consumed so far, for a caller that slices its work. */
+function* windowRecords(
+  window: BoundedText,
+  position: 'head' | 'tail',
+  read = { chars: 0 },
+): Generator<Record<string, unknown>> {
   let lines = window.text.split('\n')
   if (window.partial) {
     if (position === 'head') lines = lines.slice(0, -1)
     else lines = lines.slice(1)
   }
-  const out: Record<string, unknown>[] = []
   for (const line of lines) {
+    read.chars += line.length + 1
     const trimmed = line.trim()
     if (trimmed[0] !== '{') continue
     try {
       const parsed: unknown = JSON.parse(trimmed)
-      if (parsed && typeof parsed === 'object') out.push(parsed as Record<string, unknown>)
+      if (parsed && typeof parsed === 'object') yield parsed as Record<string, unknown>
     } catch {
       // A single malformed line must not lose the rest of the window.
     }
   }
-  return out
 }
+
+/**
+ * How much text is parsed between turns of the event loop: a stream's own chunk (512 KB), parsed in
+ * about a millisecond. A file read resolves its chunks without a macrotask, so without this a fold of
+ * a 66 MB transcript held the loop for 105 ms — and the loop is the one every chat runs on.
+ */
+const SLICE_CHARS = 512 * 1024
 
 /**
  * Stream a JSONL file line by line without materializing it. Used for transcript reads, which are
@@ -105,6 +121,7 @@ export async function* streamJsonlRecords(
   let carry = ''
   let read = 0
   for await (const chunk of stream) {
+    if (read > 0) await nextMacrotask()
     read += chunk.byteLength
     carry += decoder.decode(chunk, { stream: true })
     let nl = carry.indexOf('\n')
@@ -158,6 +175,7 @@ export async function foldJsonlFrom(
   let consumed = start
   let carry: Uint8Array | undefined
   for await (const chunk of Bun.file(path).slice(start, end).stream()) {
+    if (consumed > start || carry) await nextMacrotask()
     const bytes: Uint8Array = carry ? Buffer.concat([carry, chunk]) : chunk
     const last = bytes.lastIndexOf(10)
     if (last < 0) {
@@ -235,7 +253,14 @@ export async function* jsonlRecords(
   const window = await readTail(path, maxBytes)
   // `partial` means the window starts mid-line, which is exactly "the file was bigger than this".
   if (window.partial) options.onTruncated?.()
-  for (const record of parseWindowLines(window, 'tail')) yield record
+  const read = { chars: 0 }
+  let sliceEnd = SLICE_CHARS
+  for (const record of windowRecords(window, 'tail', read)) {
+    yield record
+    if (read.chars < sliceEnd) continue
+    sliceEnd = read.chars + SLICE_CHARS
+    await nextMacrotask()
+  }
 }
 
 export async function pathExists(path: string): Promise<boolean> {

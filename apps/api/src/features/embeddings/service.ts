@@ -197,7 +197,7 @@ export function createSemanticService(deps: SemanticServiceDeps) {
     reader,
 
     strategy,
-    /** Vectors on demand: search's queries, group routing and plugins all embed through it. */
+    /** Vectors on demand: search's queries and plugins both embed through it. */
     vectors,
 
     model: () => model,

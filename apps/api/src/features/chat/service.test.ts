@@ -87,10 +87,10 @@ describe('chat service', () => {
     ).rejects.toMatchObject({
       code: 'session_not_found',
     })
-    // The old `listDirectory(...).path` adapter cannot resolve this metadata:
-    // it attempts a real readdir/remote ls and therefore rejects a missing root.
+    // Listing works IN the folder, so a missing root is refused as a missing workspace folder.
     expect(chatService.listDirectory(userId, session.id)).rejects.toMatchObject({
-      code: 'not_a_directory',
+      status: 409,
+      code: 'workspace_folder_missing',
     })
     await destroyDatabase(db)
   })

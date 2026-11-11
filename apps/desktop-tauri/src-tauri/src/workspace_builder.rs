@@ -172,7 +172,8 @@ pub(crate) fn build(
     #[cfg(target_os = "macos")]
     {
         builder = builder
-            .initialization_script("if(document.documentElement){document.documentElement.dataset.nativeTitlebar='true';}else{document.addEventListener('DOMContentLoaded',()=>{document.documentElement.dataset.nativeTitlebar='true';},{once:true});}");
+            .initialization_script("if(document.documentElement){document.documentElement.dataset.nativeTitlebar='true';}else{document.addEventListener('DOMContentLoaded',()=>{document.documentElement.dataset.nativeTitlebar='true';},{once:true});}")
+            .initialization_script(crate::display_options::script());
     }
     builder = builder.initialization_script(format!(
     "window.__LOCALIX_WORKSPACE={context};if(!location.hash && window.__LOCALIX_WORKSPACE.route) location.hash=window.__LOCALIX_WORKSPACE.route;"

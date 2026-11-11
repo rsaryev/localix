@@ -37,6 +37,10 @@ export function assertAbsolutePath(inputPath: string): void {
   }
 }
 
+/** A filesystem root or the home folder: too broad to be a project's folder. */
+export const isBroadDir = (normalized: string, home: string = homedir()): boolean =>
+  path.parse(normalized).root === normalized || normalized === normalizeProjectDir(home)
+
 /**
  * Classify an absolute path as a file or a directory. It stats the path and nothing else: no
  * project is minted, revived or read, so an OS file open cannot grow the project list.
@@ -55,9 +59,7 @@ export async function inspectPath(
   }
   if (info.isFile()) return { kind: 'file', path: normalized }
   if (info.isDirectory()) {
-    const broad =
-      path.parse(normalized).root === normalized || normalized === normalizeProjectDir(home)
-    return { kind: 'directory', path: normalized, broad }
+    return { kind: 'directory', path: normalized, broad: isBroadDir(normalized, home) }
   }
   throw new InvalidRequestError(
     'project_path_not_regular',

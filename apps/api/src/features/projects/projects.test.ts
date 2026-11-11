@@ -73,12 +73,16 @@ describe('projects feature', () => {
     expect(fetched.name).toBe('Test Project')
 
     // 5. Update project
+    // The folder is not part of the generic update: `relocateProject` is the one way to move it.
     const updated = await projectsService.updateProject(userId, project.id, {
       name: 'Updated Name',
       workingDir: '/new/path',
     })
     expect(updated.name).toBe('Updated Name')
-    expect(updated.workingDir).toBe('/new/path')
+    expect(updated.workingDir).toBe('/path/to/test-project')
+    expect((await projectsService.getProject(userId, project.id)).workingDir).toBe(
+      '/path/to/test-project',
+    )
 
     // 6. Delete project
     await projectsService.deleteProject(userId, project.id)

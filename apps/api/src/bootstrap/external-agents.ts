@@ -60,7 +60,7 @@ export function createExternalAgentsPhase({
     id: 'core:external-agents',
     onShutdown: () => {
       history.onShutdown()
-      service.shutdown()
+      return service.shutdown()
     },
   })
   return {

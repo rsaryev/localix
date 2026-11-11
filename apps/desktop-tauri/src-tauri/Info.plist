@@ -31,7 +31,7 @@
 	<string>Localix opens projects and runs your commands on files you choose, including ones on your Desktop.</string>
 	<key>NSDownloadsFolderUsageDescription</key>
 	<string>Localix opens projects and runs your commands on files you choose, including ones in your Downloads folder.</string>
-	<key>NSRemovableVolumeUsageDescription</key>
+	<key>NSRemovableVolumesUsageDescription</key>
 	<string>Localix opens projects stored on removable volumes when you choose one.</string>
 	<key>NSNetworkVolumesUsageDescription</key>
 	<string>Localix opens projects stored on network volumes when you choose one.</string>

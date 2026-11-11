@@ -37,11 +37,6 @@ html[data-island='true'] #root {
 .lx-agent-island[data-expanded='true'] {
   --island-motion-duration: var(--dur-moderate);
 }
-/* Web and compositor fallbacks use the SAME wallpaper wash as the workspace. CSS blur cannot
-   sample another application behind a transparent webview, so never claim that it does. */
-html:not([data-desktop='true'][data-os='mac']) .lx-island-material {
-  background-image: var(--window-backdrop);
-}
 .lx-agent-island[data-expanded='true'] .lx-island-material {
   clip-path: inset(
     0 var(--island-side) calc(100% - var(--island-open-height)) round 0 0 calc(var(--radius) * 3)
@@ -118,7 +113,7 @@ html:not([data-desktop='true'][data-os='mac']) .lx-island-material {
 }
 @media (prefers-reduced-transparency: reduce), (forced-colors: active) {
   .lx-island-material {
-    background: var(--popover-solid);
+    background: var(--popover);
     background-image: none;
   }
 }

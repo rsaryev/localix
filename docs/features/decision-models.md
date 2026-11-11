@@ -10,8 +10,8 @@ in about a third of a second.
 
 ## Turn them on
 
-Connect OpenRouter. The start screen's **Connect OpenRouter for decisions** slide opens the model
-picker on OpenRouter; choose **Sign in with OpenRouter**, or paste an API key. Nothing else is
+Connect OpenRouter: open the model picker in the message box (or **Connect a provider** in **Set up
+Localix**), choose OpenRouter, then **Sign in with OpenRouter** or paste an API key. Nothing else is
 configured: features that can use a decision model start using it as soon as the connection works.
 
 ## Where Localix uses them

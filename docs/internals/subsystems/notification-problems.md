@@ -88,6 +88,13 @@ log line carries the same id, and a rejected JSON answer logs its own `code`, me
 as `request.rejected` — a mini app route answers its typed body itself, so before this the log had
 the status and nothing else. An unrecognized throw logs its stack (`apps/api/src/lib/http.ts`).
 
+An answer also carries `x-localix-route`, the route template that answered it (such as
+`/rpc/sessions/:id/tree`), and `apiFetch` (`apps/ui/src/shared/api/internal.ts`) puts it on the
+answered step as its `path`. A template holds no ids, so it may be kept where the raw URL may not;
+the client alone cuts a path to its collection (`/rpc/sessions`), and before the route was named a
+failed `GET /rpc/sessions/<id>/tree` read as "sessions failed, 404", as if the chat were gone. A
+request no route matched, and one that never got an answer, keep the cut path.
+
 ### Write an entry
 
 `toast.*` (`apps/ui/src/shared/lib/notify.ts`) keeps a toast's call shape, but every call is a

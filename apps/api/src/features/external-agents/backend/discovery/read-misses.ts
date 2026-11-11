@@ -8,12 +8,15 @@ export interface ReadMisses {
   readonly summaries: readonly SessionSummary[]
   /** By native session id: where each append-only summary's fold stopped. */
   readonly folds: ReadonlyMap<string, SummaryFold>
+  /** The sessions this read listed without walking their usage to the end. */
+  readonly unwalked: ReadonlySet<string>
 }
 
 /**
  * Summaries for the refs the cache missed. An adapter that folds is handed what it last read of the
- * same session, so a transcript that only grew is read from where that read stopped; the rest
- * parse their misses whole, as they always did.
+ * same session, so a transcript that only grew is read from where that read stopped, and `walk`
+ * says whether its usage is wanted to the end or only a list's worth (see `SessionIndex`); the
+ * rest parse their misses whole, as they always did.
  */
 export async function readMisses(
   adapter: ProviderAdapter,
@@ -21,18 +24,24 @@ export async function readMisses(
   previous: ReadonlyMap<string, SessionSummary>,
   previousFolds: ReadonlyMap<string, SummaryFold> | undefined,
   env: AdapterEnv,
+  walk: boolean,
 ): Promise<ReadMisses> {
   const folds = new Map<string, SummaryFold>()
-  if (misses.length === 0) return { summaries: [], folds }
+  const unwalked = new Set<string>()
+  if (misses.length === 0) return { summaries: [], folds, unwalked }
   const fold = adapter.foldSummary?.bind(adapter)
-  if (!fold) return { summaries: await adapter.readSummaries(misses, env), folds }
+  if (!fold) return { summaries: await adapter.readSummaries(misses, env), folds, unwalked }
   const read = await mapConcurrent(misses, FOLD_CONCURRENCY, (ref) => {
     const summary = previous.get(ref.nativeSessionId)
     const last = previousFolds?.get(ref.nativeSessionId)
-    return fold(ref, summary && last ? { summary, fold: last } : undefined, env)
+    return fold(ref, summary && last ? { summary, fold: last } : undefined, env, { walk })
   })
-  for (const { summary, fold: next } of read) if (next) folds.set(summary.nativeSessionId, next)
-  return { summaries: read.map((entry) => entry.summary), folds }
+  for (const entry of read) {
+    const id = entry.summary.nativeSessionId
+    if (entry.fold) folds.set(id, entry.fold)
+    if (entry.unwalked) unwalked.add(id)
+  }
+  return { summaries: read.map((entry) => entry.summary), folds, unwalked }
 }
 
 /**

@@ -227,19 +227,6 @@
   --glass-fill: rgba(255, 255, 255, 0.025);
   --glass-fill-hover: rgba(255, 255, 255, 0.06);
   --glass-backdrop: blur(3px) saturate(150%) brightness(0.85);
-  --glass-sheen: radial-gradient(
-    120% 80% at 30% -20%,
-    rgba(255, 255, 255, 0.11) 0%,
-    rgba(255, 255, 255, 0.03) 42%,
-    transparent 68%
-  );
-  --glass-rim: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.62) 0%,
-    rgba(255, 255, 255, 0.12) 28%,
-    rgba(255, 255, 255, 0.04) 58%,
-    rgba(255, 255, 255, 0.28) 100%
-  );
   --glass-depth:
     inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(255, 255, 255, 0.05),
     inset 0 -10px 16px -12px rgba(0, 0, 0, 0.4), 0 8px 22px -10px rgba(0, 0, 0, 0.7);

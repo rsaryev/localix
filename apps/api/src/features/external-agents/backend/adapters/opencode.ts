@@ -18,6 +18,7 @@
  */
 
 import { Database } from 'bun:sqlite'
+import { nextMacrotask } from '../../../../lib/idle-tasks'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { shellQuote } from '@localixai/mini-app-sdk/backend'
@@ -58,6 +59,9 @@ function dbPath(env: AdapterEnv): string {
 function isDiskPath(path: string): boolean {
   return path !== ':memory:' && !path.startsWith('file::memory:')
 }
+
+/** Sessions aggregated per statement: about 10 ms of a real database's work at a time. */
+const SESSION_BATCH = 8
 
 function openReadonly(path: string): Database {
   return new Database(path, { readonly: true })
@@ -120,22 +124,15 @@ async function readSummaries(
     )
     // Only the sessions asked for: a live session changes every message, and aggregating the whole
     // table for its one row cost as much as summarizing every session (59 ms of 89 on a 107 MB db).
-    const ids = JSON.stringify([...wanted])
-    const messageCounts = new Map(
-      db
-        .query<MessageCountRow, [string]>(
-          `select session_id, count(*) as messages
-             from message
-            where session_id in (select value from json_each(?))
-              and json_extract(data, '$.role') in ('user', 'assistant')
-            group by session_id`,
-        )
-        .all(ids)
-        .map((row) => [row.session_id, row.messages]),
+    const counts = db.query<MessageCountRow, [string]>(
+      `select session_id, count(*) as messages
+         from message
+        where session_id in (select value from json_each(?))
+          and json_extract(data, '$.role') in ('user', 'assistant')
+        group by session_id`,
     )
-    const usageRows = db
-      .query<UsageRow, [string]>(
-        `select session_id,
+    const usage = db.query<UsageRow, [string]>(
+      `select session_id,
                 strftime('%Y-%m-%d', time_created / 1000, 'unixepoch') as day,
                 json_extract(data, '$.modelID') as model,
                 count(*) as requests,
@@ -150,8 +147,18 @@ async function readSummaries(
             and json_extract(data, '$.role') = 'assistant'
             and json_type(data, '$.tokens') is not null
           group by session_id, day, model`,
-      )
-      .all(ids)
+    )
+    // A statement is synchronous, and the cold read of every session's messages held the event loop
+    // for 180 ms on a real 107 MB database. In batches, with a turn of the loop between them.
+    const messageCounts = new Map<string, number>()
+    const usageRows: UsageRow[] = []
+    const all = [...wanted]
+    for (let at = 0; at < all.length; at += SESSION_BATCH) {
+      if (at > 0) await nextMacrotask()
+      const ids = JSON.stringify(all.slice(at, at + SESSION_BATCH))
+      for (const row of counts.all(ids)) messageCounts.set(row.session_id, row.messages)
+      usageRows.push(...usage.all(ids))
+    }
     return summarizeOpencodeRows(rows, wanted, usageRows, messageCounts, firstPrompt, path)
   } finally {
     db.close()

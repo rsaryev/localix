@@ -93,7 +93,6 @@ export interface ChatStore extends OptimisticSendActions, StopGenerationActions 
    *  matching one, else create). Returns it so the caller can stamp the URL. */
   createHomeDraft: () => Promise<UiSession | null>
   createProject: (name: string, workingDir: string) => Promise<Project>
-  updateProject: (id: string, name: string, workingDir: string) => Promise<Project>
   deleteProject: (id: string) => Promise<void>
   setIsCreatingProject: (value: boolean) => void
   setEditingProject: (project: Project | null) => void
