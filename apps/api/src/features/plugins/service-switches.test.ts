@@ -138,6 +138,19 @@ describe('plugin switches', () => {
     expect(saved.error).toBe(disabled)
   })
 
+  test("an agent's switch answers with that agent's dependency verdict, not the default agent's", async () => {
+    const { root, service } = await setup()
+    writePlugin(join(root, 'top'), 'top', { dependencies: ['base'] })
+    writePlugin(join(root, 'base'), 'base')
+    // The default agent runs `top` without `base`; another agent switches both on.
+    await service.install('u1', { source: join(root, 'top'), projectId: null, enable: true })
+    await service.install('u1', { source: join(root, 'base'), projectId: null })
+    const agentId = 'builtin:qa'
+    await service.setEnabled('u1', { name: 'base', enabled: true, agentId })
+    const enabled = await service.setEnabled('u1', { name: 'top', enabled: true, agentId })
+    expect(enabled.error).toBeUndefined()
+  })
+
   test("enabling a plugin whose dependency is outside its range answers with the kit's error", async () => {
     const { root, service } = await setup()
     writePlugin(join(root, 'base'), 'base', { version: '3.0.0' })
@@ -182,6 +195,16 @@ describe('plugin switches', () => {
     await service.addMarketplace('u1', { source: join(root, 'market') })
     const rec = await service.install('u1', { source: 'top@market', projectId: null, enable: true })
     expect(rec.installedDependencies).toEqual(['base'])
+  })
+
+  test('a dependency the install brings is enabled with its parent, which then runs', async () => {
+    const { root, service } = await setup()
+    writeMarket(join(root, 'market'), { base: {}, top: { dependencies: ['base'] } })
+    await service.addMarketplace('u1', { source: join(root, 'market') })
+    const top = await service.install('u1', { source: 'top@market', projectId: null, enable: true })
+    expect(top).toMatchObject({ enabled: true, error: undefined })
+    const base = (await service.listPlugins('u1', {})).plugins.find((one) => one.name === 'base')
+    expect(base?.enabled).toBe(true)
   })
 
   test('an update from a local-folder marketplace re-installs the folder as it is now', async () => {

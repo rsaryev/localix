@@ -3,7 +3,7 @@ import { tempDirPerTest, writeTree } from '@localixai/testing'
 import type { ModRuntime } from '@rsaryev/llx-plugin/mods'
 import { modsTesting } from '../../plugins/kit/testing'
 import { INERT_MOD_PORTS, type ModScene, type ModsPorts } from '../contracts'
-import { createModsHost } from '../host'
+import { createModsHost, type ModsHostOptions } from '../host'
 import { NO_MOD_VMS } from '../isolation/mod-vm'
 import { createModRunScope } from '../run-scope'
 
@@ -44,6 +44,7 @@ export async function hostWithMod(register: (on: On) => void, ports: Partial<Mod
 export async function hostWithMods(
   mods: Record<string, (on: On) => void>,
   ports: Partial<ModsPorts> = {},
+  options: Partial<ModsHostOptions> = {},
 ) {
   const dir = scratch()
   const reports: string[] = []
@@ -55,7 +56,7 @@ export async function hostWithMods(
       report: (plugin, message) => reports.push(`${plugin}: ${message}`),
       ...ports,
     },
-    { vms: NO_MOD_VMS, homeDir: dir, managed: null, runtime: inlineMods(mods) },
+    { vms: NO_MOD_VMS, homeDir: dir, managed: null, runtime: inlineMods(mods), ...options },
   )
   await host.reconcile(
     Object.keys(mods).map((plugin) => {

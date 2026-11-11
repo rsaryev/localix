@@ -4,12 +4,11 @@ import { dirname, join } from 'node:path'
 import { localixWorkspaceDir } from '../../lib/env'
 import { buildPluginCatalog } from './catalog'
 import type { AvailabilityReader } from '../capabilities/availability'
-import { pluginLoadBlockReason } from './load-block'
 import { dataDirOfPlugin } from './plugin-data-id'
 import { scalarConfig, type CapabilitySourceRepository } from '../capabilities/source-repository'
 import { resolvePluginConfig } from './config'
-import { kitPluginsOf } from './catalog-kit'
-import { scopeRunningPlugins, type LocalixPluginHost } from './kit'
+import { catalogRun } from './catalog-kit'
+import type { LocalixPluginHost, ManagedSettingsSource } from './kit'
 
 /**
  * Contributions that are pure MANIFEST DATA — collected without importing a single
@@ -20,10 +19,9 @@ import { scopeRunningPlugins, type LocalixPluginHost } from './kit'
  * That is the right price for a caller that needs those. It is the wrong price for a
  * caller that needs only what discovery already parsed out of `plugin.json` (the mods host).
  *
- * The enable state remains the trust gate here exactly as in the full loader: a
- * disabled plugin contributes nothing, and a plugin the host refuses to load
- * (`pluginLoadBlockReason`) contributes nothing either, nor one the kit turns off because a
- * dependency of it is not met (`scopeRunningPlugins`).
+ * Which plugins run is the same verdict as in the full loader, the kit's (`catalogRun`): the
+ * agent's selection, managed settings over it, and the plugins' dependencies; a plugin the host
+ * refuses to load contributes nothing either.
  */
 
 export interface DeclarativeLoadOptions {
@@ -37,6 +35,8 @@ export interface DeclarativeLoadOptions {
   homeDir: string
   /** The plugin host the scope's session opens on: which plugins run is the kit's to judge. */
   pluginHost: LocalixPluginHost
+  /** The managed settings that may turn a plugin on or off; the machine's own by default. */
+  managed?: ManagedSettingsSource | null
 }
 
 /** An enabled plugin's hooks module, as the mods host loads it. */
@@ -68,15 +68,15 @@ export async function loadEnabledPluginMods(
     cwd: opts.cwd ?? localixWorkspaceDir(),
     homeDir: opts.homeDir,
   })
-  const running = await scopeRunningPlugins(opts.pluginHost, {
+  const run = await catalogRun(opts.pluginHost, catalog, {
     cwd: opts.cwd ?? localixWorkspaceDir(),
     homeDir: opts.homeDir,
-    plugins: kitPluginsOf(catalog),
+    ...(opts.managed === undefined ? {} : { managed: opts.managed }),
   })
   const mods: LoadedPluginMod[] = []
-  for (const { plugin, state } of catalog.enabled) {
+  for (const { plugin, state, error } of run.entries) {
     const module = plugin.entrypoints.hookModule
-    if (!module || pluginLoadBlockReason(plugin) || !running.has(plugin.manifest.name)) continue
+    if (!module || error) continue
     const options = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
     mods.push({
       plugin: plugin.manifest.name,

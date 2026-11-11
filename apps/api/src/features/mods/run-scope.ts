@@ -16,7 +16,7 @@ import {
   wrapToolResults,
   type CompactionVerdict,
 } from './session-events'
-import { modTools, wrapInToolCall } from './tool-call'
+import { modTools, wrapInToolCall, type ModTool } from './tool-call'
 import { toolCheckPort, type ModVerdict, type ToolCheckRun } from './tool-check'
 import { describeTools, type DescribedTools, type ToolPlacement } from './tool-describe'
 import { modelStepHook } from './turn-step'
@@ -59,7 +59,7 @@ export interface ModRunScope {
   /** `skill.prompt` for a skill preloaded into the run: the text the prompt holds for it. */
   skillPrompt?(skill: string, text: string): Promise<string>
   /** The tools the enabled mods registered. */
-  tools(): AgentTool[]
+  tools(): ModTool[]
   /** `tool.describe`: each tool's description, and the tools a mod moved behind the activator. */
   describeTools(tools: readonly AgentTool[], placement: ToolPlacement): Promise<DescribedTools>
   /** `prompt.section`, `attribution.text`, `prompt.compose`: the system prompt, when mods take part. */
@@ -106,6 +106,8 @@ export async function createModRunScope(
 ): Promise<ModRunScope> {
   // A delegated child's run reaches its parent conversation's mods.
   const hostScene = run.parentSessionId ? { ...scene, sessionId: run.parentSessionId } : scene
+  // The mods load a moment after start or a plugin change: the turn runs with them, not with none.
+  await host.settled()
   const kit = await host.hostFor(hostScene, enabled)
   const active = kit !== undefined
   const scope: ModEventScope | undefined = kit ? { host, kit, scene, ...agentOf(run) } : undefined

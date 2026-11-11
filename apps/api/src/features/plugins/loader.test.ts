@@ -69,6 +69,8 @@ const opts = (repo: CapabilitySourceRepository, availability: AvailabilityReader
   cwd: dir,
   homeDir: dir,
   pluginHost: diskPluginHost(dir),
+  // No managed settings: the machine's own are not the test's.
+  managed: null,
   now: NOW,
 })
 

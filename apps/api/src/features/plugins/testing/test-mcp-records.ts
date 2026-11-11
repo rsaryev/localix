@@ -1,6 +1,7 @@
-import { catalogMcpServers } from '../catalog-kit'
+import { catalogRun } from '../catalog-kit'
 import type { PluginCatalogEntry } from '../catalog'
 import type { DiscoveredPlugin } from '../discovery'
+import { issueLine } from '../kit'
 import { diskPluginHost } from '../kit/testing'
 import { buildMcpRecords } from '../mcp'
 
@@ -15,10 +16,8 @@ export async function pluginMcpRecords(
   logger?: { warn: (msg: string, meta?: unknown) => void },
 ) {
   const entry = { plugin, state: { config: values }, enabled: true } as PluginCatalogEntry
-  const servers = await catalogMcpServers(
-    diskPluginHost(home),
-    { all: [entry] },
-    { cwd: home, homeDir: home, logger },
-  )
+  const run = await catalogRun(diskPluginHost(home), { all: [entry] }, { cwd: home, homeDir: home })
+  const servers = await run.mcpServers()
+  for (const issue of servers.issues) logger?.warn(issueLine(issue))
   return buildMcpRecords(plugin, servers, 'u', 'ts', logger)
 }

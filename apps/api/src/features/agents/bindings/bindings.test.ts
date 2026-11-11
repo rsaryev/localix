@@ -75,6 +75,18 @@ describe('agent bindings', () => {
     expect(rules.some((rule) => rule.action === 'tool:Bash')).toBe(true)
   })
 
+  // A child delegated to a plugin's agent runs on that agent's rules: its own plugin off there would
+  // leave it without the skills its `skills:` preloads, as Claude Code never runs one.
+  test("a plugin's agent starts with its own plugin on", async () => {
+    plugins = [{ plugin: 'acme', enabled: true, agents: [{ name: 'lead' }] }]
+    await bindings().snapshot('u', '')
+    const rules = await capabilityStores.rules(db).read('u', 'cc:test-1')
+    expect(rules).toContainEqual(
+      expect.objectContaining({ action: 'plugin:acme', resource: '*', effect: 'allow' }),
+    )
+    expect(rules.some((rule) => rule.action === 'tool:Bash')).toBe(true)
+  })
+
   test('edit, rename by path, move and rename by body keep one identity', async () => {
     const b = bindings()
     await put(join(user(), 'a.md'), file('a'))

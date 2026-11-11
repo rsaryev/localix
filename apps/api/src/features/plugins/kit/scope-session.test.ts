@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { readPluginFolder } from './catalog/read-folder'
 import { diskPluginHost } from './testing'
-import { scopeMcpServers } from './scope-session'
+import { scopeRun } from './scope-session'
 import type { ScopePlugin } from './sessions'
 
 const dir = tempDirPerTest('kit-mcp-servers')
@@ -39,7 +39,7 @@ describe("a scope's plugin MCP servers, as the kit resolves them", () => {
   test("a selected plugin's server, its values and path variables substituted", async () => {
     const host = diskPluginHost(dir())
     const fmt = await installed('fmt', { values: { token: 's3cr3t' } })
-    const { resolved } = await scopeMcpServers(host, scope([fmt]))
+    const { resolved } = await (await scopeRun(host, scope([fmt]))).mcpServers()
     expect(resolved.map(({ key, server }) => [key, server])).toEqual([
       [
         'plugin:fmt:api',
@@ -55,7 +55,7 @@ describe("a scope's plugin MCP servers, as the kit resolves them", () => {
     const host = diskPluginHost(dir())
     const lint = await installed('lint', { scope: 'project', values: { token: 't' } })
     const off = await installed('off', { selected: false })
-    const { resolved } = await scopeMcpServers(host, scope([lint, off]))
+    const { resolved } = await (await scopeRun(host, scope([lint, off]))).mcpServers()
     expect(
       resolved.map(({ key, server }) => [key, (server as { command?: string }).command]),
     ).toEqual([['plugin:lint:api', join(lint.root, 'bin/serve')]])

@@ -12,6 +12,7 @@ import {
 import type { ModScene, ModSource, ModsPorts } from '../contracts'
 import type { ModComposer } from '../composer'
 import { createModuleCompiler } from '../module-build'
+import type { PaneScreen } from '../panes'
 import type { ModVmPort, VmClock } from '../isolation/mod-vm'
 import { createVmRuntime } from '../isolation/vm-runtime'
 import {
@@ -22,6 +23,7 @@ import {
   sessionModEnv,
 } from './platform-ports'
 import { createCrashes } from './crashes'
+import { createHostKeeping } from './host-keeping'
 import {
   disposeOf,
   failuresOf,
@@ -43,14 +45,13 @@ import { createSessionPorts } from './session-ports'
  * One kit `ModsHost` per Localix conversation, as Claude Code runs one mods runtime per session:
  * its chain, its `$` and its interface bound to that conversation's scene. The project a
  * conversation runs in chooses which mods it loads (`ModSource`); each loads in a VM of its own
- * (`vm-runtime.ts`). Hosts are kept for the conversations used most recently; the oldest past the
- * limit is disposed, and a change to the mods it loaded disposes it so the next use loads them anew.
- * A conversation's host unused for `idleMs` goes too (its VMs are most of what a conversation costs),
- * unless its turn runs or a pane of its mods is open; its next use loads it anew. The workspace's
- * host stays: it holds the commands and panes there before any chat.
+ * (`vm-runtime.ts`). Hosts are kept for the conversations used most recently, the oldest past the
+ * limit or unused for `idleMs` going unless in use (`host-keeping.ts`), and a change to the mods it
+ * loaded disposes it so the next use loads them anew. The workspace's host stays outside that
+ * limit: it holds the commands and panes there before any chat.
  */
 
-/** Live sessions' hosts kept at once; Localix's mods ran one instance per project for up to this many. */
+/** Conversations' hosts kept at once, the workspace's aside; Localix's mods ran one instance per project for up to this many. */
 export const SESSION_HOSTS = 16
 /** How long a conversation's host is kept unused. */
 export const IDLE_MS = 10 * 60_000
@@ -76,6 +77,8 @@ export interface SessionModsDeps {
   compose?: (scene: ModScene) => Promise<readonly { id: string; text: string; scope: string }[]>
   /** The managed settings source; the machine's own by default, `null` for none. */
   managed?: ManagedSettingsSource | null
+  /** Which panes the screen shows, by host key (`createPaneScreen` of `panes.ts`). */
+  screen?: Pick<PaneScreen, 'shownPane' | 'focusedPane'>
   /** How hooks modules compile: one compiler for every host, so a module is built once. */
   compiler?: ModCompiler
   /** Where hooks modules run; each in a VM of its own (`vm-runtime.ts`) by default. */
@@ -92,6 +95,13 @@ export function createSessionMods(deps: SessionModsDeps) {
   const compiler = deps.compiler ?? createModuleCompiler()
   const clock = deps.clock ?? systemClock
   const crashes = createCrashes(() => clock.now())
+  const { touch, evict, ...keeping } = createHostKeeping({
+    live,
+    clock,
+    idleMs: deps.idleMs ?? IDLE_MS,
+    maxHosts: deps.maxHosts ?? SESSION_HOSTS,
+    ...(deps.turnOf ? { turnOf: deps.turnOf } : {}),
+  })
   /** A mod's VM died: the line reported, and the host it ran in goes, rebuilt on its next use. */
   function died(key: string, sources: readonly ModSource[], plugin: string, reason: string) {
     const source = sources.find((one) => one.plugin === nameOf(plugin))
@@ -155,6 +165,10 @@ export function createSessionMods(deps: SessionModsDeps) {
         composer: deps.composer,
         rerun: deps.rerun,
         turn,
+        screen: {
+          shownPane: () => deps.screen?.shownPane(keyOf(scene)),
+          focusedPane: () => deps.screen?.focusedPane(keyOf(scene)),
+        },
       }),
       runtime:
         deps.runtime ??
@@ -185,27 +199,6 @@ export function createSessionMods(deps: SessionModsDeps) {
     // A command, tool or subagent type a mod registered: clients re-read the mods.
     host.registered.onChange(() => ports.changed())
     return host
-  }
-
-  /** `entry` was used: it goes once unused for `idleMs`, `session.end` heard as a resume. */
-  function touch(key: string, entry: Live) {
-    entry.idle?.()
-    if (!entry.scene.sessionId) return
-    entry.idle = clock.setTimer(() => {
-      if (live.get(key) !== entry) return
-      if (deps.turnOf?.(entry.scene) || entry.ready?.kit.ui.panes.list().length)
-        return touch(key, entry)
-      live.delete(key)
-      void disposeOf(entry, 'resume')
-    }, deps.idleMs ?? IDLE_MS)
-  }
-
-  async function evict() {
-    for (const [key, entry] of live) {
-      if (live.size <= (deps.maxHosts ?? SESSION_HOSTS)) return
-      live.delete(key)
-      await disposeOf(entry)
-    }
   }
 
   return {
@@ -245,6 +238,8 @@ export function createSessionMods(deps: SessionModsDeps) {
       void next.then(evict, () => live.get(key)?.host === next && live.delete(key))
       return next
     },
+    /** `work` runs in the scene's host, which is kept while it runs (`host-keeping.ts`). */
+    holding: keeping.holding,
     /** The scene's host when it is loaded already, without loading one. */
     loadedFor: (scene: ModScene) => live.get(keyOf(scene))?.host,
     /** The hosts loaded now, the most recently used last. */

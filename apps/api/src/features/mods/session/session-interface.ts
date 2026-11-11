@@ -19,6 +19,8 @@ export interface SessionInterfaceDeps {
   rerun: (event: string) => void
   /** The running turn's question card (`$.ui.ask`). */
   turn?: Pick<RunTools, 'ask'>
+  /** This host's pane the screen shows, and the one holding the keyboard (`panes.ts`). */
+  screen?: Pick<KitModInterface, 'shownPane' | 'focusedPane'>
 }
 
 /** The mod a kit status or log line names: `⚠ <mod>: ` or `● <mod>: ` starts it. */
@@ -44,6 +46,8 @@ export function createSessionInterface(deps: SessionInterfaceDeps): KitModInterf
       ports.changed()
     },
     isTerminalVisible: () => false,
+    shownPane: () => deps.screen?.shownPane?.(),
+    focusedPane: () => deps.screen?.focusedPane?.(),
     status(line) {
       if (scene.sessionId) composer.status(scene.sessionId, modOf(line), line)
     },

@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
-import { useGridStore } from '@/entities/workspace-grid/model'
+import { useGridStore, type GridStore } from '@/entities/workspace-grid/model'
 import { inspector } from '@/shared/lib/inspectorBus'
-import type { ModPaneRef } from '@/shared/api/modsApi'
+import { modsApi, type ModPaneRef } from '@/shared/api/modsApi'
 import { paneFocus } from './paneFocus'
+import { panesOnScreen } from './paneScreen'
 import { MOD_PANE_KIND, modPaneTabId, modPaneTabPayload, planPaneTabs } from './paneTabs'
 import { closeModPane, useModsOverview } from './useMods'
 
 /**
  * Keeps the `mod-pane` tabs in step with the panes the server lists (`paneTabs.ts`), and turns the
- * person closing one into `ui.close`. Mounted with every chat; one instance — the first — does the
+ * person closing one into `ui.close`, and tells the server which of them are in view
+ * (`panesOnScreen`). Mounted with every chat; one instance — the first — does the
  * work, so a pane is opened and closed once however many chats are on screen.
  */
 
@@ -86,5 +88,21 @@ export function ModPaneTabs() {
       }),
     [mutate],
   )
+  // Which pane tabs are in view, said again whenever that changes.
+  useEffect(() => {
+    let told = ''
+    const tell = (state: GridStore) => {
+      if (owner !== me.current) return
+      const facts = panesOnScreen(state)
+      const said = JSON.stringify(facts)
+      if (said === told) return
+      told = said
+      void modsApi.screen(facts).catch(() => {
+        told = ''
+      })
+    }
+    tell(useGridStore.getState())
+    return useGridStore.subscribe(tell)
+  }, [])
   return null
 }

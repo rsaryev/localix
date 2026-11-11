@@ -1,13 +1,7 @@
 import type { PluginSession, Resolved, ResolvedMcpServer } from '@rsaryev/llx-plugin'
 import type { LocalixPluginHost } from './host'
 import type { ManagedSettingsSource } from './settings/managed'
-import {
-  openOwnSession,
-  pluginErrors,
-  runningPlugins,
-  sessionOwn,
-  type ScopePlugin,
-} from './sessions'
+import { openOwnSession, pluginErrors, sessionOwn, type ScopePlugin } from './sessions'
 import { readClaudeSettings } from './settings/read'
 
 /** One scope: its folder, the home its Claude Code settings are read from, its catalog. */
@@ -40,29 +34,27 @@ export async function openScopeSession(
 }
 
 /**
- * The MCP servers of a scope's plugins as the kit resolves them (`session.mcpServers`). A server
- * that does not start (a bundle's required setting unsaved, a variable unset) is left out and its
- * issue reported.
+ * Whether each plugin of a scope runs, as the kit judges it in a session of the scope: the one
+ * verdict every loader starts plugin code by. The agent's selection, managed settings over it (a
+ * plugin they turn on or off), and a dependency not installed, disabled or outside its range.
  */
-export async function scopeMcpServers(
-  host: LocalixPluginHost,
-  scope: PluginScope,
-): Promise<Resolved<ResolvedMcpServer>> {
-  return (await openScopeSession(host, scope, 'mcp-servers')).mcpServers()
+export interface ScopeRun {
+  /** The ids of the plugins the scope runs. */
+  readonly running: ReadonlySet<string>
+  /** The kit's error against a plugin, by id (`pluginErrors`). */
+  readonly errors: ReadonlyMap<string, string>
+  /**
+   * The MCP servers of the running plugins (`session.mcpServers`). A server that does not start (a
+   * bundle's required setting unsaved, a variable unset) is left out and its issue reported.
+   */
+  readonly mcpServers: () => Promise<Resolved<ResolvedMcpServer>>
 }
 
-/** The plugins a scope runs outside any chat, by name (`runningPlugins` of its session). */
-export async function scopeRunningPlugins(
-  host: LocalixPluginHost,
-  scope: PluginScope,
-): Promise<ReadonlySet<string>> {
-  return runningPlugins(await openScopeSession(host, scope, 'mods'))
-}
-
-/** The kit's errors against a scope's plugins, by plugin id (`pluginErrors` of its session). */
-export async function scopePluginErrors(
-  host: LocalixPluginHost,
-  scope: PluginScope,
-): Promise<ReadonlyMap<string, string>> {
-  return pluginErrors(await openScopeSession(host, scope, 'plugin-errors'))
+export async function scopeRun(host: LocalixPluginHost, scope: PluginScope): Promise<ScopeRun> {
+  const session = await openScopeSession(host, scope, 'scope-run')
+  return {
+    running: new Set(session.plugins.flatMap((one) => (one.enabled ? [one.id] : []))),
+    errors: pluginErrors(session),
+    mcpServers: () => session.mcpServers(),
+  }
 }

@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test'
+import { manualClock } from './isolation/testing/testing-mods'
 import { hostWithMod, hostWithMods, type TestHook } from './testing/testing-host'
 
 test('a command typed in a conversation runs in its host, among the mods its turn loaded', async () => {
@@ -97,4 +98,38 @@ test('$.command.run fires command.run once, even when no mod answers it', async 
   expect(await host.runCommand({ command: 'go' }, scene)).toEqual({ text: 'went' })
   expect(seen.filter((command) => command === 'nobody')).toEqual(['nobody'])
   expect(answer).toContain('not /nobody')
+})
+
+test('a command the screen runs outside a turn keeps its host past the idle limit', async () => {
+  const clock = manualClock()
+  const gate = Promise.withResolvers<void>()
+  const ended: string[] = []
+  const { host } = await hostWithMods(
+    {
+      slow: (on) => {
+        on('command.run', async () => {
+          await gate.promise
+          return { text: 'done' }
+        })
+        on('session.end', async (_$, e: { sessionId: string }) => void ended.push(e.sessionId))
+      },
+    },
+    {},
+    { idleMs: 40, clock },
+  )
+  const chat = { userId: 'u', sessionId: 's-long', cwd: '/w' }
+  const running = host.runCommand({ command: 'slow' }, chat, new Set(['slow']))
+  await host.hostFor(chat, new Set(['slow']))
+  // A host that goes says so as it goes: its `session.end` is heard a turn of the loop later.
+  const turns = async (count: number) => {
+    for (let turn = 0; turn < count; turn++) await new Promise((r) => setTimeout(r, 0))
+  }
+  clock.advance(200)
+  await turns(20)
+  expect(ended).not.toContain('s-long')
+  gate.resolve()
+  expect(await running).toEqual({ text: 'done' })
+  clock.advance(40)
+  await turns(20)
+  expect(ended).toContain('s-long')
 })

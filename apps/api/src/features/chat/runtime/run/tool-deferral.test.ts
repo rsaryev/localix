@@ -10,6 +10,7 @@ import type { LoadedPlugins } from '../../../plugins/loader'
 import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 import type { CcHooksRuntime } from '../../../cc-hooks'
 import type { SessionRecord } from '../../repository'
+import { NO_MODS, type ModRunScope } from '../../../mods/run-scope'
 import type { RunEnv } from './types'
 import type { buildRunToolRegistry } from './runtime-tools'
 import { assembleRunTools } from './tool-assembly'
@@ -63,6 +64,7 @@ async function assemble(
     activatedTools?: string[]
     declaredTools?: string[]
     hiddenBySettings?: (tool: { name: string }) => boolean
+    mods?: ModRunScope
   } = {},
 ) {
   return assembleRunTools({
@@ -86,6 +88,7 @@ async function assemble(
     defaultCwd: '/tmp',
     disabledTools: [],
     backgroundToolNames: new Set<string>(),
+    ...(options.mods ? { mods: options.mods } : {}),
     ...(options.hiddenBySettings
       ? { hiddenBySettings: Promise.resolve(options.hiddenBySettings) }
       : {}),
@@ -168,5 +171,26 @@ describe('built-ins a run rarely calls wait behind ToolSearch', () => {
     expect(search.description).not.toContain('Configure')
     expect(search.description).toContain('- Vault [Localix]')
     expect(run.dispatchTools.map((t) => t.name)).toContain('Configure')
+  })
+})
+
+// Claude Code's `$.tool.register({ isDeferred: false })` lists the tool's schema from the start.
+describe("a mod's tools", () => {
+  const registered = (isDeferred?: boolean) => ({
+    ...NO_MODS,
+    tools: () => [
+      { ...tool('mcp__m__upfront'), ...(isDeferred === undefined ? {} : { isDeferred }) },
+    ],
+  })
+
+  test('wait behind ToolSearch by default', async () => {
+    const run = await assemble([tool('Read')], [], { mods: registered() })
+    expect(wire(run.tools)).toEqual(['Read', 'ToolSearch'])
+  })
+
+  test('one registered with isDeferred: false rides the wire from the start', async () => {
+    const run = await assemble([tool('Read')], [], { mods: registered(false) })
+    expect(wire(run.tools)).toEqual(['Read', 'mcp__m__upfront'])
+    expect(run.dispatchTools.map((t) => t.name)).toContain('mcp__m__upfront')
   })
 })

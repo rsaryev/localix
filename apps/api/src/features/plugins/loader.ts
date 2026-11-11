@@ -4,10 +4,9 @@ import { join } from 'node:path'
 
 import { type CapabilitySourceRepository, scalarConfig } from '../capabilities/source-repository'
 import type { AvailabilityReader } from '../capabilities/availability'
-import { pluginLoadBlockReason } from './load-block'
 import { buildPluginCatalog } from './catalog'
-import { catalogDependencyErrors, catalogMcpServers, kitPluginsOf } from './catalog-kit'
-import type { LocalixPluginHost } from './kit'
+import { catalogRun, kitPluginsOf } from './catalog-kit'
+import { issueLine, type LocalixPluginHost, type ManagedSettingsSource } from './kit'
 import { emptyLoadedPlugins, type LoadedPlugins } from './loader-contract'
 import { resolvePluginConfig } from './config'
 import { recordPluginLoad } from '../notifications/conditions/plugins'
@@ -43,6 +42,8 @@ export async function loadEnabledPlugins(opts: {
   homeDir: string
   /** The process's plugin host: the kit resolves the plugins' MCP servers in a session of it. */
   pluginHost: LocalixPluginHost
+  /** The managed settings that may turn a plugin on or off; the machine's own by default. */
+  managed?: ManagedSettingsSource | null
   now?: () => string
   logger?: {
     warn: (msg: string, meta?: unknown) => void
@@ -63,15 +64,17 @@ export async function loadEnabledPlugins(opts: {
   })
   result.awaitingConsent = catalog.awaitingConsent
   result.kitPlugins = kitPluginsOf(catalog)
-  const mcp = await catalogMcpServers(opts.pluginHost, catalog, {
+  // Which plugins run is the kit's verdict in a session of the scope, as a chat's run judges it:
+  // the agent's selection, managed settings over it, and the plugins' dependencies.
+  const run = await catalogRun(opts.pluginHost, catalog, {
     cwd: opts.cwd || opts.homeDir,
     homeDir: opts.homeDir,
-    logger: opts.logger,
+    ...(opts.managed === undefined ? {} : { managed: opts.managed }),
   })
+  const mcp = await run.mcpServers()
+  for (const issue of mcp.issues) opts.logger?.warn(issueLine(issue))
 
-  const unmet = catalogDependencyErrors(catalog)
-
-  for (const { plugin, state } of catalog.enabled) {
+  for (const { plugin, state, error } of run.entries) {
     const summary = {
       name: plugin.manifest.name,
       scope: plugin.scope,
@@ -97,12 +100,10 @@ export async function loadEnabledPlugins(opts: {
 
     // Refuse to RUN a plugin this host cannot satisfy: a fatal manifest error (broken JSON, invalid
     // name…), or a dependency that is not installed, disabled or outside its range (the kit's
-    // verdict, as a session judges it; plugins/troubleshooting.md, "Dependency errors").
-    // `summary.error` carries the reason, which the plugin row already renders — a plugin that
-    // contributes nothing must say why.
-    const blocked = pluginLoadBlockReason(plugin) ?? unmet.get(pluginIdOf(plugin))
-    if (blocked) {
-      summary.error = blocked
+    // verdict; plugins/troubleshooting.md, "Dependency errors"). `summary.error` carries the
+    // reason, which the plugin row already renders — a plugin that contributes nothing must say why.
+    if (error) {
+      summary.error = error
       finish()
       continue
     }

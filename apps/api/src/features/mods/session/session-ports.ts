@@ -72,6 +72,9 @@ export function createSessionPorts(deps: SessionPortsDeps): ModSessionPorts {
     deps.settings?.() ?? readClaudeSettings({ homeDir: ports.homeDir ?? '', cwd: scene.cwd })
   const read = () => ports.readSession?.(scene) ?? Promise.resolve(null)
   const sessionId = () => scene.sessionId
+  // The workspace's mods run outside any conversation, as a session of their own: its id lasts
+  // as long as the host, and `session.end` names it when the host goes.
+  const ownId = scene.sessionId ?? randomUUID()
   const git = async (...args: string[]) => {
     const result = await deps.run?.(['git', '-C', scene.cwd, ...args], scene.cwd).catch(() => null)
     return result?.exitCode === 0 ? result.stdout.trim() : null
@@ -141,11 +144,7 @@ export function createSessionPorts(deps: SessionPortsDeps): ModSessionPorts {
       root: async () => (await repo())?.root ?? scene.cwd,
       model: async () => (await read())?.model ?? '',
       turns: async () => ((await read())?.messages ?? []).filter((m) => m.role === 'user').length,
-      id: async () => {
-        const id = sessionId()
-        if (!id) throw new Error('$.session.id: no conversation here')
-        return id
-      },
+      id: async () => ownId,
       repo,
       surfaces: async () => ['desktop'],
       async usage() {

@@ -4,6 +4,7 @@ import { SEMANTIC_GLOBAL_SCOPE } from '@localixai/mini-app-sdk/backend'
 import { builtinAgentId } from '@localixai/agent/agents'
 import type { AppDatabase } from '../../../db/types'
 import { createKeyedSerializer } from '../../../lib/keyed-serializer'
+import { applySwitches } from '../../capabilities/availability'
 import { inheritedAgentPreset } from '../../capabilities/builtin-agent-presets'
 import type { CapabilitySourceRecord } from '../../capabilities/source-repository'
 import type { CapabilityStores } from '../../capabilities/store-factory'
@@ -103,7 +104,15 @@ export function createAgentBindings(deps: BindingDeps) {
         bodyHash: found.bodyHash,
       })
       for (const { found, id } of plan.create) {
-        await rules.replace(userId, id, inheritedAgentPreset(id))
+        // A plugin's agent also has its own plugin on: run as a child, its rules are the whole
+        // policy, and its plugin off there would leave it without its own skills and hooks.
+        const plugin = found.source.startsWith('plugin:') ? found.source.slice(7) : undefined
+        const preset = inheritedAgentPreset(id)
+        await rules.replace(
+          userId,
+          id,
+          plugin ? applySwitches(preset, 'plugin', [{ name: plugin, enabled: true }]) : preset,
+        )
         await sources.upsert(userId, found.projectId, id, {
           source: found.source,
           config: config(found),

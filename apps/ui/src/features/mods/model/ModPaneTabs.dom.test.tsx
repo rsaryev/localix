@@ -58,6 +58,10 @@ test('pane tabs follow the panes: opened in the background, focused when asked, 
   const close = spyOn(modsApi, 'close').mockImplementation(async (_instance, id) => {
     closed.push(id)
   })
+  const screens: unknown[] = []
+  const screen = spyOn(modsApi, 'screen').mockImplementation(async (facts) => {
+    screens.push(facts)
+  })
   let current = overview([pane('log')])
   const read = spyOn(modsApi, 'overview').mockImplementation(async () => current)
   let mutate: (key: string, data: unknown, revalidate: boolean) => Promise<unknown> = async () => {}
@@ -95,11 +99,18 @@ test('pane tabs follow the panes: opened in the background, focused when asked, 
     const log = modPaneTabId(pane('log'))
     expect(useGridStore.getState().items[log]?.title).toBe('Pane log')
     expect(activeOf(log)).not.toBe(log)
+    // The server hears which pane tabs are in view: none, Settings is.
+    expect(screens.at(-1)).toEqual({ shown: [], focused: null })
 
     // A new pane the mod asked forward opens focused.
     const diff = pane('diff', { focusRequest: 1 })
     await set(overview([pane('log'), diff]))
     expect(activeOf(modPaneTabId(diff))).toBe(modPaneTabId(diff))
+    const inView = { instance: 'gauge@p1', id: 'diff' }
+    expect(screens.at(-1)).toEqual({ shown: [inView], focused: inView })
+    const told = screens.length
+    await set(overview([pane('log'), diff]))
+    expect(screens).toHaveLength(told)
 
     // The person closes a tab: the pane is asked to close; the mod refused, so it comes back.
     const leaf = groupOfTab(useGridStore.getState().root, log)!
@@ -117,5 +128,6 @@ test('pane tabs follow the panes: opened in the background, focused when asked, 
     unregister()
     close.mockRestore()
     read.mockRestore()
+    screen.mockRestore()
   }
 })

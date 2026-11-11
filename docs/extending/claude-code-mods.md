@@ -14,12 +14,15 @@ with the plugin's `userConfig` values.
 Claude Code runs one mods runtime per session, so a mod runs once per chat: an instance starts with
 `session.start` in the chat's folder the first time the chat needs it, and keeps its own state. One
 more instance runs in the workspace, so a mod's commands and panes are there before any chat.
-Instances reload when the plugin is updated, enabled or reconfigured. At most 16 run at once, and
-the least recently used one stops (`session.end`).
+Instances reload when the plugin is updated, enabled or reconfigured. At most 16 chats' instances
+run at once, and the least recently used one stops (`session.end`); the workspace's does not count.
 
-A chat's instance unused for 10 minutes stops too, unless the chat's turn runs or one of its mods'
-panes is open, and starts again the next time the chat needs it. Deleting a chat stops its instance.
-A plugin whose dependency is not met runs no mod.
+A chat's instance unused for 10 minutes stops too, unless the chat's turn or a command run from the
+screen is running, or one of its mods' panes is open, and starts again the next time the chat needs
+it. One in use is never the one stopped for the limit. Deleting a chat stops its instance. The
+workspace's instance runs as a session of its own: `$.session.id()` names it, and it hears
+`session.end` when Localix stops or its mods reload. A plugin whose dependency is not met runs no
+mod.
 
 Each instance runs in a QuickJS VM of its own, in a worker thread: the same sandbox that runs
 `Workflow` scripts. As Claude Code describes a hooks module, `$` is its only way out: the VM has no
@@ -85,11 +88,15 @@ in its message box.
 
 Each pane a mod opens is a workspace tab of its own, titled with the pane's `title` and named in its
 header with the plugin and the project the mod runs in. `$.ui.open({ focus: true })` opens the tab
-focused and takes the keyboard, starting at its `autoFocus` control, and answers
-`{ isPlaced: true }`; `$.ui.open` without `focus` opens the tab in the background, where it is not
-drawn until the person brings it forward, and answers `{ isPlaced: false, reason }`. A pane's
-Buttons press by `hotkey` while it has focus, and `closeOnEscape` closes it on Escape. Its events
-run in the chat that opened it.
+focused and takes the keyboard, starting at its `autoFocus` control; `$.ui.open` without `focus`
+opens the tab in the background, where it is not drawn until the person brings it forward. Both
+answer `{ isPlaced: true }`. A pane's Buttons press by `hotkey` while it has focus, and
+`closeOnEscape` closes it on Escape. Its events run in the chat that opened it.
+
+`$.ui.panes()` says `isShown` for a pane whose tab is in view and `isFocused` for the one in the
+group holding the keyboard, as the window last told Localix. Claude Code shows one pane at a time,
+so with two of a chat's panes side by side only one, the focused one or else the first, is
+`isShown`.
 
 Closing the tab is the person closing the pane: the mod hears `ui.close` with
 `origin.kind: 'person'`, and a mod that refuses keeps the pane, whose tab comes back. A pane the mod
@@ -239,11 +246,9 @@ the `code-modernization` plugin load and run their hooks, commands and panes in 
   makes.
 - `$.settings.read({ key })` returns that key; `$.session.messages` takes `agentId` and `as: 'api'`
   and returns the newest 4096 entries, with `{ deny }` for an agent that is not a child of the
-  conversation. `$.session.id()` rejects outside a conversation. `$.session.repo()` is never
-  `internal` and has no `name`. `$.process.run` rejects a command still running at its timeout.
-  `$.command.register` refuses a built-in name and keeps `immediate`, which Localix does not use: a
-  command runs when it is typed.
-- `session.end` names no session: a mod's instance serves every chat of its project.
+  conversation. `$.session.repo()` is never `internal` and has no `name`. `$.process.run` rejects a
+  command still running at its timeout. `$.command.register` refuses a built-in name and keeps
+  `immediate`, which Localix does not use: a command runs when it is typed.
 - `$.session.append` keeps text rows only, and a command a mod answers with `{}` still shows a line.
 - The `claude-code/testing` kit and `claude plugin test` are not part of Localix.
 - `turn.complete` never says `refusal`: Localix's providers report none.

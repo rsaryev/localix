@@ -5,7 +5,7 @@
  * `loadEnabledPlugins` (a filesystem scan plus `register()` for each enabled plugin —
  * the loader's own comment calls it "the ordinary per-run load"), `discoverFilesystemSkills`
  * (a walk of the project and home skill dirs)
- * plus dynamic import), and `discoverContextFiles`. One session did that 1267 times, once
+ * plus dynamic import). One session did that 1267 times, once
  * per run in `agent_runs`.
  *
  * The waste is not that a run reloads — it is that PARENT AND CHILD reload the same thing.
@@ -23,7 +23,7 @@
  * (disabledTools, role tools, turn/time budgets) on top.
  *
  * WHY THIS KEY. `userId` and `projectId` decide which plugins are enabled and which
- * settings apply; `cwd` decides which filesystem skills and context files are found. Two
+ * settings apply; `cwd` decides which plugin files are found. Two
  * runs agreeing on all three see the same surface — which is exactly the parent/child
  * relationship. `capabilityRevision` is the invalidation half: enabling a plugin, editing
  * an MCP server or changing an agent provider bumps it, so a toggle is visible to the very
@@ -31,14 +31,15 @@
  * over-invalidates by design (see capabilities/revision.ts) — re-running discovery is
  * cheap, serving a stale enabled set is the bug.
  *
- * NOT CACHED HERE, deliberately: anything role- or turn-shaped. A role's tool allowlist, a
+ * NOT CACHED HERE, deliberately: the context files (`CLAUDE.md`, rules), which a new
+ * conversation reads as they are when it starts and whose edit is no capability change; and
+ * anything role- or turn-shaped. A role's tool allowlist, a
  * child's `maxTurns`, the frozen prompt strings — all of
  * those differ between a parent and its child even in one scope, and all of them are
  * cheap. Only the I/O is shared.
  */
 import { createSessionSnapshotCache } from './session-snapshot'
 import { capabilityRevision } from '../../capabilities/revision'
-import type { discoverContextFiles } from '../../agent-core/context-files'
 import type { LoadedPlugins } from '../../plugins/loader'
 import type { LoadedMiniApps } from '../../mini-apps/loader-contract'
 
@@ -48,11 +49,7 @@ import type { LoadedMiniApps } from '../../mini-apps/loader-contract'
  * shape IS the contract — naming the fields here would create a second place to keep in
  * step with it for no reader benefit.
  */
-export type ScopeDiscovery = [
-  plugins: LoadedPlugins,
-  miniApps: LoadedMiniApps,
-  contextFiles: Awaited<ReturnType<typeof discoverContextFiles>>,
-]
+export type ScopeDiscovery = [plugins: LoadedPlugins, miniApps: LoadedMiniApps]
 
 /** The inputs that decide what a scope can see. */
 export interface RunScopeKey {

@@ -35,6 +35,12 @@ const actionBody = z.object({
   element: z.string().min(1).max(200),
   value: z.string().max(100_000).optional(),
 })
+const screenPane = z.object({
+  instance: z.string().min(1).max(200),
+  id: z.string().min(1).max(200),
+})
+/** Which pane tabs the screen shows, and the one in the group holding the keyboard. */
+const screenBody = z.object({ shown: z.array(screenPane).max(50), focused: screenPane.nullable() })
 /** A band's control names its page: each page is its own drawing (`band-pages.ts`). */
 const bandActionBody = actionBody.extend({ page: z.number().int().min(0).max(16).optional() })
 
@@ -77,6 +83,11 @@ export function createModRoutes(
       .post('/sessions/:sessionId/band/actions', zValidator('json', bandActionBody), async (c) => {
         const handled = await host.band.interact(c.req.param('sessionId'), c.req.valid('json'))
         if (!handled) throw new NotFoundError('mod_control_gone', 'That control is no longer drawn')
+        return c.json({ ok: true })
+      })
+      // What the screen shows: `$.ui.panes()` answers `isShown` and `isFocused` by it.
+      .put('/panes/screen', zValidator('json', screenBody), (c) => {
+        host.panes.onScreen(c.req.valid('json'))
         return c.json({ ok: true })
       })
       .get('/panes/:instance/:id', zValidator('query', viewportQuery), async (c) => {

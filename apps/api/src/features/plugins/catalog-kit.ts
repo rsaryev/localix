@@ -2,14 +2,11 @@ import { scalarConfig } from '../capabilities/source-repository'
 import type { PluginCatalog } from './catalog'
 import { storedOptionValues } from './config'
 import {
-  issueLine,
-  scopeMcpServers,
-  scopePluginErrors,
-  unmetDependencies,
+  scopeRun,
   type LocalixPluginHost,
+  type ManagedSettingsSource,
   type ScopePlugin,
 } from './kit'
-import type { Resolved, ResolvedMcpServer } from '@rsaryev/llx-plugin'
 import { pluginLoadBlockReason } from './load-block'
 import { pluginIdOf } from './plugin-data-id'
 
@@ -35,26 +32,36 @@ export function kitPluginsOf(catalog: Pick<PluginCatalog, 'all'>): ScopePlugin[]
   )
 }
 
+/** The folder, home and managed settings a catalog's scope is judged in (`PluginScope`). */
+export interface CatalogScope {
+  readonly cwd: string
+  readonly homeDir: string
+  /** The managed settings; the machine's own by default, `null` for none. */
+  readonly managed?: ManagedSettingsSource | null
+}
+
 /**
- * The MCP servers of a catalog's plugins as the kit resolves them in a session of the scope; each
- * issue (a server that does not start) is logged.
+ * The kit's verdict on a catalog (`scopeRun`), what every loader starts plugin code by: the entries
+ * the scope turns on, each with what keeps it off (`error`: a refusal of this host,
+ * `pluginLoadBlockReason`, or the kit's, a dependency not met), the kit's errors by `pluginIdOf`,
+ * and the running plugins' MCP servers. An entry runs when it has no `error`.
  */
-export async function catalogMcpServers(
+export async function catalogRun(
   host: LocalixPluginHost,
   catalog: Pick<PluginCatalog, 'all'>,
-  scope: {
-    readonly cwd: string
-    readonly homeDir: string
-    readonly logger?: { warn: (msg: string, meta?: unknown) => void }
-  },
-): Promise<Resolved<ResolvedMcpServer>> {
-  const servers = await scopeMcpServers(host, {
-    cwd: scope.cwd,
-    homeDir: scope.homeDir,
+  scope: CatalogScope,
+) {
+  const { running, errors, mcpServers } = await scopeRun(host, {
+    ...scope,
     plugins: kitPluginsOf(catalog),
   })
-  for (const issue of servers.issues) scope.logger?.warn(issueLine(issue))
-  return servers
+  const entries = catalog.all.flatMap((entry) => {
+    const id = pluginIdOf(entry.plugin)
+    const error = pluginLoadBlockReason(entry.plugin) ?? errors.get(id)
+    const on = running.has(id) || (error !== undefined && (entry.enabled || errors.has(id)))
+    return on ? [{ ...entry, ...(error === undefined ? {} : { error }) }] : []
+  })
+  return { entries, errors, mcpServers }
 }
 
 /**
@@ -64,15 +71,7 @@ export async function catalogMcpServers(
 export async function catalogPluginErrors(
   host: LocalixPluginHost | undefined,
   catalog: Pick<PluginCatalog, 'all'>,
-  scope: { readonly cwd: string; readonly homeDir: string },
+  scope: CatalogScope,
 ): Promise<ReadonlyMap<string, string>> {
-  return host ? scopePluginErrors(host, { ...scope, plugins: kitPluginsOf(catalog) }) : new Map()
+  return host ? (await catalogRun(host, catalog, scope)).errors : new Map()
 }
-
-/**
- * The kit's dependency error against each selected plugin of a catalog, by `pluginIdOf`, judged
- * without a session (`unmetDependencies`): what keeps a plugin the loader would start off.
- */
-export const catalogDependencyErrors = (
-  catalog: Pick<PluginCatalog, 'all'>,
-): ReadonlyMap<string, string> => unmetDependencies(kitPluginsOf(catalog))

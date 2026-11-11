@@ -33,8 +33,8 @@ export const revisionOf = (sources: readonly ModSource[]) =>
   sources.map((source) => `${source.plugin}=${source.revision}`).join('\n')
 /**
  * A host goes, `session.end` heard first: the kit's `endSession` names the conversation it ran for
- * (`sessionId`, `resume.id`). A project's host outside any conversation has no session to end, so
- * its mods hear none. One that never finished loading has nothing to dispose.
+ * (`sessionId`, `resume.id`); the workspace's host, the session of its own it ran as. One that never
+ * finished loading has nothing to dispose.
  */
 export async function disposeOf(
   entry: Pick<Live, 'host' | 'idle'> | undefined,

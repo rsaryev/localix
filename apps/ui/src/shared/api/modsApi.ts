@@ -102,6 +102,18 @@ export interface ModBandDrawing {
   problem?: string
 }
 
+/** A pane tab as the screen tells the server it is in view. */
+export interface ModPaneOnScreen {
+  instance: string
+  id: string
+}
+
+/** The pane tabs in view, and the one in the group holding the keyboard (`$.ui.panes()`). */
+export interface ModPanesOnScreen {
+  shown: ModPaneOnScreen[]
+  focused: ModPaneOnScreen | null
+}
+
 export type ModAction = {
   kind: 'press' | 'change' | 'submit' | 'select'
   element: string
@@ -185,6 +197,9 @@ export const modsApi = {
         json: fault,
       }),
     )
+  },
+  async screen(facts: ModPanesOnScreen): Promise<void> {
+    await unwrap(await client.rpc.mods.panes.screen.$put({ json: facts }))
   },
   async close(instance: string, id: string): Promise<void> {
     await unwrap(

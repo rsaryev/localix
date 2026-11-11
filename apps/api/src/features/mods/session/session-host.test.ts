@@ -10,6 +10,7 @@ import {
   type ModSource,
   type ModsPorts,
 } from '../contracts'
+import { manualClock } from '../isolation/testing/testing-mods'
 import { createSessionMods, type SessionModsDeps } from './session-host'
 
 /** A Localix conversation's mods on the kit's host: real hooks modules in VMs, Localix's ports. */
@@ -133,6 +134,20 @@ test('a conversation whose host goes hears session.end, naming the conversation'
   expect(logs).toEqual(['m|● m: other a a'])
 })
 
+test("the workspace's host hears session.end when it goes, naming the session it ran as", async () => {
+  const { mods, logs, source, dir } = setup()
+  const code = `export function register(on) {
+    on('command.run', async ($) => ({ text: await $.session.id() }))
+    on('session.end', ($, e) => { $.ui.log(e.reason + ' ' + (e.sessionId === e.resume.id) + ' ' + e.sessionId) })
+  }`
+  const workspace: ModScene = { userId: '', cwd: dir }
+  const kit = await mods.hostFor(workspace, [source('m', code)])
+  const { text: id } = (await kit.runCommand('x', '')) as { text: string }
+  expect(id).toMatch(/^[0-9a-f-]{36}$/)
+  await mods.stop()
+  expect(logs).toEqual([`m|● m: other true ${id}`])
+})
+
 test("a module that fails to load is reported, by the kit's line", async () => {
   const { mods, reports, source, scene } = setup()
   await mods.hostFor(scene('s1'), [
@@ -246,27 +261,6 @@ test("a hook's $.command.run reaches the mod's other hook while that one runs el
 })
 
 /** A clock the test moves: timers fire when it passes them. */
-function manualClock() {
-  let now = 0
-  const timers = new Set<{ at: number; fire: () => void }>()
-  return {
-    now: () => now,
-    setTimer(fire: () => void, ms: number) {
-      const timer = { at: now + ms, fire }
-      timers.add(timer)
-      return () => void timers.delete(timer)
-    },
-    advance(ms: number) {
-      now += ms
-      for (const timer of timers)
-        if (timer.at <= now) {
-          timers.delete(timer)
-          timer.fire()
-        }
-    },
-  }
-}
-
 test("a conversation's host idle past `idleMs` goes; its next use loads it anew", async () => {
   const clock = manualClock()
   const { mods, source, scene } = setup({}, { idleMs: 40, clock })
@@ -282,14 +276,5 @@ test("a conversation's host idle past `idleMs` goes; its next use loads it anew"
   const again = await mods.hostFor(scene('s1'), [mod])
   expect(again).not.toBe(first)
   expect(await again.runCommand('x', '')).toEqual({ text: 'up' })
-  await mods.stop()
-})
-
-test('a host whose turn runs is not idle', async () => {
-  const clock = manualClock()
-  const { mods, source, scene } = setup({}, { idleMs: 40, clock, turnOf: () => ({ tools: [] }) })
-  await mods.hostFor(scene('s1'), [source('busy', `export function register(on) {}`)])
-  clock.advance(100)
-  expect(mods.size()).toBe(1)
   await mods.stop()
 })

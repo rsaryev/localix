@@ -54,10 +54,7 @@ export async function publishPluginInstallation(input: {
   const commit = async (directory: string) => {
     const plugin = await input.load(directory)
     if (plugin.error) throw new InvalidRequestError('plugin_invalid', plugin.error)
-    // Files are published while their backups and locks are retained. Resolve the graph before
-    // taking the database transaction so discovery never calls back into a held DB connection.
     const hasDependencies = declaredDependencies(plugin.manifest.dependencies).length > 0
-    const discovered = hasDependencies ? await input.discover() : []
     const warnings: string[] = []
     // The record, the row and its change notice are written here, under the destination lock.
     const claim = input.inPlaceClaim
@@ -78,9 +75,14 @@ export async function publishPluginInstallation(input: {
         for (const one of records) await one.settle()
       },
     }
+    // Files are published while their backups and locks are retained. The graph is resolved once
+    // the dependencies' records are taken, so a dependency the install brings is in it, and before
+    // the database transaction, so discovery never calls back into a held DB connection.
+    let discovered: DiscoveredPlugin[] = []
     try {
       for (const take of [input.record, ...(publication?.claims ?? [])])
         if (take) records.push(await take())
+      if (hasDependencies) discovered = await input.discover()
     } catch (error) {
       await cached.undo()
       await claim?.undo()

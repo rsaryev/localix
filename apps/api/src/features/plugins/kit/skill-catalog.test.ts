@@ -36,7 +36,7 @@ async function session(files: Record<string, string>, plugin: Record<string, str
 }
 
 describe('the skills of a chat, as the kit lists and expands them', () => {
-  test('a plugin skill is listed by the name the kit runs it by: its folder, whatever its frontmatter name', async () => {
+  test('a plugin skill is listed by its folder, and its frontmatter name finds it too', async () => {
     const chat = await session(
       {},
       { 'skills/fancy-folder/SKILL.md': skillFile('name: fancy\ndescription: Fancy things') },
@@ -49,15 +49,16 @@ describe('the skills of a chat, as the kit lists and expands them', () => {
         name: 'fancy-folder',
         description: 'Fancy things',
       },
-      names: ['tools:fancy-folder'],
+      names: ['tools:fancy-folder', 'tools:fancy', 'fancy'],
       source: { kind: 'plugin', pluginId: 'tools@test' },
       file: join(root, 'skills/fancy-folder/SKILL.md'),
       directory: join(root, 'skills/fancy-folder'),
     })
     expect(row && skillPlugin(row)).toEqual({ id: 'tools@test', name: 'tools' })
-    // Claude Code 2.1.319 and later: the frontmatter `name` gives a scanned plugin skill no name.
-    expect(findSessionSkill(chat, 'fancy')).toBeUndefined()
-    expect(findSessionSkill(chat, 'tools:fancy')).toBeUndefined()
+    // Claude Code 2.1.322: the frontmatter `name` is a name the skill answers to, not one it is
+    // listed by (the kit's `Skill.declaredCommand`).
+    expect(findSessionSkill(chat, 'fancy')?.invocable.command).toBe('tools:fancy-folder')
+    expect(findSessionSkill(chat, 'tools:fancy')?.invocable.command).toBe('tools:fancy-folder')
     for (const one of sessionSkills(chat)) {
       const invoked = await invokeSkill(chat, one.invocable.command, { invoker: 'model', signal })
       expect(invoked.ok).toBe(true)

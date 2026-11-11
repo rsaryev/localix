@@ -47,7 +47,7 @@ test('each turn resolves current native behavior and policy while retaining froz
       contextSnapshots: createSessionSnapshotCache<FrozenSessionContext>(),
       promptSnapshots: snapshotStore(),
       runScopes: {
-        resolve: async () => [emptyLoadedPlugins(), emptyLoadedMiniApps(), []],
+        resolve: async () => [emptyLoadedPlugins(), emptyLoadedMiniApps()],
       },
       now: () => '2026-01-01T00:00:00Z',
     } as unknown as PromptContextDeps
@@ -172,7 +172,6 @@ test('a denied mini app tool, mini app and plugin are absent from the turn', asy
               },
             ],
           },
-          [],
         ],
       },
       now: () => '2026-01-01T00:00:00Z',

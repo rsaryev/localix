@@ -15,7 +15,7 @@ import { createEventCalls } from './event-calls'
 import type { ModVmPort, VmClock } from './isolation/mod-vm'
 import { createMeasurer } from './measure'
 import { createModuleCompiler } from './module-build'
-import { createModPanes } from './panes'
+import { createModPanes, createPaneScreen } from './panes'
 import { createSessionMods } from './session/session-host'
 import { summarize } from './summary'
 
@@ -85,8 +85,10 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions) {
     wanted.filter((source) => !plugins || plugins.has(source.plugin))
   const rootOf = (plugin: string) => wanted.find((source) => source.plugin === plugin)?.root
 
+  const screen = createPaneScreen()
   const sessions = createSessionMods({
     ports,
+    screen,
     composer,
     rerun: (event) => answers.invalidate(event),
     vms: options.vms,
@@ -129,6 +131,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions) {
 
   const calls = createEventCalls(() => host)
   const panes = createModPanes({
+    screen,
     hosts: () =>
       sessions.hosts().map((live) => ({ key: live.key, cwd: live.scene.cwd, kit: live.kit })),
     changed: ports.changed,
@@ -258,10 +261,12 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions) {
     },
     /** A mod's command, through `command.run` in the scene's conversation: only mods answer it. */
     async runCommand(input: CommandInput, scene: ModScene, plugins?: ReadonlySet<string>) {
-      const kit = (await runningHostFor(scene, plugins)) ?? (await hostFor(scene, plugins))
-      if (!kit) return commandAnswer(undefined)
-      const options = input.origin ? { origin: input.origin } : {}
-      return commandAnswer(await kit.runCommand(input.command, input.args ?? '', options))
+      return sessions.holding(scene, async () => {
+        const kit = (await runningHostFor(scene, plugins)) ?? (await hostFor(scene, plugins))
+        if (!kit) return commandAnswer(undefined)
+        const options = input.origin ? { origin: input.origin } : {}
+        return commandAnswer(await kit.runCommand(input.command, input.args ?? '', options))
+      })
     },
     /** A deleted conversation: its host goes (`session.end` heard), and what was kept for it. */
     async forget(sessionId: string): Promise<void> {

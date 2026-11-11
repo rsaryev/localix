@@ -22,6 +22,7 @@ import type { SessionRecord } from '../repository'
 import { resolveBaseSessionCwd } from '../session-cwd'
 import type { PersistedMessage } from '../contracts'
 import { loadProjectStructureSnapshot } from '../../agent-core/project-structure'
+import { discoverContextFiles } from '../../agent-core/context-files'
 import { autoMemoryDir, readMemoryIndex } from '../../memory/auto-memory'
 import { claudeCodeHome } from '../../cc-settings/config-dir'
 import type { PromptContextDeps, PreparedRunContext } from './prompt-context-contracts'
@@ -112,7 +113,7 @@ export async function prepareRunContext(
   // `runScopes` keys on the capability revision too, so enabling a plugin is visible to
   // the very next run without anyone clearing anything. See run-scope.ts for why the
   // role- and turn-shaped inputs stay OUT of this.
-  const [[rawPlugins, rawMiniApps, contextFiles], projectStructure] = await Promise.all([
+  const [[rawPlugins, rawMiniApps], contextFiles, projectStructure] = await Promise.all([
     ctx.runScopes.resolve(
       {
         userId,
@@ -128,6 +129,9 @@ export async function prepareRunContext(
           availability: scopeAvailability,
         }),
     ),
+    // The project's `CLAUDE.md` and rules as they are now: an edit is not a capability change,
+    // and a new conversation reads them afresh, as Claude Code does. Never throws.
+    discoverContextFiles(defaultCwd),
     loadProjectStructureSnapshot(env, defaultCwd),
   ])
 

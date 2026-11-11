@@ -111,8 +111,14 @@ export function wrapInToolCall(tools: readonly AgentTool[], scope: ModEventScope
   )
 }
 
+/**
+ * A tool a mod registered, with its registration's `isDeferred`: `false` lists its schema from the
+ * start, as Claude Code does, instead of behind ToolSearch.
+ */
+export type ModTool = AgentTool & { readonly isDeferred?: boolean }
+
 /** The tools the enabled mods registered, each answered by their `tool.call` hooks. */
-export function modTools(scope: ModEventScope): AgentTool[] {
+export function modTools(scope: ModEventScope): ModTool[] {
   return scopedTools(scope).map((spec) => {
     const name = spec.fullName
     return {
@@ -121,6 +127,7 @@ export function modTools(scope: ModEventScope): AgentTool[] {
       description: spec.description,
       inputSchema: mcpInputSchema(spec.inputSchema ?? { type: 'object', properties: {} }),
       activeVerb: 'Running',
+      ...(spec.isDeferred === undefined ? {} : { isDeferred: spec.isDeferred }),
       async execute(toolCallId, input, signal) {
         const unanswered: AgentToolResult = {
           content: `No hook of ${spec.plugin} answered ${name}`,
@@ -135,6 +142,6 @@ export function modTools(scope: ModEventScope): AgentTool[] {
         )
         return resultOf(answer, unanswered)
       },
-    } satisfies AgentTool
+    } satisfies ModTool
   })
 }

@@ -1,6 +1,5 @@
 import {
   normalizePermissionMode,
-  pluginsWithDependencies,
   type Locations,
   type OptionValues,
   type PluginSession,
@@ -95,19 +94,6 @@ export function pluginErrors(
   for (const { severity, path, message } of session.issues)
     if (severity === 'error' && ids.has(path) && !errors.has(path)) errors.set(path, message)
   return errors
-}
-
-/**
- * The same dependency verdict without a session, for a loader that starts plugin code itself: the
- * kit's error against each selected plugin a dependency keeps off (not installed, disabled or
- * outside its range, transitively), by plugin id. A plugin the scope does not select counts as a
- * disabled dependency, one the catalog lacks as not installed.
- */
-export function unmetDependencies(plugins: readonly ScopePlugin[]): ReadonlyMap<string, string> {
-  const { issues } = pluginsWithDependencies(
-    plugins.map(({ id, plugin, selected }) => ({ id, plugin, enabled: selected })),
-  )
-  return new Map(issues.map(({ path, message }) => [path, message]))
 }
 
 /** The locations of a session: its project, and its own plugins' folders before the host's. */

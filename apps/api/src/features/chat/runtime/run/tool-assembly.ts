@@ -192,6 +192,8 @@ export async function assembleRunTools(
   // Where a deferred tool is catalogued from: its provenance, or `Localix` for a deferred built-in.
   // Kept apart from `sourceByTool`, whose absent name means a core tool to every reader.
   const deferralSource = new Map(sourceByTool)
+  // A mod's tool registered with `isDeferred: false` is listed from the start.
+  for (const tool of modTools) if (tool.isDeferred === false) deferralSource.delete(tool.name)
   // A role that names the tool in its `tools` list asked for it: it stays on the wire.
   const declared = new Set(agentProfile.declaredTools ?? [])
   if (agentProfile.openToolset)

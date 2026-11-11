@@ -83,6 +83,9 @@ import {
 // here so the historical `./service` import surface stays unchanged.
 export type { PluginService, PluginServiceDeps } from './service-types'
 
+/** A scope a catalog is built for: its project ('' or none is global), as its agent selects. */
+type CatalogScope = { projectId?: string | null; agentId?: string | null }
+
 export function createPluginService(deps: PluginServiceDeps): PluginService {
   // ONE home for every discovery and install root of this service (see `PluginServiceDeps.homeDir`).
   const home = deps.homeDir
@@ -199,9 +202,9 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     return plugin
   }
 
-  /** The kit's error against one plugin in its scope: what its row in the list shows. */
-  const kitErrorOf = async (userId: string, plugin: DiscoveredPlugin, projectId: string) => {
-    const { catalog, runtimeCwd: cwd } = await scopeCatalog(userId, projectId)
+  /** The kit's error against one plugin in its scope, as its agent sees it: what its row shows. */
+  const kitErrorOf = async (userId: string, plugin: DiscoveredPlugin, scope: CatalogScope) => {
+    const { catalog, runtimeCwd: cwd } = await scopeCatalog(userId, scope)
     const errors = await catalogPluginErrors(deps.pluginHost, catalog, { cwd, homeDir: home })
     return errors.get(pluginIdOf(plugin))
   }
@@ -227,12 +230,13 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
   }
 
   /** One scope's plugin catalog, built where its project runs (the workspace when global). */
-  const scopeCatalog = async (userId: string, scopeProjectId: string | null | undefined) => {
-    const projectId = scopeProjectId ?? ''
+  const scopeCatalog = async (userId: string, scope: CatalogScope = {}) => {
+    const projectId = scope.projectId ?? ''
+    const agentId = scope.agentId || DEFAULT_AGENT_ID
     const runtimeCwd = (projectId ? await cwdFor(userId, projectId) : null) ?? localixWorkspaceDir()
     const catalog = await buildPluginCatalog({
       repo,
-      availability: await readAvailability(deps.db, { userId, agentId: DEFAULT_AGENT_ID }),
+      availability: await readAvailability(deps.db, { userId, agentId }),
       userId,
       projectId,
       cwd: projectId ? runtimeCwd : null,
@@ -276,7 +280,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       void cwdFor(userId, opts?.projectId ?? '')
         .then(syncDeclared)
         .catch(() => undefined)
-      const { projectId, runtimeCwd, catalog } = await scopeCatalog(userId, opts?.projectId)
+      const { projectId, runtimeCwd, catalog } = await scopeCatalog(userId, opts)
       return { plugins: await recordsFromCatalog(catalog, projectId, runtimeCwd) }
     },
 
@@ -286,7 +290,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
      * the enable rule once per projection, on every snapshot fetch.
      */
     async listPluginContributions(userId, opts) {
-      const { projectId, runtimeCwd, catalog } = await scopeCatalog(userId, opts?.projectId)
+      const { projectId, runtimeCwd, catalog } = await scopeCatalog(userId, opts)
       return {
         plugins: await recordsFromCatalog(catalog, projectId, runtimeCwd),
         themes: listThemesFromCatalog(catalog),
@@ -396,7 +400,8 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       )
       deps.onChanged?.()
       const verdict = await verdictFor(userId, plugin, input.agentId)
-      return toRecord(plugin, state, verdict, false, await kitErrorOf(userId, plugin, projectId))
+      const error = await kitErrorOf(userId, plugin, { projectId, agentId: input.agentId })
+      return toRecord(plugin, state, verdict, false, error)
     },
 
     async setConfig(userId, input) {
@@ -411,7 +416,8 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       })
       deps.onChanged?.()
       const verdict = await verdictFor(userId, plugin)
-      return toRecord(plugin, state, verdict, false, await kitErrorOf(userId, plugin, projectId))
+      const error = await kitErrorOf(userId, plugin, { projectId })
+      return toRecord(plugin, state, verdict, false, error)
     },
 
     async install(userId, input, opts) {

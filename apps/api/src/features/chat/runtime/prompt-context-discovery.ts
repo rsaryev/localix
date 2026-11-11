@@ -1,4 +1,3 @@
-import { discoverContextFiles } from '../../agent-core/context-files'
 import type { AvailabilityReader } from '../../capabilities/availability'
 import { loadEnabledMiniApps } from '../../mini-apps/loader'
 import { emptyLoadedMiniApps } from '../../mini-apps/loader-contract'
@@ -12,7 +11,7 @@ import type { PromptContextDeps } from './prompt-context-contracts'
 
 /**
  * Everything a run's prompt discovers that depends only on its scope (user, project, working
- * directory, agent): the enabled plugins and mini apps, and the context files.
+ * directory, agent): the enabled plugins and mini apps.
  * `prepareRunContext` shares one answer across the scope (`runScopes`), so a spawned child that
  * inherits its parent's directory does not re-`register()` every plugin.
  */
@@ -81,9 +80,5 @@ export function loadScopeDiscovery(
         recordMiniAppCatalogLoad(scope.userId, scope.projectId, err)
         return emptyLoadedMiniApps()
       }),
-    // Localix context files (`.localix/context.md` + `.localix/rules/`) —
-    // auto-loaded into the
-    // session-stable "# Project context" prompt section. Never throws.
-    discoverContextFiles(scope.cwd),
   ])
 }

@@ -10,7 +10,6 @@ export {
   createChatPluginSessions,
   pluginErrors,
   runningPlugins,
-  unmetDependencies,
   type ChatPluginSessions,
   type ScopePlugin,
 } from './sessions'
@@ -18,7 +17,7 @@ export { sessionLspServers, type PluginLspServer } from './lsp-servers'
 export { monitorsToLaunch, type MonitorLaunch } from './monitors'
 export { scopeAgents, type HostAgents, type ScopeAgent, type ScopeAgents } from './agents'
 export { catalogTier } from '@rsaryev/llx-plugin/agents'
-export { scopeMcpServers, scopePluginErrors, scopeRunningPlugins } from './scope-session'
+export { scopeRun, type ScopeRun } from './scope-session'
 export { readPluginFolder, type FolderSource } from './catalog/read-folder'
 export { issueLine } from './catalog/issue-line'
 export { isPluginFolder, PLUGIN_MANIFEST } from './catalog/plugin-folder'

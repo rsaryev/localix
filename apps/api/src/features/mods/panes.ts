@@ -57,12 +57,55 @@ export interface PaneRef {
   focusRequest: number
 }
 
+const hostTagOf = (hostKey: string) =>
+  createHash('sha256').update(hostKey).digest('hex').slice(0, 10)
 /** A pane's owner as the screen names it: `<plugin>~<hash of its host>`. */
-export const paneInstanceOf = (plugin: string, hostKey: string) =>
-  `${plugin}~${createHash('sha256').update(hostKey).digest('hex').slice(0, 10)}`
+export const paneInstanceOf = (plugin: string, hostKey: string) => `${plugin}~${hostTagOf(hostKey)}`
+
+/** A pane as the screen names it. */
+export interface ScreenPane {
+  instance: string
+  id: string
+}
+export interface PanesOnScreen {
+  /** The pane tabs in view, one per group of the grid at most. */
+  shown: readonly ScreenPane[]
+  /** The one of them in the group holding the keyboard. */
+  focused: ScreenPane | null
+}
+
+/**
+ * Which panes the screen shows, as it last said (`PUT /panes/screen`): the kit's `shownPane` and
+ * `focusedPane` of each host. The kit asks one host for one pane in view; with several of its panes
+ * side by side, the one with the keyboard is it, else the first. Before any screen says, none is.
+ */
+export function createPaneScreen() {
+  let now: PanesOnScreen = { shown: [], focused: null }
+  const ofHost = (hostKey: string, panes: readonly (ScreenPane | null)[]) =>
+    panes.find((pane) => pane?.instance.endsWith(`~${hostTagOf(hostKey)}`))?.id
+  const same = (a: ScreenPane | null, b: ScreenPane | null) =>
+    a?.instance === b?.instance && a?.id === b?.id
+  return {
+    /** The screen's word; whether it changed anything. */
+    report(next: PanesOnScreen) {
+      const changed =
+        !same(now.focused, next.focused) ||
+        now.shown.length !== next.shown.length ||
+        now.shown.some((pane, at) => !same(pane, next.shown[at]!))
+      now = next
+      return changed
+    },
+    shownPane: (hostKey: string) => ofHost(hostKey, [now.focused, ...now.shown]),
+    focusedPane: (hostKey: string) => ofHost(hostKey, [now.focused]),
+    isFocused: (instance: string, id: string) => same(now.focused, { instance, id }),
+  }
+}
+
+export type PaneScreen = ReturnType<typeof createPaneScreen>
 
 export function createModPanes(deps: {
   hosts: () => readonly PaneHost[]
+  screen: PaneScreen
   changed: () => void
   /** The revision of a plugin's surface module, as the host bundled it. */
   clientRevision: (plugin: string, module: string) => string | undefined
@@ -126,7 +169,7 @@ export function createModPanes(deps: {
       requestId: id,
       props: {
         title: title ?? id,
-        isFocused: true,
+        isFocused: deps.screen.isFocused(instance, id),
         bodyColumns: viewport.columns,
         placement: 'dock',
         scroll: { bodyRows: viewport.rows, offset: 0 },
@@ -155,6 +198,10 @@ export function createModPanes(deps: {
   return {
     list,
     render,
+    /** Which panes the screen shows now: drawn again when that changed. */
+    onScreen(facts: PanesOnScreen) {
+      if (deps.screen.report(facts)) deps.changed()
+    },
     /** A control used on screen: through its event, to the callback of the last drawing. */
     async interact(instance: string, id: string, action: ControlAction): Promise<boolean> {
       const found = find(instance, id)
