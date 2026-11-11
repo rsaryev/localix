@@ -57,7 +57,10 @@ describe('installing name@marketplace', () => {
   it('finds a plugin the marketplace added after it was added here', async () => {
     upstream(['first'])
     const { deps, now } = setup()
-    await addMarketplace({ source: 'github', repo: 'acme/plugins' }, deps)
+    await addMarketplace(
+      { kind: 'github', repo: 'acme/plugins', path: '.claude-plugin/marketplace.json' },
+      deps,
+    )
     upstream(['first', 'second'])
     deps.tick(60_000)
 
@@ -74,7 +77,10 @@ describe('installing name@marketplace', () => {
   it('installs from the cached catalog when the refresh fails, and says so', async () => {
     upstream(['first'])
     const { deps, now } = setup()
-    await addMarketplace({ source: 'github', repo: 'acme/plugins' }, deps)
+    await addMarketplace(
+      { kind: 'github', repo: 'acme/plugins', path: '.claude-plugin/marketplace.json' },
+      deps,
+    )
     deps.fail(true)
     deps.tick(60_000)
 
@@ -93,7 +99,10 @@ describe('updating a plugin', () => {
   it('reads a git marketplace again first', async () => {
     upstream(['first'])
     const { deps, now } = setup()
-    await addMarketplace({ source: 'github', repo: 'acme/plugins' }, deps)
+    await addMarketplace(
+      { kind: 'github', repo: 'acme/plugins', path: '.claude-plugin/marketplace.json' },
+      deps,
+    )
     upstream(['first', 'second'])
     deps.tick(60_000)
 

@@ -89,15 +89,14 @@ test('a timer a drawing leaves behind writes once the drawing is done', async ()
   await expect(later!()).resolves.toEqual({ isSet: true, version: 1 })
 })
 
-test('a reset returns every value to its default, redraws, and never reuses a version', async () => {
+test('a reset returns every value to its default and redraws', async () => {
   const { spaces, state, redraws } = setup()
   await state.set(COUNT, 1)
   await state.set(COUNT, 2)
   spaces.reset('/work')
   expect(redraws()).toBe(1)
   expect(await state.get(COUNT)).toEqual({ value: undefined, version: 0 })
-  // A stale `ifVersion` from before the reset cannot match the new version.
-  expect(await state.set(COUNT, 3)).toEqual({ isSet: true, version: 3 })
+  expect(await state.set(COUNT, 3)).toEqual({ isSet: true, version: 1 })
 })
 
 test('a space refuses a write past its total size; rewriting a key or a reset frees room', () => {

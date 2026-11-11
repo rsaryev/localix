@@ -9,7 +9,7 @@ import { pathExists } from '../ext/fs-discovery'
 import { entrySource } from './claude-code-installs'
 import type { DiscoveredPlugin } from './discovery-types'
 import { loadManifest } from './manifest-load'
-import { readMarketplace, type MarketplaceEntry } from './kit'
+import { readKnownMarketplaces, readMarketplace, type MarketplaceEntry } from './kit'
 import { marketplacesRoot } from './marketplace-source'
 import { withWorkflowCommands } from './workflow-commands'
 
@@ -90,12 +90,9 @@ async function listedEntry(homeDir: string, id: string): Promise<MarketplaceEntr
   const at = id.lastIndexOf('@')
   if (at <= 0) return undefined
   try {
-    const known = JSON.parse(
-      await fs.readFile(join(marketplacesRoot(homeDir), 'known.json'), 'utf8'),
-    ) as unknown
-    const record = isRecord(known) ? known[id.slice(at + 1)] : undefined
-    if (!isRecord(record) || typeof record.installLocation !== 'string') return undefined
-    const market = await readMarketplace(record.installLocation, record.source)
+    const record = (await readKnownMarketplaces(marketplacesRoot(homeDir)))[id.slice(at + 1)]
+    if (!record) return undefined
+    const market = await readMarketplace(record)
     return market.plugins.find((one) => one.name === id.slice(0, at))
   } catch {
     return undefined

@@ -41,7 +41,7 @@ export interface PluginMonitorHost {
   /**
    * Start what the moved session hands out now (`kit/monitors.ts`): its `always` monitors when it
    * opens, and the `on-skill-invoke` ones whose skill it expanded. One the chat already runs (a
-   * session it reopened hands it out again) is not started twice.
+   * sub-agent's session hands it out again) is not started twice.
    */
   sessionMoved(input: ChatSessionMoved): Promise<void>
   /** The chat ended (deleted, or it can take no wake): its monitors stop. */

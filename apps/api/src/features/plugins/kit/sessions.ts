@@ -6,6 +6,7 @@ import {
 } from '@rsaryev/llx-plugin'
 import { createPolicyView, type PolicyLayer } from '@rsaryev/llx-plugin/settings'
 import { keepUnchanged, samePlugins, type LoadedKitPlugin, type LocalixPluginHost } from './host'
+import { LOCALIX_TOOL_NAMES } from './tool-names'
 
 /**
  * A plugin of the run's catalog: whether the run's agent may use it (`capability_rule`, trust), a
@@ -89,7 +90,8 @@ export function sessionLocations(
  * for its later runs, each run a turn of it (`withTurn`), so its `once` keys and session hooks
  * live as long as the chat. A change of trust, of the added folders, of the settings (the files,
  * the agent's selection), of the project's own plugins or their values, which a turn cannot carry,
- * opens it again. A deleted chat is
+ * opens it again, on the monitors the one it replaces started and the skills it ran
+ * (`monitorLedger`). A deleted chat is
  * forgotten (`forget`, from the runtime's session cleanup).
  */
 export function createChatPluginSessions(host: LocalixPluginHost) {
@@ -136,6 +138,8 @@ export function createChatPluginSessions(host: LocalixPluginHost) {
         plugins: own.plugins.map(({ id, plugin }) => ({ id, plugin })),
         userConfig: own.userConfig,
         locations,
+        toolNames: LOCALIX_TOOL_NAMES,
+        ...(held ? { monitorLedger: held.session.monitorLedger() } : {}),
       })
       const { chatId } = facts
       session.onBackground((delivered) => delivered.wake && wakes.get(chatId)?.(delivered.wake))

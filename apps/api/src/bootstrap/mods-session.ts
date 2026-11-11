@@ -1,9 +1,6 @@
 import type { PersistedMessage } from '../features/chat/contracts'
-import {
-  claudeCodeHookCall,
-  claudeCodeToolName,
-  claudeCodeToolResponse,
-} from '../features/ext/cc-tool-shapes'
+import { claudeCodeToolResponse } from '../features/ext/cc-tool-shapes'
+import { claudeCodeHookCall, claudeCodeToolName } from '../features/plugins/kit'
 import type { ModSessionMessage, ModSessionRead } from '../features/mods/contracts'
 
 /** A call's input in Claude Code's fields, as the conversation recorded it. */

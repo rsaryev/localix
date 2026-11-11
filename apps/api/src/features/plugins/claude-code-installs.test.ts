@@ -53,7 +53,11 @@ function fixture(): void {
       },
     }),
     '.claude/plugins/known_marketplaces.json': JSON.stringify({
-      mkt: { source: { source: 'github', repo: 'acme/mkt' }, installLocation: market() },
+      mkt: {
+        source: { source: 'github', repo: 'acme/mkt' },
+        installLocation: market(),
+        lastUpdated: '2026-10-01T00:00:00.000Z',
+      },
     }),
     '.claude/settings.json': JSON.stringify({
       enabledPlugins: {

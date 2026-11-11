@@ -11,12 +11,9 @@ import {
   type ToolCall,
 } from '@rsaryev/llx-plugin/rules'
 import type { PolicyScope } from '@rsaryev/llx-plugin/settings'
-import {
-  claudeCodeHookCall,
-  claudeCodeNames,
-  claudeCodeToolName,
-  singleCalls,
-} from '../../ext/cc-tool-shapes'
+import { singleCalls } from '../../ext/cc-tool-shapes'
+import { claudeCodeHookCall } from './tool-calls'
+import { claudeCodeToolNames } from './tool-names'
 import { realPathResolver } from './ports/session-files'
 import type { SettingsRuleEntry } from './settings/permissions'
 
@@ -26,7 +23,7 @@ import type { SettingsRuleEntry } from './settings/permissions'
  * whatever the order of files and rules; `bashFileTargets` for the files a shell line names;
  * `availableTools` for the bare denials that take a tool away; `prepareCall` and
  * `resolveRuleDirectories` for where a symlink leads). This file only puts a Localix call in
- * Claude Code's shape (`ext/cc-tool-shapes.ts`) and says where a rule was written.
+ * Claude Code's shape (`tool-calls.ts`) and says where a rule was written.
  */
 export interface SettingsRules {
   readonly rules: readonly PermissionRule[]
@@ -180,10 +177,12 @@ export function settingsVerdict(
   return { effect: decided.effect, rule: decided.rule.text, ...rules.origins.get(decided.rule)! }
 }
 
-/** Whether bare deny rules take every Claude Code name of the tool away (`WebFetch`, `mcp__*`). */
+/**
+ * Whether bare deny rules take every Claude Code name of the tool away (`WebFetch`, `mcp__*`).
+ * `availableTools` reads Claude Code's names only, so the tool's names come from `tool-names.ts`.
+ */
 export function settingsRemovesTool(rules: SettingsRules, tool: LocalTool): boolean {
-  const shaped = claudeCodeNames(tool.name)
-  const names = shaped.length > 0 ? shaped : [claudeCodeToolName(tool)]
+  const names = claudeCodeToolNames(tool)
   const session = { platform: 'posix' as const, rules: rules.rules, toolsFlag: names }
   return availableTools(names, session).length === 0
 }

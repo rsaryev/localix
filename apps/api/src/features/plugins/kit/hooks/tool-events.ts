@@ -1,12 +1,8 @@
-import {
-  absoluteFilePaths,
-  claudeCodeHookCall,
-  claudeCodeToolResponse,
-  localInputFromHook,
-} from '../../../ext/cc-tool-shapes'
+import { absoluteFilePaths, claudeCodeToolResponse } from '../../../ext/cc-tool-shapes'
 import type { CcHookToolRef, CcHooksRuntime } from '../../../cc-hooks/runtime-contracts'
 import { replacementContent } from '../../../cc-hooks/tool-output-replacement'
 import { claudeText, type EventDeps } from './runtime'
+import { claudeCodeHookCall, localInputFromHook } from '../tool-calls'
 
 type ToolEvents = Pick<
   CcHooksRuntime,
@@ -18,20 +14,22 @@ type ToolEvents = Pick<
   | 'runPostToolBatch'
 >
 
-const refOf = (tool: CcHookToolRef) => (typeof tool === 'string' ? { name: tool } : tool)
+const refOf = (tool: CcHookToolRef): Exclude<CcHookToolRef, string> =>
+  typeof tool === 'string' ? { name: tool } : tool
 
 /**
- * The tool events: a call in Claude Code's shape (`claudeCodeHookCall`, the one mapping), and a
- * hook's `updatedInput` folded back into Localix's (`localInputFromHook`).
+ * The tool events: a call's input in Claude Code's shape (`claudeCodeHookCall`), and a hook's
+ * `updatedInput` folded back into Localix's (`localInputFromHook`). `tool_name` is Localix's (an
+ * MCP tool's Claude Code address): the session names it as Claude Code does (`toolNames`).
  */
 export function createToolEvents({ fire, cwd, stop }: EventDeps): ToolEvents {
   const callOf = (tool: CcHookToolRef, input: unknown) => {
     const ref = refOf(tool)
-    const { tool_name, tool_input, mcp_server } = claudeCodeHookCall(ref, input, cwd)
+    const { tool_input, mcp_server } = claudeCodeHookCall(ref, input, cwd)
     return {
       name: ref.name,
       facts: {
-        tool_name,
+        tool_name: ref.aliases?.[0] ?? ref.name,
         tool_input: tool_input as Record<string, unknown>,
         ...(mcp_server ? { mcp_server } : {}),
       },

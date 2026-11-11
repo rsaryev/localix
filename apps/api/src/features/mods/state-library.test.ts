@@ -73,21 +73,21 @@ test('memberOf keeps one member of a family per request', async () => {
   expect([await mod.scrolled($, 'pane-a'), await mod.scrolled($, 'pane-b')]).toEqual([5, 1])
 })
 
-test('update writes again when another write came between its read and its write', async () => {
+test('update writes over a write that came between its read and its write', async () => {
   const { mod, $ } = await load()
   let raced = false
   const racing = {
     state: {
       get: $.state.get,
-      set: async (input: unknown) => {
+      set: async (...args: unknown[]) => {
         if (!raced) {
           raced = true
           await $.state.set({ plugin: 'hello-tabs', key: 'count' }, 10)
         }
-        return $.state.set(input)
+        return $.state.set(...(args as [unknown]))
       },
     },
   }
-  expect(await mod.add(racing)).toBe(11)
-  expect(await mod.raw($)).toBe(11)
+  expect(await mod.add(racing)).toBe(1)
+  expect(await mod.raw($)).toBe(1)
 })

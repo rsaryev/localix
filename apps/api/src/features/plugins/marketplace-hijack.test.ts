@@ -6,12 +6,11 @@ import { tempDirPerTest, writeTree } from '@localixai/testing'
 
 import {
   addMarketplace,
-  readKnownMarketplaces,
   removeMarketplace,
   updateMarketplace,
   type MarketplaceRegistryDeps,
 } from './marketplace-registry'
-import { describeMarketplaceSource, sameMarketplaceSource } from './marketplace-source-identity'
+import { readKnownMarketplaces } from './kit'
 
 /**
  * A catalog name registered from one source is never re-pointed at another by a later add (or by
@@ -20,6 +19,7 @@ import { describeMarketplaceSource, sameMarketplaceSource } from './marketplace-
  */
 
 const dir = tempDirPerTest('mkt-hijack')
+const CATALOG = '.claude-plugin/marketplace.json'
 
 function setup(): { deps: MarketplaceRegistryDeps; root: string; cloned: string[] } {
   const base = dir()
@@ -30,11 +30,11 @@ function setup(): { deps: MarketplaceRegistryDeps; root: string; cloned: string[
       plugins: [{ name: 'cool', source: './cool', description: owner }],
     })
   writeTree(join(base, 'real'), {
-    '.claude-plugin/marketplace.json': catalog('real'),
+    [CATALOG]: catalog('real'),
     'cool/.claude-plugin/plugin.json': '{"name":"cool"}',
   })
   writeTree(join(base, 'evil'), {
-    '.claude-plugin/marketplace.json': catalog('evil'),
+    [CATALOG]: catalog('evil'),
     'cool/.claude-plugin/plugin.json': '{"name":"cool"}',
   })
   const cloned: string[] = []
@@ -59,14 +59,17 @@ const catalogOwner = async (root: string) =>
 describe('marketplace name already registered from another source', () => {
   it('refuses the add and keeps the registered marketplace and its files', async () => {
     const { deps, root } = setup()
-    await addMarketplace({ source: 'github', repo: 'acme/plugins' }, deps)
+    await addMarketplace({ kind: 'github', repo: 'acme/plugins', path: CATALOG }, deps)
 
-    await expect(addMarketplace({ source: 'github', repo: 'evil/plugins' }, deps)).rejects.toThrow(
+    await expect(
+      addMarketplace({ kind: 'github', repo: 'evil/plugins', path: CATALOG }, deps),
+    ).rejects.toThrow(
       'Marketplace "acme" is already added from a different source (github:acme/plugins). To use this source instead, remove that marketplace first with /plugin marketplace remove acme.',
     )
     expect((await readKnownMarketplaces(root)).acme?.source).toEqual({
-      source: 'github',
+      kind: 'github',
       repo: 'acme/plugins',
+      path: CATALOG,
     })
     expect(await catalogOwner(root)).toBe('real')
     expect((await fs.readdir(root)).filter((name) => name.startsWith('.staging-'))).toEqual([])
@@ -74,33 +77,17 @@ describe('marketplace name already registered from another source', () => {
 
   it('re-adds and updates from the same source, and takes the new source after a remove', async () => {
     const { deps, root } = setup()
-    await addMarketplace({ source: 'github', repo: 'acme/plugins' }, deps)
-    expect(await addMarketplace({ source: 'github', repo: 'Acme/Plugins.git' }, deps)).toEqual({
+    await addMarketplace({ kind: 'github', repo: 'acme/plugins', path: CATALOG }, deps)
+    expect(
+      await addMarketplace({ kind: 'github', repo: 'acme/plugins', path: CATALOG }, deps),
+    ).toEqual({
       name: 'acme',
       count: 1,
     })
     expect(await updateMarketplace('acme', deps)).toEqual({ name: 'acme', count: 1 })
 
     await removeMarketplace('acme', deps)
-    await addMarketplace({ source: 'github', repo: 'evil/plugins' }, deps)
+    await addMarketplace({ kind: 'github', repo: 'evil/plugins', path: CATALOG }, deps)
     expect(await catalogOwner(root)).toBe('evil')
-  })
-
-  it('treats a different ref, kind or path as a different source', () => {
-    const github = { source: 'github', repo: 'acme/plugins' } as const
-    expect(sameMarketplaceSource(github, { ...github, ref: 'v2' })).toBe(false)
-    expect(
-      sameMarketplaceSource(github, { source: 'git', url: 'https://github.com/acme/plugins.git' }),
-    ).toBe(false)
-    expect(
-      sameMarketplaceSource({ source: 'local', path: '/a/b/' }, { source: 'local', path: '/a/b' }),
-    ).toBe(true)
-    expect(
-      sameMarketplaceSource(
-        { source: 'npm', package: 'p', version: '^1' },
-        { source: 'npm', package: 'p', version: '^2' },
-      ),
-    ).toBe(false)
-    expect(describeMarketplaceSource({ ...github, ref: 'v2' })).toBe('github:acme/plugins#v2')
   })
 })

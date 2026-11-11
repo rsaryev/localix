@@ -12,8 +12,8 @@ const reviewer: LoadedPluginAgent = {
   label: 'security-reviewer',
   description: 'Reviews for vulnerabilities',
   prompt: 'You are a security reviewer.',
-  tools: ['Read', 'Search'],
-  disallowedTools: ['tasks'],
+  tools: ['Read', 'Grep'],
+  disallowedTools: ['WebFetch'],
 }
 const input = {
   agent: { id: DEFAULT_AGENT_ID, instructions: 'You are Localix.' },
@@ -22,36 +22,13 @@ const input = {
 const chat = { agentId: DEFAULT_AGENT_ID, host: 'chat' }
 
 describe('the agent setting', () => {
-  test('runs the default agent’s chat as the plugin agent, with its tool restrictions', () => {
+  test('runs the default agent’s chat as the plugin agent; its tools narrow the run later', () => {
     const applied = applyMainAgent(input, reviewer, chat)
     expect(applied.agent.instructions).toBe('You are a security reviewer.')
     expect(applied.mainAgent).toBe(reviewer)
-    // `tools: Read, Grep` leaves out the shell, the writes and the web; `disallowedTools` adds to
-    // what the run's own rules already switched off.
-    expect(applied.disabledTools).toEqual(
-      expect.arrayContaining([
-        'Loops',
-        'tasks',
-        'Bash',
-        'Write',
-        'Edit',
-        'Research',
-        'AskUserQuestion',
-      ]),
-    )
-    expect(applied.disabledTools).not.toContain('Read')
-    expect(applied.disabledTools).not.toContain('Search')
-  })
-
-  test('a tools list switches skills off unless it names Skill (CC sub-agents)', () => {
-    expect(runAsPluginAgent(input, reviewer).disabledTools).toContain('Skill')
-    const withSkill = { ...reviewer, tools: ['Read', 'Skill'] }
-    expect(runAsPluginAgent(input, withSkill).disabledTools).not.toContain('Skill')
-  })
-
-  test('an agent without a tools list keeps every tool', () => {
-    const open = { ...reviewer, tools: undefined, disallowedTools: undefined }
-    expect(applyMainAgent(input, open, chat).disabledTools).toEqual(['Loops'])
+    // The kit resolves `tools` and `disallowedTools` over the built tools (`runToolsAgent`).
+    expect(applied.disabledTools).toEqual(['Loops'])
+    expect(runAsPluginAgent(input, reviewer).disabledTools).toEqual(['Loops'])
   })
 
   test('a chat with an agent the person chose, a child or no setting keeps its own agent', () => {
@@ -67,11 +44,11 @@ describe('the agent setting', () => {
   })
 })
 
-// sub-agents.md, `tools`: an allowlist — "The subagent can't edit files, write files, or use any
-// MCP tools" beyond it. Run as the main session agent, the same list is the chat's whole surface.
-test('the main agent’s tools list is the exact surface of the run', () => {
-  expect(runToolsAgent(null, reviewer)).toEqual({ tools: ['Read', 'Search'] })
-  expect(runToolsAgent(null, { ...reviewer, tools: undefined })).toBeNull()
+// sub-agents.md, `tools`: an allowlist. Run as the main session agent, the same list narrows the
+// chat; a child's agent type narrows the child.
+test('whose tools narrow the run', () => {
+  expect(runToolsAgent(null, reviewer)).toEqual({ agent: reviewer, asMainThread: true })
+  expect(runToolsAgent(null, null)).toBeNull()
   const child = { ...reviewer, tools: ['Read'] }
-  expect(runToolsAgent(child, reviewer)).toBe(child)
+  expect(runToolsAgent(child, reviewer)).toEqual({ agent: child, asMainThread: false })
 })

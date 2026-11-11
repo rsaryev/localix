@@ -121,10 +121,6 @@ const EXEMPTIONS: Exemptions = {
     reason:
       'CLAIM 2 only. `slug` turns a chat TITLE into the readable default name of an `/export` file (`my-chat-20260101-1200.md`): lower-kebab like the title a person reads, where the owner\'s key keeps case and uses "_". Traversal-safe: `[^a-z0-9]+` becomes "-", so no `.` and no `/` survives, and the slug is clamped to 40 characters with a fixed fallback (`chat`). It only names a file inside the exports folder under the Localix home; a name the person types is theirs and is resolved as typed, as in Claude Code\'s `/export`.',
   },
-  [exemptionKey('apps/api/src/features/plugins/claude-code-marketplace.ts', 'fileKey')]: {
-    reason:
-      "CLAIM 2 only. Its char-class replace (`canonical`) folds a marketplace name to compare it with Anthropic's reserved names, so `claude_plugins-official` reads as `claude-plugins-official`; the folded form is never a filename. The name that does become a folder is VALIDATED by `marketplaceNameProblem` (`MARKETPLACE_NAME_RE`, no `..`, no non-ASCII) and refused, not coerced. Its `join` calls read the catalog files of an already-resolved marketplace folder.",
-  },
   [exemptionKey('apps/api/src/features/memory/auto-memory.ts', 'fileKey')]: {
     reason:
       'CLAIM 2 only. `claudeProjectKey` is CLAUDE CODE\'S folder name for a project, spelled as Claude Code spells it (`[^a-zA-Z0-9]` becomes "-", a long name is clamped with a hash) so both apps open the same `~/.claude/projects/<key>/memory`; the owner\'s key would name a folder Claude Code never reads. Its input is a resolved absolute path, never a raw id. `rememberFact`\'s slug names a memory file from the person\'s own `/memory` text: every run of characters that is not a letter or digit of some script (`[^\\p{L}\\p{N}]+`) becomes "-", so no `.` or `/` survives, clamped to 48 characters with a fixed fallback.',

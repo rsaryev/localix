@@ -78,7 +78,7 @@ describe("a scope's subagents, as the kit resolves them", () => {
     expect(root.resolve('reviewer')).toMatchObject({
       agent: {
         description: 'root',
-        tools: ['Read', 'Search'],
+        tools: ['Read', 'Grep'],
         path: join(repo, '.claude/agents/review/reviewer.md'),
       },
     })
@@ -163,7 +163,7 @@ describe("a scope's subagents, as the kit resolves them", () => {
         permissionMode: 'plan',
         hooks: { Stop: [{ hooks: [{ type: 'command', command: './done.sh' }] }] },
         mcpServers: ['github'],
-        agentTypes: ['worker', 'researcher'],
+        tools: ['Agent(worker, researcher)', 'Read', 'Bash'],
       },
     })
     const loose = catalog.resolve('acme:loose')

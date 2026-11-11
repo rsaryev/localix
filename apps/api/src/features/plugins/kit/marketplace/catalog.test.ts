@@ -13,6 +13,8 @@ import {
 import { resolveEntrySource } from './entry-source'
 
 const owner = { name: 'o' }
+const github = (repo: string) =>
+  ({ kind: 'github', repo, path: '.claude-plugin/marketplace.json' }) as const
 const market = (plugins: unknown[], extra: Record<string, unknown> = {}) =>
   parseMarketplace({ name: 'shop', owner, plugins, ...extra })
 
@@ -34,7 +36,10 @@ describe('readMarketplace', () => {
       join(dir, '.claude-plugin', 'marketplace.json'),
       JSON.stringify({ name: 'shop', owner, plugins }),
     )
-    const read = await readMarketplace(dir)
+    const read = await readMarketplace({
+      source: { kind: 'directory', path: dir },
+      installLocation: dir,
+    })
     expect(read.plugins.map((one) => one.name)).toEqual(['good'])
     expect(relativeEntryPath(read.plugins[0]!)).toBe('plugins/good')
   })
@@ -42,18 +47,17 @@ describe('readMarketplace', () => {
   it('refuses a folder without the catalog, and a catalog that cannot load', async () => {
     const dir = await fs.mkdtemp(join(tmpdir(), 'kit-catalog-'))
     dirs.push(dir)
-    await expect(readMarketplace(dir)).rejects.toThrow('No .claude-plugin/marketplace.json')
+    const at = { source: { kind: 'directory', path: dir }, installLocation: dir } as const
+    await expect(readMarketplace(at)).rejects.toThrow('No .claude-plugin/marketplace.json')
     expect(() => parseMarketplace({ plugins: [] })).toThrow('Invalid marketplace.json')
   })
 
   it('takes an official name only from a source under github.com/anthropics/', () => {
     const raw = { name: 'claude-plugins-official', owner, plugins: [] }
-    expect(() => parseMarketplace(raw, { source: 'github', repo: 'someone/fork' })).toThrow(
-      'reserved',
+    expect(() => parseMarketplace(raw, github('someone/fork'))).toThrow('reserved')
+    expect(parseMarketplace(raw, github('anthropics/claude-plugins-official')).name).toBe(
+      'claude-plugins-official',
     )
-    expect(
-      parseMarketplace(raw, { source: 'github', repo: 'anthropics/claude-plugins-official' }).name,
-    ).toBe('claude-plugins-official')
   })
 })
 
@@ -127,7 +131,7 @@ describe('resolveEntrySource', () => {
       resolveEntrySource('/m', entry({ source: 'command', command: 'echo /x' })),
     ).toThrow('does not run')
     expect(() =>
-      resolveEntrySource('/m', entry('./p'), { source: 'url', url: 'https://h.example/m.json' }),
+      resolveEntrySource('/m', entry('./p'), { kind: 'url', url: 'https://h.example/m.json' }),
     ).toThrow('cannot resolve')
   })
 })

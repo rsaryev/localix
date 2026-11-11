@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
 import { fieldOf, fireIn, hearsIn, type ModEventScope } from './event-scope'
-import { claudeCodeToolName } from '../ext/cc-tool-shapes'
+import { claudeCodeToolName } from '../plugins/kit'
 
 /**
  * The conversation's own events in a run. `session.compact` fires when Localix is about to take a

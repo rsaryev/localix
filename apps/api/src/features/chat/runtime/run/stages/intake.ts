@@ -14,7 +14,9 @@
 import { agentModelSettingsFor } from '@localixai/agent'
 import { createGateRefusalTracker } from '@localixai/agent/agents'
 
+import { hooksTightenOnlyIn } from '../../../../plugins/kit'
 import { intakeTurn, markPromptBlocked } from '../../history/intake'
+import { ccPermissionMode } from '../cc-hook-session-facts'
 import { claudeCodeGateOptions } from '../claude-code-permissions'
 import { memoryRoots } from '../memory-roots'
 import { buildRunPermissionGate } from '../permission-gate-build'
@@ -120,9 +122,10 @@ export async function intakeRunTurn(
     ...(extraRoots.length > 0 ? { extraRoots } : {}),
     hitlWaitedMs: turn.state.hitlWaitedMs,
     // Claude Code mods' `tool.check` reviews each verdict; `$.tool.check` reads the gate's own.
-    toolCheck: inputs.mods.toolCheck(
-      turn.policy.human.canAnswer ? { approver: 'person' } : undefined,
-    ),
+    toolCheck: inputs.mods.toolCheck({
+      ...(turn.policy.human.canAnswer ? { approver: 'person' as const } : {}),
+      tightenOnly: hooksTightenOnlyIn(ccPermissionMode(turn.policy.permission.mode)),
+    }),
     onVerdictOptions: (options) => {
       toolset.skillCommandPolicy.current = options
     },

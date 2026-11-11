@@ -35,7 +35,26 @@ describe('the model of a delegated child the person chose none for', () => {
     ['gpt-6', 'claude-sonnet-4-5', { modelId: 'gpt-6', providerConnectionId: null }],
     ['claude-opus-9', 'claude-sonnet-4-5', {}],
   ])('model %p on %p routes %p', (model, mainModel, route) => {
-    expect(subagentModelRoute(model, { mainModel, available })).toEqual(route)
+    expect(subagentModelRoute({ definition: model }, { mainModel, available }, {})).toEqual(route)
+  })
+
+  test("the call's alias comes before the file's, the environment's after it; forced, only it", () => {
+    const context = { mainModel: 'claude-sonnet-4-5', available }
+    const haiku = { modelId: 'claude-haiku-4-5', providerConnectionId: null }
+    expect(subagentModelRoute({ definition: 'sonnet', invocation: 'haiku' }, context, {})).toEqual(
+      haiku,
+    )
+    const env = { CLAUDE_CODE_SUBAGENT_MODEL: 'gpt-6' }
+    expect(subagentModelRoute({}, context, env)).toEqual({
+      modelId: 'gpt-6',
+      providerConnectionId: null,
+    })
+    expect(subagentModelRoute({ definition: 'haiku' }, context, env)).toEqual(haiku)
+    const forced = { ...env, CLAUDE_CODE_SUBAGENT_MODEL_FORCE: '1' }
+    expect(subagentModelRoute({ invocation: 'haiku' }, context, forced)).toEqual({
+      modelId: 'gpt-6',
+      providerConnectionId: null,
+    })
   })
 })
 

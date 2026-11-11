@@ -1,6 +1,6 @@
 import { classifyToolCall, type AgentTool } from '@localixai/agent/agents'
 import { agentOf, fieldOf, fireIn, hearsIn, type ModEventScope } from './event-scope'
-import { toolCallEvent } from '../ext/cc-tool-shapes'
+import { mergeToolCheck, toolCallEvent } from '../plugins/kit'
 
 /**
  * `tool.check`: whether a tool call may run, decided before the call does. Core answers Localix's
@@ -22,7 +22,7 @@ export interface ModVerdict {
 const DECISIONS: ReadonlySet<unknown> = new Set(['allow', 'ask', 'deny'])
 
 /** A hook's verdict, or undefined when it answered none. */
-export function verdictOf(answer: unknown): ModVerdict | undefined {
+function verdictOf(answer: unknown): ModVerdict | undefined {
   const decision = fieldOf(answer, 'decision')
   if (!DECISIONS.has(decision)) return undefined
   const reason = fieldOf(answer, 'reason')
@@ -42,6 +42,13 @@ export interface ToolCheckFacts {
   approver?: 'host' | 'person'
   /** The tool says this input changes nothing. */
   isReadOnly?: boolean
+}
+
+/** What a run says of its `tool.check` hooks: who answers asks, and whether hooks only tighten. */
+export interface ToolCheckRun {
+  approver?: ToolCheckFacts['approver']
+  /** Hooks may refuse but not approve a call that is not read-only (`hooksTightenOnlyIn`). */
+  tightenOnly?: boolean
 }
 
 /** `tool.check`'s input: the tool and its arguments in Claude Code's names, and the call. */
@@ -71,8 +78,7 @@ export function toolCheckPort(
   scope: ModEventScope,
   tools: () => readonly AgentTool[],
   lend: (verdict: (toolName: string, input: unknown) => ModVerdict) => void,
-  /** Who answers the asks of this run, when someone can. */
-  approver?: ToolCheckFacts['approver'],
+  run: ToolCheckRun = {},
 ) {
   if (!hearsIn(scope, 'tool.check')) return { review: undefined, lend }
   return {
@@ -82,12 +88,18 @@ export function toolCheckPort(
       verdict: ModVerdict,
     ): Promise<ModVerdict> {
       const tool = tools().find((candidate) => candidate.name === call.toolName)
+      const isReadOnly = readsOnly(tool, call.input)
       const input = toolCheckInput(tool ?? { name: call.toolName }, call.input, call.toolCallId, {
         ...agentOf(scope),
-        ...(approver ? { approver } : {}),
-        isReadOnly: readsOnly(tool, call.input),
+        ...(run.approver ? { approver: run.approver } : {}),
+        isReadOnly,
       })
-      return verdictOf(await fireIn(scope, 'tool.check', input, () => verdict)) ?? verdict
+      const answer = verdictOf(await fireIn(scope, 'tool.check', input, () => verdict))
+      if (!answer) return verdict
+      return mergeToolCheck(verdict, answer, {
+        tightenOnly: run.tightenOnly === true,
+        ...(isReadOnly ? { isReadOnly: true } : {}),
+      })
     },
   }
 }

@@ -8,7 +8,7 @@ import { mkdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
-import { createChatPluginSessions, invokeSkill, type ScopePlugin } from './kit'
+import { createChatPluginSessions, invokeSkill, monitorsToLaunch, type ScopePlugin } from './kit'
 import { diskPluginHost, writeTestPlugin } from './kit/testing'
 import {
   createPluginMonitorHost,
@@ -145,7 +145,7 @@ describe('the plugin monitor host', () => {
     await host.stop()
   })
 
-  test('a session the chat reopens does not start a monitor the chat already runs', async () => {
+  test('a session the chat reopens continues the ledger of the one it replaced', async () => {
     const { sessions, open } = chats([await opsPlugin()])
     const spawner = fakeMonitorSpawner({ keepOpen: true })
     const host = hostOver(sessions, { spawn: spawner.spawn })
@@ -155,6 +155,8 @@ describe('the plugin monitor host', () => {
     // New settings reopen the chat's kit session, with a ledger of its own.
     open('chat-1', [{ scope: 'user', settings: { env: { CHANGED: '1' } } }])
     expect(sessions.get('chat-1')).not.toBe(first)
+    // The kit hands out nothing it started before (`monitorLedger`), not the host skipping it.
+    expect((await monitorsToLaunch(sessions.get('chat-1')!)).launches).toEqual([])
     await host.sessionMoved(moved('chat-1'))
     expect(spawner.calls).toHaveLength(1)
     await host.stop()

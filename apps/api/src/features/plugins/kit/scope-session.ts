@@ -1,6 +1,7 @@
 import type { PluginSession } from '@rsaryev/llx-plugin'
 import { createPolicyView } from '@rsaryev/llx-plugin/settings'
 import type { LocalixPluginHost } from './host'
+import { LOCALIX_TOOL_NAMES } from './tool-names'
 import type { ManagedSettingsSource } from './settings/managed'
 import { sessionLocations, sessionOwn, type ScopePlugin } from './sessions'
 import { readClaudeSettings } from './settings/read'
@@ -44,6 +45,7 @@ export async function openScopeSession(
     plugins: own.plugins.map(({ id, plugin }) => ({ id, plugin })),
     userConfig: own.userConfig,
     locations,
+    toolNames: LOCALIX_TOOL_NAMES,
   })
   return session
 }

@@ -10,6 +10,7 @@ import { migrateToLatest } from '../../db/migrator'
 import { setMarketplaceAutoUpdate } from './marketplace-auto-update'
 import { cachedVersionDir, readInstallRecords } from './plugin-cache'
 import { createPluginService } from './service'
+import { folderClone } from './testing/folder-clone'
 
 /**
  * Plugin updates as the background-activity center sees them: what is available is computed from
@@ -46,10 +47,13 @@ beforeAll(async () => {
   process.env.CLAUDE_CONFIG_DIR = join(root, 'claude')
   db = createDatabase()
   await migrateToLatest(db)
-  service = createPluginService({ db, capabilityStores, homeDir: home })
-  await service.addMarketplace('u1', {
-    source: join(root, 'market', '.claude-plugin', 'marketplace.json'),
+  service = createPluginService({
+    db,
+    capabilityStores,
+    homeDir: home,
+    cloneRepo: folderClone(join(root, 'market')),
   })
+  await service.addMarketplace('u1', { source: 'acme/shop' })
   await service.install('u1', { source: 'tool@shop', enable: true })
 })
 
@@ -125,7 +129,10 @@ describe('plugin updates', () => {
   })
 
   test('the pass is off under DISABLE_AUTOUPDATER unless FORCE_AUTOUPDATE_PLUGINS is set', async () => {
-    await setMarketplaceAutoUpdate(marketplacesRoot(), 'shop', true)
+    await setMarketplaceAutoUpdate(marketplacesRoot(), 'shop', true, {
+      env: {},
+      managedSettingsDir: join(root, 'managed'),
+    })
     const off = await service.updates.autoUpdatePass('u1', { env: { DISABLE_AUTOUPDATER: '1' } })
     expect(off).toMatchObject({ skipped: true, updated: [] })
     expect(await installedVersion()).toBe('2.0.0')

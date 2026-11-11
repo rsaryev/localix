@@ -54,6 +54,9 @@ the version is how an update is detected:
    which also carries a hash of its path, and a relative path in a marketplace cloned from git), an
    archive's `sha256` shortened to 12, or `unknown` for a local folder or `npm`.
 
+A version that cannot name one folder (empty, `.`, `..`, or holding a slash) is skipped as if unset.
+A `command` entry ignores its entry `version` and has the version `unknown`.
+
 A manifest that pins `"version": "1.0.0"` therefore keeps everyone on that copy until the string
 changes. An entry pinned to a `sha` never moves. A plugin that loads in place from a local-folder
 marketplace has no versions: it loads its current files.
@@ -149,7 +152,7 @@ like credentials and with `CLAUDE_CODE_PLUGIN_NAME` and `CLAUDE_CODE_PLUGIN_ARCH
 ## Source of truth
 
 - [The default sources](https://github.com/rsaryev/localix/blob/main/packages/store/src/default-sources.ts)
-- [The version rule](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/plugin-version.ts)
+- [The version rule](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/marketplace/versions.ts)
 - [The version cache](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/plugin-cache.ts)
 - [Updates and the auto-update pass](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/plugin-updates.ts)
 - [Which marketplaces auto-update](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/marketplace-auto-update.ts)

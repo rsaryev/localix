@@ -29,17 +29,12 @@ export function batchCommand(input: Fields): string | undefined {
   return list.join(input.keep_going === true ? '; ' : ' && ')
 }
 
-/** A `bash` call with `until` is the wait Claude Code's Monitor tool starts. */
-const isWait = (input: Fields) => input.until !== undefined
-
 const bash: ToolShape = {
-  name: 'Bash',
-  names: ['Monitor'],
-  nameFor: (input) => (isWait(input) ? 'Monitor' : 'Bash'),
-  toClaude(input) {
+  // A `bash` call with `until` is the wait Claude Code's Monitor tool starts.
+  toClaude(input, name) {
     const command = input.command ?? batchCommand(input)
     const timeout = num(input.timeout)
-    if (isWait(input))
+    if (name === 'Monitor')
       // Monitor's deadline is `timeout_ms`; `timeout` (seconds) is Bash's field, not its own.
       return defined({
         ...without(input, ['timeout']),
@@ -72,8 +67,7 @@ const bash: ToolShape = {
 }
 
 const read: ToolShape = {
-  name: 'Read',
-  toClaude(input, cwd) {
+  toClaude(input, _name, cwd) {
     const entry = only(input.reads)
     const start = num(input.start_line) ?? num(entry?.start_line)
     const end = num(input.end_line) ?? num(entry?.end_line)
@@ -114,8 +108,7 @@ const read: ToolShape = {
 // One edit, or one file written, reads as Claude Code's single-file call with no list beside it;
 // several stay Localix's list (a mods host fires one `tool.call` per entry: `singleCalls`).
 const edit: ToolShape = {
-  name: 'Edit',
-  toClaude(input, cwd) {
+  toClaude(input, _name, cwd) {
     const entry = only(input.edits)
     if (!entry) return input
     const filePath = absolutePath(entry.path, baseOf(input, cwd))
@@ -150,8 +143,7 @@ const edit: ToolShape = {
 }
 
 const write: ToolShape = {
-  name: 'Write',
-  toClaude(input, cwd) {
+  toClaude(input, _name, cwd) {
     const entry = only(input.files)
     if (!entry) return input
     return {
@@ -179,13 +171,7 @@ const queriesPattern = (input: Fields) =>
   Array.isArray(input.queries) ? input.queries.join('|') : undefined
 
 const search: ToolShape = {
-  name: 'Grep',
-  names: ['Glob'],
-  nameFor: (input) =>
-    input.query === undefined && input.queries === undefined && typeof input.glob === 'string'
-      ? 'Glob'
-      : 'Grep',
-  toClaude(input, cwd) {
+  toClaude(input, name, cwd) {
     const base = baseOf(input, cwd)
     const path =
       input.path !== undefined
@@ -193,7 +179,7 @@ const search: ToolShape = {
         : input.cwd !== undefined
           ? base
           : undefined
-    if (search.nameFor!(input) === 'Glob') return defined({ ...input, pattern: input.glob, path })
+    if (name === 'Glob') return defined({ ...input, pattern: input.glob, path })
     return defined({
       ...input,
       pattern: input.query ?? queriesPattern(input),
@@ -224,14 +210,8 @@ const search: ToolShape = {
 const WEB_KEYS = ['query', 'url', 'prompt', 'allowed_domains', 'blocked_domains', 'mode', 'offset']
 
 const research: ToolShape = {
-  name: 'WebSearch',
-  names: ['WebFetch'],
-  nameFor: (input) =>
-    Array.isArray(input.urls) && input.urls.length > 0 && input.queries === undefined
-      ? 'WebFetch'
-      : 'WebSearch',
-  toClaude(input) {
-    if (research.nameFor!(input) === 'WebFetch')
+  toClaude(input, name) {
+    if (name === 'WebFetch')
       return defined({ ...input, url: (input.urls as unknown[])[0], prompt: input.question })
     return defined({
       ...input,

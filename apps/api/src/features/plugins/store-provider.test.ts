@@ -17,7 +17,7 @@ const pg = { source: 'url', url: 'https://github.com/Acme/pg.git' }
 function fixture() {
   const root = join(dir(), 'marketplaces')
   writeTree(root, {
-    'known.json': JSON.stringify({
+    'known_marketplaces.json': JSON.stringify({
       [OFFICIAL]: {
         source: { source: 'github', repo: 'anthropics/claude-plugins-official' },
         installLocation: join(root, OFFICIAL),
@@ -28,6 +28,7 @@ function fixture() {
       [COMMUNITY]: {
         source: { source: 'github', repo: 'anthropics/claude-plugins-community' },
         installLocation: join(root, COMMUNITY),
+        lastUpdated: '2026-10-20T10:00:00.000Z',
       },
     }),
     [`${OFFICIAL}/.claude-plugin/marketplace.json`]: JSON.stringify({
@@ -433,12 +434,16 @@ describe('plugins in the Store', () => {
 
   test('a default marketplace is called by its name in the Store, a person’s by its own', async () => {
     const { provider, root } = fixture()
-    const known = JSON.parse(await Bun.file(join(root, 'known.json')).text())
+    const known = JSON.parse(await Bun.file(join(root, 'known_marketplaces.json')).text())
     for (const [name, repo] of [
       ['localix-community', 'rsaryev/localix-community'],
       ['acme', 'acme/plugins'],
     ]) {
-      known[name] = { source: { source: 'github', repo }, installLocation: join(root, name) }
+      known[name] = {
+        source: { source: 'github', repo },
+        installLocation: join(root, name),
+        lastUpdated: '2026-10-20T10:00:00.000Z',
+      }
       writeTree(root, {
         [`${name}/.claude-plugin/marketplace.json`]: JSON.stringify({
           name,
@@ -447,7 +452,7 @@ describe('plugins in the Store', () => {
         }),
       })
     }
-    await Bun.write(join(root, 'known.json'), JSON.stringify(known))
+    await Bun.write(join(root, 'known_marketplaces.json'), JSON.stringify(known))
     const labels = Object.fromEntries(
       (await provider.sources()).map((source) => [source.id, source.label]),
     )
@@ -461,12 +466,13 @@ describe('plugins in the Store', () => {
 
   test('a marketplace that cannot be read is still a source, saying why', async () => {
     const { provider, root } = fixture()
-    const known = JSON.parse(await Bun.file(join(root, 'known.json')).text())
+    const known = JSON.parse(await Bun.file(join(root, 'known_marketplaces.json')).text())
     known.gone = {
       source: { source: 'github', repo: 'acme/gone' },
       installLocation: join(root, 'gone'),
+      lastUpdated: '2026-10-20T10:00:00.000Z',
     }
-    await Bun.write(join(root, 'known.json'), JSON.stringify(known))
+    await Bun.write(join(root, 'known_marketplaces.json'), JSON.stringify(known))
     const gone = (await provider.sources()).find((source) => source.id === 'gone')
     expect(gone).toMatchObject({ count: 0, label: 'gone' })
     expect(gone?.problem).toContain('could not be read')

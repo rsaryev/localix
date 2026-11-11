@@ -6,7 +6,7 @@
  */
 import { afterEach, describe, expect, it } from 'bun:test'
 import { join } from 'node:path'
-import { tempDirPerTest } from '@localixai/testing'
+import { tempDirPerTest, writeTree } from '@localixai/testing'
 
 import { stubFetch } from '../../testing/fetch-stub'
 import { addMarketplace, resolveMarketplaceInstall } from './marketplace-registry'
@@ -21,8 +21,10 @@ afterEach(() => {
 const URL_ = 'https://registry.example.com/tool.zip'
 const COMMAND = `printf '{"Authorization":"Bearer %s"}' "$CLAUDE_CODE_PLUGIN_NAME"`
 
-async function market() {
+async function market(managed: Record<string, unknown> = {}) {
   const root = join(dir(), 'marketplaces')
+  const managedSettingsDir = join(dir(), 'managed')
+  writeTree(managedSettingsDir, { 'managed-settings.json': JSON.stringify(managed) })
   const catalog = JSON.stringify({
     name: 'hosted',
     owner: { name: 'H' },
@@ -39,12 +41,13 @@ async function market() {
   const seen: Array<Record<string, string> | undefined> = []
   const deps = {
     root,
+    managedSettingsDir,
     cloneRepo: async () => {},
     fetchArchive: async (src: { headers?: Record<string, string> }) => {
       seen.push(src.headers)
     },
   }
-  await addMarketplace({ source: 'url', url: 'https://cat.example.com/m.json' }, deps)
+  await addMarketplace({ kind: 'url', url: 'https://cat.example.com/m.json' }, deps)
   return { deps, seen }
 }
 
@@ -68,7 +71,7 @@ describe("a marketplace entry's headersHelper", () => {
     await resolveMarketplaceInstall({ plugin: 'tool', marketplace: 'hosted' }, deps, {
       acceptCommand,
     })
-    expect(seen).toEqual([{ Authorization: 'Bearer tool' }])
+    expect(seen).toEqual([{ authorization: 'Bearer tool' }])
   })
 
   it('refuses an acceptance given for another command', async () => {
@@ -77,5 +80,14 @@ describe("a marketplace entry's headersHelper", () => {
     await expect(
       resolveMarketplaceInstall({ plugin: 'tool', marketplace: 'hosted' }, deps, { acceptCommand }),
     ).rejects.toMatchObject({ code: 'plugin_command_needs_acceptance' })
+  })
+
+  it('accepted, still does not run while managed settings block commands; the download goes without it', async () => {
+    const { deps, seen } = await market({ disableCommandPluginSources: true })
+    const acceptCommand = headersHelperAcceptance(COMMAND, URL_)
+    await resolveMarketplaceInstall({ plugin: 'tool', marketplace: 'hosted' }, deps, {
+      acceptCommand,
+    })
+    expect(seen).toEqual([undefined])
   })
 })

@@ -1,11 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { AgentTool } from '@localixai/agent/agents'
-import {
-  claudeCodeToolResponse,
-  claudeCodeToolName,
-  localToolName,
-  toolInputOf,
-} from '../../ext/cc-tool-shapes'
+import { claudeCodeToolResponse } from '../../ext/cc-tool-shapes'
+import { claudeCodeToolName, localToolName, toolInputOf } from '../../plugins/kit'
 import type { ModVerdict } from '../tool-check'
 
 /**

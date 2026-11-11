@@ -4,12 +4,10 @@ import { join } from 'node:path'
 
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
-import { marketplaceNameProblem } from './claude-code-marketplace'
 import { applyEntryManifestOverrides } from './marketplace-entry-manifest'
 import {
   addMarketplace,
   listMarketplaces,
-  parseMarketplaceInput,
   resolveMarketplaceInstall,
   updateMarketplace,
   type MarketplaceRegistryDeps,
@@ -47,57 +45,12 @@ function registry(upstream?: string) {
   return { deps, clones }
 }
 
-describe('marketplace add input forms (Claude Code)', () => {
-  it('reads owner/repo@ref, hosted catalogs, git hosts and local catalog files', () => {
-    expect(parseMarketplaceInput('acme/plugins@v1.2.0')).toEqual({
-      source: 'github',
-      repo: 'acme/plugins',
-      ref: 'v1.2.0',
-    })
-    expect(parseMarketplaceInput('https://example.com/marketplace.json')).toEqual({
-      source: 'url',
-      url: 'https://example.com/marketplace.json',
-    })
-    expect(parseMarketplaceInput('https://github.com/acme/plugins')).toEqual({
-      source: 'git',
-      url: 'https://github.com/acme/plugins',
-    })
-    expect(parseMarketplaceInput('https://dev.azure.com/o/p/_git/repo#main')).toEqual({
-      source: 'git',
-      url: 'https://dev.azure.com/o/p/_git/repo',
-      ref: 'main',
-    })
-    expect(parseMarketplaceInput('/srv/m/.claude-plugin/marketplace.json')).toEqual({
-      source: 'file',
-      path: '/srv/m/.claude-plugin/marketplace.json',
-    })
-  })
-})
-
 describe('reserved marketplace names', () => {
-  const local = { source: 'local', path: '/x' } as const
-  it('refuses official names outside github.com/anthropics/, and their imitations', () => {
-    expect(marketplaceNameProblem('claude-plugins-official', local)).toContain('reserved')
-    expect(
-      marketplaceNameProblem('claude-plugins-official', {
-        source: 'github',
-        repo: 'anthropics/claude-plugins-official',
-      }),
-    ).toBeNull()
-    expect(marketplaceNameProblem('claude.code.plugins', local)).toContain('another spelling')
-    expect(marketplaceNameProblem('official-claude-plugins', local)).toContain('impersonates')
-    expect(marketplaceNameProblem('claude-plugins-official-v2', local)).toContain('impersonates')
-  })
-  it('refuses names Claude Code uses itself, object members, claudeai-, and bad characters', () => {
-    for (const name of ['inline', 'NPM', 'toString', 'claudeai-x', '../escape', 'a b', 'tëst'])
-      expect(marketplaceNameProblem(name, local)).not.toBeNull()
-    expect(marketplaceNameProblem('acme-tools', local)).toBeNull()
-  })
   it('a reserved name is refused at add time', async () => {
     const upstream = join(dir(), 'up')
     writeTree(upstream, { '.claude-plugin/marketplace.json': catalog([], 'claude-code-plugins') })
     const { deps } = registry(upstream)
-    await expect(addMarketplace({ source: 'local', path: upstream }, deps)).rejects.toThrow(
+    await expect(addMarketplace({ kind: 'directory', path: upstream }, deps)).rejects.toThrow(
       'reserved',
     )
   })
@@ -113,7 +66,7 @@ describe('Claude Code catalogs through the registry', () => {
       ]),
     })
     const { deps } = registry()
-    expect(await addMarketplace({ source: 'local', path: upstream }, deps)).toEqual({
+    expect(await addMarketplace({ kind: 'directory', path: upstream }, deps)).toEqual({
       name: 'acme-tools',
       count: 1,
     })
@@ -129,9 +82,10 @@ describe('Claude Code catalogs through the registry', () => {
     })
     const { deps } = registry()
     const file = join(upstream, '.claude-plugin', 'marketplace.json')
-    await addMarketplace({ source: 'file', path: file }, deps)
+    await addMarketplace({ kind: 'file', path: file }, deps)
     const res = await resolveMarketplaceInstall({ plugin: 'good', marketplace: 'acme-tools' }, deps)
-    expect(res.dir).toBe(join(deps.root!, 'acme-tools', 'plugins', 'good'))
+    // Read where it is, its marketplace two folders up.
+    expect(res.dir).toBe(join(upstream, 'plugins', 'good'))
   })
 
   it('fails a relative source whose directory does not exist, naming the path', async () => {
@@ -140,7 +94,7 @@ describe('Claude Code catalogs through the registry', () => {
       '.claude-plugin/marketplace.json': catalog([{ name: 'gone', source: './plugins/gone' }]),
     })
     const { deps } = registry()
-    await addMarketplace({ source: 'local', path: upstream }, deps)
+    await addMarketplace({ kind: 'directory', path: upstream }, deps)
     await expect(
       resolveMarketplaceInstall({ plugin: 'gone', marketplace: 'acme-tools' }, deps),
     ).rejects.toThrow('Source path does not exist')
@@ -169,7 +123,7 @@ describe('Claude Code catalogs through the registry', () => {
       'tools/mono/.claude-plugin/plugin.json': JSON.stringify({ name: 'mono' }),
     })
     const { deps, clones } = registry(upstream)
-    await addMarketplace({ source: 'url', url: 'https://example.com/marketplace.json' }, deps)
+    await addMarketplace({ kind: 'url', url: 'https://example.com/marketplace.json' }, deps)
 
     await expect(
       resolveMarketplaceInstall({ plugin: 'local-one', marketplace: 'acme-tools' }, deps),
@@ -191,7 +145,7 @@ describe('Claude Code catalogs through the registry', () => {
       ]),
     })
     const { deps } = registry(join(dir(), 'up'))
-    await addMarketplace({ source: 'local', path: upstream }, deps)
+    await addMarketplace({ kind: 'directory', path: upstream }, deps)
     await expect(
       resolveMarketplaceInstall({ plugin: 'evil', marketplace: 'acme-tools' }, deps),
     ).rejects.toThrow('must be inside the repository')

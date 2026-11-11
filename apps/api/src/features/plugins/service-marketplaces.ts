@@ -12,9 +12,7 @@ import {
   addMarketplace,
   listMarketplaces,
   marketplacesRoot,
-  parseMarketplaceInput,
   parseMarketplaceRef,
-  readKnownMarketplaces,
   removeMarketplace,
   updateMarketplace,
   type MarketplaceRegistryDeps,
@@ -25,7 +23,13 @@ import {
   rememberDefaultMarketplaceRemoval,
 } from './default-marketplaces'
 import type { PluginService } from './service-types'
-import { readMarketplace, resolveEntryName, type Marketplace } from './kit'
+import {
+  type Marketplace,
+  parseMarketplaceAdd,
+  readKnownMarketplaces,
+  readMarketplace,
+  resolveEntryName,
+} from './kit'
 
 /** What became of an installed plugin's entry: still listed, renamed, or removed. */
 function entryFate(
@@ -80,9 +84,7 @@ export function createMarketplaceMethods(deps: {
   /** The entries an update leaves for the person: Claude Code skips a `headersHelper` entry. */
   const manualEntries = async (name: string): Promise<Set<string>> => {
     const known = (await readKnownMarketplaces(root))[name]
-    const market = known
-      ? await readMarketplace(known.installLocation, known.source).catch(() => null)
-      : null
+    const market = known ? await readMarketplace(known).catch(() => null) : null
     return new Set(
       (market?.plugins ?? [])
         .filter((entry) => entry.headersHelper !== undefined)
@@ -92,7 +94,7 @@ export function createMarketplaceMethods(deps: {
 
   return {
     async addMarketplace(_userId, input) {
-      const parsed = parseMarketplaceInput(input.source)
+      const parsed = parseMarketplaceAdd(input.source)
       if ('error' in parsed) throw new InvalidRequestError('marketplace_bad_source', parsed.error)
       try {
         const added = await addMarketplace(parsed, registryDeps)
@@ -146,9 +148,7 @@ export function createMarketplaceMethods(deps: {
       const warnings: string[] = []
       const root = registryDeps.root ?? marketplacesRoot()
       const known = (await readKnownMarketplaces(root))[refreshed.name]
-      const market = known
-        ? await readMarketplace(known.installLocation, known.source).catch(() => null)
-        : null
+      const market = known ? await readMarketplace(known).catch(() => null) : null
       for (const row of await owned(userId, refreshed.name)) {
         if (manualNames.has(parseMarketplaceRef(row.source)?.plugin ?? row.name)) {
           manual.push(row.name)
@@ -196,7 +196,10 @@ export function createMarketplaceMethods(deps: {
     },
 
     async setMarketplaceAutoUpdate(_userId, input) {
-      await setMarketplaceAutoUpdate(root, input.name, input.autoUpdate)
+      await setMarketplaceAutoUpdate(root, input.name, input.autoUpdate, {
+        env: deps.env,
+        managedSettingsDir: registryDeps.managedSettingsDir,
+      })
     },
 
     async removeMarketplace(userId, input) {

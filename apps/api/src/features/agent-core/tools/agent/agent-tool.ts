@@ -16,10 +16,10 @@ import type { TaskDelegationResult } from '../task-delegation'
  * call until it reports (`agent-start.ts`). Talking to it afterwards is `SendMessage`, stopping it
  * `TaskStop`.
  *
- * The one field of Claude Code's it does not take is the choice of model and effort (`model`,
- * `effort`): the person sets each agent's in its settings, with whatever providers they connected,
- * and a fork runs on its parent's. Where the child works (`isolation`) is its agent file's. A call
- * written for Claude Code that names them still runs; they are dropped before the schema.
+ * A `model` alias picks the child's model where the person chose none for the agent (the kit's
+ * model order, `plugins/kit/spawn.ts`); a fork runs on its parent's. The person sets the effort,
+ * and where the child works (`isolation`) is its agent file's. A call written for Claude Code that
+ * names them still runs; they are dropped before the schema.
  */
 export const AGENT_CONTEXTS = ['none', 'fork'] as const
 export type AgentContext = (typeof AGENT_CONTEXTS)[number]
@@ -36,6 +36,8 @@ export interface AgentRequest {
   wait: boolean
   /** `worktree`: a host asks for a fresh git worktree of the chat's repository. */
   isolation?: 'worktree'
+  /** The call's `model` alias (`sonnet`, `opus`, `haiku`, `fable`); never set on a fork. */
+  model?: string
 }
 
 export interface AgentToolPort {
@@ -68,6 +70,15 @@ const inputSchema = z
       .boolean()
       .optional()
       .describe('false: hold this call until the subagent replies. Default true.'),
+    model: z
+      .string()
+      .trim()
+      .min(1)
+      .max(40)
+      .optional()
+      .describe(
+        'sonnet, opus, haiku or fable: the model family for this subagent, when its agent settings name none.',
+      ),
     name: z
       .string()
       .trim()
@@ -82,7 +93,7 @@ const inputSchema = z
 type AgentToolInput = z.infer<typeof inputSchema>
 
 /** Claude Code's Agent fields that choose what the person or the agent file chooses here. */
-const NOT_THE_CALLS = ['model', 'effort', 'isolation', 'team_name', 'mode', 'cwd'] as const
+const NOT_THE_CALLS = ['effort', 'isolation', 'team_name', 'mode', 'cwd'] as const
 
 /** The runtime's pre-validation hook: Claude Code's fields that are not the call's to choose go. */
 export function prepareAgentArguments(raw: unknown): unknown {
@@ -168,6 +179,7 @@ function startRequest(input: AgentToolInput): AgentRequest {
   return {
     ...base,
     ...(type && !isSelf(type) ? { agent: type } : {}),
+    ...(input.model ? { model: input.model } : {}),
     context: 'none',
     ...isolation,
   }

@@ -1,5 +1,5 @@
 import { cachedIn, fieldOf, fireIn, hearsIn, type ModEventScope } from './event-scope'
-import { claudeCodeToolName } from '../ext/cc-tool-shapes'
+import { claudeCodeToolName } from '../plugins/kit'
 
 /**
  * The system prompt through the mods: `prompt.section` once per section of Localix's cached

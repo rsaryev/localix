@@ -7,12 +7,12 @@ import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { removeOwnedMarketplaceDir } from './marketplace-in-place'
 import {
   addMarketplace,
-  readKnownMarketplaces,
   removeMarketplace,
   resolveMarketplaceInstall,
   updateMarketplace,
   type MarketplaceRegistryDeps,
 } from './marketplace-registry'
+import { readKnownMarketplaces } from './kit'
 
 const tempDir = tempDirPerTest('mkt-in-place-')
 
@@ -43,7 +43,7 @@ function fixture() {
 describe('a marketplace added from a local folder is read in place', () => {
   test('add records the folder itself and copies nothing', async () => {
     const { folder, deps, root } = fixture()
-    expect(await addMarketplace({ source: 'local', path: folder }, deps)).toEqual({
+    expect(await addMarketplace({ kind: 'directory', path: folder }, deps)).toEqual({
       name: 'mine',
       count: 1,
     })
@@ -57,7 +57,7 @@ describe('a marketplace added from a local folder is read in place', () => {
 
   test('remove forgets the marketplace and leaves the folder', async () => {
     const { folder, deps, root } = fixture()
-    await addMarketplace({ source: 'local', path: folder }, deps)
+    await addMarketplace({ kind: 'directory', path: folder }, deps)
     await removeMarketplace('mine', deps)
     expect(await readKnownMarketplaces(root)).toEqual({})
     expect(existsSync(join(folder, '.claude-plugin', 'marketplace.json'))).toBe(true)
@@ -66,7 +66,7 @@ describe('a marketplace added from a local folder is read in place', () => {
 
   test('update re-reads the folder and leaves it', async () => {
     const { folder, deps } = fixture()
-    await addMarketplace({ source: 'local', path: folder }, deps)
+    await addMarketplace({ kind: 'directory', path: folder }, deps)
     writeTree(folder, { '.claude-plugin/marketplace.json': catalog(['one', 'two']) })
     expect(await updateMarketplace('mine', deps)).toEqual({ name: 'mine', count: 2 })
     expect(existsSync(join(folder, 'plugins', 'one'))).toBe(true)
@@ -74,7 +74,7 @@ describe('a marketplace added from a local folder is read in place', () => {
 
   test('a catalog that renamed itself drops the old name without touching the folder', async () => {
     const { folder, deps, root } = fixture()
-    await addMarketplace({ source: 'local', path: folder }, deps)
+    await addMarketplace({ kind: 'directory', path: folder }, deps)
     const renamed = JSON.parse(catalog(['one'])) as Record<string, unknown>
     writeTree(folder, {
       '.claude-plugin/marketplace.json': JSON.stringify({ ...renamed, name: 'mine-v2' }),

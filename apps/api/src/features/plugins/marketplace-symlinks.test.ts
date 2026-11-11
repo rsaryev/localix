@@ -12,9 +12,8 @@ import {
   type MarketplaceRegistryDeps,
 } from './marketplace-registry'
 
-// Claude Code's marketplace symlink rules, end to end: a marketplace is materialized (from its
-// catalog file, which copies the folder around it; a local folder is read in place instead), one
-// of its plugins resolved, then published into an install root.
+// Claude Code's marketplace symlink rules, end to end: a marketplace is cloned (a local one is read
+// in place instead), one of its plugins resolved, then published into an install root.
 
 const tempDir = tempDirPerTest('mkt-symlinks-')
 
@@ -47,31 +46,18 @@ async function fixture() {
   const deps: MarketplaceRegistryDeps = {
     root: join(tempDir(), 'marketplaces'),
     now: () => '2026-01-01T00:00:00.000Z',
-    cloneRepo: async () => {
-      throw new Error('no network in this test')
+    // A clone brings the repository as it is, links and all.
+    cloneRepo: async (_url, dest) => {
+      await fs.cp(upstream, dest, { recursive: true, verbatimSymlinks: true })
     },
   }
-  // The catalog file of a folder: the marketplace is copied, like a fetched one.
   const source = {
-    source: 'file' as const,
-    path: join(upstream, '.claude-plugin', 'marketplace.json'),
-  }
+    kind: 'github',
+    repo: 'acme/plugins',
+    path: '.claude-plugin/marketplace.json',
+  } as const
   return { upstream, deps, source }
 }
-
-test('a copied marketplace keeps only the links that resolve inside it', async () => {
-  const { deps, source } = await fixture()
-  await addMarketplace(source, deps)
-  const installed = join(deps.root!, 'acme')
-
-  expect(await fs.readlink(join(installed, 'plugins', 'meta', 'skills', 'foo'))).toBe(
-    '../../shared/skills/foo',
-  )
-  expect(await fs.lstat(join(installed, 'outside-dir')).catch(() => null)).toBeNull()
-  expect(
-    await fs.lstat(join(installed, 'plugins', 'meta', 'absolute-secret')).catch(() => null),
-  ).toBeNull()
-})
 
 test('installing a marketplace plugin dereferences links into the marketplace', async () => {
   const { deps, source } = await fixture()
@@ -101,6 +87,8 @@ test('installing a marketplace plugin dereferences links into the marketplace', 
   expect(await fs.readFile(join(destination!, 'skills', 'docs', 'guide.md'), 'utf8')).toBe(
     'own guide',
   )
+  // A link out of the marketplace is not installed.
+  expect(await fs.lstat(join(destination!, 'absolute-secret')).catch(() => null)).toBeNull()
 })
 
 test('a marketplace plugin whose path links out of the marketplace is not installed', async () => {

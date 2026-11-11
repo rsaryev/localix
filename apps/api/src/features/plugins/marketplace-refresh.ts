@@ -1,5 +1,4 @@
 import { errorMessage } from '../../lib/errors'
-import { readKnownMarketplaces } from './marketplace-catalog'
 import {
   marketplacesRoot,
   parseMarketplaceRef,
@@ -8,6 +7,7 @@ import {
   type MarketplaceRegistryDeps,
   type ResolvedMarketplaceInstall,
 } from './marketplace-registry'
+import { isLocalSource, readKnownMarketplaces } from './kit'
 
 /**
  * Claude Code reads the named marketplace again before a `name@marketplace` install, and before
@@ -38,8 +38,7 @@ export async function refreshMarketplace(
   const root = deps.root ?? marketplacesRoot()
   const known = (await readKnownMarketplaces(root))[marketplace]
   if (!known) return undefined
-  const kind = known.source.source
-  if ((kind === 'local' || kind === 'file') && !opts.includeLocal) return undefined
+  if (isLocalSource(known.source) && !opts.includeLocal) return undefined
   const now = (opts.now ?? Date.now)()
   const key = `${root}\0${marketplace}`
   const last = refreshedAt.get(key)

@@ -1,7 +1,6 @@
 import { join, resolve } from 'node:path'
 
 import { mergeByPrecedence, pathExists as _pathExists } from '../ext/fs-discovery'
-import { normalizeCcToolName } from '../ext/cc-tool-names'
 
 import type { DiscoveredPlugin } from './discovery-types'
 
@@ -37,10 +36,6 @@ export type { DiscoveredPlugin } from './discovery-types'
 
 /** Return true if the path exists and is accessible, false otherwise. */
 export const pathExists = _pathExists
-
-// Re-export so importers (loader-contract.ts, run/permission-gate-build.ts) that depend on this
-// module's path continue to work without import-path changes.
-export { normalizeCcToolName }
 
 // Manifest parsing (loadManifest) lives in manifest-load.ts. Re-exported here so
 // the historical `./discovery` import surface stays stable for service.ts, the

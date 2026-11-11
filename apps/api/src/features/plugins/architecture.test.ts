@@ -6,7 +6,6 @@ import { tmpdir } from 'node:os'
 import { pluginManifestSchema, type PluginManifest } from './contracts'
 import type { DiscoveredPlugin } from './discovery'
 import type { ResolvedEntrypoints } from './kit'
-import { normalizeCcToolName } from './discovery'
 import { pluginConfigOptionSchema } from './contracts-config'
 import { validatePlugin } from './validate'
 import { pluginTrustClass } from './enable'
@@ -53,32 +52,6 @@ function mkPlugin(
     ...over,
   }
 }
-
-describe('normalizeCcToolName (single source of truth for CC→engine mapping)', () => {
-  it('lowercases engine names that pass through unchanged', () => {
-    expect(normalizeCcToolName('bash')).toBe('Bash')
-    expect(normalizeCcToolName('Bash')).toBe('Bash')
-    expect(normalizeCcToolName('Read')).toBe('Read')
-  })
-
-  it('maps CC alias names to engine names', () => {
-    expect(normalizeCcToolName('Grep')).toBe('Search')
-    expect(normalizeCcToolName('Glob')).toBe('Search')
-    expect(normalizeCcToolName('Agent')).toBe('Agent')
-    expect(normalizeCcToolName('WebFetch')).toBe('Research')
-    expect(normalizeCcToolName('WebSearch')).toBe('Research')
-    expect(normalizeCcToolName('AskUserQuestion')).toBe('AskUserQuestion')
-  })
-
-  it('strips CC pattern syntax before mapping: Bash(git *) → bash', () => {
-    expect(normalizeCcToolName('Bash(git *)')).toBe('Bash')
-    expect(normalizeCcToolName('Grep(*.ts)')).toBe('Search')
-  })
-
-  it('returns lowercase input when name is not in the map', () => {
-    expect(normalizeCcToolName('UnknownTool')).toBe('unknowntool')
-  })
-})
 
 describe('validatePlugin — required config and built-in path variables', () => {
   it('flags required config that is unset, and clears once provided', () => {

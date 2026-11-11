@@ -75,12 +75,22 @@ describe('plugin switches', () => {
       await service.install('u1', { source: join(root, name), projectId: null, enable: true })
 
     await expect(service.setEnabled('u1', { name: 'base', enabled: false })).rejects.toThrow(
-      'Plugin "base" is needed by top, which is enabled. Disable top first, then base.',
+      'Cannot disable "base": "top" depends on it; disable it first',
     )
     await service.setEnabled('u1', { name: 'top', enabled: false })
     expect(await service.setEnabled('u1', { name: 'base', enabled: false })).toMatchObject({
       enabled: false,
     })
+  })
+
+  test('enabling a plugin whose dependency is not installed fails and enables nothing', async () => {
+    const { root, service } = await setup()
+    writePlugin(join(root, 'lone'), 'lone', { dependencies: ['ghost'] })
+    await service.install('u1', { source: join(root, 'lone'), projectId: null })
+    const enabling = service.setEnabled('u1', { name: 'lone', enabled: true })
+    await expect(enabling).rejects.toThrow('Dependency "ghost" is not installed')
+    const listed = (await service.listPlugins('u1', { projectId: null })).plugins
+    expect(listed.find((p) => p.name === 'lone')?.enabled).toBe(false)
   })
 
   test('a switch or an install that changes nothing says the plugin already is', async () => {

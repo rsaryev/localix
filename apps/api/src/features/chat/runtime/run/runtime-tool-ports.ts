@@ -126,6 +126,7 @@ export function buildOptionalToolPorts(
     defaultCwd,
     rootSessionId: session.rootSessionId ?? session.id,
     ...(params.allowedAgentTypes ? { allowedAgentTypes: params.allowedAgentTypes } : {}),
+    ...(params.parentTools ? { parentTools: params.parentTools } : {}),
     ...(worktreeHook ? { worktreeHook } : {}),
   })
 

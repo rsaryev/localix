@@ -21,12 +21,6 @@ export const pluginAgentSchema = z.object({
    * Applied when the agent is dispatched as a delegated task run or sub-agent via `Agent`.
    */
   disallowedTools: z.array(z.string()).optional(),
-  /**
-   * The agent types `tools: Agent(worker, researcher)` lets the agent delegate to when it runs as
-   * the main thread (sub-agents.md: an allowlist; a bare `Agent` allows every type). Absent means
-   * no restriction.
-   */
-  agentTypes: z.array(z.string()).optional(),
   /** CC `model` — an alias, a full model id or `inherit`, as written (`kit/spawn.ts` routes it). */
   model: z.string().optional(),
   /**

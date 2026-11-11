@@ -35,7 +35,7 @@ import type { PluginStoreService } from './store-provider-types'
  * project's.
  */
 export function createPluginStoreProvider(deps: {
-  /** The marketplaces root (`known.json` and the checkouts). */
+  /** The marketplaces root (`known_marketplaces.json` and the checkouts). */
   root: string
   /** Where what checkouts contain is kept between starts. */
   cacheDir: string

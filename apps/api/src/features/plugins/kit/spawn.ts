@@ -4,7 +4,7 @@ import type { AgentMcpServerSpec, HooksSettings } from '@rsaryev/llx-plugin'
 import {
   agentHookGroups,
   hooksTrustGate,
-  MODEL_ALIASES,
+  modelFamily,
   planAgentMemory,
   planPreloadedSkills,
   resolveAgentMcpServers,
@@ -177,30 +177,40 @@ export function subagentPermissionMode(
   return basis === 'set' && LOCALIX_MODES.has(mode) ? (mode as AgentPermissionMode) : conversation
 }
 
-/** The main model's alias family, by the alias its id names (`claude-sonnet-4-5` is `sonnet`). */
-const familyOf = (modelId: string): string | undefined =>
-  MODEL_ALIASES.find((alias) => modelId.toLowerCase().includes(alias))
-
 /** Where the chat runs: its model, and the model ids its providers offer. */
 export interface SubagentModelContext {
   mainModel: string
   available: readonly string[]
 }
 
+/** What names a child's model: its agent file's `model` and the `Agent` call's `model` alias. */
+export interface SubagentModelAsk {
+  definition?: string
+  invocation?: string
+}
+
+/** The environment's say (sub-agents.md, "Choose a model"): `CLAUDE_CODE_SUBAGENT_MODEL`, and `_FORCE`. */
+type ModelEnv = Readonly<Record<string, string | undefined>>
+
 /**
- * The route an agent file's `model` gives a child the person chose no model for (sub-agents.md,
- * "Choose a model"), as the kit resolves it (`resolveSubagentModel`) and Localix's providers carry
- * it: the main model (`inherit`, or an alias of its family) is no route, so the child keeps its
+ * The route a child the person chose no model for takes (sub-agents.md, "Choose a model"): the
+ * `Agent` call's alias, its agent file's `model`, then `CLAUDE_CODE_SUBAGENT_MODEL` (alone under
+ * `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1`), as the kit resolves them (`resolveSubagentModel`) and
+ * Localix's providers carry them: the main model (`inherit`, or an alias of its family) is no route, so the child keeps its
  * session's; another alias is the newest model of that family the providers offer; a full id is
  * that model when they offer it. Anything they do not offer leaves the session's model.
  */
 export function subagentModelRoute(
-  definition: string | undefined,
+  ask: SubagentModelAsk,
   context: SubagentModelContext,
+  env: ModelEnv = process.env,
 ): { modelId?: string; providerConnectionId?: null } {
-  const family = familyOf(context.mainModel)
+  const family = modelFamily(context.mainModel)
   const { model, kind } = resolveSubagentModel({
-    definition,
+    definition: ask.definition,
+    invocation: ask.invocation,
+    envModel: env.CLAUDE_CODE_SUBAGENT_MODEL,
+    force: env.CLAUDE_CODE_SUBAGENT_MODEL_FORCE === '1',
     mainModel: context.mainModel,
     ...(family ? { mainFamily: family } : {}),
   })

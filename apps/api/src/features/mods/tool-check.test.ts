@@ -47,3 +47,28 @@ test('tool.check carries no agentId in the main loop and no approver where nobod
   expect(read).not.toHaveProperty('agentId')
   expect(read).not.toHaveProperty('approver')
 })
+
+async function answered(answer: 'allow' | 'deny', facts: { tightenOnly?: boolean }) {
+  const { host, scene } = await hostWithMod((on) => {
+    on('tool.check', () => ({ decision: answer, reason: 'mod' }))
+  })
+  const scope = await createModRunScope(host, scene, new Set(host.loaded()), { model: 'model-a' })
+  scope.wrapTools([tool('read', false), tool('bash', true)])
+  const port = scope.toolCheck(facts)!
+  const call = (toolName: string) => ({ toolCallId: 't1', toolName, input: {} })
+  return {
+    read: await port.review!(call('read'), { decision: 'ask' }),
+    bash: await port.review!(call('bash'), { decision: 'ask' }),
+  }
+}
+
+test('where hooks only tighten (plan mode), an allow stands on a read and not on a write', async () => {
+  const { read, bash } = await answered('allow', { tightenOnly: true })
+  expect(read).toEqual({ decision: 'allow', reason: 'mod' })
+  expect(bash).toEqual({ decision: 'ask' })
+})
+
+test('where hooks only tighten, a deny still refuses; elsewhere an allow stands', async () => {
+  expect((await answered('deny', { tightenOnly: true })).bash.decision).toBe('deny')
+  expect((await answered('allow', {})).bash.decision).toBe('allow')
+})

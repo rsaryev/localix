@@ -3,52 +3,43 @@ import { randomUUID } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
-import { readMarketplace, type Marketplace } from './kit'
+import {
+  asRecorded,
+  assertMarketplaceAllowed,
+  isLocalSource,
+  readKnownMarketplaces,
+  readMarketplace,
+  writeKnownMarketplaces,
+  type Marketplace,
+  type MarketplaceSource,
+} from './kit'
 import { rmrf } from '../ext/install-tree'
-import { hashString, marketplacesRoot, type MarketplaceSource } from './marketplace-source'
+import { hashString, marketplacesRoot } from './marketplace-source'
 import type { NpmEntrySource } from './marketplace-source-npm'
 import { materializeMarketplace } from './marketplace-materialize'
 import {
   addMarketplaceInPlace,
-  addsInPlace,
   assertOwnedMarketplaceDir,
   assertRegistrable,
   removeOwnedMarketplaceDir,
 } from './marketplace-in-place'
-
-import {
-  keptPreferences,
-  readKnownMarketplaces,
-  writeKnownMarketplaces,
-} from './marketplace-catalog'
-import { assertMarketplaceAllowed } from './claude-code-policy'
+import { keptPreferences } from './marketplace-catalog'
 
 export {
-  readKnownMarketplaces,
   listMarketplaces,
   marketplaceDependencyAllowList,
   findMarketplacesWithPlugin,
-  type KnownMarketplace,
   type MarketplaceListing,
 } from './marketplace-catalog'
-
-// Re-export the pure source-parsing + path helpers so importers keep their existing
-// `./marketplace-registry` surface.
-export {
-  marketplacesRoot,
-  parseMarketplaceInput,
-  parseMarketplaceRef,
-  type MarketplaceSource,
-} from './marketplace-source'
+export { marketplacesRoot, parseMarketplaceRef } from './marketplace-source'
 
 /**
  * Marketplace registry — the Claude Code `/plugin marketplace add` + `install
- * name@marketplace` flow. A marketplace is a git repo, local dir, catalog file or hosted
- * catalog holding Claude Code's `.claude-plugin/marketplace.json`, read by the kit
- * (`kit/marketplace`). We materialize it under
- * `~/.localix/marketplaces/<name>/` (a local folder is read in place, see
- * `marketplace-in-place.ts`) and track the set in `known.json` (keyed by name,
- * mirroring CC's `known_marketplaces.json`: `{ source, installLocation }`).
+ * name@marketplace` flow. A marketplace is a git repo, local folder, catalog file, hosted or
+ * inline catalog holding Claude Code's `.claude-plugin/marketplace.json`, read and planned by the
+ * kit (`kit/marketplace`). A fetched one is kept under `~/.localix/marketplaces/<name>/` (a local
+ * one is read in place, see `marketplace-in-place.ts`) and the set is recorded in
+ * `known_marketplaces.json` as Claude Code records it (`kit/marketplace/records.ts`).
  *
  * One unified system: resolution always ends in a local plugin directory handed to
  * `pluginService.install`, so a marketplace install reuses the same copy/enable/
@@ -63,7 +54,7 @@ export interface MarketplaceRegistryDeps {
    * checking out only the `sparse` directory when given; throws on failure.
    */
   cloneRepo: (url: string, dest: string, ref?: string, sparse?: string | string[]) => Promise<void>
-  /** Download an npm plugin source into `dest`. Defaults to `fetchNpmPlugin` (tests stub). */
+  /** Download an npm plugin entry into `dest`. Defaults to `fetchNpmPlugin` (tests stub). */
   fetchNpm?: (src: NpmEntrySource, dest: string) => Promise<void>
   /** Download an archive plugin source into `dest`. Defaults to `fetchArchivePlugin`. */
   fetchArchive?: (
@@ -81,25 +72,29 @@ export interface MarketplaceRegistryDeps {
 }
 
 /**
- * Register a marketplace by source: clone/copy it under the marketplaces root, validate
- * its catalog, and persist it in known.json. Returns the catalog name + entry count.
+ * Register a marketplace by source: fetch it under the marketplaces root (or read a local one
+ * where it is), validate its catalog, and record it. `inline` is an inline catalog as its settings
+ * declare it. Returns the catalog name + entry count.
  */
 async function addMarketplaceUnlocked(
-  source: MarketplaceSource,
+  added: MarketplaceSource,
   deps: MarketplaceRegistryDeps,
+  inline?: unknown,
 ): Promise<{ name: string; count: number }> {
   const root = deps.root ?? marketplacesRoot()
+  const now = (deps.now ?? (() => new Date().toISOString()))()
   // The organization's policy is checked before anything is fetched or written.
-  await assertMarketplaceAllowed(source, deps.managedSettingsDir)
+  await assertMarketplaceAllowed(added, deps.managedSettingsDir)
   await fs.mkdir(root, { recursive: true })
-  if (addsInPlace(source, root)) return addMarketplaceInPlace(source, root)
+  if (isLocalSource(added)) return addMarketplaceInPlace(added, root, now)
 
+  const source = asRecorded(added)
   const staging = join(root, `.staging-${Math.abs(hashString(JSON.stringify(source)))}`)
   let market: Marketplace
   let fetched: { commitSha?: string }
   try {
-    fetched = await materializeMarketplace(source, staging, deps)
-    market = await readMarketplace(staging, source)
+    fetched = await materializeMarketplace(added, staging, deps, inline)
+    market = await readMarketplace({ source, installLocation: staging })
     await assertRegistrable(market, source, root)
   } catch (err) {
     await rmrf(staging)
@@ -129,7 +124,7 @@ async function addMarketplaceUnlocked(
       ...keptPreferences(previous),
       source,
       installLocation,
-      lastUpdated: (deps.now ?? (() => new Date().toISOString()))(),
+      lastUpdated: now,
       ...(fetched.commitSha ? { gitCommitSha: fetched.commitSha } : {}),
     }
     await writeKnownMarketplaces(root, known)
@@ -159,16 +154,16 @@ async function addMarketplaceUnlocked(
 export async function addMarketplace(
   source: MarketplaceSource,
   deps: MarketplaceRegistryDeps,
+  inline?: unknown,
 ): Promise<{ name: string; count: number }> {
   const root = deps.root ?? marketplacesRoot()
-  return withMarketplaceMutationLock(root, () => addMarketplaceUnlocked(source, deps))
+  return withMarketplaceMutationLock(root, () => addMarketplaceUnlocked(source, deps, inline))
 }
 
 /**
- * Update a registered marketplace by re-materializing it from its recorded source:
- * a git/github source re-clones; an npm source re-fetches the latest version
- * satisfying its recorded range (or the latest dist-tag when unpinned). Rare edge:
- * if the refreshed catalog renamed itself, the stale record + dir are dropped.
+ * Update a registered marketplace by fetching it again from its recorded source (a local one is
+ * read again, an inline one only re-read). Rare edge: if the refreshed catalog renamed itself, the stale record + dir are
+ * dropped.
  */
 export async function updateMarketplace(
   name: string,
@@ -177,6 +172,11 @@ export async function updateMarketplace(
   const root = deps.root ?? marketplacesRoot()
   const rec = (await readKnownMarketplaces(root))[name]
   if (!rec) throw new Error(`Unknown marketplace "${name}".`)
+  // An inline catalog has nothing to fetch: its settings re-register it when they change.
+  if (rec.source.kind === 'settings') {
+    const market = await readMarketplace(rec)
+    return { name, count: market.plugins.length }
+  }
   const res = await addMarketplace(rec.source, deps)
   if (res.name !== name) await removeMarketplace(name, deps)
   return res

@@ -9,10 +9,11 @@ import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { cachedVersionDir, readInstallRecords } from './plugin-cache'
 import { createPluginService } from './service'
+import { folderClone } from './testing/folder-clone'
 
 /**
- * A plugin installed at user scope from a marketplace that Localix copies (here one added from its
- * catalog file) lands in the version cache, `cache/<marketplace>/<plugin>/<version>/`, as in Claude
+ * A plugin installed at user scope from a marketplace that Localix copies (here a GitHub one, its
+ * clone a copy of a folder) lands in the version cache, `cache/<marketplace>/<plugin>/<version>/`, as in Claude
  * Code. An update installs the new version beside the old one, which is marked `.orphaned_at`; an
  * unchanged version installs nothing; a failed update keeps the version before.
  */
@@ -45,10 +46,13 @@ beforeAll(async () => {
   process.env.CLAUDE_CONFIG_DIR = join(root, 'claude')
   db = createDatabase()
   await migrateToLatest(db)
-  service = createPluginService({ db, capabilityStores, homeDir: home })
-  await service.addMarketplace('u1', {
-    source: join(root, 'market', '.claude-plugin', 'marketplace.json'),
+  service = createPluginService({
+    db,
+    capabilityStores,
+    homeDir: home,
+    cloneRepo: folderClone(join(root, 'market')),
   })
+  await service.addMarketplace('u1', { source: 'acme/shop' })
 })
 
 afterAll(async () => {

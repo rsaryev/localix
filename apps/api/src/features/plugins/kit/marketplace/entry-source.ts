@@ -4,10 +4,11 @@ import {
   withoutRoutingHeaders,
   type FetchPlan,
   type MarketplaceEntry,
+  type MarketplaceSource,
 } from '@rsaryev/llx-plugin/marketplace'
 import { isPathWithin } from '../../../../lib/path-containment'
 import { issueLine } from '../catalog/read-folder'
-import { marketplaceOrigin } from './catalog'
+import { cloneUrl } from './sources'
 
 /**
  * Where one marketplace entry's plugin comes from, as the kit plans it (`planPluginFetch`), in the
@@ -35,9 +36,6 @@ type Resolve<K extends FetchPlan['kind']> = (
   dir: string,
 ) => ResolvedEntrySource
 
-const gitUrl = (repo: Plan<'git'>['repo']): string =>
-  'shorthand' in repo ? `https://github.com/${repo.shorthand}.git` : repo.url
-
 const RESOLVE: { readonly [K in FetchPlan['kind']]: Resolve<K> } = {
   local: (plan, entry, dir) => {
     const localPath = resolve(dir, plan.fromMarketplaceRoot)
@@ -49,7 +47,7 @@ const RESOLVE: { readonly [K in FetchPlan['kind']]: Resolve<K> } = {
     const ref = plan.sha ?? plan.ref
     return {
       git: {
-        url: gitUrl(plan.repo),
+        url: cloneUrl(plan.repo),
         ...(plan.subdir === undefined ? {} : { subdir: plan.subdir }),
         ...(ref === undefined ? {} : { ref }),
       },
@@ -88,13 +86,12 @@ const resolvePlan = <K extends FetchPlan['kind']>(
   dir: string,
 ): ResolvedEntrySource => (RESOLVE[plan.kind] as Resolve<K>)(plan, entry, dir)
 
-/** Resolve `entry` of the marketplace in `dir`, added from `recordedSource`, or throw why not. */
+/** Resolve `entry` of the marketplace rooted in `dir`, added from `origin`, or throw why not. */
 export function resolveEntrySource(
   dir: string,
   entry: MarketplaceEntry,
-  recordedSource?: unknown,
+  origin?: MarketplaceSource,
 ): ResolvedEntrySource {
-  const origin = recordedSource === undefined ? undefined : marketplaceOrigin(recordedSource)
   const { plan, issues } = planPluginFetch(entry.source, {
     platform: process.platform === 'win32' ? 'windows' : 'posix',
     ...(origin === undefined ? {} : { marketplaceOrigin: origin }),

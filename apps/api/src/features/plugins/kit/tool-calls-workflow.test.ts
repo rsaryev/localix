@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
-import { claudeCodeHookCall, claudeCodeToolName, localInputFromHook } from './cc-tool-shapes'
+import { claudeCodeHookCall, localInputFromHook } from './tool-calls'
+import { claudeCodeToolName } from './tool-names'
 
 // claude-code-tools d.ts `Workflow`: `name`, `args`, `resumeFromRunId` — Localix's fields.
 describe('the workflow tool in Claude Code’s shape', () => {

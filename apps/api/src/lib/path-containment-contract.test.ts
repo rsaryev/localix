@@ -79,10 +79,6 @@ const IDIOMS = {
 
 const EXEMPTIONS: Exemptions = {
   // ── Not path containment at all: string-shape sniffs and non-path prefixes ──
-  [exemptionKey('src/features/plugins/marketplace-source.ts', 'rel-escape')]: {
-    reason:
-      'SNIFFS whether a marketplace `source` string LOOKS like a local path (`startsWith("./")`, `"../"`, `"/"`, `"~"`) before it is ever resolved. That is a syntax classification, not a containment check — the containment check in this same file DOES go through the owner.',
-  },
   [exemptionKey('src/features/agent-core/tools/preview/open-preview-detect.ts', 'rel-escape')]: {
     reason:
       'Sniffs whether an argument string looks like a file path vs a URL. No root, nothing to contain.',

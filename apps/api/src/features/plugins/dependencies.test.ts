@@ -21,7 +21,7 @@ import {
   type DependencyResolverDeps,
   type ResolvedDependencyStep,
 } from './dependencies'
-import { cascadeEnableDependencies } from './dependencies-enable'
+import { planEnableCascade } from './dependencies-enable'
 import {
   prepareDependenciesForInstall,
   type PreparedDependencyInstall,
@@ -210,43 +210,30 @@ describe('resolveDependencyPlan', () => {
 
 // ---------- enable cascade ------------------------------------------------------
 
-describe('cascadeEnableDependencies', () => {
-  const run = async (root: DiscoveredPlugin, discovered: DiscoveredPlugin[], on: Set<string>) => {
-    const enabled: string[] = []
-    const result = await cascadeEnableDependencies(root, {
-      discovered,
-      isEnabled: (p) => on.has(p.manifest.name),
-      enable: async (p) => {
-        enabled.push(p.manifest.name)
-      },
-    })
-    return { result, enabled }
+describe('planEnableCascade', () => {
+  const plan = (root: DiscoveredPlugin, discovered: DiscoveredPlugin[], on: Set<string>) => {
+    const result = planEnableCascade(root, discovered, (p) => on.has(p.manifest.name))
+    return { enable: result.enable.map((p) => p.manifest.name), issues: result.issues }
   }
 
-  it('enables installed-but-disabled dependencies', async () => {
+  it('enables installed-but-disabled dependencies', () => {
     const root = fakePlugin({ name: 'parent', dependencies: ['lib'] })
     const lib = fakePlugin({ name: 'lib' })
-    const { result, enabled } = await run(root, [root, lib], new Set(['parent']))
-    expect(enabled).toEqual(['lib'])
-    expect(result).toMatchObject({
-      enabled: ['lib'],
-      missing: [],
-      warnings: [],
-    })
+    expect(plan(root, [root, lib], new Set(['parent']))).toEqual({ enable: ['lib'], issues: [] })
   })
 
-  it('is cycle-safe (a ↔ b) and cascades transitively', async () => {
+  it('is cycle-safe (a ↔ b) and cascades transitively', () => {
     const a = fakePlugin({ name: 'a', dependencies: ['b'] })
     const b = fakePlugin({ name: 'b', dependencies: ['a'] })
-    const { enabled } = await run(a, [a, b], new Set())
-    expect(enabled).toEqual(['b'])
+    expect(plan(a, [a, b], new Set()).enable).toEqual(['b'])
   })
 
-  it('reports missing (not-installed) dependencies without throwing', async () => {
-    const root = fakePlugin({ name: 'parent', dependencies: ['ghost'] })
-    const { result } = await run(root, [root], new Set(['parent']))
-    expect(result.missing).toEqual(['ghost'])
-    expect(result.warnings.join(' ')).toContain('ghost')
+  it('fails on a dependency that is not installed, enabling nothing', () => {
+    const root = fakePlugin({ name: 'parent', dependencies: ['lib', 'ghost'] })
+    const lib = fakePlugin({ name: 'lib' })
+    const result = plan(root, [root, lib], new Set(['parent']))
+    expect(result.enable).toEqual([])
+    expect(result.issues.join(' ')).toContain('"ghost" is not installed')
   })
 })
 
@@ -328,10 +315,14 @@ describe('prepareDependenciesForInstall', () => {
     const known = Object.fromEntries(
       names.map((n) => [
         n,
-        { source: { source: 'local', path: join(root, n) }, installLocation: join(root, n) },
+        {
+          source: { source: 'directory', path: join(root, n) },
+          installLocation: join(root, n),
+          lastUpdated: '2026-10-20T10:00:00.000Z',
+        },
       ]),
     )
-    await fs.writeFile(join(root, 'known.json'), JSON.stringify(known))
+    await fs.writeFile(join(root, 'known_marketplaces.json'), JSON.stringify(known))
   }
 
   beforeEach(async () => {

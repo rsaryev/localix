@@ -118,13 +118,14 @@ describe('default wire schema budget', () => {
     const skillSchema = JSON.stringify(skill?.inputSchema.toJSONSchema?.() ?? {})
     expect(skillSchema).toContain('"save"')
     for (const action of ['list', 'delete']) expect(skillSchema).not.toContain(`"${action}"`)
-    // Starting, messaging and stopping a subagent are separate tools; none takes a model.
+    // Starting, messaging and stopping a subagent are separate tools; only Agent takes a model
+    // (Claude Code's alias, sub-agents.md "Choose a model"), none an effort.
     for (const name of [TOOL.Agent, TOOL.SendMessage, TOOL.TaskStop]) {
       const schema = JSON.stringify(
         wire.find((tool) => tool.name === name)?.inputSchema.toJSONSchema?.() ?? {},
       )
       expect(schema).not.toContain('"action"')
-      expect(schema).not.toContain('"model"')
+      if (name !== TOOL.Agent) expect(schema).not.toContain('"model"')
       expect(schema).not.toContain('"effort"')
     }
   })

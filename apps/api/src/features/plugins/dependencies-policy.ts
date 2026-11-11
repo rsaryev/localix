@@ -4,14 +4,15 @@ import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { readAvailability } from '../capabilities/availability'
 import { actionFor } from '../capabilities/resolve'
 import type { RuleChange } from '../capabilities/rule-changes'
-import { cascadeEnableDependencies, type DependencyEnableResult } from './dependencies-enable'
+import { planEnableCascade } from './dependencies-enable'
 import type { DiscoveredPlugin } from './discovery'
 import { pluginTrustClass } from './enable'
 
 export interface DependencyEnablePlan {
   /** The rule changes the cascade wants, for the caller to write with its own. */
   changes: RuleChange[]
-  result: DependencyEnableResult
+  /** Why the plugin cannot be enabled (a dependency is not installed); no changes then. */
+  issues: string[]
 }
 
 /**
@@ -23,7 +24,7 @@ export interface DependencyEnablePlan {
  * with one fewer moving part: the caller folds these changes into the SAME read-modify-write
  * as the change that caused them, so there is one transaction and no ordering to get right.
  *
- * Dependencies never cross the project boundary (`dependencies-enable.ts` matches on the
+ * Dependencies never cross the project boundary (`dependencies-enable.ts` keeps to the
  * root's `projectId`), so every change here belongs to the scope the caller is already
  * writing.
  */
@@ -41,18 +42,16 @@ export async function planDependencyEnables(
     userId: input.userId,
     agentId: input.agentId || DEFAULT_AGENT_ID,
   })
-  const changes: RuleChange[] = []
-  const result = await cascadeEnableDependencies(input.plugin, {
-    discovered: input.discovered,
-    isEnabled: (plugin) =>
+  const plan = planEnableCascade(
+    input.plugin,
+    input.discovered,
+    (plugin) =>
       availability.effectFor('plugin', plugin.manifest.name, pluginTrustClass()) === 'allow',
-    enable: async (plugin) => {
-      changes.push({
-        action: actionFor('plugin', plugin.manifest.name),
-        resource: '*',
-        effect: 'allow',
-      })
-    },
-  })
-  return { changes, result }
+  )
+  const changes: RuleChange[] = plan.enable.map((plugin) => ({
+    action: actionFor('plugin', plugin.manifest.name),
+    resource: '*',
+    effect: 'allow',
+  }))
+  return { changes, issues: plan.issues }
 }

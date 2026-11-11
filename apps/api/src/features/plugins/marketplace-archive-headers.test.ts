@@ -37,7 +37,7 @@ describe('archive download headers', () => {
     const deps = { root, cloneRepo: async () => {} }
     await addMarketplace(
       {
-        source: 'url',
+        kind: 'url',
         url: 'https://cat.example.com/m.json',
         headers: { Authorization: 'mkt', 'X-Mkt': 'm' },
       },
@@ -49,7 +49,7 @@ describe('archive download headers', () => {
     }
     for (const plugin of ['tool', 'other'])
       await resolveMarketplaceInstall({ plugin, marketplace: 'hosted' }, { ...deps, fetchArchive })
-    // Another origin gets no marketplace headers.
-    expect(seen).toEqual([{ Authorization: 'entry', 'X-Mkt': 'm', 'X-Entry': 'e' }, undefined])
+    // Another origin gets no marketplace headers; the kit sends header names in lower case.
+    expect(seen).toEqual([{ authorization: 'entry', 'x-mkt': 'm', 'x-entry': 'e' }, undefined])
   })
 })

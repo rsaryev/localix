@@ -4,9 +4,7 @@ import type { ClaudeTheme } from '@localixai/claude-plugin'
 import { readCatalog } from '@rsaryev/llx-plugin'
 import type { Plugin } from '@rsaryev/llx-plugin/loading'
 import { themeColorToHex, type AgentRecord, type Command } from '@rsaryev/llx-plugin/format'
-import { mapCcToolList } from '../../../ext/cc-tool-names'
 import type { PluginAgent, PluginCommand } from '../../contracts'
-import { delegableAgentTypes, mapOptionalCcTools } from '../../discovery-cc-tools'
 
 /**
  * A loaded plugin's Markdown and JSON components as the kit's sessions read them (`readCatalog`,
@@ -53,12 +51,6 @@ export function readCommands(plugin: Plugin) {
   return { commands: readCatalog(plugin).commands.map(commandOf) }
 }
 
-/** The tools a rule list denies: an agent's `Bash(rm *)` removes the whole tool, as the kit reads it. */
-function deniedTools(rules: readonly string[] | undefined): string[] | undefined {
-  const tools = mapCcToolList([...(rules ?? [])], { dropUnknown: true })
-  return tools.length ? tools : undefined
-}
-
 /** An agent as the kit read it: a file's record, or a catalog entry under its scoped name. */
 export type AgentEntry = Pick<
   AgentRecord,
@@ -68,10 +60,7 @@ export type AgentEntry = Pick<
 /** An agent of the plugin, named below it (`team:security` for `<plugin>:team:security`). */
 export function agentOf(record: AgentEntry, prefix: string): PluginAgent {
   const { definition, extras } = record
-  const tools = definition.tools === undefined ? undefined : [...definition.tools]
-  const denied = deniedTools(definition.disallowedTools)
   const pinned = [...new Set(definition.skills ?? [])]
-  const types = delegableAgentTypes(tools)
   const fields: PluginAgent = {
     name:
       prefix && record.scopedName.startsWith(`${prefix}:`)
@@ -79,9 +68,11 @@ export function agentOf(record: AgentEntry, prefix: string): PluginAgent {
         : record.name,
     description: definition.description,
     prompt: definition.prompt.trim(),
-    ...(tools === undefined ? {} : { tools: mapOptionalCcTools(tools) }),
-    ...(denied ? { disallowedTools: denied } : {}),
-    ...(types ? { agentTypes: types } : {}),
+    // As written: the kit resolves them against the run's tools (`kit/subagent-tools.ts`).
+    ...(definition.tools === undefined ? {} : { tools: [...definition.tools] }),
+    ...(definition.disallowedTools?.length
+      ? { disallowedTools: [...definition.disallowedTools] }
+      : {}),
     ...(definition.model ? { model: definition.model } : {}),
     ...(pinned.length ? { pinnedSkills: pinned } : {}),
     ...(definition.maxTurns ? { maxTurns: definition.maxTurns } : {}),
@@ -96,7 +87,6 @@ export function agentOf(record: AgentEntry, prefix: string): PluginAgent {
     ...(record.hooks ? { hooks: record.hooks } : {}),
     ...(definition.mcpServers ? { mcpServers: definition.mcpServers } : {}),
   }
-  if (fields.tools === undefined) delete fields.tools
   return fields
 }
 

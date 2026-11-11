@@ -4,9 +4,10 @@ import type { ReasoningEffort } from '../../db/types'
  * WHICH MODEL AND EFFORT A SUBAGENT RUNS ON.
  *
  * The model the person chose for that agent in Localix's settings (`agentSettings.agentModelChoices`)
- * wins; when they chose none, the agent file's `model` as the kit resolves it
- * (`plugins/kit/spawn.ts` `subagentModelRoute`); else the session's. Effort is the person's or
- * the session's. The `Agent` call and a workflow's `agent()` have no say.
+ * wins; when they chose none, the `Agent` call's alias, the agent file's `model` and
+ * `CLAUDE_CODE_SUBAGENT_MODEL` as the kit orders them (`plugins/kit/spawn.ts`
+ * `subagentModelRoute`); else the session's. Effort is the person's or the session's; a
+ * workflow's `agent()` names no model.
  */
 
 /** An agent's own route: the parts the person chose, the rest left to the session. */

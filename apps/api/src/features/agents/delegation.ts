@@ -29,8 +29,8 @@ export interface AgentDirectoryRow {
   enabled: boolean
   /** `Agent` can hand it a task. */
   delegable: boolean
-  /** Its exact tool list, when its file has one. */
-  tools?: string[]
+  /** Its file's tool list as written, when it has one. */
+  tools?: readonly string[]
   /** Runs as the delegator (`general-purpose`). */
   self?: boolean
 }

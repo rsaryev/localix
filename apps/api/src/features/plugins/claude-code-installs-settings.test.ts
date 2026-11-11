@@ -20,7 +20,7 @@ function installTree(configDir: string, names: string[]): Record<string, string>
   const tree: Record<string, string> = {}
   for (const name of names) {
     const dir = join(root(), configDir, 'plugins/cache/mkt', name, '1.0.0')
-    plugins[`${name}@mkt`] = [{ scope: 'user', installPath: dir }]
+    plugins[`${name}@mkt`] = [{ scope: 'user', installPath: dir, version: '1.0.0' }]
     tree[join(configDir, 'plugins/cache/mkt', name, '1.0.0/.claude-plugin/plugin.json')] =
       JSON.stringify({ name })
   }
@@ -101,7 +101,7 @@ describe('Claude Code installs and the settings around them', () => {
     writeTree(root(), {
       'home/.claude/plugins/installed_plugins.json': JSON.stringify({
         version: 2,
-        plugins: { 'deployer@mkt': [{ scope: 'user', installPath: dir }] },
+        plugins: { 'deployer@mkt': [{ scope: 'user', installPath: dir, version: '1.0.0' }] },
       }),
       'home/.claude/plugins/cache/mkt/deployer/1.0.0/.claude-plugin/plugin.json': JSON.stringify({
         name: 'deployer',

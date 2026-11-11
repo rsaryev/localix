@@ -57,6 +57,38 @@ describe('the plugin cache', () => {
     expect(await readInstallRecords(home())).toEqual({})
   })
 
+  test('a write keeps the records of other scopes and the fields it does not know', async () => {
+    const file = join(home(), '.localix', 'plugins', 'installed_plugins.json')
+    const project = { scope: 'project', installPath: '/w/p', version: '1.0.0', projectPath: '/w' }
+    const user = { scope: 'user', installPath: '/c/p', version: '1.0.0', pinned: true }
+    mkdirSync(join(home(), '.localix', 'plugins'), { recursive: true })
+    writeFileSync(file, JSON.stringify({ version: 2, plugins: { 'p@market': [project, user] } }))
+    await setInstallRecord(home(), 'q@market', {
+      installPath: '/c/q',
+      version: '2.0.0',
+      installedAt: 'x',
+      lastUpdated: 'x',
+    })
+    const written = JSON.parse(readFileSync(file, 'utf8')) as { plugins: Record<string, unknown> }
+    expect(written.plugins['p@market']).toEqual([project, user])
+    await setInstallRecord(home(), 'p@market', null)
+    expect(
+      (JSON.parse(readFileSync(file, 'utf8')) as { plugins: Record<string, unknown> }).plugins[
+        'p@market'
+      ],
+    ).toEqual([project])
+  })
+
+  test('a file holding a record this version cannot read is never rewritten', async () => {
+    const file = join(home(), '.localix', 'plugins', 'installed_plugins.json')
+    const text = JSON.stringify({ version: 2, plugins: { 'p@market': [{ scope: 'galaxy' }] } })
+    mkdirSync(join(home(), '.localix', 'plugins'), { recursive: true })
+    writeFileSync(file, text)
+    const record = { installPath: '/c/q', version: '1', installedAt: 'x', lastUpdated: 'x' }
+    await expect(setInstallRecord(home(), 'q@market', record)).rejects.toThrow('p@market')
+    expect(readFileSync(file, 'utf8')).toBe(text)
+  })
+
   test('an orphaned version is removed 14 days after it was marked, not before', async () => {
     const live = versionDir('p', '2.0.0')
     const old = versionDir('p', '1.0.0')

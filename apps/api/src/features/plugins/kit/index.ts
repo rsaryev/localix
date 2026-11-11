@@ -140,18 +140,78 @@ export { scopeSkills, type ScopeSkills } from './scope-skills'
 export { skillPromptInput, type SkillOrigin, type SkillPromptInput } from './mods/skill-prompt'
 export {
   catalogKnows,
-  marketplaceOrigin,
   parseMarketplace,
   readCatalogJson,
   readMarketplace,
   relativeEntryPath,
   resolveEntryName,
   type Marketplace,
+  type MarketplaceAt,
   type MarketplaceEntry,
   type PluginSource,
 } from './marketplace/catalog'
+export {
+  asRecorded,
+  catalogAt,
+  readKnownMarketplaces,
+  writeKnownMarketplaces,
+  type KnownMarketplace,
+  type KnownMarketplaces,
+} from './marketplace/records'
+export {
+  clearOrphaned,
+  markOrphaned,
+  orphansToSweep,
+  pluginStore,
+  readInstalled,
+  versionsToOrphan,
+  writeInstalled,
+  type InstallRecord,
+  type InstalledRecords,
+} from './marketplace/installs'
+export { disableRefusal, enableCascade, type PluginNode } from './marketplace/dependency-graph'
+export {
+  autoUpdatePassAllowed,
+  autoUpdateToggleRefusal,
+  recordedAutoUpdate,
+} from './marketplace/updates'
+export { pluginVersion, UNKNOWN_VERSION, type VersionSourceFacts } from './marketplace/versions'
+export {
+  cloneUrl,
+  describeSource,
+  isLocalSource,
+  marketplaceAddRefusal,
+  marketplaceFetchPlan,
+  parseDeclaredSource,
+  parseMarketplaceAdd,
+  sameMarketplaceSource,
+  type MarketplaceFetchPlan,
+  type MarketplaceSource,
+} from './marketplace/sources'
+export {
+  assertMarketplaceAllowed,
+  assertPluginAllowed,
+  managedDeclarations,
+} from './marketplace/policy'
 export { resolveEntrySource, type ResolvedEntrySource } from './marketplace/entry-source'
-export { withoutRoutingHeaders } from '@rsaryev/llx-plugin/marketplace'
+export {
+  archiveHeaders,
+  catalogHeaders,
+  type ArchiveHeadersRequest,
+  type UrlSourceHeaders,
+} from './marketplace/headers'
+export {
+  claudeCodeInstallRecords,
+  claudeCodePluginSettings,
+  type ClaudeCodePluginSettings,
+  type EnabledBy as ClaudeCodeEnabledBy,
+} from './marketplace/claude-code'
+export {
+  declaredMarketplaces,
+  type DeclaredFrom,
+  type DeclaredMarketplace,
+} from './marketplace/declared'
+export { DEFAULT_MARKETPLACE_PATH, withoutRoutingHeaders } from '@rsaryev/llx-plugin/marketplace'
 export {
   clampReason,
   contextUsage,
@@ -162,3 +222,35 @@ export {
   withheldResultText,
   type ToolCallEnd,
 } from './mods/values'
+export {
+  claudeCodeToolName,
+  claudeCodeToolNames,
+  LOCALIX_TOOL_NAMES,
+  localixToolNames,
+  localToolName,
+  withRunTools,
+  type NamedTool,
+} from './tool-names'
+export { claudeCodeHookCall, localInputFromHook, toolCallEvent, toolInputOf } from './tool-calls'
+export {
+  agentToolCandidates,
+  agentToolsRefusal,
+  namesBuiltinTool,
+  narrowAgentTools,
+  type AgentToolFields,
+  type AgentToolRun,
+} from './subagent-tools'
+export {
+  createStateStore,
+  deepFreeze,
+  STATE_LIBRARY_SOURCE,
+  type StateRef,
+  type StateStore,
+} from './mods/state'
+export { splitDenyList } from './deny-list'
+export {
+  hooksTightenOnlyIn,
+  mergeToolCheck,
+  type ToolCheckContext,
+  type ToolDecision,
+} from './mods/tool-check'

@@ -17,7 +17,7 @@ import {
   type CompactionVerdict,
 } from './session-events'
 import { modTools, wrapInToolCall } from './tool-call'
-import { toolCheckPort, type ModVerdict } from './tool-check'
+import { toolCheckPort, type ModVerdict, type ToolCheckRun } from './tool-check'
 import { describeTools, type DescribedTools, type ToolPlacement } from './tool-describe'
 import { modelStepHook } from './turn-step'
 
@@ -67,7 +67,7 @@ export interface ModRunScope {
   /** `agent.offer`: the directory's agents, or the plugins' agent types, the model is offered. */
   offerAgents<T extends DirectoryAgent>(agents: readonly T[]): Promise<T[]>
   /** `tool.check` for the permission gate: a review of its verdicts, and its verdict lent. */
-  toolCheck(facts?: { approver?: 'host' | 'person' }): ModToolCheck | undefined
+  toolCheck(facts?: ToolCheckRun): ModToolCheck | undefined
   /** `turn.step` around each model request of the turn; undefined when no mod hears it. */
   modelStep(turnId: string): ModelStepHook | undefined
   /** `session.compact`: whether the checkpoint due now is kept, skipped, or one a mod asked for. */
@@ -215,7 +215,7 @@ export async function createModRunScope(
             scope,
             () => surface.tools,
             (verdict) => void (surface.verdict = verdict),
-            facts?.approver,
+            facts,
           )
         : undefined,
     modelStep: (turnId) => (active ? modelStepHook(scope, turnId) : undefined),

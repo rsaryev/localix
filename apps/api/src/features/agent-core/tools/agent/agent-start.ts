@@ -241,7 +241,7 @@ async function planAgent(
   ports?: AgentLaunchPorts,
 ): Promise<ChildPlan | { refusal: string }> {
   const target: AgentTarget = request.agent
-    ? await resolveAgentTarget(request.agent, delegator, opts)
+    ? await resolveAgentTarget(request.agent, delegator, opts, ports)
     : { agent: delegator }
   if ('refusal' in target) return target
   const { agent, type } = target
@@ -255,6 +255,7 @@ async function planAgent(
     toolCallId,
     agentId: agent.agentId,
     ...(request.isolation === 'worktree' ? { isolate: true } : {}),
+    ...(request.model ? { model: request.model } : {}),
   })
   return {
     agent,

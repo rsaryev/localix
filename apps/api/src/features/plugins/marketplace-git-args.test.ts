@@ -71,18 +71,23 @@ describe('marketplace git sources', () => {
     }
     await expect(
       materializeMarketplace(
-        { source: 'git', url: '-oProxyCommand=x@h:p' },
+        { kind: 'git', url: '-oProxyCommand=x@h:p', path: '.claude-plugin/marketplace.json' },
         join(dir(), 's'),
         deps,
       ),
-    ).rejects.toThrow('Marketplace source')
+    ).rejects.toThrow('is not a git URL')
     await expect(
       materializeMarketplace(
-        { source: 'github', repo: 'o/r', ref: '--upload-pack=x' },
+        {
+          kind: 'github',
+          repo: 'o/r',
+          path: '.claude-plugin/marketplace.json',
+          ref: '--upload-pack=x',
+        },
         join(dir(), 's'),
         deps,
       ),
-    ).rejects.toThrow('Marketplace source')
+    ).rejects.toThrow('is not a branch or tag name')
     await expect(
       fetchEntryPlugin({ git: { url: 'ext::sh -c x' } }, join(dir(), 'e'), deps),
     ).rejects.toThrow('Plugin source')

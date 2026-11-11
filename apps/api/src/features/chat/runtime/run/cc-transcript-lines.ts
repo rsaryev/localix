@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { isToolBackedItem, type AgentItem, type ToolBackedItem } from '@localixai/agent/agents'
 
 import type { PersistedMessage } from '../../contracts'
-import { claudeCodeHookCall } from '../../../ext/cc-tool-shapes'
+import { claudeCodeHookCall } from '../../../plugins/kit'
 
 /**
  * A conversation as Claude Code writes its transcript file: one JSON object per line, each a

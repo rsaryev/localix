@@ -2,9 +2,12 @@ import type { SourceView, StoreInstall, StoreProvider } from '@localixai/store'
 
 import { errorMessage } from '../../lib/errors'
 import { marketplaceAutoUpdate } from './marketplace-auto-update'
-import { readCatalogJson } from './kit'
-import { readKnownMarketplaces, type KnownMarketplace } from './marketplace-catalog'
-import { describeMarketplaceSource } from './marketplace-source-identity'
+import {
+  describeSource,
+  type KnownMarketplace,
+  readCatalogJson,
+  readKnownMarketplaces,
+} from './kit'
 import type { PluginService } from './service-types'
 import { marketView, type MarketView } from './store-listing'
 
@@ -24,7 +27,7 @@ export async function readMarketViews(
   const broken: BrokenMarket[] = []
   for (const [name, record] of Object.entries(known)) {
     try {
-      views.push(marketView(name, record, await readCatalogJson(record.installLocation)))
+      views.push(marketView(name, record, await readCatalogJson(record)))
     } catch (error) {
       broken.push({
         name,
@@ -47,7 +50,7 @@ export function pluginStoreSources(
   const common = (name: string, record: KnownMarketplace) => ({
     kind: 'plugin' as const,
     id: name,
-    url: describeMarketplaceSource(record.source),
+    url: describeSource(record.source),
     builtIn: false,
     autoUpdate: marketplaceAutoUpdate(name, record),
     ...(record.lastUpdated ? { syncedAt: record.lastUpdated } : {}),

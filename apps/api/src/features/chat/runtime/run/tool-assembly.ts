@@ -66,6 +66,8 @@ export interface AssembleRunToolsOptions {
    * settings load while the MCP servers are gathered.
    */
   hiddenBySettings?: Promise<(tool: AgentTool) => boolean>
+  /** The tools the run's agent file leaves it (`run-agent-tools.ts`), from the assembled ones. */
+  narrow?: (tools: readonly AgentTool[]) => AgentTool[]
   /**
    * Filled from the declared `mutates` flag (no hardcoded names). Dispatching one forces a
    * durable write, so a crash mid-call leaves evidence — see `handleToolExecutionStart`.
@@ -209,7 +211,8 @@ export async function assembleRunTools(
     deferred: (name) =>
       deferralSource.has(name) && !activatedForSession.includes(name) && !onSurface.includes(name),
   }) ?? { tools: chained, placed: new Map<string, boolean>() })
-  const wrapped = described.tools
+  // A tool the agent file leaves out is neither offered nor dispatched.
+  const wrapped = options.narrow ? options.narrow(described.tools) : described.tools
   const placed = [...described.placed]
   for (const [name] of placed.filter(([, deferred]) => deferred)) {
     sourceByTool.set(name, sourceByTool.get(name) ?? 'mods')

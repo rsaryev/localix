@@ -1,4 +1,5 @@
 import type { AgentLaunchPorts } from '../../../agent-core/tools/agent/agent-type'
+import type { TaskAgentType } from '../../../agent-core/tools/task-delegation-contracts'
 import type { AgentModelChoice } from '../../../agent-core/agent-model-route'
 import {
   adoptHookWorktree,
@@ -6,7 +7,12 @@ import {
 } from '../../../agent-core/tools/workflow/hook-worktree'
 import { createAgentWorktree } from '../../../agent-core/tools/workflow/worktree'
 import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
-import { subagentModelRoute, type SubagentModelContext } from '../../../plugins/kit'
+import {
+  agentToolsRefusal,
+  subagentModelRoute,
+  type NamedTool,
+  type SubagentModelContext,
+} from '../../../plugins/kit'
 import { runAsPluginAgent } from './plugin-main-agent'
 
 /**
@@ -28,10 +34,13 @@ export function agentLaunchPorts(input: {
   allowedAgentTypes?: readonly string[]
   /** The run's model and the models its providers offer: what an agent file's `model` routes to. */
   models?: SubagentModelContext
+  /** The tools this run offers, once built: what a child's agent type chooses among. */
+  parentTools?: () => readonly NamedTool[]
 }): AgentLaunchPorts {
-  const { models } = input
+  const { models, parentTools } = input
   return {
-    ...(models ? { subagentRoute: (model) => subagentModelRoute(model, models) } : {}),
+    ...(parentTools ? { toolsRefusal: (type) => childToolsRefusal(type, parentTools()) } : {}),
+    ...(models ? { subagentRoute: (ask) => subagentModelRoute(ask, models) } : {}),
     ...(input.allowedAgentTypes ? { allowedAgentTypes: input.allowedAgentTypes } : {}),
     ...(input.choices ? { choices: input.choices } : {}),
     isolate: async (name) => {
@@ -40,6 +49,17 @@ export function agentLaunchPorts(input: {
       return createAgentWorktree({ cwd: input.defaultCwd, name, group: input.rootSessionId })
     },
   }
+}
+
+/** A child of `type` is refused when its `tools` resolve to nothing among the run's tools. */
+function childToolsRefusal(type: TaskAgentType, pool: readonly NamedTool[]): string | undefined {
+  if (type.tools === undefined) return undefined
+  return agentToolsRefusal({ name: type.fullName, tools: type.tools }, pool, {
+    asMainThread: false,
+    background: type.background === true,
+    atDepthLimit: true,
+    permissionMode: type.permissionMode ?? 'default',
+  })
 }
 
 /**

@@ -109,7 +109,7 @@ describe('a plugin folder read by the kit', () => {
     expect(found.entrypoints.commandFiles).toEqual([])
   })
 
-  test('agents are named below the plugin, their tools in Localix names, worktree isolation as isolated', async () => {
+  test('agents are named below the plugin, their tools as the file wrote them, worktree isolation as isolated', async () => {
     const found = await read({
       ...manifest({ name: 'review' }),
       'agents/team/security.md':
@@ -120,12 +120,11 @@ describe('a plugin folder read by the kit', () => {
       name: 'team:security',
       description: 'Checks',
       prompt: 'Be careful',
-      agentTypes: ['worker'],
+      tools: ['Read', 'Bash', 'Agent(worker)'],
       pinnedSkills: ['audit'],
       isolation: 'isolated',
       maxTurns: 5,
     })
-    expect(found.agents[0]!.tools).toContain('Read')
     expect(found.provides.agents).toEqual(['review:team:security'])
   })
 

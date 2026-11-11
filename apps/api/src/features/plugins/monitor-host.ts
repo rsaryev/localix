@@ -51,7 +51,10 @@ export function createPluginMonitorHost(options: PluginMonitorHostOptions): Plug
   const { deliver, logger } = options
   const spawn = options.spawn ?? defaultSpawn
   const now = options.now ?? (() => Date.now())
-  /** The running monitors of each chat, by `<plugin id>:<monitor>`. */
+  /**
+   * The running monitors of each chat, by `<plugin id>:<monitor>`. A chat's sub-agent runs in a
+   * kit session of its own, which hands out the chat's `always` monitors again: one runs once.
+   */
   const chats = new Map<string, Map<string, RunningMonitor>>()
   let lifecycle: Promise<void> = Promise.resolve()
 
@@ -122,6 +125,7 @@ export function createPluginMonitorHost(options: PluginMonitorHostOptions): Plug
     chats.set(moved.chatId, running)
     for (const one of launches) {
       const id = `${one.pluginId}:${one.name}`
+      // A sub-agent's session hands out what its chat runs (the reopened chat's does not: its ledger).
       if (running.has(id)) continue
       try {
         running.set(id, startMonitor(one, moved))

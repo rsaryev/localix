@@ -1,56 +1,17 @@
-import { promises as fs } from 'node:fs'
-import { join } from 'node:path'
-
-import { catalogKnows, readMarketplace, type Marketplace } from './kit'
-import { marketplacesRoot, type MarketplaceSource } from './marketplace-source'
+import {
+  catalogKnows,
+  readKnownMarketplaces,
+  readMarketplace,
+  type KnownMarketplace,
+  type Marketplace,
+} from './kit'
+import { marketplacesRoot } from './marketplace-source'
 import { errorMessage } from '../../lib/errors'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
-
-/** A registered marketplace record (mirrors CC's known_marketplaces.json entries). */
-export interface KnownMarketplace {
-  source: MarketplaceSource
-  installLocation: string
-  /** When the listing was last fetched (Claude Code's `lastUpdated`). */
-  lastUpdated?: string
-  /**
-   * Whether the background pass refreshes it and updates its plugins (Claude Code's `autoUpdate`,
-   * which the Marketplaces toggle writes). Absent: the default (`marketplace-auto-update.ts`).
-   */
-  autoUpdate?: boolean
-  /** The commit the listing was fetched at, for a git source. */
-  gitCommitSha?: string
-}
 
 /** What a re-registration of the same marketplace keeps of its record: the person's choices. */
 export function keptPreferences(previous: KnownMarketplace | undefined): { autoUpdate?: boolean } {
   return typeof previous?.autoUpdate === 'boolean' ? { autoUpdate: previous.autoUpdate } : {}
-}
-
-const knownFile = (root: string): string => join(root, 'known.json')
-
-export async function readKnownMarketplaces(
-  root: string,
-): Promise<Record<string, KnownMarketplace>> {
-  try {
-    return JSON.parse(await fs.readFile(knownFile(root), 'utf8')) as Record<
-      string,
-      KnownMarketplace
-    >
-  } catch {
-    return {}
-  }
-}
-
-export async function writeKnownMarketplaces(
-  root: string,
-  known: Record<string, KnownMarketplace>,
-): Promise<void> {
-  await fs.mkdir(root, { recursive: true })
-  // Written aside and renamed in: a reader sees the old file or the new one, never half of one
-  // (which reads as an empty registry).
-  const aside = `${knownFile(root)}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`
-  await fs.writeFile(aside, JSON.stringify(known, null, 2) + '\n')
-  await fs.rename(aside, knownFile(root))
 }
 
 /** Per-entry summary carried on a marketplace listing row (UI/agent surfaces). */
@@ -91,7 +52,7 @@ export async function listMarketplaces(
   return Promise.all(
     Object.entries(known).map(async ([name, rec]): Promise<MarketplaceListing> => {
       try {
-        const marketplace = await readMarketplace(rec.installLocation, rec.source)
+        const marketplace = await readMarketplace(rec)
         return { name, count: marketplace.plugins.length, plugins: toListingPlugins(marketplace) }
       } catch (err) {
         return { name, count: 0, plugins: [], unsupported: errorMessage(err) }
@@ -111,10 +72,7 @@ export async function marketplaceDependencyAllowList(
   try {
     const known = (await readKnownMarketplaces(deps.root ?? marketplacesRoot()))[name]
     if (!known) return []
-    return [
-      ...(await readMarketplace(known.installLocation, known.source))
-        .allowCrossMarketplaceDependenciesOn,
-    ]
+    return [...(await readMarketplace(known)).allowCrossMarketplaceDependenciesOn]
   } catch {
     return []
   }
@@ -133,7 +91,7 @@ export async function findMarketplacesWithPlugin(
     Object.entries(await readKnownMarketplaces(root)).map(async ([mName, rec]) => {
       try {
         // A renamed name counts too: resolution then follows it or says it was removed.
-        const market = await readMarketplace(rec.installLocation, rec.source)
+        const market = await readMarketplace(rec)
         return catalogKnows(market, name) ? mName : null
       } catch {
         // unreadable catalog — skip

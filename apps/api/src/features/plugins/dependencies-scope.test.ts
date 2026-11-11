@@ -44,7 +44,10 @@ describe('a dependency installed at another scope', () => {
         await fs.cp(join(dir(), 'catalog'), dest, { recursive: true })
       },
     }
-    await addMarketplace({ source: 'github', repo: 'acme/catalog' }, deps)
+    await addMarketplace(
+      { kind: 'github', repo: 'acme/catalog', path: '.claude-plugin/marketplace.json' },
+      deps,
+    )
     const resolved = await resolveMarketplaceInstall({ plugin: 'app', marketplace: 'acme' }, deps)
 
     const globalInstall = await prepareDependenciesForInstall(

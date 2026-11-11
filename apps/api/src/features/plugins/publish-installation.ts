@@ -105,7 +105,7 @@ export async function publishPluginInstallation(input: {
           DEFAULT_AGENT_ID,
           cascade.changes,
         )
-        warnings.push(...cascade.result.warnings)
+        warnings.push(...cascade.issues)
       }
       return saved
     })

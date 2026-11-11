@@ -5,12 +5,9 @@
  */
 import { expect, test } from 'bun:test'
 
-import {
-  claudeCodeHookCall,
-  claudeCodeToolResponse,
-  localToolName,
-  toolInputOf,
-} from './cc-tool-shapes'
+import { claudeCodeHookCall, toolInputOf } from './tool-calls'
+import { claudeCodeToolResponse } from '../../ext/cc-tool-shapes'
+import { localToolName } from './tool-names'
 
 test('a loop is a Claude Code cron job or wakeup, both ways', () => {
   expect(

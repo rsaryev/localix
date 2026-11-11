@@ -213,7 +213,7 @@ describe('the definition a run is admitted with', () => {
     })
     const id = (await t.service.getAgent('u', 'scribe'))!.record.id
     expect(await t.service.resolveRunAgent('u', id, 'delegation')).toMatchObject({
-      agent: { spec: { tools: ['Read', 'Search'], maxTurns: 4 } },
+      agent: { spec: { tools: ['Read', 'Grep'], maxTurns: 4 } },
     })
     await t.projectFile('Explore')
     await t.service.setAgentEnabled('u', 'Explore', true, 'p')

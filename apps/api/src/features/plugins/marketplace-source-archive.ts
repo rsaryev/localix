@@ -10,11 +10,18 @@ import { ApiError, errorMessage } from '../../lib/errors'
 import { childEnv } from '../../lib/login-shell-env'
 import { rmrf } from '../ext/install-tree'
 import { catalogHop, fetchChecked, httpsPublicHop, readCapped } from './marketplace-download'
-import { onOrigin } from './marketplace-headers'
 import { verifyZipMembers } from './marketplace-zip-inflate'
 import { scanZip, type ZipLimits } from './marketplace-zip-scan'
 
 const execFileAsync = promisify(execFile)
+
+/** Headers for a download URL: given only on `origin` (same scheme, host and port). */
+function onOrigin(
+  origin: string,
+  headers: Record<string, string> | undefined,
+): (url: URL) => Record<string, string> | undefined {
+  return (url) => (headers && url.origin === origin ? headers : undefined)
+}
 
 /**
  * Claude Code's `archive` plugin source and hosted (`url`) marketplace catalogs: files fetched

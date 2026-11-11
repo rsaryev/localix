@@ -1,89 +1,28 @@
 import { errorMessage } from '../../lib/errors'
-import { isRecord } from '../../lib/record'
-import { readManagedPolicy } from './claude-code-policy'
-import { readClaudeSettingsSync } from './kit'
-import { sameMarketplaceSource } from './marketplace-source-identity'
-import { parseMarketplaceSourceObject } from './marketplace-source-object'
+import {
+  asRecorded,
+  declaredMarketplaces,
+  readKnownMarketplaces,
+  sameMarketplaceSource,
+  writeKnownMarketplaces,
+  type DeclaredMarketplace,
+} from './kit'
 import {
   addMarketplace,
   marketplacesRoot,
   removeMarketplace,
-  readKnownMarketplaces,
   type MarketplaceRegistryDeps,
-  type MarketplaceSource,
 } from './marketplace-registry'
 import { withMarketplaceMutationLock } from './marketplace-lock'
-import { writeKnownMarketplaces } from './marketplace-catalog'
 
 /**
- * Marketplaces a Claude Code settings file declares under `extraKnownMarketplaces` (alias
- * `additionalMarketplaces`), registered here without anyone adding them, as Claude Code does after
- * a session starts (loading.md, "Plugins and marketplaces that aren't on disk at session start").
- * The files are the user's (`<config>/settings.json`), the project's `.claude/settings.json` and
- * `.claude/settings.local.json`, and managed settings, in rising precedence; the highest entry for
- * a name wins whole, so one file's headers never pair with another file's URL. A project file's
- * `headersHelper` is not run (a cloned repository could name any command); its fixed headers are.
- * A settings source must carry the entry's own name. Its `autoUpdate` is recorded on the
- * marketplace for the background update pass. A source the user's or managed settings changed is
- * fetched from the new one; a project's settings cannot re-point a marketplace already added.
+ * Marketplaces a Claude Code settings file declares under `extraKnownMarketplaces`, registered here
+ * without anyone adding them, as Claude Code does after a session starts (loading.md, "Plugins and
+ * marketplaces that aren't on disk at session start"). Which entry counts is the kit's plan
+ * (`declaredMarketplaces` in `./kit`); its `autoUpdate` is recorded on the marketplace for the
+ * background update pass. A source the user's or managed settings changed is fetched from the new
+ * one; a project's settings cannot re-point a marketplace already added.
  */
-
-export type DeclaredFrom = 'user' | 'project' | 'local' | 'managed'
-
-export interface DeclaredMarketplace {
-  name: string
-  source: MarketplaceSource
-  from: DeclaredFrom
-  autoUpdate?: boolean
-}
-
-const declarations = (settings: Record<string, unknown> | undefined) => {
-  const value = settings?.extraKnownMarketplaces ?? settings?.additionalMarketplaces
-  return isRecord(value) ? value : {}
-}
-
-export async function declaredMarketplaces(opts: {
-  homeDir: string
-  cwd: string | null
-  env?: NodeJS.ProcessEnv
-  managedSettingsDir?: string
-}): Promise<DeclaredMarketplace[]> {
-  // The settings files where the kit places them (the local file at the repository root).
-  const { files } = readClaudeSettingsSync({
-    homeDir: opts.homeDir,
-    cwd: opts.cwd,
-    ...(opts.env ? { env: opts.env } : {}),
-    managed: null,
-  })
-  const layers = files.map((one): [DeclaredFrom, Record<string, unknown>] => [
-    one.scope,
-    declarations(one.settings),
-  ])
-  layers.push([
-    'managed',
-    (await readManagedPolicy(opts.managedSettingsDir)).extraKnownMarketplaces ?? {},
-  ])
-  const byName = new Map<string, DeclaredMarketplace>()
-  for (const [from, entries] of layers)
-    for (const [name, entry] of Object.entries(entries)) {
-      if (!isRecord(entry) || !isRecord(entry.source)) continue
-      const parsed = parseMarketplaceSourceObject(entry.source)
-      if ('error' in parsed) continue
-      if (parsed.source === 'settings' && parsed.name !== name) continue
-      let source: MarketplaceSource = parsed
-      if ((from === 'project' || from === 'local') && source.source === 'url') {
-        const { headersHelper: _dropped, ...fixed } = source
-        source = fixed
-      }
-      byName.set(name, {
-        name,
-        source,
-        from,
-        ...(typeof entry.autoUpdate === 'boolean' ? { autoUpdate: entry.autoUpdate } : {}),
-      })
-    }
-  return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name))
-}
 
 /** Register each declared marketplace not yet known from that source; failures are warnings. */
 export async function registerDeclaredMarketplaces(
@@ -94,14 +33,18 @@ export async function registerDeclaredMarketplaces(
   const added: string[] = []
   const warnings: string[] = []
   for (const entry of declared) {
+    if (entry.refused) {
+      warnings.push(`Marketplace "${entry.name}" from ${entry.from} settings: ${entry.refused}`)
+      continue
+    }
     const known = (await readKnownMarketplaces(root))[entry.name]
-    if (known && sameMarketplaceSource(known.source, entry.source)) continue
+    if (known && sameMarketplaceSource(known.source, asRecorded(entry.source))) continue
     try {
       // A source changed in the user's or the organization's settings is fetched from there, as
       // in Claude Code; a repository's settings may not re-point a marketplace already added.
       if (known && (entry.from === 'user' || entry.from === 'managed'))
         await removeMarketplace(entry.name, deps)
-      const result = await addMarketplace(entry.source, deps)
+      const result = await addMarketplace(entry.source, deps, entry.inline)
       added.push(result.name)
       if (entry.autoUpdate !== undefined) {
         await withMarketplaceMutationLock(root, async () => {

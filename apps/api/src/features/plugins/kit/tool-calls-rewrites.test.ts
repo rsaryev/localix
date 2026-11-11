@@ -5,13 +5,8 @@
  */
 import { expect, test } from 'bun:test'
 
-import {
-  claudeCodeToolName,
-  localInputFromHook,
-  localToolName,
-  toolCallEvent,
-  toolInputOf,
-} from './cc-tool-shapes'
+import { claudeCodeToolName, localToolName } from './tool-names'
+import { localInputFromHook, toolCallEvent, toolInputOf } from './tool-calls'
 
 test('a rewritten Bash line replaces the batch; the one shown runs the batch', () => {
   const seen = { commands: ['npm test', 'npm run lint'] }

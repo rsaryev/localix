@@ -39,7 +39,9 @@ export interface AgentLaunchPorts {
   /** A fresh worktree of the chat's repository, for `isolation: worktree`. */
   isolate?: (name: string) => Promise<AgentWorktree>
   /** The route an agent file's `model` gives a child the person chose no model for. */
-  subagentRoute?: (model: string | undefined) => AgentRoute
+  subagentRoute?: (ask: { definition?: string; invocation?: string }) => AgentRoute
+  /** Claude Code's refusal of an agent type whose `tools` resolve to nothing here, else none. */
+  toolsRefusal?: (type: TaskAgentType) => string | undefined
 }
 
 /** Who runs a task: the route to create, and the definition it runs as when it is not the delegator. */
@@ -53,6 +55,7 @@ export async function resolveAgentTarget(
   reference: string,
   delegator: TaskAgent,
   opts: Pick<TaskDelegationOptions, 'resolveTarget' | 'projectId'>,
+  ports?: Pick<AgentLaunchPorts, 'toolsRefusal'>,
 ): Promise<AgentTarget> {
   const found = await opts.resolveTarget(reference, { projectId: opts.projectId })
   switch (found.kind) {
@@ -62,13 +65,11 @@ export async function resolveAgentTarget(
       return { refusal: `"${reference}" names several agents: ${found.names.join(', ')}.` }
     case 'unavailable':
       return { refusal: notFound(reference) }
-    case 'agent':
+    case 'agent': {
       // Claude Code refuses to launch an agent whose `tools` resolve to nothing.
-      if (found.type.tools?.length === 0)
-        return {
-          refusal: `Agent "${found.type.fullName}" would run with zero tools: none of the names in its tools list is a tool here. Fix the agent file's tools, or start the Agent without this subagent_type.`,
-        }
-      return { agent: found.agent, type: found.type }
+      const refusal = ports?.toolsRefusal?.(found.type)
+      return refusal ? { refusal } : { agent: found.agent, type: found.type }
+    }
   }
 }
 
@@ -135,14 +136,16 @@ export interface ChildCall {
   isolate?: boolean
   /** The caller makes the worktree itself (a workflow), so the agent's own isolation adds none. */
   isolated?: boolean
+  /** The `Agent` call's `model` alias. */
+  model?: string
 }
 
 /**
  * The route, skills and folder a child is created with. The route is the person's choice for the
- * agent, if they made one; a model they did not choose is the agent file's `model`, as the kit
- * resolves it (`subagentRoute`), else none, which leaves the child on its session's model and
- * effort (`agent-model-route.ts`). The call has no say; `isolation` from the call isolates a child
- * the file does not.
+ * agent, if they made one; a model they did not choose is the call's `model`, the agent file's or
+ * the environment's, as the kit resolves them (`subagentRoute`), else none, which leaves the child
+ * on its session's model and effort (`agent-model-route.ts`). A fork runs on its parent's.
+ * `isolation` from the call isolates a child the file does not.
  */
 export async function prepareAgentChild(
   who: string,
@@ -152,8 +155,12 @@ export async function prepareAgentChild(
 ): Promise<AgentChild> {
   const notes: string[] = []
   const choice: AgentRoute = call.agentId ? agentChoiceRoute(ports?.choices, call.agentId) : {}
-  // The person's model for the agent, else its file's `model` (`plugins/kit/spawn.ts`).
-  const fromFile = type && !choice.modelId ? (ports?.subagentRoute?.(type.model) ?? {}) : {}
+  // The person's model for the agent, else the kit's model order (`plugins/kit/spawn.ts`).
+  const ask = {
+    ...(type?.model ? { definition: type.model } : {}),
+    ...(call.model ? { invocation: call.model } : {}),
+  }
+  const fromFile = call.agentId && !choice.modelId ? (ports?.subagentRoute?.(ask) ?? {}) : {}
   const chosen: AgentRoute = { ...fromFile, ...choice }
   const provenance: AgentChild['provenance'] = {}
   let worktree: AgentChild['worktree']

@@ -1,17 +1,19 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { errorMessage } from '../../../lib/errors'
+import { createStateStore, deepFreeze, type StateRef, type StateStore } from '../../plugins/kit'
 
 /**
  * `$.state`: Claude Code's reactive state, values a drawing depends on. A value is named by a
  * reference `{ plugin, key, id? }` (`id` for a family's member, `memberOf`), read by any mod and
- * written only by the plugin it names. Each write gives the value a new version, so `update` can
- * write only over what it read (`ifVersion`). A `ui.render` hook that reads a value subscribes its
+ * written only by the plugin it names. Each write gives the value a new version, and a write may
+ * name the one it expects (`ifVersion`): the kit's store (`createStateStore`) keeps them. A `ui.render` hook that reads a value subscribes its
  * drawing to it: writing the value redraws it, with no `$.ui.invalidate`; a render hook only reads.
  *
  * Claude Code keeps state for a session. A Localix mod runs once per project (`host.ts`), so the
  * mods running in one working directory share one space; the space is the host's, not an
  * instance's, so a value outlives a reload of the module. `reset` returns a space to its defaults,
- * as Claude Code's `/clear`, `/resume` and `/branch` do, its versions never handed out again.
+ * as Claude Code's `/clear`, `/resume` and `/branch` do. Localix bounds a space and subscribes a
+ * drawing to what it reads.
  */
 
 /** A value's JSON text may be at most this long, as in Claude Code. */
@@ -23,24 +25,11 @@ export const STATE_VALUE_MAX_CHARS = 4 * 1024 * 1024
  */
 export const STATE_SPACE_MAX_CHARS = 64 * 1024 * 1024
 
-export interface StateRef {
-  plugin: string
-  key: string
-  id?: string
-}
-
-interface Held {
-  value: unknown
-  version: number
-  /** The length of the value's JSON text. */
-  chars: number
-}
-
 interface Space {
-  values: Map<string, Held>
-  /** No version at or below it is handed out again (a reset keeps the highest one). */
-  floor: number
-  /** Every value's `chars` together. */
+  store: StateStore
+  /** The length of each held value's JSON text, by key. */
+  sizes: Map<string, number>
+  /** Every value's size together. */
   chars: number
   /** The keys each drawing read when it was last drawn, by drawing. */
   readers: Map<string, Set<string>>
@@ -77,12 +66,6 @@ const drawingNow = () => {
 const keyOf = ({ plugin, key, id }: StateRef) =>
   id === undefined ? `${plugin}\u0000${key}` : `${plugin}\u0000${key}\u0000${id}`
 
-function deepFrozen<T>(value: T): T {
-  if (typeof value !== 'object' || value === null || Object.isFrozen(value)) return value
-  for (const member of Object.values(value)) deepFrozen(member)
-  return Object.freeze(value)
-}
-
 /** The process's state spaces, one per working directory; `changed` redraws the mods' sites. */
 export function createStateSpaces(options: { changed: () => void; maxSpaceChars?: number }) {
   const maxChars = options.maxSpaceChars ?? STATE_SPACE_MAX_CHARS
@@ -90,11 +73,14 @@ export function createStateSpaces(options: { changed: () => void; maxSpaceChars?
   const spaceOf = (name: string) => {
     let space = spaces.get(name)
     if (!space)
-      spaces.set(name, (space = { values: new Map(), floor: 0, chars: 0, readers: new Map() }))
+      spaces.set(
+        name,
+        (space = { store: createStateStore(), sizes: new Map(), chars: 0, readers: new Map() }),
+      )
     return space
   }
   return {
-    get(name: string, ref: StateRef): { value: unknown; version: number } {
+    get(name: string, ref: StateRef): { value?: unknown; version: number } {
       const space = spaceOf(name)
       const key = keyOf(ref)
       const drawing = drawingNow()
@@ -105,34 +91,31 @@ export function createStateSpaces(options: { changed: () => void; maxSpaceChars?
         }
         space.readers.get(drawing.reader)!.add(key)
       }
-      const held = space.values.get(key)
-      return { value: held?.value, version: held?.version ?? 0 }
+      return space.store.get(ref)
     },
     /** Writes `text` (the value's JSON) unless `ifVersion` names a version other than its own. */
     set(name: string, ref: StateRef, text: string, ifVersion?: number) {
       const space = spaceOf(name)
       const key = keyOf(ref)
-      const held = space.values.get(key)
-      const current = held?.version ?? 0
-      if (ifVersion !== undefined && ifVersion !== current)
-        return { isSet: false, version: current }
-      const chars = space.chars - (held?.chars ?? 0) + text.length
+      const { version } = space.store.get(ref)
+      if (ifVersion !== undefined && ifVersion !== version) return { isSet: false, version }
+      const chars = space.chars - (space.sizes.get(key) ?? 0) + text.length
       if (chars > maxChars)
         throw new Error(
           `state.set: this project's state would hold ${chars} characters, over the ${maxChars} limit`,
         )
-      const version = Math.max(current, space.floor) + 1
-      space.values.set(key, { value: deepFrozen(JSON.parse(text)), version, chars: text.length })
+      const wrote = space.store.set(ref, deepFreeze(JSON.parse(text)))
+      space.sizes.set(key, text.length)
       space.chars = chars
       if ([...space.readers.values()].some((keys) => keys.has(key))) options.changed()
-      return { isSet: true, version }
+      return wrote
     },
     /** Every value of the space back to its default, and its drawings drawn again. */
     reset(name: string): void {
       const space = spaces.get(name)
       if (!space) return
-      for (const held of space.values.values()) space.floor = Math.max(space.floor, held.version)
-      space.values.clear()
+      space.store.reset()
+      space.sizes.clear()
       space.chars = 0
       space.readers.clear()
       options.changed()

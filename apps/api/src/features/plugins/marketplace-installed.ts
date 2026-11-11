@@ -1,6 +1,6 @@
 import type { CapabilitySourceRecord } from '../capabilities/source-repository'
-import type { KnownMarketplace } from './marketplace-registry'
 import { parseMarketplaceRef, sourceMatchesRef } from './marketplace-source'
+import type { KnownMarketplace } from './kit'
 
 /**
  * The installed plugins a marketplace owns: rows recorded as `<plugin>@<marketplace>`, where the

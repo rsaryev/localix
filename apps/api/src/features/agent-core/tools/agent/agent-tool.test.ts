@@ -39,6 +39,7 @@ describe('Agent', () => {
     const fields = Object.keys(schema.properties)
     expect(fields.sort()).toEqual([
       'description',
+      'model',
       'name',
       'prompt',
       'run_in_background',
@@ -114,8 +115,8 @@ describe('Agent', () => {
     })
   })
 
-  test('a model, effort or worktree written into the call is not the call’s to choose', async () => {
-    // The person sets each agent's model and effort; a call written for Claude Code still runs.
+  test('an effort or worktree written into the call is not the call’s to choose; a model is', async () => {
+    // The person sets each agent's effort; a call written for Claude Code still runs.
     const { value, started } = port()
     const result = await call(value, {
       description: 'Audit',
@@ -130,17 +131,18 @@ describe('Agent', () => {
       task: 'Audit auth',
       title: 'Audit',
       agent: 'Explore',
+      model: 'opus',
       context: 'none',
       wait: false,
     })
   })
 
-  test('a model named in the call is dropped, even from a host', async () => {
+  test('a model named in a fork is dropped: a fork runs on its parent', async () => {
     const { value, started } = port()
     const tool = createAgentTool(value)
     await tool.execute(
       'mod-1',
-      { description: 'Spawned', prompt: 'Do it', model: 'haiku' } as never,
+      { description: 'Spawned', prompt: 'Do it', subagent_type: 'fork', model: 'haiku' } as never,
       undefined,
       undefined,
       undefined,

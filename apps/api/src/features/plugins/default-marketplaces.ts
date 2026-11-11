@@ -7,10 +7,15 @@ import { DEFAULT_SOURCES, type DefaultSource } from '@localixai/store'
 import { envFlag } from '../../lib/env'
 import { errorMessage } from '../../lib/errors'
 import { isRecord } from '../../lib/record'
-import { readKnownMarketplaces, writeKnownMarketplaces } from './marketplace-catalog'
 import { withMarketplaceMutationLock } from './marketplace-lock'
-import { describeMarketplaceSource, sameMarketplaceSource } from './marketplace-source-identity'
-import type { MarketplaceSource } from './marketplace-source'
+import {
+  DEFAULT_MARKETPLACE_PATH,
+  describeSource,
+  type MarketplaceSource,
+  readKnownMarketplaces,
+  sameMarketplaceSource,
+  writeKnownMarketplaces,
+} from './kit'
 
 /**
  * THE DEFAULT MARKETPLACES (`docs/internals/store-scale.md`, "Default sources"): the Store's
@@ -39,8 +44,9 @@ export interface DefaultMarketplace {
 }
 
 const githubSource = (entry: DefaultSource): MarketplaceSource => ({
-  source: 'github',
+  kind: 'github',
   repo: entry.input,
+  path: DEFAULT_MARKETPLACE_PATH,
   ...(entry.paths ? { sparsePaths: [...entry.paths] } : {}),
 })
 
@@ -68,7 +74,15 @@ export function defaultMarketplaceOf(
  * is left alone.
  */
 const FORMER_SOURCES: Readonly<Record<string, readonly MarketplaceSource[]>> = {
-  localix: [{ source: 'github', repo: 'rsaryev/localix' }],
+  localix: [
+    { kind: 'github', repo: 'rsaryev/localix', path: DEFAULT_MARKETPLACE_PATH },
+    {
+      kind: 'github',
+      repo: 'rsaryev/localix',
+      path: DEFAULT_MARKETPLACE_PATH,
+      sparsePaths: ['.claude-plugin', 'plugins'],
+    },
+  ],
 }
 
 const movedFrom = (wanted: DefaultMarketplace, source: MarketplaceSource | undefined) =>
@@ -86,7 +100,7 @@ async function followMove(root: string, wanted: DefaultMarketplace): Promise<str
     if (!record || !movedFrom(wanted, record.source)) return null
     known[wanted.id] = { ...record, source: wanted.source }
     await writeKnownMarketplaces(root, known)
-    return describeMarketplaceSource(record.source)
+    return describeSource(record.source)
   })
 }
 

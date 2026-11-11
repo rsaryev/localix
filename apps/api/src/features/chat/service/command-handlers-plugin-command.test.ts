@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
+import { monitorsToLaunch } from '../../plugins/kit'
 import { skillTestSession, writeTestPlugin } from '../../plugins/kit/testing'
 import { handlePluginCommand } from './command-handlers'
 import type { CommandHandlerContext } from './command-handlers-context'
@@ -221,4 +222,23 @@ test('an injected command receives the arguments as shell words', async () => {
   const ctx = dupCtx('```!\nprintf "[%s]" $ARGUMENTS\n```', [], runs)
   await handlePluginCommand(ctx, 'u', session.id, session, '/dup:tidy Polish "the README" $(id)')
   expect(runs).toEqual(['[Polish][the README][$(id)]'])
+})
+
+// plugins/components.md, "Monitors": `on-skill-invoke:<skill>` starts once that skill or command
+// ran. Localix renders a plugin command itself, so the kit session is told it ran.
+test('a plugin command the person typed starts the monitor that waits for it', async () => {
+  const root = join(dir(), 'dup')
+  await writeTestPlugin(root, 'dup', {
+    'commands/tidy.md': 'TIDY\n',
+    'monitors/monitors.json': JSON.stringify([
+      { name: 'after', command: 'tail', description: 'After', when: 'on-skill-invoke:tidy' },
+    ]),
+  })
+  const kit = await skillTestSession(join(dir(), 'home'), dir(), [root])
+  const ctx = {
+    ...dupCtx('TIDY', [], []),
+    chatPluginSession: async () => kit,
+  } as CommandHandlerContext
+  await handlePluginCommand(ctx, 'u', session.id, session, '/dup:tidy')
+  expect((await monitorsToLaunch(kit)).launches.map((one) => one.name)).toEqual(['after'])
 })

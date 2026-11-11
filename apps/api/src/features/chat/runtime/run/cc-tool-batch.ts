@@ -7,7 +7,7 @@
 import type { AgentRuntimeRunInput } from '@localixai/agent/runtime'
 
 import type { CcHooksRuntime } from '../../../cc-hooks'
-import { claudeCodeHookCall } from '../../../ext/cc-tool-shapes'
+import { claudeCodeHookCall } from '../../../plugins/kit'
 import { wrapSystemReminder } from '../system-reminder'
 
 /** The `stoppedBy` name a PostToolBatch block ends the run under. */

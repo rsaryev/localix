@@ -1,9 +1,11 @@
-import { readMarketplace, resolveEntryName, resolveEntrySource } from './kit'
 import {
-  marketplacesRoot,
+  catalogAt,
   readKnownMarketplaces,
-  type MarketplaceRegistryDeps,
-} from './marketplace-registry'
+  readMarketplace,
+  resolveEntryName,
+  resolveEntrySource,
+} from './kit'
+import { marketplacesRoot, type MarketplaceRegistryDeps } from './marketplace-registry'
 import { lsRemoteTags } from './dependency-tags'
 
 /**
@@ -20,10 +22,10 @@ export async function dependencyTagVersions(
   try {
     const known = (await readKnownMarketplaces(deps.root ?? marketplacesRoot()))[marketplace]
     if (!known) return []
-    const market = await readMarketplace(known.installLocation, known.source)
+    const market = await readMarketplace(known)
     const entry = market.plugins.find((p) => p.name === resolveEntryName(market, name).name)
     if (!entry) return []
-    const resolved = resolveEntrySource(known.installLocation, entry, known.source)
+    const resolved = resolveEntrySource(catalogAt(known).root, entry, known.source)
     if (!('git' in resolved)) return []
     const prefix = `${entry.name}--v`
     return (await (deps.listTags ?? lsRemoteTags)(resolved.git.url))

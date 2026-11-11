@@ -47,6 +47,8 @@ export interface PluginServiceDeps {
   managedSettingsDir?: string
   /** The commit a remote git ref points at (`git ls-remote`); tests stub the network. */
   remoteCommit?: (url: string, ref?: string) => Promise<string | undefined>
+  /** How a git marketplace is cloned (`git clone`); tests copy a folder instead of the network. */
+  cloneRepo?: (url: string, dest: string, ref?: string, sparse?: string | string[]) => Promise<void>
   /**
    * The user's home, root of the global `.localix/plugins` (see `discoverPlugins`). Required: Bun
    * reads the home once at process start, so reassigning `process.env.HOME` isolates nothing —

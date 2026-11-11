@@ -1,6 +1,6 @@
 import type { DiscoveredPlugin } from './discovery'
 import { BUILTIN_TOOL_NAMES } from '../agent-core/tool-names'
-import { CC_SEMANTIC_GAPS } from '../ext/cc-tool-names'
+import { namesBuiltinTool } from './kit'
 
 export interface FieldValidation {
   errors: string[]
@@ -53,8 +53,7 @@ export function validatePluginCommands(plugin: DiscoveredPlugin): FieldValidatio
       }
     }
     for (const tool of cmd.disallowedTools ?? []) {
-      // `bash(rm *)` names the tool before its pattern.
-      if (!BUILTIN_TOOL_NAMES.includes(tool.replace(/\(.*$/, ''))) {
+      if (!namesBuiltinTool(tool, BUILTIN_TOOL_NAMES)) {
         warnings.push(
           `Command "${cmd.name}" disallowedTools lists "${tool}" which isn't a known engine tool — it has no effect.`,
         )
@@ -73,9 +72,6 @@ export function validatePluginCommands(plugin: DiscoveredPlugin): FieldValidatio
  * used to say the tool "will be ignored", which was false for every plugin tool.
  */
 function unknownToolNote(tool: string, verb: 'lists' | 'disallows'): string {
-  const lower = tool.toLowerCase()
-  if (BUILTIN_TOOL_NAMES.includes(lower))
-    return `"${tool}" — engine names are lowercase; use "${lower}".`
   return verb === 'lists'
     ? `"${tool}", which is not a built-in tool — it applies only when an enabled plugin or MCP server provides it.`
     : `"${tool}", which is not a built-in tool — it has an effect only when an enabled plugin or MCP server provides it.`
@@ -115,24 +111,16 @@ export function validatePluginAgents(plugin: DiscoveredPlugin): FieldValidation 
     if (!agent.prompt || agent.prompt.trim().length === 0) {
       warnings.push(`Agent role "${agent.name}" has an empty prompt.`)
     }
+    // In Claude Code's names (`Grep`, `Bash(git *)`), as the kit reads them (`kit/subagent-tools.ts`).
     for (const tool of agent.tools ?? []) {
-      // Strip CC pattern syntax (Bash(git *) → bash) before gap/engine check.
-      const lower = tool.split('(')[0].trim().toLowerCase()
-      const gap = CC_SEMANTIC_GAPS[lower]
-      if (gap) {
-        warnings.push(`Agent role "${agent.name}" uses CC tool ${gap}.`)
-      } else if (!BUILTIN_TOOL_NAMES.includes(tool)) {
+      if (tool !== '*' && !namesBuiltinTool(tool, BUILTIN_TOOL_NAMES))
         warnings.push(`Agent role "${agent.name}" lists tool ${unknownToolNote(tool, 'lists')}`)
-      }
     }
-    for (const entry of agent.disallowedTools ?? []) {
-      // `bash(rm *)` denies calls of `bash`; the name before the specifier is what must exist.
-      const tool = entry.split('(')[0]!.trim()
-      if (!BUILTIN_TOOL_NAMES.includes(tool)) {
+    for (const tool of agent.disallowedTools ?? []) {
+      if (!namesBuiltinTool(tool, BUILTIN_TOOL_NAMES))
         warnings.push(
           `Agent role "${agent.name}" disallows tool ${unknownToolNote(tool, 'disallows')}`,
         )
-      }
     }
     // Pinned skill names should look like valid skill names (letters/numbers/dashes/underscores).
     // Namespaced forms like "plugin:skill" are not supported — pinnedSkills takes bare names.

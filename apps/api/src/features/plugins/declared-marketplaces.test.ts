@@ -4,46 +4,40 @@ import { join } from 'node:path'
 
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
-import { declaredMarketplaces, registerDeclaredMarketplaces } from './declared-marketplaces'
-import { readKnownMarketplaces } from './marketplace-registry'
+import { registerDeclaredMarketplaces } from './declared-marketplaces'
+import { declaredMarketplaces, readKnownMarketplaces } from './kit'
 
 /**
  * `extraKnownMarketplaces` (settings-reference.md): a marketplace a settings file declares is
- * registered without anyone adding it. Across files the highest-precedence entry wins whole
- * (user < project < local < managed), and its `autoUpdate` is kept.
+ * registered without anyone adding it, with its `autoUpdate`. Which entry wins is the kit's plan
+ * (`kit/marketplace/declared.test.ts`).
  */
 
 const dir = tempDirPerTest('declared-mkt-')
+const CATALOG = '.claude-plugin/marketplace.json'
 const catalog = (name: string) =>
   JSON.stringify({ name, owner: { name: 'Acme' }, plugins: [{ name: 'p', source: './p' }] })
 
 describe('declared marketplaces', () => {
-  it('reads every settings file, the highest-precedence entry winning whole', async () => {
-    const home = join(dir(), 'home')
-    const project = join(dir(), 'project')
-    writeTree(home, {
-      '.claude/settings.json': JSON.stringify({
-        extraKnownMarketplaces: {
-          team: { source: { source: 'github', repo: 'user/team' }, autoUpdate: true },
-          mine: { source: { source: 'github', repo: 'me/mine' } },
-        },
-      }),
+  it('a source the managed policy refuses is not fetched; its refusal is a warning', async () => {
+    const deps = {
+      root: join(dir(), 'marketplaces'),
+      cloneRepo: async () => {
+        throw new Error('a refused source is not cloned')
+      },
+    }
+    const declared = [
+      {
+        name: 'team',
+        source: { kind: 'github' as const, repo: 'acme/team', path: CATALOG },
+        from: 'user' as const,
+        refused: 'blocked by policy',
+      },
+    ]
+    expect(await registerDeclaredMarketplaces(declared, deps)).toEqual({
+      added: [],
+      warnings: ['Marketplace "team" from user settings: blocked by policy'],
     })
-    writeTree(project, {
-      '.claude/settings.json': JSON.stringify({
-        extraKnownMarketplaces: { team: { source: { source: 'github', repo: 'project/team' } } },
-      }),
-    })
-    const declared = await declaredMarketplaces({
-      homeDir: home,
-      cwd: project,
-      env: {},
-      managedSettingsDir: join(dir(), 'none'),
-    })
-    expect(declared).toEqual([
-      { name: 'mine', source: { source: 'github', repo: 'me/mine' }, from: 'user' },
-      { name: 'team', source: { source: 'github', repo: 'project/team' }, from: 'project' },
-    ])
   })
 
   it('registers what is not known yet, with its autoUpdate', async () => {
@@ -61,7 +55,7 @@ describe('declared marketplaces', () => {
     const declared = [
       {
         name: 'team',
-        source: { source: 'github' as const, repo: 'acme/team' },
+        source: { kind: 'github' as const, repo: 'acme/team', path: CATALOG },
         from: 'user' as const,
         autoUpdate: true,
       },
@@ -80,5 +74,33 @@ describe('declared marketplaces', () => {
         },
       }),
     ).toEqual({ added: [], warnings: [] })
+  })
+
+  it('registers an inline catalog once, from the settings that declare it', async () => {
+    const home = join(dir(), 'home')
+    const plugins = [{ name: 'p', source: { source: 'github', repo: 'acme/p' } }]
+    writeTree(home, {
+      '.claude/settings.json': JSON.stringify({
+        extraKnownMarketplaces: { team: { source: { source: 'settings', name: 'team', plugins } } },
+      }),
+    })
+    const opts = { homeDir: home, cwd: null, env: {}, managedSettingsDir: join(dir(), 'none') }
+    const deps = {
+      root: join(dir(), 'marketplaces'),
+      cloneRepo: async () => {
+        throw new Error('an inline catalog is not cloned')
+      },
+    }
+    const declared = await declaredMarketplaces(opts)
+    expect(await registerDeclaredMarketplaces(declared, deps)).toEqual({
+      added: ['team'],
+      warnings: [],
+    })
+    expect(await registerDeclaredMarketplaces(declared, deps)).toEqual({ added: [], warnings: [] })
+    const catalogFile = join(deps.root, 'team', CATALOG)
+    expect(JSON.parse(await fs.readFile(catalogFile, 'utf8'))).toMatchObject({
+      name: 'team',
+      plugins,
+    })
   })
 })

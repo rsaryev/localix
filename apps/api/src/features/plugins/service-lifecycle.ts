@@ -11,11 +11,11 @@ import type { AvailabilityReader } from '../capabilities/availability'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import { pluginDataDir } from '../ext/user-config-substitute'
 import type { PluginCatalog } from './catalog'
-import { listDependents } from './dependencies'
 import { loadManifest, type DiscoveredPlugin } from './discovery'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
 import { pluginTrustClass } from './enable'
 import { validatePluginFull } from './validate'
+import { disableRefusal } from './kit'
 import type { PluginValidation } from './contracts'
 
 /**
@@ -53,16 +53,18 @@ export function assertEnableChanges(input: {
       )
   }
   if (input.enabled || !input.catalog) return
-  const dependents = listDependents(
-    name,
-    input.catalog.enabled.map((entry) => entry.plugin),
-  )
-  if (dependents.length === 0) return
-  const list = dependents.join(', ')
-  throw new ConflictError(
-    'plugin_has_dependents',
-    `Plugin "${name}" is needed by ${list}, which ${dependents.length === 1 ? 'is' : 'are'} enabled. Disable ${list} first, then ${name}.`,
-  )
+  // The enabled plugins that could still need it, and the plugin itself.
+  const node = (plugin: DiscoveredPlugin) => ({
+    name: plugin.manifest.name,
+    enabled: true,
+    dependencies: plugin.manifest.dependencies,
+  })
+  const others = input.catalog.enabled.filter(({ plugin }) => plugin.manifest.name !== name)
+  const refused = disableRefusal(name, [
+    ...others.map(({ plugin }) => node(plugin)),
+    node(input.plugin),
+  ])
+  if (refused) throw new ConflictError('plugin_has_dependents', refused)
 }
 
 /**

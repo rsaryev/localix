@@ -68,7 +68,7 @@ export async function startWorkflowAgent(
   const delegator = await opts.resolveAgent(self, scope)
   if (!delegator) throw new Error('The agent running this workflow is unavailable')
   const target: AgentTarget = request.agentType
-    ? await resolveAgentTarget(request.agentType, delegator, opts)
+    ? await resolveAgentTarget(request.agentType, delegator, opts, deps.plugins)
     : { agent: delegator }
   if ('refusal' in target) throw new Error(`agentType: ${target.refusal}`)
   const { agent, type } = target

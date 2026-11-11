@@ -9,6 +9,7 @@ import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { readInstallRecords } from './plugin-cache'
 import { createPluginService } from './service'
+import { folderClone } from './testing/folder-clone'
 
 /**
  * The Marketplaces section as Claude Code has it: each marketplace says whether it auto-updates and
@@ -63,8 +64,10 @@ beforeAll(async () => {
     env: { CLAUDE_CONFIG_DIR: join(root, 'claude') },
     // Hermetic: the machine's managed settings may declare marketplaces of their own.
     managedSettingsDir: join(root, 'managed'),
+    // A GitHub marketplace, so Localix keeps a copy that a refresh fetches again.
+    cloneRepo: folderClone(join(root, 'market')),
   })
-  await service.addMarketplace('u1', { source: catalogFile('market') })
+  await service.addMarketplace('u1', { source: 'acme/shop' })
   await service.install('u1', { source: 'tool@shop', enable: true })
   await service.install('u1', { source: 'gated@shop', enable: true })
 })

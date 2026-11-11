@@ -1,3 +1,4 @@
+import type { AgentTool } from '@localixai/agent/agents'
 import type { PersistedMessage } from '../../../contracts'
 /**
  * Stage 4 — tools: the one roster the model sees and the dispatcher executes.
@@ -24,6 +25,7 @@ import type { SkillCommandPolicyRef } from '../skill-tool-ports'
 import { agentRunMcpServers } from '../agent-run-mcp'
 import { claudeCodeTrusts, settingsRemovesTool } from '../../../../plugins/kit'
 import { resolveRunDenyPatterns, resolveRunDisabledTools } from '../run-tool-policy'
+import { runAgentTools } from '../run-agent-tools'
 import { surfaceMiniApps, surfaceTools } from '../surface-tools'
 import { assembleRunTools } from '../tool-assembly'
 import { assertRunToolRequirements } from '../tool-requirements'
@@ -42,15 +44,17 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   const { state } = turn
   const { defaultCwd, loadedPlugins, loadedMiniApps, ccHooks } = inputs
 
-  // A fork holds what its parent held: the closed profile of an ordinary child would take away
-  // the tools the parent had. A host's roster still decides, as for every run.
+  // A fork holds what its parent held; a host's roster still decides. The kit reads the agent's
+  // `tools` and `disallowedTools`; `offered`, once built, is what a child's agent type picks from.
+  const agentTools = runAgentTools(inputs.toolsAgent, turn.policy.permission.mode, !!frame.fork)
+  let offered: readonly AgentTool[] = []
   const agentProfile = resolveExecutionProfile(
     session,
     inputs.agent.instructions,
     frame.fork
       ? { hostTools: params.scope.hostTools, profileOverride: frame.fork.seed.profile }
       : params.scope,
-    inputs.toolsAgent ?? inputs.pluginSubagent,
+    agentTools.profileAgent ?? inputs.pluginSubagent,
   )
   // Protected orchestration authority comes only from the host, never from the agent.
   const toolSurface = executionToolSurface(params.scope.executionContext)
@@ -95,9 +99,8 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       toolDenials: inputs.toolDenials,
       agentProfile,
       // `tools: Agent(a, b)` limits the types the agent running as the main thread delegates to.
-      ...((inputs.mainAgent?.agentTypes ?? inputs.pluginSubagent?.agentTypes)
-        ? { allowedAgentTypes: inputs.mainAgent?.agentTypes ?? inputs.pluginSubagent?.agentTypes }
-        : {}),
+      ...(agentTools.allowedAgentTypes ? { allowedAgentTypes: agentTools.allowedAgentTypes } : {}),
+      parentTools: () => offered,
       loadedPlugins,
       loadedMiniApps,
       toolSurface,
@@ -192,6 +195,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     },
     // A bare deny in Claude Code's settings (`WebFetch`, `mcp__github`) takes the tool out of the
     // model's view, catalog included, as Claude Code removes it; the gate refuses a call anyway.
+    ...(agentTools.narrow ? { narrow: agentTools.narrow } : {}),
     hiddenBySettings: claudeCodePermissionsPromise.then(
       ({ rules }) =>
         (tool) =>
@@ -241,6 +245,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     ? forkToolSurface(frame.fork.seed, { tools: assembledTools, dispatchTools: assembledDispatch })
     : { tools: assembledTools, dispatchTools: assembledDispatch }
   const { tools, dispatchTools } = surface
+  offered = dispatchTools
   recordToolRoster(
     preflightTools.map((tool) => tool.name),
     { userId, projectId: session.projectId },

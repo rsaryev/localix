@@ -7,7 +7,7 @@
  * Localix only grants the breadths its own card would.
  */
 import type { GrantOption } from '../../../agent-core/permission-grant-scope'
-import { claudeCodeToolName } from '../../../ext/cc-tool-shapes'
+import { claudeCodeToolName } from '../../../plugins/kit'
 
 const SETTINGS_DESTINATIONS = ['localSettings', 'projectSettings', 'userSettings'] as const
 

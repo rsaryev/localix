@@ -131,8 +131,8 @@ test.each([
       ...CATALOG,
       'sec:reviewer': { ...CATALOG['sec:reviewer'], type: { ...REVIEWER, model: 'haiku' } },
     }
-    const subagentRoute = (model: string | undefined) =>
-      model === 'haiku' ? { modelId: 'claude-haiku-4-5', providerConnectionId: null } : {}
+    const subagentRoute = ({ definition }: { definition?: string }) =>
+      definition === 'haiku' ? { modelId: 'claude-haiku-4-5', providerConnectionId: null } : {}
     const { opts, ports, calls } = host(
       { subagentRoute, choices: [...choices] },
       typed as Record<string, DelegateResolution>,
@@ -225,8 +225,9 @@ test('a host names a worktree for the child, never a model', async () => {
 // sub-agents.md, `tools`: "If no entry in the list resolves to a tool, the subagent usually fails
 // to launch with an error naming the entries."
 test('an agent whose tools list resolves to nothing is refused', async () => {
+  const toolsRefusal = (type: TaskAgentType) => (type.tools?.length ? undefined : 'zero tools')
   const { opts, ports, calls } = host(
-    {},
+    { toolsRefusal },
     {
       tester: {
         kind: 'agent',

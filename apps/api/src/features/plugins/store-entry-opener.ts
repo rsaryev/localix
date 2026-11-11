@@ -1,6 +1,6 @@
 import { NotFoundError } from '../../lib/domain-errors'
 import type { MarketplaceEntry } from './kit'
-import { resolveEntrySource } from './kit'
+import { catalogAt, resolveEntrySource } from './kit'
 import { parseMarketplaceRef } from './marketplace-source'
 import { scanPluginContents, type PluginContents } from './store-contents'
 import type { createContentsCache } from './store-contents-cache'
@@ -36,7 +36,7 @@ export function createEntryOpener(deps: {
   /** The folder of an entry inside its marketplace's checkout, or null for a remote one. */
   function localDir(view: MarketView, entry: MarketplaceEntry): string | null {
     try {
-      const at = resolveEntrySource(view.record.installLocation, entry, view.record.source)
+      const at = resolveEntrySource(catalogAt(view.record).root, entry, view.record.source)
       return 'localPath' in at ? at.localPath : null
     } catch {
       return null

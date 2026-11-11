@@ -1,70 +1,72 @@
 import { promises as fs } from 'node:fs'
-import { basename, dirname, join, resolve } from 'node:path'
-
-import { MANIFEST_DIR, MARKETPLACE_FILE } from '@localixai/claude-plugin'
+import { dirname, join, resolve } from 'node:path'
 
 import { isPathWithin } from '../../lib/path-containment'
-import { copyExtensionTree, rmrf, stripDotGit } from '../ext/install-tree'
-import type { ResolvedEntrySource } from './kit'
-import { sourceCloneUrl, type MarketplaceSource } from './marketplace-source'
+import { rmrf, stripDotGit } from '../ext/install-tree'
+import {
+  catalogHeaders,
+  DEFAULT_MARKETPLACE_PATH,
+  cloneUrl,
+  marketplaceFetchPlan,
+  type MarketplaceSource,
+  type ResolvedEntrySource,
+} from './kit'
 import { assertGitArgs } from './marketplace-git-args'
 import { fetchNpmPlugin } from './marketplace-source-npm'
 import { fetchArchivePlugin, fetchCatalogText } from './marketplace-source-archive'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
 import { readHeadCommit } from './git-fetch'
-import { urlSourceHeaders } from './marketplace-headers'
 
 /**
  * Fetching for the marketplace registry: a marketplace source into its staging dir, and one
  * entry's remote plugin source into a plugin dir. Both end in plain directories; the registry
- * owns staging names, activation and `known.json`.
+ * owns staging names, activation and the records.
  */
 
 /**
- * Materialize a marketplace source into `staging` (replaced). A directory is copied, keeping only
- * the symlinks that resolve inside it (installing a plugin later dereferences those); a catalog
- * file brings its marketplace root (two levels up, when it sits in `.claude-plugin/`) or else only
- * itself; a hosted catalog (`url`) is just its `marketplace.json`, so its relative plugin sources
- * cannot resolve; git and npm sources are fetched.
+ * Fetch a marketplace into `staging` (replaced) by the kit's plan (`marketplaceFetchPlan`): a git
+ * repository is cloned (only its sparse folders when it names them) and its catalog put where
+ * Claude Code reads it; a hosted catalog (`http-file`) is only its `marketplace.json`, so its
+ * relative plugin sources cannot resolve; an inline catalog (`settings`) is written from `inline`,
+ * the catalog as its settings declare it. A local file or folder is never fetched: it is read
+ * where it is (`marketplace-in-place.ts`).
  */
 export async function materializeMarketplace(
   source: MarketplaceSource,
   staging: string,
   deps: MarketplaceRegistryDeps,
+  inline?: unknown,
 ): Promise<{ commitSha?: string }> {
+  const plan = marketplaceFetchPlan(source)
   await rmrf(staging)
-  let commitSha: string | undefined
-  if (source.source === 'local') {
-    await copyExtensionTree(source.path, staging)
-  } else if (source.source === 'file') {
-    const file = resolve(source.path)
-    const inLayout = basename(dirname(file)) === MANIFEST_DIR
-    if (inLayout) await copyExtensionTree(dirname(dirname(file)), staging)
+  if (plan.kind === 'http-file') {
+    const headers = await catalogHeaders(
+      {
+        url: plan.url,
+        headers: plan.headers,
+        ...(plan.helper === undefined ? {} : { headersHelper: plan.helper }),
+      },
+      { managedSettingsDir: deps.managedSettingsDir },
+    )
+    await writeCatalog(staging, await fetchCatalogText(plan.url, { headers }))
+    return {}
+  }
+  if (plan.kind === 'inline') {
+    if (inline === undefined) throw new Error('An inline marketplace is added from its settings')
+    await writeCatalog(staging, JSON.stringify(inline))
+    return {}
+  }
+  if (plan.kind !== 'git') throw new Error(`A ${source.kind} marketplace is read where it is`)
+  const url = cloneUrl(plan.repo)
+  assertGitArgs('Marketplace source', url, plan.ref)
+  await deps.cloneRepo(url, staging, plan.ref, plan.sparsePaths && [...plan.sparsePaths])
+  const commitSha = await readHeadCommit(staging)
+  // `path` names the catalog inside the repository; the repository stays the marketplace root.
+  if (plan.path !== DEFAULT_MARKETPLACE_PATH) {
+    const file = resolve(staging, plan.path)
+    if (!isPathWithin(resolve(staging), file))
+      throw new Error(`Marketplace path escapes the repository: ${plan.path}`)
     await writeCatalog(staging, await fs.readFile(file, 'utf8'))
-  } else if (source.source === 'url') {
-    const headers = await urlSourceHeaders(source)
-    await writeCatalog(staging, await fetchCatalogText(source.url, { headers }))
-  } else if (source.source === 'settings') {
-    // An inline catalog: its plugins name object sources, there being no repository to resolve in.
-    const { name, owner, plugins } = source
-    await fs.mkdir(staging, { recursive: true })
-    await writeCatalog(staging, JSON.stringify({ name, owner: owner ?? { name }, plugins }))
-  } else if (source.source === 'npm') {
-    // Same staging helper as npm ENTRY sources: the tarball carries the catalog at its root.
-    await (deps.fetchNpm ?? fetchNpmPlugin)(source, staging)
-  } else {
-    const url = sourceCloneUrl(source)
-    if (!url) throw new Error('Unsupported marketplace source')
-    assertGitArgs('Marketplace source', url, source.ref)
-    await deps.cloneRepo(url, staging, source.ref, source.sparsePaths)
-    commitSha = await readHeadCommit(staging)
-    // `path` names the catalog inside the repository; the repository stays the marketplace root.
-    if (source.path) {
-      const file = resolve(staging, source.path)
-      if (!isPathWithin(resolve(staging), file))
-        throw new Error(`Marketplace path escapes the repository: ${source.path}`)
-      await writeCatalog(staging, await fs.readFile(file, 'utf8'))
-    }
   }
   await stripDotGit(staging)
   return commitSha ? { commitSha } : {}
@@ -72,8 +74,9 @@ export async function materializeMarketplace(
 
 /** Put a catalog where Claude Code reads it, `<root>/.claude-plugin/marketplace.json`. */
 async function writeCatalog(root: string, text: string): Promise<void> {
-  await fs.mkdir(join(root, MANIFEST_DIR), { recursive: true })
-  await fs.writeFile(join(root, MARKETPLACE_FILE), text)
+  const file = join(root, DEFAULT_MARKETPLACE_PATH)
+  await fs.mkdir(dirname(file), { recursive: true })
+  await fs.writeFile(file, text)
 }
 
 /** How long a fetch made for a Store page waits for the install that may follow it. */

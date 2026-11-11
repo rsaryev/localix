@@ -1,4 +1,4 @@
-import { mapCcToolList, splitDenyList } from '../../../ext/cc-tool-names'
+import { splitDenyList } from '../../../plugins/kit'
 
 const hasSpecifier = (entry: string) => entry.includes('(')
 
@@ -20,9 +20,7 @@ export function resolveRunDisabledTools(
 ): string[] {
   const plain = configured.filter((entry) => !hasSpecifier(entry))
   const wholeTools = splitDenyList(configured.filter(hasSpecifier)).tools
-  const normalizedScoped = scoped?.length
-    ? mapCcToolList(splitDenyList(scoped).tools, { dropUnknown: false })
-    : []
+  const normalizedScoped = scoped?.length ? splitDenyList(scoped).tools : []
   return [...new Set([...plain, ...wholeTools, ...normalizedScoped])]
 }
 

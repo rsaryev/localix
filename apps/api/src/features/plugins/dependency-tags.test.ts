@@ -40,7 +40,10 @@ async function setup() {
       'other--v9.0.0',
     ],
   }
-  await addMarketplace({ source: 'github', repo: 'acme/catalog' }, deps)
+  await addMarketplace(
+    { kind: 'github', repo: 'acme/catalog', path: '.claude-plugin/marketplace.json' },
+    deps,
+  )
   return { deps, checkouts }
 }
 

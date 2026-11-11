@@ -29,7 +29,7 @@ import { announceSessionActive } from '../../../agent-core/session-activity'
 import { configuredLspServer, withoutBuiltinOverlap } from '../../../lsp'
 import type { RuntimeState } from '../agent-runner-state'
 import type { ChatRepository, SessionRecord } from '../../repository'
-import type { ToolSurface } from '@localixai/agent/agents'
+import type { AgentTool, ToolSurface } from '@localixai/agent/agents'
 import type { SkillOverrides } from '../../../agent-core/skill-overrides'
 import type { ToolDenial } from '../../../capabilities/resolve'
 import type { RunPolicy } from '../../policy/run-policy'
@@ -68,6 +68,8 @@ export function buildRunToolRegistry(
     forkLive?: () => ForkLiveRun | undefined
     /** The agent types the run's agent may delegate to (`tools: Agent(a, b)`); absent: any. */
     allowedAgentTypes?: readonly string[]
+    /** The tools the run offers, once built (a child's agent type is refused when none fits). */
+    parentTools?: () => readonly AgentTool[]
     session: SessionRecord
     /** The agent taking this turn — whose rules decided everything below. */
     agentId: string

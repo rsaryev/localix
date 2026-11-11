@@ -1,14 +1,21 @@
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
-import { readMarketplace, resolveEntryName, resolveEntrySource, type MarketplaceEntry } from './kit'
+import {
+  assertMarketplaceAllowed,
+  assertPluginAllowed,
+  catalogAt,
+  type MarketplaceEntry,
+  readKnownMarketplaces,
+  readMarketplace,
+  resolveEntryName,
+  resolveEntrySource,
+} from './kit'
 import { hashString, marketplacesRoot, sourceMatchesRef } from './marketplace-source'
 import { fetchEntryPlugin } from './marketplace-materialize'
 import { readsInPlace } from './marketplace-in-place'
-import { findMarketplacesWithPlugin, readKnownMarketplaces } from './marketplace-catalog'
-import { withSourceHeaders } from './marketplace-headers'
-import { withEntryHelperHeaders } from './entry-headers-helper'
-import { assertMarketplaceAllowed, readManagedPolicy } from './claude-code-policy'
+import { findMarketplacesWithPlugin } from './marketplace-catalog'
+import { withArchiveHeaders } from './entry-headers-helper'
 import { tagInRange } from './dependency-tags'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
 
@@ -71,15 +78,15 @@ export async function resolveMarketplaceInstall(
     ? undefined
     : Object.entries(known).find(([, rec]) => sourceMatchesRef(rec.source, ref.marketplace))
   if (bySource) ref = { ...ref, marketplace: bySource[0] }
-  const marketplaceDir = (byName ?? bySource?.[1])?.installLocation
-  if (!marketplaceDir)
+  const record = byName ?? bySource?.[1]
+  if (!record)
     throw new Error(
       `Unknown marketplace "${ref.marketplace}". Add it first: /plugin marketplace add <owner/repo>`,
     )
 
-  const registered = (byName ?? bySource?.[1])?.source
-  if (registered) await assertMarketplaceAllowed(registered, deps.managedSettingsDir)
-  const market = await readMarketplace(marketplaceDir, registered)
+  await assertMarketplaceAllowed(record.source, deps.managedSettingsDir)
+  const market = await readMarketplace(record)
+  const marketplaceDir = catalogAt(record).root
   // Apply the catalog's `renames` map first: an old name redirects to its successor;
   // a null mapping throws "removed from marketplace" (informative, not "not found").
   const requested = resolveEntryName(market, ref.plugin)
@@ -87,13 +94,11 @@ export async function resolveMarketplaceInstall(
   const entry = market.plugins.find((p) => p.name === requested.name)
   if (!entry)
     throw new Error(`Plugin "${requested.name}" not found in marketplace "${ref.marketplace}"`)
-  const id = `${entry.name}@${ref.marketplace}`
-  if (!((await readManagedPolicy(deps.managedSettingsDir)).enabledPlugins[id] ?? true))
-    throw new Error(`Plugin "${id}" is blocked by managed settings (enabledPlugins)`)
+  await assertPluginAllowed(`${entry.name}@${ref.marketplace}`, deps.managedSettingsDir)
 
   // The kit resolves a bare name under `metadata.pluginRoot`, and refuses a relative source of a
   // marketplace that brought only its marketplace.json (one added by URL or from settings).
-  const resolved = resolveEntrySource(marketplaceDir, entry, registered)
+  const resolved = resolveEntrySource(marketplaceDir, entry, record.source)
   const base = {
     entry,
     marketplace: ref.marketplace,
@@ -105,9 +110,9 @@ export async function resolveMarketplaceInstall(
   if ('localPath' in resolved) {
     if (!(await fs.stat(resolved.localPath).catch(() => null))?.isDirectory())
       throw new Error(`Source path does not exist: ${resolved.localPath}`)
-    const inPlace = readsInPlace(byName ?? bySource?.[1], root) ? { inPlace: true } : {}
+    const inPlace = readsInPlace(record, root) ? { inPlace: true } : {}
     // A relative entry of a git-hosted marketplace is at the marketplace's commit.
-    const commit = (byName ?? bySource?.[1])?.gitCommitSha
+    const commit = record.gitCommitSha
     const commitSha = commit ? { commitSha: commit } : {}
     return { dir: resolved.localPath, linkRoot: marketplaceDir, ...base, ...inPlace, ...commitSha }
   }
@@ -123,16 +128,27 @@ export async function resolveMarketplaceInstall(
     resolved.git = { ...resolved.git, ref: tag.tag }
     tagVersion = tag.version
   }
-  // An archive on a url marketplace's origin gets that source's headers; the entry's win a name.
-  const hostedBy = known[ref.marketplace]?.source
-  if ('archive' in resolved && hostedBy?.source === 'url')
-    resolved.archive = await withSourceHeaders(resolved.archive, hostedBy)
-  // An entry's headersHelper runs only once the person accepted it; its output wins a name.
+  // An archive on a url marketplace's origin gets that source's headers; the entry's win a name,
+  // and its headersHelper runs only once the person accepted it.
+  const hostedBy = record.source
   if ('archive' in resolved)
-    resolved.archive = await withEntryHelperHeaders(
+    resolved.archive = await withArchiveHeaders(
       resolved.archive,
-      entry.name,
-      opts?.acceptCommand,
+      {
+        plugin: entry.name,
+        marketplace: ref.marketplace,
+        ...(hostedBy.kind === 'url'
+          ? {
+              source: {
+                url: hostedBy.url,
+                name: ref.marketplace,
+                ...(hostedBy.headers ? { headers: hostedBy.headers } : {}),
+                ...(hostedBy.headersHelper ? { headersHelper: hostedBy.headersHelper } : {}),
+              },
+            }
+          : {}),
+      },
+      { accepted: opts?.acceptCommand, managedSettingsDir: deps.managedSettingsDir },
     )
   // Remote sources stage into a stable temp dir under the marketplaces root; git, npm and
   // archives land the same shape (a plain plugin dir handed to `installFromLocal`).

@@ -68,7 +68,10 @@ async function marketplace(catalog: Record<string, unknown>) {
       await fs.cp(folder, dest, { recursive: true })
     },
   }
-  await addMarketplace({ source: 'github', repo: 'acme/plugins' }, deps)
+  await addMarketplace(
+    { kind: 'github', repo: 'acme/plugins', path: '.claude-plugin/marketplace.json' },
+    deps,
+  )
   return deps
 }
 

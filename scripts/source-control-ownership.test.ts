@@ -27,15 +27,7 @@ const LEGACY_PLUGIN_VOCABULARY =
  * once, instead of exempting an entire reader: an unrelated plugin route in the same file must
  * still fail. Native discovery no longer reads this format and has no allowance.
  */
-const EXTERNAL_FORMAT_LITERALS = new Map([
-  [
-    'apps/api/src/features/plugins/discovery-cc-files.ts',
-    "trimmedFrontmatterField(fields.isolation) === 'worktree' ? ('isolated' as const) : undefined",
-  ],
-  // Git's own layout: a linked checkout's `gitdir:` points under the main one's `.git/worktrees/`,
-  // which is how Claude Code finds the repository root that keeps `settings.local.json`.
-  ['apps/api/src/features/cc-settings/settings-files.ts', "linked.lastIndexOf('/.git/worktrees/')"],
-])
+const EXTERNAL_FORMAT_LITERALS = new Map<string, string>([])
 
 /**
  * Claude Code's agent isolation is a different word from the plugin's worktree feature: a
@@ -53,9 +45,11 @@ const CLAUDE_CODE_ISOLATION = [
   'apps/api/src/features/memory/auto-memory',
   // A mod's `$.agent.register` spec spells isolation as an agent file does: `isolation: 'worktree'`.
   'apps/api/src/features/mods/agent-definition',
-  // Claude Code's `EnterWorktree`/`ExitWorktree` tool names, mapped to what Localix has.
-  'apps/api/src/features/ext/cc-tool-names.ts',
   'apps/api/src/features/cc-hooks/',
+  // The kit boundary is where the Claude Code format is spoken: an agent file's
+  // `isolation: 'worktree'`, the `WorktreeCreate` hook, and git's own linked-checkout layout
+  // (`<main>/.git/worktrees/<name>`) that locates the repository's `settings.local.json`.
+  'apps/api/src/features/plugins/kit/',
   // The status line's `workspace.git_worktree`, a field of Claude Code's stdin document.
   'apps/api/src/features/chat/service/status-line',
   'apps/api/src/features/chat/session-cwd',

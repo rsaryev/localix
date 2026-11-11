@@ -132,10 +132,10 @@ describe('validatePlugin', () => {
       },
     )
     const { warnings } = validatePlugin(plugin)
-    // 'bash' is a known engine tool — no warning
-    expect(warnings.some((w) => w.includes('"bash"'))).toBe(false)
+    // `Bash` is a built-in — no warning
+    expect(warnings.some((w) => w.includes('"Bash"'))).toBe(false)
     expect(
-      warnings.some((w) => w.includes('"mcp_acme_board"') && w.includes('plugin or MCP server')),
+      warnings.some((w) => w.includes('"mcp__acme__board"') && w.includes('plugin or MCP server')),
     ).toBe(true)
   })
 
@@ -152,8 +152,8 @@ describe('validatePlugin', () => {
       },
     )
     const { warnings } = validatePlugin(plugin)
-    expect(warnings.some((w) => w.includes('"read"'))).toBe(false)
-    const mcpTool = warnings.find((w) => w.includes('"mcp_acme_board"'))
+    expect(warnings.some((w) => w.includes('"Read"'))).toBe(false)
+    const mcpTool = warnings.find((w) => w.includes('"mcp__acme__board"'))
     // The defect: this used to say the tool "will be ignored", which a closed profile disproves.
     expect(mcpTool).toContain('applies only when an enabled plugin or MCP server provides it')
     expect(mcpTool).not.toContain('ignored')

@@ -7,10 +7,9 @@ import {
   findMarketplacesWithPlugin,
   listMarketplaces,
   marketplaceDependencyAllowList,
-  readKnownMarketplaces,
   type MarketplaceRegistryDeps,
-  type KnownMarketplace,
 } from './marketplace-registry'
+import { type KnownMarketplace, readKnownMarketplaces, writeKnownMarketplaces } from './kit'
 
 test('an unreadable registered catalog stays listed but contributes no plugins or permissions', async () => {
   const root = await fs.mkdtemp(join(tmpdir(), 'marketplace-unreadable-'))
@@ -19,9 +18,13 @@ test('an unreadable registered catalog stays listed but contributes no plugins o
     await fs.mkdir(catalog)
     await fs.writeFile(join(catalog, 'marketplace.json'), '{broken')
     const known: Record<string, KnownMarketplace> = {
-      broken: { source: { source: 'local', path: catalog }, installLocation: catalog },
+      broken: {
+        source: { kind: 'directory', path: catalog },
+        installLocation: catalog,
+        lastUpdated: '2026-01-01T00:00:00.000Z',
+      },
     }
-    await fs.writeFile(join(root, 'known.json'), JSON.stringify(known))
+    await writeKnownMarketplaces(root, known)
     const deps: MarketplaceRegistryDeps = {
       root,
       cloneRepo: async () => {
@@ -41,19 +44,6 @@ test('an unreadable registered catalog stays listed but contributes no plugins o
     expect(await findMarketplacesWithPlugin('anything', deps)).toEqual([])
     expect(await marketplaceDependencyAllowList('broken', deps)).toEqual([])
     expect(await readKnownMarketplaces(root)).toEqual(known)
-  } finally {
-    await fs.rm(root, { recursive: true, force: true })
-  }
-})
-
-test('malformed known.json yields an empty registry without overwriting the file', async () => {
-  const root = await fs.mkdtemp(join(tmpdir(), 'marketplace-known-recovery-'))
-  try {
-    const file = join(root, 'known.json')
-    await fs.writeFile(file, '{broken')
-
-    expect(await readKnownMarketplaces(root)).toEqual({})
-    expect(await fs.readFile(file, 'utf8')).toBe('{broken')
   } finally {
     await fs.rm(root, { recursive: true, force: true })
   }

@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs'
 import { readClientModules } from './client-source'
-import { STATE_LIBRARY } from './state-library'
+import { STATE_LIBRARY_SOURCE } from '../plugins/kit'
 
 /**
  * A hooks module as Claude Code loads it: an ES module (`.js` … `.tsx`) importing only files of its
@@ -19,7 +19,7 @@ export const CLAUDE_CODE_RUNTIME = `
 const runtime = globalThis[Symbol.for('localix.mods.claude-code')]
 export const h = runtime.h
 export const Fragment = runtime.Fragment
-${STATE_LIBRARY}`
+${STATE_LIBRARY_SOURCE}`
 
 /** A specifier a module may import besides its own files. */
 const ALLOWED_BARE = new Set(['claude-code'])

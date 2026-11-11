@@ -8,18 +8,16 @@ import { expandHome } from '../../lib/home-path'
 
 export type Fields = Record<string, unknown>
 
+/**
+ * One Localix tool's input and the Claude Code tool's, both ways. `name` is the call's Claude Code
+ * name, which the kit boundary gives (`plugins/kit/tool-names.ts`): `Glob` or `Grep` for `Search`.
+ */
 export interface ToolShape {
-  /** Claude Code's name for the tool, when its input does not say otherwise. */
-  name: string
-  /** Every other Claude Code name the tool answers to (`Glob` for `search`). */
-  names?: readonly string[]
-  /** Claude Code's name for this call: `search` with only a `glob` is `Glob`. */
-  nameFor?(input: Fields): string
   /**
    * The arguments as Claude Code's tool takes them, beside Localix's own. Given the call's
    * `cwd`, a file path is made absolute, as Claude Code's hooks always see it.
    */
-  toClaude(input: Fields, cwd?: string): Fields
+  toClaude(input: Fields, name: string, cwd?: string): Fields
   /** Localix's input from what a hook passed on, Claude Code's fields folded back. */
   fromClaude(fields: Fields, name: string): Fields
   /** Localix fields the Claude Code view leaves out and a hook's rewrite keeps. */

@@ -87,7 +87,7 @@ export interface TaskAgentType {
   isolation?: 'isolated'
   /** Its `model` as written: the route of a child the person chose no model for. */
   model?: string
-  /** Its exact tool list, when its file has one; empty when no entry named a tool here. */
+  /** Its file's `tools` as written, when it has one (`AgentLaunchPorts.toolsRefusal` reads it). */
   tools?: readonly string[]
   /** Where the definition comes from: `plugin` and built-in agents ignore the fields below. */
   source?: string

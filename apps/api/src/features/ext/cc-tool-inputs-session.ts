@@ -6,22 +6,9 @@
  */
 import { defined, num, without, type ToolShape } from './cc-tool-fields'
 
-const LOOP_NAMES: Readonly<Record<string, string>> = {
-  remove: 'CronDelete',
-  list: 'CronList',
-  reschedule: 'ScheduleWakeup',
-}
-
 // An update, a removal by another name or a run goes by the name the model calls it, `Loops`.
 const loops: ToolShape = {
-  name: 'Loops',
-  names: ['CronCreate', 'CronDelete', 'CronList', 'ScheduleWakeup'],
-  nameFor(input) {
-    if (input.action === 'add') return input.cron === undefined ? 'ScheduleWakeup' : 'CronCreate'
-    return LOOP_NAMES[String(input.action)] ?? 'Loops'
-  },
-  toClaude(input) {
-    const name = loops.nameFor!(input)
+  toClaude(input, name) {
     if (name === 'CronCreate') return { ...input, recurring: true }
     if (name === 'ScheduleWakeup') return defined({ ...input, delaySeconds: input.delay_seconds })
     return input
@@ -40,9 +27,6 @@ const loops: ToolShape = {
 }
 
 const mcpResources: ToolShape = {
-  name: 'ListMcpResourcesTool',
-  names: ['ReadMcpResourceTool'],
-  nameFor: (input) => (input.action === 'read' ? 'ReadMcpResourceTool' : 'ListMcpResourcesTool'),
   toClaude: (input) => input,
   fromClaude: (fields, name) =>
     fields.action !== undefined

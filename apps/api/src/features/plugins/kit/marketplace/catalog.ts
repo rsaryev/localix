@@ -1,8 +1,6 @@
 import { promises as fs } from 'node:fs'
-import { join } from 'node:path'
 import {
   DEFAULT_MARKETPLACE_PATH,
-  parseMarketplaceSource,
   readMarketplace as readCatalog,
   resolveRename,
   type Marketplace,
@@ -10,6 +8,7 @@ import {
   type MarketplaceSource,
 } from '@rsaryev/llx-plugin/marketplace'
 import { issueLine } from '../catalog/read-folder'
+import { catalogAt } from './records'
 
 /**
  * A marketplace's `marketplace.json`, read by the kit (`readMarketplace`): an error in a top-level
@@ -19,24 +18,25 @@ import { issueLine } from '../catalog/read-folder'
 
 export type { Marketplace, MarketplaceEntry, PluginSource } from '@rsaryev/llx-plugin/marketplace'
 
-/** Where a marketplace was added from, as the kit reads a recorded `source` (`{ source: 'github', … }`). */
-export const marketplaceOrigin = (recorded: unknown): MarketplaceSource | undefined =>
-  parseMarketplaceSource(recorded, { policy: false }).source
+/** A registered marketplace, or one being added: where it was added from and where it is. */
+export interface MarketplaceAt {
+  source: MarketplaceSource
+  installLocation: string
+}
 
 /** A parsed catalog, or why it cannot load: its blocking issues, one per line. */
-export function parseMarketplace(raw: unknown, recordedSource?: unknown): Marketplace {
-  const origin = recordedSource === undefined ? undefined : marketplaceOrigin(recordedSource)
+export function parseMarketplace(raw: unknown, origin?: MarketplaceSource): Marketplace {
   const read = readCatalog(raw, origin === undefined ? {} : { origin })
   if (read.marketplace) return read.marketplace
   const errors = read.issues.filter((one) => one.severity === 'error').map(issueLine)
   throw new Error(`Invalid marketplace.json: ${errors.join('; ') || 'it does not load'}`)
 }
 
-/** The catalog in `dir` as written, at Claude Code's `.claude-plugin/marketplace.json`. */
-export async function readCatalogJson(dir: string): Promise<unknown> {
-  const file = join(dir, DEFAULT_MARKETPLACE_PATH)
+/** The marketplace's catalog as written (`catalogAt`). */
+export async function readCatalogJson(at: MarketplaceAt): Promise<unknown> {
+  const { file } = catalogAt(at)
   const text = await fs.readFile(file, 'utf8').catch(() => {
-    throw new Error(`No ${DEFAULT_MARKETPLACE_PATH} found in ${dir}`)
+    throw new Error(`No ${DEFAULT_MARKETPLACE_PATH} found in ${at.installLocation}`)
   })
   try {
     return JSON.parse(text) as unknown
@@ -45,11 +45,9 @@ export async function readCatalogJson(dir: string): Promise<unknown> {
   }
 }
 
-/** The catalog in `dir`, read by the kit. */
-export const readMarketplace = async (
-  dir: string,
-  recordedSource?: unknown,
-): Promise<Marketplace> => parseMarketplace(await readCatalogJson(dir), recordedSource)
+/** The marketplace's catalog, read by the kit. */
+export const readMarketplace = async (at: MarketplaceAt): Promise<Marketplace> =>
+  parseMarketplace(await readCatalogJson(at), at.source)
 
 /**
  * The name a request for `requested` installs under the catalog's `renames` (`resolveRename`): the

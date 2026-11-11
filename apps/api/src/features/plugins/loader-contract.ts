@@ -1,6 +1,5 @@
 import type { McpServerRecord } from '../mcp/repository'
 import type { DiscoveredSkill } from '../agent-core/skill-discovery'
-import { normalizeCcToolName } from './discovery'
 import type { PluginAgent } from './contracts'
 import type { PluginOutputStyle } from './output-styles'
 import type { ScopePlugin } from './kit'
@@ -24,12 +23,12 @@ export interface LoadedPluginAgent {
   description: string
   /** Worker system prompt / identity. */
   prompt: string
-  /** Engine tool names (undefined = the role's default tool surface). */
-  tools?: string[]
-  /** Engine tool names blocked for this role. */
+  /**
+   * Its file's `tools` and `disallowedTools`, as written in Claude Code's names (undefined
+   * `tools`: the run's own surface); the kit resolves them per run (`kit/subagent-tools.ts`).
+   */
+  tools?: readonly string[]
   disallowedTools?: readonly string[]
-  /** `tools: Agent(a, b)`: the agent types it may delegate to as the main thread (none: all). */
-  agentTypes?: readonly string[]
   /** CC `model:` — as written; a child with no model the person chose runs on it (`kit/spawn.ts`). */
   model?: string
   /** CC `skills:` — skill names to preload when this agent runs. */
@@ -132,13 +131,8 @@ export function buildLoadedAgent(
     // CC describes an agent whose file gives no description as `Agent from <plugin> plugin`.
     description: agent.description || `Agent from ${pluginName} plugin`,
     prompt: subst(agent.prompt),
-    ...(agent.tools && !agent.tools.includes('*')
-      ? { tools: [...new Set(agent.tools.map(normalizeCcToolName))] }
-      : {}),
-    ...(agent.disallowedTools
-      ? { disallowedTools: agent.disallowedTools.map(normalizeCcToolName) }
-      : {}),
-    ...(agent.agentTypes?.length ? { agentTypes: agent.agentTypes } : {}),
+    ...(agent.tools ? { tools: [...agent.tools] } : {}),
+    ...(agent.disallowedTools ? { disallowedTools: [...agent.disallowedTools] } : {}),
     ...(agent.model ? { model: agent.model } : {}),
     ...(agent.pinnedSkills?.length ? { pinnedSkills: agent.pinnedSkills } : {}),
     ...(agent.maxTurns ? { maxTurns: agent.maxTurns } : {}),

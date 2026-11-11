@@ -11,12 +11,14 @@ import {
 } from './default-marketplaces'
 import {
   type KnownMarketplace,
+  type MarketplaceSource,
   readKnownMarketplaces,
   writeKnownMarketplaces,
-} from './marketplace-catalog'
-import type { MarketplaceSource } from './marketplace-source'
+} from './kit'
 
 const dir = tempDirPerTest('default-marketplaces-')
+const CATALOG = '.claude-plugin/marketplace.json'
+const AT = '2026-01-01T00:00:00.000Z'
 const root = () => join(dir(), 'marketplaces')
 
 /** An add that registers under the default's own name, the way the catalog would name it. */
@@ -27,7 +29,7 @@ function adder(fail?: Error) {
     if (fail) throw fail
     const name = DEFAULT_MARKETPLACES.find((found) => found.source === source)!.id
     const known = await readKnownMarketplaces(root())
-    known[name] = { source, installLocation: join(root(), name) }
+    known[name] = { source, installLocation: join(root(), name), lastUpdated: AT }
     await writeKnownMarketplaces(root(), known)
     return { name, count: 1 }
   }
@@ -42,17 +44,29 @@ describe('the default marketplaces on start', () => {
       [
         'localix',
         {
-          source: 'github',
+          kind: 'github',
           repo: 'rsaryev/localix-marketplace',
+          path: CATALOG,
           sparsePaths: ['.claude-plugin', 'plugins'],
         },
       ],
       [
         'localix-community',
-        { source: 'github', repo: 'rsaryev/localix-community', sparsePaths: ['.claude-plugin'] },
+        {
+          kind: 'github',
+          repo: 'rsaryev/localix-community',
+          path: CATALOG,
+          sparsePaths: ['.claude-plugin'],
+        },
       ],
-      ['claude-plugins-official', { source: 'github', repo: 'anthropics/claude-plugins-official' }],
-      ['claude-community', { source: 'github', repo: 'anthropics/claude-plugins-community' }],
+      [
+        'claude-plugins-official',
+        { kind: 'github', repo: 'anthropics/claude-plugins-official', path: CATALOG },
+      ],
+      [
+        'claude-community',
+        { kind: 'github', repo: 'anthropics/claude-plugins-community', path: CATALOG },
+      ],
     ])
   })
 
@@ -69,16 +83,17 @@ describe('the default marketplaces on start', () => {
     expect(calls).toHaveLength(4)
   })
 
-  test('one registered already from the same repository, under any name, is reused', async () => {
+  test('one registered already from the same source, under any name, is reused', async () => {
     await writeKnownMarketplaces(root(), {
       'my-official': {
-        source: { source: 'github', repo: 'Anthropics/claude-plugins-official.git' },
+        source: { kind: 'github', repo: 'anthropics/claude-plugins-official', path: CATALOG },
         installLocation: join(root(), 'my-official'),
+        lastUpdated: AT,
       },
     })
     const { add, calls } = adder()
     expect((await ensure(add))['claude-plugins-official']).toEqual({ status: 'present' })
-    expect(calls.map((source) => source.source === 'github' && source.repo)).not.toContain(
+    expect(calls.map((source) => source.kind === 'github' && source.repo)).not.toContain(
       'anthropics/claude-plugins-official',
     )
   })
@@ -87,11 +102,13 @@ describe('the default marketplaces on start', () => {
     // A profile from v0.1.0-beta.17 or older: `localix` was the core repository's own catalog.
     const before = {
       source: {
-        source: 'github',
+        kind: 'github',
         repo: 'rsaryev/localix',
+        path: CATALOG,
         sparsePaths: ['.claude-plugin', 'plugins'],
       },
       installLocation: join(root(), 'localix'),
+      lastUpdated: AT,
       autoUpdate: true,
     } satisfies KnownMarketplace
     await writeKnownMarketplaces(root(), { localix: before })
@@ -113,8 +130,9 @@ describe('the default marketplaces on start', () => {
 
   test('a `localix` the person registered from another repository keeps its source', async () => {
     const theirs = {
-      source: { source: 'github', repo: 'someone/localix-fork' },
+      source: { kind: 'github', repo: 'someone/localix-fork', path: CATALOG },
       installLocation: join(root(), 'localix'),
+      lastUpdated: AT,
     } satisfies KnownMarketplace
     await writeKnownMarketplaces(root(), { localix: theirs })
     expect((await ensure(adder().add)).localix).toEqual({ status: 'present' })

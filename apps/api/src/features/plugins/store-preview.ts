@@ -6,12 +6,17 @@ import { InvalidRequestError } from '../../lib/domain-errors'
 import { errorMessage } from '../../lib/errors'
 import { rmrf } from '../ext/install-tree'
 import { defaultMarketplaceOf } from './default-marketplaces'
-import { parseMarketplace, readCatalogJson } from './kit'
-import { readKnownMarketplaces } from './marketplace-catalog'
+import {
+  isLocalSource,
+  parseMarketplace,
+  parseMarketplaceAdd,
+  readCatalogJson,
+  readKnownMarketplaces,
+  sameMarketplaceSource,
+} from './kit'
 import { materializeMarketplace } from './marketplace-materialize'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
-import { hashString, parseMarketplaceInput } from './marketplace-source'
-import { sameMarketplaceSource } from './marketplace-source-identity'
+import { hashString } from './marketplace-source'
 import { marketView } from './store-listing'
 
 /**
@@ -24,15 +29,18 @@ export async function previewMarketplace(
     root: string
   },
 ): Promise<SourcePreview> {
-  const source = parseMarketplaceInput(input)
+  const source = parseMarketplaceAdd(input)
   if ('error' in source) throw new InvalidRequestError('marketplace_bad_source', source.error)
   const staging = join(deps.root, `.preview-${Math.abs(hashString(input))}`)
   try {
-    await materializeMarketplace(source, staging, deps)
-    const raw = await readCatalogJson(staging)
+    // A local marketplace is read where it is, as adding it would read it.
+    const at = { source, installLocation: isLocalSource(source) ? source.path : staging }
+    if (!isLocalSource(source)) await materializeMarketplace(source, staging, deps)
+    const raw = await readCatalogJson(at)
     const market = parseMarketplace(raw, source)
     const known = await readKnownMarketplaces(deps.root)
-    const view = marketView(market.name, { source, installLocation: staging }, raw, market)
+    const record = { ...at, lastUpdated: new Date().toISOString() }
+    const view = marketView(market.name, record, raw, market)
     const publishers = [
       ...market.plugins.map((entry) => entry.display.author?.name),
       market.owner.name,

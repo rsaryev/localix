@@ -1,6 +1,4 @@
-import { readFile } from 'node:fs/promises'
-import type { PluginSession, SessionSkill } from '@rsaryev/llx-plugin'
-import { parseFrontmatter } from '@rsaryev/llx-plugin/format'
+import type { PluginSession } from '@rsaryev/llx-plugin'
 import { skillLookup } from '@rsaryev/llx-plugin/skills'
 
 /**
@@ -18,16 +16,11 @@ const textOf = (name: string, dir: string | undefined, body: string): SkillText 
   content: dir ? `Resolve relative references from: ${JSON.stringify(dir)}\n\n${body}` : body,
 })
 
-async function bodyOf(row: SessionSkill): Promise<string | undefined> {
-  if (!row.file) return undefined
-  const text = await readFile(row.file, 'utf8').catch(() => undefined)
-  return text === undefined ? undefined : parseFrontmatter(text).body
-}
-
 /**
  * The skills the person chose by name (a session's pins, a keyword of their message), found by every
- * name the kit answers to, in the order named and each once. A pin is the person's own choice, so
- * `disable-model-invocation` does not hide one; a skill whose file is gone is left out.
+ * name the kit answers to, in the order named and each once, with the body the kit reads for a
+ * host's pin (`skillContent`). A pin is the person's own choice, so `disable-model-invocation`
+ * does not hide one; a skill whose file is gone is left out.
  */
 export async function skillTexts(
   session: PluginSession,
@@ -42,8 +35,8 @@ export async function skillTexts(
     const row = lookup.find(name)
     if (!row || seen.has(row.invocable.command)) continue
     seen.add(row.invocable.command)
-    const body = await bodyOf(row)
-    if (body !== undefined) out.push(textOf(row.invocable.command, row.directory, body))
+    const read = await session.skillContent(row.invocable.command, { signal })
+    if (read.ok) out.push(textOf(row.invocable.command, row.directory, read.skill.body))
   }
   return out
 }

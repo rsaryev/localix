@@ -8,7 +8,6 @@
 import { defined, isRecord, str, without, type Fields, type ToolShape } from './cc-tool-fields'
 
 const skill: ToolShape = {
-  name: 'Skill',
   toClaude: (input) =>
     input.action === 'get'
       ? defined({ ...input, skill: input.name, args: input.arguments })
@@ -28,7 +27,6 @@ const skill: ToolShape = {
 const QUESTION_KEYS = ['header', 'multiSelect', 'kind', 'placeholder', 'min', 'max', 'step']
 
 const ask: ToolShape = {
-  name: 'AskUserQuestion',
   toClaude(input) {
     if (!Array.isArray(input.questions)) return input
     const questions = input.questions.map((q) =>
@@ -67,11 +65,8 @@ export function planText(input: Fields): string | undefined {
 
 // A call Claude Code has no tool for goes by the name the model calls it, `Plan`.
 const plan: ToolShape = {
-  name: 'Plan',
-  names: ['ExitPlanMode'],
-  nameFor: (input) => (input.action === 'present' ? 'ExitPlanMode' : 'Plan'),
-  toClaude: (input) =>
-    input.action === 'present' ? defined({ ...input, plan: planText(input) }) : input,
+  toClaude: (input, name) =>
+    name === 'ExitPlanMode' ? defined({ ...input, plan: planText(input) }) : input,
   // ExitPlanMode's plan is "injected from the plan file": a hook's copy of it changes nothing.
   fromClaude: (fields, name) =>
     without(name === 'ExitPlanMode' ? { action: 'present', ...fields } : fields, [
@@ -83,14 +78,12 @@ const plan: ToolShape = {
 
 /** `ToolSearch` takes Claude Code's `ToolSearch` fields as they are; only the name differs. */
 const activateTools: ToolShape = {
-  name: 'ToolSearch',
   toClaude: (input) => input,
   fromClaude: (fields) => fields,
 }
 
 /** `workflow` is Claude Code's `Workflow`, whose `name`, `args` and `resumeFromRunId` it shares. */
 const workflow: ToolShape = {
-  name: 'Workflow',
   toClaude: (input) => input,
   fromClaude: (fields) => fields,
 }

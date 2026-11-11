@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test'
 import { realpath } from 'node:fs/promises'
 import { tempDirPerTest } from '@localixai/testing'
 
+import type { TaskAgentType } from '../../../agent-core/tools/task-delegation-contracts'
 import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
 import {
   applyCatalogAgent,
@@ -63,7 +64,7 @@ test('a plugin agent with cacheTtl asks its runs for that cache lifetime', () =>
 
 // The agent a run runs as brings its own ceiling, whoever started it: a child delegated to it,
 // an agent chosen for a chat, or a session started on it.
-test('a run as a catalog agent takes its prompt, tool ceiling and instruction files', () => {
+test('a run as a catalog agent takes its prompt and instruction files', () => {
   const input = {
     agent: { id: 'cc:1', instructions: 'ignored' },
     disabledTools: ['AskUserQuestion'],
@@ -71,26 +72,23 @@ test('a run as a catalog agent takes its prompt, tool ceiling and instruction fi
   const applied = applyCatalogAgent(input, { ...REVIEWER, omitClaudeMd: true })
   expect(applied?.agent.instructions).toBe('You are the security reviewer.')
   expect(applied?.subagent.omitClaudeMd).toBe(true)
-  expect(applied?.disabledTools).toEqual(
-    expect.arrayContaining(['AskUserQuestion', 'Research', 'Bash', 'Write']),
-  )
-  expect(applied?.disabledTools).not.toContain('Read')
-})
-
-test('a file agent that lists only Read leaves every other Claude Code tool off', () => {
-  const applied = applyCatalogAgent(
-    { agent: { instructions: 'x' }, disabledTools: [] },
-    { ...REVIEWER, tools: ['Read'], disallowedTools: undefined },
-  )
-  expect(applied?.disabledTools).toEqual(
-    expect.arrayContaining(['Write', 'Edit', 'Bash', 'Search']),
-  )
-  expect(applied?.disabledTools).not.toContain('Read')
+  // Its `tools` and `disallowedTools` narrow the built run instead (`run-agent-tools.ts`).
+  expect(applied?.disabledTools).toEqual(['AskUserQuestion'])
 })
 
 test('the default agent, and a route with no definition behind it, keep their own run', () => {
   const input = { agent: { instructions: 'You are Localix.' }, disabledTools: [] }
   expect(applyCatalogAgent(input, undefined)).toBeNull()
+})
+
+// sub-agents.md, `tools`: a child whose list resolves to none of the run's tools is refused.
+test('the delegate ports refuse a type whose tools the run does not offer', () => {
+  const base = { catalog: [], defaultCwd: '/tmp', rootSessionId: 'root' }
+  const ports = agentLaunchPorts({ ...base, parentTools: () => [{ name: 'Read' }] })
+  const type: TaskAgentType = { name: 'w', fullName: 'w', description: '' }
+  expect(ports.toolsRefusal?.({ ...type, tools: ['Bash'] })).toContain('zero tools')
+  expect(ports.toolsRefusal?.({ ...type, tools: ['Read'] })).toBeUndefined()
+  expect(ports.toolsRefusal?.(type)).toBeUndefined()
 })
 
 test('the delegate ports carry the run agent’s Agent(...) allowlist', () => {

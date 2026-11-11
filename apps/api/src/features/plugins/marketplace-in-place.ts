@@ -2,20 +2,21 @@ import { resolve } from 'node:path'
 
 import { isPathBelow, isPathWithin } from '../../lib/path-containment'
 import { rmrf } from '../ext/install-tree'
-import { marketplaceNameProblem } from './claude-code-marketplace'
-import { readMarketplace, type Marketplace } from './kit'
 import {
-  keptPreferences,
+  isLocalSource,
+  marketplaceAddRefusal,
   readKnownMarketplaces,
+  readMarketplace,
   writeKnownMarketplaces,
   type KnownMarketplace,
-} from './marketplace-catalog'
-import { differentSourceMessage, sameMarketplaceSource } from './marketplace-source-identity'
-import type { MarketplaceSource } from './marketplace-source'
+  type Marketplace,
+  type MarketplaceSource,
+} from './kit'
+import { keptPreferences } from './marketplace-catalog'
 
 /**
- * Marketplaces read IN PLACE: one added from a local folder is registered where it is, never
- * copied, as Claude Code does ("Relative-path plugins in a marketplace you added from a local
+ * Marketplaces read IN PLACE: one added from a local file or folder is registered where it is,
+ * never copied, as Claude Code does ("Relative-path plugins in a marketplace you added from a local
  * path: the plugin loads in place", loading.md). Its `installLocation` is then the person's own
  * folder, so the registry may delete or rename a marketplace directory only when it is one of
  * Localix's own, strictly inside the marketplaces root ({@link removeOwnedMarketplaceDir}).
@@ -37,18 +38,11 @@ export function assertOwnedMarketplaceDir(root: string, dir: string): void {
 }
 
 /**
- * A local folder outside the marketplaces root is read in place. (A folder inside it would be one
- * of Localix's own copies, which keeps being copied as before.)
+ * True when the registered marketplace is read in place, so its relative plugins can be too. A
+ * local one whose record still points at a copy an older Localix took is a copy until updated.
  */
-export const addsInPlace = (
-  source: MarketplaceSource,
-  root: string,
-): source is { source: 'local'; path: string } =>
-  source.source === 'local' && !isPathWithin(resolve(root), resolve(source.path))
-
-/** True when the registered marketplace is read in place, so its relative plugins can be too. */
 export const readsInPlace = (rec: KnownMarketplace | undefined, root: string): boolean =>
-  !!rec && rec.source.source === 'local' && !ownsMarketplaceDir(root, rec.installLocation)
+  !!rec && isLocalSource(rec.source) && !ownsMarketplaceDir(root, rec.installLocation)
 
 /** What every marketplace must pass before it is registered under its catalog name. */
 export async function assertRegistrable(
@@ -56,29 +50,29 @@ export async function assertRegistrable(
   source: MarketplaceSource,
   root: string,
 ): Promise<void> {
-  const refused = marketplaceNameProblem(market.name, source)
+  const refused = marketplaceAddRefusal(market.name, source, await readKnownMarketplaces(root))
   if (refused) throw new Error(refused)
-  // A name registered from another source keeps it: re-pointing it would move where the
-  // plugins installed from it update from. Replacing it takes an explicit remove first.
-  const existing = (await readKnownMarketplaces(root))[market.name]
-  if (existing && !sameMarketplaceSource(existing.source, source))
-    throw new Error(differentSourceMessage(market.name, existing.source))
 }
 
 /**
- * Register a local folder in place: validate its catalog and record the folder itself. Adding it
- * again re-reads it; a copy an earlier version of Localix took of it is Localix's own and goes.
+ * Register a local file or folder in place (the kit's `installLocationFor`): validate its catalog
+ * and record the path itself. Adding it again re-reads it; a copy an earlier version of Localix
+ * took of it is Localix's own and goes. A path inside the marketplaces folder is Localix's own.
  */
 export async function addMarketplaceInPlace(
-  source: { source: 'local'; path: string },
+  source: Extract<MarketplaceSource, { kind: 'file' | 'directory' }>,
   root: string,
+  now: string,
 ): Promise<{ name: string; count: number }> {
   const installLocation = resolve(source.path)
-  const market = await readMarketplace(installLocation)
-  await assertRegistrable(market, source, root)
+  if (isPathWithin(resolve(root), installLocation))
+    throw new Error(`Refusing to add ${installLocation}: it is inside the marketplaces folder`)
+  const at = { source: { ...source, path: installLocation }, installLocation }
+  const market = await readMarketplace(at)
+  await assertRegistrable(market, at.source, root)
   const known = await readKnownMarketplaces(root)
   const previous = known[market.name]
-  known[market.name] = { ...keptPreferences(previous), source, installLocation }
+  known[market.name] = { ...keptPreferences(previous), ...at, lastUpdated: now }
   await writeKnownMarketplaces(root, known)
   if (previous && resolve(previous.installLocation) !== installLocation)
     await removeOwnedMarketplaceDir(root, previous.installLocation).catch(() => {})

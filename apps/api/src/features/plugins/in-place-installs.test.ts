@@ -27,8 +27,12 @@ function fixture() {
     'tool/skills/hello/SKILL.md': '---\nname: hello\ndescription: Says hello\n---\nHELLO-V1\n',
   })
   writeTree(home, {
-    '.localix/marketplaces/known.json': JSON.stringify({
-      mk: { source: { source: 'local', path: market }, installLocation: market },
+    '.localix/marketplaces/known_marketplaces.json': JSON.stringify({
+      mk: {
+        source: { source: 'directory', path: market },
+        installLocation: market,
+        lastUpdated: '2026-10-20T10:00:00.000Z',
+      },
     }),
   })
   return { home, market, installRoot: join(home, '.localix', 'plugins') }

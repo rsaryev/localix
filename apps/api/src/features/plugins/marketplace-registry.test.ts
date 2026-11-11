@@ -2,107 +2,21 @@ import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { CLAUDE_CODE_MARKETPLACE } from './claude-code-marketplace'
 
 import {
   addMarketplace,
   listMarketplaces,
-  parseMarketplaceInput,
   parseMarketplaceRef,
-  marketplacesRoot,
-  readKnownMarketplaces,
   removeMarketplace,
   resolveBareInstall,
   resolveMarketplaceInstall,
   updateMarketplace,
   type MarketplaceRegistryDeps,
 } from './marketplace-registry'
-import { stubFetch, fetchUrl } from '../../testing/fetch-stub'
-import { homedir } from 'node:os'
+import { readKnownMarketplaces } from './kit'
 
-describe('marketplacesRoot', () => {
-  it('resolves <base>/.localix/marketplaces, defaulting base to the home dir', () => {
-    expect(marketplacesRoot('/tmp/x')).toBe(join('/tmp/x', '.localix', 'marketplaces'))
-    expect(marketplacesRoot()).toBe(join(homedir(), '.localix', 'marketplaces'))
-  })
-})
-
-describe('parseMarketplaceInput', () => {
-  it('hints at /plugin install for a plugin@marketplace reference, keeping SSH git URLs', () => {
-    expect(parseMarketplaceInput('cool@acme')).toEqual({
-      error:
-        '"cool@acme" looks like a plugin@marketplace reference; install it with /plugin install cool@acme',
-    })
-    expect(parseMarketplaceInput('git@github.com:acme/repo.git')).toEqual({
-      source: 'git',
-      url: 'git@github.com:acme/repo.git',
-    })
-  })
-
-  it('parses owner/repo as github', () => {
-    expect(parseMarketplaceInput('nextlevelbuilder/ui-ux-pro-max-skill')).toEqual({
-      source: 'github',
-      repo: 'nextlevelbuilder/ui-ux-pro-max-skill',
-    })
-  })
-  it('parses an https git url', () => {
-    expect(parseMarketplaceInput('https://github.com/a/b.git')).toEqual({
-      source: 'git',
-      url: 'https://github.com/a/b.git',
-    })
-  })
-  it('parses an ssh url with a ref', () => {
-    expect(parseMarketplaceInput('git@github.com:a/b.git#v2')).toEqual({
-      source: 'git',
-      url: 'git@github.com:a/b.git',
-      ref: 'v2',
-    })
-  })
-  it('parses an absolute path as local', () => {
-    expect(parseMarketplaceInput('/tmp/mkt')).toEqual({ source: 'local', path: '/tmp/mkt' })
-  })
-  it('errors on garbage', () => {
-    expect(parseMarketplaceInput('not a marketplace!!')).toHaveProperty('error')
-  })
-  it('parses the npm: shorthand, with and without a version spec', () => {
-    expect(parseMarketplaceInput('npm:acme-marketplace')).toEqual({
-      source: 'npm',
-      package: 'acme-marketplace',
-    })
-    expect(parseMarketplaceInput('npm:@scope/mkt@^2.0.0')).toEqual({
-      source: 'npm',
-      package: '@scope/mkt',
-      version: '^2.0.0',
-    })
-  })
-  it('accepts a CC-spec npm source object (extraKnownMarketplaces shape)', () => {
-    expect(
-      parseMarketplaceInput({
-        source: 'npm',
-        package: '@org/mkt',
-        version: '^1.0.0',
-        registry: 'https://r.example',
-      }),
-    ).toEqual({
-      source: 'npm',
-      package: '@org/mkt',
-      version: '^1.0.0',
-      registry: 'https://r.example',
-    })
-  })
-  it('errors on an invalid npm package name (string and object forms)', () => {
-    expect(parseMarketplaceInput('npm:../evil')).toHaveProperty('error')
-    expect(
-      parseMarketplaceInput({ source: 'npm', package: 'https://github.com/o/r/x.tgz' }),
-    ).toHaveProperty('error')
-    expect(parseMarketplaceInput({ source: 'npm' })).toHaveProperty('error')
-  })
-  it('errors on a source type only the policy lists accept', () => {
-    expect(parseMarketplaceInput({ source: 'hostPattern', hostPattern: '.*' })).toHaveProperty(
-      'error',
-    )
-  })
-})
+const CATALOG = '.claude-plugin/marketplace.json'
+const gh = (repo: string) => ({ kind: 'github', repo, path: CATALOG }) as const
 
 describe('parseMarketplaceRef', () => {
   it('splits plugin@marketplace', () => {
@@ -154,12 +68,55 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
   })
 
   it('add registers a marketplace from a github source via the clone stub', async () => {
-    const res = await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
+    const res = await addMarketplace(gh('acme/repo'), deps)
     expect(res).toEqual({ name: 'acme', count: 1 })
   })
 
+  it('records the marketplace in known_marketplaces.json, as Claude Code reads it', async () => {
+    await addMarketplace(gh('acme/repo'), deps)
+    expect(await fs.readdir(root)).toContain('known_marketplaces.json')
+    expect(await readKnownMarketplaces(root)).toEqual({
+      acme: {
+        source: gh('acme/repo'),
+        installLocation: join(root, 'acme'),
+        lastUpdated: '2026-01-01T00:00:00.000Z',
+      },
+    })
+  })
+
+  it('registers a catalog file where it is, its plugins read from its folder', async () => {
+    const file = join(upstream, CATALOG)
+    expect(await addMarketplace({ kind: 'file', path: file }, deps)).toEqual({
+      name: 'acme',
+      count: 1,
+    })
+    expect((await readKnownMarketplaces(root)).acme?.installLocation).toBe(file)
+    expect(await fs.readdir(root)).not.toContain('acme')
+    const res = await resolveMarketplaceInstall({ plugin: 'cool', marketplace: 'acme' }, deps)
+    expect(res.dir).toBe(join(upstream, 'plugins', 'cool'))
+  })
+
+  it('refuses a source the organization blocks before fetching anything', async () => {
+    const managed = join(root, '..', 'managed')
+    await fs.mkdir(managed, { recursive: true })
+    await fs.writeFile(
+      join(managed, 'managed-settings.json'),
+      JSON.stringify({ blockedMarketplaces: [{ source: 'github', repo: 'evil/plugins' }] }),
+    )
+    let cloned = false
+    const blocked = addMarketplace(gh('evil/plugins'), {
+      ...deps,
+      managedSettingsDir: managed,
+      cloneRepo: async () => {
+        cloned = true
+      },
+    })
+    await expect(blocked).rejects.toThrow('is blocked by enterprise policy')
+    expect(cloned).toBe(false)
+  })
+
   it('resolves plugin@owner/repo against the source a marketplace was added from', async () => {
-    await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
+    await addMarketplace(gh('acme/repo'), deps)
     const res = await resolveMarketplaceInstall({ plugin: 'cool', marketplace: 'acme/repo' }, deps)
     expect(res.marketplace).toBe('acme')
     expect(res.entry.name).toBe('cool')
@@ -167,16 +124,16 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
 
   it('registers a Claude Code-only marketplace (.claude-plugin/marketplace.json)', async () => {
     await fs.rm(join(upstream, '.claude-plugin'), { recursive: true })
-    await fs.mkdir(dirname(join(upstream, CLAUDE_CODE_MARKETPLACE)), { recursive: true })
+    await fs.mkdir(dirname(join(upstream, CATALOG)), { recursive: true })
     await fs.writeFile(
-      join(upstream, CLAUDE_CODE_MARKETPLACE),
+      join(upstream, CATALOG),
       JSON.stringify({
         name: 'cc',
         owner: { name: 'o' },
         plugins: [{ name: 'cool', source: './plugins/cool' }],
       }),
     )
-    expect(await addMarketplace({ source: 'github', repo: 'o/cc' }, deps)).toEqual({
+    expect(await addMarketplace(gh('o/cc'), deps)).toEqual({
       name: 'cc',
       count: 1,
     })
@@ -185,7 +142,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
   })
 
   it('restores the previous marketplace when activation fails', async () => {
-    await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
+    await addMarketplace(gh('acme/repo'), deps)
     await fs.writeFile(
       join(upstream, '.claude-plugin', 'marketplace.json'),
       JSON.stringify({
@@ -205,7 +162,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
 
     let activationError: unknown
     try {
-      await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
+      await addMarketplace(gh('acme/repo'), deps)
     } catch (error) {
       activationError = error
     } finally {
@@ -253,8 +210,8 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     }
 
     await Promise.all([
-      addMarketplace({ source: 'github', repo: 'org/first' }, concurrentDeps),
-      addMarketplace({ source: 'github', repo: 'org/second' }, concurrentDeps),
+      addMarketplace(gh('org/first'), concurrentDeps),
+      addMarketplace(gh('org/second'), concurrentDeps),
     ])
 
     expect(peakClones).toBe(1)
@@ -263,7 +220,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
 
   it('list shows the registered marketplaces, and nothing built in', async () => {
     expect(await listMarketplaces(deps)).toEqual([])
-    await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
+    await addMarketplace(gh('acme/repo'), deps)
     expect(await listMarketplaces(deps)).toEqual([
       { name: 'acme', count: 1, plugins: [{ name: 'cool' }] },
     ])
@@ -278,7 +235,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
         plugins: [{ name: 'cool', source: './plugins/cool', description: 'cool infra' }],
       }),
     )
-    await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
+    await addMarketplace(gh('acme/repo'), deps)
     const list = await listMarketplaces(deps)
     expect(list.find((m) => m.name === 'acme')?.plugins).toEqual([
       { name: 'cool', description: 'cool infra' },
@@ -286,17 +243,21 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
   })
 
   it('resolves plugin@marketplace from a registered marketplace', async () => {
-    await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
+    await addMarketplace(gh('acme/repo'), deps)
     const resolved = await resolveMarketplaceInstall({ plugin: 'cool', marketplace: 'acme' }, deps)
     expect(resolved.dir).toBe(join(root, 'acme', 'plugins', 'cool'))
     expect(resolved.entry.name).toBe('cool')
   })
 
   it('remove deletes a registered marketplace', async () => {
-    await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
+    await addMarketplace(gh('acme/repo'), deps)
     await removeMarketplace('acme', deps)
     const list = await listMarketplaces(deps)
     expect(list.find((m) => m.name === 'acme')).toBeUndefined()
+  })
+
+  it('update of an unknown marketplace errors', () => {
+    expect(updateMarketplace('nope', deps)).rejects.toThrow('Unknown marketplace')
   })
 
   it('errors resolving an unknown marketplace', () => {
@@ -306,7 +267,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
   })
 
   it('resolves a bare plugin name across registered marketplaces (no @marketplace)', async () => {
-    await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
+    await addMarketplace(gh('acme/repo'), deps)
     const resolved = await resolveBareInstall('cool', deps)
     expect(resolved.dir).toBe(join(root, 'acme', 'plugins', 'cool'))
     expect(resolved.entry.name).toBe('cool')
@@ -326,7 +287,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
         plugins: [{ name: 'cool', source: './plugins/cool', ...extra }],
       }),
     )
-    await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
+    await addMarketplace(gh('acme/repo'), deps)
   }
 
   it('resolveMarketplaceInstall exposes entry.defaultEnabled=true when set in the catalog', async () => {
@@ -359,7 +320,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
           renames,
         }),
       )
-      await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
+      await addMarketplace(gh('acme/repo'), deps)
     }
 
     it('an old name resolves to the renamed entry, with renamedFrom set', async () => {
@@ -400,106 +361,6 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     it('a bare null-mapped name surfaces the removed error (not "no marketplace")', async () => {
       await addAcmeWithRenames({ gone: null })
       expect(resolveBareInstall('gone', deps)).rejects.toThrow('removed from marketplace')
-    })
-  })
-
-  describe('npm marketplace sources (whole-marketplace from a package)', () => {
-    const realFetch = globalThis.fetch
-    afterEach(() => {
-      globalThis.fetch = realFetch
-    })
-
-    /** Build a real npm-shaped tarball whose root carries `.claude-plugin/marketplace.json`. */
-    async function makeMarketTarball(pluginNames: string[]): Promise<Uint8Array> {
-      const work = await fs.mkdtemp(join(tmpdir(), 'npm-mkt-'))
-      try {
-        const pkg = join(work, 'package')
-        await fs.mkdir(join(pkg, '.claude-plugin'), { recursive: true })
-        const plugins = []
-        for (const name of pluginNames) {
-          await fs.mkdir(join(pkg, 'plugins', name, '.claude-plugin'), { recursive: true })
-          await fs.writeFile(
-            join(pkg, 'plugins', name, '.claude-plugin', 'plugin.json'),
-            JSON.stringify({ name, version: '1.0.0', description: name }),
-          )
-          plugins.push({ name, source: `./plugins/${name}` })
-        }
-        await fs.writeFile(
-          join(pkg, '.claude-plugin', 'marketplace.json'),
-          JSON.stringify({ name: 'npmmkt', owner: { name: 'acme' }, plugins }),
-        )
-        const tgz = join(work, 'm.tgz')
-        await Bun.spawn(['tar', '-czf', tgz, '-C', work, 'package']).exited
-        return new Uint8Array(await fs.readFile(tgz))
-      } finally {
-        await fs.rm(work, { recursive: true, force: true })
-      }
-    }
-
-    /** Stub the npm registry: one packument, per-version tarballs (no integrity → skip verify). */
-    function stubNpmRegistry(byVersion: Record<string, Uint8Array>, latest: string): void {
-      globalThis.fetch = stubFetch(async (input) => {
-        const url = fetchUrl(input)
-        const m = url.match(/\/t-([\d.]+)\.tgz$/)
-        if (m) return new Response(byVersion[m[1] as string]!.slice().buffer as ArrayBuffer)
-        return Response.json({
-          'dist-tags': { latest },
-          versions: Object.fromEntries(
-            Object.keys(byVersion).map((v) => [v, { dist: { tarball: `https://x/t-${v}.tgz` } }]),
-          ),
-        })
-      })
-    }
-
-    it('add registers a marketplace fetched from npm (materialized like a git one)', async () => {
-      stubNpmRegistry({ '1.0.0': await makeMarketTarball(['cool']) }, '1.0.0')
-      const source = parseMarketplaceInput('npm:acme-marketplace@^1.0.0')
-      if ('error' in source) throw new Error(source.error)
-      const res = await addMarketplace(source, deps)
-      expect(res).toEqual({ name: 'npmmkt', count: 1 })
-      // Same ~/.localix/marketplaces/<name>/ layout + known.json record as git sources.
-      const known = await readKnownMarketplaces(root)
-      expect(known['npmmkt']).toEqual({
-        source: { source: 'npm', package: 'acme-marketplace', version: '^1.0.0' },
-        installLocation: join(root, 'npmmkt'),
-        lastUpdated: '2026-01-01T00:00:00.000Z',
-      })
-      const resolved = await resolveMarketplaceInstall(
-        { plugin: 'cool', marketplace: 'npmmkt' },
-        deps,
-      )
-      expect(resolved.dir).toBe(join(root, 'npmmkt', 'plugins', 'cool'))
-    })
-
-    it('update re-fetches the latest version satisfying the recorded range', async () => {
-      stubNpmRegistry({ '1.0.0': await makeMarketTarball(['cool']) }, '1.0.0')
-      await addMarketplace({ source: 'npm', package: 'acme-marketplace', version: '^1.0.0' }, deps)
-      // A newer 1.2.0 (two plugins) is published; ^1.0.0 now resolves to it.
-      stubNpmRegistry(
-        {
-          '1.0.0': await makeMarketTarball(['cool']),
-          '1.2.0': await makeMarketTarball(['cool', 'cooler']),
-        },
-        '1.2.0',
-      )
-      const res = await updateMarketplace('npmmkt', deps)
-      expect(res).toEqual({ name: 'npmmkt', count: 2 })
-      const list = await listMarketplaces(deps)
-      expect(list.find((m) => m.name === 'npmmkt')?.plugins.map((p) => p.name)).toEqual([
-        'cool',
-        'cooler',
-      ])
-    })
-
-    it('update of an unknown marketplace errors', () => {
-      expect(updateMarketplace('nope', deps)).rejects.toThrow('Unknown marketplace')
-    })
-
-    it('add surfaces the npm path typed errors (registry 404 → plugin_npm_fetch_failed)', async () => {
-      globalThis.fetch = stubFetch(async () => new Response('nope', { status: 404 }))
-      expect(addMarketplace({ source: 'npm', package: 'does-not-exist' }, deps)).rejects.toThrow(
-        /HTTP 404/,
-      )
     })
   })
 })

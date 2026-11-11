@@ -2,7 +2,6 @@ import { errorMessage } from '../../lib/errors'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import type { DiscoveredPlugin } from './discovery-types'
 import { autoUpdatePassAllowed, marketplaceAutoUpdate } from './marketplace-auto-update'
-import { readKnownMarketplaces } from './marketplace-catalog'
 import { marketplacesRoot } from './marketplace-source'
 import { sweepOrphanedVersions } from './plugin-cache'
 import type { PluginUpdateJob, PluginUpdatesResponse } from './contracts-updates'
@@ -13,6 +12,7 @@ import {
   marketplaceRecord,
   type MarketplaceInstall,
 } from './update-candidates'
+import { readKnownMarketplaces } from './kit'
 
 /**
  * PLUGIN UPDATES: what is available, the updates in flight, and the auto-update pass (Claude Code's

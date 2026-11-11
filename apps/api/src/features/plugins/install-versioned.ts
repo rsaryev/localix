@@ -5,6 +5,7 @@ import { ConflictError } from '../../lib/domain-errors'
 import { isRecord } from '../../lib/record'
 import { pathExists } from '../ext/fs-discovery'
 import type { InPlaceInstall } from './install-in-place'
+import { pluginVersion, type VersionSourceFacts } from './kit'
 import type { ResolvedMarketplaceInstall } from './marketplace-registry'
 import {
   cachedPluginDir,
@@ -15,7 +16,7 @@ import {
   setInstallRecord,
   type CachedInstallRecord,
 } from './plugin-cache'
-import { entryVersionFacts, resolvePluginVersion, type VersionSourceFacts } from './plugin-version'
+import { entryVersionFacts } from './plugin-version'
 
 /**
  * A user-scope install from a marketplace that Localix copies goes into the version cache
@@ -55,7 +56,7 @@ export async function resolvedVersion(resolved: ResolvedMarketplaceInstall): Pro
     facts.kind === 'relative' || facts.kind === 'git'
       ? { ...facts, ...(resolved.commitSha ? { commitSha: resolved.commitSha } : {}) }
       : facts
-  return resolvePluginVersion({
+  return pluginVersion({
     manifestVersion: await manifestVersion(resolved.dir),
     entryVersion: resolved.entry.version,
     source,

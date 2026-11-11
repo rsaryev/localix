@@ -4,22 +4,24 @@ import { join } from 'node:path'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import { isRecord } from '../../lib/record'
 import type { DiscoveredPlugin } from './discovery-types'
-import { resolveEntryName } from './kit'
-import { readMarketplace, resolveEntrySource } from './kit'
-import type { KnownMarketplace } from './marketplace-catalog'
+import {
+  catalogAt,
+  pluginVersion,
+  readMarketplace,
+  resolveEntryName,
+  resolveEntrySource,
+  UNKNOWN_VERSION,
+  type KnownMarketplace,
+  type VersionSourceFacts,
+} from './kit'
 import { parseMarketplaceRef, sourceMatchesRef } from './marketplace-source'
 import { readInstallRecords } from './plugin-cache'
-import {
-  entryVersionFacts,
-  resolvePluginVersion,
-  UNKNOWN_VERSION,
-  type VersionSourceFacts,
-} from './plugin-version'
+import { entryVersionFacts } from './plugin-version'
 
 /**
  * WHAT AN UPDATE WOULD INSTALL, computed without installing: the version of each user-scope plugin
  * installed from a marketplace, against the version its current listing resolves to by Claude
- * Code's rule (`plugin-version.ts`). A relative entry is read in the marketplace's copy (its
+ * Code's rule (the kit's, `pluginVersion`). A relative entry is read in the marketplace's copy (its
  * manifest, else the entry, else the marketplace's commit); a git entry pinned to a commit is that
  * commit and never moves; an unpinned git entry asks the remote for its commit (`git ls-remote`),
  * since its manifest is not known before a fetch, and counts as newer only when the commit differs
@@ -105,7 +107,7 @@ export async function candidateFor(
   const found = marketplaceRecord(known, install.marketplace)
   if (!found) return null
   const [, record] = found
-  const market = await readMarketplace(record.installLocation, record.source).catch(() => null)
+  const market = await readMarketplace(record).catch(() => null)
   if (!market) return null
   let name: string
   try {
@@ -121,7 +123,7 @@ export async function candidateFor(
   let declared: string | undefined
   const resolved = (() => {
     try {
-      return resolveEntrySource(record.installLocation, entry, record.source)
+      return resolveEntrySource(catalogAt(record).root, entry, record.source)
     } catch {
       return null
     }
@@ -133,7 +135,7 @@ export async function candidateFor(
     const commitSha = await remoteCommit(resolved.git.url, resolved.git.ref)
     if (commitSha) facts = { ...facts, commitSha }
   }
-  const version = resolvePluginVersion({
+  const version = await pluginVersion({
     manifestVersion: declared,
     entryVersion: entry.version,
     source: facts,

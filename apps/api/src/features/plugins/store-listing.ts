@@ -12,12 +12,13 @@ import {
 
 import { defaultMarketplaceOf } from './default-marketplaces'
 import {
-  parseMarketplace,
-  resolveEntrySource,
+  catalogAt,
+  type KnownMarketplace,
   type Marketplace,
   type MarketplaceEntry,
+  parseMarketplace,
+  resolveEntrySource,
 } from './kit'
-import type { KnownMarketplace } from './marketplace-catalog'
 import type { PluginContents } from './store-contents'
 import { entryCuration } from './store-editorial'
 
@@ -63,17 +64,18 @@ export function marketView(
 /** Where the marketplace's own repository is, for an entry that lives inside it. */
 function repositoryOf(record: KnownMarketplace): string | null {
   const { source } = record
-  if (source.source === 'github') return source.repo
-  if (source.source === 'git') return source.url
+  if (source.kind === 'github') return source.repo
+  if (source.kind === 'git') return source.url
   return null
 }
 
 /** The entry's normalized origin (`identity.ts`), or none when it cannot be resolved. */
 export function entryOrigin(view: MarketView, entry: MarketplaceEntry): string | undefined {
   try {
-    const at = resolveEntrySource(view.record.installLocation, entry, view.record.source)
+    const { root } = catalogAt(view.record)
+    const at = resolveEntrySource(root, entry, view.record.source)
     if ('localPath' in at) {
-      const path = relative(view.record.installLocation, at.localPath)
+      const path = relative(root, at.localPath)
       const repo = repositoryOf(view.record)
       return repo ? gitOrigin({ url: repo, path }) : `marketplace:${view.name}#${path}`
     }

@@ -1,4 +1,5 @@
 import { sessionRoute } from '../../../contracts/session-route'
+import { announceSessionActive } from '../../agent-core/session-activity'
 import {
   skillToolPathVars,
   substituteToolPathVars,
@@ -120,6 +121,10 @@ export async function handlePluginCommand(
       const reply = `\`${firstToken}\`: ${error.message.slice(0, 4000)}`
       return insertDirectReply(userId, sessionId, prompt, reply, ts, 'error')
     }
+    // Localix rendered the command itself: the kit session records it, so a monitor waiting for
+    // it (`on-skill-invoke`) starts now.
+    if (kitSession?.recordSkillInvocation(`${match.plugin}:${match.command.name}`))
+      announceSessionActive({ userId, chatId: session.rootSessionId ?? sessionId, sessionId })
     const resolvedBindings = await resolveMessageBindings(deps, userId, session, bindings)
     if (match.command.activateTools?.length) {
       const tools = match.command.activateTools

@@ -1,12 +1,12 @@
 import { mcpInputSchema, type AgentTool, type AgentToolResult } from '@localixai/agent/agents'
 import { isBlockedThrow } from '../agent-core/tools/tool-error-result'
-import { singleCalls, toolCallEvent, toolInputOf } from '../ext/cc-tool-shapes'
+import { singleCalls } from '../ext/cc-tool-shapes'
 import type { ModScene } from './contracts'
 import { agentOf } from './event-scope'
 import type { ModsHost } from './host'
 import { coreAnswer, resultOf } from './tool-answers'
 import { errorMessage } from '../../lib/errors'
-import { withheldResultText, type ToolCallEnd } from '../plugins/kit'
+import { withheldResultText, type ToolCallEnd, toolCallEvent, toolInputOf } from '../plugins/kit'
 
 /**
  * `tool.call` in Localix. Every tool call of a conversation goes through the mods enabled there:

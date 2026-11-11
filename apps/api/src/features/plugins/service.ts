@@ -1,4 +1,4 @@
-import { InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
+import { ConflictError, InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
 import { promises as fs } from 'node:fs'
 import { pluginLoadBlockReason } from './load-block'
 import { isAbsolute } from 'node:path'
@@ -90,7 +90,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
   // Marketplace registry deps — one git clone primitive shared with plugin install.
   const managed = deps.managedSettingsDir ? { managedSettingsDir: deps.managedSettingsDir } : {}
   const registryDeps: MarketplaceRegistryDeps = {
-    cloneRepo,
+    cloneRepo: deps.cloneRepo ?? cloneRepo,
     now,
     root: marketplacesRoot(home),
     ...managed,
@@ -366,6 +366,9 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
               agentId: input.agentId,
             })
           : null
+      // As in Claude Code, a dependency that is not installed fails the enable.
+      if (cascade?.issues.length)
+        throw new ConflictError('plugin_dependency_missing', cascade.issues.join('\n'))
       await createAvailabilityWriter(deps.db).apply(userId, targetAgentId, [
         own,
         ...(cascade?.changes ?? []),
@@ -375,11 +378,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         await repo.get(userId, rowScopeOf(plugin, projectId), input.name),
       )
       deps.onChanged?.()
-      const record = await toRecord(plugin, state, await verdictFor(userId, plugin, input.agentId))
-      if (cascade?.result.warnings.length) {
-        record.validation.warnings.push(...cascade.result.warnings)
-      }
-      return record
+      return toRecord(plugin, state, await verdictFor(userId, plugin, input.agentId))
     },
 
     async setConfig(userId, input) {
