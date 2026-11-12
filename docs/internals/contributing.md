@@ -161,10 +161,9 @@ superseded it), `Prepare release` asks for one and waits for it.
 
 `Checks passed` fails when any job fails or is cancelled and names each job's result, so branch
 protection needs to require only that status. The app jobs run in parallel, each building from its
-own Turbo archive: `types` (source and test types), `unit tests` (`bun run test`),
-`integration tests` (`bun run test:integration`), `desktop bundle` (a smoke test of the staged
-bundle) and `coverage` (`bun run coverage`, see [Testing](testing.md#coverage)). One failing job
-does not stop the others.
+own Turbo cache: `types` (source and test types), `unit tests` (`bun run test`), `integration tests`
+(`bun run test:integration`), `desktop bundle` (a smoke test of the staged bundle) and `coverage`
+(`bun run coverage`, see [Testing](testing.md#coverage)). One failing job does not stop the others.
 
 A failing job lists its failing tests, type errors and Turbo tasks on the run's summary page
 (`scripts/ci-failure-summary.mjs`). The other job scans the history for secrets with gitleaks, lints
@@ -186,6 +185,12 @@ Each runner container may use 5 of the server's 6 cores and 5 GB: a hard 2-core 
 test processes Turbo starts for all 6 cores into multi-second stalls. The containers share the Rust,
 Cargo and tool caches. The image is Ubuntu 24.04 with Rust, sccache and the webview's libraries;
 Node and Bun come from the setup actions and stay in a cache volume.
+
+On our runners the caches are folders in that volume (`/cache`), kept between jobs: Turbo's per
+slice (`/cache/turbo/<slice>`), Bun's packages (`/cache/bun`) and the Rust build
+(`/cache/target/<key>`). Nothing is downloaded from or uploaded to GitHub's cache, which took
+minutes per job against seconds of checking. GitHub's machines (a fork's pull request, a release's
+builds) restore and save archives as before.
 
 The release stays on GitHub-hosted runners: the Linux leg on `ubuntu-22.04` for an older glibc
 baseline, and the macOS leg on `macos-15`. Workflows grant no default token permissions; each job

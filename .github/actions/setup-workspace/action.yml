@@ -17,8 +17,16 @@ runs:
       with:
         bun-version: 1.4.4
 
+    # On our runner Bun's package cache is a folder on the CI server's disk (a volume of the
+    # runner's container), kept between jobs: nothing is downloaded or uploaded. GitHub's machines
+    # restore and save an archive instead.
+    - name: Keep Bun's cache on the runner's disk
+      if: inputs.install == 'true' && runner.environment == 'self-hosted'
+      shell: bash
+      run: echo "BUN_INSTALL_CACHE_DIR=/cache/bun" >> "$GITHUB_ENV"
+
     - name: Cache dependencies
-      if: inputs.install == 'true'
+      if: inputs.install == 'true' && runner.environment == 'github-hosted'
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
       with:
         path: ~/.bun/install/cache

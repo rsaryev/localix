@@ -60,6 +60,7 @@
       "outputs": []
     },
     "tauri:check": {
+      "passThroughEnv": ["CARGO_TARGET_DIR", "RUSTC_WRAPPER", "SCCACHE_DIR", "SCCACHE_CACHE_SIZE"],
       "inputs": ["$TURBO_DEFAULT$"],
       "outputs": []
     },

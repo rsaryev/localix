@@ -145,14 +145,30 @@ describe('CI minute budget contract', () => {
     expect(Bun.YAML.parse(read('.github/workflows/landing.yml')).name).toBe('Website Deploy')
   })
 
-  test('restores dependencies from a GitHub cache archive keyed by the lockfile', () => {
+  test("keeps dependencies on our runner's disk, and in a GitHub archive keyed by the lockfile elsewhere", () => {
     const workspace = Bun.YAML.parse(read('.github/actions/setup-workspace/action.yml')) as {
       runs: { steps: Step[] }
     }
+    const disk = workspace.runs.steps.find(
+      (step) => step.name === "Keep Bun's cache on the runner's disk",
+    )
+    expect(disk?.if).toBe("inputs.install == 'true' && runner.environment == 'self-hosted'")
+    expect(disk?.run).toContain('BUN_INSTALL_CACHE_DIR=/cache/bun')
     const archive = workspace.runs.steps.find((step) => step.name === 'Cache dependencies')
-    expect(archive?.if).toBe("inputs.install == 'true'")
+    expect(archive?.if).toBe("inputs.install == 'true' && runner.environment == 'github-hosted'")
     expect(archive?.with?.path).toBe('~/.bun/install/cache')
     expect(archive?.with?.key).toContain("hashFiles('bun.lock')")
+  })
+
+  test("keeps Turbo's cache on our runner's disk, and restores an archive only on GitHub's machines", () => {
+    const steps = ci.jobs.app.steps
+    const disk = steps.findIndex((step) => step.name === "Keep Turbo's cache on the runner's disk")
+    const restore = steps.findIndex((step) => step.name === 'Restore Turbo cache')
+    const build = steps.findIndex((step) => step.name === 'Build workspace packages')
+    expect(steps[disk]?.if).toBe("runner.environment == 'self-hosted'")
+    expect(steps[disk]?.run).toContain('TURBO_CACHE_DIR=/cache/turbo/$SLICE')
+    expect(steps[restore]?.if).toBe("runner.environment == 'github-hosted'")
+    expect(disk).toBeLessThan(build)
   })
 
   test('bounds the Turbo archive before main saves it', () => {

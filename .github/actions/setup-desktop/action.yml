@@ -19,6 +19,11 @@ runs:
       if: inputs.build-native == 'true' && runner.os == 'Linux'
       shell: bash
       run: |
+        # Our runner's image has them already: no apt-get on every job.
+        if dpkg -s libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libxdo-dev \
+          libssl-dev build-essential file xdg-utils >/dev/null 2>&1; then
+          exit 0
+        fi
         sudo apt-get update
         sudo apt-get install -y \
           libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
@@ -30,9 +35,20 @@ runs:
         toolchain: ${{ inputs.toolchain }}
         components: ${{ inputs.build-native == 'true' && 'clippy,rustfmt' || '' }}
 
-    # PRs and tags read the archive main saved; only main writes one, so branches cannot evict it.
+    # On our runner the build folder is on the CI server's disk, kept between jobs, and sccache
+    # (in the runner's image) shares compiled crates: each check builds only what changed. Cargo
+    # locks the folder, so two jobs at once wait for each other rather than collide.
+    - name: Keep the Rust build on the runner's disk
+      if: inputs.build-native == 'true' && runner.environment == 'self-hosted'
+      shell: bash
+      env:
+        CACHE_KEY: ${{ inputs.cache-key }}
+      run: echo "CARGO_TARGET_DIR=/cache/target/$CACHE_KEY" >> "$GITHUB_ENV"
+
+    # GitHub's machines: PRs and tags read the archive main saved; only main writes one, so
+    # branches cannot evict it.
     - name: Cache Rust compilation
-      if: inputs.build-native == 'true'
+      if: inputs.build-native == 'true' && runner.environment == 'github-hosted'
       uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       with:
         workspaces: './apps/desktop-tauri/src-tauri -> target'
