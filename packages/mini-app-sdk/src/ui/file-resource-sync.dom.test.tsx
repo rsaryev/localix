@@ -91,9 +91,12 @@ test('live file sync has no periodic reads, queues invalidation during reads, an
       watcher.onLive(false)
       await tick()
     })
-    await act(async () => {
-      await tick(45)
-    })
+    // The fallback timer is a real one: wait for its first read, not for a fixed time that a busy
+    // machine overruns.
+    for (let waited = 0; calls <= 2 && waited < 200; waited++)
+      await act(async () => {
+        await tick()
+      })
     expect(calls).toBeGreaterThan(2)
     initial = true
     await act(async () => {
