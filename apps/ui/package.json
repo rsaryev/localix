@@ -32,7 +32,7 @@
     "@localixai/search": "workspace:*",
     "@localixai/store": "workspace:*",
     "@localixai/visual-feedback": "workspace:*",
-    "@rsaryev/llx-plugin": "link:../../../llx-plugin",
+    "@rsaryev/llx-plugin": "0.1.0",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-virtual": "^3.14.21",
     "@xterm/addon-fit": "^0.11.0",
@@ -56,9 +56,11 @@
     "zustand": "^5.0.16"
   },
   "devDependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.321",
     "@babel/core": "^8.0.7",
     "@happy-dom/global-registrator": "21.0.4",
     "@iconify/types": "^2.0.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@rolldown/plugin-babel": "^0.2.4",
     "@types/babel__core": "^7.20.5",
     "@types/bun": "1.4.3",

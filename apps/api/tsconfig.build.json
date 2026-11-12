@@ -1,10 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // Workspace packages build their dist first; the linked kit is read from its src through its
-    // own condition, as in tsconfig.json.
-    "customConditions": ["llx-plugin-source"],
-    "rewriteRelativeImportExtensions": true,
+    // Workspace packages build their dist first; `@rsaryev/llx-plugin` is read from its published
+    // declarations, as in tsconfig.json.
     "incremental": false,
     "target": "ES2022",
     // `lib` must be restated whenever `target` is overridden: tsconfig.base.json sets
