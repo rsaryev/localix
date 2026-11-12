@@ -10,6 +10,15 @@ function localToolsOf(name: string): readonly string[] {
   return host.length > 0 ? host : [name]
 }
 
+/** An entry as written, without the quotes a frontmatter list may leave around it. */
+const tokenOf = (raw: string) => raw.replace(/^["']|["']$/g, '').trim()
+
+/** Whether the kit reads a specifier on a deny entry: `Bash(rm *)`, `Read(*)`, `Agent(worker)`. */
+export function hasSpecifier(raw: string): boolean {
+  const entry = parseToolEntry(tokenOf(raw))
+  return entry.specifier !== undefined || Array.isArray(entry.spawn)
+}
+
 /**
  * Split a denylist (a skill's or command's `disallowedTools`, the settings' entries): `tools` are
  * the whole tools it switches off (a bare name, or `name(*)`), by Localix's names; `patterned` are
@@ -20,7 +29,7 @@ export function splitDenyList(list: readonly string[]): { tools: string[]; patte
   const tools: string[] = []
   const patterned: string[] = []
   for (const raw of list) {
-    const token = raw.replace(/^["']|["']$/g, '').trim()
+    const token = tokenOf(raw)
     const entry = parseToolEntry(token)
     const whole =
       (entry.specifier === undefined || entry.specifier.trim() === '*') &&

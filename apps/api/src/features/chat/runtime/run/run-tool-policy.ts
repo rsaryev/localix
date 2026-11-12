@@ -1,6 +1,4 @@
-import { splitDenyList } from '../../../plugins/kit'
-
-const hasSpecifier = (entry: string) => entry.includes('(')
+import { hasSpecifier, splitDenyList } from '../../../plugins/kit'
 
 /**
  * Resolve the one denylist used by every per-run tool provider.

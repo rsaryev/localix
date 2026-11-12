@@ -220,7 +220,7 @@ export {
   type StateRef,
   type StateStore,
 } from './mods/state'
-export { splitDenyList } from './deny-list'
+export { hasSpecifier, splitDenyList } from './deny-list'
 export {
   hooksTightenOnlyIn,
   mergeToolCheck,
