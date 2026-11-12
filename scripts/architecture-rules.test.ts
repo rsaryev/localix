@@ -166,6 +166,29 @@ describe('positive and negative controls', () => {
     ])
   })
 
+  // Which links a plugin copy keeps is the kit's (an archive's links, `planTreeCopy`'s relinks):
+  // a link is written only where the kit's verdict is applied.
+  test('X6 fires on a symlink or hard link written outside the places that apply the kit', () => {
+    const hits = X6_PLUGIN_SEMANTICS_IN_THE_KIT.detect([
+      planted('apps/api/src/a.ts', 'await fs.symlink(target, to)'),
+      planted('apps/api/src/b.ts', "import { link } from 'node:fs/promises'\nawait link(a, b)"),
+      planted('apps/api/src/c.ts', "import { symlinkSync, readFileSync } from 'node:fs'"),
+      planted('apps/api/src/d.ts', 'fsp.link(a, b); fs.linkSync(a, b)'),
+      planted('apps/api/src/features/plugins/marketplace-zip-extract.ts', 'fs.symlink(t, p)'),
+      planted('apps/api/src/features/plugins/kit/ports/staged-directory.ts', 'fs.symlink(t, p)'),
+      planted('apps/api/src/e.test.ts', 'await fs.symlink(target, to)'),
+      // Not a link: reading one, removing a file, a method of Localix's own.
+      planted('apps/api/src/f.ts', 'fs.readlink(p); fs.unlink(p); host.link(u, s, p)'),
+      planted('apps/api/src/g.ts', '// fs.symlink is the kit port\nexport {}'),
+    ])
+    expect(hits).toEqual([
+      'apps/api/src/a.ts writes a link (plugin copy links)',
+      'apps/api/src/b.ts writes a link (plugin copy links)',
+      'apps/api/src/c.ts writes a link (plugin copy links)',
+      'apps/api/src/d.ts writes a link (plugin copy links)',
+    ])
+  })
+
   test('X7 fires on a kit value or re-export outside the boundary, never on a type import', () => {
     const hits = X7_KIT_THROUGH_THE_BOUNDARY.detect([
       planted(

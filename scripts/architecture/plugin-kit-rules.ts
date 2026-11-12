@@ -41,6 +41,23 @@ const MARKERS = [
   { name: 'force-for-plugin', pattern: /force-for-plugin/u, what: 'plugin settings' },
 ] as const
 
+/**
+ * X6 also covers links: which links a plugin copy keeps is the kit's (`scanArchive`'s links of an
+ * archive, `planTreeCopy`'s relinks), so a symlink or hard link is written only where that verdict
+ * is applied. The boundary (its `StagedDirectory` port) is outside the rule already; this lists
+ * the other files that write one, each with why.
+ */
+const LINK_WRITERS = new Set([
+  // Writes the links of a zip the kit scanned and allowed, and nothing else.
+  'apps/api/src/features/plugins/marketplace-zip-extract.ts',
+  // Localix's own lock file, created atomically through a hard link: not a plugin copy.
+  'apps/api/src/lib/runtime-endpoint.ts',
+])
+const LINK_CALL = /\b(?:fs|fsp|fsPromises|promises)\.(?:sym)?link(?:Sync)?\s*\(/u
+const LINK_IMPORT =
+  /import\s*\{[^}]*\b(?:sym)?link(?:Sync)?\b[^}]*\}\s*from\s*['"](?:node:)?fs(?:\/promises)?['"]/u
+const writesLink = (code: string) => LINK_CALL.test(code) || LINK_IMPORT.test(code)
+
 /** The code with every backslash escape reduced to the character it escapes. */
 const unescaped = (code: string) => code.replace(/\\(.)/gsu, '$1')
 
@@ -58,6 +75,8 @@ export const X6_PLUGIN_SEMANTICS_IN_THE_KIT: Rule = {
       for (const marker of MARKERS)
         if (marker.pattern.test(code))
           found.push(`${source.file} spells ${marker.name} (${marker.what})`)
+      if (!LINK_WRITERS.has(source.file) && writesLink(source.code))
+        found.push(`${source.file} writes a link (plugin copy links)`)
     }
     return found
   },

@@ -45,10 +45,14 @@ not): `$ARGUMENTS`, `CLAUDE_SKILL_DIR`, `${CLAUDE_PLUGIN_ROOT}`, `CLAUDE_PLUGIN_
 `hookSpecificOutput`, `permissionDecision`, `hooks.json`, `disable-model-invocation`,
 `allowed-tools`, `SKILL.md`, `plugin.json`, `.mcp.json`, `headersHelper` and `force-for-plugin`. A
 bare `${NAME}` is not a marker: Localix's own mini app manifests, model catalog and `.npmrc` use it.
-It reads `apps/api/src`, `apps/ui/src` and `packages/`, outside the boundary, tests and testing
-helpers. Its baseline, `scripts/architecture-baselines/x6.json`, lists the code that still spells
-them and only shrinks as each piece moves behind the boundary. Each entry that stays is one of
-these:
+X6 also flags code that writes a symlink or hard link (`fs.symlink`, `fs.link`, or `symlink` and
+`link` imported from `node:fs` or `node:fs/promises`): which links a plugin copy keeps is the kit's
+verdict. Besides the boundary's `StagedDirectory` port, only two files may write one:
+`plugins/marketplace-zip-extract.ts` (the links of a zip the kit scanned) and
+`lib/runtime-endpoint.ts` (Localix's own lock file, created through a hard link). It reads
+`apps/api/src`, `apps/ui/src` and `packages/`, outside the boundary, tests and testing helpers. Its
+baseline, `scripts/architecture-baselines/x6.json`, lists the code that still spells them and only
+shrinks as each piece moves behind the boundary. Each entry that stays is one of these:
 
 - Words for the person or the model, not reading: the `search` and `skill` tool descriptions, the
   `/skills`, `/mcp` and `/plugin` listings, the OAuth flow's reason for no sign-in
@@ -67,6 +71,10 @@ these:
   (`kit/settings/mcp-record.ts`: `readMcpServer`, `readMcpOAuth`). The kit plans and runs the helper
   and its trust gate (`kit/settings/mcp-remote.ts`), from the trust of the folder each Claude Code
   file's server was read in, stamped on its record (`kit/settings/mcp-plan.ts`).
+- The extension tree copy (`ext/copy-tree.ts`), which still decides which links a plugin's cache
+  copy keeps (in the tree kept, in its marketplace dereferenced). The kit's `planTreeCopy` (relinks
+  and dereferences, applied by `kit/ports/staged-directory.ts`) decides that; the entry goes when
+  `ext/publish-trees.ts` copies a plugin through the kit's plan.
 - A marketplace entry's `headersHelper`, which the person accepts by the kit's digest before it runs
   (`entry-headers-helper.ts`, `marketplace-resolve.ts`, `marketplace-materialize.ts`;
   `decideAcceptance`).
