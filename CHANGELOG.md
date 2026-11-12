@@ -4,23 +4,62 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+## v0.1.0-beta.27 — 2026-11-12
+
+Claude Code plugins now run on one shared engine, the open `llx-plugin` kit, so a plugin behaves in
+Localix as it does in Claude Code. The built-in browser keeps your sign-ins, and a project whose
+folder moved can be pointed at its new place.
+
+### Added
+
+- **Locate a moved project folder**: when a project's folder was moved or renamed, the Files pane
+  says the folder is missing and offers **Locate folder…**; when Localix finds where it went, one
+  click accepts the suggestion.
+- **Open directly in the built-in browser**: a toolbar button of the desktop app shows the page at
+  its own address rather than through the preview, for a site that insists on its real origin
+  (Visual Feedback is off there).
+
 ### Changed
 
-- **Plugin links are copied as Claude Code copies them**: a plugin that links several times to the
-  same folder of its marketplace now gets a full copy at each link, and a link inside a linked
-  folder that leads outside the marketplace is always left out. An install whose links would bring
-  in more than 20,000 entries or 256 MiB is refused and leaves the installed copy as it was.
+- **Plugins behave as in Claude Code**: skills, commands, subagents, hooks, MCP servers, mods,
+  output styles and marketplaces of a Claude Code plugin are read and decided by the `llx-plugin`
+  kit, which follows Claude Code's documentation. A plugin's commands are written
+  `/<plugin>:<command>`; the bare `/<plugin>` shortcut is gone, as in Claude Code.
+- **Folder trust is stricter**: a folder trusted only because a parent folder is trusted no longer
+  gets its allow rules, its `.mcp.json` approvals, its `headersHelper` or the hooks and MCP servers
+  of its agents. Localix asks once more before it runs a plugin's `headersHelper`.
 - **MCP servers of Claude Code files are read as Claude Code reads them**: an entry of
   `~/.claude.json`, `.mcp.json`, the managed settings, a plugin or a subagent that Claude Code
   refuses no longer loads: a `url` with no `type`, a `serverUrl` in place of `url`, a `command`
   given as a list, or an `env` value that is not a string. Add `"type": "http"` (or `"sse"`, `"ws"`)
   to a remote entry that stopped loading. Servers you added in Localix are not affected.
+- **Plugin links are copied as Claude Code copies them**: a plugin that links several times to the
+  same folder of its marketplace now gets a full copy at each link, and a link inside a linked
+  folder that leads outside the marketplace is always left out. An install whose links would bring
+  in more than 20,000 entries or 256 MiB is refused and leaves the installed copy as it was.
+- **External agent history opens much faster**: the External tab of History reads only the start and
+  end of each session to list it, and draws only the rows on screen.
+- **A calmer Mac window**: panels and popovers sit dark on the window's glass, the window turns
+  solid under Reduce Transparency and in full screen, and a double-click on the title bar does what
+  System Settings says.
+- **Replies are drawn by `llx-markdown`**: chat replies and file change cards render and stream
+  through our own Markdown renderer.
 
 ### Fixed
 
+- **Sign-in and saved settings in the built-in browser**: an app that checks its origin refused
+  writes, a sign-in through another site lost its session, and some redirects left a white page. The
+  preview now keeps the app's own origin and lets the browser follow redirects.
+- **Archive plugins are unpacked safely**: a plugin archive whose links lead outside its folder, or
+  that writes through a link, is refused whole.
 - **A plugin update check that fails says so**: when a plugin's listing could not be read or its
   fetch failed, the Store showed it as up to date. It now shows **could not check** next to its
   version, with the reason on hover.
+- **Plugin agents and mods start reliably**: a turn waits for its mods to load, a plugin's agent
+  starts with its own plugin on, and a subagent's model alias resolves among the providers you have
+  connected.
+- **Mods use less memory**: a chat's mods share one worker thread, and deleting or idling a chat
+  releases it.
 
 ## v0.1.0-beta.26 — 2026-11-04
 
