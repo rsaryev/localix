@@ -1,7 +1,5 @@
-import type { FileScope } from '@rsaryev/llx-plugin/settings'
 import type { ClaudeSettingsInput } from '../plugins/kit'
 import { installedMcpSettingsReader } from './claude-code-settings'
-import { normalizeMcpServerEntry } from './normalize'
 import type { McpServerRecord } from './repository'
 
 /**
@@ -40,35 +38,4 @@ export function claudeCodeMcpServers(input: ClaudeCodeMcpInput): McpServerRecord
   return [...input.own, ...input.plugins, ...(input.extra ?? [])].filter(
     (server) => !taken.has(server.name) && taken.add(server.name),
   )
-}
-
-/**
- * A server of Claude Code's files as a Localix record (`normalizeMcpServerEntry`); undefined for an
- * entry Localix cannot connect.
- */
-export function claudeCodeServerRecord(
-  /** The Claude Code scope a configured server was read from. */
-  scope: FileScope,
-  name: string,
-  raw: Record<string, unknown>,
-  input: ClaudeCodeMcpInput,
-): McpServerRecord | undefined {
-  try {
-    const parsed = normalizeMcpServerEntry(name, raw, input.projectId)
-    if (parsed.enabled === false) return undefined
-    return {
-      id: `claude-code:${scope}:${name}`,
-      userId: input.userId,
-      projectId: input.projectId,
-      name: parsed.name,
-      description: parsed.description ?? '',
-      transport: parsed.transport,
-      config: parsed.config as Record<string, unknown>,
-      createdAt: '',
-      updatedAt: '',
-    }
-  } catch {
-    // An entry Claude Code could not load either; the others still load.
-    return undefined
-  }
 }

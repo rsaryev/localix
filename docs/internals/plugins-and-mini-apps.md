@@ -61,11 +61,12 @@ these:
   line and subagent status line commands (`CLAUDE_PROJECT_DIR`, `CLAUDE_PLUGIN_ROOT`,
   `CLAUDE_PLUGIN_DATA`), a settings MCP server's environment (`mcp-settings-env.ts`) and the data
   folder a plugin server writes to (`mcp-connect.ts`).
-- The MCP record Localix stores and connects: its `headersHelper` field (`mcp/contracts.ts`,
-  `normalize.ts`, the plugin record's helper root in `plugins/mcp.ts`) and the Store's `.mcp.json`
-  scope label (`store-listing.ts`). The kit plans and runs the helper and its trust gate
-  (`kit/settings/mcp-remote.ts`), from the trust of the folder each Claude Code file's server was
-  read in, stamped on its record (`kit/settings/mcp-plan.ts`).
+- The MCP record Localix stores and connects: its `headersHelper` field (`mcp/contracts.ts`, the
+  plugin record's helper root in `plugins/mcp.ts`) and the Store's `.mcp.json` scope label
+  (`store-listing.ts`). A Claude Code entry becomes that record only through the kit's readers
+  (`kit/settings/mcp-record.ts`: `readMcpServer`, `readMcpOAuth`). The kit plans and runs the helper
+  and its trust gate (`kit/settings/mcp-remote.ts`), from the trust of the folder each Claude Code
+  file's server was read in, stamped on its record (`kit/settings/mcp-plan.ts`).
 - A marketplace entry's `headersHelper`, which the person accepts by the kit's digest before it runs
   (`entry-headers-helper.ts`, `marketplace-resolve.ts`, `marketplace-materialize.ts`;
   `decideAcceptance`).

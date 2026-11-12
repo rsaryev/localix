@@ -76,6 +76,23 @@ describe('the MCP servers of an agent file', () => {
     }
   })
 
+  // mcp.md, "Option 2": an inline entry is read like a `.mcp.json` one; one Claude Code skips waits.
+  test('inline servers are read as records; one Claude Code cannot read is skipped', () => {
+    const mcpServers = [
+      ...FILE,
+      { broken: { type: 'http' } },
+      { untyped: { url: 'https://u' } },
+    ] as unknown as typeof FILE
+    const specs = agentMcpSpecs(testCatalogAgent('a', { mcpServers }), 'dialog')
+    expect(specs.inline.playwright).toEqual({
+      name: 'playwright',
+      transport: 'stdio',
+      config: { command: ['npx'] },
+    })
+    expect(specs.inline.docs?.transport).toBe('http')
+    expect(specs.skipped).toEqual(['broken', 'untyped'])
+  })
+
   test('nothing for a plugin’s agent or a built-in type', () => {
     const none = { references: [], inline: {}, skipped: [] }
     for (const source of [{ kind: 'plugin', pluginId: 'p' }, { kind: 'builtin' }] as const)

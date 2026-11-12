@@ -10,15 +10,17 @@ import {
   type ConfiguredCandidate,
   type McpCandidate,
   type PlanSource,
+  type PlannedServer,
   type FileScope,
 } from '@rsaryev/llx-plugin/settings'
 import { readJsonRecordSync } from '../../../../lib/json'
 import { isRecord } from '../../../../lib/record'
 import { claudeStateFile } from '../../../cc-settings/config-dir'
-import { claudeCodeServerRecord, type ClaudeCodeMcpInput } from '../../../mcp/claude-code-servers'
+import type { ClaudeCodeMcpInput } from '../../../mcp/claude-code-servers'
 import type { McpServerRecord } from '../../../mcp/repository'
 import { settingsEnvOf } from './env'
 import { managedSettingsDir } from './managed'
+import { mcpServerShape } from './mcp-record'
 import { readClaudeSettingsSync, type ClaudeSettings } from './read'
 import { repositoryApprovalsCount, trustSourceOf } from './trust'
 import type { TrustSource } from '@rsaryev/llx-plugin/loading'
@@ -35,9 +37,6 @@ import type { TrustSource } from '@rsaryev/llx-plugin/loading'
  * person added here), the lists judge them like the rest, and exclusive control leaves them out, as
  * it leaves out a subagent's inline servers, which load last.
  */
-
-const serversOf = (doc: unknown): Record<string, unknown> =>
-  isRecord(doc) && isRecord(doc.mcpServers) ? doc.mcpServers : {}
 
 function textOf(file: string): string | undefined {
   try {
@@ -78,6 +77,27 @@ function withHelperTrust(
   trust: { source: TrustSource; key: string },
 ): McpServerRecord | undefined {
   return record && { ...record, config: { ...record.config, headersHelperTrust: trust } }
+}
+
+/** A server of a Claude Code file as a Localix record; undefined when the record refuses it. */
+function claudeCodeServerRecord(
+  scope: FileScope,
+  server: PluginMcpServer,
+  name: string,
+  input: ClaudeCodeMcpInput,
+): McpServerRecord | undefined {
+  const shape = mcpServerShape(name, server)
+  return (
+    shape && {
+      ...shape,
+      id: `claude-code:${scope}:${name}`,
+      userId: input.userId,
+      projectId: input.projectId,
+      description: '',
+      createdAt: '',
+      updatedAt: '',
+    }
+  )
 }
 
 /** The project path `~/.claude.json` keys the folder by: the folder, else its repository root. */
@@ -148,20 +168,10 @@ export function claudeCodeMcpPlan(
     toggles: readProjectToggles(state, key),
   })
 
-  const managedRaw = (name: string) =>
-    serversOf(managedText ? JSON.parse(managedText) : undefined)[name] ??
-    settings.files
-      .filter((one) => one.scope === 'managed')
-      .map((one) =>
-        isRecord(one.settings.managedMcpServers) ? one.settings.managedMcpServers : {},
-      )
-      .find((servers) => name in servers)?.[name]
-  const rawOf: { readonly [S in FileScope]: (name: string) => unknown } = {
-    managed: managedRaw,
-    local: (name) => serversOf(claudeJsonProject(state, key))[name],
-    project: (name) => serversOf(mcpJson)[name],
-    user: (name) => serversOf(state)[name],
-  }
+  // The record keeps a configured server as the kit read it: its references expand when it connects.
+  const asRead = new Map([...user, ...file].map((one) => [`${one.scope}:${one.name}`, one.server]))
+  const serverOf = (planned: PlannedServer, scope: FileScope) =>
+    scope === 'managed' ? planned.server : asRead.get(`${scope}:${planned.name}`)
   const policy = mcp.serverPolicy()
   const admitted = (record: McpServerRecord) =>
     policy.check({ name: record.name, server: kitServerOf(record) }).allowed
@@ -179,9 +189,12 @@ export function claudeCodeMcpPlan(
     const scope = SCOPE_OF[planned.source]
     if (planned.source === 'plugin') add(plugins.get(planned.name), false)
     else if (scope) {
-      const raw = rawOf[scope](planned.name)
-      if (isRecord(raw))
-        add(withHelperTrust(claudeCodeServerRecord(scope, planned.name, raw, input), trust), false)
+      const server = serverOf(planned, scope)
+      if (server)
+        add(
+          withHelperTrust(claudeCodeServerRecord(scope, server, planned.name, input), trust),
+          false,
+        )
     }
   }
   for (const record of plan.exclusive ? [] : (input.extra ?? [])) add(record, true)

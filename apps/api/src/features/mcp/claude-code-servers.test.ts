@@ -267,6 +267,22 @@ describe("Claude Code's MCP servers in a Localix run", () => {
     expect(serversFor({ 'project/.mcp.json': mcpJson }, { trusted: true }).names).toEqual([])
   })
 
+  // mcp.md, "Option 2": a `url` with no `type` reads as stdio and is skipped; a `${VAR}` stays for
+  // the connection to expand, so it is expanded once.
+  test('an entry Claude Code skips does not load; a reference is left for the connection', () => {
+    const { names, servers } = serversFor({
+      'home/.claude.json': JSON.stringify({
+        mcpServers: {
+          untyped: { url: 'https://mcp.example.com/mcp' },
+          listed: { command: ['python', 'server.py'] },
+          tool: { command: 'npx', args: ['${TOOL_PKG}'] },
+        },
+      }),
+    })
+    expect(names).toEqual(['tool'])
+    expect(servers[0]?.config.command).toEqual(['npx', '${TOOL_PKG}'])
+  })
+
   test("an agent's inline servers join the run under the organization's deny list", () => {
     const inline = [
       own('mine', { command: ['mine-server'] }),

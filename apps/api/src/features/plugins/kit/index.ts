@@ -65,6 +65,7 @@ export { managedSettingsDir, type ManagedSettingsSource } from './settings/manag
 export { claudeCodeTrust, claudeCodeTrusts } from './settings/trust'
 export { claudeCodeSettingsEnv, settingsEnvOf } from './settings/env'
 export { installKitPorts } from './install-ports'
+export { mcpServerShape } from './settings/mcp-record'
 export { settingsCommandLine } from './settings/hooks'
 export { outputStyleSetting, settingsModes } from './settings/values'
 export {

@@ -3,18 +3,25 @@ import { describe, expect, test } from 'bun:test'
 import { agentMcpServers } from './agent-servers'
 
 // sub-agents.md, `mcpServers`: a map is an inline definition in `.mcp.json`'s shape. Which entries
-// apply is the kit's (`plugins/kit/spawn.ts`); this makes server records of the inline ones.
+// apply, and how each reads, is the kit's (`plugins/kit/spawn.ts`); this makes them the run's records.
 const owner = { userId: 'u', projectId: 'p', agent: 'tester' }
 
 describe('the MCP servers of an agent file', () => {
-  test('inline definitions become server records; one that cannot load is skipped', () => {
+  test('inline servers become the run’s records; what waits stays skipped', () => {
     const { references, inline, skipped } = agentMcpServers(
       {
         references: ['github'],
         inline: {
-          playwright: { type: 'stdio', command: 'npx', args: ['-y', '@playwright/mcp@latest'] },
-          docs: { type: 'http', url: 'https://docs.example.com/mcp' },
-          broken: { type: 'http' },
+          playwright: {
+            name: 'playwright',
+            transport: 'stdio',
+            config: { command: ['npx', '-y', '@playwright/mcp@latest'] },
+          },
+          docs: {
+            name: 'docs',
+            transport: 'http',
+            config: { url: 'https://docs.example.com/mcp' },
+          },
         },
         skipped: ['waiting'],
       },
@@ -31,6 +38,6 @@ describe('the MCP servers of an agent file', () => {
       projectId: 'p',
       config: { command: ['npx', '-y', '@playwright/mcp@latest'] },
     })
-    expect(skipped).toEqual(['waiting', 'broken'])
+    expect(skipped).toEqual(['waiting'])
   })
 })

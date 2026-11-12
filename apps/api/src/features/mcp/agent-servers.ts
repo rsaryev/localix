@@ -1,5 +1,3 @@
-import { isRecord } from '../../lib/record'
-import { normalizeMcpServerEntry } from './normalize'
 import type { McpServerRecord } from './repository'
 
 /**
@@ -8,7 +6,7 @@ import type { McpServerRecord } from './repository'
  * an inline server in `.mcp.json`'s shape, connected when the subagent starts and disconnected when
  * it finishes. Which entries apply is the kit's (`plugins/kit` `agentMcpSpecs`, which the caller
  * runs): a plugin's agent loads without, and a project file's inline servers wait for its folder's
- * trust. This turns each inline one into a server record.
+ * trust, and the kit reads each inline entry (`readServerShape`). This makes them this run's records.
  */
 export interface AgentMcpServers {
   /** Names of configured servers: they stay as the run already reaches them. */
@@ -19,10 +17,10 @@ export interface AgentMcpServers {
   skipped: string[]
 }
 
-/** The entries the kit let apply: references, inline definitions as written, and what waits. */
+/** The entries the kit let apply: references, inline servers it read, and what waits. */
 export interface AgentMcpEntries {
   readonly references: readonly string[]
-  readonly inline: Readonly<Record<string, unknown>>
+  readonly inline: Readonly<Record<string, Pick<McpServerRecord, 'name' | 'transport' | 'config'>>>
   readonly skipped: readonly string[]
 }
 
@@ -30,29 +28,17 @@ export function agentMcpServers(
   specs: AgentMcpEntries,
   options: { userId: string; projectId: string; agent: string },
 ): AgentMcpServers {
-  const out: AgentMcpServers = {
+  return {
     references: [...specs.references],
-    inline: [],
+    inline: Object.entries(specs.inline).map(([name, shape]) => ({
+      ...shape,
+      id: `agent:${options.agent}:${name}`,
+      userId: options.userId,
+      projectId: options.projectId,
+      description: '',
+      createdAt: '',
+      updatedAt: '',
+    })),
     skipped: [...specs.skipped],
   }
-  for (const [name, raw] of Object.entries(specs.inline)) {
-    try {
-      const parsed = normalizeMcpServerEntry(name, isRecord(raw) ? raw : {}, options.projectId)
-      if (parsed.enabled === false) continue
-      out.inline.push({
-        id: `agent:${options.agent}:${name}`,
-        userId: options.userId,
-        projectId: options.projectId,
-        name: parsed.name,
-        description: parsed.description ?? '',
-        transport: parsed.transport,
-        config: parsed.config as Record<string, unknown>,
-        createdAt: '',
-        updatedAt: '',
-      })
-    } catch {
-      out.skipped.push(name)
-    }
-  }
-  return out
 }

@@ -13,7 +13,6 @@
   "apps/api/src/features/mcp/contracts.ts spells headersHelper (MCP headers helper)",
   "apps/api/src/features/mcp/mcp-connect.ts spells CLAUDE_PLUGIN_DATA (plugin variables)",
   "apps/api/src/features/mcp/mcp-settings-env.ts spells CLAUDE_PROJECT_DIR (hook variables)",
-  "apps/api/src/features/mcp/normalize.ts spells headersHelper (MCP headers helper)",
   "apps/api/src/features/mcp/oauth/flow.ts spells headersHelper (MCP headers helper)",
   "apps/api/src/features/mcp/store-listing.ts spells .mcp.json (MCP config reading)",
   "apps/api/src/features/mini-apps/folder.ts spells plugin.json (manifest reading)",

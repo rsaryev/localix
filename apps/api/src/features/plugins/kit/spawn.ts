@@ -17,6 +17,7 @@ import {
 import type { AgentMemoryScope, AgentSource } from '@rsaryev/llx-plugin/format'
 import type { TrustSituation } from '@rsaryev/llx-plugin/loading'
 import { bestModelForFamily } from './model-alias'
+import { readServerShape, type McpServerShape } from './settings/mcp-record'
 import { contentApplies } from './settings/trust'
 import type { AgentPermissionMode } from '../../../contracts/agent-permission-mode'
 import type { PermissionMode } from '../../../contracts/permission-modes'
@@ -91,11 +92,11 @@ const fileSourceOf = (source: CatalogSource): AgentSource | undefined => {
   return tier === 'builtin' ? undefined : tier
 }
 
-/** An agent's `mcpServers` as the kit resolves them; inline definitions kept as written. */
+/** An agent's `mcpServers` as the kit resolves them; inline definitions read as server records. */
 export interface AgentMcpSpecs {
   references: readonly string[]
-  inline: Readonly<Record<string, unknown>>
-  /** Inline servers that wait for the folder's trust. */
+  inline: Readonly<Record<string, McpServerShape>>
+  /** Inline servers that wait for the folder's trust, or that Claude Code cannot read. */
   skipped: readonly string[]
 }
 
@@ -118,10 +119,16 @@ export function agentMcpSpecs(
     folderTrusted: contentApplies('subagent-inline-mcp', trust),
     policy: allowAll,
   })
+  const read = Object.entries(resolved.inline).map(
+    ([name, raw]) => [name, readServerShape(name, raw)] as const,
+  )
   return {
     references: resolved.references,
-    inline: resolved.inline,
-    skipped: resolved.skipped.map((entry) => entry.name),
+    inline: Object.fromEntries(read.flatMap(([name, shape]) => (shape ? [[name, shape]] : []))),
+    skipped: [
+      ...resolved.skipped.map((entry) => entry.name),
+      ...read.flatMap(([name, shape]) => (shape ? [] : [name])),
+    ],
   }
 }
 
