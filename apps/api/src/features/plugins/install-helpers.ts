@@ -10,13 +10,13 @@ import { isUnderInstallRoot, rmrf, stripDotGit } from '../ext/install-tree'
 import { pluginNameRefusal, readPluginFolder } from './kit'
 import { marketplaceOnlyHint } from './claude-code-marketplace'
 import { fetchGitTree } from './git-fetch'
-import { publishExtensionTree, type ExtensionPublicationLifecycle } from '../ext/publish-tree'
+import { publishExtensionTree, type ExtensionPublicationLifecycle } from './publish-tree'
 
 export interface MaterializedPluginSource {
   directory: string
   name: string
   inPlace: boolean
-  /** The marketplace the source was resolved from; see `copyExtensionTree`. */
+  /** The marketplace the source was resolved from; see `copyPluginTree`. */
   linkRoot?: string
 }
 

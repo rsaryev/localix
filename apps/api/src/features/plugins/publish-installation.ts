@@ -8,7 +8,7 @@ import { createAvailabilityWriter, readAvailability } from '../capabilities/avai
 import { pluginTrustClass } from './enable'
 import type { CapabilitySourceRecord } from '../capabilities/source-repository'
 import type { CapabilityStores } from '../capabilities/store-factory'
-import { publishExtensionTrees } from '../ext/publish-trees'
+import { publishExtensionTrees } from './publish-trees'
 import type { PreparedDependencyInstall } from './dependencies-install'
 import type { DiscoveredPlugin } from './discovery'
 import type { MaterializedPluginSource } from './install-helpers'

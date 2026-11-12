@@ -6,7 +6,7 @@ import type {
   CapabilitySourceRecord,
   CapabilitySourceRepository,
 } from '../capabilities/source-repository'
-import { publishExtensionTrees } from '../ext/publish-trees'
+import { publishExtensionTrees } from './publish-trees'
 import { isApiError } from '../../lib/errors'
 import type { PluginCatalogEntry } from './catalog'
 import {

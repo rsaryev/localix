@@ -44,8 +44,9 @@ const MARKERS = [
 /**
  * X6 also covers links: which links a plugin copy keeps is the kit's (`scanArchive`'s links of an
  * archive, `planTreeCopy`'s relinks), so a symlink or hard link is written only where that verdict
- * is applied. The boundary (its `StagedDirectory` port) is outside the rule already; this lists
- * the other files that write one, each with why.
+ * is applied. The boundary is outside the rule already: its `StagedDirectory` port and the tree
+ * copy that applies `planTreeCopy` (`kit/ports/staged-directory.ts`, `kit/ports/tree-copy.ts`) are
+ * where a plugin copy's links are written. This lists the other files that write one, each with why.
  */
 const LINK_WRITERS = new Set([
   // Writes the links of a zip the kit scanned and allowed, and nothing else.

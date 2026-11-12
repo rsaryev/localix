@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { listSubdirs, pathExists } from '../ext/fs-discovery'
-import { isExtensionPublicationArtifact } from '../ext/publish-tree'
+import { isExtensionPublicationArtifact } from './publish-tree'
 import { isPluginFolder } from './kit'
 import { MINI_APP_FILE } from './layout/read'
 import { loadManifest } from './manifest-load'

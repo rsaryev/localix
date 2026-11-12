@@ -73,6 +73,38 @@ describe('a staged plugin directory moved into the cache', () => {
     expect(existsSync(join(destination, 'outside'))).toBe(false)
   })
 
+  test('a dereferenced directory keeps only links within it: a link to a file outside is not copied', async () => {
+    writeTree(dir(), {
+      'market/shared/lib.md': 'shared',
+      'market/notes.md': 'notes',
+      'outside/secret': 'secret',
+      'stage/a.md': 'a',
+    })
+    symlinkSync(join(dir(), 'outside/secret'), join(dir(), 'market/shared/leak'))
+    symlinkSync('lib.md', join(dir(), 'market/shared/alias'))
+    const destination = join(dir(), 'cache/demo/3.0.0')
+    const committed = await diskStagedDirectory.commit(
+      {
+        stagedPath: join(dir(), 'stage'),
+        destination,
+        plan: plan({
+          copy: ['a.md'],
+          dereferences: [
+            { path: 'shared', from: join(dir(), 'market/shared'), isDirectory: true },
+            { path: 'notes.md', from: join(dir(), 'market/notes.md'), isDirectory: false },
+          ],
+        }),
+      },
+      signal,
+    )
+    expect(committed).toBeUndefined()
+    expect(readFileSync(join(destination, 'shared/lib.md'), 'utf8')).toBe('shared')
+    expect(existsSync(join(destination, 'shared/leak'))).toBe(false)
+    expect(lstatSync(join(destination, 'shared/leak'), { throwIfNoEntry: false })).toBeUndefined()
+    expect(readlinkSync(join(destination, 'shared/alias'))).toBe('lib.md')
+    expect(lstatSync(join(destination, 'notes.md')).isFile()).toBe(true)
+  })
+
   test('a move that fails puts the earlier copy back and says so', async () => {
     writeTree(dir(), { 'cache/demo/1.0.0/a.md': 'old' })
     const destination = join(dir(), 'cache/demo/1.0.0')

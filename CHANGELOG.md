@@ -4,6 +4,13 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+### Changed
+
+- **Plugin links are copied as Claude Code copies them**: a plugin that links several times to the
+  same folder of its marketplace now gets a full copy at each link, and a link inside a linked
+  folder that leads outside the marketplace is always left out. An install whose links would bring
+  in more than 20,000 entries or 256 MiB is refused and leaves the installed copy as it was.
+
 ### Fixed
 
 - **A plugin update check that fails says so**: when a plugin's listing could not be read or its

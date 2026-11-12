@@ -2,7 +2,8 @@ import { ConflictError, UnprocessableError } from '../../lib/domain-errors'
 import { promises as fs, type Stats } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
-import { copyExtensionTree, rmrf } from './install-tree'
+import { rmrf } from '../ext/install-tree'
+import { copyPluginTree } from './kit'
 
 const PREFIX = '.extension-publish-'
 export const isExtensionPublicationArtifact = (name: string): boolean => name.startsWith(PREFIX)
@@ -131,7 +132,7 @@ async function publish(
         retain: false,
       }
       prepared.push(tree)
-      await copyExtensionTree(source, tree.staged, { linkRoot: input.linkRoot })
+      await copyPluginTree(source, tree.staged, { linkRoot: input.linkRoot })
       await input.prepare?.(tree.staged)
       tree.identity = await fs.lstat(tree.staged)
       if (!tree.identity.isDirectory())

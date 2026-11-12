@@ -167,3 +167,27 @@ test('a tree may name its own destination root; a failed commit leaves nothing t
   expect(published[0]).toBe(join(versions, '2.0.0'))
   expect(await fs.readFile(join(versions, '2.0.0', 'version'), 'utf8')).toBe('new')
 })
+
+test('a plugin whose links fan out past the copy limit is not installed, and nothing is left', async () => {
+  const f = await fixture()
+  const marketplace = join(f.root, 'market')
+  const plugin = join(marketplace, 'plugins', 'fan')
+  await fs.mkdir(join(marketplace, 'level1'), { recursive: true })
+  await fs.mkdir(join(marketplace, 'level0'), { recursive: true })
+  for (let i = 0; i < 150; i++) {
+    await fs.writeFile(join(marketplace, 'level1', `f${i}`), 'x')
+    await fs.symlink('../level1', join(marketplace, 'level0', `l${i}`), 'dir')
+  }
+  await fs.mkdir(plugin, { recursive: true })
+  await fs.symlink('../../level0', join(plugin, 'shared'), 'dir')
+
+  await expect(
+    publishExtensionTrees({
+      installRoot: f.installRoot,
+      trees: [{ source: plugin, name: 'a', replace: true, linkRoot: marketplace }],
+    }),
+  ).rejects.toMatchObject({ code: 'plugin_links_too_large' })
+  expect(await f.version('a')).toBe('old')
+  expect(await fs.readdir(f.installRoot)).toEqual(['a', 'b'])
+  expect(await fs.readdir(join(f.installRoot, 'a'))).toEqual(['version'])
+})

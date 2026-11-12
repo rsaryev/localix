@@ -162,6 +162,13 @@ fetched again. `/plugin marketplace update` follows the catalog's `renames` chai
 renamed plugin under its current name; a plugin the catalog dropped stays with a warning, or is
 uninstalled when the catalog sets `forceRemoveDeletedPlugins`.
 
+When a plugin is copied in, its symlinks are handled as Claude Code handles them: a link that stays
+inside the plugin is kept as a relative link, one to elsewhere in its marketplace is replaced by a
+copy of what it points to (each time it is linked), and one that leads outside the marketplace, to
+nothing, or back into a folder being copied is left out. A plugin from a local folder keeps only the
+links inside it. Localix refuses an install whose links would bring in more than 20,000 entries or
+256 MiB, and leaves the installed copy as it was.
+
 When a plugin is copied in, its Node.js packages install from its lockfile as Claude Code installs
 them: `bun.lock`, `npm-shrinkwrap.json` or `package-lock.json` with a matching `package.json`, only
 pinned registry packages, scripts off, for at most 60 seconds, in a folder of its own. A lockfile

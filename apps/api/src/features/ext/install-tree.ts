@@ -4,9 +4,7 @@ import { join, resolve } from 'node:path'
 import { isPathBelow } from '../../lib/path-containment'
 
 // Install-tree primitives for the plugin installer: removal, naming and root containment.
-// The copy itself lives in `copy-tree.ts` and is re-exported here for existing importers.
-
-export { copyExtensionTree, type CopyTreeOptions } from './copy-tree'
+// The copy itself is the kit boundary's `copyPluginTree` (`plugins/kit/ports/tree-copy.ts`).
 
 /**
  * Recursively delete a path, swallowing a missing-target (or any) error. The

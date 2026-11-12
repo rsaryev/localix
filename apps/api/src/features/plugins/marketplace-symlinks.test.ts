@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { tempDirPerTest } from '@localixai/testing'
 
-import { publishExtensionTrees } from '../ext/publish-trees'
+import { publishExtensionTrees } from './publish-trees'
 import { withPluginSource } from './install-helpers'
 import {
   addMarketplace,
@@ -112,6 +112,6 @@ test('a marketplace plugin whose path links out of the marketplace is not instal
           trees: [{ source: parent.directory, name: parent.name, linkRoot: parent.linkRoot }],
         }),
     ),
-  ).rejects.toThrow('is or traverses a symlink')
+  ).rejects.toThrow('does not stay inside its marketplace directory')
   expect(await fs.lstat(join(installRoot, 'meta', 'secret')).catch(() => null)).toBeNull()
 })

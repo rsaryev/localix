@@ -8,12 +8,15 @@ import type {
 } from '@rsaryev/llx-plugin/marketplace'
 import { errorMessage } from '../../../../lib/errors'
 import { openDirectory } from './marketplace-io'
+import { copyPluginTree } from './tree-copy'
 
 /**
  * A fetched plugin's staged directory, installed into a cache version folder so a reader sees the
  * old copy or the new, never a mix: an earlier copy is renamed aside, the new one renamed in, and
  * the earlier one renamed back when that fails. With a plan the new copy is first built beside the
- * destination as the plan says (entries copied, links relinked, targets dereferenced).
+ * destination as the plan says (entries copied, links relinked, targets dereferenced). A
+ * dereferenced directory is copied by `copyPluginTree` with no marketplace: only the links that stay
+ * inside it survive, and no link is followed out of it.
  */
 
 const PERMISSION_CODES = new Set(['EACCES', 'EPERM', 'ENOSPC', 'EROFS'])
@@ -43,8 +46,12 @@ async function materialize(request: StagedCommit, out: string): Promise<void> {
     await fs.mkdir(dirname(join(out, link.path)), { recursive: true })
     await fs.symlink(link.target, join(out, link.path))
   }
-  for (const copy of plan.dereferences)
-    await fs.cp(copy.from, join(out, copy.path), { recursive: true, dereference: true })
+  for (const copy of plan.dereferences) {
+    const to = join(out, copy.path)
+    await fs.mkdir(dirname(to), { recursive: true })
+    if (copy.isDirectory) await copyPluginTree(copy.from, to)
+    else await fs.copyFile(copy.from, to)
+  }
 }
 
 async function commit(
