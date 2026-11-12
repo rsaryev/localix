@@ -169,9 +169,9 @@ product behavior merely because a Markdown block is present.
 
 ## Source of truth
 
-- [The `flowdown` dependency](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/package.json)
+- [The `flowdown` dependency](https://github.com/localixai/localix-studio/blob/main/apps/ui/package.json)
   — the package owns entry points, markers, fences, parsing, sanitization and the document renderer.
-- [Plugin host entry](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/app/kit/markdown.ts)
+- [Plugin host entry](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/app/kit/markdown.ts)
   and
-  [workspace renderer props](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/ui/MarkdownRendererImpl.tsx).
+  [workspace renderer props](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/ui/MarkdownRendererImpl.tsx).
 - [Answer formatting](../features/answer-formatting.md) — workspace behavior and limits.

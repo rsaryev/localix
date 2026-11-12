@@ -29,16 +29,16 @@ describe('the checkout of a folder', () => {
   test('a repository with an origin, and the linked worktree of it', async () => {
     const main = join(scratch(), 'main')
     await git(scratch(), 'init', '-q', main)
-    await git(main, 'remote', 'add', 'origin', 'git@github.com:rsaryev/localix-studio.git')
+    await git(main, 'remote', 'add', 'origin', 'git@github.com:localixai/localix-studio.git')
     await git(main, 'commit', '--allow-empty', '-q', '-m', 'init')
     expect(await readStatusLineWorkspace(main)).toEqual({
-      repo: { host: 'github.com', owner: 'rsaryev', name: 'localix-studio' },
+      repo: { host: 'github.com', owner: 'localixai', name: 'localix-studio' },
     })
 
     const linked = join(scratch(), 'feature-x')
     await git(main, 'worktree', 'add', '-q', linked)
     expect(await readStatusLineWorkspace(linked)).toEqual({
-      repo: { host: 'github.com', owner: 'rsaryev', name: 'localix-studio' },
+      repo: { host: 'github.com', owner: 'localixai', name: 'localix-studio' },
       worktree: 'feature-x',
     })
   })

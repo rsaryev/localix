@@ -17,7 +17,7 @@ recording; logic changes should include a regression test when practical.
 Localix uses Bun 1.4.4 and Turborepo:
 
 ```bash
-git clone https://github.com/rsaryev/localix-studio.git
+git clone https://github.com/localixai/localix-studio.git
 cd localix
 bun install --frozen-lockfile
 bun run build
@@ -48,7 +48,7 @@ its own source. It is never bundled into Localix artifacts.
 Runnable applications live in `apps/`, shared TypeScript libraries in `packages/`, repository
 automation in `scripts/`, shared configuration in `config/`, documentation in `docs/`, and static
 media in `assets/`. Localix's own plugins and mini apps live in the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace). Keep feature-specific code
+[Localix marketplace](https://github.com/localixai/localix-marketplace). Keep feature-specific code
 inside its feature and expose cross-feature behavior through typed ports or registries.
 
 Oxfmt is authoritative: two-space indentation, 100-column width, single-quoted JavaScript strings,

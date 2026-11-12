@@ -115,19 +115,19 @@ user and assistant text.
 
 ## Source of truth
 
-- [Memory folder, index loading and `/memory <fact>`](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/memory/auto-memory.ts)
-- [Memory section](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/prompt/sections/memory.ts)
+- [Memory folder, index loading and `/memory <fact>`](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/memory/auto-memory.ts)
+- [Memory section](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/prompt/sections/memory.ts)
   and
-  [the folders a run writes without a card](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/memory-roots.ts)
-- [Persisted prompt snapshot and refresh exceptions](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/prompt-snapshot.ts)
-- [Agent prompt and provider admission](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/prompt-agent-context.ts)
-- [Prompt loading](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/prompt-context.ts)
+  [the folders a run writes without a card](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/memory-roots.ts)
+- [Persisted prompt snapshot and refresh exceptions](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/prompt-snapshot.ts)
+- [Agent prompt and provider admission](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/prompt-agent-context.ts)
+- [Prompt loading](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/prompt-context.ts)
   and
-  [snapshot cache](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/session-snapshot.ts)
-- [History recall](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/history/history-search.ts)
-- [`/memory` command](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/service/command-handlers-listings.ts)
-- [Skill tool](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/skill.ts)
+  [snapshot cache](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/session-snapshot.ts)
+- [History recall](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tools/history/history-search.ts)
+- [`/memory` command](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/service/command-handlers-listings.ts)
+- [Skill tool](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tools/skill.ts)
   and
-  [skill writes](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/skill-files.ts)
-- [Completion hook invocation](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/finalize.ts)
-- [Memory provider lifecycle](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/memory-hooks.ts)
+  [skill writes](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/skill-files.ts)
+- [Completion hook invocation](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/finalize.ts)
+- [Memory provider lifecycle](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mini-apps/memory-hooks.ts)

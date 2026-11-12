@@ -9,8 +9,8 @@ itself.
 ## Reporting a vulnerability
 
 Report suspected vulnerabilities through
-[GitHub Security Advisories](https://github.com/rsaryev/localix-studio/security/advisories/new). Do
-not open a public issue or discussion for a security-sensitive report. Do not publish a release
+[GitHub Security Advisories](https://github.com/localixai/localix-studio/security/advisories/new).
+Do not open a public issue or discussion for a security-sensitive report. Do not publish a release
 until that advisory route is reachable and monitored.
 
 Include the affected version or commit, impact, reproduction steps or a proof of concept, and any

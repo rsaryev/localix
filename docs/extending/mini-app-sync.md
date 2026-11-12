@@ -139,9 +139,9 @@ makes no periodic requests. Test user isolation and release both write and files
 
 ## Source of truth
 
-- [Resource scheduler](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/resource-sync.ts)
-- [Project-file synchronization](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/file-resource-sync.ts)
-- [Store change publisher](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/store-change-feed.ts)
-- [Store snapshot reader](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/store-snapshot.ts)
-- [Route snapshot validation and ordering](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/route-snapshot.ts)
-- [Explicit mutation notifications](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/observe-mutations.ts)
+- [Resource scheduler](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/ui/resource-sync.ts)
+- [Project-file synchronization](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/ui/file-resource-sync.ts)
+- [Store change publisher](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/backend/store-change-feed.ts)
+- [Store snapshot reader](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/ui/store-snapshot.ts)
+- [Route snapshot validation and ordering](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/ui/route-snapshot.ts)
+- [Explicit mutation notifications](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/backend/observe-mutations.ts)

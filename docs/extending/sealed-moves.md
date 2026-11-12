@@ -2,9 +2,10 @@
 
 A sealed move is a value one player commits to (a move, a word, a number) that the other players may
 not read until the mini app reveals it, and that its owner cannot change after committing. The Rock
-Paper Scissors mini app of the [Localix marketplace](https://github.com/rsaryev/localix-marketplace)
-is the reference. A word-guessing game, where one agent picks the word and the user or other agents
-guess, uses the same three parts.
+Paper Scissors mini app of the
+[Localix marketplace](https://github.com/localixai/localix-marketplace) is the reference. A
+word-guessing game, where one agent picks the word and the user or other agents guess, uses the same
+three parts.
 
 ## Terminology
 
@@ -56,8 +57,8 @@ pass it to `seal` as the owner.
 
 ## Source of truth
 
-- [Sealing in the item funnel](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/sealed-items.ts)
-- [Tool presentation contract](https://github.com/rsaryev/localix-studio/blob/main/packages/agent/src/agents/tool-definition.ts)
-- [Commitments and views](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/sealed.ts)
-- [A sealed-move game's rules and per-side view](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps),
+- [Sealing in the item funnel](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/sealed-items.ts)
+- [Tool presentation contract](https://github.com/localixai/localix-studio/blob/main/packages/agent/src/agents/tool-definition.ts)
+- [Commitments and views](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/sealed.ts)
+- [A sealed-move game's rules and per-side view](https://github.com/localixai/localix-marketplace/tree/main/mini-apps),
   in the marketplace

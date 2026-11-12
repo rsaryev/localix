@@ -282,24 +282,24 @@ OAuth tokens, dynamic client data, and the pending PKCE verifier are AES-256-GCM
 
 ## Source of truth
 
-- [Registry contracts](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/contracts.ts)
+- [Registry contracts](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/contracts.ts)
   and
-  [scope repository](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/repository.ts)
-- [Store provider](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/store-provider.ts),
-  [its form](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/store-fields.ts)
+  [scope repository](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/repository.ts)
+- [Store provider](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/store-provider.ts),
+  [its form](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/store-fields.ts)
   and
-  [secrets](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/store-secrets.ts)
-- [Server records and availability](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/service.ts)
-- [Claude Code's servers in a folder, through the plugin kit](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/kit/settings/mcp-plan.ts)
-- [Deferred tool assembly](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/tool-assembly.ts)
-- [Transport connection](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/mcp-connect.ts)
-- [Connection and metadata lifecycle](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/client-manager.ts)
-- [Tool projection and timeouts](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/mcp-tools.ts)
-- [Resource tools](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/mcp-resource-tools.ts)
-- [Result bounds](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/mcp-result.ts)
-- [Runtime assembly](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/mcp-tools.ts)
-- [OAuth storage](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/oauth/store.ts)
-- [Interactive sign-in and callback](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/oauth/flow.ts)
-- [Pending sign-in lifetime](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/oauth/pending-flow-registry.ts)
-- [Per-agent switches on the agent's Access tab](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/store/ui/AgentAccess.tsx)
-- [Default server seed](https://github.com/rsaryev/localix-studio/blob/main/apps/api/migrations/20260601T000000_init_schema.ts)
+  [secrets](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/store-secrets.ts)
+- [Server records and availability](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/service.ts)
+- [Claude Code's servers in a folder, through the plugin kit](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/kit/settings/mcp-plan.ts)
+- [Deferred tool assembly](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/tool-assembly.ts)
+- [Transport connection](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/mcp-connect.ts)
+- [Connection and metadata lifecycle](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/client-manager.ts)
+- [Tool projection and timeouts](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/mcp-tools.ts)
+- [Resource tools](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/mcp-resource-tools.ts)
+- [Result bounds](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/mcp-result.ts)
+- [Runtime assembly](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/mcp-tools.ts)
+- [OAuth storage](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/oauth/store.ts)
+- [Interactive sign-in and callback](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/oauth/flow.ts)
+- [Pending sign-in lifetime](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/oauth/pending-flow-registry.ts)
+- [Per-agent switches on the agent's Access tab](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/features/store/ui/AgentAccess.tsx)
+- [Default server seed](https://github.com/localixai/localix-studio/blob/main/apps/api/migrations/20260601T000000_init_schema.ts)

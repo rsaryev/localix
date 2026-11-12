@@ -6,7 +6,7 @@ answers through the mini app's own tools. A turn-based game mini app is the refe
 its own board, a move on it wakes that chat, and the agent replies through the mini app's one tool,
 with action `move`. A single tool with action dispatch keeps the mini app's callable surface
 compact. The turn-based games in the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace) show the variations on that
+[Localix marketplace](https://github.com/localixai/localix-marketplace) show the variations on that
 shape:
 
 - **A larger move.** The wake lists the legal moves, and the agent answers with one of them through
@@ -83,10 +83,10 @@ changing an active run. Explicitly activated tools have their own lifetime; see
 
 ## Source of truth
 
-- [The SDK contract](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/host-services.ts)
-- [The host side](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/mini-app-wake.ts)
-- [Delivery outcomes](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/triggers/delivery.ts)
-- [Initial tool activation](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/tool-deferral.ts)
-- [Tools a wake or an open tab brings](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/surface-tools.ts)
-- [The marketplace's turn-based games](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps)
+- [The SDK contract](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/backend/host-services.ts)
+- [The host side](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mini-apps/mini-app-wake.ts)
+- [Delivery outcomes](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/triggers/delivery.ts)
+- [Initial tool activation](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/tool-deferral.ts)
+- [Tools a wake or an open tab brings](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/surface-tools.ts)
+- [The marketplace's turn-based games](https://github.com/localixai/localix-marketplace/tree/main/mini-apps)
   are reference mini apps for this shape

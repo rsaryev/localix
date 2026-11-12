@@ -79,8 +79,8 @@ the agent sees, and [Subagents](../features/delegation.md) to run work in parall
 
 ## Source of truth
 
-- [Project-folder selection](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/entities/chat/model/useAddProjectFolder.ts)
-- [Session lifecycle](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/service/session-lifecycle.ts)
-- [Turn entry and durable queueing](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/service/turn-entry.ts)
-- [Queue selection and steering](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/wake-queue/selection.ts)
-- [Built-in slash-command catalog](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/slash-catalog.ts)
+- [Project-folder selection](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/entities/chat/model/useAddProjectFolder.ts)
+- [Session lifecycle](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/service/session-lifecycle.ts)
+- [Turn entry and durable queueing](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/service/turn-entry.ts)
+- [Queue selection and steering](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/wake-queue/selection.ts)
+- [Built-in slash-command catalog](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/slash-catalog.ts)

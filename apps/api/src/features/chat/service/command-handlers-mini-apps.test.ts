@@ -125,7 +125,7 @@ describe('/mini-app', () => {
 
   describe('marketplace', () => {
     const LOCALIX =
-      'https://github.com/rsaryev/localix-marketplace/releases/latest/download/mini-app-marketplace.json'
+      'https://github.com/localixai/localix-marketplace/releases/latest/download/mini-app-marketplace.json'
     const ADA = 'https://ada.test/mini-app-marketplace.json'
     const entry = (name: string, source: string) => ({ name, source })
     const service = (calls: string[] = []) => ({

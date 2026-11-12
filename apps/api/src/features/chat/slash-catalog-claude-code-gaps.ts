@@ -84,7 +84,7 @@ const GAPS: readonly { names: readonly string[]; reply: string }[] = [
   {
     names: ['bug', 'feedback'],
     reply:
-      '`/{name}` sends a report from Claude Code. Report a Localix problem at https://github.com/rsaryev/localix-studio/issues.',
+      '`/{name}` sends a report from Claude Code. Report a Localix problem at https://github.com/localixai/localix-studio/issues.',
   },
   {
     names: ['release-notes'],

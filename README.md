@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/rsaryev/localix-studio/releases/latest">Download</a> ·
+  <a href="https://github.com/localixai/localix-studio/releases/latest">Download</a> ·
   <a href="docs/README.md">Documentation</a> ·
   <a href="#run-from-source">Run from source</a>
 </p>
@@ -45,7 +45,7 @@
   <tr>
     <td valign="top">
       <strong>Mini apps, built by the agent</strong><br>
-      Describe one to the agent, with the authoring plugin from the <a href="https://github.com/rsaryev/localix-marketplace">Localix marketplace</a>: a meal log from photos, a dashboard, a game, wired to the agent, models and embeddings.<br>
+      Describe one to the agent, with the authoring plugin from the <a href="https://github.com/localixai/localix-marketplace">Localix marketplace</a>: a meal log from photos, a dashboard, a game, wired to the agent, models and embeddings.<br>
       <a href="docs/extending/build-with-the-agent.md">Build a mini app →</a>
     </td>
     <td valign="top">
@@ -77,7 +77,7 @@ screens, a backend and agent tools. Install them from the Store, or have the age
 ([mini apps](docs/features/mini-apps.md),
 [build with the agent](docs/extending/build-with-the-agent.md)). Localix itself ships none: its own
 mini apps and plugins are in the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace).
+[Localix marketplace](https://github.com/localixai/localix-marketplace).
 
 ## On this computer
 
@@ -91,7 +91,8 @@ mini apps and plugins are in the
 ## Download
 
 - **macOS, Apple silicon:** `Localix-macos-arm64.dmg` from the
-  [latest release](https://github.com/rsaryev/localix-studio/releases/latest), signed and notarized
+  [latest release](https://github.com/localixai/localix-studio/releases/latest), signed and
+  notarized
 - **macOS Intel, Linux, Windows:** no installer yet, [run from source](#run-from-source)
 
 Each release lists checksums in `SHA256SUMS.txt`.
@@ -102,7 +103,7 @@ For the desktop app, install [Bun](https://bun.sh) **1.4.4**, a Rust toolchain, 
 [Tauri prerequisites](https://tauri.app/start/prerequisites/).
 
 ```bash
-git clone https://github.com/rsaryev/localix-studio.git
+git clone https://github.com/localixai/localix-studio.git
 cd localix
 bun install --frozen-lockfile
 bun run dev

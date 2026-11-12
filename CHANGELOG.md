@@ -275,7 +275,7 @@ way the rest of Localix asks.
   repositories, under **Localix Community**. Each one is its author's: installing asks first, an app
   is signed (or not) with its author's key, and it updates only from its author's catalog. To list
   yours, publish it and open a pull request to the
-  [Localix Community](https://github.com/rsaryev/localix-community) repository.
+  [Localix Community](https://github.com/localixai/localix-community) repository.
 - **Signed mini app catalogs**: a mini app's page in the Store says beside its publisher whether its
   catalog is **Signed**, **Not signed**, or its **Signature changed**. Signed apps, the Localix ones
   included, still update within six hours, and the **⋯** menu beside **Open** has **Update
@@ -378,7 +378,7 @@ Localix in step. The Store's recommendations look at your work more closely and 
 ## v0.1.0-beta.18 — 2026-10-29
 
 Localix's own mini apps and plugins now come from the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace) and install, update and are
+[Localix marketplace](https://github.com/localixai/localix-marketplace) and install, update and are
 trusted like anyone else's. Localix itself ships the mini app SDK and kit to build them with.
 
 ### Changed

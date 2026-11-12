@@ -78,10 +78,10 @@ route must reject that absence before accessing its storage.
 
 ## Source of truth
 
-- [The helper](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/route-validator.ts)
-- [The failure summary](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/http.ts)
-- [The guard](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/lib/validator.test.ts)
-- [Contributed route environment](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/http.ts)
-- [Request scope resolution](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/route-scope.ts)
-- [First-reconcile wait](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/mini-app-route-boot-hold.ts)
-- [Project-scope load budget](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/scope-load.ts)
+- [The helper](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/backend/route-validator.ts)
+- [The failure summary](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/backend/http.ts)
+- [The guard](https://github.com/localixai/localix-studio/blob/main/apps/api/src/lib/validator.test.ts)
+- [Contributed route environment](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/backend/http.ts)
+- [Request scope resolution](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mini-apps/route-scope.ts)
+- [First-reconcile wait](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mini-apps/mini-app-route-boot-hold.ts)
+- [Project-scope load budget](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/scope-load.ts)

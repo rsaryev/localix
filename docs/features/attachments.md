@@ -94,12 +94,12 @@ readable on the API host and the relevant runtime limits.
 
 ## Source of truth
 
-- [Composer modality policy](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/lib/attachment-policy.ts)
-- [File staging](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/lib/attachments/file-staging.ts)
-- [Staged attachment removal](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/lib/attachments/useComposerAttachments.ts)
-- [Raw media upload limit](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/api/media-client.ts)
-- [Persisted media bindings](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/media/attachments.ts)
-- [Spill handoff](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/attachment-spill.ts)
-- [Original-path attachments](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/attachment-path.ts)
-- [Preview bounds](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/attachment-manifests.ts)
-- [Image resizing](https://github.com/rsaryev/localix-studio/blob/main/packages/agent/src/images/downscale.ts)
+- [Composer modality policy](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/lib/attachment-policy.ts)
+- [File staging](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/lib/attachments/file-staging.ts)
+- [Staged attachment removal](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/lib/attachments/useComposerAttachments.ts)
+- [Raw media upload limit](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/api/media-client.ts)
+- [Persisted media bindings](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/media/attachments.ts)
+- [Spill handoff](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/attachment-spill.ts)
+- [Original-path attachments](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/attachment-path.ts)
+- [Preview bounds](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/attachment-manifests.ts)
+- [Image resizing](https://github.com/localixai/localix-studio/blob/main/packages/agent/src/images/downscale.ts)

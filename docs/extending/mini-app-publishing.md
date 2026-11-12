@@ -3,9 +3,9 @@
 A mini app reaches other people through a **marketplace**: one `mini-app-marketplace.json` that
 lists apps, with one archive per app beside it and each app's icon, screenshots and README next to
 them. The Localix core hosts no marketplace: the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace) publishes its own with each of
-its releases. Anyone can publish theirs the same way, from a copy of the authoring plugin's template
-or with the [plugin](build-with-the-agent.md) itself, and people add it to their Store.
+[Localix marketplace](https://github.com/localixai/localix-marketplace) publishes its own with each
+of its releases. Anyone can publish theirs the same way, from a copy of the authoring plugin's
+template or with the [plugin](build-with-the-agent.md) itself, and people add it to their Store.
 [Mini app marketplaces](mini-app-marketplace.md) is the format's reference.
 
 ## Terminology
@@ -137,7 +137,7 @@ app is read, signed and updated from there, and offered as `habits@ada`. See
 
 ### Localix Community
 
-[Localix Community](https://github.com/rsaryev/localix-community) lists plugins and mini apps that
+[Localix Community](https://github.com/localixai/localix-community) lists plugins and mini apps that
 people publish in their own repositories. It holds no code: its `.localix-mini-app/marketplace.json`
 links each mini app to its author's marketplace, and its `.claude-plugin/marketplace.json` names
 each plugin's repository. Localix reads it from the start, under the name **Localix Community**.
@@ -264,10 +264,10 @@ follows your newest release, so the next release is the next update.
 
 ## Source of truth
 
-- [The pack command](https://github.com/rsaryev/localix-marketplace/tree/main/plugins) (in the
+- [The pack command](https://github.com/localixai/localix-marketplace/tree/main/plugins) (in the
   authoring plugin)
-- [The Localix marketplace's own packing](https://github.com/rsaryev/localix-marketplace/blob/main/scripts/pack.ts)
-- [The media rules](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/manifest/media.ts)
-- [Reading a marketplace](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/marketplace-feed.ts)
-- [Serving store media](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/store-media.ts)
-- [Installing an archive](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/store-install.ts)
+- [The Localix marketplace's own packing](https://github.com/localixai/localix-marketplace/blob/main/scripts/pack.ts)
+- [The media rules](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/manifest/media.ts)
+- [Reading a marketplace](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mini-apps/marketplace-feed.ts)
+- [Serving store media](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mini-apps/store-media.ts)
+- [Installing an archive](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mini-apps/store-install.ts)

@@ -16,27 +16,27 @@ of your own, reach the host through its UI kit, and understand how an edit reach
 
 ## What you can do
 
-| Task                           | Mechanism                                                                 | Boundary                                                                                                                        |
-| ------------------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Create a mini app              | The authoring plugin's `create` command, with what it should do           | The authoring plugin from the [Localix marketplace](https://github.com/rsaryev/localix-marketplace), in Localix or Claude Code. |
-| Check, build and install it    | `mini-app check`, then `mini-app install`                                 | Leftovers, style, builds, types, the mini app's tests.                                                                          |
-| Look at it and use it          | The agent's `Browser` tool with `url: "mini-app:<name>"`                  | snapshot, take_screenshot, steps, console; no evaluate.                                                                         |
-| Use a host control             | Import it from `@localixai/kit/<id>`                                      | Typed by its real props; an `@/…` import fails the build.                                                                       |
-| Draw a graph or a board        | `Canvas` from `@localixai/kit/canvas`                                     | The host's camera and edge; never bundle `@xyflow/react`.                                                                       |
-| Take any app link              | `readMessageBindingDrag`, `linksInText` (`kit/context-links`)             | A drop or a pasted `@session:…`/`localix://…` is the same link.                                                                 |
-| Show an app link               | `ContextBindingPreview` from `@localixai/mini-app-sdk/ui`                 | The host draws it: a file, a session, a message, a tool call's card.                                                            |
-| Read and change a list         | `useCollection` from `@localixai/mini-app-sdk/ui/app`; it hears the agent | `add`, `update` and `remove` answer with the new list, shown at once.                                                           |
-| Register a screen              | `screenUi`, `useAgentContext`, `useScreenProblem` (`ui/app`)              | The tab, what the agent is told, and a failure line.                                                                            |
-| Read or act on any other route | `usePolledSnapshot` and its `send()` (`ui/route-snapshot`)                | The escape hatch under `useCollection`; the route answers.                                                                      |
-| Follow a live stream           | `createRealtimeFeed`, `useRealtimeFeed` (`ui/realtime-feed`)              | One subscription per key; resubscribes after a reconnect.                                                                       |
-| Complete what is typed         | `useMiniAppTextInputCompletion` + `textInputCompletionSurfaces`           | Surface id `<app>.<field>`; open tabs are added by the host.                                                                    |
-| Keep what the user creates     | `defineCollection` and `createMiniApp(ctx).collection(spec)`              | Under `ctx.dataDir`, or per chat with `scope: 'chat'`.                                                                          |
-| Keep what one chat creates     | `ctx.sessionStorage.resolveDataDir(userId, sessionId)`                    | Removed with the chat and every session beneath it.                                                                             |
-| Keep tabs in their workspace   | The default work-item scope (`'session'`)                                 | Scoped instances stay in their root workspace.                                                                                  |
-| Know the tab's own chat        | `useWorkItemSessionId()` from `ui/work-item-session`                      | The only session a tab acts for; the SDK has no active session.                                                                 |
-| React to file changes          | `useMiniAppWorkspaceChanges` (`ui/runtime-hooks`)                         | One chat, coalesced; poll only when source coverage is unavailable.                                                             |
-| Use icons                      | Import from `lucide-react`                                                | Bundled per icon from the mini app kit.                                                                                         |
-| See an edit in the running app | Install again; the mini app is swapped in place                           | An open tab re-renders; the app is never reloaded.                                                                              |
+| Task                           | Mechanism                                                                 | Boundary                                                                                                                          |
+| ------------------------------ | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Create a mini app              | The authoring plugin's `create` command, with what it should do           | The authoring plugin from the [Localix marketplace](https://github.com/localixai/localix-marketplace), in Localix or Claude Code. |
+| Check, build and install it    | `mini-app check`, then `mini-app install`                                 | Leftovers, style, builds, types, the mini app's tests.                                                                            |
+| Look at it and use it          | The agent's `Browser` tool with `url: "mini-app:<name>"`                  | snapshot, take_screenshot, steps, console; no evaluate.                                                                           |
+| Use a host control             | Import it from `@localixai/kit/<id>`                                      | Typed by its real props; an `@/…` import fails the build.                                                                         |
+| Draw a graph or a board        | `Canvas` from `@localixai/kit/canvas`                                     | The host's camera and edge; never bundle `@xyflow/react`.                                                                         |
+| Take any app link              | `readMessageBindingDrag`, `linksInText` (`kit/context-links`)             | A drop or a pasted `@session:…`/`localix://…` is the same link.                                                                   |
+| Show an app link               | `ContextBindingPreview` from `@localixai/mini-app-sdk/ui`                 | The host draws it: a file, a session, a message, a tool call's card.                                                              |
+| Read and change a list         | `useCollection` from `@localixai/mini-app-sdk/ui/app`; it hears the agent | `add`, `update` and `remove` answer with the new list, shown at once.                                                             |
+| Register a screen              | `screenUi`, `useAgentContext`, `useScreenProblem` (`ui/app`)              | The tab, what the agent is told, and a failure line.                                                                              |
+| Read or act on any other route | `usePolledSnapshot` and its `send()` (`ui/route-snapshot`)                | The escape hatch under `useCollection`; the route answers.                                                                        |
+| Follow a live stream           | `createRealtimeFeed`, `useRealtimeFeed` (`ui/realtime-feed`)              | One subscription per key; resubscribes after a reconnect.                                                                         |
+| Complete what is typed         | `useMiniAppTextInputCompletion` + `textInputCompletionSurfaces`           | Surface id `<app>.<field>`; open tabs are added by the host.                                                                      |
+| Keep what the user creates     | `defineCollection` and `createMiniApp(ctx).collection(spec)`              | Under `ctx.dataDir`, or per chat with `scope: 'chat'`.                                                                            |
+| Keep what one chat creates     | `ctx.sessionStorage.resolveDataDir(userId, sessionId)`                    | Removed with the chat and every session beneath it.                                                                               |
+| Keep tabs in their workspace   | The default work-item scope (`'session'`)                                 | Scoped instances stay in their root workspace.                                                                                    |
+| Know the tab's own chat        | `useWorkItemSessionId()` from `ui/work-item-session`                      | The only session a tab acts for; the SDK has no active session.                                                                   |
+| React to file changes          | `useMiniAppWorkspaceChanges` (`ui/runtime-hooks`)                         | One chat, coalesced; poll only when source coverage is unavailable.                                                               |
+| Use icons                      | Import from `lucide-react`                                                | Bundled per icon from the mini app kit.                                                                                           |
+| See an edit in the running app | Install again; the mini app is swapped in place                           | An open tab re-renders; the app is never reloaded.                                                                                |
 
 Open HTTP and HTTPS links with `miniAppExternal.open(url)` from
 `@localixai/mini-app-sdk/ui/runtime`: the active conversation's Browser by default, the system
@@ -367,29 +367,29 @@ Use `MarkdownRenderer` from `@localixai/kit/markdown` with source as `children`;
 
 ## Source of truth
 
-- [Shared-module and artifact contract](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui-artifact.ts)
-- [Mini app kit layout](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/kit-layout.ts)
+- [Shared-module and artifact contract](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/ui-artifact.ts)
+- [Mini app kit layout](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mini-apps/kit-layout.ts)
   and
-  [its staging](https://github.com/rsaryev/localix-studio/blob/main/scripts/stage-mini-app-kit.mjs)
-- [The authoring plugin](https://github.com/rsaryev/localix-marketplace/tree/main/plugins): the UI
+  [its staging](https://github.com/localixai/localix-studio/blob/main/scripts/stage-mini-app-kit.mjs)
+- [The authoring plugin](https://github.com/localixai/localix-marketplace/tree/main/plugins): the UI
   artifact builder, the style check and the template layout
-- [The token rules](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/contracts/ui-token-rules.ts)
-- [Kit declarations](https://github.com/rsaryev/localix-studio/blob/main/scripts/stage-mini-app-kit-declarations.mjs)
-- [Mini app view host](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/inspector/model/miniAppViewHost.ts)
+- [The token rules](https://github.com/localixai/localix-studio/blob/main/apps/api/src/contracts/ui-token-rules.ts)
+- [Kit declarations](https://github.com/localixai/localix-studio/blob/main/scripts/stage-mini-app-kit-declarations.mjs)
+- [Mini app view host](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/features/inspector/model/miniAppViewHost.ts)
   and
-  [the embedded actuator](https://github.com/rsaryev/localix-studio/blob/main/packages/visual-feedback/src/embedded/index.ts)
-- [Mini app record and file route](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/ui-artifact.ts)
-- [Workbench runtime](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/contrib/miniAppUiRuntime.ts)
+  [the embedded actuator](https://github.com/localixai/localix-studio/blob/main/packages/visual-feedback/src/embedded/index.ts)
+- [Mini app record and file route](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mini-apps/ui-artifact.ts)
+- [Workbench runtime](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/contrib/miniAppUiRuntime.ts)
   and
-  [host wiring](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/contrib/miniAppUiDiscovery.ts)
-- [Shared-module registry](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/app/miniAppSharedModules.ts)
-- [Realtime feed](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/realtime-feed.ts)
-- [Tool cards](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/tool-cards.ts),
-  [comment actions](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/comment-actions.ts)
+  [host wiring](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/contrib/miniAppUiDiscovery.ts)
+- [Shared-module registry](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/app/miniAppSharedModules.ts)
+- [Realtime feed](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/ui/realtime-feed.ts)
+- [Tool cards](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/ui/tool-cards.ts),
+  [comment actions](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/ui/comment-actions.ts)
   and
-  [session surfaces](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/contrib.ts)
-- [UI kit](https://github.com/rsaryev/localix-studio/tree/main/apps/ui/src/app/kit)
+  [session surfaces](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/ui/contrib.ts)
+- [UI kit](https://github.com/localixai/localix-studio/tree/main/apps/ui/src/app/kit)
 
-- [Tab scopes](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/entities/workspace-grid/model/scope.ts)
+- [Tab scopes](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/entities/workspace-grid/model/scope.ts)
   and
-  [instance guard](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/contrib/uiContrib.ts).
+  [instance guard](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/contrib/uiContrib.ts).

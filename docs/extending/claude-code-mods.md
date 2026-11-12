@@ -265,5 +265,5 @@ the `code-modernization` plugin load and run their hooks, commands and panes in 
 
 ## Source of truth
 
-- [Mods host](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mods/host.ts)
-- [Parity tool](https://github.com/rsaryev/localix-studio/blob/main/scripts/cc-parity/README.md)
+- [Mods host](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mods/host.ts)
+- [Parity tool](https://github.com/localixai/localix-studio/blob/main/scripts/cc-parity/README.md)

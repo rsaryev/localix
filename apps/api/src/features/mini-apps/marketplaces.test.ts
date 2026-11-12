@@ -8,7 +8,7 @@ import { migrateToLatest } from '../../db/migrator'
 import { createMiniAppMarketplaces } from './marketplaces'
 
 const LOCALIX =
-  'https://github.com/rsaryev/localix-marketplace/releases/latest/download/mini-app-marketplace.json'
+  'https://github.com/localixai/localix-marketplace/releases/latest/download/mini-app-marketplace.json'
 const ADA = 'https://ada.example.test/mini-app-marketplace.json'
 const GRACE_REPO =
   'https://github.com/grace/apps/releases/latest/download/mini-app-marketplace.json'

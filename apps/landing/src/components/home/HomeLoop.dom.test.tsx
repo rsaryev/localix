@@ -123,7 +123,7 @@ test('one mini apps card covers what a person gets, what a developer builds on a
     '/docs/features--mini-apps',
     '/docs/extending--mini-apps',
     '/docs/features--mini-app-mac-apps',
-    'https://github.com/rsaryev/localix-marketplace',
+    'https://github.com/localixai/localix-marketplace',
   ])
   expect(words).not.toMatch(/\/[a-z-]+:[a-z-]+/)
   await cleanup()

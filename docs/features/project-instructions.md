@@ -63,7 +63,7 @@ cached.
 
 ## Source of truth
 
-- [Instruction file discovery](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/context-files.ts)
-- [Files loaded as the work moves](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/context-on-demand.ts)
-- [Rule files](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/context-rules.ts)
-- [Imports](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/context-imports.ts)
+- [Instruction file discovery](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/context-files.ts)
+- [Files loaded as the work moves](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/context-on-demand.ts)
+- [Rule files](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/context-rules.ts)
+- [Imports](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/context-imports.ts)

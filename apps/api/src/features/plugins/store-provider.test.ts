@@ -495,7 +495,7 @@ describe('plugins in the Store', () => {
     const { provider, root } = fixture()
     const known = JSON.parse(await Bun.file(join(root, 'known_marketplaces.json')).text())
     for (const [name, repo] of [
-      ['localix-community', 'rsaryev/localix-community'],
+      ['localix-community', 'localixai/localix-community'],
       ['acme', 'acme/plugins'],
     ]) {
       known[name] = {

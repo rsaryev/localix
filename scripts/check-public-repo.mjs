@@ -75,13 +75,13 @@ for (const { path, manifest } of workspacePackages) {
   assert.equal(manifest.license, 'MIT', `${path} must declare its package license`)
   assert.equal(
     manifest.repository?.url,
-    'git+https://github.com/rsaryev/localix-studio.git',
+    'git+https://github.com/localixai/localix-studio.git',
     `${path} must point npm provenance to the public repository`,
   )
   assert.equal(manifest.homepage, 'https://localix.ai', `${path} must declare the project homepage`)
   assert.equal(
     manifest.bugs?.url,
-    'https://github.com/rsaryev/localix-studio/issues',
+    'https://github.com/localixai/localix-studio/issues',
     `${path} must direct package issues to the public tracker`,
   )
   if (manifest.files?.includes('src')) {

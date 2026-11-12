@@ -88,7 +88,7 @@ const CARDS: Card[] = [
       { slug: 'features--mini-app-mac-apps', label: 'Mac apps' },
     ],
     external: {
-      href: 'https://github.com/rsaryev/localix-marketplace',
+      href: 'https://github.com/localixai/localix-marketplace',
       label: 'Localix marketplace',
     },
   },

@@ -78,11 +78,11 @@ Inspect and stop that child separately when needed.
 
 ## Source of truth
 
-- [Loop creation and cancellation](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/loops/service.ts)
-- [Target routing and fire gates](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/loops/action.ts)
-- [Child-run lifecycle](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/loops/subsession-runner.ts)
-- [Fixed schedule and restart policy](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/triggers/kinds/cron.ts)
-- [Dynamic delay and watchdog](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/triggers/kinds/delay.ts)
-- [Trigger lifecycle and manual fires](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/triggers/engine.ts)
-- [Failure backoff](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/triggers/backoff.ts)
-- [Automatic gate and fire settlement](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/triggers/cycle.ts)
+- [Loop creation and cancellation](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/loops/service.ts)
+- [Target routing and fire gates](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/loops/action.ts)
+- [Child-run lifecycle](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/loops/subsession-runner.ts)
+- [Fixed schedule and restart policy](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/triggers/kinds/cron.ts)
+- [Dynamic delay and watchdog](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/triggers/kinds/delay.ts)
+- [Trigger lifecycle and manual fires](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/triggers/engine.ts)
+- [Failure backoff](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/triggers/backoff.ts)
+- [Automatic gate and fire settlement](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/triggers/cycle.ts)

@@ -67,8 +67,8 @@ One configuration file lists the sources a fresh profile starts with; adding one
 | `label`     | What the Store calls it, where a provider's own name would not say.             |
 
 Starting entries: the Localix marketplace's mini apps and its `localix` plugin marketplace (one
-repository, `rsaryev/localix-marketplace`; `localix`, editorial), Localix Community's mini app list
-and its `localix-community` plugin marketplace (one repository, `rsaryev/localix-community`;
+repository, `localixai/localix-marketplace`; `localix`, editorial), Localix Community's mini app
+list and its `localix-community` plugin marketplace (one repository, `localixai/localix-community`;
 `community`, not editorial), `anthropics/claude-plugins-official` (`official`, editorial) and
 `anthropics/claude-plugins-community` (`community`, not editorial).
 

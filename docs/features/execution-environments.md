@@ -54,8 +54,8 @@ process, so changing these variables requires a restart.
 
 ## Source of truth
 
-- [Environment contract](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/environment.ts)
-- [Shell resolution](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/environments/shell.ts)
-- [Terminal host ports](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/bootstrap/terminal-ports.ts)
-- [Local adapter](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/environments/local.ts)
-- [Session file-operation routing](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/service/file-ops-context.ts)
+- [Environment contract](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tools/environment.ts)
+- [Shell resolution](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tools/environments/shell.ts)
+- [Terminal host ports](https://github.com/localixai/localix-studio/blob/main/apps/api/src/bootstrap/terminal-ports.ts)
+- [Local adapter](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tools/environments/local.ts)
+- [Session file-operation routing](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/service/file-ops-context.ts)

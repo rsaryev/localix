@@ -41,9 +41,28 @@ describe('which marketplaces auto-update', () => {
     // repository of their own, and the core knows them only by that address.
     const appRepository = {
       ...thirdParty,
-      source: { kind: 'github' as const, repo: 'rsaryev/localix-studio', path: CATALOG },
+      source: { kind: 'github' as const, repo: 'localixai/localix-studio', path: CATALOG },
     }
     expect(isOfficialMarketplace('localix', appRepository)).toBe(false)
+    expect(
+      isOfficialMarketplace('localix', {
+        source: {
+          kind: 'git',
+          url: 'https://github.com/localixai/localix-marketplace.git',
+          path: CATALOG,
+        },
+      }),
+    ).toBe(true)
+    expect(marketplaceAutoUpdate('localix', thirdParty)).toBe(false)
+  })
+
+  // The repository moved from rsaryev to the localixai organisation; a copy registered from the
+  // old address is the same marketplace and keeps updating.
+  test('the official marketplace registered from its former address is still the official one', () => {
+    const former = {
+      source: { kind: 'github' as const, repo: 'rsaryev/localix-marketplace', path: CATALOG },
+    }
+    expect(isOfficialMarketplace('localix', former)).toBe(true)
     expect(
       isOfficialMarketplace('localix', {
         source: {
@@ -53,7 +72,11 @@ describe('which marketplaces auto-update', () => {
         },
       }),
     ).toBe(true)
-    expect(marketplaceAutoUpdate('localix', thirdParty)).toBe(false)
+    expect(
+      isOfficialMarketplace('localix', {
+        source: { kind: 'github', repo: 'rsaryev/other', path: CATALOG },
+      }),
+    ).toBe(false)
   })
 
   test('Claude Code’s official marketplaces keep the default the kit gives them', () => {

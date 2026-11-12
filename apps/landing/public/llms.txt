@@ -28,4 +28,4 @@ API for those records; Localix exposes no MCP server of its own: https://localix
 
 No desktop build is published yet; Localix runs from a source checkout with Bun.
 Install: https://localix.ai/docs/getting-started--installation
-Docs: https://localix.ai/docs — Source: https://github.com/rsaryev/localix-studio
+Docs: https://localix.ai/docs — Source: https://github.com/localixai/localix-studio

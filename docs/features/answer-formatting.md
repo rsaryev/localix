@@ -218,7 +218,7 @@ examples and package entry points.
 
 - [Shared Markdown](../extending/markdown.md): the `flowdown` package owns the dialect, its parsing,
   steps, tabs, figures, for/against, file trees, callouts, diagrams and cached math.
-- [The prompt section and its gate](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/prompt/sections/answer-format.ts)
-- [The workspace renderer](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/ui/MarkdownRendererImpl.tsx)
-- [Tickable checklists](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/ui/MarkdownTaskList.tsx)
-- [The workspace diagram](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/ui/mermaid/MermaidDiagram.tsx)
+- [The prompt section and its gate](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/prompt/sections/answer-format.ts)
+- [The workspace renderer](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/ui/MarkdownRendererImpl.tsx)
+- [Tickable checklists](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/ui/MarkdownTaskList.tsx)
+- [The workspace diagram](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/ui/mermaid/MermaidDiagram.tsx)

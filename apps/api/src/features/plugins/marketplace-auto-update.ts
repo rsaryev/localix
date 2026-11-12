@@ -34,15 +34,17 @@ export const OFFICIAL_MARKETPLACE: { name: string; source: MarketplaceSource } =
   },
 }
 
-const OFFICIAL_REPO = LOCALIX_MARKETPLACE.repo.toLowerCase()
+const OFFICIAL_REPOS = new Set(
+  [LOCALIX_MARKETPLACE.repo, ...LOCALIX_MARKETPLACE.formerRepos].map((repo) => repo.toLowerCase()),
+)
 
 export function isOfficialMarketplace(name: string, record: Pick<KnownMarketplace, 'source'>) {
   if (name !== OFFICIAL_MARKETPLACE.name) return false
   const { source } = record
-  if (source.kind === 'github') return source.repo.toLowerCase() === OFFICIAL_REPO
+  if (source.kind === 'github') return OFFICIAL_REPOS.has(source.repo.toLowerCase())
   if (source.kind === 'git') {
     const repo = /^https:\/\/github\.com\/([^/]+\/[^/]+?)(?:\.git)?\/?$/i.exec(source.url)?.[1]
-    return repo?.toLowerCase() === OFFICIAL_REPO
+    return repo !== undefined && OFFICIAL_REPOS.has(repo.toLowerCase())
   }
   return false
 }

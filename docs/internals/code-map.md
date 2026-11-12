@@ -36,7 +36,7 @@ a typed Hono RPC client over that API. `apps/desktop-tauri` wraps both as the sh
 `apps/landing` is the product and documentation site. Everything persisted lives under `~/.localix`
 (`localix.db`, the vault, `plugins/` for Claude Code plugins and `mini-apps/` for mini apps). This
 repository holds no mini app and no plugin: Localix's own live in the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace) and install from it like
+[Localix marketplace](https://github.com/localixai/localix-marketplace) and install from it like
 anyone's.
 
 The desktop [agent island](agent-island.md) uses a separate UI entry (`app/islandEntry.tsx`) and the
@@ -64,7 +64,7 @@ with it and maps the result to the one runtime manifest the loader uses (`kit/ca
 It reads only `.claude-plugin/plugin.json`: a root `plugin.json` is not a manifest, and a folder
 holding `.localix-mini-app/mini-app.json` is refused as a plugin. Mini apps are found and read by
 `apps/api/src/features/mini-apps/discovery.ts`. Making a mini app is not the core's: the authoring
-plugin of the [Localix marketplace](https://github.com/rsaryev/localix-marketplace) scaffolds,
+plugin of the [Localix marketplace](https://github.com/localixai/localix-marketplace) scaffolds,
 checks and builds one from the mini app kit, whose validation tools are
 `features/mini-apps/kit-tools.ts`, and `features/mini-apps/local-install.ts` installs the package it
 builds.

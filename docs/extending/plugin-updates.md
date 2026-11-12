@@ -12,19 +12,19 @@ registered, where a plugin's version comes from, and when an update runs.
 | Update a marketplace and its plugins         | **Update marketplace** on its row, or `/plugin marketplace update <name>` |
 | Refresh every listing, installing nothing    | `/plugin marketplace update`                                              |
 | Turn auto-update on or off for a marketplace | The switch on its row under **Marketplaces**                              |
-| Use Localix's plugins in plain Claude Code   | `claude plugin marketplace add rsaryev/localix-marketplace`               |
+| Use Localix's plugins in plain Claude Code   | `claude plugin marketplace add localixai/localix-marketplace`             |
 
 ## How it works
 
 ### Localix's own plugins
 
 Localix ships no plugin. Its own live in the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace), which is the `localix`
+[Localix marketplace](https://github.com/localixai/localix-marketplace), which is the `localix`
 default marketplace below: they install, update and switch off in the Store (Plugins) like any
 other, and carry no special origin or precedence. In plain Claude Code:
 
 ```bash
-claude plugin marketplace add rsaryev/localix-marketplace
+claude plugin marketplace add localixai/localix-marketplace
 claude plugin install <plugin>@localix
 ```
 
@@ -36,12 +36,12 @@ installed, then a project's own plugins under a name nothing else holds.
 
 On first start Localix registers the [Store](../features/store.md)'s default marketplaces, the way
 Claude Code adds `claude-plugins-official`: its official `localix` from the GitHub repository
-`rsaryev/localix-marketplace` (only `.claude-plugin/` and `plugins/` are checked out), Anthropic's
+`localixai/localix-marketplace` (only `.claude-plugin/` and `plugins/` are checked out), Anthropic's
 `claude-plugins-official` and its community `claude-community`. Nothing from them is installed. One
 already registered from the same repository, under any name, is reused. They need the network once;
 offline (or with `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` set) they are skipped and tried again at
 the next start. Removing one is remembered: it is not added back until you add it yourself, for
-example with `/plugin marketplace add rsaryev/localix-marketplace`.
+example with `/plugin marketplace add localixai/localix-marketplace`.
 
 ### Updates
 
@@ -163,9 +163,9 @@ credentials and with `CLAUDE_CODE_PLUGIN_NAME` and `CLAUDE_CODE_PLUGIN_ARCHIVE_U
 
 ## Source of truth
 
-- [The default sources](https://github.com/rsaryev/localix-studio/blob/main/packages/store/src/default-sources.ts)
-- [The version rule](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/kit/marketplace/versions.ts)
-- [The version cache](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/plugin-cache.ts)
-- [Updates and the auto-update pass](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/plugin-updates.ts)
-- [Which marketplaces auto-update](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/marketplace-auto-update.ts)
-- [The default marketplaces](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/default-marketplaces.ts)
+- [The default sources](https://github.com/localixai/localix-studio/blob/main/packages/store/src/default-sources.ts)
+- [The version rule](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/kit/marketplace/versions.ts)
+- [The version cache](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/plugin-cache.ts)
+- [Updates and the auto-update pass](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/plugin-updates.ts)
+- [Which marketplaces auto-update](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/marketplace-auto-update.ts)
+- [The default marketplaces](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/default-marketplaces.ts)

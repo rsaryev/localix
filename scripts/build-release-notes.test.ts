@@ -24,7 +24,7 @@ Intro line.
 const base = {
   tag: 'v1.2.0-beta.1',
   commit: 'a'.repeat(40),
-  repository: 'rsaryev/localix-studio',
+  repository: 'localixai/localix-studio',
   channel: 'beta',
   changelog,
   assets: ['Localix-macos-arm64.dmg', 'Localix-linux-x64.AppImage', 'latest.json'],

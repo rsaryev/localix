@@ -15,7 +15,7 @@ describe('updater manifest', () => {
   test('a macOS-only release lists exactly its platforms and needs no other signatures', () => {
     const macOnly = signatures.slice(0, 2)
     const manifest = createUpdaterManifest({
-      repository: 'rsaryev/localix-studio',
+      repository: 'localixai/localix-studio',
       tag: 'v1.2.3',
       version: '1.2.3',
       publishedAt: '2026-07-24T01:02:03Z',
@@ -30,7 +30,7 @@ describe('updater manifest', () => {
   test('a platform named for the release still fails when its signature is missing', () => {
     expect(() =>
       createUpdaterManifest({
-        repository: 'rsaryev/localix-studio',
+        repository: 'localixai/localix-studio',
         tag: 'v1.2.3',
         version: '1.2.3',
         publishedAt: '2026-07-24T01:02:03Z',
@@ -50,7 +50,7 @@ describe('updater manifest', () => {
 
   test('maps every signed Tauri updater bundle to an encoded release URL', () => {
     const manifest = createUpdaterManifest({
-      repository: 'rsaryev/localix-studio',
+      repository: 'localixai/localix-studio',
       tag: 'v1.2.3',
       version: '1.2.3',
       publishedAt: '2026-07-24T01:02:03Z',
@@ -75,7 +75,7 @@ describe('updater manifest', () => {
 
   test('carries the version’s changelog section as the notes the update dialog shows', () => {
     const manifest = createUpdaterManifest({
-      repository: 'rsaryev/localix-studio',
+      repository: 'localixai/localix-studio',
       tag: 'v1.2.3',
       version: '1.2.3',
       publishedAt: '2026-07-24T01:02:03Z',
@@ -92,7 +92,7 @@ describe('updater manifest', () => {
     // installer rejects a payload that is not a Debian package, so the AppImage URL under the
     // generic key would fail on every click.
     const manifest = createUpdaterManifest({
-      repository: 'rsaryev/localix-studio',
+      repository: 'localixai/localix-studio',
       tag: 'v1.2.3',
       version: '1.2.3',
       publishedAt: '2026-07-24T01:02:03Z',
@@ -107,7 +107,7 @@ describe('updater manifest', () => {
   test('refuses a release without a signed .deb rather than stranding deb installs', () => {
     expect(() =>
       createUpdaterManifest({
-        repository: 'rsaryev/localix-studio',
+        repository: 'localixai/localix-studio',
         tag: 'v1.2.3',
         version: '1.2.3',
         publishedAt: '2026-07-24T01:02:03Z',
@@ -127,7 +127,7 @@ describe('updater manifest', () => {
       ],
     }
     const base = {
-      repository: 'rsaryev/localix-studio',
+      repository: 'localixai/localix-studio',
       tag: 'v1.2.3',
       version: '1.2.3',
       publishedAt: '2026-07-24T01:02:03Z',
@@ -154,7 +154,7 @@ describe('updater manifest', () => {
   test('rejects a signature whose updater bundle was not uploaded', () => {
     expect(() =>
       createUpdaterManifest({
-        repository: 'rsaryev/localix-studio',
+        repository: 'localixai/localix-studio',
         tag: 'v1.2.3',
         version: '1.2.3',
         publishedAt: '2026-07-24T01:02:03Z',
@@ -167,7 +167,7 @@ describe('updater manifest', () => {
   test('rejects a partial platform set and a mismatched version', () => {
     expect(() =>
       createUpdaterManifest({
-        repository: 'rsaryev/localix-studio',
+        repository: 'localixai/localix-studio',
         tag: 'v1.2.3',
         version: '1.2.3',
         publishedAt: '2026-07-24T01:02:03Z',
@@ -178,7 +178,7 @@ describe('updater manifest', () => {
 
     expect(() =>
       createUpdaterManifest({
-        repository: 'rsaryev/localix-studio',
+        repository: 'localixai/localix-studio',
         tag: 'v1.2.3',
         version: '1.2.4',
         publishedAt: '2026-07-24T01:02:03Z',

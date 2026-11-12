@@ -48,7 +48,7 @@ names they were given, and none of them can take a core tool's name.
 | Use an open mini app's tools      | Link the mini app's tab to the message (open tabs link by default), or let it wake the chat.                                                       | Uses the message's linked context; tab/chip changes take effect when you send.                                                                                  |
 | Learn why a tool is missing       | Ask the agent; it reads the run's ledger through `Configure` with `action: "inspect"`.                                                             | Read-only; requires `Configure` in the run. Known withheld tools report their reasons.                                                                          |
 | Wait for something external       | `Bash` with `until: <seconds>` polls the command and wakes the session when it exits 0.                                                            | Needs a manageable job (`Jobs` present); see [Wait for something](monitors.md).                                                                                 |
-| Plan before building              | A task-board mini app's tool: put the work on the chat's board before starting.                                                                    | A deferred mini app tool on a passive board; Localix's own are in the [Localix marketplace](https://github.com/rsaryev/localix-marketplace).                    |
+| Plan before building              | A task-board mini app's tool: put the work on the chat's board before starting.                                                                    | A deferred mini app tool on a passive board; Localix's own are in the [Localix marketplace](https://github.com/localixai/localix-marketplace).                  |
 | Show you something                | The agent links it in its reply: a file as `localix://ui/work-item/file?path=…&line=…`, a mini app view by the `App view:` link its tool returned. | Nothing opens on its own; you open a link when you choose.                                                                                                      |
 | Find, install or create a package | `Store` searches the sources you added, shows a package's plan, and installs, updates, removes, enables, disables, or creates an agent or skill.   | Root chats only; each change waits for your approval and a run nobody can answer refuses it. See [Store](store.md) and [Agent management](agent-management.md). |
 
@@ -237,12 +237,12 @@ core-registry ceiling.
 
 ## Source of truth
 
-- [Tool catalog and per-shape exposure](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tool-names.ts)
-- [Tool ledger: one verdict per tool](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tool-ledger.ts)
-- [Protected names for usage suggestions](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tool-policy-sets.ts)
-- [Wire assembly and deferral](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/tool-assembly.ts)
-- [Scoped Settings projection](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/capabilities/snapshot.ts)
-- [Known withheld-name errors](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/withheld-stub.ts)
-- [Browser opening and readiness](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/browser/browser-open.ts)
-- [Schema budget ratchet](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tool-schema-budget.test.ts)
-- [`Bash until` wait](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/bash/bash-until.ts)
+- [Tool catalog and per-shape exposure](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tool-names.ts)
+- [Tool ledger: one verdict per tool](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tool-ledger.ts)
+- [Protected names for usage suggestions](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tool-policy-sets.ts)
+- [Wire assembly and deferral](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/tool-assembly.ts)
+- [Scoped Settings projection](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/capabilities/snapshot.ts)
+- [Known withheld-name errors](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tools/withheld-stub.ts)
+- [Browser opening and readiness](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tools/browser/browser-open.ts)
+- [Schema budget ratchet](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tool-schema-budget.test.ts)
+- [`Bash until` wait](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tools/bash/bash-until.ts)

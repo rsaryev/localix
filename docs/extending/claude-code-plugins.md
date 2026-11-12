@@ -3,7 +3,7 @@
 Localix reads a Claude Code plugin in place: `.claude-plugin/plugin.json` and its component folders
 load as they are, with no conversion, and the same folder keeps working in Claude Code. Use this
 page to install one and to see which Claude Code features run in Localix. Localix's own plugins are
-in the [Localix marketplace](https://github.com/rsaryev/localix-marketplace).
+in the [Localix marketplace](https://github.com/localixai/localix-marketplace).
 
 ## What you can do
 
@@ -42,11 +42,12 @@ to the plugin; the plugin's settings keep only a reference, and the value reache
 `CLAUDE_PLUGIN_OPTION_<KEY>`) and its MCP servers' `${user_config.KEY}` when they run.
 
 Localix ships no plugin. It registers the [Store](../features/store.md)'s default marketplaces on
-first start, `localix` (the [Localix marketplace](https://github.com/rsaryev/localix-marketplace)),
-Anthropic's official and its community one, for browsing; every other plugin comes from a source you
-add. Manage them in the Store (Plugins) or with `/plugin`. A plugin runs no Localix native code.
-Screens, a backend and agent tools over Localix's APIs are a mini app's, a separate format with its
-own folder, settings and command; see [Build a mini app](mini-apps.md).
+first start, `localix` (the
+[Localix marketplace](https://github.com/localixai/localix-marketplace)), Anthropic's official and
+its community one, for browsing; every other plugin comes from a source you add. Manage them in the
+Store (Plugins) or with `/plugin`. A plugin runs no Localix native code. Screens, a backend and
+agent tools over Localix's APIs are a mini app's, a separate format with its own folder, settings
+and command; see [Build a mini app](mini-apps.md).
 
 ## How it works
 
@@ -387,11 +388,11 @@ Code unchanged: panes, the band above the message box, buttons and their hotkeys
 ## Source of truth
 
 - [The Claude Code plugin format](https://github.com/rsaryev/llx-plugin/tree/main/src/format)
-- [Reading a plugin folder](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/kit/catalog/read-folder.ts)
-- [The mods runtime](https://github.com/rsaryev/localix-studio/tree/main/apps/api/src/features/mods)
+- [Reading a plugin folder](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/kit/catalog/read-folder.ts)
+- [The mods runtime](https://github.com/localixai/localix-studio/tree/main/apps/api/src/features/mods)
 - [Mods engine and elements](https://github.com/rsaryev/llx-plugin/tree/main/src/mods)
-- [Hook events and the inert ones](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/cc-hooks/contracts.ts)
+- [Hook events and the inert ones](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/cc-hooks/contracts.ts)
 - [MCP variable expansion](https://github.com/rsaryev/llx-plugin/blob/main/src/loading/resolve/substitute.ts)
-- [Claude Code marketplace names](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/claude-code-marketplace.ts)
-- [Marketplace entry sources](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/kit/marketplace/entry-source.ts)
-- [Layout tests](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/claude-code-layout.test.ts)
+- [Claude Code marketplace names](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/claude-code-marketplace.ts)
+- [Marketplace entry sources](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/kit/marketplace/entry-source.ts)
+- [Layout tests](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/claude-code-layout.test.ts)

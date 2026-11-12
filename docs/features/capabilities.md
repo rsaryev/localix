@@ -55,9 +55,9 @@ allowing its own plan files and permitted session-state changes. Use it to inves
 plan for approval. For a lasting restriction, give the agent rules that deny the relevant calls;
 denying file-write tools alone does not prevent writes through shell commands or other tools. Agreed
 work can be tracked on a task-board mini app (see the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace)); its board starts no model or
-session. When separate execution is useful, the agent explicitly calls `Agent`, whose subagent runs
-as itself or a directory agent under the same mode.
+[Localix marketplace](https://github.com/localixai/localix-marketplace)); its board starts no model
+or session. When separate execution is useful, the agent explicitly calls `Agent`, whose subagent
+runs as itself or a directory agent under the same mode.
 
 ### Going back to what we ship
 
@@ -126,14 +126,14 @@ Permissions also supports argument patterns and order, which a whole-item switch
 
 ## Source of truth
 
-- [Capability rules and evaluation](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/capability-rule.ts)
-- [Capability resolver and whole-tool denial](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/capabilities/resolve.ts)
-- [Permission-rule composition](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/permission-gate-build.ts)
-- [The permission gate](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/permission-gate.ts)
-- [Permission-mode rewriting](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/capabilities/permission-mode-policy.ts)
-- [Switch-to-rule translation](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/contrib/capabilityRules.ts)
-- [Draft and Apply behavior](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/settings/model/usePermissionRules.ts)
-- [Run shape](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/run-shape.ts)
-- [Mini app roster narrowing](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/narrow.ts)
+- [Capability rules and evaluation](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/capability-rule.ts)
+- [Capability resolver and whole-tool denial](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/capabilities/resolve.ts)
+- [Permission-rule composition](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/permission-gate-build.ts)
+- [The permission gate](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/permission-gate.ts)
+- [Permission-mode rewriting](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/capabilities/permission-mode-policy.ts)
+- [Switch-to-rule translation](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/contrib/capabilityRules.ts)
+- [Draft and Apply behavior](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/features/settings/model/usePermissionRules.ts)
+- [Run shape](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/run-shape.ts)
+- [Mini app roster narrowing](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mini-apps/narrow.ts)
   and
-  [the run's rule projection](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/prompt-context.ts)
+  [the run's rule projection](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/prompt-context.ts)

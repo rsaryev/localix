@@ -170,7 +170,7 @@ expected result, observed result, and the relevant sanitized diagnostic. Remove 
 credentials, provider responses, private source, and database contents before sharing it.
 
 Report suspected vulnerabilities through the private process in
-[SECURITY.md](https://github.com/rsaryev/localix-studio/blob/main/SECURITY.md).
+[SECURITY.md](https://github.com/localixai/localix-studio/blob/main/SECURITY.md).
 
 ## Configuration
 
@@ -215,19 +215,19 @@ Report suspected vulnerabilities through the private process in
 
 ## Source of truth
 
-- [Development startup and port checks](https://github.com/rsaryev/localix-studio/blob/main/scripts/dev-servers.mjs)
-- [Log timeline CLI](https://github.com/rsaryev/localix-studio/blob/main/scripts/logs.mjs)
-- [API log destination and rotation](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/lib/runtime-log-destination.ts)
-- [Desktop logging](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/log.rs)
-- [Idle task scheduler](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/lib/idle-tasks.ts)
-- [Storage maintenance](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/bootstrap/storage-maintenance.ts)
-- [Storage service](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/storage/service.ts)
-- [Desktop API child](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/sidecar.rs)
-- [Effective-configuration report](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/settings/ui/DiagnosticsSettings.tsx)
-- [Effective-configuration service](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/effective-config/service.ts)
-- [Diagnostics host scope](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/bootstrap/app-services.ts)
-- [Direct-run model requirements](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/stages/turn.ts)
-- [Agent-owned permission policy](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/permission-engine.ts)
-- [Permission decisions](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/permission-gate.ts)
-- [Plugin activation](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/enable.ts)
-- [Mini app activation](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/catalog.ts)
+- [Development startup and port checks](https://github.com/localixai/localix-studio/blob/main/scripts/dev-servers.mjs)
+- [Log timeline CLI](https://github.com/localixai/localix-studio/blob/main/scripts/logs.mjs)
+- [API log destination and rotation](https://github.com/localixai/localix-studio/blob/main/apps/api/src/lib/runtime-log-destination.ts)
+- [Desktop logging](https://github.com/localixai/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/log.rs)
+- [Idle task scheduler](https://github.com/localixai/localix-studio/blob/main/apps/api/src/lib/idle-tasks.ts)
+- [Storage maintenance](https://github.com/localixai/localix-studio/blob/main/apps/api/src/bootstrap/storage-maintenance.ts)
+- [Storage service](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/storage/service.ts)
+- [Desktop API child](https://github.com/localixai/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/sidecar.rs)
+- [Effective-configuration report](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/features/settings/ui/DiagnosticsSettings.tsx)
+- [Effective-configuration service](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/effective-config/service.ts)
+- [Diagnostics host scope](https://github.com/localixai/localix-studio/blob/main/apps/api/src/bootstrap/app-services.ts)
+- [Direct-run model requirements](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/stages/turn.ts)
+- [Agent-owned permission policy](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/permission-engine.ts)
+- [Permission decisions](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/permission-gate.ts)
+- [Plugin activation](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/enable.ts)
+- [Mini app activation](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mini-apps/catalog.ts)

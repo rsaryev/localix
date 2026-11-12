@@ -5,4 +5,4 @@ export const SITE_ORIGIN = 'https://localix.ai'
 export const X_URL = 'https://x.com/localixai'
 
 /** The public source repository. */
-export const REPOSITORY_URL = 'https://github.com/rsaryev/localix-studio'
+export const REPOSITORY_URL = 'https://github.com/localixai/localix-studio'

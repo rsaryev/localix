@@ -147,7 +147,7 @@ enhancers or one tab strip's kinds. Only a consumer whose own slice moved re-ren
 ### Example entrypoints
 
 The core holds no workbench. The workbench mini apps of the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps) are
+[Localix marketplace](https://github.com/localixai/localix-marketplace/tree/main/mini-apps) are
 written against this contract: each has a `backend/index.ts` returning its subsystems and tools, and
 a `ui/register.tsx` registering its work items, viewlet, anchors, icons and editors.
 
@@ -208,11 +208,11 @@ HMR.
 - [UI host adapter](../../../apps/ui/src/shared/contrib/host.ts)
 - [Mini app UI wiring](../../../apps/ui/src/shared/contrib/miniAppUiDiscovery.ts)
 - [Mini app UI runtime](../../../apps/ui/src/shared/contrib/miniAppUiRuntime.ts)
-- [Mini app UI artifact builder](https://github.com/rsaryev/localix-marketplace/tree/main/plugins)
+- [Mini app UI artifact builder](https://github.com/localixai/localix-marketplace/tree/main/plugins)
   (in the authoring plugin)
 - [Mini app kit staging](../../../scripts/stage-mini-app-kit.mjs)
 - [Development kit cache](../../../scripts/mini-app-kit-cache.mjs) (a kit staged for identical
   inputs is reused across `bun run dev` launches)
-- [User mini app authoring](https://github.com/rsaryev/localix-marketplace/tree/main/plugins) and
+- [User mini app authoring](https://github.com/localixai/localix-marketplace/tree/main/plugins) and
   [the local install](../../../apps/api/src/features/mini-apps/local-install.ts)
 - [Workbench registries](../../../apps/ui/src/shared/contrib/uiContrib.ts)

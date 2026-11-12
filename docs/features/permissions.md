@@ -51,7 +51,7 @@ may open it; writes, edits and shell commands stay blocked there.
 | What the model is told | The path belongs to the Localix application itself; work in `~/.localix` and the project folder, and do not retry.                                                            |
 
 The roots are computed once per process from the server module's own location
-([`host-roots.ts`](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/lib/host-roots.ts)),
+([`host-roots.ts`](https://github.com/localixai/localix-studio/blob/main/apps/api/src/lib/host-roots.ts)),
 the same self-location rule the staged `migrations/` and `mini-app-kit` roots use. For the same
 reason a tool or mini app host given no cwd starts in `~/.localix/workspace`, never in the API's
 launch directory, which is the host application; a source lint keeps `process.cwd()` out of
@@ -122,14 +122,14 @@ followed by an authored allow remains an allowlist with an exception, even when 
 (installed Claude Code plugins) and `skills/` — for reads and writes alike, in every role. The rest
 of `~/.localix` (the database, the vault, the captured login-shell environment, backups) is outside,
 so touching it asks
-([`workspace.ts`](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/workspace.ts)).
+([`workspace.ts`](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tools/workspace.ts)).
 
 `outside-workspace`, `dangerous` and `mutates` are named CLASSES: they are computed from the call's
 facts, not compared against its text. That is what makes them robust where a glob is not — `rm -fr`,
 `rm -r -f` and `rm --recursive --force` are one class and three different strings.
 
 The rules editor suggests the classes declared in
-[`capability-resource-classes.ts`](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/capability-resource-classes.ts).
+[`capability-resource-classes.ts`](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/capability-resource-classes.ts).
 That list defines their predicates and the capability kinds they apply to.
 
 An artifact's trust class (`bundled`, `opt-in`, `untrusted`) is in the same list and works the same
@@ -272,15 +272,15 @@ inspect or revoke current session grants. When no client can receive a confirmat
 
 ## Source of truth
 
-- [Rule matching and evaluation](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/permission-engine.ts)
-- [The gate and its carve-out](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/permission-gate.ts)
-- [The host-root guard](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/host-root-guard.ts)
+- [Rule matching and evaluation](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/permission-engine.ts)
+- [The gate and its carve-out](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/permission-gate.ts)
+- [The host-root guard](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/host-root-guard.ts)
   and
-  [the host's own roots](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/lib/host-roots.ts)
-- [Call-fact extraction](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/permission-facts.ts)
-- [The guards each shipped role carries](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/capabilities/builtin-agent-presets.ts)
-- [Per-run rule assembly](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/permission-gate-build.ts)
-- [Mode rewriting](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/capabilities/permission-mode-policy.ts)
-- [Permanent-rule insertion](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/capabilities/availability.ts)
-- [Session grants](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/confirm-requester.ts)
-- [Settings surface](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/settings/ui/permissions/PermissionRulesView.tsx)
+  [the host's own roots](https://github.com/localixai/localix-studio/blob/main/apps/api/src/lib/host-roots.ts)
+- [Call-fact extraction](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/permission-facts.ts)
+- [The guards each shipped role carries](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/capabilities/builtin-agent-presets.ts)
+- [Per-run rule assembly](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/permission-gate-build.ts)
+- [Mode rewriting](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/capabilities/permission-mode-policy.ts)
+- [Permanent-rule insertion](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/capabilities/availability.ts)
+- [Session grants](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/confirm-requester.ts)
+- [Settings surface](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/features/settings/ui/permissions/PermissionRulesView.tsx)

@@ -89,9 +89,9 @@ development does not automatically install a launcher.
 
 ## Source of truth
 
-- [CLI launcher](https://github.com/rsaryev/localix-studio/blob/main/packages/cli/bin/localix.mjs)
-- [Argument parser](https://github.com/rsaryev/localix-studio/blob/main/packages/cli/src/args.ts)
-- [Help text](https://github.com/rsaryev/localix-studio/blob/main/packages/cli/src/commands/help.ts)
-- [Path resolution and deep links](https://github.com/rsaryev/localix-studio/blob/main/packages/cli/src/open-url.ts)
-- [Launcher install plan](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/shell-command/plan.ts)
-- [Launcher install service](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/shell-command/service.ts)
+- [CLI launcher](https://github.com/localixai/localix-studio/blob/main/packages/cli/bin/localix.mjs)
+- [Argument parser](https://github.com/localixai/localix-studio/blob/main/packages/cli/src/args.ts)
+- [Help text](https://github.com/localixai/localix-studio/blob/main/packages/cli/src/commands/help.ts)
+- [Path resolution and deep links](https://github.com/localixai/localix-studio/blob/main/packages/cli/src/open-url.ts)
+- [Launcher install plan](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/shell-command/plan.ts)
+- [Launcher install service](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/shell-command/service.ts)

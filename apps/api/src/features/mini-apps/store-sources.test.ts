@@ -8,7 +8,7 @@ const release = (repo: string) =>
   `https://github.com/${repo}/releases/latest/download/mini-app-marketplace.json`
 
 const COMMUNITY = {
-  url: release('rsaryev/localix-community'),
+  url: release('localixai/localix-community'),
   name: 'localix-community',
   vouches: false,
   builtIn: true,
@@ -20,7 +20,7 @@ describe('the marketplaces every installation reads', () => {
   test("the Localix marketplace's release, which Localix vouches for, then Localix Community's", () => {
     expect(builtInMiniAppSources({})).toEqual([
       {
-        url: release('rsaryev/localix-marketplace'),
+        url: release('localixai/localix-marketplace'),
         name: 'localix',
         vouches: true,
         builtIn: true,

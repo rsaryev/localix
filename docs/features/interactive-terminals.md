@@ -130,12 +130,12 @@ contract.
 
 ## Source of truth
 
-- [Action fields and wait limits](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-schema.ts)
-- [Automatic observation cap](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-observation.ts)
-- [Wait and post-exit behavior](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-wait.ts)
-- [API final-screen archive](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/terminal/service.ts)
-- [API scrollback retention](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/terminal/session-scrollback.ts)
-- [Agent session ownership](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/bootstrap/terminal-ports.ts)
-- [UI replay cache](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/terminal/model/terminalOutput.ts)
-- [Tab closing and reconnect](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/terminal/ui/TerminalPane.tsx)
-- [Explicit relaunch](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/terminal/model/restartTerminalTab.ts)
+- [Action fields and wait limits](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-schema.ts)
+- [Automatic observation cap](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-observation.ts)
+- [Wait and post-exit behavior](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-wait.ts)
+- [API final-screen archive](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/terminal/service.ts)
+- [API scrollback retention](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/terminal/session-scrollback.ts)
+- [Agent session ownership](https://github.com/localixai/localix-studio/blob/main/apps/api/src/bootstrap/terminal-ports.ts)
+- [UI replay cache](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/features/terminal/model/terminalOutput.ts)
+- [Tab closing and reconnect](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/features/terminal/ui/TerminalPane.tsx)
+- [Explicit relaunch](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/features/terminal/model/restartTerminalTab.ts)

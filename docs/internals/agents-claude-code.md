@@ -13,7 +13,7 @@
   binding and chat history. All of it is keyed by agent identity and reconciled through the change
   feed.
 - The starter team is a plugin of the
-  [Localix marketplace](https://github.com/rsaryev/localix-marketplace), recommended in the Store.
+  [Localix marketplace](https://github.com/localixai/localix-marketplace), recommended in the Store.
   Nothing is seeded into a profile.
 - Mini apps do not contribute agents; an agent shipped with software is a plugin component (X3).
 

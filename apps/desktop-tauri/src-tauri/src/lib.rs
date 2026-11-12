@@ -83,7 +83,7 @@ use tauri::{Manager, RunEvent};
 /// The public site, opened by Help > Website.
 pub(crate) const SITE_URL: &str = "https://localix.ai";
 /// The public source repository; Help links to its docs, issues and releases.
-pub(crate) const REPOSITORY_URL: &str = "https://github.com/rsaryev/localix-studio";
+pub(crate) const REPOSITORY_URL: &str = "https://github.com/localixai/localix-studio";
 
 #[cfg(target_os = "macos")]
 mod app_bundle;

@@ -1,7 +1,7 @@
 # Store
 
 The Store is where you find, install, update and remove what Localix can add: mini apps and Claude
-Code plugins, from the [Localix marketplace](https://github.com/rsaryev/localix-marketplace) and
+Code plugins, from the [Localix marketplace](https://github.com/localixai/localix-marketplace) and
 from Anthropic's official and community plugin marketplaces. Use this page to see where its packages
 come from, how its search works, and what happens before anything is installed.
 
@@ -131,8 +131,8 @@ the macOS desktop an app with a screen of its own also offers **Install as app**
 
 A fresh profile starts with these sources. Only the Localix marketplace installs anything on its own
 (see below); from the others nothing is installed or switched on. The first two are one repository,
-the [Localix marketplace](https://github.com/rsaryev/localix-marketplace): its releases publish the
-mini app marketplace, and its `plugins` folder is the plugin marketplace. The core names none of
+the [Localix marketplace](https://github.com/localixai/localix-marketplace): its releases publish
+the mini app marketplace, and its `plugins` folder is the plugin marketplace. The core names none of
 their packages.
 
 | Source                                | Trust     | Shown as                                                |
@@ -191,6 +191,6 @@ guess, and a kind it ranks `None` (a reader that also shows Markdown) is not off
 
 ## Source of truth
 
-- [Store feature](https://github.com/rsaryev/localix-studio/tree/main/apps/api/src/features/store)
-- [Default sources](https://github.com/rsaryev/localix-studio/blob/main/packages/store/src/default-sources.ts)
-- [Plugins in the Store](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/store-provider.ts)
+- [Store feature](https://github.com/localixai/localix-studio/tree/main/apps/api/src/features/store)
+- [Default sources](https://github.com/localixai/localix-studio/blob/main/packages/store/src/default-sources.ts)
+- [Plugins in the Store](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/store-provider.ts)

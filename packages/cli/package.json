@@ -12,12 +12,12 @@
   ],
   "homepage": "https://localix.ai",
   "bugs": {
-    "url": "https://github.com/rsaryev/localix-studio/issues"
+    "url": "https://github.com/localixai/localix-studio/issues"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rsaryev/localix-studio.git",
+    "url": "git+https://github.com/localixai/localix-studio.git",
     "directory": "packages/cli"
   },
   "bin": {

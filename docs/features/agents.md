@@ -109,9 +109,10 @@ a card to you.
 ## Starter agents
 
 A starter team of ordinary plugin agents is in the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace) and Recommended in the Store.
-Nothing is added to your folders until you install it, and uninstalling removes them. Use **Copy to
-Yours** to change one. Pick one when you start a conversation, or name one as a subagent type.
+[Localix marketplace](https://github.com/localixai/localix-marketplace) and Recommended in the
+Store. Nothing is added to your folders until you install it, and uninstalling removes them. Use
+**Copy to Yours** to change one. Pick one when you start a conversation, or name one as a subagent
+type.
 
 ## Default tool candidates
 

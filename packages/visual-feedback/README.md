@@ -7,11 +7,11 @@ context.
 ## Consumers
 
 The
-[API preview injector](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/preview/probe-inject.ts)
+[API preview injector](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tools/preview/probe-inject.ts)
 bundles `probe-entry` into served preview HTML. The
-[preview UI bridge](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/inspector/ui/useVisualFeedback.ts)
+[preview UI bridge](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/features/inspector/ui/useVisualFeedback.ts)
 imports the protocol, and the
-[feedback layer](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/inspector/ui/VisualFeedbackLayer.tsx)
+[feedback layer](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/features/inspector/ui/VisualFeedbackLayer.tsx)
 uses the host payload builder.
 
 ## Public entry points
@@ -46,11 +46,11 @@ uses the host payload builder.
 ## Source of truth
 
 - [Package exports](./package.json)
-- [Root barrel](https://github.com/rsaryev/localix-studio/blob/main/packages/visual-feedback/src/index.ts)
-- [Bridge protocol](https://github.com/rsaryev/localix-studio/blob/main/packages/visual-feedback/src/protocol/index.ts)
-- [Host payload builder](https://github.com/rsaryev/localix-studio/blob/main/packages/visual-feedback/src/host/payload.ts)
+- [Root barrel](https://github.com/localixai/localix-studio/blob/main/packages/visual-feedback/src/index.ts)
+- [Bridge protocol](https://github.com/localixai/localix-studio/blob/main/packages/visual-feedback/src/protocol/index.ts)
+- [Host payload builder](https://github.com/localixai/localix-studio/blob/main/packages/visual-feedback/src/host/payload.ts)
 - [Embedded panel actuation](src/embedded/index.ts)
 - [Console buffer and optional capture installation](src/actuate/console-capture.ts)
-- [Probe entry](https://github.com/rsaryev/localix-studio/blob/main/packages/visual-feedback/src/probe/entry.ts)
-- [Source resolver](https://github.com/rsaryev/localix-studio/blob/main/packages/visual-feedback/src/source/index.ts)
-- [Visual Feedback guide](https://github.com/rsaryev/localix-studio/blob/main/docs/features/visual-feedback.md)
+- [Probe entry](https://github.com/localixai/localix-studio/blob/main/packages/visual-feedback/src/probe/entry.ts)
+- [Source resolver](https://github.com/localixai/localix-studio/blob/main/packages/visual-feedback/src/source/index.ts)
+- [Visual Feedback guide](https://github.com/localixai/localix-studio/blob/main/docs/features/visual-feedback.md)

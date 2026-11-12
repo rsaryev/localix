@@ -55,5 +55,5 @@ these two types.
 
 ## Source of truth
 
-- [The run's hooks on the plugin session](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/kit/hooks/run-hooks.ts)
-- [Model and verifier evaluators](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/cc-hook-evaluators.ts)
+- [The run's hooks on the plugin session](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/kit/hooks/run-hooks.ts)
+- [Model and verifier evaluators](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/cc-hook-evaluators.ts)

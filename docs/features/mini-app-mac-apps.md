@@ -96,7 +96,7 @@ mini app is on again.
 
 ## Source of truth
 
-- [Installing and refreshing app bundles](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/app_bundle.rs)
-- [The app runner](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/app_runner.rs)
-- [Install actions and icons](https://github.com/rsaryev/localix-studio/tree/main/apps/ui/src/features/standalone-mini-apps)
-- [The app page](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/pages/chat/model/useMiniApp.ts)
+- [Installing and refreshing app bundles](https://github.com/localixai/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/app_bundle.rs)
+- [The app runner](https://github.com/localixai/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/app_runner.rs)
+- [Install actions and icons](https://github.com/localixai/localix-studio/tree/main/apps/ui/src/features/standalone-mini-apps)
+- [The app page](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/pages/chat/model/useMiniApp.ts)

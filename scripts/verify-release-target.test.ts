@@ -12,18 +12,18 @@ function requestFrom(entries: Record<string, unknown>) {
 describe('release target provenance', () => {
   test('accepts an exact annotated tag and a matching reusable draft', () => {
     const result = inspectReleaseTarget({
-      repository: 'rsaryev/localix-studio',
+      repository: 'localixai/localix-studio',
       tag: 'v1.2.3',
       sourceCommit: commit,
       request: requestFrom({
-        '/repos/rsaryev/localix-studio/git/ref/tags/v1.2.3': {
+        '/repos/localixai/localix-studio/git/ref/tags/v1.2.3': {
           object: { type: 'tag', sha: tagObject },
         },
-        [`/repos/rsaryev/localix-studio/git/tags/${tagObject}`]: {
+        [`/repos/localixai/localix-studio/git/tags/${tagObject}`]: {
           object: { type: 'commit', sha: commit },
         },
         // Only the list returns drafts; `releases/tags/{tag}` answers 404 for one.
-        '/repos/rsaryev/localix-studio/releases?per_page=100': [
+        '/repos/localixai/localix-studio/releases?per_page=100': [
           { tag_name: 'v1.2.2', draft: false, body: 'older' },
           { tag_name: 'v1.2.3', draft: true, body: `Localix v1.2.3\n\nSource commit: ${commit}` },
         ],
@@ -35,11 +35,11 @@ describe('release target provenance', () => {
 
   test('allows creation only when the exact tag exists and the release does not', () => {
     const result = inspectReleaseTarget({
-      repository: 'rsaryev/localix-studio',
+      repository: 'localixai/localix-studio',
       tag: 'v1.2.3',
       sourceCommit: commit,
       request: requestFrom({
-        '/repos/rsaryev/localix-studio/git/ref/tags/v1.2.3': {
+        '/repos/localixai/localix-studio/git/ref/tags/v1.2.3': {
           object: { type: 'commit', sha: commit },
         },
       }),
@@ -50,13 +50,13 @@ describe('release target provenance', () => {
 
   test('rejects a mismatched tag, a published release, and an unrelated draft', () => {
     const baseEntries = {
-      '/repos/rsaryev/localix-studio/git/ref/tags/v1.2.3': {
+      '/repos/localixai/localix-studio/git/ref/tags/v1.2.3': {
         object: { type: 'commit', sha: commit },
       },
     }
     const inspect = (release?: unknown, sourceCommit = commit) =>
       inspectReleaseTarget({
-        repository: 'rsaryev/localix-studio',
+        repository: 'localixai/localix-studio',
         tag: 'v1.2.3',
         sourceCommit,
         request: requestFrom({
@@ -64,7 +64,7 @@ describe('release target provenance', () => {
           ...(release === undefined
             ? {}
             : {
-                '/repos/rsaryev/localix-studio/releases?per_page=100': [
+                '/repos/localixai/localix-studio/releases?per_page=100': [
                   { tag_name: 'v1.2.3', ...release },
                 ],
               }),
@@ -81,12 +81,12 @@ describe('release target provenance', () => {
     // Another tag's draft in the list is not this release.
     expect(
       inspectReleaseTarget({
-        repository: 'rsaryev/localix-studio',
+        repository: 'localixai/localix-studio',
         tag: 'v1.2.3',
         sourceCommit: commit,
         request: requestFrom({
           ...baseEntries,
-          '/repos/rsaryev/localix-studio/releases?per_page=100': [
+          '/repos/localixai/localix-studio/releases?per_page=100': [
             { tag_name: 'v1.2.4', draft: true },
           ],
         }),

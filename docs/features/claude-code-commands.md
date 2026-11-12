@@ -77,4 +77,4 @@ appears only when nothing claims the name.
 
 ## Source of truth
 
-- [Core slash-command catalog](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/slash-catalog.ts)
+- [Core slash-command catalog](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/slash-catalog.ts)

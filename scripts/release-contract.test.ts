@@ -81,7 +81,7 @@ describe('release workflow contract', () => {
     expect(against.permissions).toEqual({ contents: 'read' })
     expect(against.environment).toBeUndefined()
     const run = against.steps.map((step) => step.run ?? '').join('\n')
-    expect(run).toContain('rsaryev/localix-marketplace')
+    expect(run).toContain('localixai/localix-marketplace')
     expect(run).toContain('bun run check mini-apps')
     expect(against.steps.some((step) => step.env?.MINI_APP_KIT)).toBe(true)
     expect(workflow.jobs['mini-app-kit-stage']!.permissions).toEqual({ contents: 'read' })
@@ -294,7 +294,7 @@ describe('release workflow contract', () => {
     expect(desktopConfig.bundle.targets).toEqual(['app', 'dmg', 'nsis', 'deb', 'appimage'])
 
     const releaseRepository = workflowValues(release, 'RELEASE_REPO')[0]
-    expect(releaseRepository).toBe('rsaryev/localix-studio')
+    expect(releaseRepository).toBe('localixai/localix-studio')
     expect(readUpdaterSettings({ env: {} }).endpoints).toEqual([
       `https://github.com/${releaseRepository}/releases/latest/download/latest.json`,
     ])

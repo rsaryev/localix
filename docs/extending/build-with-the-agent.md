@@ -28,11 +28,11 @@ creating the mini app.
 ## How it works
 
 Making a mini app is the job of the authoring plugin, a Claude Code plugin from the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace). Install it in Localix from
+[Localix marketplace](https://github.com/localixai/localix-marketplace). Install it in Localix from
 the Store (Plugins); in Claude Code, add it with:
 
 ```text
-/plugin marketplace add rsaryev/localix-marketplace
+/plugin marketplace add localixai/localix-marketplace
 /plugin install mini-app-authoring@localix
 ```
 
@@ -109,7 +109,7 @@ board.
 
 ## Source of truth
 
-- [The authoring plugin](https://github.com/rsaryev/localix-marketplace/tree/main/plugins)
-- [The kit's validation tools](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/kit-tools.ts)
-- [Installing a local package](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/local-install.ts)
-- [The template every mini app forks](https://github.com/rsaryev/localix-marketplace/tree/main/plugins)
+- [The authoring plugin](https://github.com/localixai/localix-marketplace/tree/main/plugins)
+- [The kit's validation tools](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mini-apps/kit-tools.ts)
+- [Installing a local package](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mini-apps/local-install.ts)
+- [The template every mini app forks](https://github.com/localixai/localix-marketplace/tree/main/plugins)

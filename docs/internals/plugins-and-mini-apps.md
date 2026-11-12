@@ -16,7 +16,7 @@ A mini app does not contain, name or depend on a plugin, and a plugin knows noth
 This page is the contract for the split. The status table at the end says what is already true.
 
 Localix's own plugins and mini apps are not in this repository. They live in the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace) and install, update and are
+[Localix marketplace](https://github.com/localixai/localix-marketplace) and install, update and are
 trusted from its marketplace like anyone's. The core knows only that repository, as a trusted
 default source (`LOCALIX_MARKETPLACE` in `packages/store/src/default-sources.ts`), and names none of
 its plugins or mini apps. What the core publishes for them is the mini app SDK and the mini app kit.
@@ -106,7 +106,7 @@ A part Claude Code defines and Localix does not run is reported in the plugin's 
 dropped silently. A key Claude Code does not define is a validation warning, as in Claude Code.
 
 A Localix plugin is still only a plugin. The authoring plugin of the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace) is where mini apps are made:
+[Localix marketplace](https://github.com/localixai/localix-marketplace) is where mini apps are made:
 its skills, reviewer agent, edit hook and `mini-app` command scaffold, check, build, pack and
 install them, and it imports no Localix code, so X1 and X2 hold: no code path joins the two layers,
 and its folder holds no `.localix-mini-app/`. It reaches Localix only through data — the mini app

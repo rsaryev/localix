@@ -150,7 +150,7 @@ describe('/mini-app marketplace remove', () => {
     backendClient.listMiniAppMarketplaces = async () => [
       {
         name: 'Localix',
-        url: 'https://github.com/rsaryev/localix-marketplace/releases/latest/download/mini-app-marketplace.json',
+        url: 'https://github.com/localixai/localix-marketplace/releases/latest/download/mini-app-marketplace.json',
         builtIn: true,
       },
       { name: 'ada', url: 'https://ada.test/mini-app-marketplace.json', builtIn: false },

@@ -26,7 +26,7 @@ process-level override.
 
 ## How it works
 
-[`apps/api/src/lib/env.ts`](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/lib/env.ts)
+[`apps/api/src/lib/env.ts`](https://github.com/localixai/localix-studio/blob/main/apps/api/src/lib/env.ts)
 owns API-side parsing. `loadEnv()` validates the boot schema, while three shared readers normalize
 values used deeper in the runtime:
 
@@ -36,7 +36,7 @@ values used deeper in the runtime:
 | `envInt(name, fallback)`  | A finite positive number, truncated to an integer    | Blank, zero, negative, or non-numeric returns fallback. |
 | `envString(name)`         | Non-empty text after trimming                        | Blank returns `undefined`.                              |
 
-[`apps/api/src/lib/env-contract.test.ts`](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/lib/env-contract.test.ts)
+[`apps/api/src/lib/env-contract.test.ts`](https://github.com/localixai/localix-studio/blob/main/apps/api/src/lib/env-contract.test.ts)
 scans `apps/api/src` for direct reads of named variables. It permits operating-system variables and
 three dynamic-name boundaries: login-shell repair, hook interpolation, and manifest-declared MCP
 child environment values.
@@ -49,7 +49,7 @@ Session-owned mini app data uses `~/.localix/session-data` with the default data
 `LOCALIX_DB_FILE` uses `<absolute database filename>.session-data` instead, so databases in the same
 directory still have separate session data. The startup orphan sweep reconciles only that database's
 data root; a test database cannot remove the default database's mini app state.
-[`session-storage.ts`](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/session-storage.ts)
+[`session-storage.ts`](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mini-apps/session-storage.ts)
 owns this path selection.
 
 Detached children the API tracks (the local model servers, background jobs, terminals) are reaped
@@ -59,7 +59,7 @@ installed, each API process records the process groups it tracks in `~/.localix/
 its own process group SIGKILLs those groups and removes the file once the API pid is gone; the next
 API start does the same for any file whose API is dead, which is also how Windows (no watchdog)
 recovers. A clean exit removes the file.
-[`orphan-guard.ts`](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/lib/orphan-guard.ts)
+[`orphan-guard.ts`](https://github.com/localixai/localix-studio/blob/main/apps/api/src/lib/orphan-guard.ts)
 owns this.
 
 The login-shell resolver captures the user's interactive shell environment for GUI launches.
@@ -193,10 +193,10 @@ can change a running development process without restarting it.
 
 ## Source of truth
 
-- [Environment schema and readers](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/lib/env.ts)
-- [Raw-read contract test](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/lib/env-contract.test.ts)
-- [Login-shell environment repair](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/lib/login-shell-env.ts)
-- [Agent shell selection](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/environments/shell.ts)
-- [MCP timeout policy](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/mcp-tools.ts)
-- [MCP result cap](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/mcp-result.ts)
-- [Source-development launcher](https://github.com/rsaryev/localix-studio/blob/main/scripts/dev-servers.mjs)
+- [Environment schema and readers](https://github.com/localixai/localix-studio/blob/main/apps/api/src/lib/env.ts)
+- [Raw-read contract test](https://github.com/localixai/localix-studio/blob/main/apps/api/src/lib/env-contract.test.ts)
+- [Login-shell environment repair](https://github.com/localixai/localix-studio/blob/main/apps/api/src/lib/login-shell-env.ts)
+- [Agent shell selection](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/agent-core/tools/environments/shell.ts)
+- [MCP timeout policy](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/mcp-tools.ts)
+- [MCP result cap](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/mcp-result.ts)
+- [Source-development launcher](https://github.com/localixai/localix-studio/blob/main/scripts/dev-servers.mjs)

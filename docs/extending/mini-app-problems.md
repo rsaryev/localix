@@ -83,13 +83,13 @@ a hint but has no primary recovery action. The recovery helper already marks its
 
 ## Source of truth
 
-- [Prerequisite](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/prerequisite.ts)
+- [Prerequisite](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/prerequisite.ts)
   and
-  [its recovery](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/prerequisite-recovery.ts)
-- [Host executables](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/executables.ts)
-- [Typed errors](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/typed-error.ts)
-- [Problem report hook](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/use-problem-report.ts)
-- [Terminal recovery input](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/lib/terminalBus.ts)
-- [Problem state](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/ui/problem-report/ProblemState.tsx)
+  [its recovery](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/ui/prerequisite-recovery.ts)
+- [Host executables](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/backend/executables.ts)
+- [Typed errors](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/backend/typed-error.ts)
+- [Problem report hook](https://github.com/localixai/localix-studio/blob/main/packages/mini-app-sdk/src/ui/use-problem-report.ts)
+- [Terminal recovery input](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/lib/terminalBus.ts)
+- [Problem state](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/ui/problem-report/ProblemState.tsx)
   and
-  [the house-style check](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/ui/problem-report/house-style.test.ts)
+  [the house-style check](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/ui/problem-report/house-style.test.ts)

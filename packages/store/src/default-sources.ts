@@ -39,7 +39,12 @@ export const TRUST_WEIGHTS: Readonly<Record<Trust, number>> = {
  */
 export const LOCALIX_MARKETPLACE = {
   name: 'localix',
-  repo: 'rsaryev/localix-marketplace',
+  repo: 'localixai/localix-marketplace',
+  /**
+   * Where it lived before the move to the localixai organisation. GitHub redirects the address, so
+   * a copy registered from it still updates, and it is still the official marketplace.
+   */
+  formerRepos: ['rsaryev/localix-marketplace'] as readonly string[],
   /** Only the plugin marketplace and the plugins are checked out, not the mini apps' sources. */
   paths: ['.claude-plugin', 'plugins'],
   /**
@@ -62,7 +67,7 @@ export const LOCALIX_MARKETPLACE = {
  */
 export const LOCALIX_COMMUNITY = {
   name: 'localix-community',
-  repo: 'rsaryev/localix-community',
+  repo: 'localixai/localix-community',
   /** As `LOCALIX_MARKETPLACE.signingKeys`; its private key is that repository's secret. */
   signingKeys: ['wORGUn4IvGMwsealgokrxlO0Q9j1LwayZgt6x0qwGhM='] as readonly string[],
 } as const

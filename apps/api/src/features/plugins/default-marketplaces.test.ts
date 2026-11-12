@@ -41,7 +41,7 @@ describe('the default marketplaces on start', () => {
         'localix',
         {
           kind: 'github',
-          repo: 'rsaryev/localix-marketplace',
+          repo: 'localixai/localix-marketplace',
           path: CATALOG,
           sparsePaths: ['.claude-plugin', 'plugins'],
         },
@@ -50,7 +50,7 @@ describe('the default marketplaces on start', () => {
         'localix-community',
         {
           kind: 'github',
-          repo: 'rsaryev/localix-community',
+          repo: 'localixai/localix-community',
           path: CATALOG,
           sparsePaths: ['.claude-plugin'],
         },

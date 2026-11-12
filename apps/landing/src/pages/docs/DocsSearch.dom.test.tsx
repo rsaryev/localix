@@ -77,7 +77,7 @@ test('home header is the bird, Docs and GitHub', async () => {
     expect(header.querySelectorAll('a')).toHaveLength(3)
     expect(header.querySelector('a[href="/docs"]')?.textContent).toBe('Docs')
     expect(header.querySelector('[aria-label="Localix on GitHub"]')?.getAttribute('href')).toBe(
-      'https://github.com/rsaryev/localix-studio',
+      'https://github.com/localixai/localix-studio',
     )
     // The bird stands where llx.sh sets its wordmark, and its link carries the name.
     expect(header.querySelector('[aria-label="Localix home"]')?.getAttribute('href')).toBe('/')

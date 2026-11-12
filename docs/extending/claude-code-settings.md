@@ -163,11 +163,11 @@ These keys and sources do not change Localix:
 
 ## Source of truth
 
-- [Settings files and merge](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/kit/settings/read.ts)
-- [Managed settings](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/kit/settings/managed.ts)
-- [Permission rules](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/kit/permissions.ts)
-- [Settings env](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/kit/settings/env.ts)
-- [Settings hooks](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/kit/settings/hooks.ts)
-- [Claude Code MCP servers](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mcp/claude-code-servers.ts)
-- [Status line](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/service/status-line.ts)
-- [Status line input](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/service/status-line-input.ts)
+- [Settings files and merge](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/kit/settings/read.ts)
+- [Managed settings](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/kit/settings/managed.ts)
+- [Permission rules](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/kit/permissions.ts)
+- [Settings env](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/kit/settings/env.ts)
+- [Settings hooks](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/kit/settings/hooks.ts)
+- [Claude Code MCP servers](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/mcp/claude-code-servers.ts)
+- [Status line](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/service/status-line.ts)
+- [Status line input](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/chat/service/status-line-input.ts)

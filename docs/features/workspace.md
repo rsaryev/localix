@@ -349,25 +349,25 @@ primary shortcut.
 
 ## Source of truth
 
-- [Global search scopes](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/search/model/scopes.ts)
-- [Search surface and partial results](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/search/ui/GlobalSearchTab.tsx)
+- [Global search scopes](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/features/search/model/scopes.ts)
+- [Search surface and partial results](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/features/search/ui/GlobalSearchTab.tsx)
 
-- [Surface registry](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/widgets/editor-grid/ui/registry.tsx)
-- [Split rendering](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/widgets/editor-grid/ui/GridView.tsx)
+- [Surface registry](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/widgets/editor-grid/ui/registry.tsx)
+- [Split rendering](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/widgets/editor-grid/ui/GridView.tsx)
   ·
-  [apps/ui/src/widgets/editor-grid/ui/GroupView.tsx](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/widgets/editor-grid/ui/GroupView.tsx)
-- [Placement policy](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/entities/workspace-grid/model/placement.ts)
-- [Scope and restoration](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/entities/workspace-grid/model/scope.ts)
+  [apps/ui/src/widgets/editor-grid/ui/GroupView.tsx](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/widgets/editor-grid/ui/GroupView.tsx)
+- [Placement policy](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/entities/workspace-grid/model/placement.ts)
+- [Scope and restoration](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/entities/workspace-grid/model/scope.ts)
   ·
-  [apps/ui/src/entities/workspace-grid/model/persistence.ts](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/entities/workspace-grid/model/persistence.ts)
-- [Restorable surface contract](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/entities/workspace-grid/model/capabilities.ts)
-- [Tab operations and cap](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/entities/workspace-grid/model/itemOps.ts)
-- [Shortcut catalog](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/lib/keybindings/catalog.ts)
+  [apps/ui/src/entities/workspace-grid/model/persistence.ts](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/entities/workspace-grid/model/persistence.ts)
+- [Restorable surface contract](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/entities/workspace-grid/model/capabilities.ts)
+- [Tab operations and cap](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/entities/workspace-grid/model/itemOps.ts)
+- [Shortcut catalog](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/lib/keybindings/catalog.ts)
   ·
-  [platform chord engine](https://github.com/rsaryev/localix-studio/blob/main/packages/kit/src/keyboard/chord.ts)
+  [platform chord engine](https://github.com/localixai/localix-studio/blob/main/packages/kit/src/keyboard/chord.ts)
   ·
-  [cross-platform contracts](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/lib/keybindings/chord.test.ts)
-- [Composer context state](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/entities/chat/model/useContextRefs.ts)
-- [Live tab context](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/entities/workspace-grid/model/liveTabMessageContext.ts)
-- [Context reference grammar](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/contracts/context-refs.ts)
-- [Interactive terminal](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/terminal/ui/TerminalPane.tsx)
+  [cross-platform contracts](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/shared/lib/keybindings/chord.test.ts)
+- [Composer context state](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/entities/chat/model/useContextRefs.ts)
+- [Live tab context](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/entities/workspace-grid/model/liveTabMessageContext.ts)
+- [Context reference grammar](https://github.com/localixai/localix-studio/blob/main/apps/api/src/contracts/context-refs.ts)
+- [Interactive terminal](https://github.com/localixai/localix-studio/blob/main/apps/ui/src/features/terminal/ui/TerminalPane.tsx)
