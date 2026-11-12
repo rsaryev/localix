@@ -30,12 +30,16 @@ const run = (
 
 describe('the script sandbox', () => {
   test('runs independent calls in parallel and returns only what the script outputs', async () => {
-    // Overlap, not wall time: starting the worker is no part of what this pins.
+    // Overlap, not timing: no call ends before both have started, so calls made one after the
+    // other would never finish and the run would end on its limit.
     const events: string[] = []
+    const bothStarted = Promise.withResolvers<void>()
     const tracked: ScriptTool = {
       ...read,
       execute: async (input, signal) => {
         events.push('start')
+        if (events.length === 2) bothStarted.resolve()
+        await bothStarted.promise
         const value = await read.execute(input, signal)
         events.push('end')
         return value
