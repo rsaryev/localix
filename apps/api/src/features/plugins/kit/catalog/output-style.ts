@@ -1,6 +1,7 @@
 import {
   BUILTIN_OUTPUT_STYLES,
   DEFAULT_OUTPUT_STYLE_ID,
+  findOutputStyle,
   listOutputStyles,
   readOutputStyle,
   resolveOutputStyle,
@@ -43,24 +44,11 @@ export function builtinStyleDescription(id: string): string | undefined {
 }
 
 /**
- * What `/output-style <query>` names, as the kit matches its argument (`resolveOutputStyle`, case
- * ignored): a style's id, `default`, or undefined when it names nothing. A forced style decides the
- * style in force, not what the argument names, so none is forced here. The kit answers Default both
- * for "default" and for a name nothing has; with a built-in style as the setting, only the first
- * stays Default.
+ * What `/output-style <query>` names, as the kit matches its argument (`findOutputStyle`, case
+ * ignored): a style's id, `default`, or undefined when it names nothing.
  */
-export function commandStyleId(styles: readonly StyleBody[], query: string): string | undefined {
-  const unforced = kitStyles(styles).map((style) => ({ ...style, forceForPlugin: false }))
-  const id = resolveOutputStyle({ command: query, styles: unforced }).id
-  if (id !== DEFAULT_OUTPUT_STYLE_ID) return id
-  const probe = BUILTIN_OUTPUT_STYLES.find((style) => style.id !== DEFAULT_OUTPUT_STYLE_ID)?.id
-  const named = resolveOutputStyle({
-    command: query,
-    styles: [],
-    ...(probe ? { setting: probe } : {}),
-  })
-  return named.id === DEFAULT_OUTPUT_STYLE_ID ? id : undefined
-}
+export const commandStyleId = (styles: readonly StyleBody[], query: string): string | undefined =>
+  findOutputStyle(kitStyles(styles), query)?.id
 
 /**
  * The id of the style in force, as the kit decides it (output-styles.md, "Change your output
