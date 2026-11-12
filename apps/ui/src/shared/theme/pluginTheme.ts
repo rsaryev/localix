@@ -25,10 +25,18 @@ export type PluginThemeSpec = CapabilitySnapshot['themes'][number]
 const STORAGE_KEY = 'sandbox_plugin_theme'
 const NO_THEMES: readonly PluginThemeSpec[] = []
 
+/**
+ * A theme id stored before ids took Claude Code's `custom:<plugin>:<slug>` form was `<plugin>:<slug>`;
+ * it reads as the new id, so the next listing repaints and rewrites it.
+ */
+const currentId = (id: string) => (id.startsWith('custom:') ? id : `custom:${id}`)
+
 function readStored(): PluginThemeSpec | null {
   try {
     const parsed = JSON.parse(loadString(STORAGE_KEY) ?? 'null') as PluginThemeSpec | null
-    return parsed && typeof parsed.id === 'string' && parsed.overrides ? parsed : null
+    return parsed && typeof parsed.id === 'string' && parsed.overrides
+      ? { ...parsed, id: currentId(parsed.id) }
+      : null
   } catch {
     return null
   }

@@ -11,15 +11,17 @@ beforeAll(() => {
 afterAll(async () => teardown())
 
 const dracula: PluginThemeSpec = {
-  id: 'vamp:dracula',
+  id: 'custom:vamp:dracula',
   pluginName: 'vamp',
+  slug: 'dracula',
   name: 'Dracula',
   base: 'dark',
   overrides: { '--composer-accent': '#bd93f9', '--status-error': '#ff5555' },
 }
 const paper: PluginThemeSpec = {
-  id: 'docs:paper',
+  id: 'custom:docs:paper',
   pluginName: 'docs',
+  slug: 'paper',
   name: 'Paper',
   base: 'light',
   overrides: { '--user-message': '#fdf6e3' },
@@ -46,12 +48,12 @@ describe('the theme choices', () => {
   test('the picker switches to the base, then lays the theme over it', async () => {
     const { selectTheme, themeChoices } = await import('./themeChoice')
     expect(themeChoices([dracula]).at(-1)).toEqual({
-      value: 'plugin:vamp:dracula',
+      value: 'plugin:custom:vamp:dracula',
       label: 'Dracula',
       description: 'From vamp',
     })
     const { modes, setMode } = recorder()
-    selectTheme('plugin:vamp:dracula', [dracula], setMode)
+    selectTheme('plugin:custom:vamp:dracula', [dracula], setMode)
     expect(modes).toEqual(['dark'])
     expect(accent()).toBe('#bd93f9')
     selectTheme('light', [dracula], setMode)
@@ -102,8 +104,13 @@ describe('/theme', () => {
     })
     expect(modes).toEqual(['dark'])
     expect(accent()).toBe('#bd93f9')
-    // The id and the bare slug name it too.
+    // Its id, `<plugin>:<slug>` and the bare slug name it too.
     expect(runThemeCommand('docs:paper', deps).kind).toBe('switched')
+    expect(modes.at(-1)).toBe('light')
+    expect(runThemeCommand('custom:vamp:dracula', deps).kind).toBe('switched')
+    expect(modes.at(-1)).toBe('dark')
+    const sun = { ...paper, id: 'custom:docs:sun', slug: 'sun', name: 'Sunny' }
+    expect(runThemeCommand('sun', { ...deps, themes: [sun] }).kind).toBe('switched')
     expect(modes.at(-1)).toBe('light')
     expect(runThemeCommand('System', deps).title).toBe('Theme set to System')
     expect(modes.at(-1)).toBe('system')
@@ -113,7 +120,7 @@ describe('/theme', () => {
   test('an unknown or shared name changes nothing and says why', async () => {
     const { runThemeCommand } = await import('./themeChoice')
     const { modes, setMode } = recorder()
-    const twin = { ...dracula, id: 'other:dracula', pluginName: 'other' }
+    const twin = { ...dracula, id: 'custom:other:dracula', pluginName: 'other' }
     const deps = { themes: [dracula, twin], selection: dark, chosen: null, setMode }
     expect(runThemeCommand('solarized', deps)).toMatchObject({
       kind: 'unknown',

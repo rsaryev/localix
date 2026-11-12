@@ -13,7 +13,7 @@ import { currentThemeSelection, setThemeMode, type ResolvedTheme, type ThemeMode
  * the custom and plugin themes). One list and one apply step for both surfaces.
  */
 export interface ThemeChoice {
-  /** `system`/`light`/`dark`, or `plugin:<plugin>:<slug>` — never collides with an appearance. */
+  /** `system`/`light`/`dark`, or `plugin:<theme id>` — never collides with an appearance. */
   value: string
   label: string
   description?: string
@@ -74,7 +74,7 @@ export function selectTheme(
 
 /**
  * The choice a typed name means, ignoring case as Claude Code's `/theme` does: an appearance, a
- * theme's name, its `<plugin>:<slug>` id or its bare slug. A name two plugins share is ambiguous.
+ * theme's name, its id, `<plugin>:<slug>` or its bare slug. A name two plugins share is ambiguous.
  */
 export function findThemeChoice(
   query: string,
@@ -89,10 +89,10 @@ export function findThemeChoice(
   const byId = themes.find((theme) => theme.id.toLowerCase() === wanted)
   const matches = byId
     ? [byId]
-    : themes.filter(
-        (theme) =>
-          theme.name.toLowerCase() === wanted ||
-          theme.id.slice(theme.id.indexOf(':') + 1).toLowerCase() === wanted,
+    : themes.filter((theme) =>
+        [theme.name, theme.slug, `${theme.pluginName}:${theme.slug}`].some(
+          (name) => name.toLowerCase() === wanted,
+        ),
       )
   if (matches.length === 1) {
     const choice = themeChoices(matches).at(-1)!

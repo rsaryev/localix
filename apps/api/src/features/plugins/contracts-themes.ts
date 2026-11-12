@@ -6,9 +6,14 @@ import { z } from 'zod'
  * (`themes.ts` maps the Claude Code tokens). Listed in the capability snapshot.
  */
 export const pluginThemeSpecSchema = z.object({
-  /** `<plugin>:<slug>` — stable across reloads; what the device stores when it is chosen. */
+  /**
+   * `custom:<plugin>:<slug>`, what Claude Code's `/theme` stores for it (settings-reference.md,
+   * `theme`) — stable across reloads; what the device stores when it is chosen.
+   */
   id: z.string(),
   pluginName: z.string(),
+  /** The theme's file name without `.json`. */
+  slug: z.string(),
   /** The theme's own label (`name`, else its slug). */
   name: z.string(),
   base: z.enum(['dark', 'light']),

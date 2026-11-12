@@ -10,8 +10,9 @@ beforeAll(() => {
 afterAll(async () => teardown())
 
 const dracula: PluginThemeSpec = {
-  id: 'vamp:dracula',
+  id: 'custom:vamp:dracula',
   pluginName: 'vamp',
+  slug: 'dracula',
   name: 'Dracula',
   base: 'dark',
   overrides: { '--composer-accent': '#bd93f9', '--status-error': '#ff5555' },
@@ -67,7 +68,7 @@ describe('a plugin color theme', () => {
     expect(accent()).toBe('')
     // …and keeps the choice, as Claude Code keeps `custom:<slug>`…
     expect(JSON.parse(localStorage.getItem('sandbox_plugin_theme') ?? 'null')?.id).toBe(
-      'vamp:dracula',
+      'custom:vamp:dracula',
     )
     // …so it paints again where it is listed.
     reconcilePluginTheme([{ ...dracula, overrides: { '--composer-accent': '#ff79c6' } }])
@@ -77,5 +78,26 @@ describe('a plugin color theme', () => {
     expect(accent()).toBe('')
     expect(localStorage.getItem('sandbox_plugin_theme')).toBeNull()
     reconcilePluginTheme(undefined)
+  })
+
+  test('a choice stored before ids took the custom: prefix still paints its theme', async () => {
+    const { clearPluginTheme, installPluginTheme, reconcilePluginTheme } =
+      await import('./pluginTheme')
+    document.documentElement.dataset.theme = 'dark'
+    const stop = installPluginTheme()
+    try {
+      const { slug: _slug, ...stored } = { ...dracula, id: 'vamp:dracula' }
+      localStorage.setItem('sandbox_plugin_theme', JSON.stringify(stored))
+      window.dispatchEvent(new StorageEvent('storage', { key: 'sandbox_plugin_theme' }))
+      reconcilePluginTheme([{ ...dracula, overrides: { '--composer-accent': '#ff79c6' } }])
+      expect(accent()).toBe('#ff79c6')
+      expect(JSON.parse(localStorage.getItem('sandbox_plugin_theme') ?? 'null')?.id).toBe(
+        'custom:vamp:dracula',
+      )
+    } finally {
+      clearPluginTheme()
+      reconcilePluginTheme(undefined)
+      stop()
+    }
   })
 })

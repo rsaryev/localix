@@ -38,6 +38,7 @@ export {
 } from './spawn'
 export { resolveModelAlias } from './model-alias'
 export type { HexTheme, PluginWorkflow } from './catalog/components'
+export { customThemeId } from '@rsaryev/llx-plugin/format'
 export { readSkillDescriptions } from './catalog/components'
 export { workflowScript, type WorkflowScript } from './catalog/workflow-script'
 export { savedWorkflows } from './catalog/saved-workflows'

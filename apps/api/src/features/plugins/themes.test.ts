@@ -35,8 +35,10 @@ const dracula = theme('dracula', {
 describe('toLocalixTheme', () => {
   test('maps each Claude Code token onto the CSS properties that draw its role', () => {
     expect(toLocalixTheme('vamp', dracula)).toEqual({
-      id: 'vamp:dracula',
+      // What Claude Code's `/theme` stores for a plugin's theme (settings-reference.md, `theme`).
+      id: 'custom:vamp:dracula',
       pluginName: 'vamp',
+      slug: 'dracula',
       name: 'Dracula',
       // A daltonized or ANSI preset starts from its light or dark tone.
       base: 'light',
@@ -100,8 +102,8 @@ describe('listThemesFromCatalog', () => {
     const off = entry('off', 'global', [theme('x')])
     const local = entry('local', 'project', [theme('y')])
     expect(listThemesFromCatalog(catalog([on, local], [on, off, local])).map((t) => t.id)).toEqual([
-      'vamp:dracula',
-      'local:y',
+      'custom:vamp:dracula',
+      'custom:local:y',
     ])
   })
 })

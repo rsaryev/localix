@@ -1,6 +1,6 @@
 import type { PluginCatalog } from './catalog'
 import type { PluginThemeSpec } from './contracts-themes'
-import type { HexTheme } from './kit'
+import { customThemeId, type HexTheme } from './kit'
 
 /**
  * Claude Code color themes as Localix themes. A Claude Code theme recolors a terminal UI through
@@ -65,8 +65,9 @@ export function toLocalixTheme(pluginName: string, theme: HexTheme): PluginTheme
   for (const [token, color] of Object.entries(theme.overrides))
     for (const cssVar of CC_THEME_TOKEN_VARS[token] ?? []) overrides[cssVar] = color
   return {
-    id: `${pluginName}:${theme.slug}`,
+    id: customThemeId(theme.slug, pluginName),
     pluginName,
+    slug: theme.slug,
     name: theme.name,
     base: theme.base.startsWith('light') ? 'light' : 'dark',
     overrides,
