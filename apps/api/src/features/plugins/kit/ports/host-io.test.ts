@@ -2,7 +2,13 @@ import { describe, expect, test } from 'bun:test'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
-import { hostLocations, processEnvironment, scratchFolder, systemClock } from './host-io'
+import {
+  hostLocations,
+  pluginDataDir,
+  processEnvironment,
+  scratchFolder,
+  systemClock,
+} from './host-io'
 
 const dir = tempDirPerTest('kit-host-io')
 
@@ -86,5 +92,17 @@ describe('the scratch folder', () => {
     expect(readFileSync(first, 'utf8')).toBe('one')
     expect(first.endsWith('hook-output.txt')).toBe(true)
     expect(existsSync(second)).toBe(true)
+  })
+})
+
+describe("a plugin's data folder", () => {
+  test('is under ~/.localix/plugin-data, named by the id as Claude Code names it', () => {
+    const home = '/home/u'
+    const at = (name: string) => join(home, '.localix', 'plugin-data', name)
+    expect(pluginDataDir('my-plugin', home)).toBe(at('my-plugin'))
+    expect(pluginDataDir('a@b c.d', home)).toBe(at('a-b-c-d'))
+    expect(pluginDataDir('keep_under-score', home)).toBe(at('keep_under-score'))
+    // One `-` per character, not per UTF-16 unit: the kit's `pluginDataId`.
+    expect(pluginDataDir('a\u{1F600}b', home)).toBe(at('a-b'))
   })
 })

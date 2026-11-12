@@ -3,9 +3,6 @@ import { mcpServerShape } from './kit'
 import type { DiscoveredPlugin } from './discovery'
 import type { Resolved, ResolvedMcpServer } from '@rsaryev/llx-plugin'
 
-// `pluginDataDir` lives in `../ext/user-config-substitute` (shared with cc-hooks).
-export { pluginDataDir } from '../ext/user-config-substitute'
-
 /**
  * The MCP server records of one enabled plugin, from the servers its scope's kit session resolved
  * (`kit/scope-session.ts`): each keyed `plugin:<plugin>:<server>`, named `<plugin>_<server>` so its

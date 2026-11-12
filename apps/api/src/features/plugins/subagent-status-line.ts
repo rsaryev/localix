@@ -1,9 +1,9 @@
 import type { CommandRunner } from '@rsaryev/llx-plugin'
 import type { SubagentStatusTask } from '@rsaryev/llx-plugin/settings'
 import { childEnv } from '../../lib/login-shell-env'
-import { pluginDataDir } from '../ext/user-config-substitute'
 import {
   hostCommandRunner,
+  pluginDataDir,
   processEnvironment,
   runKitSubagentStatusLine,
   subagentStatusLineInput,

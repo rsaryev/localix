@@ -73,20 +73,6 @@ const OWNER = 'packages/mini-app-sdk/src/backend/safe-file-key.ts'
 const EXEMPTIONS: Exemptions = {
   // ── Same charset, but NOT a filesystem key: a different KIND, and merging them would put a
   //    security boundary one careless edit away from a convenience tweak. Do not consolidate. ──
-  // MOVED, and the ruling had to be RE-ARGUED, not just re-keyed: this rule lived in `mcp.ts`
-  // under the reason "no path is built from it" — and then commit 6dd1c7b5b moved it to
-  // `user-config-substitute.ts` as `pluginDataDir`, which builds EXACTLY that path
-  // (`join(localixHome(), 'plugin-data', id)`). The old blessing's premise was simply false at
-  // its new address, and it went unseen because CLAIM 2's `path.join` regex could not read the
-  // bare `join(` spelling (see `buildsAPath`). The blessing survives on a DIFFERENT argument.
-  [exemptionKey('apps/api/src/features/ext/user-config-substitute.ts', 'rule')]: {
-    reason:
-      'Namespaces a PLUGIN ID for `~/.localix/plugin-data/<id>`, replacing with "-" (not "_") to mirror the CC spec\'s own data-dir id. Its charset is the owner\'s exactly — `.` and `/` both die, so `..` → `--` and no separator can be re-introduced — i.e. it is traversal-safe for the same reason the owner is, it just spells the replacement differently to stay CC-compatible. NOT merged into the owner because the replacement char is part of an EXTERNAL spec, not our choice: changing it to "_" to share the owner would silently relocate every plugin\'s existing data dir. Its input is a plugin NAME from a manifest, not a userId, and a collision yields two plugins sharing a data dir — not one user reading another\'s credentials. Pinned in plugins/plugin-data-id.test.ts.',
-  },
-  [exemptionKey('apps/api/src/features/ext/user-config-substitute.ts', 'fileKey')]: {
-    reason:
-      'Same ruling as its CLAIM 1 entry above — `pluginDataDir` joins the sanitized plugin id into `~/.localix/plugin-data/<id>`. Traversal-safe: the charset admits no `.` and no `/`, so no dot-segment and no separator can survive it.',
-  },
   [exemptionKey('apps/api/src/features/chat/runtime/run/attachment-spill-plan.ts', 'fileKey')]: {
     reason:
       'CLAIM 2 only (its charset admits `.`, so it is not the owner\'s rule). `sanitizeSegment` guards the dot-segment hazard EXPLICITLY with a second pass — `.replace(/^\\.+/, "_")` — so `..` → `__` before it reaches `path.posix.join`. It keys a scratch spill file by sessionId under `.localix/attachments/`, not a credential store. Newly VISIBLE (not new) once CLAIM 2 learned to read `path.posix.join`; reviewed and ruled safe on that explicit guard.',
@@ -351,10 +337,10 @@ describe('safe-file-key contract', () => {
    * the deleted `agent-memory.ts`; `path.posix.join(` was blind for the same reason.
    *
    * Narrowing `buildsAPath` back to `PATH_JOIN_RE.test(code)` does go red today — but only via
-   * the live-tree anchor, which fires because `user-config-substitute.ts` HAPPENS to use the named
-   * import. That is coverage by coincidence: this suite's own blessings moved once already
-   * (mcp.ts → ext/user-config-substitute.ts), and the day that file changes its import style, the branch
-   * stops being exercised and the detector can be re-narrowed with everything green — back to
+   * the live-tree anchor, when some live file HAPPENS to use the named import. That is coverage by
+   * coincidence: this suite's own blessings moved once already (mcp.ts → user-config-substitute.ts,
+   * since deleted for the plugin kit's `pluginDataId`), and the day such a file changes its import
+   * style, the branch stops being exercised and the detector can be re-narrowed with everything green — back to
    * the exact blindness that shipped the bug. A planted control does not depend on what the
    * live tree happens to look like.
    */

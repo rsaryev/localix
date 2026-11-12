@@ -235,7 +235,7 @@ export { diskFiles, type DiskFiles } from './ports/files'
 export { createModsHost } from '@rsaryev/llx-plugin/mods'
 export { hostCommandRunner } from './ports/command-runner'
 export { sessionEnvScripts } from './ports/session-files'
-export { hostLocations, processEnvironment, systemClock } from './ports/host-io'
+export { hostLocations, pluginDataDir, processEnvironment, systemClock } from './ports/host-io'
 export {
   runSubagentStatusLine as runKitSubagentStatusLine,
   subagentStatusLineInput,

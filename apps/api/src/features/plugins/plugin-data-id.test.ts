@@ -9,7 +9,7 @@ import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
 import type { DiscoveredPlugin } from './discovery'
-import { pluginDataDir } from '../ext/user-config-substitute'
+import { pluginDataDir } from './kit'
 import { pluginIdOf } from './plugin-data-id'
 
 const home = tempDirPerTest('plugin-data-id-')

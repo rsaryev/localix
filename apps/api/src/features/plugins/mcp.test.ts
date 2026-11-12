@@ -3,7 +3,6 @@ import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { connectServerConfig } from './kit/settings/mcp-connect'
 import { loadManifest } from './manifest-load'
-import { pluginDataDir } from './mcp'
 import { pluginMcpRecords } from './testing/test-mcp-records'
 
 const dir = tempDirPerTest('plugin-mcp-')
@@ -134,19 +133,5 @@ describe("a plugin's MCP server records", () => {
     )
     expect(found.map(({ name }) => name)).toEqual(['p_ok'])
     expect(JSON.stringify(warns)).toContain('LOCALIX_TEST_UNSET_VARIABLE')
-  })
-})
-
-describe('pluginDataDir', () => {
-  test('resolves under ~/.localix/plugin-data and sanitizes the id', () => {
-    const home = '/home/u'
-    expect(pluginDataDir('my-plugin', home)).toBe(
-      join(home, '.localix', 'plugin-data', 'my-plugin'),
-    )
-    // non-alphanumeric (other than _ and -) → '-'
-    expect(pluginDataDir('a@b c.d', home)).toBe(join(home, '.localix', 'plugin-data', 'a-b-c-d'))
-    expect(pluginDataDir('keep_under-score', home)).toBe(
-      join(home, '.localix', 'plugin-data', 'keep_under-score'),
-    )
   })
 })

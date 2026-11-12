@@ -1,4 +1,4 @@
-import { pluginDataDir } from '../ext/user-config-substitute'
+import { pluginDataDir } from './kit'
 import type { DiscoveredPlugin } from './discovery-types'
 
 /**

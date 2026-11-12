@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import type { Clock, Environment, Locations, ScratchFiles } from '@rsaryev/llx-plugin'
-import { pluginDataDir } from '../../../ext/user-config-substitute'
+import { pluginDataId } from '@rsaryev/llx-plugin/loading'
 
 /**
  * The small machine ports: time, the environment, where things are, and a scratch folder. Each is
@@ -53,6 +53,14 @@ export interface HostLocationsDeps {
   /** The folder a plugin was loaded from, by the id Localix keys it by. */
   pluginRoot(pluginId: string): string
 }
+
+/**
+ * `${CLAUDE_PLUGIN_DATA}` of the plugin `pluginId` (`name@marketplace`, or the bare name of a plugin
+ * from no marketplace): Localix keeps it at `~/.localix/plugin-data/<id>` where Claude Code keeps
+ * `~/.claude/plugins/data/<id>`, `<id>` the kit's `pluginDataId`.
+ */
+export const pluginDataDir = (pluginId: string, home: string): string =>
+  join(home, '.localix', 'plugin-data', pluginDataId(pluginId))
 
 /** `CLAUDE_PLUGIN_DATA` is Localix's `~/.localix/plugin-data/<id>`, created when first asked. */
 export function hostLocations(deps: HostLocationsDeps): Locations {
