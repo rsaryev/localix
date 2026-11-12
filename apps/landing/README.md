@@ -51,7 +51,8 @@ rendering the home page.
 Configs included:
 
 - **Netlify** — `netlify.toml` (base `apps/landing`, publish `dist`).
-- **Vercel** — `vercel.json`.
+- **Cloudflare Pages** (where localix.ai is served) — `public/_redirects`, `public/_headers` and
+  `public/404.html`, deployed by the `Website Deploy` workflow.
 - **Docker/nginx** — `Dockerfile` (build from the repo root:
   `docker build -f apps/landing/Dockerfile -t localix-landing .`).
 

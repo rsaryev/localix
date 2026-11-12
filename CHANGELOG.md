@@ -4,6 +4,11 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+- The website moves from Vercel to Cloudflare Pages (project `localix-studio`, serving localix.ai
+  and studio.localix.ai). `Website Deploy` builds it with turbo and uploads it with wrangler, with
+  the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; an unknown address answers a real
+  404 page.
+
 ## v0.1.0-beta.27 — 2026-11-12
 
 Claude Code plugins now run on one shared engine, the open `llx-plugin` kit, so a plugin behaves in

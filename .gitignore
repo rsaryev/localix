@@ -47,8 +47,6 @@ id_ecdsa*
 id_ed25519*
 .npmrc
 .netrc
-# Local Vercel link and pulled settings (apps/landing deploys from CI; nothing here is source).
-.vercel
 
 # Database
 .data/

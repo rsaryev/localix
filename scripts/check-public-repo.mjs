@@ -492,10 +492,18 @@ assert(
     !netlifyConfig.includes('to = "/index.html"'),
   'Netlify must serve static docs shells without a global SPA fallback',
 )
-const vercelConfig = JSON.parse(await readFile(join(root, 'apps/landing/vercel.json'), 'utf8'))
-assert.deepEqual(vercelConfig.rewrites, [
-  { source: '/docs/:slug', destination: '/docs/:slug.html' },
-])
+// Cloudflare Pages serves /docs/<slug> from its .html shell itself and answers an unknown URL
+// with 404.html; without that page it would serve the home page for every address.
+const pagesRedirects = await readFile(join(root, 'apps/landing/public/_redirects'), 'utf8')
+assert(
+  /^\/docs\s+\/docs\/getting-started--what-is-localix\s+302$/mu.test(pagesRedirects) &&
+    !/\/index\.html/u.test(pagesRedirects),
+  'Cloudflare Pages must redirect /docs and must not add a global SPA fallback',
+)
+assert(
+  existsSync(join(root, 'apps/landing/public/404.html')),
+  'Cloudflare Pages needs apps/landing/public/404.html, or unknown URLs become soft-404 home pages',
+)
 
 const dockerIgnore = await readFile(join(root, '.dockerignore'), 'utf8')
 for (const rule of [

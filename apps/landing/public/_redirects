@@ -1,0 +1,4 @@
+# Cloudflare Pages. A docs page is served from its static shell, /docs/<slug> from
+# /docs/<slug>.html, by Pages itself; only the bare /docs needs a rule.
+/docs   /docs/getting-started--what-is-localix   302
+/docs/  /docs/getting-started--what-is-localix   302

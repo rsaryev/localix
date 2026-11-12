@@ -149,7 +149,7 @@ validation, including the full Rust test suite.
 | ----------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Checks`          | PR, push to main (not docs-only), manual run | `App (types)` (types, test layout, size), `App (tests)` (unit tests) and `Desktop (Rust) and repository scans`, reported as `Checks passed`. |
 | `Desktop Release` | Manual run from main                         | Prepare release and require green CI → validate changelog and signing → create draft → build → publish.                                      |
-| `Website Deploy`  | Manual run                                   | Build and deploy the website, a preview unless `production` is chosen and `LANDING_PRODUCTION=true`.                                         |
+| `Website Deploy`  | Manual run                                   | Build and deploy the website to Cloudflare Pages, a preview unless `production` is chosen and `LANDING_PRODUCTION=true`.                     |
 
 A push starts only `Checks`; the website and a desktop release are always started by hand, so a
 deploy costs a build only when someone wants one. Run `Website Deploy` again after a release is

@@ -1,19 +1,20 @@
 name: Website Deploy
 
-# Builds the landing site and deploys it to Vercel, the same way the desktop release is built: in
-# GitHub Actions, then published as a prebuilt artifact. Vercel's own Git integration is not used,
-# so a deploy only ever happens from a build this workflow verified.
+# Builds the landing site and deploys it to Cloudflare Pages (project localix-studio, serving
+# localix.ai and studio.localix.ai), the same way the desktop release is built: in GitHub Actions,
+# then uploaded as a finished folder. Pages' own Git integration is not used, so a deploy only ever
+# happens from a build this workflow verified.
 #
 # It runs only by hand (Actions → Website Deploy → Run workflow), never on a push, a pull request
 # or a published release: a deploy costs a full build, and the site only needs the newest one.
 # Run it after a release is published so the download buttons link its installers.
 #
-#   • production off → a preview deployment
+#   • production off → a preview deployment (branch preview, at a *.pages.dev address)
 #   • production on  → the production site, when LANDING_PRODUCTION=true is also set
 #
 # Until the variable is set, every run deploys a preview and the live site is left alone.
 #
-# Needs: secret VERCEL_TOKEN; variables VERCEL_ORG_ID and VERCEL_PROJECT_ID.
+# Needs: secrets CLOUDFLARE_API_TOKEN (Account > Cloudflare Pages > Edit) and CLOUDFLARE_ACCOUNT_ID.
 
 on:
   workflow_dispatch:
@@ -33,9 +34,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
-  VERCEL_CLI_VERSION: 62.2.0
+  PAGES_PROJECT: localix-studio
+  WRANGLER_VERSION: 4.161.0
 
 jobs:
   deploy:
@@ -54,13 +54,13 @@ jobs:
 
       - name: Check the deployment credentials
         run: |
-          test -n "$VERCEL_TOKEN" || { echo "VERCEL_TOKEN is not set" >&2; exit 1; }
-          test -n "$VERCEL_ORG_ID" || { echo "VERCEL_ORG_ID is not set" >&2; exit 1; }
-          test -n "$VERCEL_PROJECT_ID" || { echo "VERCEL_PROJECT_ID is not set" >&2; exit 1; }
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "CLOUDFLARE_API_TOKEN is not set" >&2; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "CLOUDFLARE_ACCOUNT_ID is not set" >&2; exit 1; }
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      # The target decides which Vercel environment is pulled and whether the deploy is public.
+      # The target decides the Pages branch: main is production, anything else a preview.
       - name: Decide the target
         id: target
         env:
@@ -71,10 +71,10 @@ jobs:
           [ "$DISPATCH_PRODUCTION" = "true" ] && want_production=true
           if [ "$want_production" = "true" ] && [ "$PRODUCTION_ENABLED" = "true" ]; then
             echo "environment=production" >> "$GITHUB_OUTPUT"
-            echo "flag=--prod" >> "$GITHUB_OUTPUT"
+            echo "branch=main" >> "$GITHUB_OUTPUT"
           else
             echo "environment=preview" >> "$GITHUB_OUTPUT"
-            echo "flag=" >> "$GITHUB_OUTPUT"
+            echo "branch=preview" >> "$GITHUB_OUTPUT"
             [ "$want_production" = "true" ] && echo "::notice::Production deploys are off (set the repository variable LANDING_PRODUCTION=true); deploying a preview instead."
           fi
 
@@ -104,45 +104,28 @@ jobs:
             echo "No published release yet; installers stay marked coming soon."
           fi
 
-      # On Bun: the CLI's own launcher starts `#!/usr/bin/env node`, and this runner has no Node.
-      - name: Install the pinned Vercel CLI
-        run: bunx --bun "vercel@$VERCEL_CLI_VERSION" --version
-
-      - name: Pull the Vercel configuration
-        run:
-          bunx --bun "vercel@$VERCEL_CLI_VERSION" pull --yes --environment="$TARGET_ENVIRONMENT"
-          --token "$VERCEL_TOKEN"
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          TARGET_ENVIRONMENT: ${{ steps.target.outputs.environment }}
-
       - name: Build website
-        run:
-          bunx --bun "vercel@$VERCEL_CLI_VERSION" build ${TARGET_FLAG:+"$TARGET_FLAG"} --token
-          "$VERCEL_TOKEN"
+        run: bunx turbo build --filter=@localixai/landing
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          TARGET_FLAG: ${{ steps.target.outputs.flag }}
           VITE_RELEASE_LIVE: ${{ steps.release.outputs.live }}
           VITE_RELEASE_TAG: ${{ steps.release.outputs.tag }}
           VITE_RELEASE_ASSETS: ${{ steps.release.outputs.assets }}
 
+      # On Bun: wrangler's launcher starts `#!/usr/bin/env node`, and this runner has no Node.
       - name: Deploy website
         id: deploy
         run: |
-          # The CLI prints plain text here and JSON when it detects an agent, so the address is
-          # read with a pattern that works for both, and readiness is asked of the API instead.
-          bunx --bun "vercel@$VERCEL_CLI_VERSION" deploy --prebuilt ${TARGET_FLAG:+"$TARGET_FLAG"} --token "$VERCEL_TOKEN" > deploy.out
-          url=$(grep -Eo 'https://[A-Za-z0-9.-]+\.vercel\.app' deploy.out | tail -n 1)
-          test -n "$url" || { cat deploy.out >&2; echo "No deployment address in the CLI output" >&2; exit 1; }
-          host="${url#https://}"
-          state=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v13/deployments/$host?teamId=$VERCEL_ORG_ID" | jq -r '.readyState')
-          test "$state" = "READY" || { echo "Deployment $host is $state, not READY" >&2; exit 1; }
+          bunx --bun "wrangler@$WRANGLER_VERSION" pages deploy apps/landing/dist \
+            --project-name="$PAGES_PROJECT" --branch="$TARGET_BRANCH" \
+            --commit-hash="$GITHUB_SHA" --commit-dirty=false > deploy.out 2>&1 || { cat deploy.out >&2; exit 1; }
+          cat deploy.out
+          url=$(grep -Eo 'https://[A-Za-z0-9.-]+\.pages\.dev' deploy.out | tail -n 1)
+          test -n "$url" || { echo "No deployment address in wrangler's output" >&2; exit 1; }
           echo "url=$url" >> "$GITHUB_OUTPUT"
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          TARGET_FLAG: ${{ steps.target.outputs.flag }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TARGET_BRANCH: ${{ steps.target.outputs.branch }}
 
       - name: Write the deployment summary
         env:
