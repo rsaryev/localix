@@ -1,6 +1,6 @@
 import { expect, setDefaultTimeout, test } from 'bun:test'
 import { createScriptVms } from '@localixai/engine-scripts'
-import { hostWithVms } from './testing/testing-mods'
+import { hostWithVms, manualClock } from './testing/testing-mods'
 
 /**
  * A mod gone wrong on the real VM: a hook that never yields the thread — a plain loop or a loop of
@@ -42,7 +42,10 @@ for (const kind of ['spin', 'jobs'])
   test(`a hook that holds its thread (${kind}) is stopped, the conversation's other mods answer once it is, and the mod starts again`, async () => {
     const { command, host, reported, reports } = await hostWithVms(
       { spinner: SPINNER, other: OTHER },
-      { vms, hangMs: 300 },
+      // The limit under test is a turn's, which the VM's thread times itself. A load has the same
+      // budget on the host's clock, and a cold VM on a busy machine takes longer than 300 ms to
+      // load: that clock stands still here, so a slow load is not what stops the mod.
+      { vms, hangMs: 300, clock: manualClock() },
     )
     const stopped = reported('held its thread')
     const spinning = command('spinner', kind)

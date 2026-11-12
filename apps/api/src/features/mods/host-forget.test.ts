@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test'
+import { expect, setDefaultTimeout, test } from 'bun:test'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { createScriptVms } from '@localixai/engine-scripts'
@@ -10,6 +10,9 @@ import { manualClock } from './isolation/testing/testing-mods'
 /** A deleted conversation's mods go with it: its host and its VMs, and what was kept for it. */
 
 const scratch = tempDirPerTest('mods-host-forget', {})
+
+// Real VMs start cold here and the collector is waited for: seconds on a busy CI runner.
+setDefaultTimeout(30_000)
 
 /**
  * Real VMs, counted while they run, and the threads that hold at least one of them; what each VM
