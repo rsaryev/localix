@@ -39,22 +39,23 @@ function rows(
     // Nothing fires: these tests read once.
     timers: { set: () => 0, clear: () => {} },
     homeDir: '/home/me',
-    run: async (options) => {
-      inputs.push(options.input)
-      envs.push(options.env ?? {})
-      return {
-        code: 0,
-        stdout: '{"id":"child","content":"mapper · 42 tok"}',
-        stderr: '',
-        timedOut: false,
-        aborted: false,
-      }
+    runner: {
+      run: async (run) => {
+        inputs.push(run.stdin ?? '')
+        envs.push(run.env)
+        return {
+          exitCode: 0,
+          stdout: '{"id":"child","content":"mapper · 42 tok"}',
+          stderr: '',
+          timedOut: false,
+        }
+      },
     },
     ...more,
   })
 }
 
-const envs: NodeJS.ProcessEnv[] = []
+const envs: Array<Readonly<Record<string, string>>> = []
 
 describe('subagent rows', () => {
   test('a plugin status line rewrites the open children, given in Claude Code task fields', async () => {

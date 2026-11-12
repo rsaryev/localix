@@ -1,13 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 
-import {
-  parseSubagentRows,
-  plainRowText,
-  runSubagentStatusLine,
-  type SubagentTask,
-} from './subagent-status-line'
+import type { CommandRun, CommandRunner } from '@rsaryev/llx-plugin'
+import type { SubagentStatusTask } from '@rsaryev/llx-plugin/settings'
 
-const task = (id: string): SubagentTask => ({
+import { plainRowText, runSubagentStatusLine } from './subagent-status-line'
+
+const task = (id: string): SubagentStatusTask => ({
   id,
   type: 'local_agent',
   agentType: 'Explore',
@@ -20,6 +18,25 @@ const task = (id: string): SubagentTask => ({
   cwd: '/repo',
 })
 
+/** A runner that records each run and answers with `stdout` and `exitCode`. */
+function fakeRunner(stdout: string, exitCode: number | null = 0) {
+  const runs: CommandRun[] = []
+  const runner: CommandRunner = {
+    run: async (run) => {
+      runs.push(run)
+      return { exitCode, stdout, stderr: '', timedOut: false }
+    },
+  }
+  return { runs, runner }
+}
+
+const base = {
+  sessionId: 's1',
+  cwd: '/repo',
+  columns: 120,
+  homeDir: '/home/me',
+}
+
 describe('running a subagent status line', () => {
   test('a row body keeps its text and drops colors and hyperlink escapes', () => {
     expect(
@@ -27,8 +44,8 @@ describe('running a subagent status line', () => {
     ).toBe('ok link')
   })
 
-  test('reads one JSON line per known row; an empty body hides it, other lines are ignored', () => {
-    const rows = parseSubagentRows(
+  test('draws one JSON line per known row as plain text; an empty body hides it', async () => {
+    const { runner } = fakeRunner(
       [
         'noise',
         '{"id":"a","content":"\\u001b[1mA\\u001b[0m"}',
@@ -36,8 +53,13 @@ describe('running a subagent status line', () => {
         '{"id":"x","content":"?"}',
         '{bad',
       ].join('\n'),
-      new Set(['a', 'b']),
     )
+    const rows = await runSubagentStatusLine({
+      ...base,
+      line: { command: 'rows.sh' },
+      tasks: [task('a'), task('b')],
+      runner,
+    })
     expect(rows).toEqual([
       { id: 'a', content: 'A' },
       { id: 'b', content: '' },
@@ -45,53 +67,45 @@ describe('running a subagent status line', () => {
   })
 
   test('runs the command with the rows on stdin and the plugin roots in its environment', async () => {
-    const seen: { input?: string; env?: NodeJS.ProcessEnv; cwd?: string } = {}
+    const { runs, runner } = fakeRunner('{"id":"child-1","content":"⚙ parser"}\n')
     const rows = await runSubagentStatusLine({
+      ...base,
       line: { command: 'row.sh', plugin: { id: 'p@m', name: 'p', root: '/plugins/p' } },
       tasks: [task('child-1')],
-      sessionId: 's1',
-      cwd: '/repo',
-      columns: 120,
-      homeDir: '/home/me',
-      run: async (options) => {
-        Object.assign(seen, { input: options.input, env: options.env, cwd: options.cwd })
-        return {
-          code: 0,
-          stdout: '{"id":"child-1","content":"⚙ parser"}\n',
-          stderr: '',
-          timedOut: false,
-          aborted: false,
-        }
-      },
+      runner,
     })
     expect(rows).toEqual([{ id: 'child-1', content: '⚙ parser' }])
-    expect(JSON.parse(seen.input!)).toMatchObject({
+    const run = runs[0]
+    expect(run?.spec).toEqual({ form: 'shell', command: 'row.sh', shell: 'bash' })
+    expect(JSON.parse(run?.stdin ?? '')).toMatchObject({
       session_id: 's1',
+      cwd: '/repo',
       columns: 120,
       tasks: [{ id: 'child-1', type: 'local_agent', tokenCount: 1200 }],
     })
-    expect(seen.env?.CLAUDE_PLUGIN_ROOT).toBe('/plugins/p')
-    expect(seen.env?.CLAUDE_PLUGIN_DATA).toContain('p-m')
-    expect(seen.env?.CLAUDE_PROJECT_DIR).toBe('/repo')
-    expect(seen.cwd).toBe('/repo')
+    expect(run?.env.CLAUDE_PLUGIN_ROOT).toBe('/plugins/p')
+    expect(run?.env.CLAUDE_PLUGIN_DATA).toContain('p-m')
+    expect(run?.env.CLAUDE_PROJECT_DIR).toBe('/repo')
+    expect(run?.cwd).toBe('/repo')
+    // The 5 s limit reaches the runner as a signal that is not yet aborted.
+    expect(run?.signal.aborted).toBe(false)
   })
 
   test('a failing command rewrites nothing', async () => {
+    const { runner } = fakeRunner('{"id":"child-1","content":"x"}', 1)
     const rows = await runSubagentStatusLine({
-      line: { command: 'false', plugin: { id: 'p@m', name: 'p', root: '/p' } },
+      ...base,
+      line: { command: 'false' },
       tasks: [task('child-1')],
-      sessionId: 's1',
-      cwd: '/repo',
-      columns: 80,
-      homeDir: '/home/me',
-      run: async () => ({
-        code: 1,
-        stdout: '{"id":"child-1","content":"x"}',
-        stderr: 'boom',
-        timedOut: false,
-        aborted: false,
-      }),
+      runner,
     })
     expect(rows).toEqual([])
+  })
+
+  test('with no rows to rewrite nothing runs', async () => {
+    const { runs, runner } = fakeRunner('')
+    const rows = await runSubagentStatusLine({ ...base, line: { command: 'x' }, tasks: [], runner })
+    expect(rows).toEqual([])
+    expect(runs).toEqual([])
   })
 })

@@ -1,11 +1,12 @@
 import { agentRoute } from '../../../contracts/session-route'
 import { userHome } from '../../../lib/env'
 import type { ChildRunSummary } from '../../agent-core/tools/agent/agent-control'
-import type { PluginSession } from '@rsaryev/llx-plugin'
+import type { CommandRunner, PluginSession } from '@rsaryev/llx-plugin'
+import type { SubagentStatusTask } from '@rsaryev/llx-plugin/settings'
 import { chosenSubagentStatusLine } from '../../plugins/kit'
 import type { PluginCatalog } from '../../plugins/catalog'
 import { kitPluginsOf } from '../../plugins/catalog-kit'
-import { runSubagentStatusLine, type SubagentTask } from '../../plugins/subagent-status-line'
+import { runSubagentStatusLine } from '../../plugins/subagent-status-line'
 import type { SessionRecord } from '../repository'
 import type { SessionStreamRegistry } from '../runtime/session-stream-registry'
 import {
@@ -48,7 +49,7 @@ export interface SubagentRowsDeps {
   listDelegatedRuns: (userId: string, sessionId: string) => Promise<ChildRunSummary[]>
   streamRegistry: Pick<SessionStreamRegistry, 'hasWatchers' | 'publish'>
   homeDir?: string
-  run?: Parameters<typeof runSubagentStatusLine>[0]['run']
+  runner?: CommandRunner
   timers?: Timers
   tickMs?: number
   debounceMs?: number
@@ -75,7 +76,7 @@ export function createSubagentRows(deps: SubagentRowsDeps) {
     const line = kit && chosenSubagentStatusLine(kit, kitPluginsOf(catalog))
     if (!line) return { view: { active: false, rows: [] }, running: false, ids: [] }
     const runs = await deps.listDelegatedRuns(userId, sessionId)
-    const tasks: SubagentTask[] = []
+    const tasks: SubagentStatusTask[] = []
     for (const run of runs.filter((entry) => entry.status !== 'closed').slice(0, MAX_TASKS)) {
       const child = await deps.getSession(userId, run.sessionId)
       if (!child) continue
@@ -103,7 +104,7 @@ export function createSubagentRows(deps: SubagentRowsDeps) {
       cwd,
       columns: COLUMNS,
       homeDir: deps.homeDir ?? userHome(),
-      ...(deps.run ? { run: deps.run } : {}),
+      ...(deps.runner ? { runner: deps.runner } : {}),
     })
     return {
       view: { active: true, rows },
