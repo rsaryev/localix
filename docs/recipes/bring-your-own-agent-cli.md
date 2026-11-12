@@ -74,10 +74,10 @@ and checks before relying on an external agent's answer.
 
 ## Source of truth
 
-- [Installed CLI detection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/external-agents/installed.ts)
-- [Linking a CLI to a chat](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/external-agents/backend/link-session-routes.ts)
-- [Attaching native history](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/external-agents/backend/attach-session-routes.ts)
-- [Opening or reusing the owned terminal](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/external-agents/backend/owned-session-routes.ts)
-- [Native resume contracts](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/external-agents/backend/resume-session.ts)
-- [Observed terminal state](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/external-agents/backend/live/observe.ts)
-- [External-agent tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/external-agents/backend/tools/agent-sessions-tool.ts)
+- [Installed CLI detection](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/external-agents/installed.ts)
+- [Linking a CLI to a chat](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/external-agents/backend/link-session-routes.ts)
+- [Attaching native history](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/external-agents/backend/attach-session-routes.ts)
+- [Opening or reusing the owned terminal](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/external-agents/backend/owned-session-routes.ts)
+- [Native resume contracts](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/external-agents/backend/resume-session.ts)
+- [Observed terminal state](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/external-agents/backend/live/observe.ts)
+- [External-agent tool](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/external-agents/backend/tools/agent-sessions-tool.ts)

@@ -1,6 +1,6 @@
 # Shared Markdown
 
-The workspace and this documentation use the `llx-markdown` package. It owns the syntax; each host
+The workspace and this documentation use the `flowdown` package. It owns the syntax; each host
 chooses its links, images and reading layout. Mini apps use the host's [MarkdownRenderer](ui-kit.md)
 from the UI kit.
 
@@ -25,8 +25,8 @@ callback, checkboxes outside a conversation message are read-only.
 Inside a workspace host that owns document presentation, use the package directly:
 
 ```tsx
-import { Markdown } from 'llx-markdown'
-import 'llx-markdown/styles.css'
+import { Markdown } from '@localix-ai/flowdown'
+import '@localix-ai/flowdown/styles.css'
 
 export function Document({ source }: { source: string }) {
   return (
@@ -93,13 +93,13 @@ remains Markdown. The tab bar supports the keyboard and labels its panels.
 >
 > #### Parser
 >
-> `llx-markdown` reads Markdown with its own parser. A host that owns a unified pipeline imports
-> `remarkLlx` from `llx-markdown/remark` to get the same forms there.
+> `flowdown` reads Markdown with its own parser. A host that owns a unified pipeline imports
+> `remarkFlowdown` from `@localix-ai/flowdown/remark` to get the same forms there.
 >
 > #### Document
 >
-> Import `Markdown` from `llx-markdown` for a complete document with host components and plugins, as
-> the workspace and the documentation do.
+> Import `Markdown` from `flowdown` for a complete document with host components and plugins, as the
+> workspace and the documentation do.
 
 ## Trees and diagrams
 
@@ -169,9 +169,9 @@ product behavior merely because a Markdown block is present.
 
 ## Source of truth
 
-- [The `llx-markdown` dependency](https://github.com/rsaryev/localix/blob/main/apps/ui/package.json)
+- [The `flowdown` dependency](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/package.json)
   — the package owns entry points, markers, fences, parsing, sanitization and the document renderer.
-- [Plugin host entry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/app/kit/markdown.ts)
+- [Plugin host entry](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/app/kit/markdown.ts)
   and
-  [workspace renderer props](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/MarkdownRendererImpl.tsx).
+  [workspace renderer props](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/ui/MarkdownRendererImpl.tsx).
 - [Answer formatting](../features/answer-formatting.md) — workspace behavior and limits.

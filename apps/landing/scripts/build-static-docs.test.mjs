@@ -39,7 +39,7 @@ describe('static docs HTML', () => {
     expect(body).toContain('<p>The document renderer does not open workspace files')
     expect(body).toContain('aria-label="Keep the source portable"')
     expect(body).toContain('<p>Write ordinary Markdown beneath the marker.</p>')
-    expect(body).toContain('<footer class="llx-quote-source">Localix Markdown contract</footer>')
+    expect(body).toContain('<footer class="fd-quote-source">Localix Markdown contract</footer>')
   })
   test('uses the shared dialect and keeps all variants readable without JavaScript', () => {
     const body = renderStaticMarkdown(

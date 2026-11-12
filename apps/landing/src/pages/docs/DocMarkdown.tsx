@@ -1,8 +1,9 @@
-import { Markdown, type MarkdownProps } from 'llx-markdown'
-import { highlight } from 'llx-markdown/highlight'
+import { Markdown, type MarkdownProps } from '@localix-ai/flowdown'
+import { highlight } from '@localix-ai/flowdown/highlight'
 
 // Module constants: `<Markdown>` keeps what a loader brought, by the loader.
-const loadMath = () => import('katex/dist/katex.min.css').then(() => import('llx-markdown/math'))
+const loadMath = () =>
+  import('katex/dist/katex.min.css').then(() => import('@localix-ai/flowdown/math'))
 const loadMermaid = () => import('mermaid')
 
 /**

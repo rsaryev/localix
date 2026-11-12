@@ -41,7 +41,7 @@ const TAURI = join(root, 'node_modules', '.bin', 'tauri')
  * drawn on this grid to its own shape; macOS 13 to 15 show it as drawn.
  */
 const MAC_PLATE = { inset: 100, size: 824, radius: 185.4 }
-/** The artwork's own plate (as in LLX Desk's icon.svg), for Windows and Linux, which mask nothing. */
+/** The artwork's own plate (as in Localix Terminal's icon.svg), for Windows and Linux, which mask nothing. */
 const ARTWORK_PLATE = { inset: 64, size: 896, radius: 200 }
 /** Where the bird's 2048 box sits on a plate, as fractions of the plate: the artwork's optical centre. */
 const BIRD_ON_PLATE = { dx: 20 / 896, dy: -4 / 896, size: 892 / 896 }

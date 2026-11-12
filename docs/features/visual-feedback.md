@@ -81,7 +81,7 @@ error with the tree it needs to dismiss it. Whether this is faster than another 
 page is not measured here; the design avoids sending raw HTML or pixels where a few hundred tokens
 of tree will do. The tool needs a connected Localix application with a Preview host; an API-only
 headless run cannot complete it. The action and recovery contract belongs to
-[Preview control internals](https://github.com/rsaryev/localix/blob/main/docs/internals/subsystems/preview-control.md).
+[Preview control internals](https://github.com/rsaryev/localix-studio/blob/main/docs/internals/subsystems/preview-control.md).
 
 ### Resize through the agent tool
 
@@ -269,15 +269,15 @@ attached is reviewed in the composer's attached-context list.
 ## Related guides
 
 - [Use the workspace](workspace.md)
-- [Preview control internals](https://github.com/rsaryev/localix/blob/main/docs/internals/subsystems/preview-control.md)
+- [Preview control internals](https://github.com/rsaryev/localix-studio/blob/main/docs/internals/subsystems/preview-control.md)
 - [Human in the loop](hitl.md)
 
 ## Source of truth
 
-- [Selection gestures and text bound](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/selection/fsm.ts)
-- [Probe capture](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/probe/capture.ts)
-- [Layered source resolution](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/source/index.ts)
-- [Capture redaction and limits](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/core/redact.ts)
-- [Host bridge](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/ui/useVisualFeedback.ts)
-- [Comment batching](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/ui/VisualFeedbackLayer.tsx)
-- [Static and proxied probe injection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/preview/preview-probe.ts)
+- [Selection gestures and text bound](https://github.com/rsaryev/localix-studio/blob/main/packages/visual-feedback/src/selection/fsm.ts)
+- [Probe capture](https://github.com/rsaryev/localix-studio/blob/main/packages/visual-feedback/src/probe/capture.ts)
+- [Layered source resolution](https://github.com/rsaryev/localix-studio/blob/main/packages/visual-feedback/src/source/index.ts)
+- [Capture redaction and limits](https://github.com/rsaryev/localix-studio/blob/main/packages/visual-feedback/src/core/redact.ts)
+- [Host bridge](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/inspector/ui/useVisualFeedback.ts)
+- [Comment batching](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/inspector/ui/VisualFeedbackLayer.tsx)
+- [Static and proxied probe injection](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/preview/preview-probe.ts)

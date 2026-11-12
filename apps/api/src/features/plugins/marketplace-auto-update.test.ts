@@ -41,7 +41,7 @@ describe('which marketplaces auto-update', () => {
     // repository of their own, and the core knows them only by that address.
     const appRepository = {
       ...thirdParty,
-      source: { kind: 'github' as const, repo: 'rsaryev/localix', path: CATALOG },
+      source: { kind: 'github' as const, repo: 'rsaryev/localix-studio', path: CATALOG },
     }
     expect(isOfficialMarketplace('localix', appRepository)).toBe(false)
     expect(

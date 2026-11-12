@@ -96,8 +96,8 @@ you compare its current DOM and style context with the original note.
 
 ## Source of truth
 
-- [Probe capture](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/probe/capture.ts)
-- [Source resolution](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/source/index.ts)
-- [Host bridge](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/ui/useVisualFeedback.ts)
-- [Comment batching](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/ui/VisualFeedbackLayer.tsx)
-- [Viewport presets](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/model/previewViewportPresets.ts)
+- [Probe capture](https://github.com/rsaryev/localix-studio/blob/main/packages/visual-feedback/src/probe/capture.ts)
+- [Source resolution](https://github.com/rsaryev/localix-studio/blob/main/packages/visual-feedback/src/source/index.ts)
+- [Host bridge](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/inspector/ui/useVisualFeedback.ts)
+- [Comment batching](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/inspector/ui/VisualFeedbackLayer.tsx)
+- [Viewport presets](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/inspector/model/previewViewportPresets.ts)

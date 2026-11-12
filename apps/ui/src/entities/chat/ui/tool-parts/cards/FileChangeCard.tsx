@@ -8,7 +8,7 @@ import { isItemStreaming, hasItemError, itemErrorMessage } from '../itemHelpers'
 import { baseName, strField, asRecord } from './format'
 import { toolMeta } from './meta'
 import { firstChangedLine } from '@/shared/ui/diff'
-import { useSmoothText } from 'llx-markdown'
+import { useSmoothText } from '@localix-ai/flowdown'
 import { fileChangeSubtitle, lastContent, lastNewString } from './fileChangeFormat'
 import { FileChangeRow } from './FileChangeRow'
 

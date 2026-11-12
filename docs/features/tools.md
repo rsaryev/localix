@@ -237,12 +237,12 @@ core-registry ceiling.
 
 ## Source of truth
 
-- [Tool catalog and per-shape exposure](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-names.ts)
-- [Tool ledger: one verdict per tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-ledger.ts)
-- [Protected names for usage suggestions](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-policy-sets.ts)
-- [Wire assembly and deferral](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/tool-assembly.ts)
-- [Scoped Settings projection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/snapshot.ts)
-- [Known withheld-name errors](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/withheld-stub.ts)
-- [Browser opening and readiness](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/browser/browser-open.ts)
-- [Schema budget ratchet](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-schema-budget.test.ts)
-- [`Bash until` wait](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/bash-until.ts)
+- [Tool catalog and per-shape exposure](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tool-names.ts)
+- [Tool ledger: one verdict per tool](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tool-ledger.ts)
+- [Protected names for usage suggestions](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tool-policy-sets.ts)
+- [Wire assembly and deferral](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/tool-assembly.ts)
+- [Scoped Settings projection](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/capabilities/snapshot.ts)
+- [Known withheld-name errors](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/withheld-stub.ts)
+- [Browser opening and readiness](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/browser/browser-open.ts)
+- [Schema budget ratchet](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tool-schema-budget.test.ts)
+- [`Bash until` wait](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/bash/bash-until.ts)

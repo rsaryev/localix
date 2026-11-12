@@ -294,7 +294,7 @@ describe('release workflow contract', () => {
     expect(desktopConfig.bundle.targets).toEqual(['app', 'dmg', 'nsis', 'deb', 'appimage'])
 
     const releaseRepository = workflowValues(release, 'RELEASE_REPO')[0]
-    expect(releaseRepository).toBe('rsaryev/localix')
+    expect(releaseRepository).toBe('rsaryev/localix-studio')
     expect(readUpdaterSettings({ env: {} }).endpoints).toEqual([
       `https://github.com/${releaseRepository}/releases/latest/download/latest.json`,
     ])

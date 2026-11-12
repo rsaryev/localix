@@ -29,6 +29,7 @@
       },
       "dependencies": {
         "@hono/zod-validator": "^0.9.1",
+        "@localix-ai/flowdown": "^0.5.1",
         "@localixai/agent": "workspace:*",
         "@localixai/change-feed": "workspace:*",
         "@localixai/engine": "workspace:*",
@@ -50,7 +51,6 @@
         "hono": "^4.12.30",
         "kysely": "^0.29.7",
         "linkedom": "^0.18.14",
-        "llx-markdown": "^0.3.0",
         "pino": "10.4.0",
         "shell-quote": "^1.12.0",
         "tailwindcss": "^4.3.3",
@@ -85,12 +85,12 @@
         "@fontsource-variable/dm-sans": "^5.3.0",
         "@fontsource-variable/inter": "^5.3.0",
         "@fontsource-variable/sora": "^5.3.0",
+        "@localix-ai/flowdown": "^0.5.1",
         "@localixai/kit": "workspace:*",
         "@localixai/mini-app-sdk": "workspace:*",
         "@tailwindcss/vite": "^4.3.3",
         "highlight.js": "^11.12.0",
         "katex": "^0.19.0",
-        "llx-markdown": "^0.3.0",
         "lucide-react": "^1.61.0",
         "mermaid": "^12.2.0",
         "react": "^19.3.1",
@@ -120,6 +120,7 @@
         "@fontsource-variable/jetbrains-mono": "^5.3.0",
         "@fontsource/fragment-mono": "^5.3.0",
         "@iconify-icons/vscode-icons": "^2.0.19",
+        "@localix-ai/flowdown": "^0.5.1",
         "@localixai/agent": "workspace:*",
         "@localixai/api": "workspace:*",
         "@localixai/dataview": "workspace:*",
@@ -139,7 +140,6 @@
         "diff": "^9.0.0",
         "hono": "^4.12.30",
         "katex": "^0.19.0",
-        "llx-markdown": "^0.3.0",
         "lucide-react": "^1.61.0",
         "monaco-editor": "workspace:*",
         "radix-ui": "1.8.1",
@@ -780,6 +780,8 @@
     "@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.5.5", "", {}, "sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og=="],
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
+
+    "@localix-ai/flowdown": ["@localix-ai/flowdown@0.5.1", "", { "peerDependencies": { "highlight.js": "^11.0.0", "katex": ">=0.16.0", "react": "^18.2.0 || ^19.0.0" }, "optionalPeers": ["highlight.js", "katex", "react"] }, "sha512-ccgspB5euTJUBjkMbRlaf3ZjUDa4ONMcS6kRcYNdB1zjmTYTt2FCbex7lbZwmHK+JHxB7G8hnXEW8x3oTQR7vg=="],
 
     "@localixai/agent": ["@localixai/agent@workspace:packages/agent"],
 
@@ -2190,8 +2192,6 @@
     "linkedom": ["linkedom@0.18.14", "", { "dependencies": { "@acemir/cssom": "^0.9.32", "css-select": "^7.0.0", "html-escaper": "^3.0.3", "htmlparser2": "^10.1.0", "uhyphen": "^0.2.0" }, "peerDependencies": { "canvas": ">= 2" }, "optionalPeers": ["canvas"] }, "sha512-BRUnkOm4YR5vo+qI3j0EbungB0vZPSCue5AdnTQRaxAGSbsOZiBFRO0rh4zlo8qXUhli8pxvnpEXDklMnlq2Rg=="],
 
     "linkifyjs": ["linkifyjs@4.3.3", "", {}, "sha512-P8aEP5U/D1/IlTY2OeYsErdwh9bGuLE30NcXtKEjgdHcahveQoQwM2yZNsioQHsWFz0P7KKudisbrzCgR0sDHg=="],
-
-    "llx-markdown": ["llx-markdown@0.3.0", "", { "peerDependencies": { "highlight.js": "^11.0.0", "katex": ">=0.16.0", "react": "^18.2.0 || ^19.0.0" }, "optionalPeers": ["highlight.js", "katex"] }, "sha512-skr8zK2Kzi5MtbmeQOa9KbeKYFhbtr0paRlrp1CnpY8xHBSjFVkrwq/GTUDs/rxLvn8jLTGs+xY1ofzafXCYxw=="],
 
     "localix": ["localix@workspace:packages/cli"],
 

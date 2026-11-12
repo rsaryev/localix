@@ -191,12 +191,12 @@ secret settings, shown with source **Mini app**) and **System** items.
 
 ## Source of truth
 
-- [Vault service and versioning](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/service.ts)
-- [Exposure shield and cache bounds](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/exposure-shield.ts)
-- [Vault master-key loading](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/master-key.ts)
-- [Vault database storage](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/store.ts)
-- [Vault HTTP routes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/routes.ts)
-- [Encryption and authenticated-data format](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/cipher.ts)
-- [Agent Vault tool and approval boundary](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/agent-tool.ts)
-- [Mini app secret interpolation](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/secret-interpolate.ts)
-- [Vault workspace UI](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/secrets/ui/VaultWorkspace.tsx)
+- [Vault service and versioning](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/secrets/service.ts)
+- [Exposure shield and cache bounds](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/secrets/exposure-shield.ts)
+- [Vault master-key loading](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/secrets/master-key.ts)
+- [Vault database storage](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/secrets/store.ts)
+- [Vault HTTP routes](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/secrets/routes.ts)
+- [Encryption and authenticated-data format](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/secrets/cipher.ts)
+- [Agent Vault tool and approval boundary](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/secrets/agent-tool.ts)
+- [Mini app secret interpolation](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/secret-interpolate.ts)
+- [Vault workspace UI](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/secrets/ui/VaultWorkspace.tsx)

@@ -79,8 +79,8 @@ waiting contract.
 
 ## Source of truth
 
-- [Action fields and wait bounds](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-schema.ts)
-- [Guards before input and automatic observations](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal.ts)
-- [Wait outcomes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-wait.ts)
-- [Partial input on cancellation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-input.ts)
-- [Named-key encoding](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-keys.ts)
+- [Action fields and wait bounds](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-schema.ts)
+- [Guards before input and automatic observations](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal.ts)
+- [Wait outcomes](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-wait.ts)
+- [Partial input on cancellation](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-input.ts)
+- [Named-key encoding](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-keys.ts)

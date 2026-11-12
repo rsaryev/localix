@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Search existing issues first and remove credentials, tokens, private source, and personal data from every attachment. Report suspected vulnerabilities privately through [Security Advisories](https://github.com/rsaryev/localix/security/advisories/new).
+        Search existing issues first and remove credentials, tokens, private source, and personal data from every attachment. Report suspected vulnerabilities privately through [Security Advisories](https://github.com/rsaryev/localix-studio/security/advisories/new).
 
   - type: dropdown
     id: area

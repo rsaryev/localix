@@ -126,14 +126,14 @@ Permissions also supports argument patterns and order, which a whole-item switch
 
 ## Source of truth
 
-- [Capability rules and evaluation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/capability-rule.ts)
-- [Capability resolver and whole-tool denial](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/resolve.ts)
-- [Permission-rule composition](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/permission-gate-build.ts)
-- [The permission gate](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/permission-gate.ts)
-- [Permission-mode rewriting](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/permission-mode-policy.ts)
-- [Switch-to-rule translation](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/capabilityRules.ts)
-- [Draft and Apply behavior](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/model/usePermissionRules.ts)
-- [Run shape](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/run-shape.ts)
-- [Mini app roster narrowing](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/narrow.ts)
+- [Capability rules and evaluation](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/capability-rule.ts)
+- [Capability resolver and whole-tool denial](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/capabilities/resolve.ts)
+- [Permission-rule composition](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/permission-gate-build.ts)
+- [The permission gate](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/permission-gate.ts)
+- [Permission-mode rewriting](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/capabilities/permission-mode-policy.ts)
+- [Switch-to-rule translation](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/contrib/capabilityRules.ts)
+- [Draft and Apply behavior](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/settings/model/usePermissionRules.ts)
+- [Run shape](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/run-shape.ts)
+- [Mini app roster narrowing](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/narrow.ts)
   and
-  [the run's rule projection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/prompt-context.ts)
+  [the run's rule projection](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/prompt-context.ts)

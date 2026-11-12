@@ -367,28 +367,29 @@ Use `MarkdownRenderer` from `@localixai/kit/markdown` with source as `children`;
 
 ## Source of truth
 
-- [Shared-module and artifact contract](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui-artifact.ts)
-- [Mini app kit layout](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/kit-layout.ts)
-  and [its staging](https://github.com/rsaryev/localix/blob/main/scripts/stage-mini-app-kit.mjs)
+- [Shared-module and artifact contract](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui-artifact.ts)
+- [Mini app kit layout](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/kit-layout.ts)
+  and
+  [its staging](https://github.com/rsaryev/localix-studio/blob/main/scripts/stage-mini-app-kit.mjs)
 - [The authoring plugin](https://github.com/rsaryev/localix-marketplace/tree/main/plugins): the UI
   artifact builder, the style check and the template layout
-- [The token rules](https://github.com/rsaryev/localix/blob/main/apps/api/src/contracts/ui-token-rules.ts)
-- [Kit declarations](https://github.com/rsaryev/localix/blob/main/scripts/stage-mini-app-kit-declarations.mjs)
-- [Mini app view host](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/model/miniAppViewHost.ts)
+- [The token rules](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/contracts/ui-token-rules.ts)
+- [Kit declarations](https://github.com/rsaryev/localix-studio/blob/main/scripts/stage-mini-app-kit-declarations.mjs)
+- [Mini app view host](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/inspector/model/miniAppViewHost.ts)
   and
-  [the embedded actuator](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/embedded/index.ts)
-- [Mini app record and file route](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/ui-artifact.ts)
-- [Workbench runtime](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/miniAppUiRuntime.ts)
+  [the embedded actuator](https://github.com/rsaryev/localix-studio/blob/main/packages/visual-feedback/src/embedded/index.ts)
+- [Mini app record and file route](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/ui-artifact.ts)
+- [Workbench runtime](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/contrib/miniAppUiRuntime.ts)
   and
-  [host wiring](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/miniAppUiDiscovery.ts)
-- [Shared-module registry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/app/miniAppSharedModules.ts)
-- [Realtime feed](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/realtime-feed.ts)
-- [Tool cards](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/tool-cards.ts),
-  [comment actions](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/comment-actions.ts)
+  [host wiring](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/contrib/miniAppUiDiscovery.ts)
+- [Shared-module registry](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/app/miniAppSharedModules.ts)
+- [Realtime feed](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/realtime-feed.ts)
+- [Tool cards](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/tool-cards.ts),
+  [comment actions](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/comment-actions.ts)
   and
-  [session surfaces](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/contrib.ts)
-- [UI kit](https://github.com/rsaryev/localix/tree/main/apps/ui/src/app/kit)
+  [session surfaces](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/contrib.ts)
+- [UI kit](https://github.com/rsaryev/localix-studio/tree/main/apps/ui/src/app/kit)
 
-- [Tab scopes](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/workspace-grid/model/scope.ts)
+- [Tab scopes](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/entities/workspace-grid/model/scope.ts)
   and
-  [instance guard](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/uiContrib.ts).
+  [instance guard](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/contrib/uiContrib.ts).

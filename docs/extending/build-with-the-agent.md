@@ -110,6 +110,6 @@ board.
 ## Source of truth
 
 - [The authoring plugin](https://github.com/rsaryev/localix-marketplace/tree/main/plugins)
-- [The kit's validation tools](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/kit-tools.ts)
-- [Installing a local package](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/local-install.ts)
+- [The kit's validation tools](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/kit-tools.ts)
+- [Installing a local package](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/local-install.ts)
 - [The template every mini app forks](https://github.com/rsaryev/localix-marketplace/tree/main/plugins)

@@ -110,13 +110,13 @@ curl --request POST http://127.0.0.1:5051/rpc/webhook/messages \
 
 ## Source of truth
 
-- [Webhook route and validation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/webhook/routes.ts)
-- [Model-visible provenance wrapper](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/webhook/wrap.ts)
-- [Runtime address resolution](https://github.com/rsaryev/localix/blob/main/apps/api/src/lib/runtime-address.ts)
-- [Request identity boundary](https://github.com/rsaryev/localix/blob/main/apps/api/src/lib/request-identity.ts)
-- [Host and page-origin policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/lib/local-origin-guard.ts)
-- [Slash-command recognition](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/slash-commands.ts)
-- [Queue priority policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/queue-policy.ts)
-- [Chat turn admission and busy queue](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/turn-entry.ts)
-- [Wake provenance projection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/wake-provenance.ts)
-- [Runtime context line](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/prompt/sections/workspace.ts)
+- [Webhook route and validation](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/webhook/routes.ts)
+- [Model-visible provenance wrapper](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/webhook/wrap.ts)
+- [Runtime address resolution](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/lib/runtime-address.ts)
+- [Request identity boundary](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/lib/request-identity.ts)
+- [Host and page-origin policy](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/lib/local-origin-guard.ts)
+- [Slash-command recognition](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/service/slash-commands.ts)
+- [Queue priority policy](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/queue-policy.ts)
+- [Chat turn admission and busy queue](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/service/turn-entry.ts)
+- [Wake provenance projection](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/wake-provenance.ts)
+- [Runtime context line](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/prompt/sections/workspace.ts)

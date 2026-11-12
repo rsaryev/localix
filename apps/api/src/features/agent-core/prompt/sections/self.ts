@@ -7,7 +7,7 @@
  * plugin, a setting — not an invitation to study the app during ordinary work.
  */
 
-const SOURCE_URL = 'https://github.com/rsaryev/localix'
+const SOURCE_URL = 'https://github.com/rsaryev/localix-studio'
 
 export function buildSelfSection(): string {
   return [

@@ -143,6 +143,6 @@ await host?.changes?.followCoreDeletions('unassign', async (deletion) => {
 
 `ctx.semantic` and `ctx.decisions` exist on every load; register sources and follow the change feed
 from the boot-time backend load, like `watchPath`. Types:
-[`semantic.ts`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/semantic.ts),
-[`decision.ts`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/decision.ts),
-[`changes.ts`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/changes.ts).
+[`semantic.ts`](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/semantic.ts),
+[`decision.ts`](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/decision.ts),
+[`changes.ts`](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/changes.ts).

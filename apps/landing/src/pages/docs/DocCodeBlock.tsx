@@ -1,6 +1,6 @@
 import { isValidElement, useRef, useState } from 'react'
 import { Button } from '@localixai/kit/button'
-import { childrenToText } from 'llx-markdown'
+import { childrenToText } from '@localix-ai/flowdown'
 
 const CODE_LANGUAGE_LABELS: Record<string, string> = {
   bash: 'Shell',

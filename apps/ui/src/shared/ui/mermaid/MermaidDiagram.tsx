@@ -11,7 +11,7 @@ import {
   resolveMermaidLook,
   type MermaidLook,
   type MermaidRenderer,
-} from 'llx-markdown/mermaid'
+} from '@localix-ai/flowdown/mermaid'
 import { loadMermaid } from '../markdownStages'
 import DiagramViewer from './DiagramViewer'
 import { ContributedActions } from '../ContributedActions'
@@ -180,7 +180,7 @@ export function MermaidDiagram({
         aria-label="Enlarge diagram"
         aria-haspopup="dialog"
         onClick={enlarge}
-        // The SVG comes from Mermaid with `securityLevel: 'strict'` (llx-markdown/mermaid).
+        // The SVG comes from Mermaid with `securityLevel: 'strict'` (@localix-ai/flowdown/mermaid).
         dangerouslySetInnerHTML={{ __html: state.svg }}
       />
       {/* `lx-media-actions` is the transcript's hover-action hook: a coarse pointer has no

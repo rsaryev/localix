@@ -1,6 +1,6 @@
-import type { Extension, Node } from 'llx-markdown'
+import type { Extension, Node } from '@localix-ai/flowdown'
 import type { ActionTarget } from '@localixai/mini-app-sdk/ui'
-import { TREE_FENCE_LANGUAGE } from 'llx-markdown/prompt'
+import { TREE_FENCE_LANGUAGE } from '@localix-ai/flowdown/prompt'
 
 type MarkdownBlock = Extract<ActionTarget, { kind: 'markdown' }>['block']
 

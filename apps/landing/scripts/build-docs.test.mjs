@@ -204,7 +204,7 @@ describe('docs generator', () => {
         [
           {
             sourcePath: 'docs/page.md',
-            content: '[source](https://github.com/rsaryev/localix/blob/main/apps/source.ts)',
+            content: '[source](https://github.com/rsaryev/localix-studio/blob/main/apps/source.ts)',
           },
         ],
         root,

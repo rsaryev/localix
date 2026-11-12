@@ -77,11 +77,11 @@ only the last active window group; the remaining groups stay hidden and availabl
 
 ## Source of truth
 
-- [Native workspace menu](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/workspace_menu.rs)
-- [Editor and window close shortcuts](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/menu.rs)
-- [Workspace lifecycle](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/workspace_lifecycle.rs)
-- [Group visibility and reopening](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/workspace_visibility.rs)
-- [Saved group compatibility](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/workspace_session_model.rs)
-- [Bounded frontend flush](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/frontend_flush.rs)
-- [Drag previews](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/workspace_drag_snapshot.rs)
-- [Shortcut reservation](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/keybindings/resolve.ts)
+- [Native workspace menu](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/workspace_menu.rs)
+- [Editor and window close shortcuts](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/menu.rs)
+- [Workspace lifecycle](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/workspace_lifecycle.rs)
+- [Group visibility and reopening](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/workspace_visibility.rs)
+- [Saved group compatibility](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/workspace_session_model.rs)
+- [Bounded frontend flush](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/frontend_flush.rs)
+- [Drag previews](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/workspace_drag_snapshot.rs)
+- [Shortcut reservation](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/lib/keybindings/resolve.ts)

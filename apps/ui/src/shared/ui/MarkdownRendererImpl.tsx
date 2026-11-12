@@ -6,7 +6,7 @@ import {
   isCodeBlock,
   type Extension,
   type MarkdownComponents,
-} from 'llx-markdown'
+} from '@localix-ai/flowdown'
 import { ActionSurfaceProvider, useActionSurface } from '@localixai/mini-app-sdk/ui'
 import { ContentActionBlock, ContentLinkActions } from './ContentActionBlock'
 import { contentActions } from './contentActionsExtension'
@@ -56,7 +56,7 @@ type MarkdownLinkProps = ComponentPropsWithoutRef<'a'> & { node?: unknown }
 const TEXT_REVEAL_CATCH_UP_MS = 260
 
 // The renderer keeps every finished block of a streaming reply and parses only the end that
-// changed (`llx-markdown`), so a token costs the same at the end of a long reply as at its start.
+// changed (`flowdown`), so a token costs the same at the end of a long reply as at its start.
 // That is why there is no reparse throttle and no plain-text fallback for long replies here.
 
 /** The fence's code element owns the frame (CodeBlock), so `pre` adds nothing around it. */

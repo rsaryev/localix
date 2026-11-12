@@ -123,8 +123,9 @@ changes the item's `[ ]` to `[x]` in the element's Markdown, and undo takes it b
 
 ### One shared dialect
 
-The `llx-markdown` package owns the callout kinds, container forms, fence languages and source-line
-prefix. The agent prompt (`llx-markdown/prompt`), workspace and documentation share that grammar.
+The `flowdown` package owns the callout kinds, container forms, fence languages and source-line
+prefix. The agent prompt (`@localix-ai/flowdown/prompt`), workspace and documentation share that
+grammar.
 
 `agent-core/prompt/sections/answer-format.ts` renders `# Answer formatting` in the cached prompt
 prefix. It also sets the shape rules: plain prose for a short reply, a heading per thread for a long
@@ -133,15 +134,15 @@ style preferences, which override it.
 
 ### Rendering
 
-The dialect of `llx-markdown` re-labels nodes its parser already produces. It does not emit raw
-HTML, so the sanitize pipeline gains nothing new to trust. It runs while a reply streams too, so a
-callout does not re-flow the message when the reply settles. A marker still being typed, such as
-`> [!WARN`, is withheld by the streaming stabilizer until its `]` arrives.
+The dialect of `flowdown` re-labels nodes its parser already produces. It does not emit raw HTML, so
+the sanitize pipeline gains nothing new to trust. It runs while a reply streams too, so a callout
+does not re-flow the message when the reply settles. A marker still being typed, such as `> [!WARN`,
+is withheld by the streaming stabilizer until its `]` arrives.
 
-Math is typeset while a reply streams. `llx-markdown/math` keeps recently typeset formulas in a
-bounded cache, so repeated expressions can reuse their rendered nodes until eviction. The stabilizer
-withholds a formula from its opening `$` until the closing one arrives; a currency amount such as
-`$5` and a shell variable such as `$HOME` are left as text.
+Math is typeset while a reply streams. `@localix-ai/flowdown/math` keeps recently typeset formulas
+in a bounded cache, so repeated expressions can reuse their rendered nodes until eviction. The
+stabilizer withholds a formula from its opening `$` until the closing one arrives; a currency amount
+such as `$5` and a shell variable such as `$HOME` are left as text.
 
 Math, code highlighting, diagrams, and inspector snapshots each use a bounded cache built with the
 shared cache utility. Reusing a formula avoids repeated typesetting, but the time saved depends on
@@ -215,9 +216,9 @@ examples and package entry points.
 
 ## Source of truth
 
-- [Shared Markdown](../extending/markdown.md): the `llx-markdown` package owns the dialect, its
-  parsing, steps, tabs, figures, for/against, file trees, callouts, diagrams and cached math.
-- [The prompt section and its gate](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/prompt/sections/answer-format.ts)
-- [The workspace renderer](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/MarkdownRendererImpl.tsx)
-- [Tickable checklists](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/MarkdownTaskList.tsx)
-- [The workspace diagram](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/mermaid/MermaidDiagram.tsx)
+- [Shared Markdown](../extending/markdown.md): the `flowdown` package owns the dialect, its parsing,
+  steps, tabs, figures, for/against, file trees, callouts, diagrams and cached math.
+- [The prompt section and its gate](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/prompt/sections/answer-format.ts)
+- [The workspace renderer](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/ui/MarkdownRendererImpl.tsx)
+- [Tickable checklists](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/ui/MarkdownTaskList.tsx)
+- [The workspace diagram](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/ui/mermaid/MermaidDiagram.tsx)

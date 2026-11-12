@@ -78,7 +78,7 @@ function originOf(ctx, symbol) {
     return 'host'
   // The host's Markdown is a package of its own, installed like any other. What a kit module
   // lends from it is still the host's to describe: left foreign, `MermaidRenderer` became `any`.
-  if (file.includes('/node_modules/llx-markdown/')) return 'host'
+  if (file.includes('/node_modules/@localix-ai/flowdown/')) return 'host'
   return 'foreign'
 }
 

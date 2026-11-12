@@ -142,13 +142,13 @@ automatically a Localix command.
 
 ## Source of truth
 
-- [Preset definitions](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/keybindings/presetDefinitions.ts)
-- [Matching, OS adaptation and validation](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/keybindings/presets.ts)
-- [Settings and runtime synchronization](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/model/useKeybindings.ts)
-- [Native-tab reservation and conflict scope](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/keybindings/resolve.ts)
-- [Focused-surface routing](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/actions/ActionRegistryProvider.tsx)
-- [Default editor ownership](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/keybindings/editorKeyOwnership.ts)
-- [Terminal key ownership](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/terminal/model/terminalKeymap.ts)
-- [Recorder conflict confirmation](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/keyboard/ChordRecorder.tsx)
-- [Profile save and retry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/user-settings/settingsStore.ts)
-- [Initial profile precedence](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/user-settings/settingsSyncBarrier.ts)
+- [Preset definitions](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/lib/keybindings/presetDefinitions.ts)
+- [Matching, OS adaptation and validation](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/lib/keybindings/presets.ts)
+- [Settings and runtime synchronization](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/settings/model/useKeybindings.ts)
+- [Native-tab reservation and conflict scope](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/lib/keybindings/resolve.ts)
+- [Focused-surface routing](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/lib/actions/ActionRegistryProvider.tsx)
+- [Default editor ownership](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/lib/keybindings/editorKeyOwnership.ts)
+- [Terminal key ownership](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/terminal/model/terminalKeymap.ts)
+- [Recorder conflict confirmation](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/settings/ui/keyboard/ChordRecorder.tsx)
+- [Profile save and retry](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/lib/user-settings/settingsStore.ts)
+- [Initial profile precedence](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/lib/user-settings/settingsSyncBarrier.ts)

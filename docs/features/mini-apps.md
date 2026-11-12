@@ -150,10 +150,10 @@ that opens the app's row in the Store (Mini apps). The entry clears once the app
 
 ## Source of truth
 
-- [The Store](https://github.com/rsaryev/localix/tree/main/apps/ui/src/features/store)
+- [The Store](https://github.com/rsaryev/localix-studio/tree/main/apps/ui/src/features/store)
 
-- [The `/mini-app` command](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers-mini-apps.ts)
-- [The mini apps feature](https://github.com/rsaryev/localix/tree/main/apps/api/src/features/mini-apps)
-- [Where mini apps live](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/paths.ts)
-- [Mini app conditions in the Event Center](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/notifications/conditions/mini-apps.ts)
-- [The contract for plugins and mini apps](https://github.com/rsaryev/localix/blob/main/docs/internals/plugins-and-mini-apps.md)
+- [The `/mini-app` command](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/service/command-handlers-mini-apps.ts)
+- [The mini apps feature](https://github.com/rsaryev/localix-studio/tree/main/apps/api/src/features/mini-apps)
+- [Where mini apps live](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/paths.ts)
+- [Mini app conditions in the Event Center](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/notifications/conditions/mini-apps.ts)
+- [The contract for plugins and mini apps](https://github.com/rsaryev/localix-studio/blob/main/docs/internals/plugins-and-mini-apps.md)

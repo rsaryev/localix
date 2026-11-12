@@ -75,7 +75,7 @@ Code's. A folder is one or the other: a folder with both `.localix-mini-app/` an
 loads nothing and says why. A mini app tells the agent how to use it in its `guide.md`, not in
 skills; the prompt lists each enabled mini app in one line, marked when it has a guide, and the
 agent reads the guide with `MiniAppGuide` before it first uses the app. The
-[contract](https://github.com/rsaryev/localix/blob/main/docs/internals/plugins-and-mini-apps.md)
+[contract](https://github.com/rsaryev/localix-studio/blob/main/docs/internals/plugins-and-mini-apps.md)
 records the rules.
 
 Tools over Localix's APIs, settings or a screen make a mini app; skills, commands, hooks and MCP
@@ -208,7 +208,8 @@ module: keep what a person creates under `ctx.dataDir`
 warm service at module scope. `execute` takes the call id, then input.
 
 [Hooks and commands](../features/hooks-and-commands.md) owns hook timing and command behavior;
-[the SDK](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/) owns the types.
+[the SDK](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/) owns the
+types.
 
 ### Results a tool reports
 
@@ -237,11 +238,11 @@ the person that `localix://` link, and the person opens it.
 An app that records who acted, or streams someone's own data, must not read that identity from model
 or client input. The host binds it; a task-board mini app in the Localix marketplace uses all three:
 
-| Seam                                                                                                                                                           | Answer                                                                                          | Boundary                                                        |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| [`ctx.agents.list(userId, sessionId)`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/context.ts)                              | The enabled agents of the session's scope, its project's included: `{ id, name, description? }` | Read-only; rejects a session the user does not own. Store `id`. |
-| [`context.session.agent`](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/types.ts) in `execute`                                        | `{ agentId, name }` of the agent whose turn it is                                               | Absent when the run has no addressable speaker.                 |
-| [`start(params, send, { userId })`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/ws-frame-registry.ts) on a `wsFrames` entry | The host-supplied Localix user ID of the socket                                                 | Tags `s`, `r` and `n` are core's; registration rejects them.    |
+| Seam                                                                                                                                                                  | Answer                                                                                          | Boundary                                                        |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| [`ctx.agents.list(userId, sessionId)`](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/context.ts)                              | The enabled agents of the session's scope, its project's included: `{ id, name, description? }` | Read-only; rejects a session the user does not own. Store `id`. |
+| [`context.session.agent`](https://github.com/rsaryev/localix-studio/blob/main/packages/agent/src/agents/types.ts) in `execute`                                        | `{ agentId, name }` of the agent whose turn it is                                               | Absent when the run has no addressable speaker.                 |
+| [`start(params, send, { userId })`](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/ws-frame-registry.ts) on a `wsFrames` entry | The host-supplied Localix user ID of the socket                                                 | Tags `s`, `r` and `n` are core's; registration rejects them.    |
 
 ### Watching files
 
@@ -275,25 +276,25 @@ All paths are relative to the mini app's folder and confined to it.
 `@localixai/mini-app-sdk/app-manifest`) refuses unknown keys, a plugin's `skills` or `hooks` among
 them:
 
-| Field                    | Shape                                                     | Effect and boundary                                                                                                                                                        |
-| ------------------------ | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`                   | string, required                                          | Letters, numbers, dashes or underscores; the namespace of its tools and commands.                                                                                          |
-| `version`, `description` | string, required                                          | The app's version, and what it does, shown in Settings and in the agent's listing.                                                                                         |
-| `displayName`, …         | `author`, `homepage`, `repository`, `license`, `keywords` | Display fields; a published `homepage` is an `https://` address.                                                                                                           |
-| `icon`                   | path in the folder                                        | The app's icon in the store, Settings and its Mac app. Required to publish; see [icon](mini-app-publishing.md#icon-and-screenshots).                                       |
-| `screenshots`            | `{ path, caption? }` array; max 10                        | Shown on the app's store page at their own resolution; `.png`, `.jpg` or `.webp`, ≤5 MB each.                                                                              |
-| `tags`                   | string array; max 8                                       | Lower-case words joined by dashes; the store filters and searches by them.                                                                                                 |
-| `apiVersion`             | positive integer                                          | Targets [the contract](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/mini-app.api.md), currently `2`. A newer version blocks loading; omission warns. |
-| `category`               | `development`, `data`, `content`, `utilities` or `games`  | Groups workbenches in the rail's tools menu; one per app.                                                                                                                  |
-| `surfaces`               | string array; `['agent']`                                 | `workbench` adds a screen. Unknown values are retained.                                                                                                                    |
-| `private`                | boolean                                                   | Keeps an authoring scaffold out of packaging.                                                                                                                              |
-| `backend`                | string or string array                                    | The native entrypoint(s) exporting `register(ctx)`; a package names the built `.mjs`.                                                                                      |
-| `guide`                  | path; `./guide.md`                                        | The agent's guide; pages it links live in `guide/<page>.md`.                                                                                                               |
-| `config`                 | config-option map                                         | Settings delivered through `ctx.config`.                                                                                                                                   |
-| `commands`               | map keyed by command name                                 | Each `{ prompt, description?, args?, argumentHint?, featured?, activateTools? }` (max 8 tools).                                                                            |
-| `views`                  | view array; max 6                                         | Sandboxed iframe UI, each a work-item tab; HTML capped at 1.5 MiB.                                                                                                         |
-| `promptSections`         | `{ title, content }` array; max 3                         | Static text under the app's prompt section; title max 80, content max 2,000 characters.                                                                                    |
-| `fileAssociations`       | association array                                         | File types the app opens inside Localix. The Store offers the app for such a file; they never reach the operating system.                                                  |
+| Field                    | Shape                                                     | Effect and boundary                                                                                                                                                               |
+| ------------------------ | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                   | string, required                                          | Letters, numbers, dashes or underscores; the namespace of its tools and commands.                                                                                                 |
+| `version`, `description` | string, required                                          | The app's version, and what it does, shown in Settings and in the agent's listing.                                                                                                |
+| `displayName`, …         | `author`, `homepage`, `repository`, `license`, `keywords` | Display fields; a published `homepage` is an `https://` address.                                                                                                                  |
+| `icon`                   | path in the folder                                        | The app's icon in the store, Settings and its Mac app. Required to publish; see [icon](mini-app-publishing.md#icon-and-screenshots).                                              |
+| `screenshots`            | `{ path, caption? }` array; max 10                        | Shown on the app's store page at their own resolution; `.png`, `.jpg` or `.webp`, ≤5 MB each.                                                                                     |
+| `tags`                   | string array; max 8                                       | Lower-case words joined by dashes; the store filters and searches by them.                                                                                                        |
+| `apiVersion`             | positive integer                                          | Targets [the contract](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/mini-app.api.md), currently `2`. A newer version blocks loading; omission warns. |
+| `category`               | `development`, `data`, `content`, `utilities` or `games`  | Groups workbenches in the rail's tools menu; one per app.                                                                                                                         |
+| `surfaces`               | string array; `['agent']`                                 | `workbench` adds a screen. Unknown values are retained.                                                                                                                           |
+| `private`                | boolean                                                   | Keeps an authoring scaffold out of packaging.                                                                                                                                     |
+| `backend`                | string or string array                                    | The native entrypoint(s) exporting `register(ctx)`; a package names the built `.mjs`.                                                                                             |
+| `guide`                  | path; `./guide.md`                                        | The agent's guide; pages it links live in `guide/<page>.md`.                                                                                                                      |
+| `config`                 | config-option map                                         | Settings delivered through `ctx.config`.                                                                                                                                          |
+| `commands`               | map keyed by command name                                 | Each `{ prompt, description?, args?, argumentHint?, featured?, activateTools? }` (max 8 tools).                                                                                   |
+| `views`                  | view array; max 6                                         | Sandboxed iframe UI, each a work-item tab; HTML capped at 1.5 MiB.                                                                                                                |
+| `promptSections`         | `{ title, content }` array; max 3                         | Static text under the app's prompt section; title max 80, content max 2,000 characters.                                                                                           |
+| `fileAssociations`       | association array                                         | File types the app opens inside Localix. The Store offers the app for such a file; they never reach the operating system.                                                         |
 
 The native UI is found by convention at `ui/register.tsx`. A `views[]` entry is
 `{ id, title, file, icon?, agentDescription? }`; a `fileAssociations[]` entry is
@@ -370,11 +371,11 @@ that repository.
 
 ## Source of truth
 
-- [Mini app manifest schema](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/manifest/app.ts)
-- [Discovery and scope rules](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/discovery.ts)
-- [Trust and enable state](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/catalog.ts)
-- [Runtime loader](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/loader.ts)
-- [Where mini apps live](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/paths.ts)
-- [Backend context](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/context.ts)
+- [Mini app manifest schema](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/manifest/app.ts)
+- [Discovery and scope rules](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/discovery.ts)
+- [Trust and enable state](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/catalog.ts)
+- [Runtime loader](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/loader.ts)
+- [Where mini apps live](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/paths.ts)
+- [Backend context](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/context.ts)
   and
-  [host services](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/host-services.ts)
+  [host services](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/backend/host-services.ts)

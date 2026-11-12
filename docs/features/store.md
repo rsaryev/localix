@@ -191,6 +191,6 @@ guess, and a kind it ranks `None` (a reader that also shows Markdown) is not off
 
 ## Source of truth
 
-- [Store feature](https://github.com/rsaryev/localix/tree/main/apps/api/src/features/store)
-- [Default sources](https://github.com/rsaryev/localix/blob/main/packages/store/src/default-sources.ts)
-- [Plugins in the Store](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/store-provider.ts)
+- [Store feature](https://github.com/rsaryev/localix-studio/tree/main/apps/api/src/features/store)
+- [Default sources](https://github.com/rsaryev/localix-studio/blob/main/packages/store/src/default-sources.ts)
+- [Plugins in the Store](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/store-provider.ts)

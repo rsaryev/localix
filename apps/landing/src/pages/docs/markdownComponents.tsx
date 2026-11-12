@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { MarkdownComponents } from 'llx-markdown'
+import type { MarkdownComponents } from '@localix-ai/flowdown'
 import { screenshotAssets } from '../../generated/shots'
 import { Screenshot } from '../../components/Screenshot'
 import { CAPTURE_HEIGHT, CAPTURE_WIDTH } from '../../lib/capture'

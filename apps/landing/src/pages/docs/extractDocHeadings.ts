@@ -1,4 +1,4 @@
-import { extractHeadings } from 'llx-markdown'
+import { extractHeadings } from '@localix-ai/flowdown'
 import type { DocHeading } from './docBootstrap'
 
 /** The outline uses the same CommonMark AST and ids as the rendered document. */

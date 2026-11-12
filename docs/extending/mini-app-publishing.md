@@ -267,7 +267,7 @@ follows your newest release, so the next release is the next update.
 - [The pack command](https://github.com/rsaryev/localix-marketplace/tree/main/plugins) (in the
   authoring plugin)
 - [The Localix marketplace's own packing](https://github.com/rsaryev/localix-marketplace/blob/main/scripts/pack.ts)
-- [The media rules](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/manifest/media.ts)
-- [Reading a marketplace](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/marketplace-feed.ts)
-- [Serving store media](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/store-media.ts)
-- [Installing an archive](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/store-install.ts)
+- [The media rules](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/manifest/media.ts)
+- [Reading a marketplace](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/marketplace-feed.ts)
+- [Serving store media](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/store-media.ts)
+- [Installing an archive](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/store-install.ts)

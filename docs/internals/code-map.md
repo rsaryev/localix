@@ -223,7 +223,7 @@ copy. Two copies drifting is why `wake-provenance` exists.
 | A mini app capability   | Not in this repository: a mini app (`mini-app.json`, `guide.md` with pages in `guide/`, `backend/index.ts`, `ui/register.tsx`) is written against the `@localixai/mini-app-sdk` contract in its own repository, such as the Localix marketplace; this repository changes the SDK and the kit, and installed copies run from `~/.localix/mini-apps/<name>/`. A Claude Code plugin's parts live in `.claude-plugin/` and its component folders |
 | A schema change         | a new file in `apps/api/migrations/` + `db/types.ts`; no existing migration is ever renamed, edited or deleted, because `bun run dev` has already run it on your database (`migration-ledger.ts` refuses to boot, `migration-freeze.test.ts` refuses in CI); see `apps/api/migrations/README.md`                                                                                                                                             |
 
-Markdown grammar and rendering come from the `llx-markdown` package; the workspace owns mentions,
-links, checklists, diagrams' controls and content actions (`apps/ui/src/shared/ui`) and their look
+Markdown grammar and rendering come from the `flowdown` package; the workspace owns mentions, links,
+checklists, diagrams' controls and content actions (`apps/ui/src/shared/ui`) and their look
 (`apps/ui/src/app/markdown.css`), while `apps/landing/src/pages/docs` owns documentation links and
 layout. See [Shared Markdown](../extending/markdown.md).

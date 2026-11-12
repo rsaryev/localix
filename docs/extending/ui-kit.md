@@ -185,13 +185,13 @@ agent to choose there before writing a control.
 
 ## Source of truth
 
-- [`packages/kit/src/entries/`](https://github.com/rsaryev/localix/tree/main/packages/kit/src/entries)
+- [`packages/kit/src/entries/`](https://github.com/rsaryev/localix-studio/tree/main/packages/kit/src/entries)
   — the public modules.
-- [`packages/kit/src/catalog/index.ts`](https://github.com/rsaryev/localix/blob/main/packages/kit/src/catalog/index.ts)
+- [`packages/kit/src/catalog/index.ts`](https://github.com/rsaryev/localix-studio/blob/main/packages/kit/src/catalog/index.ts)
   — the catalog.
-- [`packages/kit/styles/index.css`](https://github.com/rsaryev/localix/blob/main/packages/kit/styles/index.css)
+- [`packages/kit/styles/index.css`](https://github.com/rsaryev/localix-studio/blob/main/packages/kit/styles/index.css)
   — the layer order.
-- [`apps/ui/src/app/miniAppSharedModules.ts`](https://github.com/rsaryev/localix/blob/main/apps/ui/src/app/miniAppSharedModules.ts)
+- [`apps/ui/src/app/miniAppSharedModules.ts`](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/app/miniAppSharedModules.ts)
   — the runtime registry.
 
 [visual]: ../internals/visual-system.md

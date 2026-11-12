@@ -1,71 +1,71 @@
-/* Localix's look for Markdown, over `llx-markdown/styles.css`.
+/* Localix's look for Markdown, over `@localix-ai/flowdown/styles.css`.
 
-   The renderer is `llx-markdown`: it ships a complete stylesheet that reads its colours from
+   The renderer is `flowdown`: it ships a complete stylesheet that reads its colours from
    `--llx-*` tokens. Here those tokens become the kit's theme tokens, on the root as well as on each
    document (a Mermaid diagram outside a document reads them too), and the rules after them are the
    workspace's typography and forms, which differ from the library's quieter defaults. Imported by
    `index.css` right after the library, so the same selectors win by order. */
 
 :root,
-.llx-markdown {
-  --llx-fg: var(--foreground);
-  --llx-fg-soft: var(--text-soft);
-  --llx-fg-faint: var(--text-faint);
-  --llx-bg: var(--background);
-  --llx-bg-solid: var(--background-solid);
-  --llx-border: var(--border);
-  --llx-border-subtle: var(--border-subtle);
-  --llx-border-strong: var(--border-strong);
-  --llx-link: var(--foreground);
-  --llx-focus: var(--ring);
-  --llx-info: var(--status-info);
-  --llx-success: var(--status-success);
-  --llx-important: var(--conn-violet);
-  --llx-warning: var(--status-warning);
-  --llx-danger: var(--status-error);
-  --llx-chart-1: var(--chart-1);
-  --llx-chart-2: var(--chart-2);
-  --llx-chart-3: var(--chart-3);
-  --llx-chart-4: var(--chart-4);
-  --llx-chart-5: var(--chart-5);
-  --llx-chart-6: var(--chart-6);
-  --llx-chart-7: var(--chart-7);
-  --llx-chart-8: var(--chart-8);
-  --llx-font-mono: var(--font-mono);
-  --llx-radius: var(--radius-lg);
-  --llx-radius-small: var(--radius-sm);
+.flowdown {
+  --fd-fg: var(--foreground);
+  --fd-fg-soft: var(--text-soft);
+  --fd-fg-faint: var(--text-faint);
+  --fd-bg: var(--background);
+  --fd-bg-solid: var(--background-solid);
+  --fd-border: var(--border);
+  --fd-border-subtle: var(--border-subtle);
+  --fd-border-strong: var(--border-strong);
+  --fd-link: var(--foreground);
+  --fd-focus: var(--ring);
+  --fd-info: var(--status-info);
+  --fd-success: var(--status-success);
+  --fd-important: var(--conn-violet);
+  --fd-warning: var(--status-warning);
+  --fd-danger: var(--status-error);
+  --fd-chart-1: var(--chart-1);
+  --fd-chart-2: var(--chart-2);
+  --fd-chart-3: var(--chart-3);
+  --fd-chart-4: var(--chart-4);
+  --fd-chart-5: var(--chart-5);
+  --fd-chart-6: var(--chart-6);
+  --fd-chart-7: var(--chart-7);
+  --fd-chart-8: var(--chart-8);
+  --fd-font-mono: var(--font-mono);
+  --fd-radius: var(--radius-lg);
+  --fd-radius-small: var(--radius-sm);
 }
 
 /* ─── Typography ─── */
-.llx-markdown {
+.flowdown {
   width: 100%;
   overflow-wrap: anywhere;
 }
-.llx-markdown > *:first-child,
-.llx-markdown > .lx-content-block:first-child > :first-child {
+.flowdown > *:first-child,
+.flowdown > .lx-content-block:first-child > :first-child {
   margin-top: 0;
 }
-.llx-markdown > *:last-child,
-.llx-markdown > .lx-content-block:last-child > :first-child {
+.flowdown > *:last-child,
+.flowdown > .lx-content-block:last-child > :first-child {
   margin-bottom: 0;
 }
-.llx-markdown p,
-.llx-markdown ul,
-.llx-markdown ol,
-.llx-markdown blockquote,
-.llx-markdown table {
+.flowdown p,
+.flowdown ul,
+.flowdown ol,
+.flowdown blockquote,
+.flowdown table {
   margin: 0.65rem 0;
 }
 /* A heading belongs to the text BELOW it: more space above than under, so a section reads as
    one group instead of a title floating between two. The scale is a chat reply's, not a page's —
    a 1.5rem h1 inside a message outweighed everything around it, the header of the message
    included. `balance` keeps a two-line heading from ending on one orphaned word. */
-.llx-markdown h1,
-.llx-markdown h2,
-.llx-markdown h3,
-.llx-markdown h4,
-.llx-markdown h5,
-.llx-markdown h6 {
+.flowdown h1,
+.flowdown h2,
+.flowdown h3,
+.flowdown h4,
+.flowdown h5,
+.flowdown h6 {
   margin: 1.5em 0 0.45em;
   font-family: var(--font-heading);
   font-weight: 600;
@@ -73,8 +73,8 @@
   letter-spacing: -0.015em;
   text-wrap: balance;
 }
-.llx-markdown :is(h1, h2, h3, h4, h5, h6) + :is(h1, h2, h3, h4, h5, h6),
-.llx-markdown
+.flowdown :is(h1, h2, h3, h4, h5, h6) + :is(h1, h2, h3, h4, h5, h6),
+.flowdown
   > .lx-content-block:has(> :is(h1, h2, h3, h4, h5, h6))
   + .lx-content-block
   > :is(h1, h2, h3, h4, h5, h6) {
@@ -84,95 +84,95 @@
    with a little more room under it. Only a leading `#` — `##` is a section, a later heading is
    inside the reply — and only in an agent's reply (TextBubble's `data-author`), never in a
    person's message or in Reader, which share this renderer. */
-[data-author='agent'] .llx-markdown > h1:first-child,
-[data-author='agent'] .llx-markdown > .lx-content-block:first-child > h1 {
+[data-author='agent'] .flowdown > h1:first-child,
+[data-author='agent'] .flowdown > .lx-content-block:first-child > h1 {
   margin-bottom: 0.7em;
   text-align: center;
 }
 /* An author's section number (`## 1.2 Title`, the dialect): the outline position, set
    quieter than the title it precedes. */
-.llx-markdown .llx-section-number {
+.flowdown .fd-section-number {
   margin-right: 0.45em;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--text-faint);
 }
-.llx-markdown h1 {
+.flowdown h1 {
   font-size: 1.32rem;
 }
-.llx-markdown h2 {
+.flowdown h2 {
   font-size: 1.16rem;
 }
-.llx-markdown h3 {
+.flowdown h3 {
   font-size: 1.03rem;
 }
 /* Paragraphs avoid a lone last word. Not on the tail of a streaming reply: that paragraph is
    the one still growing, and re-balancing its last lines on every token is a visible wobble. */
-.llx-markdown :is(p, li) {
+.flowdown :is(p, li) {
   text-wrap: pretty;
 }
-.llx-markdown[data-streaming] > :last-child,
-.llx-markdown[data-streaming] > :last-child :is(p, li) {
+.flowdown[data-streaming] > :last-child,
+.flowdown[data-streaming] > :last-child :is(p, li) {
   text-wrap: wrap;
 }
 /* Bold marks what a reader scans for; Inter's 700 turned a bolded phrase into a shout. */
-.llx-markdown :is(strong, b) {
+.flowdown :is(strong, b) {
   font-weight: 600;
 }
 /* Nested headings (`####`+): consistent with h1–h3, just smaller, instead of
    browser defaults (no heading font, awkward margins). */
-.llx-markdown h4 {
+.flowdown h4 {
   font-size: 1rem;
 }
-.llx-markdown h5 {
+.flowdown h5 {
   font-size: 0.9rem;
 }
-.llx-markdown h6 {
+.flowdown h6 {
   font-size: 0.85rem;
   color: var(--text-soft);
 }
 /* Tailwind's preflight strips every list marker, and nothing here gave them back, so a numbered
    answer rendered as unnumbered lines and a bulleted one as a loose stack of sentences. */
-.llx-markdown ul,
-.llx-markdown ol {
+.flowdown ul,
+.flowdown ol {
   padding-left: 1.35rem;
 }
-.llx-markdown ul {
+.flowdown ul {
   list-style: disc;
 }
-.llx-markdown ol {
+.flowdown ol {
   list-style: decimal;
 }
-.llx-markdown :is(ul, ol) ul {
+.flowdown :is(ul, ol) ul {
   list-style: circle;
 }
-.llx-markdown li + li {
+.flowdown li + li {
   margin-top: 0.25rem;
 }
 /* Bullets and numbers are scaffolding: quieter than the text they carry, and numbers set in
    tabular figures so a list past nine keeps one column. */
-.llx-markdown li::marker {
+.flowdown li::marker {
   color: var(--text-faint);
 }
-.llx-markdown ol > li::marker {
+.flowdown ol > li::marker {
   font-variant-numeric: tabular-nums;
 }
-.llx-markdown li > :is(ul, ol) {
+.flowdown li > :is(ul, ol) {
   margin: 0.25rem 0;
 }
 /* Section divider (`---`): a thin token-colored rule, not the browser's 3D inset. */
-.llx-markdown hr {
+.flowdown hr {
   margin: 1.1rem 0;
   border: 0;
   border-top: 1px solid var(--border);
 }
 /* Strikethrough (`~~text~~`) = removed/done — mute it so it reads as de-emphasized. */
-.llx-markdown del {
+.flowdown del {
   color: var(--text-soft);
 }
 /* A link is marked by a faint underline that firms up on hover: a full-strength line under
    every reference striped a source-heavy reply. */
-.llx-markdown a {
+.flowdown a {
   color: var(--foreground);
   text-decoration: underline;
   text-decoration-thickness: 1px;
@@ -182,36 +182,36 @@
   /* A long bare URL as link text wraps instead of overflowing the bubble. */
   overflow-wrap: anywhere;
 }
-.llx-markdown a:hover {
+.flowdown a:hover {
   text-decoration-color: currentColor;
 }
-.llx-markdown blockquote {
+.flowdown blockquote {
   border-left: 2px solid var(--border);
   padding-left: 0.85rem;
   color: var(--text-soft);
 }
 /* A quote's closing `— Author` line (the dialect): set right, below the quotation, so
    the source reads as a signature instead of one more line of the quote. */
-.llx-markdown blockquote > :has(+ .llx-quote-source) {
+.flowdown blockquote > :has(+ .fd-quote-source) {
   margin-bottom: 0;
 }
-.llx-markdown blockquote > .llx-quote-source {
+.flowdown blockquote > .fd-quote-source {
   margin-top: 0.3rem;
   text-align: right;
   font-size: 0.9em;
   font-style: italic;
   color: var(--text-faint);
 }
-.llx-markdown blockquote > .llx-quote-source::before {
+.flowdown blockquote > .fd-quote-source::before {
   content: '\2014\00a0';
 }
 
-/* ─── Callouts (`> [!NOTE]` … `> [!CAUTION]`, `llx-markdown` Callout) ───
+/* ─── Callouts (`> [!NOTE]` … `> [!CAUTION]`, `flowdown` Callout) ───
    Status on the glyph, never as a wash (`shared/ui/status-tone.ts`): the note itself is a veil —
    the foreground at a few percent over whatever ground it sits on — so it is right in every
    theme and under glass, and five of them in a reply read as asides rather than as banners.
    The glyph hangs in its own column beside the first line; the text keeps the prose colour. */
-.llx-markdown .llx-callout {
+.flowdown .fd-callout {
   --callout: var(--status-info);
   display: grid;
   grid-template-columns: 1rem minmax(0, 1fr);
@@ -221,39 +221,39 @@
   background: color-mix(in oklch, var(--foreground) 4%, transparent);
   padding: 0.65rem 0.9rem;
 }
-.llx-markdown .llx-callout-icon {
+.flowdown .fd-callout-icon {
   width: 1rem;
   height: 1rem;
   /* Centre the glyph on the first line box, whatever the line height. */
   margin-top: calc((1lh - 1rem) / 2);
   color: var(--callout);
 }
-.llx-markdown .llx-callout[data-callout='tip'] {
+.flowdown .fd-callout[data-callout='tip'] {
   --callout: var(--status-success);
 }
-.llx-markdown .llx-callout[data-callout='important'] {
+.flowdown .fd-callout[data-callout='important'] {
   /* GitHub's violet for "important"; the connection palette is the one tuned violet we have. */
   --callout: var(--conn-violet);
 }
-.llx-markdown .llx-callout[data-callout='warning'] {
+.flowdown .fd-callout[data-callout='warning'] {
   --callout: var(--status-warning);
 }
-.llx-markdown .llx-callout[data-callout='caution'] {
+.flowdown .fd-callout[data-callout='caution'] {
   --callout: var(--status-error);
 }
-.llx-markdown .llx-callout-title {
+.flowdown .fd-callout-title {
   margin-bottom: 0.15rem;
   font-weight: 600;
   color: var(--foreground);
 }
 /* The title and its text are one unit: no paragraph gap between them. */
-.llx-markdown .llx-callout-title + * {
+.flowdown .fd-callout-title + * {
   margin-top: 0;
 }
-.llx-markdown .llx-callout-body > :first-child {
+.flowdown .fd-callout-body > :first-child {
   margin-top: 0;
 }
-.llx-markdown .llx-callout-body > :last-child {
+.flowdown .fd-callout-body > :last-child {
   margin-bottom: 0;
 }
 
@@ -262,15 +262,15 @@
 /* ─── Figures (`![alt](src "Caption")` alone in a paragraph) ─── */
 /* A figure is set like one in a document: centred, and bounded to a share of the reply so a
    photo illustrates the text instead of becoming the whole message. Click opens it full size. */
-.llx-markdown .llx-figure {
+.flowdown .fd-figure {
   margin: 1.1rem 0;
   text-align: center;
 }
-.llx-markdown .llx-figure > .lx-markdown-image {
+.flowdown .fd-figure > .lx-markdown-image {
   max-width: min(100%, 34rem);
 }
-.llx-markdown .llx-figure > img,
-.llx-markdown .llx-figure > .lx-markdown-image > img {
+.flowdown .fd-figure > img,
+.flowdown .fd-figure > .lx-markdown-image > img {
   display: block;
   margin: 0 auto;
   max-width: min(100%, 34rem);
@@ -278,7 +278,7 @@
   object-fit: contain;
   border-radius: 0.75rem;
 }
-.llx-markdown .llx-figure > figcaption {
+.flowdown .fd-figure > figcaption {
   margin-top: 0.45rem;
   text-align: center;
   font-size: 0.86em;
@@ -289,24 +289,24 @@
 /* ─── Diagrams (```mermaid, see MermaidDiagram) ───
    A figure, not a panel: no frame, fill or header, so a diagram sits in the reply the way an
    image does. Its colours come from the tokens (mermaidLook.ts); only shape is here. */
-.llx-markdown .lx-diagram-canvas {
+.flowdown .lx-diagram-canvas {
   display: flex;
   justify-content: center;
   overflow-x: auto;
   padding: 0.5rem 0;
 }
-.llx-markdown .lx-diagram-canvas svg {
+.flowdown .lx-diagram-canvas svg {
   max-width: 100%;
   height: auto;
 }
 /* Nodes take the control radius instead of Mermaid's square corners. */
-.llx-markdown .lx-diagram-canvas :is(.node rect.label-container, rect.actor, rect.note),
+.flowdown .lx-diagram-canvas :is(.node rect.label-container, rect.actor, rect.note),
 .lx-diagram-embedded :is(.node rect.label-container, rect.actor, rect.note) {
   rx: 6px;
   ry: 6px;
 }
 /* The pending frame holds roughly a small diagram's height, so the swap barely moves the text. */
-.llx-markdown .lx-diagram-pending {
+.flowdown .lx-diagram-pending {
   display: flex;
   min-height: 8rem;
   align-items: center;
@@ -316,12 +316,12 @@
   color: var(--text-faint);
 }
 /* The parser's message under a source that could not be drawn, tucked up to its code block. */
-.llx-markdown .lx-diagram-note {
+.flowdown .lx-diagram-note {
   margin: -0.5rem 0 0.65rem;
   font-size: 0.85em;
   color: var(--text-faint);
 }
-.llx-markdown :where(p, li, blockquote, td, th) > code {
+.flowdown :where(p, li, blockquote, td, th) > code {
   border-radius: 0.35rem;
   background: var(--surface-hover);
   padding: 0.1rem 0.3rem;
@@ -333,24 +333,24 @@
    a rule under it, hairlines between rows and a rule to close. The full cell grid with a filled
    header row boxed every value in and was the loudest thing in a reply; horizontal rules alone
    carry the rows, and the eye reads the columns from their alignment. */
-.llx-markdown table {
+.flowdown table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9em;
   font-variant-numeric: tabular-nums;
 }
-.llx-markdown .llx-table {
+.flowdown .fd-table {
   max-width: 100%;
   margin: 0.65rem 0;
   overflow-x: auto;
 }
-.llx-markdown .llx-table table {
+.flowdown .fd-table table {
   width: max-content;
   min-width: 100%;
   margin: 0;
 }
-.llx-markdown th,
-.llx-markdown td {
+.flowdown th,
+.flowdown td {
   border-bottom: 1px solid var(--border-subtle);
   padding: 0.5rem 0.9rem;
   text-align: left;
@@ -359,22 +359,22 @@
   overflow-wrap: anywhere;
 }
 /* The outer columns align with the prose around the table instead of an invisible cell wall. */
-.llx-markdown :is(th, td):first-child {
+.flowdown :is(th, td):first-child {
   padding-left: 0;
 }
-.llx-markdown :is(th, td):last-child {
+.flowdown :is(th, td):last-child {
   padding-right: 0;
 }
-.llx-markdown th {
+.flowdown th {
   border-top: 1px solid var(--border);
   border-bottom-color: var(--border);
   font-weight: 600;
   color: var(--text-soft);
 }
-.llx-markdown tbody tr:last-child td {
+.flowdown tbody tr:last-child td {
   border-bottom-color: var(--border);
 }
-.llx-markdown img {
+.flowdown img {
   max-width: 100%;
   /* Inline images (badges, shields, emoji-style icons) sit on the text baseline
      at their natural size — no block layout or large radius, so a row of badges
@@ -383,8 +383,8 @@
 }
 /* A lone image that is its paragraph's only direct child = a content figure
    (screenshot, diagram). Badges live inside <a>, so they never match this. */
-.llx-markdown p > img:only-child,
-.llx-markdown p > .lx-markdown-image:only-child > img {
+.flowdown p > img:only-child,
+.flowdown p > .lx-markdown-image:only-child > img {
   display: block;
   /* Cap inline height so a tall/narrow image doesn't dominate the message —
      click opens it full-size (see the img renderer). */
@@ -409,9 +409,9 @@
     content: '...';
   }
 }
-.llx-markdown[data-caret] > :last-child:is(p, h1, h2, h3, h4, h5, h6)::after,
-.llx-markdown[data-caret] > :last-child:is(ul, ol) > li:last-child::after,
-.llx-markdown[data-caret] > :last-child:is(blockquote, aside) p:last-child::after {
+.flowdown[data-caret] > :last-child:is(p, h1, h2, h3, h4, h5, h6)::after,
+.flowdown[data-caret] > :last-child:is(ul, ol) > li:last-child::after,
+.flowdown[data-caret] > :last-child:is(blockquote, aside) p:last-child::after {
   content: '.';
   /* Over the library's block caret: the workspace keeps its typing ellipsis. */
   width: auto;
@@ -425,9 +425,9 @@
   animation: stream-ellipsis 1.2s infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .llx-markdown[data-caret] > :last-child:is(p, h1, h2, h3, h4, h5, h6)::after,
-  .llx-markdown[data-caret] > :last-child:is(ul, ol) > li:last-child::after,
-  .llx-markdown[data-caret] > :last-child:is(blockquote, aside) p:last-child::after {
+  .flowdown[data-caret] > :last-child:is(p, h1, h2, h3, h4, h5, h6)::after,
+  .flowdown[data-caret] > :last-child:is(ul, ol) > li:last-child::after,
+  .flowdown[data-caret] > :last-child:is(blockquote, aside) p:last-child::after {
     content: '…';
     animation: none;
   }

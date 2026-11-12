@@ -83,7 +83,7 @@ See [Keyboard shortcuts](../features/keyboard-shortcuts.md) for user-facing focu
 
 ## Source of truth
 
-- [Hook lifetime and current values](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/focus/useFocusEntry.ts)
-- [Scope routing and modal barriers](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/focus/store.ts)
-- [Default key policies](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/focus/types.ts)
-- [Exact chord matching](https://github.com/rsaryev/localix/blob/main/packages/kit/src/keyboard/chord.ts)
+- [Hook lifetime and current values](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/focus/useFocusEntry.ts)
+- [Scope routing and modal barriers](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/focus/store.ts)
+- [Default key policies](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/ui/focus/types.ts)
+- [Exact chord matching](https://github.com/rsaryev/localix-studio/blob/main/packages/kit/src/keyboard/chord.ts)

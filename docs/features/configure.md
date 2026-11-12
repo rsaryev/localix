@@ -98,9 +98,9 @@ schema and are never told it exists, so they cannot spend a turn discovering the
 
 ## Source of truth
 
-- [The `Configure` tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/configure/configure.ts)
-- [Tool ledger and withhold reasons](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-ledger.ts)
-- [Remedy registry](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/config-proposals/registry.ts)
-- [Switch writes and rule provenance](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/config-proposals/remedies/toggles.ts)
-- [Proposal host and provenance](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/config-proposals/service.ts)
-- [The card](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/ui/hitl/ConfigChangeInteractionView.tsx)
+- [The `Configure` tool](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tools/configure/configure.ts)
+- [Tool ledger and withhold reasons](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tool-ledger.ts)
+- [Remedy registry](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/config-proposals/registry.ts)
+- [Switch writes and rule provenance](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/config-proposals/remedies/toggles.ts)
+- [Proposal host and provenance](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/config-proposals/service.ts)
+- [The card](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/entities/chat/ui/hitl/ConfigChangeInteractionView.tsx)

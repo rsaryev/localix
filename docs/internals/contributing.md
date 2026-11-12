@@ -31,7 +31,7 @@ running and maps each change to the checks that catch regressions.
 Start a fresh checkout with the pinned tools, install dependencies, and seed package outputs:
 
 ```bash
-git clone https://github.com/rsaryev/localix.git
+git clone https://github.com/rsaryev/localix-studio.git
 cd localix
 bun install --frozen-lockfile
 bun run build
@@ -59,7 +59,7 @@ report missing `@localixai/*` modules that are not source defects.
 
 The [architecture guide](architecture.md) owns import direction and runtime composition. The
 [mini app guide](../extending/mini-apps.md) and the
-[plugins and mini apps contract](https://github.com/rsaryev/localix/blob/main/docs/internals/plugins-and-mini-apps.md)
+[plugins and mini apps contract](https://github.com/rsaryev/localix-studio/blob/main/docs/internals/plugins-and-mini-apps.md)
 own extension boundaries; do not duplicate those contracts inside feature changes.
 
 ### Turbo and focused commands
@@ -109,7 +109,7 @@ the runtime suite and `check:tests` before review.
 ### Pull-request gates
 
 The root
-[contribution policy](https://github.com/rsaryev/localix/blob/main/CONTRIBUTING.md#required-checks)
+[contribution policy](https://github.com/rsaryev/localix-studio/blob/main/CONTRIBUTING.md#required-checks)
 owns the ordered gate list. The public-repository check compares that list with CI, so adding or
 removing a required gate must update the policy and workflow together.
 
@@ -218,8 +218,8 @@ can write to the release. The `legs` input can select only the platforms that ne
 To cut a release:
 
 1. Write the version's `CHANGELOG.md` section as described under Releases in
-   [AGENTS.md](https://github.com/rsaryev/localix/blob/main/AGENTS.md#releases) and commit it to
-   `main`. It is the release's Highlights and the "What's new" of the app's update dialog; the
+   [AGENTS.md](https://github.com/rsaryev/localix-studio/blob/main/AGENTS.md#releases) and commit it
+   to `main`. It is the release's Highlights and the "What's new" of the app's update dialog; the
    workflow refuses a version without one.
 2. Wait for `Checks` to pass on the `main` commit being released. Tag the commit that has its own
    `Checks` run: when several commits are pushed at once, only the newest one gets a run.
@@ -296,25 +296,25 @@ format check as a read-only gate before review.
 - Generated desktop resources, sidecar binaries, package `dist` trees, Turbo state, and generated
   landing modules are ignored build products. Change their inputs instead.
 - Release configuration describes a pipeline, not the existence of a public signed artifact. Check
-  [GitHub Releases](https://github.com/rsaryev/localix/releases) for a published release and its
-  actual assets before writing download instructions. A draft release is not publicly available.
+  [GitHub Releases](https://github.com/rsaryev/localix-studio/releases) for a published release and
+  its actual assets before writing download instructions. A draft release is not publicly available.
 
 ## Related guides
 
 - [Installation and native prerequisites](../getting-started/installation.md)
-- [Documentation standards](https://github.com/rsaryev/localix/blob/main/docs/internals/doc-standards.md)
+- [Documentation standards](https://github.com/rsaryev/localix-studio/blob/main/docs/internals/doc-standards.md)
 - [Architecture](architecture.md)
 - [Environment contract](environment.md)
 - [Build a mini app](../extending/mini-apps.md)
 
 ## Source of truth
 
-- [Root scripts and Bun version](https://github.com/rsaryev/localix/blob/main/package.json)
-- [Turbo task graph](https://github.com/rsaryev/localix/blob/main/turbo.json)
-- [Continuous integration workflow](https://github.com/rsaryev/localix/blob/main/.github/workflows/ci.yml)
-- [Required contribution checks](https://github.com/rsaryev/localix/blob/main/CONTRIBUTING.md)
-- [Oxfmt configuration](https://github.com/rsaryev/localix/blob/main/.oxfmtrc.json)
-- [Oxlint configuration](https://github.com/rsaryev/localix/blob/main/.oxlintrc.json)
-- [Knip configuration](https://github.com/rsaryev/localix/blob/main/knip.json)
-- [API source TypeScript project](https://github.com/rsaryev/localix/blob/main/apps/api/tsconfig.json)
-- [API test TypeScript project](https://github.com/rsaryev/localix/blob/main/apps/api/tsconfig.test.json)
+- [Root scripts and Bun version](https://github.com/rsaryev/localix-studio/blob/main/package.json)
+- [Turbo task graph](https://github.com/rsaryev/localix-studio/blob/main/turbo.json)
+- [Continuous integration workflow](https://github.com/rsaryev/localix-studio/blob/main/.github/workflows/ci.yml)
+- [Required contribution checks](https://github.com/rsaryev/localix-studio/blob/main/CONTRIBUTING.md)
+- [Oxfmt configuration](https://github.com/rsaryev/localix-studio/blob/main/.oxfmtrc.json)
+- [Oxlint configuration](https://github.com/rsaryev/localix-studio/blob/main/.oxlintrc.json)
+- [Knip configuration](https://github.com/rsaryev/localix-studio/blob/main/knip.json)
+- [API source TypeScript project](https://github.com/rsaryev/localix-studio/blob/main/apps/api/tsconfig.json)
+- [API test TypeScript project](https://github.com/rsaryev/localix-studio/blob/main/apps/api/tsconfig.test.json)

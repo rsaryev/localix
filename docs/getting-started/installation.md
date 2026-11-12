@@ -2,8 +2,8 @@
 
 Run Localix from a source checkout as a native desktop app or an isolated browser workspace. This
 guide covers prerequisites, development commands, and local bundles. For packaged builds, check
-[GitHub Releases](https://github.com/rsaryev/localix/releases): a draft or a configured build matrix
-does not mean an installer is publicly available.
+[GitHub Releases](https://github.com/rsaryev/localix-studio/releases): a draft or a configured build
+matrix does not mean an installer is publicly available.
 
 ## Terminology
 
@@ -29,7 +29,7 @@ Run these commands from the repository root.
 ## How it works
 
 ```bash
-git clone https://github.com/rsaryev/localix.git
+git clone https://github.com/rsaryev/localix-studio.git
 cd localix
 bun install --frozen-lockfile
 bun run dev
@@ -78,7 +78,7 @@ sudo apt-get install -y \
 ```
 
 The repository does not pin macOS SDK, Windows SDK, compiler, or WebView2 versions. See the
-[desktop build notes](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/README.md)
+[desktop build notes](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/README.md)
 before creating a native bundle.
 
 ## Updates
@@ -142,13 +142,13 @@ is restored; see [startup logs](troubleshooting.md#read-the-logs-of-one-launch).
 
 ## Source of truth
 
-- [Root scripts and Bun version](https://github.com/rsaryev/localix/blob/main/package.json)
-- [Development supervisor](https://github.com/rsaryev/localix/blob/main/scripts/dev-servers.mjs)
-- [Desktop sidecar staging](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/scripts/prepare-sidecar.mjs)
-- [Tauri bundle configuration](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/tauri.conf.json)
-- [Updater release overlay](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/scripts/build-release-config.mjs)
-- [Native release matrix](https://github.com/rsaryev/localix/blob/main/.github/workflows/release.yml)
-- [Native updater outcomes](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/updater.rs)
-- [Bounded save request](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/frontend_flush.rs)
-- [Restart warning roster](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/model/interruptibleWork.ts)
-- [Migration backup and retention](https://github.com/rsaryev/localix/blob/main/apps/api/src/db/connection.ts)
+- [Root scripts and Bun version](https://github.com/rsaryev/localix-studio/blob/main/package.json)
+- [Development supervisor](https://github.com/rsaryev/localix-studio/blob/main/scripts/dev-servers.mjs)
+- [Desktop sidecar staging](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/scripts/prepare-sidecar.mjs)
+- [Tauri bundle configuration](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/tauri.conf.json)
+- [Updater release overlay](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/scripts/build-release-config.mjs)
+- [Native release matrix](https://github.com/rsaryev/localix-studio/blob/main/.github/workflows/release.yml)
+- [Native updater outcomes](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/updater.rs)
+- [Bounded save request](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/frontend_flush.rs)
+- [Restart warning roster](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/entities/chat/model/interruptibleWork.ts)
+- [Migration backup and retention](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/db/connection.ts)

@@ -1,4 +1,4 @@
-import { Markdown, type MarkdownComponents } from 'llx-markdown'
+import { Markdown, type MarkdownComponents } from '@localix-ai/flowdown'
 
 const group = ({ children }: { children?: React.ReactNode }) => (
   <h4 className="pt-1 text-2xs font-medium tracking-wide text-text-faint uppercase">{children}</h4>

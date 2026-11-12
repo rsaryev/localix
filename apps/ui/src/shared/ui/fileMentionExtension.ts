@@ -1,7 +1,7 @@
 // `@path/to/file.ts` in a message's text becomes a link the renderer draws as a clickable file
 // chip. The link carries the `mention:` scheme, so the `a` component can tell it from an
 // ordinary file link and from the URLs a model writes (which `fileHrefToPath` already handles).
-import type { Extension, Node } from 'llx-markdown'
+import type { Extension, Node } from '@localix-ai/flowdown'
 import { FILE_MENTION_RE, mentionPathOf, mentionLabel } from '@/shared/lib/fileMention'
 
 /** Encodes a mention path into the link href the renderer decodes. */
@@ -56,5 +56,5 @@ function linkify(parent: Node): void {
   parent.children = next
 }
 
-/** The `llx-markdown` extension for a person's message: its `@path` tokens are file chips. */
+/** The `flowdown` extension for a person's message: its `@path` tokens are file chips. */
 export const fileMentions: Extension = { name: 'file-mentions', transform: linkify }

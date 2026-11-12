@@ -260,11 +260,11 @@ and non-zero-exit behavior. For a forked skill, verify the invoking agent has ev
 
 ## Source of truth
 
-- [A scope's skills, read through the plugin kit](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/scope-skills.ts)
-- [The `SKILL.md` format as the kit reads it](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/skill-files.ts)
-- [Writing skills to a scope's folder](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/skill-files.ts)
-- [Slash-command dispatch](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers.ts)
-- [Typed skill and command expansion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers-skill.ts)
-- [The agent's rules for injected commands](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/skill-command-authorize.ts)
-- [File-reference attachment](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/file-references.ts)
-- [Model roster and pinned-skill prompt sections](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/prompt/sections/features.ts)
+- [A scope's skills, read through the plugin kit](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/kit/scope-skills.ts)
+- [The `SKILL.md` format as the kit reads it](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/kit/skill-files.ts)
+- [Writing skills to a scope's folder](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/skill-files.ts)
+- [Slash-command dispatch](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/service/command-handlers.ts)
+- [Typed skill and command expansion](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/service/command-handlers-skill.ts)
+- [The agent's rules for injected commands](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/service/skill-command-authorize.ts)
+- [File-reference attachment](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/file-references.ts)
+- [Model roster and pinned-skill prompt sections](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/prompt/sections/features.ts)

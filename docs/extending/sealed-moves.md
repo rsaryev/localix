@@ -56,8 +56,8 @@ pass it to `seal` as the owner.
 
 ## Source of truth
 
-- [Sealing in the item funnel](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/sealed-items.ts)
-- [Tool presentation contract](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/tool-definition.ts)
-- [Commitments and views](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/sealed.ts)
+- [Sealing in the item funnel](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/sealed-items.ts)
+- [Tool presentation contract](https://github.com/rsaryev/localix-studio/blob/main/packages/agent/src/agents/tool-definition.ts)
+- [Commitments and views](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/sealed.ts)
 - [A sealed-move game's rules and per-side view](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps),
   in the marketplace

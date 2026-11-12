@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/logo.svg" width="72" height="72" alt="Localix">
+  <img src="assets/logo.svg" width="72" height="72" alt="Localix Studio">
 </p>
 
-<h1 align="center">Localix</h1>
+<h1 align="center">Localix Studio</h1>
 
 <p align="center">
   <strong>The Agentic Development Environment</strong>
@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/rsaryev/localix/releases/latest">Download</a> ·
+  <a href="https://github.com/rsaryev/localix-studio/releases/latest">Download</a> ·
   <a href="docs/README.md">Documentation</a> ·
   <a href="#run-from-source">Run from source</a>
 </p>
@@ -91,7 +91,7 @@ mini apps and plugins are in the
 ## Download
 
 - **macOS, Apple silicon:** `Localix-macos-arm64.dmg` from the
-  [latest release](https://github.com/rsaryev/localix/releases/latest), signed and notarized
+  [latest release](https://github.com/rsaryev/localix-studio/releases/latest), signed and notarized
 - **macOS Intel, Linux, Windows:** no installer yet, [run from source](#run-from-source)
 
 Each release lists checksums in `SHA256SUMS.txt`.
@@ -102,7 +102,7 @@ For the desktop app, install [Bun](https://bun.sh) **1.4.4**, a Rust toolchain, 
 [Tauri prerequisites](https://tauri.app/start/prerequisites/).
 
 ```bash
-git clone https://github.com/rsaryev/localix.git
+git clone https://github.com/rsaryev/localix-studio.git
 cd localix
 bun install --frozen-lockfile
 bun run dev

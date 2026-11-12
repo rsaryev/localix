@@ -42,8 +42,8 @@ folder moved can be pointed at its new place.
 - **A calmer Mac window**: panels and popovers sit dark on the window's glass, the window turns
   solid under Reduce Transparency and in full screen, and a double-click on the title bar does what
   System Settings says.
-- **Replies are drawn by `llx-markdown`**: chat replies and file change cards render and stream
-  through our own Markdown renderer.
+- **Replies are drawn by `flowdown`**: chat replies and file change cards render and stream through
+  our own Markdown renderer.
 
 ### Fixed
 

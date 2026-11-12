@@ -95,13 +95,13 @@ agent's runs are judged by.
 
 ## Source of truth
 
-- [Suggestion rules and thresholds](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-gc.ts)
-- [Protected tool names](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-policy-sets.ts)
-- [Capability and usage report](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/tools/gc-report.ts)
-- [Report route and scope](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/tools/routes.ts)
-- [Agent-aware capability snapshots](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/snapshot.ts)
-- [Wire-count exclusions](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/tools/wire-tools.ts)
-- [Usage persistence](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/tools/usage-repository.ts)
-- [Run roster recording](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/stages/tools.ts)
-- [Tool-call recording](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/event-handlers-tools.ts)
-- [Per-agent tool switches (Access tab)](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/store/ui/AgentAccess.tsx)
+- [Suggestion rules and thresholds](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tool-gc.ts)
+- [Protected tool names](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/tool-policy-sets.ts)
+- [Capability and usage report](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/tools/gc-report.ts)
+- [Report route and scope](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/tools/routes.ts)
+- [Agent-aware capability snapshots](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/capabilities/snapshot.ts)
+- [Wire-count exclusions](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/tools/wire-tools.ts)
+- [Usage persistence](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/tools/usage-repository.ts)
+- [Run roster recording](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/stages/tools.ts)
+- [Tool-call recording](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/event-handlers-tools.ts)
+- [Per-agent tool switches (Access tab)](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/store/ui/AgentAccess.tsx)

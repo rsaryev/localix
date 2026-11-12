@@ -216,16 +216,16 @@ refusing a pane-sized element that paints a ground in the first place.
 ### The Mac window
 
 Localix follows the Mac window rules below. Each source is Apple's unless it names the sibling
-`localix-desk` research (`docs/ui.md` there), which tested them in a native AppKit window.
+Localix Terminal research (`docs/ui.md` there), which tested them in a native AppKit window.
 
-| Rule                                                                                                   | Here                                                                                                                                    | Source                                                                                                      |
-| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| One material behind the whole window; chrome stays clear over it; content panes take a coat.           | `window_material.rs` puts one `NSVisualEffectView` in the frame view; the page root is transparent.                                     | Adopting Liquid Glass: "Reduce your use of custom backgrounds in controls and navigation elements"          |
-| Nothing is painted under the page to fake glass: no wallpaper, colour pools, sheen or gradient.        | Without the material (browser, Windows, Linux) the root paints `--window-ground` and every coat is 100%.                                | Adopting Liquid Glass; HIG Materials: "Don't use Liquid Glass in the content layer"                         |
-| No glass on glass: menus, popovers and dialogs are solid with a hairline and never blur what is under. | `.lx-floating-surface`, `.bg-popover` and `.lx-modal-surface` are opaque on every platform.                                             | Adopting Liquid Glass ("Audit the backgrounds of sheets and popovers"); `localix-desk` `docs/ui.md`, Layers |
-| Solid when it must be: Reduce transparency, Increase contrast, full screen, the person's Off.          | One selector list in `window-material.css` lifts every coat to 100% for `data-reduce-transparency`, `data-fullscreen` and Off.          | HIG Accessibility; `localix-desk` `docs/ui.md`, Glass (full screen has no desktop to sample)                |
-| The page is told the accessibility setting; it does not guess.                                         | WKWebView never matches `prefers-reduced-transparency`, so `display_options.rs` stamps `data-reduce-transparency` at load and on focus. | Probed on macOS 26 in a WKWebView: neither `reduce` nor `no-preference` matches                             |
-| Transparency is offered only where there is glass.                                                     | Settings → Preferences shows Window transparency only when `hasNativeWindowMaterial()`.                                                 | HIG Materials                                                                                               |
+| Rule                                                                                                   | Here                                                                                                                                    | Source                                                                                                        |
+| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| One material behind the whole window; chrome stays clear over it; content panes take a coat.           | `window_material.rs` puts one `NSVisualEffectView` in the frame view; the page root is transparent.                                     | Adopting Liquid Glass: "Reduce your use of custom backgrounds in controls and navigation elements"            |
+| Nothing is painted under the page to fake glass: no wallpaper, colour pools, sheen or gradient.        | Without the material (browser, Windows, Linux) the root paints `--window-ground` and every coat is 100%.                                | Adopting Liquid Glass; HIG Materials: "Don't use Liquid Glass in the content layer"                           |
+| No glass on glass: menus, popovers and dialogs are solid with a hairline and never blur what is under. | `.lx-floating-surface`, `.bg-popover` and `.lx-modal-surface` are opaque on every platform.                                             | Adopting Liquid Glass ("Audit the backgrounds of sheets and popovers"); Localix Terminal `docs/ui.md`, Layers |
+| Solid when it must be: Reduce transparency, Increase contrast, full screen, the person's Off.          | One selector list in `window-material.css` lifts every coat to 100% for `data-reduce-transparency`, `data-fullscreen` and Off.          | HIG Accessibility; Localix Terminal `docs/ui.md`, Glass (full screen has no desktop to sample)                |
+| The page is told the accessibility setting; it does not guess.                                         | WKWebView never matches `prefers-reduced-transparency`, so `display_options.rs` stamps `data-reduce-transparency` at load and on focus. | Probed on macOS 26 in a WKWebView: neither `reduce` nor `no-preference` matches                               |
+| Transparency is offered only where there is glass.                                                     | Settings → Preferences shows Window transparency only when `hasNativeWindowMaterial()`.                                                 | HIG Materials                                                                                                 |
 
 Deliberate deviations, each a decision rather than an oversight:
 
@@ -234,7 +234,7 @@ Deliberate deviations, each a decision rather than an oversight:
   workspace with flat grey the moment focus left. The titlebar dims its contents instead.
 - The material is chosen per appearance (`HUDWindow` in dark, `UnderWindowBackground` in light).
   Apple says to pick by purpose, not by apparent colour (`NSVisualEffectView`), but no single
-  material served both themes: `HUDWindow` turned the light theme to mud. `localix-desk` makes the
+  material served both themes: `HUDWindow` turned the light theme to mud. Localix Terminal makes the
   same split.
 - The accent is the app's own (`--composer-accent`), not the system accent colour.
 

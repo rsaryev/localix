@@ -34,7 +34,7 @@ For mods, `scripts/cc-parity` runs one probe mod in the installed Claude Code an
 host and compares, event by event and call by call, the shape of what each hands it. Its test fails
 when a shape that matched stops matching. After a new Claude Code release, its snapshot is taken
 again and the differences are fixed or listed. See the tool's
-[README](https://github.com/rsaryev/localix/blob/main/scripts/cc-parity/README.md).
+[README](https://github.com/rsaryev/localix-studio/blob/main/scripts/cc-parity/README.md).
 
 ## Limits
 
@@ -96,8 +96,8 @@ Where Localix has no equivalent, the feature is not offered:
 
 ## Source of truth
 
-- [Claude Code tool shapes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/tools/cc-tool-shapes.ts)
-- [Mods host](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mods/host.ts)
-- [Skill discovery](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/scope-skills.ts)
-- [Project instructions](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/context-files.ts)
-- [Parity tool](https://github.com/rsaryev/localix/blob/main/scripts/cc-parity/README.md)
+- [Claude Code tool shapes](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/kit/tools/cc-tool-shapes.ts)
+- [Mods host](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mods/host.ts)
+- [Skill discovery](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/kit/scope-skills.ts)
+- [Project instructions](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/context-files.ts)
+- [Parity tool](https://github.com/rsaryev/localix-studio/blob/main/scripts/cc-parity/README.md)

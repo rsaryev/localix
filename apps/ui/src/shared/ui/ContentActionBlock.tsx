@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { Node } from 'llx-markdown'
+import type { Node } from '@localix-ai/flowdown'
 import type { ActionTarget } from '@localixai/mini-app-sdk/ui'
 import { FLOATING_SURFACE } from '@localixai/kit/workbench-toolbar'
 import { ContributedActions } from './ContributedActions'

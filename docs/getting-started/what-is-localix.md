@@ -89,13 +89,13 @@ agent permission to call its tools.
 
 ## Source of truth
 
-- [Desktop API process](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/sidecar.rs)
-- [Session creation and local execution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/session-lifecycle.ts)
-- [Direct-run model requirements](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/stages/turn.ts)
-- [Workspace pane registry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/widgets/editor-grid/ui/registry.tsx)
-- [Agent-owned permission policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/permission-engine.ts)
+- [Desktop API process](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/sidecar.rs)
+- [Session creation and local execution](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/service/session-lifecycle.ts)
+- [Direct-run model requirements](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/chat/runtime/run/stages/turn.ts)
+- [Workspace pane registry](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/widgets/editor-grid/ui/registry.tsx)
+- [Agent-owned permission policy](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/agent-core/permission-engine.ts)
 - [The Localix marketplace's mini apps](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps)
-- [Plugin trust classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/enable.ts)
-- [UI and agent plugin policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/service.ts)
-- [UI and agent mini app policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/service.ts)
-- [Visual Feedback capture](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/probe/capture.ts)
+- [Plugin trust classification](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/enable.ts)
+- [UI and agent plugin policy](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/service.ts)
+- [UI and agent mini app policy](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/mini-apps/service.ts)
+- [Visual Feedback capture](https://github.com/rsaryev/localix-studio/blob/main/packages/visual-feedback/src/probe/capture.ts)

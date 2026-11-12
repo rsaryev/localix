@@ -163,9 +163,9 @@ credentials and with `CLAUDE_CODE_PLUGIN_NAME` and `CLAUDE_CODE_PLUGIN_ARCHIVE_U
 
 ## Source of truth
 
-- [The default sources](https://github.com/rsaryev/localix/blob/main/packages/store/src/default-sources.ts)
-- [The version rule](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/kit/marketplace/versions.ts)
-- [The version cache](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/plugin-cache.ts)
-- [Updates and the auto-update pass](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/plugin-updates.ts)
-- [Which marketplaces auto-update](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/marketplace-auto-update.ts)
-- [The default marketplaces](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/default-marketplaces.ts)
+- [The default sources](https://github.com/rsaryev/localix-studio/blob/main/packages/store/src/default-sources.ts)
+- [The version rule](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/kit/marketplace/versions.ts)
+- [The version cache](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/plugin-cache.ts)
+- [Updates and the auto-update pass](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/plugin-updates.ts)
+- [Which marketplaces auto-update](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/marketplace-auto-update.ts)
+- [The default marketplaces](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/features/plugins/default-marketplaces.ts)

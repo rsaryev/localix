@@ -1,5 +1,5 @@
 import type { SVGProps } from 'react'
-import { FileTree as SharedFileTree, type TreeIcon } from 'llx-markdown'
+import { FileTree as SharedFileTree, type TreeIcon } from '@localix-ai/flowdown'
 import { fileIcon, folderIcon, type FileIconSpec } from './file-icon/fileIcon'
 
 /** One glyph component per spec, kept: a new component on every render would remount the svg. */

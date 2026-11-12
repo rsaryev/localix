@@ -4,7 +4,7 @@ import {
   DIAGRAM_FENCE_LANGUAGE,
   DIAGRAM_KINDS,
   TREE_FENCE_LANGUAGE,
-} from 'llx-markdown/prompt'
+} from '@localix-ai/flowdown/prompt'
 import type { RunShape } from '@localixai/agent/agents'
 
 /**
@@ -15,7 +15,7 @@ import type { RunShape } from '@localixai/agent/agents'
  * lists where a table belonged, a warning buried mid-paragraph — and the renderer's callouts
  * and diagrams went unused because nothing told the model they existed.
  *
- * Every construct named here is read from `llx-markdown/prompt`, the dialect the UI renderer
+ * Every construct named here is read from `@localix-ai/flowdown/prompt`, the dialect the UI renderer
  * reads too, so the prompt cannot advertise a marker the transcript would print as raw text.
  *
  * Rendered only where that renderer is what the reader sees: a CHAT shape (a sub-agent's report

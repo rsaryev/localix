@@ -1,4 +1,4 @@
-import { defaultUrlTransform } from 'llx-markdown'
+import { defaultUrlTransform } from '@localix-ai/flowdown'
 import { isUiNavigationAction } from '@localixai/mini-app-sdk/ui'
 import { fileHrefToReference, type FileHrefReference } from './markdownFileRef'
 import { isAgentProfileHref } from './markdownAgentRef'

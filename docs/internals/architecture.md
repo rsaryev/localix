@@ -97,7 +97,7 @@ and failing on any `node:` import, with the chain that reached it.
 
 The chat service assembles session context, effective configuration, tools, permissions, and
 persistence around the `AgentRuntime` port. The production composition root supplies the engine. The
-[agent runtime boundary](https://github.com/rsaryev/localix/blob/main/docs/internals/agent-runtime.md)
+[agent runtime boundary](https://github.com/rsaryev/localix-studio/blob/main/docs/internals/agent-runtime.md)
 owns that interface and its event contract.
 
 A task board, a mini app of the
@@ -121,7 +121,7 @@ Plugin and mini app enablement changes which tools, providers, hooks, and workbe
 register. [Build a mini app](../extending/mini-apps.md) owns the mini app manifest fields and
 contribution lifecycles; [Install Claude Code plugins](../extending/claude-code-plugins.md) owns
 what a plugin runs.
-[Plugins and mini apps](https://github.com/rsaryev/localix/blob/main/docs/internals/plugins-and-mini-apps.md)
+[Plugins and mini apps](https://github.com/rsaryev/localix-studio/blob/main/docs/internals/plugins-and-mini-apps.md)
 is the contract between the two.
 
 ## Limits
@@ -141,24 +141,24 @@ is the contract between the two.
 
 ## Related guides
 
-- [Architecture principles, rules and audit](https://github.com/rsaryev/localix/blob/main/docs/internals/architecture/README.md)
-- [Agent runtime boundary](https://github.com/rsaryev/localix/blob/main/docs/internals/agent-runtime.md)
+- [Architecture principles, rules and audit](https://github.com/rsaryev/localix-studio/blob/main/docs/internals/architecture/README.md)
+- [Agent runtime boundary](https://github.com/rsaryev/localix-studio/blob/main/docs/internals/agent-runtime.md)
 - [Environment and configuration](environment.md)
 - [Workspace](../features/workspace.md)
 - [Execution environments](../features/execution-environments.md)
 - [Build a mini app](../extending/mini-apps.md)
 - [Install Claude Code plugins](../extending/claude-code-plugins.md)
-- [Plugins and mini apps](https://github.com/rsaryev/localix/blob/main/docs/internals/plugins-and-mini-apps.md)
+- [Plugins and mini apps](https://github.com/rsaryev/localix-studio/blob/main/docs/internals/plugins-and-mini-apps.md)
 
 ## Source of truth
 
-- [API composition root](https://github.com/rsaryev/localix/blob/main/apps/api/src/bootstrap.ts)
-- [Desktop sidecar lifecycle](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/sidecar.rs)
-- [Core event socket](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/api/eventSocket.ts)
-- [Terminal stream pane](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/terminal/ui/TerminalPane.tsx)
-- [Work-item registry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/widgets/editor-grid/ui/registry.tsx)
-- [Runtime interfaces](https://github.com/rsaryev/localix/blob/main/packages/agent/src/runtime/index.ts)
-- [Mini app manifest contracts](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/manifest/app.ts)
-- [Architecture checker](https://github.com/rsaryev/localix/blob/main/scripts/check-architecture.mjs)
-- [Browser-graph guard](https://github.com/rsaryev/localix/blob/main/scripts/browser-graph-guard.test.ts)
-- [API export map (the leaves)](https://github.com/rsaryev/localix/blob/main/apps/api/package.json)
+- [API composition root](https://github.com/rsaryev/localix-studio/blob/main/apps/api/src/bootstrap.ts)
+- [Desktop sidecar lifecycle](https://github.com/rsaryev/localix-studio/blob/main/apps/desktop-tauri/src-tauri/src/sidecar.rs)
+- [Core event socket](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/shared/api/eventSocket.ts)
+- [Terminal stream pane](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/features/terminal/ui/TerminalPane.tsx)
+- [Work-item registry](https://github.com/rsaryev/localix-studio/blob/main/apps/ui/src/widgets/editor-grid/ui/registry.tsx)
+- [Runtime interfaces](https://github.com/rsaryev/localix-studio/blob/main/packages/agent/src/runtime/index.ts)
+- [Mini app manifest contracts](https://github.com/rsaryev/localix-studio/blob/main/packages/mini-app-sdk/src/manifest/app.ts)
+- [Architecture checker](https://github.com/rsaryev/localix-studio/blob/main/scripts/check-architecture.mjs)
+- [Browser-graph guard](https://github.com/rsaryev/localix-studio/blob/main/scripts/browser-graph-guard.test.ts)
+- [API export map (the leaves)](https://github.com/rsaryev/localix-studio/blob/main/apps/api/package.json)

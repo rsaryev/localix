@@ -75,13 +75,13 @@ for (const { path, manifest } of workspacePackages) {
   assert.equal(manifest.license, 'MIT', `${path} must declare its package license`)
   assert.equal(
     manifest.repository?.url,
-    'git+https://github.com/rsaryev/localix.git',
+    'git+https://github.com/rsaryev/localix-studio.git',
     `${path} must point npm provenance to the public repository`,
   )
   assert.equal(manifest.homepage, 'https://localix.ai', `${path} must declare the project homepage`)
   assert.equal(
     manifest.bugs?.url,
-    'https://github.com/rsaryev/localix/issues',
+    'https://github.com/rsaryev/localix-studio/issues',
     `${path} must direct package issues to the public tracker`,
   )
   if (manifest.files?.includes('src')) {
@@ -159,7 +159,7 @@ const repositoryFiles = repositoryFilesResult.stdout
 // blocklist them would republish the very names the check exists to retire, and would miss the
 // next one; allowlisting the public ones instead needs no such list and fails closed on any name
 // that has not been made public.
-const CANONICAL_REPOSITORY = 'localix'
+const CANONICAL_REPOSITORY = 'localix-studio'
 const PUBLIC_REPOSITORIES = new Set([
   CANONICAL_REPOSITORY,
   LOCALIX_MARKETPLACE.repo.split('/')[1],

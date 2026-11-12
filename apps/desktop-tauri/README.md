@@ -203,8 +203,8 @@ records the digests that check compares.
   icons"). macOS 26 masks an `.icns` of that shape to its own rounded rectangle (WWDC25 session
   220). The icon tested masked cleanly on 26.6, without the gray backing a full-bleed square gets.
   macOS 13 to 15 show it as drawn. SVG `rx` is a circular corner, not Apple's continuous one; the
-  difference is visible only before 26. LLX Desk drew the same bird on a larger 896 plate, and that
-  plate stays for Windows and Linux, which mask nothing.
+  difference is visible only before 26. Localix Terminal drew the same bird on a larger 896 plate,
+  and that plate stays for Windows and Linux, which mask nothing.
 - **Every raster** is drawn at its own size from the vector by `tauri icon`, so nothing is scaled up
   from a smaller raster. `icon.png` (512) comes first in `bundle.icon`, because Linux takes its
   window icon from the first PNG there.
@@ -212,8 +212,9 @@ records the digests that check compares.
   with `icon_as_template` so AppKit tints it for the bar. Windows and Linux trays show `64x64.png`
   in colour.
 - **Badge**: the macOS Dock badge is the system's own (`NSDockTile` badge label, via
-  `set_badge_count`), as in LLX Desk. A count goes there; it never bounces or animates. Windows has
-  no numeric badge, so `badge-overlay.png` (a 32 px red dot) is set on every workspace window.
+  `set_badge_count`), as in Localix Terminal. A count goes there; it never bounces or animates.
+  Windows has no numeric badge, so `badge-overlay.png` (a 32 px red dot) is set on every workspace
+  window.
 - **Icon Composer (`.icon`)**: the bundler (2.10) accepts a `.icon` in `bundle.icon`. It compiles
   the file with `actool` into `Assets.car` and sets `CFBundleIconName`, and the `.icns` stays as the
   fallback for macOS before 26. To adopt it: author the layered icon in Icon Composer (the format is

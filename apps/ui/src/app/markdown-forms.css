@@ -1,7 +1,7 @@
-/* The answer forms over `llx-markdown/styles.css`: steps, tabs, stats, pros/cons, trees and
+/* The answer forms over `@localix-ai/flowdown/styles.css`: steps, tabs, stats, pros/cons, trees and
    checklists, in the workspace's typography. Tokens and the base rules: `markdown.css`. */
 
-/* ─── Answer forms: the dialect's structured shapes (`llx-markdown/prompt` teaches them) ───
+/* ─── Answer forms: the dialect's structured shapes (`@localix-ai/flowdown/prompt` teaches them) ───
    Steps, tabs, headline figures, the case for and against, file trees and checklists. Each is
    plain Markdown underneath; these rules are what make it read as the shape it is. Nothing here
    is a status except the pros/cons glyphs, so the neutral parts take the text tiers and the
@@ -10,35 +10,35 @@
 /* ─── Steps (`> [!STEPS]` over a list) ───
    A sequence read in order: an open dot per step on a dotted line, the step's title, its
    "when" quieter beneath, then its text. */
-.llx-markdown .llx-steps-title,
-.llx-markdown .llx-stats-title,
-.llx-markdown .llx-tabs-title {
+.flowdown .fd-steps-title,
+.flowdown .fd-stats-title,
+.flowdown .fd-tabs-title {
   margin-bottom: 0.35rem;
   font-weight: 600;
   color: var(--foreground);
 }
-.llx-markdown .llx-steps-title + .llx-steps,
-.llx-markdown .llx-stats-title + .llx-stats,
-.llx-markdown .llx-tabs-title + .llx-tabs {
+.flowdown .fd-steps-title + .fd-steps,
+.flowdown .fd-stats-title + .fd-stats,
+.flowdown .fd-tabs-title + .fd-tabs {
   margin-top: 0;
 }
-.llx-markdown ol.llx-steps,
-.llx-markdown ul.llx-steps {
+.flowdown ol.fd-steps,
+.flowdown ul.fd-steps {
   list-style: none;
   margin: 0.8rem 0;
   padding-left: 0;
 }
-.llx-markdown .llx-steps > li {
+.flowdown .fd-steps > li {
   --step-dot: 0.875rem;
   position: relative;
   margin: 0;
   padding: 0 0 0.9rem 1.75rem;
 }
-.llx-markdown .llx-steps > li:last-child {
+.flowdown .fd-steps > li:last-child {
   padding-bottom: 0;
 }
 /* The dot sits on the first line box, whatever its height. */
-.llx-markdown .llx-steps > li::before {
+.flowdown .fd-steps > li::before {
   content: '';
   position: absolute;
   left: 0;
@@ -49,7 +49,7 @@
   border-radius: 9999px;
 }
 /* The line runs from under this dot to the next one; the last step has none to reach. */
-.llx-markdown .llx-steps > li:not(:last-child)::after {
+.flowdown .fd-steps > li:not(:last-child)::after {
   content: '';
   position: absolute;
   left: calc(var(--step-dot) / 2 - 0.75px);
@@ -57,43 +57,43 @@
   bottom: 0.15rem;
   border-left: 1.5px dotted color-mix(in oklch, var(--foreground) 28%, transparent);
 }
-.llx-markdown .llx-step-head {
+.flowdown .fd-step-head {
   margin: 0;
 }
-.llx-markdown .llx-step-title {
+.flowdown .fd-step-title {
   font-weight: 600;
   color: var(--foreground);
 }
-.llx-markdown .llx-step-meta {
+.flowdown .fd-step-meta {
   display: block;
   margin-top: 0.1rem;
   font-size: 0.85em;
   font-style: italic;
   color: var(--text-faint);
 }
-.llx-markdown .llx-step-body {
+.flowdown .fd-step-body {
   margin: 0.3rem 0 0;
 }
-.llx-markdown .llx-steps > li > :last-child {
+.flowdown .fd-steps > li > :last-child {
   margin-bottom: 0;
 }
 
-/* ─── Tabs (`> [!TABS]` with a heading per variant, `llx-markdown` Tabs) ───
+/* ─── Tabs (`> [!TABS]` with a heading per variant, `flowdown` Tabs) ───
    The variants share one bordered panel; the tab row takes the measures of the kit's TabBar:
    the panel-header height, full-height tabs, the soft text tier until a tab is chosen. */
-.llx-markdown .llx-tabs {
+.flowdown .fd-tabs {
   margin: 0.8rem 0;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
 }
-.llx-markdown .llx-tab-list {
+.flowdown .fd-tab-list {
   gap: 0;
   height: var(--panel-header-height);
   border-bottom-color: var(--border-soft);
   padding: 0;
 }
-.llx-markdown .llx-tab {
+.flowdown .fd-tab {
   display: flex;
   align-items: center;
   height: 100%;
@@ -103,31 +103,31 @@
   color: var(--text-soft);
   transition: color 150ms;
 }
-.llx-markdown .llx-tab:hover,
-.llx-markdown .llx-tab[aria-selected='true'] {
+.flowdown .fd-tab:hover,
+.flowdown .fd-tab[aria-selected='true'] {
   color: var(--foreground);
 }
-.llx-markdown .llx-tab[aria-selected='true']::after {
+.flowdown .fd-tab[aria-selected='true']::after {
   inset: auto 0 0;
   border-bottom: 0;
   height: 2px;
   border-radius: 9999px;
   background: var(--foreground);
 }
-.llx-markdown .llx-tab-panel {
+.flowdown .fd-tab-panel {
   padding: 0.6rem 0.9rem 0.75rem;
 }
-.llx-markdown .llx-tab-panel > :first-child {
+.flowdown .fd-tab-panel > :first-child {
   margin-top: 0;
 }
-.llx-markdown .llx-tab-panel > :last-child {
+.flowdown .fd-tab-panel > :last-child {
   margin-bottom: 0;
 }
 
 /* ─── Headline figures (`> [!STATS]` over `- **value** label`) ───
    A row of figures that wraps: the value large, its label quiet under it. */
-.llx-markdown ul.llx-stats,
-.llx-markdown ol.llx-stats {
+.flowdown ul.fd-stats,
+.flowdown ol.fd-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(8.5rem, 100%), 1fr));
   gap: 0.5rem;
@@ -135,14 +135,14 @@
   padding: 0;
   list-style: none;
 }
-.llx-markdown .llx-stats > li {
+.flowdown .fd-stats > li {
   min-width: 0;
   margin: 0;
   border-radius: 0.75rem;
   background: color-mix(in oklch, var(--foreground) 4%, transparent);
   padding: 0.6rem 0.8rem;
 }
-.llx-markdown .llx-stat-value {
+.flowdown .fd-stat-value {
   display: block;
   font-size: 1.35em;
   font-weight: 600;
@@ -150,7 +150,7 @@
   font-variant-numeric: tabular-nums;
   color: var(--foreground);
 }
-.llx-markdown .llx-stat-label {
+.flowdown .fd-stat-label {
   display: block;
   margin-top: 0.15rem;
   font-size: 0.85em;
@@ -161,13 +161,13 @@
 /* ─── The case for and against (`> [!PROS]` / `> [!CONS]`) ───
    A point per row with its glyph in the status hue — the one status in these forms. Written one
    after the other, the two sit side by side, and stack where the reply is narrow. */
-.llx-markdown .llx-verdicts {
+.flowdown .fd-verdicts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
   gap: 0.5rem;
   margin: 0.8rem 0;
 }
-.llx-markdown .llx-verdict {
+.flowdown .fd-verdict {
   min-width: 0;
   --verdict: var(--status-success);
   margin: 0.8rem 0;
@@ -175,38 +175,38 @@
   background: color-mix(in oklch, var(--foreground) 4%, transparent);
   padding: 0.6rem 0.9rem;
 }
-.llx-markdown .llx-verdicts > .llx-verdict {
+.flowdown .fd-verdicts > .fd-verdict {
   margin: 0;
 }
-.llx-markdown .llx-verdict[data-verdict='cons'] {
+.flowdown .fd-verdict[data-verdict='cons'] {
   --verdict: var(--status-error);
 }
-.llx-markdown .llx-verdict-title {
+.flowdown .fd-verdict-title {
   margin: 0 0 0.3rem;
   font-weight: 600;
   color: var(--foreground);
 }
-.llx-markdown ul.llx-verdict-list,
-.llx-markdown ol.llx-verdict-list {
+.flowdown ul.fd-verdict-list,
+.flowdown ol.fd-verdict-list {
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.llx-markdown .llx-verdict-list > li {
+.flowdown .fd-verdict-list > li {
   position: relative;
   margin: 0.2rem 0;
   padding-left: 1.35rem;
 }
-.llx-markdown .llx-verdict-list > li::before {
+.flowdown .fd-verdict-list > li::before {
   position: absolute;
   left: 0;
   font-weight: 700;
   color: var(--verdict);
 }
-.llx-markdown .llx-verdict[data-verdict='pros'] .llx-verdict-list > li::before {
+.flowdown .fd-verdict[data-verdict='pros'] .fd-verdict-list > li::before {
   content: '✓';
 }
-.llx-markdown .llx-verdict[data-verdict='cons'] .llx-verdict-list > li::before {
+.flowdown .fd-verdict[data-verdict='cons'] .fd-verdict-list > li::before {
   content: '✕';
 }
 
@@ -214,60 +214,59 @@
    The rows take the Files sidebar's metrics, on the reply's own ground: the interface's text
    rather than a code column, 12px per level, a chevron column before every folder, and a comment
    in the faint tier with no `#` before it. */
-.llx-markdown .llx-tree {
+.flowdown .fd-tree {
   margin: 0.8rem 0;
   font-family: inherit;
   font-size: var(--text-xs);
   line-height: normal;
 }
-.llx-markdown .llx-tree-row {
+.flowdown .fd-tree-row {
   height: 1.5rem;
   gap: 0.375rem;
   border-radius: var(--radius-sm);
-  padding: 0 0.5rem 0 calc(var(--llx-tree-depth, 0) * 12px + 24px);
+  padding: 0 0.5rem 0 calc(var(--fd-tree-depth, 0) * 12px + 24px);
   color: var(--text-soft);
 }
-.llx-markdown .llx-tree-row[data-folder] {
-  padding-left: calc(var(--llx-tree-depth, 0) * 12px + 8px);
+.flowdown .fd-tree-row[data-folder] {
+  padding-left: calc(var(--fd-tree-depth, 0) * 12px + 8px);
   color: var(--foreground);
 }
-.llx-markdown .llx-tree-row:hover {
+.flowdown .fd-tree-row:hover {
   background-color: transparent;
 }
-.llx-markdown .llx-tree-row[data-folder]:hover {
+.flowdown .fd-tree-row[data-folder]:hover {
   background-color: var(--surface-hover);
 }
-.llx-markdown .llx-tree-chevron {
+.flowdown .fd-tree-chevron {
   width: 0.875rem;
   height: 0.875rem;
 }
-.llx-markdown .llx-tree-icon {
+.flowdown .fd-tree-icon {
   width: 1rem;
   height: 1rem;
 }
-.llx-markdown .llx-tree-comment::before {
+.flowdown .fd-tree-comment::before {
   content: none;
 }
 
 /* ─── Checklists (GFM `- [ ] item`, see MarkdownTaskList) ─── */
-.llx-markdown ul.contains-task-list,
-.llx-markdown ol.contains-task-list {
+.flowdown ul.contains-task-list,
+.flowdown ol.contains-task-list {
   padding-left: 0;
   list-style: none;
 }
-.llx-markdown li.task-list-item {
+.flowdown li.task-list-item {
   position: relative;
   padding-left: 1.55rem;
 }
-.llx-markdown li.task-list-item .lx-task-box {
+.flowdown li.task-list-item .lx-task-box {
   /* Anchor to the first line without making loose paragraphs and nested lists flex columns. */
   position: absolute;
   left: 0;
   top: calc((1lh - 1rem) / 2);
   margin: 0;
 }
-.llx-markdown
-  li.task-list-item:has(> .lx-task-box:checked, > p:first-child > .lx-task-box:checked) {
+.flowdown li.task-list-item:has(> .lx-task-box:checked, > p:first-child > .lx-task-box:checked) {
   color: var(--text-faint);
   text-decoration: line-through;
   text-decoration-color: color-mix(in oklch, var(--foreground) 30%, transparent);
