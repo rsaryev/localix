@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { utimesSync } from 'node:fs'
+import { mkdirSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
@@ -33,5 +33,16 @@ describe('modRevision', () => {
     expect(await modRevision(files, { a: 2 })).not.toBe(before)
     later(files.module)
     expect(await modRevision(files, { a: 1 })).not.toBe(before)
+  })
+
+  test('a link back to its own folder is not entered, and a file in a subfolder still counts', async () => {
+    const hooks = join(dir(), 'hooks')
+    symlinkSync('.', join(hooks, 'self'))
+    mkdirSync(join(hooks, 'lib'))
+    writeFileSync(join(hooks, 'lib/util.js'), 'export const one = 1')
+    const files = { module: join(hooks, 'register.js') }
+    const before = await modRevision(files, {})
+    later(join(hooks, 'lib/util.js'))
+    expect(await modRevision(files, {})).not.toBe(before)
   })
 })

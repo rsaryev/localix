@@ -29,11 +29,23 @@ async function extract(entries: ZipFixtureEntry[]) {
   return { base, dest, outcome }
 }
 
+/** Every entry under `dir`, never entering a link: a recursive `readdir` follows `A -> .` for ever. */
+async function entriesUnder(dir: string, rel = ''): Promise<string[]> {
+  const entries = await fs.readdir(join(dir, rel), { withFileTypes: true })
+  const below = await Promise.all(
+    entries.map(async (entry) => {
+      const name = join(rel, entry.name)
+      return entry.isDirectory() ? [name, ...(await entriesUnder(dir, name))] : [name]
+    }),
+  )
+  return below.flat()
+}
+
 /** Every link under `dest` that resolves, resolves inside it. */
 async function linksResolvingOutside(dest: string): Promise<string[]> {
   const realDest = await fs.realpath(dest).catch(() => undefined)
   if (realDest === undefined) return []
-  const names = await fs.readdir(dest, { recursive: true })
+  const names = await entriesUnder(dest)
   const outside: string[] = []
   for (const name of names) {
     const real = await fs.realpath(join(dest, name)).catch(() => undefined)

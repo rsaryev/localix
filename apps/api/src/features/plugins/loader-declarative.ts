@@ -110,16 +110,21 @@ export async function modRevision(
   return `${code}:${files.types ?? ''}:${types}:${JSON.stringify(options)}`
 }
 
-/** The newest modification time under `dir`: a hooks module and the files it imports. */
+/**
+ * The newest modification time under `dir`: a hooks module and the files it imports. A link is read
+ * and never entered: a recursive `readdir` follows one, and a link back to its own folder never ends.
+ */
 async function newestChange(dir: string): Promise<number> {
-  const files = await readdir(dir, { recursive: true }).catch(() => [] as string[])
+  const entries = await readdir(dir, { withFileTypes: true }).catch(() => [])
   const times = await Promise.all(
-    files.map((file) =>
-      stat(join(dir, file)).then(
+    entries.map(async (entry) => {
+      const path = join(dir, entry.name)
+      const own = await stat(path).then(
         (info) => info.mtimeMs,
         () => 0,
-      ),
-    ),
+      )
+      return entry.isDirectory() ? Math.max(own, await newestChange(path)) : own
+    }),
   )
   return Math.max(0, ...times)
 }
