@@ -188,7 +188,7 @@ Node and Bun come from the setup actions and stay in a cache volume.
 
 On our runners the caches are folders in that volume (`/cache`), kept between jobs: Turbo's per
 slice (`/cache/turbo/<slice>`), Bun's packages (`/cache/bun`) and the Rust build
-(`/cache/target/<key>`). Nothing is downloaded from or uploaded to GitHub's cache, which took
+(`/cache/target/checks`). Nothing is downloaded from or uploaded to GitHub's cache, which took
 minutes per job against seconds of checking. GitHub's machines (a fork's pull request, a release's
 builds) restore and save archives as before.
 

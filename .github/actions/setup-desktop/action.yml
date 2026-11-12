@@ -37,13 +37,12 @@ runs:
 
     # On our runner the build folder is on the CI server's disk, kept between jobs, and sccache
     # (in the runner's image) shares compiled crates: each check builds only what changed. Cargo
-    # locks the folder, so two jobs at once wait for each other rather than collide.
+    # locks the folder, so two jobs at once wait for each other rather than collide. Only the
+    # checks run here (a release builds on GitHub's machines), so the path is a constant.
     - name: Keep the Rust build on the runner's disk
       if: inputs.build-native == 'true' && runner.environment == 'self-hosted'
       shell: bash
-      env:
-        CACHE_KEY: ${{ inputs.cache-key }}
-      run: echo "CARGO_TARGET_DIR=/cache/target/$CACHE_KEY" >> "$GITHUB_ENV"
+      run: echo "CARGO_TARGET_DIR=/cache/target/checks" >> "$GITHUB_ENV"
 
     # GitHub's machines: PRs and tags read the archive main saved; only main writes one, so
     # branches cannot evict it.
