@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { chmod, mkdir, rename, rm, symlink, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, rename, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
@@ -101,8 +101,11 @@ describe('finding a moved folder', () => {
     const seen = join(temp(), 'repo')
     await mkdir(seen)
     const identity = await folderIdentity(seen)
-    // Deleted, and a different folder made at a sibling path: same name, not the same folder.
-    await rm(seen, { recursive: true })
+    // Moved out of reach, three levels down, and other folders made where it is looked for: same
+    // name, not the same folder. It still exists, so no new folder is handed its inode (a deleted
+    // folder's inode goes to the next one made, within one birth-time tick on Linux).
+    await mkdir(join(temp(), 'far', 'away'), { recursive: true })
+    await rename(seen, join(temp(), 'far', 'away', 'repo'))
     await mkdir(join(temp(), 'repo-copy'))
     await mkdir(join(temp(), 'nested', 'repo'), { recursive: true })
     expect(await suggestMovedFolder(seen, identity)).toBeNull()

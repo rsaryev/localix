@@ -55,7 +55,8 @@ export class WorkspaceFolderUnavailableError extends ConflictError {
  *
  * Stored with the project each time its folder is seen (`noteProjectFolder` in `relocate.ts`), so a
  * folder renamed while the app was closed is still recognised on the next start. A file system with
- * no birth time reports 0, and an inode reused by a new folder has a later birth time.
+ * no birth time reports 0, and an inode reused by a new folder has a later birth time, unless that
+ * folder is made within the file system's clock tick (a few milliseconds on Linux) of the first.
  */
 const identityOf = (info: Stats): string => `${info.dev}:${info.ino}:${info.birthtimeMs}`
 

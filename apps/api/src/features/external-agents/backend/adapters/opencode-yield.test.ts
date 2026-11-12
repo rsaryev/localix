@@ -57,7 +57,8 @@ describe('reading many opencode sessions lets the event loop turn', () => {
 
     expect(summaries).toHaveLength(SESSIONS)
     expect(summaries.every((s) => s.usage?.requests === 1)).toBe(true)
-    // One file check turns it once or twice; five batches turn it at least four more times.
-    expect(turns).toBeGreaterThanOrEqual(5)
+    // Five batches are four turns apart; read in one go, only the file check could turn it, twice
+    // at most.
+    expect(turns).toBeGreaterThanOrEqual(4)
   })
 })
