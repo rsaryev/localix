@@ -62,6 +62,10 @@ load. `deniedMcpServers` and `allowedMcpServers` (`serverName`, `serverCommand`,
 `allowManagedMcpServersOnly` keeps the managed list alone) apply to every server, plugin servers and
 your own included. The plugin kit decides which servers load, as Claude Code does.
 
+An entry is read as Claude Code reads it, and one Claude Code refuses does not load: a `url` with no
+`type` (add `"type": "http"`, `"sse"` or `"ws"`), a `serverUrl` in place of `url`, a `command` given
+as a list, or an `env` value that is not a string. Localix does not yet say which entry it skipped.
+
 Such a server is offered as `mcp_<server>_<tool>`, like your own. The Store lists the servers of
 `~/.claude.json` and the managed settings under Yours, and those of a project's `.mcp.json` and
 local entries on its Project shelf, read-only: change them in the file they come from. Their switch

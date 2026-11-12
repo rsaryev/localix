@@ -10,6 +10,11 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
   same folder of its marketplace now gets a full copy at each link, and a link inside a linked
   folder that leads outside the marketplace is always left out. An install whose links would bring
   in more than 20,000 entries or 256 MiB is refused and leaves the installed copy as it was.
+- **MCP servers of Claude Code files are read as Claude Code reads them**: an entry of
+  `~/.claude.json`, `.mcp.json`, the managed settings, a plugin or a subagent that Claude Code
+  refuses no longer loads: a `url` with no `type`, a `serverUrl` in place of `url`, a `command`
+  given as a list, or an `env` value that is not a string. Add `"type": "http"` (or `"sse"`, `"ws"`)
+  to a remote entry that stopped loading. Servers you added in Localix are not affected.
 
 ### Fixed
 
