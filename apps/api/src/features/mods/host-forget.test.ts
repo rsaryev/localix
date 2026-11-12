@@ -20,13 +20,19 @@ function countedVms() {
   const counted = { live: 0, threads: 0 }
   const started: WeakRef<object>[] = []
   /**
-   * How many of the VMs started from the `from`th on are still held by anything, after a turn of the
-   * event loop: the collector also scans the stack, which the turn leaves empty.
+   * How many of the VMs started from the `from`th on are still held by anything. The collector also
+   * scans the stack, which a turn of the event loop leaves empty, and a stopped thread lets go some
+   * turns later when the process is busy: it is asked again, for up to a second, until none is held.
+   * A VM that something really holds is still counted when that second is over.
    */
   const kept = async (from: number) => {
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    Bun.gc(true)
-    return started.slice(from).filter((ref) => ref.deref() !== undefined).length
+    const held = () => started.slice(from).filter((ref) => ref.deref() !== undefined).length
+    for (let turn = 0; turn < 50; turn++) {
+      await new Promise((resolve) => setTimeout(resolve, turn === 0 ? 0 : 20))
+      Bun.gc(true)
+      if (held() === 0) break
+    }
+    return held()
   }
   const vms: ModVmPort = {
     thread() {

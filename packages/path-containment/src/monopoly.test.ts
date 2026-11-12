@@ -93,8 +93,6 @@ const EXEMPTIONS: Record<string, string> = {
     'Matches an HTTP route path against a mounted URL prefix. Not a filesystem path.',
 
   // ── syntax sniffs: "does this string LOOK like a path/URL?", before anything is resolved ──
-  'apps/api/src/features/plugins/marketplace-source.ts::rel-escape':
-    'Sniffs whether a marketplace `source` LOOKS like a local path (`./`, `../`, `/`, `~`) before it is resolved. The containment check in this same file goes through the owner.',
   'apps/api/src/features/agent-core/tools/preview/open-preview-detect.ts::rel-escape':
     'Sniffs whether an argument looks like a file path vs a URL. No root, nothing to contain.',
 }
