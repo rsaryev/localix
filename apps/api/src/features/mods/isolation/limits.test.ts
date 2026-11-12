@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test'
+import { expect, setDefaultTimeout, test } from 'bun:test'
 import { createScriptVms } from '@localixai/engine-scripts'
 import { hostWithVms } from './testing/testing-mods'
 
@@ -8,6 +8,10 @@ import { hostWithVms } from './testing/testing-mods'
  * thread, answer once it is, and the mod starts again; memory past the VM's limit fails inside the VM, never the host; a rejection
  * nothing handled is reported without stopping the mod. The turn limit is the test's own (`hangMs`).
  */
+
+// The real VM starts cold here and fills 16 MiB: on a shared CI runner that is seconds, not the 5 s
+// of a unit test.
+setDefaultTimeout(30_000)
 
 const vms = createScriptVms()
 
