@@ -62,6 +62,7 @@ const LEARNING = [
 ].join('\n')
 
 const builtin = (name: string, instructions: string): StyleBody => ({
+  id: name,
   name,
   description: builtinStyleDescription(name) ?? '',
   keepCodingInstructions: true,

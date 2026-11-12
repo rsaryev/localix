@@ -9,6 +9,7 @@ describe('outputStyleFile', () => {
       '---\nname: Terse\ndescription: Short\nkeep-coding-instructions: true\n---\n\nBe brief.\n',
     )
     expect(style).toEqual({
+      id: 'Terse',
       name: 'Terse',
       description: 'Short',
       keepCodingInstructions: true,

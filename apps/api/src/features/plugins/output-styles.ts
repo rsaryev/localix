@@ -1,6 +1,12 @@
 import { BUILTIN_OUTPUT_STYLES } from './output-style-builtins'
 import type { DiscoveredPlugin } from './discovery-types'
-import { activeStyleId, DEFAULT_OUTPUT_STYLE_ID, offeredStyleIndexes, type StyleBody } from './kit'
+import {
+  activeStyleId,
+  commandStyleId,
+  DEFAULT_OUTPUT_STYLE_ID,
+  offeredStyleIndexes,
+  type StyleBody,
+} from './kit'
 
 /**
  * The output styles a chat can run in, as Claude Code lists them in `/output-style`: the built-in
@@ -11,7 +17,7 @@ import { activeStyleId, DEFAULT_OUTPUT_STYLE_ID, offeredStyleIndexes, type Style
 export type OutputStyleSource = 'builtin' | 'user' | 'project' | 'plugin'
 
 export interface NamedOutputStyle {
-  /** What a chat or a setting stores: the style's name, or `<plugin>:<name>` for a plugin's. */
+  /** What a chat or a setting stores: the kit's id of the style (`<plugin>:<name>` for a plugin's). */
   fullName: string
   source: OutputStyleSource
   style: StyleBody
@@ -33,14 +39,14 @@ export function pluginOutputStyles(
 ): PluginOutputStyle[] {
   return (plugin.entrypoints.components?.outputStyles ?? []).map((style) => ({
     pluginName: plugin.manifest.name,
-    fullName: `${plugin.manifest.name}:${style.name}`,
+    fullName: style.id,
     source: 'plugin',
     style,
   }))
 }
 
 const local = (source: OutputStyleSource, styles: readonly StyleBody[] = []): NamedOutputStyle[] =>
-  styles.map((style) => ({ fullName: style.name, source, style }))
+  styles.map((style) => ({ fullName: style.id, source, style }))
 
 /**
  * Every style a chat can pick, in the order `/output-style` lists them, as the kit decides it
@@ -58,9 +64,7 @@ export function outputStyleCatalog(input: {
     ...local('project', input.project),
     ...local('user', input.user),
   ]
-  const offered = offeredStyleIndexes(
-    custom.map((entry) => ({ id: entry.fullName, style: entry.style })),
-  )
+  const offered = offeredStyleIndexes(custom.map((entry) => entry.style))
   return [...local('builtin', BUILTIN_OUTPUT_STYLES), ...offered.map((index) => custom[index]!)]
 }
 
@@ -77,23 +81,25 @@ export function activeOutputStyle(
   fallback?: string | null,
 ): NamedOutputStyle | null {
   const id = activeStyleId(
-    styles.map((entry) => ({ id: entry.fullName, style: entry.style })),
+    styles.map((entry) => entry.style),
     { ...(chosen ? { command: chosen } : {}), ...(fallback ? { setting: fallback } : {}) },
   )
   return styles.find((entry) => entry.fullName === id) ?? null
 }
 
 /**
- * What `/output-style <query>` names, ignoring case as Claude Code's command does
- * (output-styles.md, "Change your output style"): the default style or a style's full name, a
- * plugin's as `<plugin>:<name>`.
+ * What `/output-style <query>` names, as the kit matches the command's argument (`commandStyleId`;
+ * output-styles.md, "Change your output style"): the default style or one of `styles`.
  */
 export function findOutputStyle(
   styles: readonly NamedOutputStyle[],
   query: string,
 ): { kind: 'default' } | { kind: 'style'; entry: NamedOutputStyle } | { kind: 'none' } {
-  const wanted = query.trim().toLowerCase()
-  if (wanted === DEFAULT_OUTPUT_STYLE_ID) return { kind: 'default' }
-  const entry = styles.find((one) => one.fullName.toLowerCase() === wanted)
+  const id = commandStyleId(
+    styles.map((entry) => entry.style),
+    query,
+  )
+  if (id === DEFAULT_OUTPUT_STYLE_ID) return { kind: 'default' }
+  const entry = id === undefined ? undefined : styles.find((one) => one.fullName === id)
   return entry ? { kind: 'style', entry } : { kind: 'none' }
 }

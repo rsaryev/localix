@@ -13,6 +13,7 @@ const pluginStyle = (name: string, forceForPlugin = false): PluginOutputStyle =>
   fullName: `p:${name}`,
   source: 'plugin',
   style: {
+    id: `p:${name}`,
     name,
     description: '',
     keepCodingInstructions: true,
@@ -43,6 +44,7 @@ describe('the output style catalog', () => {
   // never shadows a built-in, and of two that share a name the first in precedence order wins.
   test('a local style never replaces a built-in; the project wins a name over the person', () => {
     const style = (name: string, instructions: string) => ({
+      id: name,
       name,
       description: '',
       keepCodingInstructions: false,
@@ -86,6 +88,17 @@ describe('choosing the style a chat runs in', () => {
   })
 })
 
+/** What the catalog offers of the local styles, by source: the kit picks the first of a name. */
+const offered = (
+  local: Awaited<ReturnType<typeof readLocalOutputStyles>>,
+  source: 'user' | 'project',
+) =>
+  Object.fromEntries(
+    outputStyleCatalog(local)
+      .filter((entry) => entry.source === source)
+      .map((entry) => [entry.style.name, entry.style.instructions]),
+  )
+
 describe("reading the person's and the project's styles", () => {
   test('reads `.localix/output-styles` from home and from the working directory up', async () => {
     writeTree(home(), { '.localix/output-styles/plain.md': '---\nname: Plain\n---\nNo frills.' })
@@ -102,15 +115,14 @@ describe("reading the person's and the project's styles", () => {
     })
     expect(local.user).toEqual([
       {
+        id: 'Plain',
         name: 'Plain',
         keepCodingInstructions: false,
         forceForPlugin: false,
         instructions: 'No frills.',
       },
     ])
-    expect(
-      Object.fromEntries(local.project.map((style) => [style.name, style.instructions])),
-    ).toEqual({
+    expect(offered(local, 'project')).toEqual({
       team: 'Nearest team voice.',
       'root-only': 'Only at the root.',
     })
@@ -125,9 +137,7 @@ describe("reading the person's and the project's styles", () => {
       'sub/.localix/output-styles/here.md': 'Here.',
     })
     const local = await readLocalOutputStyles({ homeDir: home(), cwd: `${repo()}/sub`, env: {} })
-    expect(
-      Object.fromEntries(local.project.map((style) => [style.name, style.instructions])),
-    ).toEqual({ here: 'Here.', above: 'Above.' })
+    expect(offered(local, 'project')).toEqual({ here: 'Here.', above: 'Above.' })
   })
 
   test("`CLAUDE_CONFIG_DIR` is the person's Claude Code folder, taken as written", async () => {
@@ -150,12 +160,7 @@ describe("reading the person's and the project's styles", () => {
       '.claude/output-styles/review.md': 'Team review voice.',
     })
     const local = await readLocalOutputStyles({ homeDir: home(), cwd: repo(), env: {} })
-    expect(Object.fromEntries(local.user.map((style) => [style.name, style.instructions]))).toEqual(
-      {
-        terse: 'From Claude Code.',
-        plain: 'Localix plain.',
-      },
-    )
+    expect(offered(local, 'user')).toEqual({ terse: 'From Claude Code.', plain: 'Localix plain.' })
     expect(local.project.map((style) => style.name)).toEqual(['review'])
   })
 })

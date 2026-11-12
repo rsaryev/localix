@@ -53,6 +53,7 @@ describe('choosing a style', () => {
     fullName: `${plugin}:${name}`,
     source: 'plugin' as const,
     style: {
+      id: `${plugin}:${name}`,
       name,
       description: '',
       keepCodingInstructions: false,

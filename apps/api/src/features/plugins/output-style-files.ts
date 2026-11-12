@@ -11,8 +11,8 @@ import { outputStyleFile, outputStyleFolders, type StyleBody } from './kit'
  * is a Markdown file with optional frontmatter, the file name being the name unless `name` sets one.
  *
  * Project styles load from every such folder from the working directory up (the kit's folders,
- * `outputStyleFolders`); where two define one name, the one nearest the working directory wins, and
- * at one level Localix's folder wins over Claude Code's.
+ * `outputStyleFolders`), nearest first, and at one level Localix's folder before Claude Code's.
+ * Which of two styles of one name applies is the kit's (the first in that order wins).
  * Read when a chat runs or lists its styles, so an edit applies from the next message.
  */
 
@@ -20,7 +20,7 @@ import { outputStyleFile, outputStyleFolders, type StyleBody } from './kit'
 const MAX_STYLES_PER_DIR = 64
 
 /** The styles in one folder, sorted by file name; a file that cannot be read is skipped. */
-export async function readOutputStyleDir(dir: string): Promise<StyleBody[]> {
+async function readOutputStyleDir(dir: string): Promise<StyleBody[]> {
   const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => [])
   const files = entries
     .filter((entry) => entry.isFile() && extname(entry.name) === '.md')
@@ -30,28 +30,23 @@ export async function readOutputStyleDir(dir: string): Promise<StyleBody[]> {
   const styles: StyleBody[] = []
   for (const name of files) {
     const raw = await readSkillMarkdownFile(join(dir, name)).catch(() => null)
-    if (raw === null) continue
-    const style = outputStyleFile(join(dir, name), raw)
-    if (!styles.some((found) => found.name === style.name)) styles.push(style)
+    if (raw !== null) styles.push(outputStyleFile(join(dir, name), raw))
   }
   return styles
 }
 
-/** The styles of `folders` in order, the first of a name winning. */
-async function firstByName(folders: readonly string[]): Promise<StyleBody[]> {
-  const out = new Map<string, StyleBody>()
-  for (const folder of folders)
-    for (const style of await readOutputStyleDir(folder))
-      if (!out.has(style.name)) out.set(style.name, style)
-  return [...out.values()]
+/** The styles of `folders` in order. */
+async function readFolders(folders: readonly string[]): Promise<StyleBody[]> {
+  const read = await Promise.all(folders.map(readOutputStyleDir))
+  return read.flat()
 }
 
-/** The person's styles and the project's, each resolved nearest first to one per name. */
+/** The person's styles and the project's, each nearest first. */
 export async function readLocalOutputStyles(input: {
   homeDir: string
   cwd?: string | null
   env?: Record<string, string | undefined>
 }): Promise<{ user: StyleBody[]; project: StyleBody[] }> {
   const folders = outputStyleFolders(input)
-  return { user: await firstByName(folders.user), project: await firstByName(folders.project) }
+  return { user: await readFolders(folders.user), project: await readFolders(folders.project) }
 }

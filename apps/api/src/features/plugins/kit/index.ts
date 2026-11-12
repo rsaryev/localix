@@ -45,6 +45,7 @@ export { frontmatterFileText } from './catalog/frontmatter-edit'
 export {
   activeStyleId,
   builtinStyleDescription,
+  commandStyleId,
   DEFAULT_OUTPUT_STYLE_ID,
   offeredStyleIndexes,
   outputStyleFile,

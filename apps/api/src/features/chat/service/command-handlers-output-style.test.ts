@@ -8,6 +8,7 @@ import { handleControlCommand } from './command-handlers'
 import type { SessionRecord } from '../repository'
 
 const style = (name: string, extra: Partial<StyleBody> = {}): StyleBody => ({
+  id: name,
   name,
   description: `${name} replies`,
   keepCodingInstructions: false,
@@ -16,10 +17,13 @@ const style = (name: string, extra: Partial<StyleBody> = {}): StyleBody => ({
   ...extra,
 })
 
+/** An enabled plugin's styles as the kit reads them: each under `<plugin>:<name>`. */
 const plugin = (name: string, styles: StyleBody[]) => ({
   plugin: {
     manifest: { name },
-    entrypoints: { components: { outputStyles: styles } },
+    entrypoints: {
+      components: { outputStyles: styles.map((one) => ({ ...one, id: `${name}:${one.name}` })) },
+    },
   },
 })
 

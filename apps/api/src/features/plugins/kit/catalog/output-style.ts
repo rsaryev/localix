@@ -1,24 +1,28 @@
 import {
   BUILTIN_OUTPUT_STYLES,
+  DEFAULT_OUTPUT_STYLE_ID,
   listOutputStyles,
   readOutputStyle,
   resolveOutputStyle,
   type OutputStyle,
 } from '@rsaryev/llx-plugin/format'
 
-export { DEFAULT_OUTPUT_STYLE_ID } from '@rsaryev/llx-plugin/format'
+export { DEFAULT_OUTPUT_STYLE_ID }
 
 /**
  * An output style as a chat runs it: the kit's `OutputStyle` without where it was read from, so a
- * built-in style (which has no file) is one too. The instructions are trimmed.
+ * built-in style (which has no file) is one too. `id` is what `/output-style` and the `outputStyle`
+ * setting call it, as the kit names it (`<plugin>:<name>` for a plugin's). The instructions are
+ * trimmed.
  */
 export type StyleBody = Pick<
   OutputStyle,
-  'name' | 'description' | 'keepCodingInstructions' | 'forceForPlugin' | 'instructions'
+  'id' | 'name' | 'description' | 'keepCodingInstructions' | 'forceForPlugin' | 'instructions'
 >
 
 /** The parts of a kit style a chat runs on. */
 export const styleBody = (style: OutputStyle): StyleBody => ({
+  id: style.id,
   name: style.name,
   ...(style.description === undefined ? {} : { description: style.description }),
   keepCodingInstructions: style.keepCodingInstructions,
@@ -39,28 +43,45 @@ export function builtinStyleDescription(id: string): string | undefined {
 }
 
 /**
+ * What `/output-style <query>` names, as the kit matches its argument (`resolveOutputStyle`, case
+ * ignored): a style's id, `default`, or undefined when it names nothing. A forced style decides the
+ * style in force, not what the argument names, so none is forced here. The kit answers Default both
+ * for "default" and for a name nothing has; with a built-in style as the setting, only the first
+ * stays Default.
+ */
+export function commandStyleId(styles: readonly StyleBody[], query: string): string | undefined {
+  const unforced = kitStyles(styles).map((style) => ({ ...style, forceForPlugin: false }))
+  const id = resolveOutputStyle({ command: query, styles: unforced }).id
+  if (id !== DEFAULT_OUTPUT_STYLE_ID) return id
+  const probe = BUILTIN_OUTPUT_STYLES.find((style) => style.id !== DEFAULT_OUTPUT_STYLE_ID)?.id
+  const named = resolveOutputStyle({
+    command: query,
+    styles: [],
+    ...(probe ? { setting: probe } : {}),
+  })
+  return named.id === DEFAULT_OUTPUT_STYLE_ID ? id : undefined
+}
+
+/**
  * The id of the style in force, as the kit decides it (output-styles.md, "Change your output
  * style"): a `force-for-plugin` style over everything, else the `/output-style` choice (case
  * ignored), else the `outputStyle` setting (exact), else `default`. `styles` are the custom ones,
  * each under the id `/output-style` lists it by; the built-ins are the kit's.
  */
 export const activeStyleId = (
-  styles: readonly IdentifiedStyle[],
+  styles: readonly StyleBody[],
   choice: { readonly command?: string; readonly setting?: string },
 ): string => resolveOutputStyle({ ...choice, styles: kitStyles(styles) }).id
 
-/** A custom style under the id `/output-style` lists it by. */
-type IdentifiedStyle = { readonly id: string; readonly style: StyleBody }
-
-const kitStyles = (styles: readonly IdentifiedStyle[]): OutputStyle[] =>
-  styles.map(({ id, style }) => ({ ...style, id, path: id }))
+const kitStyles = (styles: readonly StyleBody[]): OutputStyle[] =>
+  styles.map((style) => ({ ...style, path: style.id }))
 
 /**
  * The indexes of the custom `styles` `/output-style` offers, as the kit lists them
  * (`listOutputStyles`): of several that share an id the first wins, and one that reuses a built-in
  * id (or `default`) is never offered, so a custom style never shadows a built-in one.
  */
-export function offeredStyleIndexes(styles: readonly IdentifiedStyle[]): number[] {
+export function offeredStyleIndexes(styles: readonly StyleBody[]): number[] {
   const builtin = new Set(BUILTIN_OUTPUT_STYLES.map(({ id }) => id))
   const listed = new Set(
     listOutputStyles(kitStyles(styles), resolveOutputStyle({ styles: [] }))

@@ -162,6 +162,7 @@ describe('a plugin folder read by the kit', () => {
     ])
     expect(entry.components?.outputStyles).toEqual([
       {
+        id: 'ops:Terse',
         name: 'Terse',
         description: 'Short',
         keepCodingInstructions: false,
