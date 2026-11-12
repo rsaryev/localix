@@ -75,7 +75,10 @@ jobs:
           else
             echo "environment=preview" >> "$GITHUB_OUTPUT"
             echo "branch=preview" >> "$GITHUB_OUTPUT"
-            [ "$want_production" = "true" ] && echo "::notice::Production deploys are off (set the repository variable LANDING_PRODUCTION=true); deploying a preview instead."
+            # An if, not `[ ] && echo`: as the step's last command that would fail it on a preview.
+            if [ "$want_production" = "true" ]; then
+              echo "::notice::Production deploys are off (set the repository variable LANDING_PRODUCTION=true); deploying a preview instead."
+            fi
           fi
 
       # The installer links answer 404 until a release exists, so the download buttons only go live
