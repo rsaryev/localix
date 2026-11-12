@@ -88,7 +88,8 @@ export type FetchPlugin = (ref: {
 /**
  * What an update of the install would bring, or null when it brings nothing or the entry is no
  * longer listed: the kit's check before the fetch (`precheckUpdate`), then on the fetched copy
- * (`updateCheck`).
+ * (`updateCheck`). A listing that cannot be read or a fetch that fails rejects: the check did not
+ * run, which the caller reports as unchecked rather than as no update.
  */
 export async function candidateFor(
   install: MarketplaceInstall,
@@ -98,8 +99,7 @@ export async function candidateFor(
   const found = marketplaceRecord(known, install.marketplace)
   if (!found) return null
   const [marketplace, record] = found
-  const market = await readMarketplace(record).catch(() => null)
-  if (!market) return null
+  const market = await readMarketplace(record)
   let name: string
   try {
     name = resolveEntryName(market, install.name).name

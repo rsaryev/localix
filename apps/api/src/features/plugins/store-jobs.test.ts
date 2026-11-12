@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test'
 import type { PluginUpdatesResponse } from './contracts-updates'
 import { createPluginStoreJobs } from './store-jobs'
 
-const idle: PluginUpdatesResponse = { available: [], jobs: [], lastCheckedAt: null }
+const idle: PluginUpdatesResponse = { available: [], unchecked: [], jobs: [], lastCheckedAt: null }
 
 describe("the Store's plugin jobs", () => {
   test('a second install of a plugin while its first runs is not started', async () => {

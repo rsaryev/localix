@@ -14,6 +14,12 @@ export const pluginUpdateAvailableSchema = z.object({
   to: z.string(),
 })
 
+/** An install whose update check could not run (its listing unreadable, its fetch failed), and why. */
+export const pluginUpdateUncheckedSchema = z.object({
+  id: z.string(),
+  error: z.string(),
+})
+
 export const pluginUpdateJobSchema = z.object({
   id: z.string(),
   phase: z.enum(['checking', 'downloading', 'installing', 'done', 'failed']),
@@ -23,6 +29,8 @@ export type PluginUpdateJob = z.infer<typeof pluginUpdateJobSchema>
 
 export const pluginUpdatesResponseSchema = z.object({
   available: z.array(pluginUpdateAvailableSchema),
+  /** Could not check: not the same as no update, so never folded into `available`'s absence. */
+  unchecked: z.array(pluginUpdateUncheckedSchema),
   jobs: z.array(pluginUpdateJobSchema),
   /** When availability was last computed; null before the first check. */
   lastCheckedAt: z.string().nullable(),

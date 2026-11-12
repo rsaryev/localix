@@ -29,6 +29,14 @@ const LISTINGS = [
     ref: { kind: 'plugin', id: 'lint' },
     installs: [{ scope: 'project', version: '0.3.0', enabled: true }],
   }),
+  listing({
+    id: 'audit',
+    displayName: 'Audit',
+    ref: { kind: 'plugin', id: 'audit' },
+    installs: [
+      { scope: 'user', version: '1.4.0', enabled: true, updateUnchecked: 'git clone failed' },
+    ],
+  }),
 ]
 const row = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLElement>(`[data-install="${id}"]`)
@@ -102,6 +110,20 @@ describe('the Store’s library', () => {
       // Configure opens the package's own page on its Settings tab, not a page of Settings.
       const page = view.host.querySelector('[data-store-page="planner"]')!
       expect(page.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe('Settings')
+    } finally {
+      await view.done()
+    }
+  })
+
+  // A check that could not run is unknown, with why: not up to date, and nothing to update to.
+  test('an install whose update check failed says it could not check, and why', async () => {
+    const view = await renderStore({ listings: LISTINGS, target: { shelf: 'installed' } })
+    try {
+      const audit = row(view.host, 'audit')!
+      expect(audit.textContent).toContain('1.4.0')
+      expect(audit.textContent).toContain('could not check')
+      expect(audit.querySelector('[title="git clone failed"]')).not.toBeNull()
+      expect(row(view.host, 'planner')?.textContent).not.toContain('could not check')
     } finally {
       await view.done()
     }

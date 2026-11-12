@@ -122,6 +122,15 @@ describe('plugin updates', () => {
     expect(await installedVersion()).toBe('2.0.0')
   })
 
+  // A check whose fetch fails is "could not check", with its reason, never "no update".
+  test('a check that cannot fetch the plugin is unchecked, with why, and offers nothing', async () => {
+    await service.updates.recheck('u1')
+    const status = service.updates.snapshot()
+    expect(status.available).toEqual([])
+    expect(status.unchecked.map((entry) => entry.id)).toEqual(['tool@shop'])
+    expect(status.unchecked[0]?.error).toBeTruthy()
+  })
+
   test('the auto-update pass leaves a marketplace with auto-update off alone', async () => {
     const outcome = await service.updates.autoUpdatePass('u1', { env: {} })
     expect(outcome.updated).toEqual([])

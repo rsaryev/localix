@@ -149,6 +149,12 @@ export const PACKAGE_TABS: readonly PackageTab[] = [
               <dd className="text-foreground tabular-nums">
                 {install.version ?? '—'}
                 {install.updateTo && ` → ${install.updateTo}`}
+                {install.updateUnchecked && (
+                  <span className="text-text-soft" title={install.updateUnchecked}>
+                    {' '}
+                    (could not check for updates)
+                  </span>
+                )}
               </dd>
             </div>
           ))}

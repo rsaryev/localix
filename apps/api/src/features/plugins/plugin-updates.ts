@@ -18,7 +18,8 @@ import { readKnownMarketplaces } from './kit'
  * PLUGIN UPDATES: what is available, the updates in flight, and the auto-update pass (Claude Code's
  * "Keep plugins updated"). Availability is decided by the kit on a fetch of each plugin's listing
  * entry, without installing (`update-candidates.ts`): on demand with a refresh of the listings, and
- * by every pass.
+ * by every pass. A plugin whose check could not run (its listing unreadable, its fetch failed) is
+ * `unchecked`, with why: the person sees "could not check", never a quiet "up to date".
  * An apply runs one job at a time through checking → downloading → installing → done or failed; a
  * failed update keeps the version before, because the install only swaps a record once the new
  * version is in place. Every move tells the subscribers (the Store's plugin provider); a finished
@@ -65,6 +66,7 @@ export function createPluginUpdates(deps: {
   const now = deps.now ?? (() => new Date().toISOString())
   const root = marketplacesRoot(deps.home)
   let available: PluginUpdatesResponse['available'] = []
+  let unchecked: PluginUpdatesResponse['unchecked'] = []
   let lastCheckedAt: string | null = null
   const jobs = new Map<string, PluginUpdateJob>()
   const listeners = new Set<() => void>()
@@ -79,6 +81,7 @@ export function createPluginUpdates(deps: {
   }
   const snapshot = (): PluginUpdatesResponse => ({
     available,
+    unchecked,
     jobs: [...jobs.values()],
     lastCheckedAt,
   })
@@ -143,13 +146,20 @@ export function createPluginUpdates(deps: {
     }
     const known = await readKnownMarketplaces(root)
     const found: PluginUpdatesResponse['available'] = []
+    const failed: PluginUpdatesResponse['unchecked'] = []
     for (const install of installed) {
-      const candidate = await candidateFor(install, known, deps.fetchPlugin).catch(() => null)
-      if (!candidate || candidate.manual) continue
       const { id, name, marketplace, version: from } = install
+      const candidate = await candidateFor(install, known, deps.fetchPlugin).catch(
+        (error: unknown) => {
+          failed.push({ id, error: errorMessage(error) })
+          return null
+        },
+      )
+      if (!candidate || candidate.manual) continue
       found.push({ id, name, marketplace, from, to: candidate.version })
     }
     available = found
+    unchecked = failed
     lastCheckedAt = now()
     notify()
     if (autoApply) {

@@ -4,6 +4,12 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+### Fixed
+
+- **A plugin update check that fails says so**: when a plugin's listing could not be read or its
+  fetch failed, the Store showed it as up to date. It now shows **could not check** next to its
+  version, with the reason on hover.
+
 ## v0.1.0-beta.26 — 2026-11-04
 
 Mini apps get smarter in the chat: the agent now finds things in them by meaning, and a mini app you

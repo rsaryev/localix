@@ -83,7 +83,12 @@ function fixture() {
   })
   const calls: string[] = []
   let installed: PluginRecord[] = []
-  let updates: PluginUpdatesResponse = { available: [], jobs: [], lastCheckedAt: null }
+  let updates: PluginUpdatesResponse = {
+    available: [],
+    unchecked: [],
+    jobs: [],
+    lastCheckedAt: null,
+  }
   const remote = join(dir(), 'fetched', 'pg')
   writeTree(remote, {
     '.claude-plugin/plugin.json': JSON.stringify({ name: 'pg', license: 'MIT' }),
@@ -269,6 +274,7 @@ describe('plugins in the Store', () => {
           to: '1.2.0',
         },
       ],
+      unchecked: [],
       jobs: [],
       lastCheckedAt: null,
     })
@@ -277,6 +283,18 @@ describe('plugins in the Store', () => {
       { scope: 'user', version: '1.1.0', enabled: true, updateTo: '1.2.0' },
     ])
     expect(review.configurable).toBeUndefined()
+
+    // A check that could not run shows as unknown, with why, not as up to date.
+    offer({
+      available: [],
+      unchecked: [{ id: `review@${OFFICIAL}`, error: 'git clone failed' }],
+      jobs: [],
+      lastCheckedAt: null,
+    })
+    const unknown = byId((await provider.listings(actor)).listings, `review@${OFFICIAL}`)
+    expect(unknown.installs).toEqual([
+      { scope: 'user', version: '1.1.0', enabled: true, updateUnchecked: 'git clone failed' },
+    ])
   })
 
   describe('settings', () => {
@@ -411,10 +429,15 @@ describe('plugins in the Store', () => {
       action: 'update',
       phase: 'done',
     })
-    offer({ available: [], jobs: [{ id, phase: 'done' }], lastCheckedAt: null })
+    offer({ available: [], unchecked: [], jobs: [{ id, phase: 'done' }], lastCheckedAt: null })
     await provider.remove(id, 'user', actor)
     expect(byId((await provider.listings(actor)).listings, id).job).toBeUndefined()
-    offer({ available: [], jobs: [{ id, phase: 'downloading' }], lastCheckedAt: null })
+    offer({
+      available: [],
+      unchecked: [],
+      jobs: [{ id, phase: 'downloading' }],
+      lastCheckedAt: null,
+    })
     expect(byId((await provider.listings(actor)).listings, id).job).toMatchObject({
       phase: 'downloading',
     })

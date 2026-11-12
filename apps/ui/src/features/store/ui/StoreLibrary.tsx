@@ -87,6 +87,9 @@ const InstallRow = memo(function InstallRow({
         </WorkbenchListRowMeta>
         <WorkbenchListRowMeta className="hidden w-32 truncate px-0 tabular-nums @2xl:block">
           {install.updateTo ? `${install.version ?? '?'} → ${install.updateTo}` : install.version}
+          {install.updateUnchecked && (
+            <span title={install.updateUnchecked}> · could not check</span>
+          )}
         </WorkbenchListRowMeta>
         <WorkbenchListRowActions aria-label={`${name} controls`} className="gap-1.5">
           {updates ? (

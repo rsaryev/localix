@@ -89,6 +89,10 @@ does; the update that follows within ten minutes uses that fetch. The Store (Plu
 opens, and every marketplace refresh checks again. A newer version found in a marketplace with
 auto-update on is installed at once, so **Update now** is offered only for the other marketplaces.
 
+A plugin whose check could not run, because its listing could not be read or its fetch failed, shows
+**could not check** next to its version, with the reason on hover: its state is unknown, not up to
+date.
+
 A plugin whose manifest sets `version` updates only when that changes, while one without follows its
 commit. A check never fetches an entry with a `headersHelper` or a `command` source, since both run
 a command you accept, so neither is offered here. **Update marketplace** refreshes the listing and
@@ -147,8 +151,9 @@ credentials and with `CLAUDE_CODE_PLUGIN_NAME` and `CLAUDE_CODE_PLUGIN_ARCHIVE_U
   project install stays a copy in the project, and a plugin loading in place has no versions.
 - An archive entry without a `sha256` pin, and an npm entry, have the version `unknown` unless a
   `version` field is set, so they are not updated on their own.
-- A remote git entry is checked by its commit without being fetched, so a new commit whose manifest
-  keeps the same `version` shows as an update once; applying it installs nothing and says so.
+- Every check fetches each remote entry (git, npm, archive) as an install would: Claude Code's
+  version can come from the fetched manifest, so nothing cheaper (a commit or tag listing) settles
+  it. Only a version a claude.ai marketplace records is compared without a fetch.
 
 ## Related guides
 

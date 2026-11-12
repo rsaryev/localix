@@ -58,6 +58,8 @@ export const installSchema = z.object({
   enabled: z.boolean(),
   /** A newer version its source offers. */
   updateTo: z.string().optional(),
+  /** Its source could not be checked for an update, and why: unknown, which is not up to date. */
+  updateUnchecked: z.string().optional(),
 })
 export type StoreInstall = z.infer<typeof installSchema>
 

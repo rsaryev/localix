@@ -130,4 +130,15 @@ describe('an update candidate', () => {
     const known = await marketplace([{ name: 'other', source: './plugins/tool' }])
     expect(await candidateFor(install('1.0.0'), known, noFetch)).toBeNull()
   })
+
+  // A check that could not run is not "no update": the caller reports it as unchecked.
+  test('a listing that cannot be read or a fetch that fails rejects, rather than "no update"', async () => {
+    const git = [{ name: 'tool', source: { source: 'github', repo: 'o/tool' } }]
+    const known = await marketplace(git)
+    await expect(candidateFor(install('1.0.0'), known, noFetch)).rejects.toThrow(
+      'nothing is fetched',
+    )
+    writeTree(known.shop?.installLocation ?? '', { '.claude-plugin/marketplace.json': '{' })
+    await expect(candidateFor(install('1.0.0'), known, noFetch)).rejects.toThrow()
+  })
 })

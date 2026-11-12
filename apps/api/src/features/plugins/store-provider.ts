@@ -80,6 +80,7 @@ export function createPluginStoreProvider(deps: {
     updates: PluginUpdatesResponse,
   ): Pick<Listing, 'installs' | 'job' | 'configurable'> {
     const offered = updates.available.find((found) => found.id === id)
+    const unchecked = updates.unchecked.find((found) => found.id === id)
     const job = jobs.of(id, updates)
     return {
       installs: records.map((record) => ({
@@ -87,6 +88,7 @@ export function createPluginStoreProvider(deps: {
         version: record.version,
         enabled: record.enabled,
         ...(offered && record.scope === 'global' ? { updateTo: offered.to } : {}),
+        ...(unchecked && record.scope === 'global' ? { updateUnchecked: unchecked.error } : {}),
       })),
       ...(job ? { job } : {}),
       ...(records.some((record) => record.config.length > 0) ? { configurable: true } : {}),
