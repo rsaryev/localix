@@ -4,10 +4,18 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
-- The website moves from Vercel to Cloudflare Pages (project `localix-studio`, serving localix.ai
-  and studio.localix.ai). `Website Deploy` builds it with turbo and uploads it with wrangler, with
-  the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; an unknown address answers a real
-  404 page.
+## v0.1.0-beta.28 — 2026-11-13
+
+Localix Studio now lives at github.com/localixai/localix-studio, beside the rest of Localix. Its
+updates, links and plugin marketplace follow the new address; nothing changes on your side.
+
+### Changed
+
+- **A new home on GitHub**: Help → Localix Documentation, Report an Issue… and Release Notes open
+  github.com/localixai/localix-studio, and updates come from there. The old address forwards to it.
+- **The Localix marketplace at its new address**: the built-in plugin marketplace is
+  localixai/localix-marketplace. One you added under its former address still counts as the official
+  one and keeps updating itself.
 
 ## v0.1.0-beta.27 — 2026-11-12
 
