@@ -29,5 +29,10 @@
     "typescript": "^6.0.0",
     "vite": "^8.0.0"
   },
-  "description": "Localix Studio's landing and docs, made from llx-sitekit."
+  "description": "Localix Studio's landing and docs, made from llx-sitekit.",
+  "sitekit": {
+    "template": "https://github.com/rsaryev/llx-sitekit.git",
+    "branch": "main",
+    "synced": "9ccf84210eb33759a44fa571a4d4e512e2b7d980"
+  }
 }
