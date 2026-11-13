@@ -181,7 +181,6 @@ terminal. Stop it when finished.
 bun run test:screenshots
 bun run test:screenshots --grep 'agents/context-and-limits'
 bun run screenshots:publish
-bun run --cwd apps/landing generate
 ```
 
 The test runner prints its review directory. Each PNG has a sidecar recording its semantic key,
@@ -195,9 +194,10 @@ For an intentional refresh of already reviewed compositions:
 bun run screenshots:update --grep 'agents/context-and-limits'
 ```
 
-This runs the tests, publishes only if the run succeeds, updates existing dated screenshot
-references across public guides, then generates the landing. New screenshots still need an author to
-choose the relevant place in the guide. Do not insert an image into every reference page.
+This runs the tests, publishes only if the run succeeds, and updates existing dated screenshot
+references across public guides; the website picks them up when it is next built. New screenshots
+still need an author to choose the relevant place in the guide. Do not insert an image into every
+reference page.
 
 ```bash
 bun run screenshots:audit

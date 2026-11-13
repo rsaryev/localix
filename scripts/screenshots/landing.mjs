@@ -1,5 +1,5 @@
 // The homepage's captures: the same scenarios as the docs, in a smaller 16:10 window, so the UI
-// reads at the size of a card. Writes WebP into apps/landing/public/landing.
+// reads at the size of a card. Writes WebP into site/public/shots.
 //
 // On a FRESH capture root (LOCALIX_CAPTURE_ROOT), before `bun run screenshots:seed`:
 //   bun scripts/screenshots/landing.mjs --pick-model
@@ -29,7 +29,7 @@ export const LANDING_SHOTS = {
 const VIEWPORT = '1200x750'
 /** Width of the published WebP: twice a card's widest panel, for a sharp picture on a Retina screen. */
 const OUT_WIDTH = 1600
-const outDir = path.join(repoRoot, 'apps/landing/public/landing')
+const outDir = path.join(repoRoot, 'site/public/shots')
 
 await verifyDemoRuntime()
 const grep = process.argv.includes('--grep')

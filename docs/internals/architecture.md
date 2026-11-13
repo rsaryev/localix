@@ -23,7 +23,7 @@ record before changing it.
 | `apps/api`              | Hono routes, domain services, agent execution, persistence, and mini app hosts. | Feature code reaches the agent loop through the runtime port.           |
 | `apps/ui`               | React workspaces, typed panes, settings, and API/event clients.                 | It requests state from the API; it does not own durable domain state.   |
 | `apps/desktop-tauri`    | Native window, release sidecar lifecycle, and desktop capabilities.             | Development scripts start the API instead of the Rust shell.            |
-| `apps/landing`          | Documentation site and generated navigation.                                    | It is not part of the desktop runtime.                                  |
+| `site`                  | The website and its documentation pages, built from `docs/`.                    | It is not part of the desktop runtime and has its own install.          |
 | `packages/agent`        | Provider-neutral agent types, tools, messages, and runtime interfaces.          | It cannot import Localix API features or the engine.                    |
 | `packages/engine*`      | The engine behind the runtime port: loop, model access, script sandbox.         | Production API imports are limited to the bootstrap composition root.   |
 | `packages/mini-app-sdk` | The mini app manifest (`/app-manifest`) and host contribution contracts.        | A contribution exists only when its extension is installed and enabled. |
@@ -111,11 +111,11 @@ create child sessions only with the `Agent` tool.
 
 Architecture checks are repository commands, not runtime settings.
 
-| Command                               | Checks                                                                     |
-| ------------------------------------- | -------------------------------------------------------------------------- |
-| `bun run check:architecture`          | Package import boundaries, engine layers, and the composition-root rule.   |
-| `bun run check:docs`                  | Internal subsystem references documented by the architecture checker.      |
-| `bun run --cwd apps/landing docs:gen` | Documentation metadata, links, repository paths, and generated navigation. |
+| Command                      | Checks                                                                   |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| `bun run check:architecture` | Package import boundaries, engine layers, and the composition-root rule. |
+| `bun run check:docs`         | Internal subsystem references documented by the architecture checker.    |
+| `bun run build:site`         | Public documentation pages, links and anchors, and the website build.    |
 
 Plugin and mini app enablement changes which tools, providers, hooks, and workbench panes the hosts
 register. [Build a mini app](../extending/mini-apps.md) owns the mini app manifest fields and

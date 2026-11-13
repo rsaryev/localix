@@ -33,7 +33,8 @@ const BUN_RUNTIME_NOTICE = [
   'bun-runtime-LICENSE.txt',
 ]
 const PRODUCT_RUNTIME_ROOTS = ['apps/api', 'apps/ui']
-const LANDING_RUNTIME_ROOTS = ['apps/landing']
+// The website (site/) is not a workspace: it has its own install, resolved from its own folder.
+const SITE_RUNTIME_ROOTS = ['site']
 const NOTICE_BASENAME_RE = /^(?:licen[cs]e|unlicense|copying|copyright|notice)(?:[._-].*)?$/iu
 
 function readManifest(path) {
@@ -92,7 +93,7 @@ function packageNoticeFiles(packageRoot) {
 }
 
 function runtimeRootManifestPaths(repoRoot, target) {
-  const roots = (target === 'landing' ? LANDING_RUNTIME_ROOTS : PRODUCT_RUNTIME_ROOTS).map((path) =>
+  const roots = (target === 'site' ? SITE_RUNTIME_ROOTS : PRODUCT_RUNTIME_ROOTS).map((path) =>
     join(repoRoot, path, 'package.json'),
   )
   return roots.sort((left, right) => left.localeCompare(right))
@@ -100,7 +101,7 @@ function runtimeRootManifestPaths(repoRoot, target) {
 
 /** Build the installed external runtime dependency closure for one distributable surface. */
 export function collectRuntimeNoticePackages({ repoRoot, target = 'product' }) {
-  if (target !== 'product' && target !== 'landing') {
+  if (target !== 'product' && target !== 'site') {
     throw new Error(`Unknown third-party notice target: ${target}`)
   }
   const workspaceByName = new Map()
@@ -222,3 +223,15 @@ export const STAGED_DESKTOP_NOTICE_FILES = [
   BUN_RUNTIME_NOTICE[1],
   RUST_NOTICES_FILE,
 ]
+
+// `bun scripts/stage-third-party-notices.mjs site site/dist`: the website's notices, staged into
+// its build by Website Deploy (the site's own build knows nothing of the repository around it).
+if (import.meta.main) {
+  const [target, destination] = process.argv.slice(2)
+  if (!target || !destination) {
+    console.error('usage: stage-third-party-notices.mjs <product|site> <destination>')
+    process.exit(2)
+  }
+  const repoRoot = join(dirname(new URL(import.meta.url).pathname), '..')
+  stageThirdPartyNotices({ repoRoot, destination: join(process.cwd(), destination), target })
+}

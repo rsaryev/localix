@@ -25,7 +25,7 @@ running and maps each change to the checks that catch regressions.
 | Open isolated browser development | `bun run dev:web`                                                | Uses `.data/dev/localix.db` by default; no native desktop bridges.   |
 | Build a native bundle             | `bun run build:desktop`                                          | Produces a host-platform local build, not a verified public release. |
 | Run one API test file             | `cd apps/api && bun test src/features/projects/projects.test.ts` | Build workspace dependencies first.                                  |
-| Validate public Markdown          | `bun run --cwd apps/landing docs:gen`                            | Formats nothing; use Oxfmt separately on the files you own.          |
+| Validate public Markdown          | `bun run build:site`                                             | Formats nothing; use Oxfmt separately on the files you own.          |
 | Update the language servers       | `bun run --cwd apps/api lsp:update`                              | Newest releases a week old into `language-servers.json`; review it.  |
 
 Start a fresh checkout with the pinned tools, install dependencies, and seed package outputs:
@@ -50,7 +50,7 @@ report missing `@localixai/*` modules that are not source defects.
 | `apps/api/`           | Hono API, agent runtime composition, persistence, and backend features.     |
 | `apps/ui/`            | React workspace and client-side feature surfaces.                           |
 | `apps/desktop-tauri/` | Native shell, staged API sidecar, platform bridge, and packaging.           |
-| `apps/landing/`       | Product site and generated documentation renderer.                          |
+| `site/`               | The website and its documentation pages, with its own install and check.    |
 | `packages/`           | Shared runtime-neutral libraries, adapters, CLI launcher, and SDK surfaces. |
 | `scripts/`            | Repository checks, staging, release helpers, and development launchers.     |
 | `config/`             | Shared tool configuration.                                                  |

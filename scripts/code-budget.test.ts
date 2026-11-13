@@ -26,7 +26,7 @@ describe('budgetFiles', () => {
       'scripts/build-stamp.d.mts',
       'scripts/screenshots/capture.pw.mjs',
       'vendor/monaco/editor.js',
-      'apps/landing/src/generated/docs.ts',
+      'apps/api/src/generated/routes.ts',
       'docs/guide.md',
     ]
     expect(budgetFiles(files, config.exclude)).toEqual([
@@ -51,7 +51,6 @@ describe('the recorded budget', () => {
       'scripts/screenshots/capture.mjs',
       'apps/api/scripts/check-compression.ts',
       'apps/desktop-tauri/scripts/prepare-sidecar.mjs',
-      'apps/landing/scripts/build-docs.mjs',
       'apps/ui/build/fail-on-node-builtin.ts',
       'apps/ui/vite.config.ts',
       'packages/oxlint-rules/src/rules/no-off-scale-radius.ts',

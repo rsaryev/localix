@@ -10,7 +10,7 @@
  * Element-scoped listeners are untouched. `input.addEventListener('keydown', …)` is bounded by the
  * element that owns it, which is exactly the thing a global listener is not.
  *
- * SCOPE is the workspace UI, because that is where the registry exists. The landing site has no
+ * SCOPE is the workspace UI, because that is where the registry exists. The website has no
  * registry, and the visual-feedback probe runs inside the page being previewed rather than inside
  * our app — for those a global listener is the only listener there is. Plugin surfaces are in
  * scope through the SDK focus registry: `useFocusEntry` with a DOM scope offers local commands

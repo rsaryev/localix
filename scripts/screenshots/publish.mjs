@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import { pngDimensions } from '../../apps/landing/scripts/build-shots.mjs'
+import { pngDimensions } from './png.mjs'
 import { capturePlan } from './plan.mjs'
 import { captureRoot, repoRoot } from './runtime.mjs'
 

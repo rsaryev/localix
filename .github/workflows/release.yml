@@ -575,10 +575,10 @@ jobs:
               ;;
           esac
           # Stable-name copies of the installer people download. Tauri puts the version in the
-          # installer's name, so a link to it changes with every release; the landing page links to
+          # installer's name, so a link to it changes with every release; the website links to
           # `releases/latest/download/<stable name>` instead, which GitHub resolves to the newest
-          # published release. These names are mirrored by `STABLE_INSTALLER_NAMES` in
-          # apps/landing/src/components/downloadOptions.ts, and a landing test keeps them in step.
+          # published release. The website's downloads are in site/content/site.ts, and
+          # scripts/positioning.test.ts keeps them among these names.
           # The versioned installers stay: the updater manifest is built from those.
           stable_copy() {
             local source
@@ -887,9 +887,9 @@ jobs:
             --draft=false --prerelease=false --latest
 
       # A release published with the workflow token does not trigger `release: published`
-      # workflows, so the landing would keep its "coming soon" buttons. Dispatch it explicitly,
-      # The landing resolves the newest published release on its own.
-      - name: Refresh the landing download buttons
+      # workflows, so the website would not list it under Releases. Dispatch it explicitly; its
+      # download button already reaches the newest release by the installer's stable name.
+      - name: Refresh the website
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run landing.yml --repo "$RELEASE_REPO" --ref main -f production=true

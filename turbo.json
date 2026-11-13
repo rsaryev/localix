@@ -3,7 +3,7 @@
   "globalDependencies": ["tsconfig.base.json"],
   "tasks": {
     "build": {
-      "dependsOn": ["^build", "docs:gen"],
+      "dependsOn": ["^build"],
       "env": ["LOCALIX_BUILD_STAMP"],
       "outputs": [
         "dist/**",
@@ -12,13 +12,8 @@
         "server/**",
         "build/**",
         "src/views/main/**",
-        "src/resources/**",
-        "src/generated/**"
+        "src/resources/**"
       ]
-    },
-    "docs:gen": {
-      "dependsOn": ["^build"],
-      "outputs": ["src/generated/**"]
     },
     "dev": {
       "passThroughEnv": ["HOST", "PORT", "NODE_ENV", "LOCALIX_*", "VITE_*"],

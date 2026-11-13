@@ -166,7 +166,7 @@
     "**/out",
     "**/.turbo",
     "**/*.d.ts",
-    "apps/landing/src/generated",
+    "site",
     "docs/assets/screenshots/fixtures",
     "vendor",
     ".agents/skills"

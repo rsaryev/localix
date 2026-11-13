@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { captureRoot, repoRoot } from './runtime.mjs'
 import { capturePlan, retainedShots, archiveOnly } from './plan.mjs'
-import { pngDimensions } from '../../apps/landing/scripts/build-shots.mjs'
+import { pngDimensions } from './png.mjs'
 
 const shotsRoot = path.join(repoRoot, 'docs/assets/screenshots')
 const files = (await fs.readdir(shotsRoot, { recursive: true })).filter((file) =>

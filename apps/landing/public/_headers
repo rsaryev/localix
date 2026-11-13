@@ -1,4 +1,0 @@
-# The RFC 9727 API catalog has no file extension, so the host guesses a type
-# unless it is stated. Say the one the RFC registers.
-/.well-known/api-catalog
-  Content-Type: application/linkset+json

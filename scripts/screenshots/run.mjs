@@ -35,16 +35,9 @@ try {
     JSON.stringify({ root: runRoot, passed: exitCode === 0 }),
   )
   if (exitCode) process.exitCode = exitCode
-  else if (update) {
-    await publishCaptures(runRoot)
-    const generator = Bun.spawn(['bun', 'run', '--cwd', 'apps/landing', 'generate'], {
-      cwd: repoRoot,
-      stdout: 'inherit',
-      stderr: 'inherit',
-    })
-    process.exitCode = await generator.exited
-  } else
-    console.log(`Review captures: ${runRoot}\nAfter visual review: bun run screenshots:publish`)
+  // The website reads the docs and their pictures as it is built: nothing to regenerate here.
+  else if (update) await publishCaptures(runRoot)
+  else console.log(`Review captures: ${runRoot}\nAfter visual review: bun run screenshots:publish`)
 } finally {
   service.stop()
 }

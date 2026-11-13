@@ -14,7 +14,7 @@
 
 - [ ] Required CI checks passed; focused local checks and their exact results are listed above
 - [ ] `bun run check:rust` passed for Rust changes, or not applicable
-- [ ] `bun run --cwd apps/landing generate` passed for public Markdown, or not applicable
+- [ ] `bun run build:site` passed for public Markdown, or not applicable
 - [ ] UI evidence attached, or not applicable
 
 ## Risk and rollback

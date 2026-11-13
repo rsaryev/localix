@@ -118,10 +118,11 @@ documentation generator), credentials, `.env` files, `.localix/` runtime state, 
 
 Write public copy in English and verify product claims against the implementation that makes them
 true. Keep planned, configured, and default behavior distinct. Every fenced example must declare its
-language and stay focused on the contract it teaches. After changing public Markdown, run:
+language and stay focused on the contract it teaches. After changing public Markdown, build the
+website, which holds every listed page to the docs' standard and fails on a broken link or anchor:
 
 ```bash
-bun run --cwd apps/landing generate
+bun run build:site
 ```
 
 Store product captures only in `docs/assets/screenshots/`, named

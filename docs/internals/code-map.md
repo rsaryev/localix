@@ -33,7 +33,7 @@ results, so suspect the cache when a failure disappears without an edit.
 A Bun and Hono API (`apps/api`) owns the agent runtime, tools, permissions, storage and one
 multiplexed websocket (`/rpc/ws`) that carries every live update. The React workspace (`apps/ui`) is
 a typed Hono RPC client over that API. `apps/desktop-tauri` wraps both as the shipped app, and
-`apps/landing` is the product and documentation site. Everything persisted lives under `~/.localix`
+`site/` is the product and documentation website. Everything persisted lives under `~/.localix`
 (`localix.db`, the vault, `plugins/` for Claude Code plugins and `mini-apps/` for mini apps). This
 repository holds no mini app and no plugin: Localix's own live in the
 [Localix marketplace](https://github.com/localixai/localix-marketplace) and install from it like
@@ -225,5 +225,5 @@ copy. Two copies drifting is why `wake-provenance` exists.
 
 Markdown grammar and rendering come from the `flowdown` package; the workspace owns mentions, links,
 checklists, diagrams' controls and content actions (`apps/ui/src/shared/ui`) and their look
-(`apps/ui/src/app/markdown.css`), while `apps/landing/src/pages/docs` owns documentation links and
-layout. See [Shared Markdown](../extending/markdown.md).
+(`apps/ui/src/app/markdown.css`), while `site/src/pages/docs` owns documentation links and layout.
+See [Shared Markdown](../extending/markdown.md).

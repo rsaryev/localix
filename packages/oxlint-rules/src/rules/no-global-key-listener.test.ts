@@ -91,10 +91,10 @@ describe(RULE, () => {
   })
 
   test('is silent outside the workspace UI, where there is no registry to use', async () => {
-    // The landing site and the visual-feedback probe have no action registry; for them a global
+    // The website and the visual-feedback probe have no action registry; for them a global
     // listener is the only listener there is.
     const findings = await runRule(RULE, `window.addEventListener('keydown', onKey)`, {
-      filename: 'apps/landing/src/pages/HomePage.tsx',
+      filename: 'site/src/app/entry-docs.tsx',
     })
     expect(findings).toEqual([])
   })

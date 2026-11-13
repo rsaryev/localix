@@ -22,5 +22,5 @@
     "react-doctor/dangerous-html-sink": "error",
     "react-doctor/raw-sql-injection-risk": "error"
   },
-  "ignorePatterns": ["**/node_modules", "**/dist", "**/out", "apps/landing/src/generated"]
+  "ignorePatterns": ["**/node_modules", "**/dist", "**/out", "site"]
 }

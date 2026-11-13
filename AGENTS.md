@@ -125,8 +125,9 @@ and UI captures.
 ## Documentation and Hygiene
 
 Document new capabilities and update `docs/public-nav.json`. Public copy is English; verify claims
-and label fenced blocks. Generate public Markdown changes once with
-`bun run --cwd apps/landing generate`. Captures belong in `docs/assets/screenshots/`.
+and label fenced blocks. Check public Markdown changes once with `bun run build:site`, which builds
+the website (`site/`) and fails on a broken link or anchor. Captures belong in
+`docs/assets/screenshots/`.
 
 Never commit secrets, `.env`, `.localix/`, generated output, private data, or local absolute paths.
 Use `check:public` for suspicious files. Add migrations without editing existing ones. Document

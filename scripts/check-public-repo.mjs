@@ -13,8 +13,6 @@ const requiredFiles = [
   'CONTRIBUTING.md',
   'SECURITY.md',
   'CODE_OF_CONDUCT.md',
-  '.dockerignore',
-  'apps/landing/Dockerfile',
   '.github/workflows/ci.yml',
   '.github/workflows/release.yml',
   '.github/ISSUE_TEMPLATE/bug_report.yml',
@@ -170,7 +168,7 @@ const publicReferenceFiles = repositoryFiles.filter(
   (file) =>
     file === 'README.md' ||
     file.startsWith('.github/') ||
-    file.startsWith('apps/landing/') ||
+    file.startsWith('site/') ||
     file.startsWith('docs/') ||
     file.endsWith('/package.json'),
 )
@@ -457,79 +455,25 @@ for (const workflow of [
   }
 }
 
-const landingDockerfile = await readFile(join(root, 'apps/landing/Dockerfile'), 'utf8')
-const dockerBaseImages = [...landingDockerfile.matchAll(/^\s*FROM\s+(\S+)/gimu)].map(
-  (match) => match[1],
-)
-assert(dockerBaseImages.length > 0, 'apps/landing/Dockerfile must declare a base image')
-for (const image of dockerBaseImages) {
-  assert.match(image, /@sha256:[0-9a-f]{64}$/u, `Docker base image must pin a digest: ${image}`)
-}
-
-const landingIndex = await readFile(join(root, 'apps/landing/index.html'), 'utf8')
+// The website is static. Cloudflare Pages serves /docs/<slug> from its prerendered page and
+// answers an unknown URL with 404.html; without that page, or with a global SPA fallback, every
+// address would get the home page.
+const siteConfig = await readFile(join(root, 'site/content/site.ts'), 'utf8')
 assert(
-  landingIndex.includes('https://localix.ai/og.png'),
-  'landing social metadata must use the raster Open Graph image',
+  siteConfig.includes("path: '/og.jpg'"),
+  'the website social metadata must use the raster Open Graph image',
 )
-await access(join(root, 'apps/landing/public/og.png'))
-
-const landingNginx = await readFile(join(root, 'apps/landing/nginx.conf'), 'utf8')
-for (const contract of [
-  'location = /docs',
-  'try_files $uri.html =404;',
-  'try_files $uri $uri/ =404;',
-]) {
-  assert(landingNginx.includes(contract), `landing nginx must include: ${contract}`)
-}
+await access(join(root, 'site/public/og.jpg'))
+const sitePrerender = await readFile(join(root, 'site/scripts/prerender.mjs'), 'utf8')
 assert(
-  !landingNginx.includes('/index.html;'),
-  'landing nginx must not turn unknown routes into soft-404 home pages',
+  sitePrerender.includes('404.html'),
+  'the website build must write 404.html, or unknown URLs become soft-404 home pages',
 )
-
-const netlifyConfig = await readFile(join(root, 'apps/landing/netlify.toml'), 'utf8')
+const siteRedirects = join(root, 'site/public/_redirects')
 assert(
-  netlifyConfig.includes('to = "/docs/:splat.html"') &&
-    !netlifyConfig.includes('to = "/index.html"'),
-  'Netlify must serve static docs shells without a global SPA fallback',
+  !existsSync(siteRedirects) || !/\/index\.html/u.test(await readFile(siteRedirects, 'utf8')),
+  'Cloudflare Pages must not get a global SPA fallback',
 )
-// Cloudflare Pages serves /docs/<slug> from its .html shell itself and answers an unknown URL
-// with 404.html; without that page it would serve the home page for every address.
-const pagesRedirects = await readFile(join(root, 'apps/landing/public/_redirects'), 'utf8')
-assert(
-  /^\/docs\s+\/docs\/getting-started--what-is-localix\s+302$/mu.test(pagesRedirects) &&
-    !/\/index\.html/u.test(pagesRedirects),
-  'Cloudflare Pages must redirect /docs and must not add a global SPA fallback',
-)
-assert(
-  existsSync(join(root, 'apps/landing/public/404.html')),
-  'Cloudflare Pages needs apps/landing/public/404.html, or unknown URLs become soft-404 home pages',
-)
-
-const dockerIgnore = await readFile(join(root, '.dockerignore'), 'utf8')
-for (const rule of [
-  '.git',
-  '.localix',
-  'skills-lock.json',
-  'node_modules',
-  '**/node_modules',
-  'target',
-  '**/target',
-  'tmp',
-  '**/tmp',
-  '.env',
-  '.env.*',
-  'vendor/monaco-editor',
-  'apps/desktop-tauri/src-tauri/binaries',
-  'apps/desktop-tauri/src-tauri/gen',
-  'apps/desktop-tauri/src-tauri/resources',
-  'packages/cli/public',
-  'packages/cli/server',
-]) {
-  assert(
-    dockerIgnore.split(/\r?\n/u).includes(rule),
-    `.dockerignore must exclude the repository-noise path: ${rule}`,
-  )
-}
 
 console.log(
   `[public] ${requiredFiles.length} community/release files, ${workspacePackages.length} workspace manifests, ${localMarkdownLinkCount} local documentation links, and ${repositoryFiles.length} repository paths are clean.`,

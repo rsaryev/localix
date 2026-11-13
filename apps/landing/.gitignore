@@ -1,6 +1,0 @@
-dist
-.turbo
-node_modules
-src/generated
-public/shots
-.vercel

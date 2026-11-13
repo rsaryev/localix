@@ -109,12 +109,12 @@ section, immediately after the claim it demonstrates; a screenshot proves visibl
 
 ### Commands
 
-| Command                               | Use                                                     | Boundary                                              |
-| ------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------- |
-| `bunx oxfmt --write <owned-files>`    | Format only the files changed in the current scope.     | Do not use the repository-wide writer in shared work. |
-| `bun run --cwd apps/landing docs:gen` | Validate and generate the public documentation surface. | It checks pages listed in the public navigation.      |
-| `bun run check:docs`                  | Validate source references in subsystem internals.      | It is a ratchet with explicit historical debt.        |
-| `bun run check:public`                | Validate public paths, links, and repository hygiene.   | It also checks contracts outside Markdown.            |
+| Command                            | Use                                                    | Boundary                                              |
+| ---------------------------------- | ------------------------------------------------------ | ----------------------------------------------------- |
+| `bunx oxfmt --write <owned-files>` | Format only the files changed in the current scope.    | Do not use the repository-wide writer in shared work. |
+| `bun run build:site`               | Build the website and every public documentation page. | It checks pages listed in the public navigation.      |
+| `bun run check:docs`               | Validate source references in subsystem internals.     | It is a ratchet with explicit historical debt.        |
+| `bun run check:public`             | Validate public paths, links, and repository hygiene.  | It also checks contracts outside Markdown.            |
 
 ## Limits
 
@@ -135,7 +135,7 @@ section, immediately after the claim it demonstrates; a screenshot proves visibl
 
 ## Source of truth
 
-- [Documentation generator](../../apps/landing/scripts/build-docs.mjs)
+- [Website documentation navigation](../../site/content/docs/nav.ts)
 - [Public documentation navigation](../public-nav.json)
 - [Public repository hygiene check](../../scripts/check-public-repo.mjs)
 - [Subsystem source-reference check](../../scripts/check-doc-refs.mjs)

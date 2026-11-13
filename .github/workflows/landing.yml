@@ -1,13 +1,14 @@
 name: Website Deploy
 
-# Builds the landing site and deploys it to Cloudflare Pages (project localix-studio, serving
-# localix.ai and studio.localix.ai), the same way the desktop release is built: in GitHub Actions,
-# then uploaded as a finished folder. Pages' own Git integration is not used, so a deploy only ever
-# happens from a build this workflow verified.
+# Builds the website, site/ (made from the llx-sitekit template), and deploys it to Cloudflare
+# Pages (project localix-studio, serving studio.localix.ai and localix.ai), the same way the
+# desktop release is built: in GitHub Actions, then uploaded as a finished folder. Pages' own Git
+# integration is not used, so a deploy only ever happens from a build this workflow verified.
 #
-# It runs only by hand (Actions → Website Deploy → Run workflow), never on a push, a pull request
-# or a published release: a deploy costs a full build, and the site only needs the newest one.
-# Run it after a release is published so the download buttons link its installers.
+# It runs only by hand (Actions → Website Deploy → Run workflow), and from the release workflow
+# once a release is published, never on a push or a pull request: the site only needs the newest
+# build. The download button links the newest release's installer by a name with no version in
+# it, so a build never has to be told which release is out.
 #
 #   • production off → a preview deployment (branch preview, at a *.pages.dev address)
 #   • production on  → the production site, when LANDING_PRODUCTION=true is also set
@@ -27,8 +28,8 @@ on:
 permissions:
   contents: read
 
-# Deployments queue instead of cancelling: two in flight could finish in the wrong order, and a
-# build from before a release would replace the page that links its installers.
+# Deployments queue instead of cancelling: two in flight could finish in the wrong order, and an
+# older build would replace the newer page.
 concurrency:
   group: landing-production
   cancel-in-progress: false
@@ -49,8 +50,11 @@ jobs:
         with:
           persist-credentials: false
 
+      # Bun alone: the site has its own install, in site/, and needs none of the workspace's.
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
+        with:
+          install: 'false'
 
       - name: Check the deployment credentials
         run: |
@@ -81,44 +85,23 @@ jobs:
             fi
           fi
 
-      # The installer links answer 404 until a release exists, so the download buttons only go live
-      # in a build made after one is published. This asks for the newest published release (the one
-      # `latest` points to) and hands the page its tag and asset names, so it links exactly the
-      # installers that exist.
-      - name: Find the newest published release
-        id: release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          gh api "repos/$REPOSITORY/releases?per_page=20" \
-            --jq '[.[] | select(.draft | not)] | .[0] // empty' > release.json
-          if [ -s release.json ]; then
-            tag=$(jq -r .tag_name release.json)
-            assets=$(jq -r '[.assets[].name] | join(",")' release.json)
-            {
-              echo "live=true"
-              echo "tag=$tag"
-              echo "assets=$assets"
-            } >> "$GITHUB_OUTPUT"
-            echo "Newest published release: $tag ($assets)"
-          else
-            echo "live=false" >> "$GITHUB_OUTPUT"
-            echo "No published release yet; installers stay marked coming soon."
-          fi
-
+      # The check is the build: the layers, the types, the docs' standard (a broken link or anchor
+      # fails it), then the landing and every docs page prerendered into site/dist.
       - name: Build website
-        run: bunx turbo build --filter=@localixai/landing
-        env:
-          VITE_RELEASE_LIVE: ${{ steps.release.outputs.live }}
-          VITE_RELEASE_TAG: ${{ steps.release.outputs.tag }}
-          VITE_RELEASE_ASSETS: ${{ steps.release.outputs.assets }}
+        working-directory: site
+        run: |
+          bun install --frozen-lockfile
+          bun --bun run check
+
+      # What the page runs on (React, xterm.js) travels with it, as with the desktop app.
+      - name: Stage third-party notices
+        run: bun scripts/stage-third-party-notices.mjs site site/dist
 
       # On Bun: wrangler's launcher starts `#!/usr/bin/env node`, and this runner has no Node.
       - name: Deploy website
         id: deploy
         run: |
-          bunx --bun "wrangler@$WRANGLER_VERSION" pages deploy apps/landing/dist \
+          bunx --bun "wrangler@$WRANGLER_VERSION" pages deploy site/dist \
             --project-name="$PAGES_PROJECT" --branch="$TARGET_BRANCH" \
             --commit-hash="$GITHUB_SHA" --commit-dirty=false > deploy.out 2>&1 || { cat deploy.out >&2; exit 1; }
           cat deploy.out
@@ -133,13 +116,11 @@ jobs:
       - name: Write the deployment summary
         env:
           TARGET_ENVIRONMENT: ${{ steps.target.outputs.environment }}
-          RELEASE_TAG: ${{ steps.release.outputs.tag || 'none' }}
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
         run: |
           {
-            echo "### Landing deployed"
+            echo "### Website deployed"
             echo ""
             echo "- Target: \`$TARGET_ENVIRONMENT\`"
-            echo "- Release linked: \`$RELEASE_TAG\`"
             echo "- Deployment: $DEPLOYMENT_URL"
           } >> "$GITHUB_STEP_SUMMARY"

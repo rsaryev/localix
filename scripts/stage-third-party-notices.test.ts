@@ -45,9 +45,9 @@ function fixture(): string {
     name: '@fixture/ui',
     dependencies: { '@fixture/local': 'workspace:*' },
   })
-  manifest(root, 'apps/landing', {
-    name: '@fixture/landing',
-    dependencies: { 'landing-only': '1.0.0' },
+  manifest(root, 'site', {
+    name: '@fixture/site',
+    dependencies: { 'site-only': '1.0.0' },
   })
   manifest(root, 'packages/local', {
     name: '@fixture/local',
@@ -69,7 +69,7 @@ function fixture(): string {
     version: '2.0.0',
     license: 'ISC',
   })
-  externalPackage(root, 'landing-only', { license: 'MIT' }, 'landing license\n')
+  externalPackage(root, 'site-only', { license: 'MIT' }, 'site license\n')
   externalPackage(root, 'dev-only', { license: 'MIT' }, 'dev license\n')
 
   write(join(root, 'vendor/monaco-editor-runtime/LICENSE'), 'monaco license\n')
@@ -91,8 +91,8 @@ describe('third-party runtime notices', () => {
       'external-b',
     ])
     expect(
-      collectRuntimeNoticePackages({ repoRoot: root, target: 'landing' }).map(({ name }) => name),
-    ).toEqual(['landing-only'])
+      collectRuntimeNoticePackages({ repoRoot: root, target: 'site' }).map(({ name }) => name),
+    ).toEqual(['site-only'])
   })
 
   test('normalizes license text deterministically and records metadata-only licenses', () => {
@@ -111,10 +111,10 @@ describe('third-party runtime notices', () => {
   test('stages vendored notices only for the product target', () => {
     const root = fixture()
     const product = join(root, 'out-product')
-    const landing = join(root, 'out-landing')
+    const site = join(root, 'out-site')
 
     stageThirdPartyNotices({ repoRoot: root, destination: product })
-    stageThirdPartyNotices({ repoRoot: root, destination: landing, target: 'landing' })
+    stageThirdPartyNotices({ repoRoot: root, destination: site, target: 'site' })
 
     expect(readdirSync(product).sort()).toEqual([
       'monaco-editor-LICENSE.txt',
@@ -123,9 +123,9 @@ describe('third-party runtime notices', () => {
       'npm-runtime-THIRD_PARTY_NOTICES.txt',
       'quickjs-ng-LICENSE.txt',
     ])
-    expect(readdirSync(landing)).toEqual(['npm-runtime-THIRD_PARTY_NOTICES.txt'])
-    expect(readFileSync(join(landing, 'npm-runtime-THIRD_PARTY_NOTICES.txt'), 'utf8')).toContain(
-      'landing-only@1.0.0',
+    expect(readdirSync(site)).toEqual(['npm-runtime-THIRD_PARTY_NOTICES.txt'])
+    expect(readFileSync(join(site, 'npm-runtime-THIRD_PARTY_NOTICES.txt'), 'utf8')).toContain(
+      'site-only@1.0.0',
     )
   })
 

@@ -1,7 +1,7 @@
 export interface StageThirdPartyNoticesOptions {
   repoRoot: string
   destination: string
-  target?: 'product' | 'landing'
+  target?: 'product' | 'site'
   /** Adds the Bun runtime and the native shell's Rust crates to a desktop build's notices. */
   desktop?: { targetTriple?: string; metadata?: unknown }
 }

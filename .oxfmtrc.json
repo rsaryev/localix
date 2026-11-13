@@ -17,7 +17,7 @@
     "node_modules",
     "dist",
     ".turbo",
-    "apps/landing/src/generated",
+    "site",
     "apps/api/migrations/*.ts",
     "packages/mini-app-sdk/mini-app.api.md",
     "docs/assets/screenshots/fixtures",

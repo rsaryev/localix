@@ -36,8 +36,6 @@ const skippedTrees = [
   // ONE tree because listing its entries one by one failed the gate on every checkout that had
   // staged a new kind of payload — the migrations copy named the mini app a migration once served.
   'apps/desktop-tauri/src-tauri/resources/',
-  // Generated landing-page modules mirror canonical Markdown and screenshot manifests.
-  'apps/landing/src/generated/',
   // Generated/staged CLI payloads are checked through their canonical app/package sources.
   'packages/cli/public/',
   'packages/cli/server/',
@@ -945,7 +943,6 @@ for (const file of files) {
     const browserUiSource =
       path.startsWith('apps/ui/src/') ||
       path.startsWith('packages/kit/src/') ||
-      path.startsWith('apps/landing/src/') ||
       path.startsWith('packages/mini-app-sdk/src/ui/')
     if (
       uiProductionSource &&

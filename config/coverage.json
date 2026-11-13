@@ -17,7 +17,6 @@
   "floors": {
     "apps/api": 87.3,
     "apps/desktop-tauri": 82.5,
-    "apps/landing": 89.8,
     "apps/ui": 78.6,
     "packages/agent": 95.3,
     "packages/change-feed": 98.6,
@@ -110,11 +109,6 @@
     "apps/desktop-tauri/scripts/prepare-sidecar.mjs",
     "apps/desktop-tauri/scripts/run-tauri.mjs",
     "apps/desktop-tauri/scripts/tauri-staging.mjs",
-    "apps/landing/scripts/render-home.tsx",
-    "apps/landing/src/app/AppRoutes.tsx",
-    "apps/landing/src/components/ErrorBoundary.tsx",
-    "apps/landing/src/main.tsx",
-    "apps/landing/src/pages/HomePage.tsx",
     "apps/ui/src/app/App.tsx",
     "apps/ui/src/app/inlineFonts.ts",
     "apps/ui/src/app/kit/diff.ts",
@@ -399,7 +393,6 @@
   "uncovered": {
     "apps/api": 13756,
     "apps/desktop-tauri": 105,
-    "apps/landing": 287,
     "apps/ui": 18603,
     "packages/agent": 267,
     "packages/change-feed": 6,

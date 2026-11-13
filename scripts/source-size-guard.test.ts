@@ -43,18 +43,11 @@ const GROWTH_ALLOWANCE = 0.1
 
 const limitFor = (path: string): number => (path.endsWith('.css') ? MAX_STYLE_LINES : MAX_LINES)
 
-// `apps/landing/src` was outside this list until it was not: the ratchet never
-// saw the marketing site, so a 555-line docs page and a 660-line stylesheet grew
-// there with nothing to notice. Every app that ships TypeScript belongs here.
+// Every app that ships TypeScript belongs here. The website (`site/`) is no app of this
+// workspace: it has its own install, and its own check holds it to the template's rules.
 // The Tauri shell's Rust sources follow the same layering rule; `*_tests.rs` companions are
 // table-driven coverage, measured like `.test.ts` files (not at all).
-const ROOTS = [
-  'apps/api/src',
-  'apps/ui/src',
-  'apps/landing/src',
-  'apps/desktop-tauri/src-tauri/src',
-  'packages',
-]
+const ROOTS = ['apps/api/src', 'apps/ui/src', 'apps/desktop-tauri/src-tauri/src', 'packages']
 const SKIP_DIRS = new Set([
   'node_modules',
   'dist',

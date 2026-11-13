@@ -53,9 +53,7 @@ setDefaultTimeout(30_000)
  * OS_VARS category) plus two BOOT-TIME files that run before any module graph exists and
  * so could not import `env.ts` even if it were exported: `apps/ui/vite.config.ts`
  * (`LOCALIX_DEV_UI_PORT`, `VITE_*`) and the CLI's plain-JS launcher
- * `packages/cli/bin/localix.mjs` (`LOCALIX_USE_BUNDLED`). And
- * `apps/landing/src/generated/docs.ts` only *contains* the environment-variables doc page
- * as generated markdown, not a real read.
+ * `packages/cli/bin/localix.mjs` (`LOCALIX_USE_BUNDLED`).
  *
  * If Localix config ever must be read outside apps/api, the fix is to PROMOTE the owner
  * (export `lib/env.ts` as an `@localixai/api` subpath, or move it to a package) and widen

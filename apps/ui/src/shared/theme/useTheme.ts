@@ -1,6 +1,4 @@
 import { useSyncExternalStore } from 'react'
-// Relative (not `@/`) imports: this hook is also consumed by apps/landing via the
-// `@ui/*` alias, where `@/` resolves to landing/src and would not find these.
 import {
   applyPlatformDataset,
   hasNativeWindowMaterial,
@@ -86,9 +84,8 @@ export function applyThemeModeToDom(mode: ThemeMode): ResolvedTheme {
 // (ChatPage, Settings, the sonner Toaster, …), so per-instance useState would
 // desync them — a Settings change would leave the rail icon stale and a stale
 // 'system' instance's media listener would clobber the explicit choice on an OS
-// flip. One store + useSyncExternalStore keeps every instance live. Built on
-// React's own primitive (no zustand) because apps/landing also consumes this
-// hook and carries no zustand dependency.
+// flip. One store + useSyncExternalStore keeps every instance live, on React's
+// own primitive.
 
 interface ThemeSnapshot {
   themeMode: ThemeMode
