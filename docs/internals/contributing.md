@@ -145,19 +145,20 @@ validation, including the full Rust test suite.
 
 ### Workflows and releases
 
-| Workflow          | Runs when                                    | Jobs and result                                                                                                                              |
-| ----------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Checks`          | PR, push to main (not docs-only), manual run | `App (types)` (types, test layout, size), `App (tests)` (unit tests) and `Desktop (Rust) and repository scans`, reported as `Checks passed`. |
-| `Desktop Release` | Manual run from main                         | Prepare release and require green CI → validate changelog and signing → create draft → build → publish.                                      |
-| `Website Deploy`  | Manual run                                   | Build and deploy the website to Cloudflare Pages, a preview unless `production` is chosen and `LANDING_PRODUCTION=true`.                     |
+| Workflow          | Runs when                                            | Jobs and result                                                                                                                                               |
+| ----------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Checks`          | PR, push to main (not docs-only), manual run         | `App (types)` (types, test layout, size), `App (tests)` (unit tests) and `Desktop (Rust) and repository scans`, reported as `Checks passed`.                  |
+| `Desktop Release` | Manual run from main                                 | Prepare release and require green CI → validate changelog and signing → create draft → build → publish.                                                       |
+| `Website Deploy`  | Push to main changing `site/` or `docs/`, manual run | Build and deploy the website to Cloudflare Pages: production on a push; by hand a preview unless `production` is chosen. Both need `LANDING_PRODUCTION=true`. |
 
-A push starts only `Checks`; the website and a desktop release are always started by hand, so a
-deploy costs a build only when someone wants one. Run `Website Deploy` again after a release is
-published, so the download buttons link its installers. A new push to a pull request cancels its
-unfinished run. Main runs one `Checks` at a time and keeps only the newest waiting one, so a burst
-of pushes costs the first run and the last; a push that changes only `docs/`, Markdown or `assets/`
-starts none. A release needs a run for its exact commit: when the tagged commit has none (or main
-superseded it), `Prepare release` asks for one and waits for it.
+A push starts `Checks`, and `Website Deploy` when it changes `site/` or `docs/`, so what the site
+says is live once it is on main; a desktop release is always started by hand. The release workflow
+runs `Website Deploy` once a release is published, so the download buttons link its installers. A
+new push to a pull request cancels its unfinished run. Main runs one `Checks` at a time and keeps
+only the newest waiting one, so a burst of pushes costs the first run and the last; a push that
+changes only `docs/`, Markdown or `assets/` starts none. A release needs a run for its exact commit:
+when the tagged commit has none (or main superseded it), `Prepare release` asks for one and waits
+for it.
 
 `Checks passed` fails when any job fails or is cancelled and names each job's result, so branch
 protection needs to require only that status. The app jobs run in parallel, each building from its

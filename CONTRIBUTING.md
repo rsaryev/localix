@@ -83,11 +83,11 @@ The workflows have separate responsibilities:
 | ----------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `Checks`          | Pull requests, pushes to main (not docs-only), manual runs | Four parallel `App` jobs and `Desktop (Rust)` validate the source.                              |
 | `Desktop Release` | Manual run from main                                       | Prepare and require green CI → validate changelog and signing → create draft → build → publish. |
-| `Website Deploy`  | Manual runs                                                | Build the website and deploy a preview or production site.                                      |
+| `Website Deploy`  | Pushes to main that change `site/` or `docs/`, manual runs | Build the website and deploy it: production on a push, a preview or production by hand.         |
 
-A push starts only the checks; the website and a desktop release are started by hand. A new push to
-a pull request cancels its older run. Main runs one at a time and keeps only the newest waiting run;
-a release asks for a run of its commit when main skipped it.
+A push starts the checks, and the website when it changes `site/` or `docs/`; a desktop release is
+started by hand. A new push to a pull request cancels its older run. Main runs one at a time and
+keeps only the newest waiting run; a release asks for a run of its commit when main skipped it.
 
 CI runs pinned Rust formatting, Clippy, and tests unless a change reaches none of the desktop
 sources, root manifest, Bun lockfile, or shared CI setup: a pull request's merge diff, or the
