@@ -11,7 +11,7 @@ const read = (rel: string) => readFileSync(join(repoRoot, rel), 'utf8').replaceA
  * said "planning, executing, and reviewing software work", another "shared context across
  * files"). Change them here and in every carrier below, or this test names the one left behind.
  */
-const TITLE = 'Localix — One workspace for you and your agents'
+const TITLE = 'Localix Studio: the agentic development environment'
 const HEADLINE = 'The Agentic Development Environment'
 const DESCRIPTION =
   'Localix is an open source Agentic Development Environment: an AI agent, its subagents, your editor, terminals and browser. Use any model, or run one locally.'

@@ -9,7 +9,7 @@ const DESCRIPTION =
 
 const site: SiteConfig = {
   name: 'Localix Studio',
-  title: 'Localix — One workspace for you and your agents',
+  title: 'Localix Studio: the agentic development environment',
   description: DESCRIPTION,
   url: 'https://studio.localix.ai',
   github: GITHUB,
