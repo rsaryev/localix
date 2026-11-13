@@ -29,7 +29,8 @@ function pages(): Plugin {
         // A picture of docs outside the site's folder is served where the build copies it
         // (`../docs/assets/x.png` at /docs/assets/x.png): Vite serves it from where it is.
         if (OUTSIDE && route.startsWith(OUTSIDE) && /\.\w+$/.test(route)) {
-          req.url = `/@fs${dir(DOCS_DIR)}/${route.slice(OUTSIDE.length)}`;
+          // url is Node's own field, which the site's types do not know without Node's.
+          (req as { url?: string }).url = `/@fs${dir(DOCS_DIR)}/${route.slice(OUTSIDE.length)}`;
           return next();
         }
         if (route === '/' || (/\.\w+$/.test(route) && !made) || route.startsWith('/@')) return next();
