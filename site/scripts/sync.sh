@@ -41,6 +41,18 @@ if [ -z "$prefix" ]; then
   git config merge.ours.driver true
   before=$(git rev-parse HEAD)
   if ! git merge --no-edit -m "Sync with the template" "template/$branch"; then
+    # A site's own file the site removed and the template changed stays removed: the driver keeps
+    # the site's side of a file both changed, but git asks about a removal instead of calling it.
+    for path in $(git diff --name-only --diff-filter=U); do
+      if [ "$(git check-attr merge -- "$path" | sed 's/.*: //')" = ours ] && ! git cat-file -e "HEAD:$path" 2>/dev/null; then
+        git rm -q -- "$path"
+      fi
+    done
+    if [ -z "$(git diff --name-only --diff-filter=U)" ]; then
+      git commit -q --no-edit
+    fi
+  fi
+  if [ -f "$(git rev-parse --git-dir)/MERGE_HEAD" ]; then
     echo >&2
     echo "sync: the template changed a file this site changed too (listed above)." >&2
     echo "      Resolve it, then: git commit, npm install, npm run check" >&2
