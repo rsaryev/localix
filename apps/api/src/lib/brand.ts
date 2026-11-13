@@ -2,4 +2,4 @@
 export const PRODUCT_NAME = 'Localix'
 
 /** The public site origin, without a trailing slash. */
-export const SITE_URL = 'https://localix.ai'
+export const SITE_URL = 'https://studio.localix.ai'

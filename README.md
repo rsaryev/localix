@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <a href="https://localix.ai">
+  <a href="https://studio.localix.ai">
     <img src="docs/assets/films/demo.png" alt="Watch the Localix demo: one prompt, and the agent writes a landing page, opens it in the browser and tests it at phone, tablet and desktop widths" width="880">
   </a>
 </p>

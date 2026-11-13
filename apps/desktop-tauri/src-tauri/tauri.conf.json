@@ -34,7 +34,7 @@
     "copyright": "© 2026 LocalixAI",
     "license": "MIT",
     "category": "DeveloperTools",
-    "homepage": "https://localix.ai",
+    "homepage": "https://studio.localix.ai",
     "shortDescription": "Open source Agentic Development Environment",
     "longDescription": "Localix is an open source Agentic Development Environment (ADE): one workspace for you and your agents. An agent and its subagents work in the editor, terminals, browser preview, databases, and shared project board built into one app, with context you can see and rules for every tool call. Describe a plugin and an agent builds its interface and tools.",
     "externalBin": ["binaries/bun"],

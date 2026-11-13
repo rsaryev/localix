@@ -81,7 +81,7 @@
 use tauri::{Manager, RunEvent};
 
 /// The public site, opened by Help > Website.
-pub(crate) const SITE_URL: &str = "https://localix.ai";
+pub(crate) const SITE_URL: &str = "https://studio.localix.ai";
 /// The public source repository; Help links to its docs, issues and releases.
 pub(crate) const REPOSITORY_URL: &str = "https://github.com/localixai/localix-studio";
 

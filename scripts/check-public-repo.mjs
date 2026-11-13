@@ -76,7 +76,11 @@ for (const { path, manifest } of workspacePackages) {
     'git+https://github.com/localixai/localix-studio.git',
     `${path} must point npm provenance to the public repository`,
   )
-  assert.equal(manifest.homepage, 'https://localix.ai', `${path} must declare the project homepage`)
+  assert.equal(
+    manifest.homepage,
+    'https://studio.localix.ai',
+    `${path} must declare the project homepage`,
+  )
   assert.equal(
     manifest.bugs?.url,
     'https://github.com/localixai/localix-studio/issues',

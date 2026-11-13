@@ -1,7 +1,7 @@
 name: Website Deploy
 
 # Builds the website, site/ (made from the llx-sitekit template), and deploys it to Cloudflare
-# Pages (project localix-studio, serving studio.localix.ai and localix.ai), the same way the
+# Pages (project localix-studio, serving studio.localix.ai), the same way the
 # desktop release is built: in GitHub Actions, then uploaded as a finished folder. Pages' own Git
 # integration is not used, so a deploy only ever happens from a build this workflow verified.
 #
