@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { existsSync } from 'node:fs'
+import { existsSync, lstatSync } from 'node:fs'
 import { access, readFile, readdir } from 'node:fs/promises'
 import { dirname, join, resolve, sep } from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -151,9 +151,14 @@ assert.equal(
   `Unable to enumerate repository files: ${repositoryFilesResult.stderr}`,
 )
 
+// A symbolic link is read at the file it names, which is listed in its own right: read again at the
+// link's place (site/CHANGELOG.md is the repository's CHANGELOG.md), its relative links would
+// resolve from the wrong folder.
 const repositoryFiles = repositoryFilesResult.stdout
   .split('\0')
-  .filter((file) => file && existsSync(join(root, file)))
+  .filter(
+    (file) => file && existsSync(join(root, file)) && !lstatSync(join(root, file)).isSymbolicLink(),
+  )
 
 // `localix`, the Localix marketplace (the one source the core trusts by name) and the Localix
 // Community list (the untrusted source it reads beside it) are the only repositories in the

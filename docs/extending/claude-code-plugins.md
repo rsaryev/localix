@@ -387,12 +387,15 @@ Code unchanged: panes, the band above the message box, buttons and their hotkeys
 
 ## Source of truth
 
-- [The Claude Code plugin format](https://github.com/rsaryev/llx-plugin/tree/main/src/format)
+- [The Claude Code plugin format](https://app.unpkg.com/@rsaryev/llx-plugin@0.1.1/files/src/format),
+  in `@rsaryev/llx-plugin` 0.1.1, the version Studio pins
 - [Reading a plugin folder](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/kit/catalog/read-folder.ts)
 - [The mods runtime](https://github.com/localixai/localix-studio/tree/main/apps/api/src/features/mods)
-- [Mods engine and elements](https://github.com/rsaryev/llx-plugin/tree/main/src/mods)
+- [Mods engine and elements](https://app.unpkg.com/@rsaryev/llx-plugin@0.1.1/files/src/mods), in
+  `@rsaryev/llx-plugin` 0.1.1
 - [Hook events and the inert ones](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/cc-hooks/contracts.ts)
-- [MCP variable expansion](https://github.com/rsaryev/llx-plugin/blob/main/src/loading/resolve/substitute.ts)
+- [MCP variable expansion](https://app.unpkg.com/@rsaryev/llx-plugin@0.1.1/files/src/loading/resolve/substitute.ts),
+  in `@rsaryev/llx-plugin` 0.1.1
 - [Claude Code marketplace names](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/claude-code-marketplace.ts)
 - [Marketplace entry sources](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/kit/marketplace/entry-source.ts)
 - [Layout tests](https://github.com/localixai/localix-studio/blob/main/apps/api/src/features/plugins/claude-code-layout.test.ts)
