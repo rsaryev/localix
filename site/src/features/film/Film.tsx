@@ -49,7 +49,8 @@ export function Film({ src, label }: { src: string; label: string }) {
   useEffect(() => {
     let alive = true;
     let cleanup = () => {};
-    const fonts = document.fonts.load('14px Mono').catch(() => []);
+    // The block elements are a face of their own (global.css), loaded only for text that has them.
+    const fonts = Promise.all([document.fonts.load('14px Mono'), document.fonts.load('14px Mono', '\u2588')]).catch(() => []);
     const styles = import('@xterm/xterm/css/xterm.css');
     void Promise.all([import('@xterm/xterm'), fetch(src).then((r) => r.text()), fonts, styles]).then(async ([{ Terminal }, text]) => {
       const node = host.current;
@@ -71,18 +72,22 @@ export function Film({ src, label }: { src: string; label: string }) {
       // A row's height by the type's size, as this font really sets it: its own line height times
       // the terminal's, which no constant here could know.
       const pitch = (node.querySelector<HTMLElement>('.xterm-screen')?.offsetHeight ?? 0) / (term.rows * (term.options.fontSize ?? 15)) || 1.5;
-      const cols = await usedColumns(term, cast);
+      const { cols, fullScreen } = await usedColumns(term, cast);
       if (!alive) return term.dispose();
       term.resize(cols, cast.rows);
       term.reset();
       // The frame's size is the stylesheet's alone (Film.css), the same before the terminal
       // loads and after, so nothing on the page moves when it arrives. The type fits the
-      // recording's columns to the frame's width, and the rows are those its height holds.
+      // recording's columns to the frame's width, and the rows are those its height holds; a
+      // full-screen program keeps the rows it drew in.
       const fit = () => {
-        const size = (node.clientWidth - PADDING) / (cols * CELL);
-        const font = Math.max(6, Math.min(LARGEST, Math.floor(size * 2) / 2));
+        const wide = (node.clientWidth - PADDING) / (cols * CELL);
+        // A full-screen program is shown whole, its rows too, however small that makes it: cut,
+        // it loses its header or its prompt. Anything else keeps a readable size and scrolls.
+        const size = fullScreen ? Math.min(wide, (node.clientHeight - PADDING_BLOCK) / (cast.rows * pitch)) : wide;
+        const font = Math.max(fullScreen ? 3 : 6, Math.min(LARGEST, Math.floor(size * 2) / 2));
         term.options.fontSize = font;
-        const rows = Math.max(8, Math.floor((node.clientHeight - PADDING_BLOCK) / Math.ceil(font * pitch)));
+        const rows = fullScreen ? cast.rows : Math.max(8, Math.floor((node.clientHeight - PADDING_BLOCK) / Math.ceil(font * pitch)));
         if (rows !== term.rows) term.resize(cols, rows);
       };
       fit();

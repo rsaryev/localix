@@ -1,4 +1,4 @@
-/* The page's ground: eza.rocks's structure (a heavy headline, stacked terminal cards), on black
+/* The page's ground: a heavy headline and stacked terminal cards, on black
    and kept clean: no offset shadows, no color for decoration; green and red only where they mean
    ok and wrong. The fonts live in public/fonts, so their URLs (and the preloads) stay as they were. */
 
@@ -22,6 +22,16 @@
   font-display: swap;
   font-weight: 100 800;
   src: url('/fonts/jetbrains-mono.woff2') format('woff2-variations');
+}
+/* The block elements, which the mono font lacks: rectangles that fill a terminal cell, so a
+   program's block art reads as one shape (scripts/block-font.py). */
+@font-face {
+  font-family: 'Mono';
+  font-style: normal;
+  font-display: block;
+  font-weight: 100 800;
+  src: url('/fonts/mono-blocks.woff2') format('woff2');
+  unicode-range: U+2580-2590, U+2594-259F;
 }
 
 :root {
