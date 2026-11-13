@@ -36,6 +36,9 @@ export type SiteConfig = {
   bar: { links: NavLink[]; action?: NavLink };
   /** Under every page: one line, and links. */
   footer: { note: string; links: NavLink[] };
+  /** Who makes the product, and the page of everything they make: signed first in the footer,
+   *  before its line, and the way there from every page. */
+  maker?: NavLink;
   /** schema.org data for the landing. */
   jsonLd?: Record<string, unknown>;
   /** The opening of llms.txt, as markdown; the docs' list follows it. */
