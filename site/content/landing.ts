@@ -7,7 +7,8 @@ const DOCS = '/docs';
 const GITHUB = 'https://github.com/localixai/localix-studio';
 const SOURCE = `${DOCS}/getting-started--installation#how-it-works`;
 
-const shot = (name: string, alt: string): Media => ({ kind: 'image', src: `/shots/${name}.webp`, alt, width: 1600, height: 1000 });
+// The app's window on the screen, with the desktop around it, as Localix Terminal's site shows its own.
+const shot = (name: string, alt: string): Media => ({ kind: 'image', src: `/shots/${name}.jpg`, alt, width: 1720, height: 1134 });
 
 // From the agent and its controls, through what it can be given (the Store, Claude Code's
 // plugins), to the mini app platform and what a mini app becomes on a Mac.

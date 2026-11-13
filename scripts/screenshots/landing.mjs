@@ -1,5 +1,8 @@
 // The homepage's captures: the same scenarios as the docs, in a smaller 16:10 window, so the UI
-// reads at the size of a card. Writes WebP into site/public/shots.
+// reads at the size of a card. Writes WebP into site/public/shots. The site shows the app's window
+// on the screen instead (`shots/<name>.jpg`: the release run with a HOME of its own, these
+// scenarios seeded into it, the window captured with the desktop around it, as Localix Terminal's
+// are); the WebP are the window's inside alone, for a page that wants that.
 //
 // On a FRESH capture root (LOCALIX_CAPTURE_ROOT), before `bun run screenshots:seed`:
 //   bun scripts/screenshots/landing.mjs --pick-model
