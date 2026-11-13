@@ -5,27 +5,19 @@ name: Website Deploy
 # desktop release is built: in GitHub Actions, then uploaded as a finished folder. Pages' own Git
 # integration is not used, so a deploy only ever happens from a build this workflow verified.
 #
-# It runs on a push to main that changes the site or the docs it renders (site/, docs/), by hand
-# (Actions → Website Deploy → Run workflow), and from the release workflow once a release is
-# published; never for a pull request. The download button links the newest release's installer
-# by a name with no version in it, so a build never has to be told which release is out.
+# It runs only by hand (Actions → Website Deploy → Run workflow), and from the release workflow
+# once a release is published, never on a push or a pull request: the site only needs the newest
+# build. The download button links the newest release's installer by a name with no version in
+# it, so a build never has to be told which release is out.
 #
-#   • a push to main  → the production site
-#   • production off  → a preview deployment (branch preview, at a *.pages.dev address)
-#   • production on   → the production site
+#   • production off → a preview deployment (branch preview, at a *.pages.dev address)
+#   • production on  → the production site, when LANDING_PRODUCTION=true is also set
 #
-# Production needs LANDING_PRODUCTION=true as well; until it is set, every run deploys a preview
-# and the live site is left alone.
+# Until the variable is set, every run deploys a preview and the live site is left alone.
 #
 # Needs: secrets CLOUDFLARE_API_TOKEN (Account > Cloudflare Pages > Edit) and CLOUDFLARE_ACCOUNT_ID.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'site/**'
-      - 'docs/**'
-      - '.github/workflows/landing.yml'
   workflow_dispatch:
     inputs:
       production:
@@ -49,7 +41,7 @@ env:
 jobs:
   deploy:
     name: Deploy website
-    # Our own runner; the workflow never runs for a pull request, so no outside code reaches it.
+    # Our own runner; the workflow runs only by hand, never for a pull request.
     runs-on: localix
     timeout-minutes: 20
     steps:
@@ -78,12 +70,9 @@ jobs:
         env:
           PRODUCTION_ENABLED: ${{ vars.LANDING_PRODUCTION }}
           DISPATCH_PRODUCTION: ${{ inputs.production }}
-          EVENT: ${{ github.event_name }}
         run: |
           want_production=false
-          if [ "$DISPATCH_PRODUCTION" = "true" ] || [ "$EVENT" = "push" ]; then
-            want_production=true
-          fi
+          [ "$DISPATCH_PRODUCTION" = "true" ] && want_production=true
           if [ "$want_production" = "true" ] && [ "$PRODUCTION_ENABLED" = "true" ]; then
             echo "environment=production" >> "$GITHUB_OUTPUT"
             echo "branch=main" >> "$GITHUB_OUTPUT"

@@ -46,6 +46,6 @@ bun --bun run check    # the layers, the types, the build, the docs' standard
 
 ## Publishing
 
-Website Deploy runs on a push to main that changes `site/` or `docs/`, by hand, and from the
-release workflow once a release is published: the check, then `dist/`, with the third-party notices of what it ships, to the Cloudflare Pages
+Website Deploy is run by hand, and by the release workflow once a release is published: the
+check, then `dist/`, with the third-party notices of what it ships, to the Cloudflare Pages
 project `localix-studio`.
