@@ -22,9 +22,25 @@
 </p>
 
 <p align="center">
-  <a href="https://studio.localix.ai">
-    <img src="docs/assets/films/demo.png" alt="Watch the Localix demo: one prompt, and the agent writes a landing page, opens it in the browser and tests it at phone, tablet and desktop widths" width="880">
-  </a>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/workspace-dark.png">
+    <img src="assets/workspace-light.png" width="860" alt="A Localix Studio window on a project: its chats on the left, the page the agent built open in the Browser, and the chat on the right">
+  </picture>
+</p>
+
+<p align="center">
+  <a href="assets/editor-dark.png"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/editor-dark.png">
+    <img src="assets/editor-light.png" width="284" alt="A TypeScript file in the editor, the language server's completion list open, with the chat beside it">
+  </picture></a>
+  <a href="assets/subagents-dark.png"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/subagents-dark.png">
+    <img src="assets/subagents-light.png" width="284" alt="Two subagents started from a chat: one still running, one done, each with what it was asked and what it answered">
+  </picture></a>
+  <a href="assets/mini-apps-dark.png"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/mini-apps-dark.png">
+    <img src="assets/mini-apps-light.png" width="284" alt="A mini app in Localix, a task board with its columns of cards">
+  </picture></a>
 </p>
 
 <table>

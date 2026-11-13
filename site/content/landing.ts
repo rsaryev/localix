@@ -1,14 +1,25 @@
 import type { Card, LandingContent, Media } from '@/shared/config';
 
 // The landing's words. The design is the template's; this file is the site's. The words of each
-// card come from the docs it links to; the stills are the app's own window, all of one size, and
-// the clip is one real session of it.
+// card come from the docs it links to; the stills are the app's own window on the screen, with the
+// desktop around it, all of one size, as Localix Terminal's site shows its own.
 const DOCS = '/docs';
 const GITHUB = 'https://github.com/localixai/localix-studio';
 const SOURCE = `${DOCS}/getting-started--installation#how-it-works`;
 
-// The app's window on the screen, with the desktop around it, as Localix Terminal's site shows its own.
-const shot = (name: string, alt: string): Media => ({ kind: 'image', src: `/shots/${name}.jpg`, alt, width: 1720, height: 1134 });
+/** The window's stills, all of one size: what each shows, in words. */
+const SHOT = { width: 1720, height: 1134 };
+const SHOTS = {
+  models:
+    'The model picker: this chat’s model and background workloads, the providers, an API key form and the chosen model’s context, pricing and capabilities',
+  workspace: 'The workspace: the project’s chats on the left, the page the agent built in the Browser, and the chat on the right',
+  editor:
+    'A TypeScript file in the editor: the language server’s completion list after channel., offering the object’s properties and methods, under the symbol breadcrumb, with the chat beside it',
+  subagents: 'Two subagents started from a chat: one still running, one done, each with what it was asked and what it answered',
+  store: 'The Store searching for git: commands, screens and MCP servers found inside packages, with the packages below',
+  'mini-apps': 'A mini app in Localix, a task board: the add-task bar, filters, progress and the columns of task cards',
+};
+const shot = (name: keyof typeof SHOTS): Media => ({ kind: 'image', src: `/shots/${name}.jpg`, alt: SHOTS[name], ...SHOT });
 
 // From the agent and its controls, through what it can be given (the Store, Claude Code's
 // plugins), to the mini app platform and what a mini app becomes on a Mac.
@@ -20,16 +31,13 @@ const CARDS: Card[] = [
       { href: `${DOCS}/features--local-models`, label: 'Local models' },
       { href: `${DOCS}/features--decision-models`, label: 'Decision models' },
     ],
-    media: shot(
-      'models',
-      'The model picker: this chat’s model and background workloads, the providers, an API key form and the chosen model’s context, pricing and capabilities',
-    ),
+    media: shot('models'),
   },
   {
     title: 'Terminals and browser in one window',
     text: 'The agent works inside your project folder, with its files, terminals and Git, and you work next to it in the same window. It can open the page it builds in the Browser, beside you. Link Claude Code, Codex, Gemini CLI or another installed coding agent to a chat, and its terminal opens beside the conversation.',
     links: [{ href: `${DOCS}/features--workspace`, label: 'The workspace' }],
-    media: shot('workspace', 'The workspace: the project’s chats on the left, the page the agent built in the Browser, and the chat on the right'),
+    media: shot('workspace'),
   },
   {
     title: 'An editor that knows your code',
@@ -38,16 +46,13 @@ const CARDS: Card[] = [
       { href: `${DOCS}/features--editor`, label: 'The editor' },
       { href: `${DOCS}/features--lsp`, label: 'Language servers' },
     ],
-    media: shot(
-      'editor',
-      'A TypeScript file in the editor: the language server’s completion list after channel., offering the object’s properties and methods, under the symbol breadcrumb, with the chat beside it',
-    ),
+    media: shot('editor'),
   },
   {
     title: 'Subagents in parallel',
     text: 'The agent hands a self-contained task to a subagent, a session of its own that works while the agent goes on and answers back when it is done. Each one shows what it was asked and what it answered, and sits under its chat in the sidebar, where you can open it and talk to it directly.',
     links: [{ href: `${DOCS}/features--delegation`, label: 'Subagents' }],
-    media: shot('subagents', 'Two subagents started from a chat: one still running, one done, each with what it was asked and what it answered'),
+    media: shot('subagents'),
   },
   {
     title: 'The Store',
@@ -56,7 +61,7 @@ const CARDS: Card[] = [
       { href: `${DOCS}/features--store`, label: 'The Store' },
       { href: `${DOCS}/extending--claude-code-plugins`, label: 'Claude Code plugins' },
     ],
-    media: shot('store', 'The Store searching for git: commands, screens and MCP servers found inside packages, with the packages below'),
+    media: shot('store'),
   },
   {
     title: 'Mini apps, with the agent inside',
@@ -67,7 +72,7 @@ const CARDS: Card[] = [
       { href: `${DOCS}/features--mini-app-mac-apps`, label: 'Mac apps' },
       { href: 'https://github.com/localixai/localix-marketplace', label: 'Localix marketplace' },
     ],
-    media: shot('mini-apps', 'A mini app in Localix, a task board: the add-task bar, filters, progress and the columns of task cards'),
+    media: shot('mini-apps'),
   },
 ];
 
@@ -77,12 +82,15 @@ const landing: LandingContent = {
     lede: 'An AI agent and its subagents work with you in one desktop app: your editor, terminals and browser. Any model, or run one on your own computer.',
     under: `Open source, MIT license. On other systems, [build it from source](${SOURCE}).`,
     links: [{ label: 'Get started', href: `${DOCS}/getting-started--installation` }],
-    clip: {
-      src: '/films/demo.mp4',
-      poster: '/films/demo.jpg',
-      width: 2560,
-      height: 1638,
-      label: 'One prompt with a pasted brief: the agent writes a landing page, opens it in the browser itself and tests it at phone, tablet and desktop widths',
+    tour: {
+      label: 'The app’s window on a project, in four stills',
+      ...SHOT,
+      scenes: [
+        { label: 'Workspace', src: '/shots/workspace.jpg', alt: SHOTS.workspace },
+        { label: 'Editor', src: '/shots/editor.jpg', alt: SHOTS.editor },
+        { label: 'Subagents', src: '/shots/subagents.jpg', alt: SHOTS.subagents },
+        { label: 'Mini apps', src: '/shots/mini-apps.jpg', alt: SHOTS['mini-apps'] },
+      ],
     },
   },
   loop: {
