@@ -40,6 +40,7 @@ const site: SiteConfig = {
     ],
     action: { label: 'Download', href: '/#start' },
   },
+  maker: { label: 'Localix Lab', href: 'https://localix.ai' },
   footer: {
     note: 'Localix Studio is MIT-licensed and open source.',
     links: [
