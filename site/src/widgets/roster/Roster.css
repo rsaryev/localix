@@ -1,0 +1,51 @@
+/* The docs as an index: short columns, each a quiet title over hairline-ruled rows. */
+.roster {
+  padding-top: var(--section);
+}
+.roster-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  align-items: start;
+  gap: 2.25rem clamp(2rem, 4vw, 4rem);
+}
+.roster h3 {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+}
+.roster ul {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+.roster-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.roster-name {
+  font: 500 clamp(1rem, 0.95rem + 0.25vw, 1.125rem) / 1.3 var(--display);
+  letter-spacing: -0.015em;
+  transition: transform 300ms var(--ease-out);
+}
+/* What a short column leaves out: quieter than a page's name. */
+.roster-more .roster-name {
+  color: var(--muted);
+}
+.roster-no {
+  color: var(--muted);
+  font: 400 0.75rem / 1 var(--text);
+  font-variant-numeric: tabular-nums;
+  transition: color 160ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .roster-row:hover .roster-name {
+    transform: translateX(4px);
+  }
+  .roster-row:hover .roster-no {
+    color: var(--white);
+  }
+}

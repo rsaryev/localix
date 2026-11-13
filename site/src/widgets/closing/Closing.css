@@ -1,0 +1,51 @@
+/* The page's end: the steps side by side under a hairline each, then the ways in. */
+.closing {
+  padding-block: var(--section) clamp(3.5rem, 7vw, 6rem);
+  scroll-margin-top: var(--bar);
+}
+.closing-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 1.75rem clamp(1.5rem, 3vw, 3rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.closing-steps li {
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--line);
+}
+.closing-steps .label {
+  display: block;
+  margin-bottom: 0.9rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.closing-steps h3 {
+  margin: 0 0 0.5rem;
+  font: 600 1.125rem / 1.25 var(--display);
+  letter-spacing: -0.015em;
+}
+.closing-steps p {
+  max-width: 36ch;
+  margin: 0;
+  color: var(--soft);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+.closing-steps code {
+  color: var(--white);
+  font-size: 0.86em;
+  white-space: nowrap;
+}
+.closing-steps a {
+  color: var(--white);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.closing-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: clamp(2.25rem, 4vw, 3.25rem) 0 0;
+}

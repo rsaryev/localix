@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /kit
+Disallow: /og-card.html
+Sitemap: https://studio.localix.ai/sitemap.xml

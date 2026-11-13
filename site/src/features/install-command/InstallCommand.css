@@ -1,0 +1,104 @@
+/* The install block: one hairline frame. With several ways in, a bar over the command holds their
+   tabs and Copy, as a code block's bar in the docs does; with one, Copy stands beside the command. */
+.install-box {
+  width: 100%;
+  max-width: 36rem;
+  margin-top: clamp(1.75rem, 2.6vw, 3rem);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--card);
+  text-align: left;
+}
+.install-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  padding-inline: 0.5rem 0.25rem;
+  border-bottom: 1px solid var(--line-strong);
+}
+.install-tabs {
+  display: flex;
+}
+/* A tab is its word and a rule under it, on the bar's own hairline when it is the one shown. */
+.install-tabs button {
+  position: relative;
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: 500 0.8125rem / 1 var(--text);
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+.install-tabs button::after {
+  content: '';
+  position: absolute;
+  inset: auto 0.75rem -1px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--white);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+.install-tabs button:hover,
+.install-tabs button[aria-selected='true'] {
+  color: var(--white);
+}
+.install-tabs button[aria-selected='true']::after {
+  opacity: 1;
+}
+.install {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+/* The command is always one line, so the block is the same height whichever tab is shown: a
+   command longer than the frame scrolls sideways, its end fading where more is hidden. No
+   scrollbar is drawn, which would add its own height on some systems. */
+.install code {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  padding: 0.95rem 1.1rem;
+  color: var(--white);
+  font: 400 clamp(0.8125rem, 0.76rem + 0.2vw, 0.9375rem) / 1.55 var(--mono);
+  white-space: pre;
+  mask-image: linear-gradient(to right, var(--black) calc(100% - 1.75rem), transparent);
+}
+.install code::-webkit-scrollbar {
+  display: none;
+}
+.install-line {
+  flex: none;
+  padding-right: 1.1rem;
+}
+.install-copy {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  padding-inline: 0.75rem;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--soft);
+  font: 500 0.8125rem / 1 var(--text);
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+/* "Copied" is no wider than "Copy" would leave room for: the bar does not shift when it changes. */
+.install-copy span {
+  min-width: 3.4em;
+  text-align: left;
+}
+.install-copy:hover {
+  color: var(--white);
+}
+.install-box:not(.tabbed) .install-copy {
+  margin-right: 0.25rem;
+}

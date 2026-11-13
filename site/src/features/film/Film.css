@@ -1,0 +1,24 @@
+/* The recorded run in a real terminal, almost the page's black, edged by a hairline. Its sixteen
+   colours are the --ansi-* tokens. */
+/* On a phone the smallest font still leaves the recording wider than the frame: it scrolls
+   sideways rather than losing its last columns. */
+.film {
+  display: grid;
+  align-content: center;
+  /* Its size is set here and nowhere else: about the shape of the recording (its columns by its
+     rows of Mono), never taller than the window leaves beside the bar and the caption. The
+     terminal takes the rows that fit, so the page does not move when it loads. */
+  aspect-ratio: 1.16;
+  max-height: calc(100svh - 13.5rem);
+  min-height: 12rem;
+  overflow: hidden;
+  overflow-x: auto;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+.film .xterm-viewport {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}

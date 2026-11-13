@@ -1,0 +1,42 @@
+/* One quiet line under a demo: the chapters, which go to a part of it, and play or pause. */
+.chapters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0.75rem 0.25rem 0;
+  color: var(--muted);
+  font: 400 0.8125rem / 1.5 var(--mono);
+}
+.chapters-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+}
+.chapters button {
+  min-height: 2.25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+.chapters button:hover,
+.chapters button[aria-current] {
+  color: var(--white);
+}
+.chapters .chapters-toggle {
+  min-width: 4.5ch;
+  text-align: right;
+  color: var(--soft);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.chapters button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

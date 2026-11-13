@@ -1,0 +1,243 @@
+/* The docs' frame, on the landing's ground: one column on a phone, the path over the page its
+   menu; the rail of pages beside the text from 48rem; the page's sections on the right from 75rem,
+   the three set apart across the width. */
+.docs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  column-gap: 3rem;
+  padding-block: 0.25rem clamp(3rem, 8vw, 6rem);
+}
+.docs-label {
+  margin: 0;
+  color: var(--muted);
+  font: 500 0.8125rem/1.2 var(--text);
+}
+.docs-side,
+.docs-toc {
+  display: none;
+  position: sticky;
+  top: 2rem;
+  max-height: calc(100dvh - 4rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+@media (min-width: 48rem) {
+  .docs {
+    grid-template-columns: 13.5rem minmax(0, 1fr);
+    padding-top: 2rem;
+  }
+  .docs-side {
+    display: block;
+  }
+}
+@media (min-width: 75rem) {
+  .docs {
+    grid-template-columns: 13.5rem minmax(0, 48rem) 11rem;
+    justify-content: space-between;
+  }
+  .docs-toc {
+    display: block;
+  }
+  /* The index has no sections on the right: its cards take that room. */
+  .docs-main:last-child {
+    grid-column: 2 / -1;
+  }
+}
+.docs-main {
+  min-width: 0;
+}
+.docs-article {
+  max-width: 48rem;
+  margin-inline: auto;
+}
+
+/* The rail: a branch a group, its pages hung on a hairline under it. */
+.docs-nav {
+  display: grid;
+  gap: 0.25rem;
+  padding-right: 0.5rem;
+}
+.docs-nav summary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2rem;
+  padding: 0 0.5rem;
+  border-radius: 7px;
+  color: var(--muted);
+  font: 500 0.8125rem/1.2 var(--text);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+.docs-nav summary::-webkit-details-marker {
+  display: none;
+}
+.docs-nav summary svg {
+  flex: none;
+  transition: transform 200ms var(--ease-out);
+}
+.docs-nav summary:hover,
+.docs-nav [open] > summary {
+  color: var(--white);
+}
+.docs-nav [open] > summary svg {
+  transform: rotate(90deg);
+}
+.docs-nav ul {
+  display: grid;
+  gap: 1px;
+  margin: 0.25rem 0 0.6rem 0.95rem;
+  padding: 0 0 0 0.3rem;
+  border-left: 1px solid var(--line-strong);
+  list-style: none;
+}
+/* A branch opens downward, where the browser can animate one. */
+@supports (interpolate-size: allow-keywords) {
+  .docs-nav details {
+    interpolate-size: allow-keywords;
+  }
+  .docs-nav details::details-content {
+    block-size: 0;
+    overflow: clip;
+    transition: block-size 220ms var(--ease-out), content-visibility 220ms allow-discrete;
+  }
+  .docs-nav details[open]::details-content {
+    block-size: auto;
+  }
+}
+.docs-nav a {
+  display: block;
+  padding: 0.4rem 0.75rem;
+  border-radius: 7px;
+  color: var(--soft);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+.docs-nav a:hover {
+  background: var(--card);
+  color: var(--white);
+}
+.docs-nav a[aria-current='page'] {
+  background: var(--raised);
+  color: var(--white);
+}
+
+.docs-toc ul {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  border-left: 1px solid var(--line-strong);
+}
+.docs-toc a {
+  display: block;
+  margin-left: -1px;
+  padding: 0.28rem 0 0.28rem 0.75rem;
+  border-left: 1px solid transparent;
+  color: var(--soft);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+.docs-toc .sub a {
+  padding-left: 1.5rem;
+  font-size: 0.8125rem;
+}
+.docs-toc a:hover {
+  border-left-color: var(--faint);
+  color: var(--white);
+}
+.docs-toc a[aria-current='location'] {
+  border-left-color: var(--white);
+  color: var(--white);
+}
+
+.docs-title {
+  margin: 0 0 1.25rem;
+  font: 600 clamp(1.85rem, 1.4rem + 1.6vw, 2.5rem) / 1.15 var(--display);
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  scroll-margin-top: 4rem;
+}
+/* The index's and the 404's head: a label over a larger title. */
+.docs-head {
+  margin-bottom: 2.25rem;
+}
+.docs-head h1 {
+  margin: 0.9rem 0 0;
+  font: 700 clamp(2.1rem, 1.5rem + 2.4vw, 3.25rem) / 1.04 var(--display);
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.docs-index {
+  max-width: 68rem;
+}
+.docs-lede {
+  max-width: 42rem;
+  margin: 1.25rem 0 0;
+  color: var(--soft);
+  font-size: clamp(1rem, 1.3vw, 1.125rem);
+  line-height: 1.6;
+}
+.docs-lede a {
+  color: var(--white);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.docs-group {
+  display: grid;
+  gap: 1.1rem;
+  margin-top: clamp(2.5rem, 5vw, 3.5rem);
+}
+.docs-group h2 {
+  margin: 0;
+  font: 700 1.5rem/1.15 var(--display);
+  letter-spacing: -0.035em;
+}
+.docs-group p {
+  max-width: 42rem;
+  margin: 0.4rem 0 0;
+  color: var(--soft);
+  font-size: 0.9375rem;
+}
+.docs-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16.5rem), 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.docs-cards a {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+  height: 100%;
+  padding: 1.1rem 1.2rem 1.2rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--card);
+  transition: border-color 160ms ease;
+}
+.docs-cards a:hover {
+  border-color: var(--faint);
+}
+.docs-card-title {
+  font: 600 1rem/1.3 var(--text);
+}
+.docs-card-text {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--soft);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}

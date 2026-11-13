@@ -1,0 +1,217 @@
+/* The kit page: a frame around specimens. Everything shown is styled by its own stylesheet; this
+   one only lays the page out. */
+.kit {
+  padding-block: 0.25rem clamp(3rem, 8vw, 6rem);
+}
+.kit .docs-head {
+  max-width: 47rem;
+}
+.kit code {
+  font-size: 0.86em;
+}
+.kit-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.75rem;
+}
+.kit-toc a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding-inline: 0.8rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--soft);
+  font: 500 var(--step-s) / 1 var(--text);
+  transition: color 160ms ease, border-color 160ms ease;
+}
+.kit-toc a:hover {
+  border-color: var(--faint);
+  color: var(--white);
+}
+.kit-section {
+  margin-top: clamp(3rem, 7vw, 5rem);
+  padding-top: clamp(2rem, 4vw, 3rem);
+  border-top: 1px solid var(--line);
+  scroll-margin-top: 1rem;
+}
+.kit-section > h2 {
+  margin: 0;
+  font: 700 var(--step-3) / 1.05 var(--display);
+  letter-spacing: -0.04em;
+}
+.kit-section > h3,
+.kit-spec > h3 {
+  margin: 2.5rem 0 0;
+  font: 600 1.25rem / 1.2 var(--display);
+  letter-spacing: -0.02em;
+  scroll-margin-top: 1rem;
+}
+.kit-note {
+  max-width: 47rem;
+  margin: 0.9rem 0 0;
+  color: var(--soft);
+}
+.kit-note code,
+.kit-meta code,
+.kit-swatch code,
+.docs-lede code {
+  color: var(--white);
+}
+.kit-meta {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: var(--step-s);
+  line-height: 1.5;
+}
+
+/* Tokens: a chip, the property and its value in force, and what it is for. */
+.kit-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: 0.75rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.kit-swatch {
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  padding: 0.9rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+.kit-chip {
+  display: grid;
+  place-items: center;
+  height: 3.5rem;
+  border: 1px solid var(--line-strong);
+  border-radius: calc(var(--radius) - 4px);
+}
+.kit-chip-text {
+  font: 600 1.5rem / 1 var(--display);
+}
+.kit-swatch-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+}
+.kit-value {
+  color: var(--muted);
+  font: 400 0.75rem / 1.4 var(--mono);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.kit-swatch-use {
+  color: var(--soft);
+  font-size: var(--step-s);
+  line-height: 1.5;
+}
+
+/* The type scale: each step set in itself. */
+.kit-type {
+  display: grid;
+  gap: 1.75rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.kit-type li {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--line);
+}
+.kit-type p {
+  margin: 0;
+}
+.kit-type .kit-meta {
+  margin-top: 0.75rem;
+}
+.kit-step-3 {
+  font: 700 var(--step-3) / 1.05 var(--display);
+  letter-spacing: -0.04em;
+}
+.kit-step-1 {
+  max-width: 34em;
+  color: var(--soft);
+  font-size: var(--step-1);
+  line-height: 1.5;
+}
+.kit-body {
+  max-width: 34em;
+}
+.kit-step-s {
+  color: var(--muted);
+  font-size: var(--step-s);
+}
+.kit-code {
+  font: 400 0.875rem / 1.5 var(--mono);
+}
+
+/* A specimen: its words, then the thing on the page's own ground. */
+.kit-stage {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+  margin-top: 1.5rem;
+  padding: clamp(1rem, 3vw, 2rem);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+}
+.kit-stage > * {
+  min-width: 0;
+}
+.kit-stage > :is(p, ul, nav),
+.kit-stage .install-box,
+.kit-stage .download {
+  margin-block: 0;
+}
+/* The tour at about the width the hero gives it. */
+.kit-tour,
+.kit-clip {
+  max-width: 40rem;
+}
+/* Prose in the docs' own measure; its first heading opens the specimen, so it needs no rule
+   above it. */
+.kit-stage .prose {
+  max-width: 47rem;
+}
+.kit-stage .prose > h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.kit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.kit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1.5rem;
+}
+.kit-grid > div {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.kit-grid .kit-meta {
+  margin: 0;
+}
+.kit-icons {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  color: var(--soft);
+}
+/* In a specimen a card does not stick, and nothing waits for a scroll to appear. */
+.kit-stage .loop-card {
+  position: relative;
+  top: 0;
+}

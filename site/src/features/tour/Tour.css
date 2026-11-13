@@ -1,0 +1,26 @@
+/* The product's stills in one frame, edged by a hairline as the recording is. They lie one over
+   another, and the one shown fades in over the one before it. */
+.tour {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+.tour img {
+  grid-area: 1 / 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 500ms var(--ease-out);
+}
+.tour img[data-shown] {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour img {
+    transition: none;
+  }
+}

@@ -1,0 +1,9 @@
+/* This site's own look. The template's tokens are in src/shared/styles/global.css (and the code
+   colours in syntax.css); redefine here the ones this site changes, and nothing else. This file is
+   loaded last on every page, and is never carried over from the template.
+
+   Localix Studio's one accent is the amber gold of the page the agent builds in its demo: it is
+   the site's colour for a link in running text, the one colour that is not a state. */
+:root {
+  --link: #e9bb4f;
+}

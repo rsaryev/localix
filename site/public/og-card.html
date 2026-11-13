@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex">
+  <title>Social card</title>
+  <!-- The source of og.jpg, the picture a link preview shows. Edit the words or the still, then
+       render it at twice 1200×630 with a headless browser, and save that as a JPEG:
+       chrome --headless --force-device-scale-factor=2 --screenshot=og.png --window-size=1200,630 public/og-card.html
+       sips -s format jpeg -s formatOptions 90 og.png --out public/og.jpg -->
+  <style>
+    @font-face { font-family: 'Display'; src: url(fonts/dm-sans.woff2) format('woff2'); font-weight: 100 1000; }
+    @font-face { font-family: 'Text'; src: url(fonts/inter.woff2) format('woff2'); font-weight: 100 900; }
+    @font-face { font-family: 'Mono'; src: url(fonts/jetbrains-mono.woff2) format('woff2'); font-weight: 100 800; }
+    html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #050505; color: #f4f4f2; }
+    body { position: relative; }
+    .og-head { position: absolute; left: 80px; top: 56px; }
+    .og-name { font: 600 64px/1 'Display', sans-serif; letter-spacing: -0.04em; }
+    .og-tag { margin-top: 18px; color: #b0b0ad; font: 400 26px/1.35 'Text', sans-serif; letter-spacing: -0.01em; }
+    .og-url { position: absolute; right: 80px; top: 68px; color: #8b8b87; font: 400 20px/1 'Mono', monospace; }
+    /* The app’s window as the demo opens on it, wider than the card's margins and running off its
+       foot: the top of the window is what is seen. */
+    .og-shot { position: absolute; left: 40px; top: 214px; width: 1120px; border: 1px solid #2a2a28; border-radius: 20px; }
+  </style>
+</head>
+<body>
+  <div class="og-head">
+    <div class="og-name">Localix Studio</div>
+    <div class="og-tag">The Agentic Development Environment</div>
+  </div>
+  <div class="og-url">studio.localix.ai</div>
+  <img class="og-shot" src="films/demo.jpg" alt="">
+</body>
+</html>

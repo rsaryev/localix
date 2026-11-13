@@ -1,0 +1,71 @@
+/* The bar: links and one pill, on the right. */
+.nav {
+  height: var(--bar);
+}
+.nav-links {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: clamp(0.9rem, 2.4vw, 1.9rem);
+  height: 100%;
+}
+.nav-links > a.label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--soft);
+}
+.nav-links > a.label[aria-current] {
+  color: var(--white);
+}
+@media (hover: hover) and (pointer: fine) {
+  .nav-links > a.label:hover {
+    color: var(--white);
+  }
+}
+/* On a phone: the first link and the action (and the way home, where there is one). */
+@media (max-width: 34rem) {
+  .nav-links > a.label:not(:first-of-type) {
+    display: none;
+  }
+}
+
+/* On the landing the bar stays over the page, with no band and no rule under it: what scrolls
+   beneath meets a veil, the ground blurred at the top and gone a little below the bar. */
+.nav-over {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 50;
+}
+.nav-over::before {
+  position: absolute;
+  inset: 0 0 -2rem;
+  z-index: -1;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--black) 95%, transparent),
+    color-mix(in srgb, var(--black) 90%, transparent) 60%,
+    transparent
+  );
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent);
+  mask-image: linear-gradient(to bottom, black 60%, transparent);
+  content: '';
+  pointer-events: none;
+}
+/* At the top there is nothing under the bar to soften: the veil comes with the first scroll. */
+@supports (animation-timeline: scroll()) {
+  .nav-over::before {
+    animation: nav-veil linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 7.5rem;
+  }
+}
+@keyframes nav-veil {
+  from { opacity: 0; }
+}
+/* The landing starts under its bar. */
+.nav-over ~ main {
+  padding-top: var(--bar);
+}

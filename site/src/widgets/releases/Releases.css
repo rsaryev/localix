@@ -1,0 +1,56 @@
+/* The releases: a short ruled list, the version and its date on the left, what it brings on the
+   right with how much changed under it in small type. */
+.releases {
+  padding-top: var(--section);
+}
+.releases ol {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+.releases li {
+  display: grid;
+  grid-template-columns: minmax(9rem, 13rem) minmax(0, 1fr);
+  gap: 0.5rem 2rem;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.releases p {
+  margin: 0;
+}
+.releases-when {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.releases-version {
+  font: 600 1rem / 1.25 var(--display);
+  letter-spacing: -0.015em;
+}
+.releases time,
+.releases-changes {
+  color: var(--muted);
+  font: 400 0.75rem / 1.4 var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.releases-summary {
+  max-width: 62ch;
+  color: var(--soft);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+.releases-summary + .releases-changes {
+  margin-top: 0.5rem;
+}
+/* On a phone the version and its date share a line over the text. */
+@media (max-width: 47.99rem) {
+  .releases li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .releases-when {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+}

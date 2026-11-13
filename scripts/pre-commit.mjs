@@ -64,7 +64,8 @@ if (formatted.length) {
 const sources = formatted.filter((path) => /\.[cm]?[jt]sx?$/.test(path))
 if (sources.length) {
   console.log(`[pre-commit] Linting ${sources.length} staged files`)
-  run(join('node_modules', '.bin', 'oxlint'), ['--', ...sources])
+  // The website (`site/`) is linted by its own check, so its files may be all a commit stages.
+  run(join('node_modules', '.bin', 'oxlint'), ['--no-error-on-unmatched-pattern', '--', ...sources])
 }
 if (plan.tests.length) {
   console.log(`[pre-commit] Running ${plan.tests.length} changed or co-located test files`)

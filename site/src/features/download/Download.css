@@ -1,0 +1,27 @@
+/* The download: a row of actions, the filled one first, and under it one small line of what the
+   build needs and the other builds. */
+.download {
+  margin: clamp(1.75rem, 2.6vw, 3rem) 0 0;
+}
+.download-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0;
+}
+.download-more {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font: 400 0.875rem / 1.5 var(--text);
+  text-wrap: balance;
+}
+.download-more a {
+  color: var(--soft);
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 160ms ease;
+}
+.download-more a:hover {
+  color: var(--white);
+}

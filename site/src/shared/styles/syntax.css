@@ -1,0 +1,45 @@
+/* How code reads, the same in the landing's panels and the docs' code blocks. Quiet tones on the
+   black: a command in white, keys and flags in two cool tones, strings in sage, numbers and
+   literals in a dusty violet, variables in teal, the rest dimmed. ok/bad mark a status word. */
+:root {
+  --tk-key: #8fb0e0;
+  --tk-flag: #d8b983;
+  --tk-str: #a5c791;
+  --tk-num: #c3a6e0;
+  --tk-var: #7fc3c8;
+  --tk-dim: #7c7c78; /* 4.5:1 and more on the panels' black (WCAG AA) */
+  --tk-ok: #8bd49c;
+  --tk-bad: #ef7a6d;
+}
+.tk-prompt,
+.tk-comment,
+.tk-out,
+.tk-punct {
+  color: var(--tk-dim);
+}
+.tk-op {
+  color: var(--muted);
+}
+.tk-cmd {
+  color: var(--white);
+  font-weight: 600;
+}
+.tk-key {
+  color: var(--tk-key);
+}
+.tk-flag {
+  color: var(--tk-flag);
+}
+.tk-str {
+  color: var(--tk-str);
+}
+.tk-num,
+.tk-lit {
+  color: var(--tk-num);
+}
+.tk-var {
+  color: var(--tk-var);
+}
+.tk-comment {
+  font-style: italic;
+}

@@ -3,6 +3,7 @@
     {
       "id": "getting-started",
       "title": "Getting started",
+      "blurb": "Setup, a first session, privacy, and what to do when a run fails.",
       "pages": [
         "getting-started/what-is-localix.md",
         "getting-started/installation.md",
@@ -14,6 +15,7 @@
     {
       "id": "recipes",
       "title": "Recipes",
+      "blurb": "Each recipe walks through one task from setup to a visible result.",
       "pages": [
         "recipes/bring-your-own-agent-cli.md",
         "recipes/drive-interactive-terminal.md",
@@ -26,6 +28,7 @@
       "categories": [
         {
           "title": "Core",
+          "blurb": "The agent, its subagents, and what each may do.",
           "pages": [
             "features/capabilities.md",
             "features/agents.md",
@@ -50,6 +53,7 @@
         },
         {
           "title": "Workspace",
+          "blurb": "The window you and the agent share: panels, mini apps, the editor and settings.",
           "pages": [
             "features/workspace.md",
             "features/native-workspace-tabs.md",
@@ -69,6 +73,7 @@
         },
         {
           "title": "Models & context",
+          "blurb": "Providers, models on this computer, and keeping a request inside its budget.",
           "pages": [
             "features/providers.md",
             "features/local-models.md",
@@ -80,10 +85,12 @@
         },
         {
           "title": "Memory & skills",
+          "blurb": "Carry context into later work, and reuse procedures.",
           "pages": ["features/learning-loop.md", "features/skills.md"]
         },
         {
           "title": "Integrations",
+          "blurb": "MCP servers, hooks and commands, credentials, and messages from outside.",
           "pages": [
             "features/mcp.md",
             "features/hooks-and-commands.md",
@@ -100,6 +107,7 @@
     {
       "id": "extending",
       "title": "Extending",
+      "blurb": "Mini apps, Claude Code plugins and skills: what you build on Localix.",
       "pages": [
         "extending/mini-apps.md",
         "extending/claude-code-compatibility.md",
@@ -127,6 +135,7 @@
     {
       "id": "contributors",
       "title": "Contributors",
+      "blurb": "The public contributor guides: setup and architecture.",
       "pages": [
         "internals/architecture.md",
         "internals/environment.md",

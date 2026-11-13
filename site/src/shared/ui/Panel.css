@@ -1,0 +1,73 @@
+/* A panel: what a program printed, in the terminal's own measure. Its tones are syntax.css's. */
+.panel {
+  margin: 0;
+  overflow-x: auto;
+  padding: 1.15rem 1.3rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--panel-text);
+  font: 400 clamp(0.75rem, 0.68rem + 0.26vw, 0.9rem) / 1.75 var(--mono);
+  font-variant-numeric: tabular-nums;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+  container-type: inline-size;
+}
+.panel-row {
+  display: block;
+  white-space: pre;
+}
+.t-dim { color: var(--tk-dim); }
+.t-hi { color: var(--bright); font-weight: 600; }
+.t-ok { color: var(--tk-ok); }
+.t-bad { color: var(--tk-bad); }
+.t-acc { color: var(--tk-var); }
+.t-sel { color: var(--bright); font-weight: 600; }
+
+/* A table: the grid holds the columns, each row takes them over, so they line up. */
+.panel-grid {
+  display: grid;
+  column-gap: 2ch;
+  width: max-content;
+}
+.panel-grid + .panel-row,
+.panel-row + .panel-grid {
+  margin-top: 0.6rem;
+}
+.panel-cells {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+.panel-cells .r {
+  text-align: right;
+}
+
+/* In a narrow panel (a phone) nothing is cut off at the edge: a line wraps, and a table's row is
+   its first cell with the rest under it. */
+@container (max-width: 34rem) {
+  /* A wrapped line hangs under its first, so where a line starts is still read down the edge. */
+  .panel-row {
+    padding-left: 2ch;
+    text-indent: -2ch;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .panel-grid {
+    display: block;
+    width: auto;
+  }
+  .panel-cells {
+    display: block;
+  }
+  .panel-cells + .panel-cells {
+    margin-top: 0.55rem;
+  }
+  .panel-cells > span {
+    display: block;
+    white-space: normal;
+  }
+  .panel-cells .r {
+    text-align: left;
+  }
+}

@@ -1,0 +1,34 @@
+/* One strip under a hairline: the site's line on the left, the links on the right; one under the
+   other on a phone. */
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.25rem 1.5rem;
+  margin-top: auto;
+  padding-block: 0.6rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+.foot p {
+  margin: 0;
+}
+.foot nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.4rem;
+}
+.foot nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--soft);
+}
+@media (hover: hover) and (pointer: fine) {
+  .foot nav a:hover {
+    color: var(--white);
+  }
+}

@@ -1,0 +1,48 @@
+/* A link as an action, a pill: filled for the one to take first, a hairline outline otherwise. */
+.action {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 1.4rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--white);
+  font: 600 0.75rem / 1 var(--text);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition:
+    transform 160ms var(--ease-out),
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+.action:active {
+  transform: scale(0.97);
+}
+.action.filled {
+  border-color: var(--white);
+  background: var(--white);
+  color: var(--black);
+}
+/* The bar's: drawn small, its hit area a finger's all the same. */
+.action.small {
+  position: relative;
+  min-height: 2.125rem;
+  padding: 0 0.95rem;
+  font-size: 0.6875rem;
+}
+.action.small::after {
+  position: absolute;
+  inset: -0.35rem -0.25rem;
+  content: '';
+}
+@media (hover: hover) and (pointer: fine) {
+  .action:hover {
+    border-color: var(--faint);
+  }
+  .action.filled:hover {
+    border-color: var(--bright);
+    background: var(--bright);
+  }
+}

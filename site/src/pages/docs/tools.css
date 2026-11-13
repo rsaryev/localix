@@ -1,0 +1,183 @@
+/* The docs' search: its button in the bar, quiet as a link, and the search itself. The text's
+   size is the reader's, kept from page to page. */
+:root[data-size='large'] .prose { font-size: 1.25rem; }
+:root[data-size='larger'] .prose { font-size: 1.4rem; }
+
+.search-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.25rem;
+  margin-right: 0.75rem;
+  padding: 0 0.6rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--white);
+  font: 500 0.875rem / 1 var(--text);
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+.search-open:hover {
+  background: var(--raised);
+}
+.search-open svg {
+  width: 15px;
+  height: 15px;
+}
+.search-open kbd {
+  color: var(--muted);
+  font: 400 0.8125rem / 1 var(--text);
+}
+.search-close {
+  padding: 0.2rem 0.35rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  background: none;
+  color: var(--muted);
+  font: 500 0.6875rem / 1 var(--mono);
+}
+/* A phone has no such key, and no room for the word. */
+@media (max-width: 40rem) {
+  .search-open {
+    width: 2.75rem;
+    height: 2.75rem;
+    margin-right: 0;
+    padding: 0;
+    justify-content: center;
+  }
+  .search-open svg {
+    width: 18px;
+    height: 18px;
+  }
+  .search-open-label,
+  .search-open kbd {
+    display: none;
+  }
+}
+
+.search {
+  width: min(40rem, 100vw - 1.5rem);
+  max-height: min(34rem, 100dvh - 6rem);
+  margin: clamp(0.75rem, 12vh, 7rem) auto auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--white);
+  box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.8);
+}
+.search[open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  animation: search-in 180ms var(--ease-out);
+}
+.search::backdrop {
+  background: rgb(0 0 0 / 0.6);
+  backdrop-filter: blur(3px);
+}
+@keyframes search-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.985); }
+}
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.9rem 0 1.1rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+}
+.search-field svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+.search-field input {
+  flex: 1;
+  min-width: 0;
+  height: 3.25rem;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--white);
+  /* 16px: a phone zooms into a smaller field. */
+  font: 400 1rem / 1 var(--text);
+  appearance: none;
+}
+/* The field is the dialog's one place to type: its caret says where the focus is. */
+.search-field input:focus-visible {
+  outline: 0;
+  box-shadow: none;
+}
+.search-field input::placeholder {
+  color: var(--muted);
+}
+.search-field input::-webkit-search-cancel-button {
+  display: none;
+}
+.search-close {
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+.search-close:hover {
+  color: var(--white);
+}
+.search-results {
+  margin: 0;
+  padding: 0.4rem;
+  overflow-y: auto;
+  list-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+  overscroll-behavior: contain;
+}
+.search-results:empty {
+  display: none;
+}
+.search-results a {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 9px;
+  scroll-margin: 0.4rem;
+}
+.search-results [aria-selected='true'] a {
+  background: var(--raised);
+}
+.search-where {
+  color: var(--muted);
+  font: 500 0.75rem / 1.3 var(--text);
+}
+.search-title {
+  font: 500 0.9375rem / 1.35 var(--text);
+}
+.search-text {
+  overflow: hidden;
+  color: var(--soft);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.search-results mark {
+  background: none;
+  color: var(--white);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--faint);
+  text-underline-offset: 3px;
+}
+.search-status {
+  margin: 0;
+  padding: 0.7rem 1.1rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.search-results:not(:empty) + .search-status {
+  border-top: 1px solid var(--line);
+  font: 400 0.75rem / 1.4 var(--mono);
+}
+@media (prefers-reduced-motion: reduce) {
+  .search[open] { animation: none; }
+}

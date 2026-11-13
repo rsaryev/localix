@@ -1,0 +1,10 @@
+/* A clip in the frame the stills and the recording have: a hairline edge, the panel's ground
+   while it loads, its own proportions. */
+.clip {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}

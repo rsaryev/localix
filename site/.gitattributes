@@ -1,0 +1,6 @@
+# What a site made from this template owns. On `npm run sync`, where the template and the site
+# both changed one of these, the site's version is kept (scripts/sync.sh sets the driver up).
+content/** merge=ours
+public/** merge=ours
+README.md merge=ours
+*.woff2 binary

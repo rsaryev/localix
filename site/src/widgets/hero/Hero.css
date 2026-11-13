@@ -1,0 +1,91 @@
+/* The landing, one screen: the copy on the left with one word on a white chip; on the right, larger,
+   since it is the product, its window in stills or a recorded run. Stacked on a phone. The only motion is the
+   first paint, and the recording. */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(2.5rem, 7vw, 4rem);
+  padding-block: clamp(2rem, 6vw, 4rem) clamp(2.5rem, 7vw, 4rem);
+}
+.hero h1,
+.hero-title {
+  margin: 0;
+  font: 700 clamp(2.4rem, 1.3rem + 4.6vw, 3.75rem) / 1 var(--display);
+  letter-spacing: -0.05em;
+  text-wrap: balance;
+}
+/* The chip and its comma stay on one line: an inline block would let the comma wrap alone. */
+.hero-lead {
+  white-space: nowrap;
+}
+.hero-chip {
+  display: inline-block;
+  padding: 0 0.1em 0.04em;
+  border-radius: 0.08em;
+  background: var(--white);
+  color: var(--black);
+  transform: rotate(-1.5deg);
+}
+.lede {
+  max-width: 32em;
+  margin: clamp(1.25rem, 2.2vw, 2rem) 0 0;
+  color: var(--soft);
+  font-size: var(--step-1);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.hero-under {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font: 400 0.875rem / 1.5 var(--text);
+}
+.hero-under a {
+  color: var(--soft);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 160ms ease;
+}
+.hero-under a:hover {
+  color: var(--white);
+}
+.hero-demo {
+  min-width: 0;
+  margin: 0;
+}
+
+/* Side by side on wide screens, the hero filling the window between the bar and the footer. */
+@media (min-width: 60rem) {
+  .hero {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 7fr);
+    column-gap: clamp(2.5rem, 4vw, 5rem);
+    align-items: center;
+    min-height: min(calc(100svh - 10rem), 60rem);
+  }
+  .hero h1,
+  .hero-title {
+    font-size: clamp(2.75rem, 3.7vw, 4.75rem);
+  }
+}
+
+/* The headline and the lede are there at the first paint; what follows them rises into place. */
+.hero .download,
+.hero .install-box,
+.hero-under,
+.hero-demo {
+  animation: rise 600ms var(--ease-out) both;
+}
+.hero .hero-under { animation-delay: 60ms; }
+.hero .hero-demo { animation-delay: 120ms; }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero .download,
+  .hero .install-box,
+  .hero-under,
+  .hero-demo { animation: none; }
+}
+.lede code {
+  color: var(--white);
+  font-size: 0.88em;
+}

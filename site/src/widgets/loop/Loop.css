@@ -1,0 +1,131 @@
+/* The cards as a stack: each sticks under the bar and the next slides over it, a little lower, so
+   the edges of those under it show. Words on the left, what shows them on the right: a terminal,
+   a picture, a clip. Black cards on the page's lighter ground; only they carry a shadow. */
+.loop {
+  padding-block: clamp(2.5rem, 6vw, 5rem) 0;
+}
+.loop-stack {
+  display: grid;
+  gap: clamp(1.5rem, 5vw, 3.5rem);
+}
+.loop-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  padding: clamp(1.15rem, 2.6vw, 2rem);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: 0 -28px 60px -32px rgb(0 0 0 / 0.95);
+}
+/* The tag over the title; the links under the words are labels too, and keep no margin. */
+.loop-text > .label {
+  margin: 0 0 0.85rem;
+  color: var(--muted);
+}
+.loop-text code {
+  padding: 0.1em 0.35em;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  background: var(--raised);
+  color: var(--white);
+  font-size: 0.86em;
+  white-space: nowrap;
+}
+.loop-text h3 {
+  margin: 0;
+  text-wrap: balance;
+  font: 600 clamp(1.3rem, 1rem + 1.1vw, 1.8rem) / 1.15 var(--display);
+  letter-spacing: -0.025em;
+}
+.loop-text h3 + p {
+  max-width: 32em;
+  margin: 0.9rem 0 0;
+  color: var(--soft);
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+.loop-text .loop-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.4rem;
+  margin: 0.6rem 0 -0.75rem;
+}
+.loop-text .loop-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--white);
+}
+@media (hover: hover) and (pointer: fine) {
+  .loop-text .loop-links a:hover {
+    color: var(--soft);
+  }
+}
+.loop-media {
+  align-self: center;
+  min-width: 0;
+}
+/* A picture or a clip: whole, at the card's width, in the terminal's frame. */
+.loop-shot {
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.loop-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.loop-card-plain .loop-text h3 + p {
+  max-width: 44em;
+}
+@media (min-width: 60rem) {
+  .loop-card {
+    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+    align-items: center;
+    gap: clamp(1.75rem, 4vw, 3.5rem);
+  }
+  .loop-card-plain {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* The stack, once the script has told each card its height (--h): a card sticks a little lower
+   than the one before, so the edges of those under it show; one taller than what is left of the
+   window sticks by its end instead, so its last line is read before the next covers it. */
+.loop[data-stack] .loop-card {
+  --at: calc(var(--bar) + 0.75rem + var(--n) * 0.6rem);
+  position: sticky;
+  top: min(var(--at), 100svh - var(--h) - 0.75rem);
+}
+@media (min-width: 60rem) {
+  .loop[data-stack] .loop-card {
+    --at: calc(var(--bar) + 1.25rem + var(--n) * 0.875rem);
+  }
+}
+
+/* A card's lines come in one after another once it is seen. */
+.loop-card[data-reveal] .panel-row {
+  transition:
+    opacity 420ms var(--ease-out),
+    transform 420ms var(--ease-out);
+  transition-delay: calc(var(--i) * 110ms + 120ms);
+}
+.loop-card[data-reveal='wait'] .panel-row {
+  opacity: 0;
+  transform: translateY(6px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .loop[data-stack] .loop-card {
+    position: relative;
+    top: 0;
+  }
+  .loop-card[data-reveal] .panel-row {
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+}

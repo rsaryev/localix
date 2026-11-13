@@ -1,0 +1,23 @@
+/* A section's heading, and the aside on its baseline at the right; under it on a phone. */
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem 2rem;
+  margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
+}
+.section-head h2 {
+  margin: 0;
+  font: 600 var(--step-3) / 1.05 var(--display);
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+.section-head .label {
+  color: var(--soft);
+}
+@media (hover: hover) and (pointer: fine) {
+  .section-head a.label:hover {
+    color: var(--white);
+  }
+}
